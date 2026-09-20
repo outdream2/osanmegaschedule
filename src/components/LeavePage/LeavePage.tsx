@@ -273,7 +273,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
 
     const ok = await confirm({
       message: (
-        <div className="text-[15px] leading-relaxed text-zinc-700">
+        <div className="text-[21px] leading-relaxed text-zinc-700">
           <div className="font-semibold text-zinc-900 mb-1">
             {formType} · {formStart} ~ {formEnd} ({days}일)
           </div>
@@ -431,18 +431,18 @@ export const LeavePage: React.FC<LeavePageProps> = ({
 
             {/* 잔여 연차 · 한 줄 텍스트 */}
             <div className="flex items-center justify-between px-1">
-              <div className="text-[18px] font-semibold text-zinc-700">
+              <div className="text-[20px] font-semibold text-zinc-700">
                 {balance
                   ? <>잔여 연차: <span className="font-bold text-zinc-900 tabular-nums">{balance.remaining}일</span>
-                      <span className="text-zinc-400 text-[16px] font-normal ml-2">
+                      <span className="text-zinc-400 text-[20px] font-normal ml-2">
                         (사용 {balance.used} / 총 {balance.total})
                       </span>
                     </>
-                  : <span className="text-zinc-400 text-[17px]">연차 정보 로딩 중...</span>
+                  : <span className="text-zinc-400 text-[21px]">연차 정보 로딩 중...</span>
                 }
               </div>
               {isManager && (
-                <span className="text-[14px] text-zinc-400 font-medium">관리자 · 전체 신청 조회</span>
+                <span className="text-[20px] text-zinc-400 font-medium">관리자 · 전체 신청 조회</span>
               )}
             </div>
 
@@ -450,14 +450,14 @@ export const LeavePage: React.FC<LeavePageProps> = ({
             <Card>
               <div className="flex items-center gap-2 mb-4">
                 <AccentBar />
-                <span className="text-[19px] font-bold text-ink tracking-tight">신규 신청</span>
+                <span className="text-[21px] font-bold text-ink tracking-tight">신규 신청</span>
               </div>
 
               <form onSubmit={handleSubmit}>
                 {/* 표 헤더 */}
                 <div className="hidden sm:grid grid-cols-[120px_1fr_1fr_72px_1fr] gap-0 bg-zinc-50 border border-zinc-200 rounded-t-lg overflow-hidden">
                   {(["유형", "시작일", "종료일", "일수", "사유"] as const).map(h => (
-                    <div key={h} className="px-3 py-2.5 text-[13px] font-semibold text-zinc-500 uppercase tracking-wider border-r last:border-r-0 border-zinc-200">
+                    <div key={h} className="px-3 py-2.5 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider border-r last:border-r-0 border-zinc-200">
                       {h}
                     </div>
                   ))}
@@ -470,7 +470,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                     <select
                       value={formType}
                       onChange={e => setFormType(e.target.value)}
-                      className="w-full bg-white border-0 text-[16px] font-semibold text-zinc-800 focus:outline-none focus:ring-1 focus:ring-brand-deep rounded px-1 py-1 cursor-pointer"
+                      className="w-full bg-white border-0 text-[20px] font-semibold text-zinc-800 focus:outline-none focus:ring-1 focus:ring-brand-deep rounded px-1 py-1 cursor-pointer"
                     >
                       {LEAVE_TYPES.map(t => (
                         <option key={t} value={t}>{t}</option>
@@ -488,7 +488,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                         setFormStart(s);
                         if (formEnd < s) setFormEnd(s);
                       }}
-                      className="w-full bg-white border-0 text-[16px] font-semibold text-zinc-800 focus:outline-none focus:ring-1 focus:ring-brand-deep rounded px-1 py-1 tabular-nums"
+                      className="w-full bg-white border-0 text-[20px] font-semibold text-zinc-800 focus:outline-none focus:ring-1 focus:ring-brand-deep rounded px-1 py-1 tabular-nums"
                       required
                     />
                   </div>
@@ -500,14 +500,14 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                       value={formEnd}
                       min={formStart}
                       onChange={e => setFormEnd(e.target.value)}
-                      className="w-full bg-white border-0 text-[16px] font-semibold text-zinc-800 focus:outline-none focus:ring-1 focus:ring-brand-deep rounded px-1 py-1 tabular-nums"
+                      className="w-full bg-white border-0 text-[20px] font-semibold text-zinc-800 focus:outline-none focus:ring-1 focus:ring-brand-deep rounded px-1 py-1 tabular-nums"
                       required
                     />
                   </div>
 
                   {/* 일수 */}
                   <div className="px-2 py-2.5 border-r border-zinc-200 flex items-center justify-center">
-                    <span className="text-[16px] font-bold text-zinc-700 tabular-nums">
+                    <span className="text-[20px] font-bold text-zinc-700 tabular-nums">
                       {calcDays(formStart, formEnd)}일
                     </span>
                   </div>
@@ -520,7 +520,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                       value={formReason}
                       onChange={e => setFormReason(e.target.value)}
                       placeholder="사유 입력 (선택)"
-                      className="w-full bg-white border-0 text-[16px] text-zinc-700 focus:outline-none focus:ring-1 focus:ring-brand-deep rounded px-1 py-1"
+                      className="w-full bg-white border-0 text-[20px] text-zinc-700 focus:outline-none focus:ring-1 focus:ring-brand-deep rounded px-1 py-1"
                     />
                   </div>
                 </div>
@@ -528,11 +528,11 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                 {/* 모바일 · 세로 스택 폼 */}
                 <div className="sm:hidden flex flex-col gap-3">
                   <div>
-                    <div className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">유형</div>
+                    <div className="text-[21px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">유형</div>
                     <select
                       value={formType}
                       onChange={e => setFormType(e.target.value)}
-                      className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2.5 text-[17px] font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep transition cursor-pointer"
+                      className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2.5 text-[21px] font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep transition cursor-pointer"
                     >
                       {LEAVE_TYPES.map(t => (
                         <option key={t} value={t}>{t}</option>
@@ -541,41 +541,41 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <div className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">시작일</div>
+                      <div className="text-[21px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">시작일</div>
                       <input
                         type="date" value={formStart}
                         onChange={e => { const s = e.target.value; setFormStart(s); if (formEnd < s) setFormEnd(s); }}
-                        className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2.5 text-[17px] font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep transition tabular-nums"
+                        className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2.5 text-[21px] font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep transition tabular-nums"
                         required
                       />
                     </div>
                     <div>
-                      <div className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">종료일</div>
+                      <div className="text-[21px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">종료일</div>
                       <input
                         type="date" value={formEnd} min={formStart}
                         onChange={e => setFormEnd(e.target.value)}
-                        className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2.5 text-[17px] font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep transition tabular-nums"
+                        className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2.5 text-[21px] font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep transition tabular-nums"
                         required
                       />
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[16px] text-zinc-500">
+                  <div className="flex items-center gap-1.5 text-[20px] text-zinc-500">
                     <span>총</span>
                     <span className="font-bold text-zinc-800 tabular-nums">{calcDays(formStart, formEnd)}일</span>
                   </div>
                   <div>
-                    <div className="text-[15px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">사유 <span className="font-normal text-zinc-400">(선택)</span></div>
+                    <div className="text-[21px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">사유 <span className="font-normal text-zinc-400">(선택)</span></div>
                     <input
                       lang="ko" type="text" value={formReason}
                       onChange={e => setFormReason(e.target.value)}
                       placeholder="사유 입력"
-                      className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2.5 text-[17px] text-zinc-700 focus:outline-none focus:border-brand-deep transition"
+                      className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2.5 text-[21px] text-zinc-700 focus:outline-none focus:border-brand-deep transition"
                     />
                   </div>
                 </div>
 
                 {submitError && (
-                  <div className="mt-2 text-[16px] text-rose-500 font-semibold px-1">{submitError}</div>
+                  <div className="mt-2 text-[20px] text-rose-500 font-semibold px-1">{submitError}</div>
                 )}
 
                 {/* 2026-09-18 · 사용자 지시 · 최신 트렌드 · 파란 primary + 그림자 hover · "연차신청" 라벨 */}
@@ -583,7 +583,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[17px] font-bold tracking-tight shadow-sm hover:shadow-md hover:shadow-blue-200/60 transition-all duration-150 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[21px] font-bold tracking-tight shadow-sm hover:shadow-md hover:shadow-blue-200/60 transition-all duration-150 cursor-pointer"
                   >
                     {submitting ? "신청 중..." : "연차신청"}
                   </button>
@@ -596,10 +596,10 @@ export const LeavePage: React.FC<LeavePageProps> = ({
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
                   <AccentBar />
-                  <span className="text-[19px] font-bold text-ink tracking-tight">
+                  <span className="text-[21px] font-bold text-ink tracking-tight">
                     {isManager ? "전체 신청 이력" : "내 신청 이력"}
                   </span>
-                  <span className="text-[16px] font-medium text-ink-soft tabular-nums">· {displayRequests.length}건</span>
+                  <span className="text-[20px] font-medium text-ink-soft tabular-nums">· {displayRequests.length}건</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {/* 2026-09-20 · 선택 삭제 · 선택 시에만 노출 */}
@@ -608,7 +608,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                       type="button"
                       onClick={() => handleBulkDelete(Array.from(selectedIds))}
                       disabled={bulkDeleting}
-                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-rose-500 hover:bg-rose-600 active:bg-rose-700 disabled:opacity-40 text-white text-[14px] font-bold tracking-tight shadow-sm transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-rose-500 hover:bg-rose-600 active:bg-rose-700 disabled:opacity-40 text-white text-[20px] font-bold tracking-tight shadow-sm transition-all cursor-pointer"
                     >
                       <Trash2 size={13} />
                       <span>선택 삭제 ({selectedIds.size})</span>
@@ -620,7 +620,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                       type="button"
                       onClick={() => handleBulkDelete(displayRequests.map(r => r.id))}
                       disabled={bulkDeleting}
-                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40 text-[14px] font-semibold transition-all cursor-pointer"
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40 text-[20px] font-semibold transition-all cursor-pointer"
                     >
                       <Trash2 size={13} />
                       <span>전체 삭제</span>
@@ -665,14 +665,14 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                           />
                         </th>
                         {isManager && (
-                          <th className="text-left px-4 py-3 text-[13px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">신청자</th>
+                          <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">신청자</th>
                         )}
-                        <th className="text-left px-4 py-3 text-[13px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">유형</th>
-                        <th className="text-left px-4 py-3 text-[13px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">기간</th>
-                        <th className="text-center px-3 py-3 text-[13px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">상태</th>
-                        <th className="text-center px-3 py-3 text-[13px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">PDF</th>
+                        <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">유형</th>
+                        <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">기간</th>
+                        <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">상태</th>
+                        <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">PDF</th>
                         {!isManager && (
-                          <th className="text-center px-3 py-3 text-[13px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">취소</th>
+                          <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">취소</th>
                         )}
                       </tr>
                     </thead>
@@ -695,15 +695,15 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                               />
                             </td>
                             {isManager && (
-                              <td className="px-4 py-3 font-semibold text-[16px] text-zinc-800 whitespace-nowrap">{r.employee_name}</td>
+                              <td className="px-4 py-3 font-semibold text-[20px] text-zinc-800 whitespace-nowrap">{r.employee_name}</td>
                             )}
-                            <td className="px-4 py-3 font-semibold text-[16px] text-zinc-800 whitespace-nowrap">{r.leave_type}</td>
-                            <td className="px-4 py-3 text-[16px] text-zinc-600 whitespace-nowrap tabular-nums">
+                            <td className="px-4 py-3 font-semibold text-[20px] text-zinc-800 whitespace-nowrap">{r.leave_type}</td>
+                            <td className="px-4 py-3 text-[20px] text-zinc-600 whitespace-nowrap tabular-nums">
                               {fmtDate(r.start_date)}
                               {r.start_date !== r.end_date && (
                                 <span className="text-zinc-400"> ~ {fmtDate(r.end_date)}</span>
                               )}
-                              <span className="text-zinc-400 text-[15px] ml-1.5 tabular-nums">
+                              <span className="text-zinc-400 text-[21px] ml-1.5 tabular-nums">
                                 ({calcDays(r.start_date, r.end_date)}일)
                               </span>
                             </td>
@@ -712,7 +712,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                                 {STATUS_LABEL[r.status]}
                               </StatusPill>
                               {r.reviewer_note && (
-                                <div className="mt-1 flex items-center justify-center gap-0.5 text-[13px] text-indigo-500">
+                                <div className="mt-1 flex items-center justify-center gap-0.5 text-[21px] text-indigo-500">
                                   <StickyNote size={12} className="shrink-0" />
                                   <span className="break-words">{r.reviewer_note}</span>
                                 </div>
@@ -723,7 +723,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                                 type="button"
                                 onClick={() => openPdfModal(r)}
                                 title="신청서 PDF 보기"
-                                className="inline-flex items-center gap-1 text-[15px] font-medium text-zinc-400 hover:text-brand-deep transition-colors cursor-pointer group-hover:text-zinc-600"
+                                className="inline-flex items-center gap-1 text-[21px] font-medium text-zinc-400 hover:text-brand-deep transition-colors cursor-pointer group-hover:text-zinc-600"
                               >
                                 <FileText size={14} />
                                 <span className="hidden sm:inline">PDF</span>
@@ -744,7 +744,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                                     }
                                   </button>
                                 ) : (
-                                  <span className="text-zinc-200 text-[18px]">—</span>
+                                  <span className="text-zinc-200 text-[20px]">—</span>
                                 )}
                               </td>
                             )}
@@ -776,10 +776,10 @@ export const LeavePage: React.FC<LeavePageProps> = ({
             <Card>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[19px] font-bold text-zinc-900">
+                  <span className="text-[21px] font-bold text-zinc-900">
                     {mgrTab === "pending" ? "승인 대기" : "전체 목록"}
                   </span>
-                  <span className="text-[15px] tabular-nums text-zinc-400 font-medium">
+                  <span className="text-[21px] tabular-nums text-zinc-400 font-medium">
                     {(mgrTab === "pending" ? pending : reviewed).length}건
                   </span>
                 </div>
@@ -816,12 +816,12 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                           <div className="flex items-start gap-3 min-w-0 flex-1">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[19px] font-bold text-zinc-900 leading-tight">{r.employee_name}</span>
-                                <span className="text-[15px] font-semibold text-brand-deep bg-brand-tint px-2 py-0.5 rounded-full">
+                                <span className="text-[21px] font-bold text-zinc-900 leading-tight">{r.employee_name}</span>
+                                <span className="text-[21px] font-semibold text-brand-deep bg-brand-tint px-2 py-0.5 rounded-full">
                                   {r.leave_type}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1.5 mt-1.5 text-[17px] text-zinc-600">
+                              <div className="flex items-center gap-1.5 mt-1.5 text-[21px] text-zinc-600">
                                 <CalendarDays size={15} className="text-zinc-400" />
                                 <span className="tabular-nums font-medium">{fmtDate(r.start_date)}</span>
                                 {r.start_date !== r.end_date && (
@@ -832,18 +832,18 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                                 )}
                               </div>
                               {r.reason && (
-                                <div className="mt-2 flex items-start gap-1.5 text-[15px] text-zinc-600 bg-zinc-50 border border-zinc-100 rounded-lg px-2.5 py-1.5">
+                                <div className="mt-2 flex items-start gap-1.5 text-[21px] text-zinc-600 bg-zinc-50 border border-zinc-100 rounded-lg px-2.5 py-1.5">
                                   <MessageSquareText size={14} className="text-zinc-400 mt-0.5 shrink-0" />
                                   <span className="break-words">{r.reason}</span>
                                 </div>
                               )}
                               {r.reviewer_note && (
-                                <div className="mt-1.5 flex items-start gap-1.5 text-[15px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1.5">
+                                <div className="mt-1.5 flex items-start gap-1.5 text-[21px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1.5">
                                   <StickyNote size={14} className="text-indigo-400 mt-0.5 shrink-0" />
                                   <span className="break-words"><span className="font-bold">내 메모:</span> {r.reviewer_note}</span>
                                 </div>
                               )}
-                              <div className="mt-2 text-[15px] text-zinc-400 tabular-nums">
+                              <div className="mt-2 text-[21px] text-zinc-400 tabular-nums">
                                 {fmtDateTime(r.created_at)} 신청
                               </div>
                             </div>
@@ -871,13 +871,13 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                                 value={reviewNote}
                                 onChange={e => setReviewNote(e.target.value)}
                                 placeholder="메모 (선택)"
-                                className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[17px] focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
+                                className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[21px] focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
                               />
                               <div className="grid grid-cols-2 gap-2">
                                 <button
                                   onClick={() => handleReview(r.id, "approved")}
                                   disabled={processingId === r.id}
-                                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[17px] font-semibold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white transition-all cursor-pointer disabled:opacity-50"
+                                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[21px] font-semibold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white transition-all cursor-pointer disabled:opacity-50"
                                 >
                                   <CheckCircle2 size={15} />
                                   {processingId === r.id ? "처리 중..." : "승인"}
@@ -885,7 +885,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                                 <button
                                   onClick={() => handleReview(r.id, "rejected")}
                                   disabled={processingId === r.id}
-                                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[17px] font-semibold bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white transition-all cursor-pointer disabled:opacity-50"
+                                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[21px] font-semibold bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white transition-all cursor-pointer disabled:opacity-50"
                                 >
                                   <XCircle size={15} />
                                   {processingId === r.id ? "처리 중..." : "반려"}
@@ -893,7 +893,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                               </div>
                               <button
                                 onClick={() => { setReviewingId(null); setReviewNote(""); }}
-                                className="text-[15px] text-zinc-400 hover:text-zinc-600 text-center cursor-pointer py-1"
+                                className="text-[21px] text-zinc-400 hover:text-zinc-600 text-center cursor-pointer py-1"
                               >
                                 취소
                               </button>
@@ -902,7 +902,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                             <div className="mt-3">
                               <button
                                 onClick={() => { setReviewingId(r.id); setReviewNote(""); }}
-                                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[17px] font-semibold bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-950 text-white transition-all cursor-pointer"
+                                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[21px] font-semibold bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-950 text-white transition-all cursor-pointer"
                               >
                                 검토하기
                               </button>
@@ -932,7 +932,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
             <button
               onClick={handlePdfDownload}
               disabled={pdfDownloading}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-700 text-white text-[16px] font-semibold transition-colors cursor-pointer disabled:opacity-40"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-700 text-white text-[20px] font-semibold transition-colors cursor-pointer disabled:opacity-40"
             >
               {pdfDownloading ? (
                 <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>생성 중...</span></>
@@ -942,7 +942,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
             </button>
             <button
               onClick={() => { setPdfModalOpen(false); setPdfModalData(null); }}
-              className="px-4 py-2 rounded-lg border border-zinc-200 text-zinc-600 text-[16px] font-semibold hover:bg-zinc-50 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-lg border border-zinc-200 text-zinc-600 text-[20px] font-semibold hover:bg-zinc-50 transition-colors cursor-pointer"
             >
               닫기
             </button>
