@@ -11,7 +11,8 @@ import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 import { SplitPanel } from "../common/SplitPanel";
 import { StatusPill } from "../common/StatusPill";
-import { ScanLine, RotateCcw, X } from "lucide-react";
+import { ScanLine, RotateCcw, X, PackageCheck } from "lucide-react";
+import { Modal } from "../common/Modal";
 import { Spinner } from "../common/Spinner";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { loadZBar } from "../BarcodeScanner/zbar";
@@ -119,6 +120,17 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
   // ── T20/Phase 2 · 상품별 진열요청 · 각 행 [📢 요청] state (핸들러는 showToast 아래)
   const [requestingKey, setRequestingKey]       = useState<string | null>(null);
+
+  // ── 진열요청 Modal state (#317 · 2026-09-20)
+  type DisplayRequestPending = {
+    row: StockRow;
+    targetZone: string;
+    autoNote: string;
+    storeSum: number;
+    warehouseSum: number;
+  };
+  const [displayRequestModal, setDisplayRequestModal] = useState<DisplayRequestPending | null>(null);
+  const [displayNoteInput, setDisplayNoteInput]       = useState<string>("");
 
   // ── T-SCAN-1 (2026-08-05) · 바코드 스캔 즉시 상품정보 모달 팝업
   //   · 스캔 → 리스트 행 추가 (기존) + 이 모달 팝업 (신규)
@@ -264,7 +276,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
   // ── T20/Phase 2 · 상품별 진열요청 · POST /api/display-requests
   // 2026-08-05 · 구역별 요청 지원 · zoneOverride 있으면 그 구역 · 없으면 배정구역
-  const requestDisplay = useCallback(async (row: StockRow, zoneOverride?: string | null) => {
+  // 2026-09-20 · #317 · confirm → Note 입력 Modal 팝업 (zoneOverride 없을 때)
+  const requestDisplay = useCallback((row: StockRow, zoneOverride?: string | null) => {
     const store1 = calcSlotTotal(row.prevStore1Qty, row.store1AddQty);
     const store2 = calcSlotTotal(row.prevStore2Qty, row.store2AddQty);
     const store3 = calcSlotTotal(row.prevStore3Qty, row.store3AddQty);
@@ -277,18 +290,25 @@ export const ScanPage: React.FC<ScanPageProps> = ({
     const autoNote = storeSum === 0
       ? (warehouseSum > 0 ? `매장 전량 부족 · 창고 ${warehouseSum}개 대기` : "매장·창고 모두 부족")
       : `매장 ${storeSum}개 · 진열 보충 요청`;
-    // 구역별 요청 시 confirm 생략 (모달 안 직접 클릭 · 이중 확인 제거)
-    if (!zoneOverride) {
-      const confirmMsg = `[${row.product.name}] 진열요청?\n· 배정 구역: ${rm || "미지정"}\n· 현재 매장: ${storeSum}개 · 창고: ${warehouseSum}개\n· 노트: ${autoNote}`;
-      if (!await confirm({ message: confirmMsg })) return;
+    // 구역별 요청 시 Modal 생략 (모달 안 직접 클릭 · 이중 확인 제거)
+    if (zoneOverride) {
+      void _doDisplayRequest(row, targetZone, autoNote);
+      return;
     }
+    // 일반 진열요청 → Modal 팝업
+    setDisplayNoteInput("");
+    setDisplayRequestModal({ row, targetZone, autoNote, storeSum, warehouseSum });
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── 진열요청 실제 POST · Modal [진열 요청] 버튼 또는 zoneOverride 직접 호출
+  const _doDisplayRequest = useCallback(async (row: StockRow, targetZone: string, note: string) => {
     setRequestingKey(row.key);
     try {
       await api.post("/api/display-requests", {
         product_code: row.code,
         zone_id: targetZone,
         zone_label: targetZone,
-        note: autoNote,
+        note,
         requested_at: new Date().toISOString(),
       });
       // 2026-08-18 · 진열 요청 배지 즉시 갱신
@@ -301,6 +321,15 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       setRequestingKey(null);
     }
   }, [showToast]);
+
+  // ── 진열요청 Modal [진열 요청] 확인 핸들러
+  const handleDisplayRequestConfirm = useCallback(() => {
+    if (!displayRequestModal) return;
+    const { row, targetZone, autoNote } = displayRequestModal;
+    const finalNote = displayNoteInput.trim() || autoNote;
+    setDisplayRequestModal(null);
+    void _doDisplayRequest(row, targetZone, finalNote);
+  }, [displayRequestModal, displayNoteInput, _doDisplayRequest]);
 
   // ── 스캔 핸들러
   // 2026-08-25 · 사용자 지시 · preloadedProduct 인자 추가
@@ -845,6 +874,90 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         }}
         onToast={showToast}
       />
+
+      {/* 2026-09-20 · #317 · 진열요청 Note 입력 Modal */}
+      <Modal
+        open={!!displayRequestModal}
+        onClose={() => setDisplayRequestModal(null)}
+        title="진열 요청"
+        icon={<PackageCheck size={17} />}
+        titleAccent
+        size="sm"
+        align="bottom-mobile"
+        footer={
+          <div className="flex items-center gap-2 w-full">
+            <button
+              type="button"
+              onClick={() => setDisplayRequestModal(null)}
+              className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-semibold
+                text-ink-soft bg-zinc-100 hover:bg-zinc-200
+                transition-colors cursor-pointer"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={handleDisplayRequestConfirm}
+              disabled={!!requestingKey}
+              className="flex-1 px-4 py-2.5 rounded-xl text-[15px] font-bold
+                text-white bg-brand-deep hover:bg-brand-dark active:bg-brand-dark
+                disabled:opacity-50 disabled:cursor-not-allowed
+                transition-colors cursor-pointer"
+            >
+              {requestingKey ? "전송 중..." : "진열 요청"}
+            </button>
+          </div>
+        }
+      >
+        {displayRequestModal && (
+          <div className="flex flex-col gap-4">
+            {/* 상품 정보 */}
+            <div className="rounded-xl bg-zinc-50 border border-zinc-200/80 px-4 py-3 flex flex-col gap-1.5">
+              <div className="flex items-baseline gap-2">
+                <span className="text-[13px] font-medium text-ink-muted w-20 shrink-0">상품</span>
+                <span className="text-[15px] font-bold text-ink leading-snug break-words whitespace-normal">
+                  {displayRequestModal.row.product.name}
+                </span>
+              </div>
+              {displayRequestModal.targetZone && (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[13px] font-medium text-ink-muted w-20 shrink-0">배정 구역</span>
+                  <span className="text-[15px] font-semibold text-ink leading-snug">
+                    {displayRequestModal.targetZone}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-baseline gap-2">
+                <span className="text-[13px] font-medium text-ink-muted w-20 shrink-0">현재 재고</span>
+                <span className="text-[14px] text-ink-soft leading-snug">
+                  매장 {displayRequestModal.storeSum}개 · 창고 {displayRequestModal.warehouseSum}개
+                </span>
+              </div>
+            </div>
+
+            {/* 요청 사유 */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[13px] font-semibold text-ink-soft">
+                요청 사유 <span className="font-normal text-ink-muted">(선택)</span>
+              </label>
+              <textarea
+                rows={3}
+                value={displayNoteInput}
+                onChange={e => setDisplayNoteInput(e.target.value)}
+                placeholder={displayRequestModal.autoNote}
+                className="w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5
+                  text-[15px] text-ink placeholder:text-ink-muted
+                  focus:outline-none focus:ring-2 focus:ring-brand-deep/30 focus:border-brand-deep
+                  resize-none transition-colors leading-relaxed"
+                autoFocus
+              />
+              <p className="text-[12px] text-ink-muted leading-snug">
+                비워 두면 자동 메모가 사용됩니다.
+              </p>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
