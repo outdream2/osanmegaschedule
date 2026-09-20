@@ -89,7 +89,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
   const employeeId = authSession?.employeeId;
   const employeeName = authSession?.employeeName ?? "";
   const confirm = useConfirm();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
 
   // 관리자 · mode="both" 시 · apply UI 도 항상 노출 (자기 신청 + 모두 조회)
   const showApply = mode === "apply" || mode === "both";
@@ -106,6 +106,9 @@ export const LeavePage: React.FC<LeavePageProps> = ({
   const [myRequests, setMyRequests] = useState<LeaveRequest[]>([]);
   const [myLoading, setMyLoading] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  // 2026-09-20 · 사용자 지시 · 이력 · 선택 체크박스 · 전체/선택 삭제
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // ── PDF state ───────────────────────────────────────────────────────────────
   const pdfModalRef = useRef<HTMLDivElement | null>(null);
@@ -309,6 +312,44 @@ export const LeavePage: React.FC<LeavePageProps> = ({
   };
 
   // ── Cancel (employee) ───────────────────────────────────────────────────────
+  // 2026-09-20 · 이력 · 선택 삭제 헬퍼
+  const toggleSelectRow = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const toggleSelectAll = () => {
+    setSelectedIds(prev => {
+      if (prev.size === displayRequests.length) return new Set();
+      return new Set(displayRequests.map(r => r.id));
+    });
+  };
+  const handleBulkDelete = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const isAll = ids.length === displayRequests.length;
+    const ok = await confirm({
+      title: isAll ? "전체 삭제" : "선택 삭제",
+      message: `${ids.length}건의 신청 이력을 삭제할까요?${isManager ? "\n승인된 항목의 스케쥴도 함께 제거됩니다." : ""}`,
+      confirmLabel: "삭제",
+      danger: true,
+    });
+    if (!ok) return;
+    setBulkDeleting(true);
+    let succeed = 0, fail = 0;
+    for (const id of ids) {
+      try { await deleteLeaveRequest(id); succeed += 1; }
+      catch { fail += 1; }
+    }
+    setBulkDeleting(false);
+    setSelectedIds(new Set());
+    if (fail > 0) showError(`${fail}건 삭제 실패 (성공 ${succeed})`);
+    else showSuccess(`${succeed}건 삭제 완료`);
+    if (isManager) await loadAllRequests(); else await loadMyRequests();
+    dispatchApprovalChange("leave");
+  };
+
   const handleCancel = async (id: string) => {
     const target = myRequests.find(r => r.id === id);
     const ok = await confirm({
@@ -560,13 +601,39 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                   </span>
                   <span className="text-[16px] font-medium text-ink-soft tabular-nums">· {displayRequests.length}건</span>
                 </div>
-                <button
-                  onClick={isManager ? loadAllRequests : loadMyRequests}
-                  disabled={displayLoading}
-                  className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all cursor-pointer"
-                >
-                  <RefreshCw size={13} className={displayLoading ? "animate-spin" : ""} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* 2026-09-20 · 선택 삭제 · 선택 시에만 노출 */}
+                  {selectedIds.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleBulkDelete(Array.from(selectedIds))}
+                      disabled={bulkDeleting}
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-rose-500 hover:bg-rose-600 active:bg-rose-700 disabled:opacity-40 text-white text-[14px] font-bold tracking-tight shadow-sm transition-all cursor-pointer"
+                    >
+                      <Trash2 size={13} />
+                      <span>선택 삭제 ({selectedIds.size})</span>
+                    </button>
+                  )}
+                  {/* 전체 삭제 · 이력 존재 시 */}
+                  {displayRequests.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleBulkDelete(displayRequests.map(r => r.id))}
+                      disabled={bulkDeleting}
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40 text-[14px] font-semibold transition-all cursor-pointer"
+                    >
+                      <Trash2 size={13} />
+                      <span>전체 삭제</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={isManager ? loadAllRequests : loadMyRequests}
+                    disabled={displayLoading}
+                    className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all cursor-pointer"
+                  >
+                    <RefreshCw size={13} className={displayLoading ? "animate-spin" : ""} />
+                  </button>
+                </div>
               </div>
 
               {displayLoading && displayRequests.length > 0 && (
@@ -586,6 +653,17 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-zinc-50 border-b border-zinc-200">
+                        {/* 2026-09-20 · 선택 체크박스 컬럼 */}
+                        <th className="text-center px-3 py-3 w-10">
+                          <input
+                            type="checkbox"
+                            checked={displayRequests.length > 0 && selectedIds.size === displayRequests.length}
+                            ref={el => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < displayRequests.length; }}
+                            onChange={toggleSelectAll}
+                            className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            aria-label="전체 선택"
+                          />
+                        </th>
                         {isManager && (
                           <th className="text-left px-4 py-3 text-[13px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">신청자</th>
                         )}
@@ -604,8 +682,18 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                         return (
                           <tr
                             key={r.id}
-                            className={`group transition-colors duration-100 hover:bg-zinc-50/60 ${idx !== 0 ? "border-t border-zinc-100" : ""}`}
+                            className={`group transition-colors duration-100 hover:bg-zinc-50/60 ${idx !== 0 ? "border-t border-zinc-100" : ""} ${selectedIds.has(r.id) ? "bg-blue-50/40" : ""}`}
                           >
+                            {/* 2026-09-20 · 선택 체크박스 */}
+                            <td className="text-center px-3 py-3 w-10">
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.has(r.id)}
+                                onChange={() => toggleSelectRow(r.id)}
+                                className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                aria-label={`${r.employee_name} ${r.leave_type} 선택`}
+                              />
+                            </td>
                             {isManager && (
                               <td className="px-4 py-3 font-semibold text-[16px] text-zinc-800 whitespace-nowrap">{r.employee_name}</td>
                             )}
