@@ -125,10 +125,12 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
   if (productCodes.length > 0) {
     try {
       // 2026-09-10 · #51 · 사용자 지시 · 진열요청 · 상세위치 (location_detail) 컬럼 추가
-      const { data: prods } = await supabase
+      // 2026-09-20 · 진단 · products 조회 결과 로그 · RLS 의심
+      const { data: prods, error: prodsErr } = await supabase
         .from("products")
         .select("product_code, product_name, spec, display_location, location, location_detail")
         .in("product_code", productCodes);
+      console.log(`[display-requests DIAG] products.in query · codes=[${productCodes.slice(0,3).join(",")}] · found=${prods?.length ?? 0} · err=${prodsErr?.message ?? "none"}`);
       const infoMap = new Map<string, { name: string; spec: string | null; display_location: string | null; location: string | null; location_detail: string | null }>();
       for (const p of prods ?? []) {
         const c = String(p.product_code ?? "").trim();
