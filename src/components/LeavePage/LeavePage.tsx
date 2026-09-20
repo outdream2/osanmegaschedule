@@ -5,6 +5,9 @@
 //   · 이력 표 형식 · PDF 컬럼 → 클릭 시 모달
 //   · PDF 결재란/도장/그라디언트 완전 제거
 // 2026-09-18 · 관리자 전체 신청 표시 + 컬럼 축소 + 목업 스타일 + 글씨 +2 (사용자 지시)
+// 2026-09-20 · approval 뷰 재구성 (사용자 지시)
+//   · TabBar(승인대기/전체목록) 제거 · mgrTab 제거
+//   · 상단 = pending 카드 (개선된 UI) · 하단 = 전체 이력 표 (RequestHistoryTable 공유)
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { listLeaveRequests, createLeaveRequest, reviewLeaveRequest, deleteLeaveRequest } from "../../lib/leaveApi";
@@ -14,7 +17,7 @@ import { EmptyState } from "../common/EmptyState";
 import {
   CalendarDays, Clock, CheckCircle2, XCircle,
   RefreshCw, Trash2, FileText, Download,
-  MessageSquareText, StickyNote,
+  MessageSquareText, StickyNote, ChevronDown,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { fmtDateYMD, fmtDateMD } from "../../lib/format";
@@ -24,7 +27,6 @@ import { StatusPill, type PillTone } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
-import { TabBar } from "../common/TabBar";
 import { Modal } from "../common/Modal";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../hooks/useToast";
@@ -63,8 +65,6 @@ interface LeavePageProps {
   mode?: LeaveMode;
 }
 
-type ManagerTab = "pending" | "all";
-
 const LEAVE_TYPES = ["연차", "반차", "오전반차", "오후반차", "월차", "병가", "특별휴가"];
 
 const STATUS_LABEL: Record<string, string> = {
@@ -81,6 +81,275 @@ function calcDays(start: string, end: string): number {
   const ms = new Date(end).getTime() - new Date(start).getTime();
   return Math.max(1, Math.round(ms / 86400000) + 1);
 }
+
+// ── RequestHistoryTable · apply + approval 양쪽 재사용 ─────────────────────
+interface RequestHistoryTableProps {
+  rows: LeaveRequest[];
+  isManager: boolean;
+  loading: boolean;
+  selectedIds: Set<string>;
+  onToggleRow: (id: string) => void;
+  onToggleAll: () => void;
+  cancellingId: string | null;
+  deletingId: string | null;
+  onCancel: (id: string) => void;
+  onDelete: (r: LeaveRequest) => void;
+  onOpenPdf: (r: LeaveRequest) => void;
+}
+
+const RequestHistoryTable: React.FC<RequestHistoryTableProps> = ({
+  rows, isManager, loading, selectedIds,
+  onToggleRow, onToggleAll,
+  cancellingId, deletingId,
+  onCancel, onDelete, onOpenPdf,
+}) => {
+  if (loading && rows.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Spinner tone="zinc" label="로딩 중..." labelSize={16} />
+      </div>
+    );
+  }
+  if (!loading && rows.length === 0) {
+    return (
+      <EmptyState
+        title="신청 이력 없음"
+        hint={isManager ? "전체 직원 연차 신청이 없습니다" : "위 폼에서 신청하세요"}
+        size="compact"
+      />
+    );
+  }
+  return (
+    <div className={`overflow-x-auto rounded-lg border border-zinc-200 ${loading ? "opacity-40 pointer-events-none" : ""}`}>
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="bg-zinc-50 border-b border-zinc-200">
+            {isManager && (
+              <th className="text-center px-3 py-3 w-10">
+                <input
+                  type="checkbox"
+                  checked={rows.length > 0 && selectedIds.size === rows.length}
+                  ref={el => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < rows.length; }}
+                  onChange={onToggleAll}
+                  className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  aria-label="전체 선택"
+                />
+              </th>
+            )}
+            {isManager && (
+              <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">신청자</th>
+            )}
+            <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">유형</th>
+            <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">기간</th>
+            <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">상태</th>
+            <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">PDF</th>
+            {!isManager && (
+              <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">취소</th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, idx) => {
+            const tone: PillTone = r.status === "pending" ? "amber" : r.status === "approved" ? "emerald" : "rose";
+            return (
+              <tr
+                key={r.id}
+                className={`group transition-colors duration-100 hover:bg-zinc-50/60 ${idx !== 0 ? "border-t border-zinc-100" : ""} ${selectedIds.has(r.id) ? "bg-blue-50/40" : ""}`}
+              >
+                {isManager && (
+                  <td className="text-center px-3 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(r.id)}
+                      onChange={() => onToggleRow(r.id)}
+                      className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      aria-label={`${r.employee_name} ${r.leave_type} 선택`}
+                    />
+                  </td>
+                )}
+                {isManager && (
+                  <td className="px-4 py-3 font-semibold text-[20px] text-zinc-800 whitespace-nowrap">{r.employee_name}</td>
+                )}
+                <td className="px-4 py-3 font-semibold text-[20px] text-zinc-800 whitespace-nowrap">{r.leave_type}</td>
+                <td className="px-4 py-3 text-[20px] text-zinc-600 whitespace-nowrap tabular-nums">
+                  {fmtDateYMD(r.start_date)}
+                  {r.start_date !== r.end_date && (
+                    <span className="text-zinc-400"> ~ {fmtDateYMD(r.end_date)}</span>
+                  )}
+                  <span className="text-zinc-400 text-[20px] ml-1.5 tabular-nums">
+                    ({calcDays(r.start_date, r.end_date)}일)
+                  </span>
+                </td>
+                <td className="px-3 py-3 text-center whitespace-nowrap">
+                  <StatusPill tone={tone} size="sm" dot pulse={r.status === "pending"}>
+                    {STATUS_LABEL[r.status]}
+                  </StatusPill>
+                  {r.reviewer_note && (
+                    <div className="mt-1 flex items-center justify-center gap-0.5 text-[20px] text-indigo-500">
+                      <StickyNote size={12} className="shrink-0" />
+                      <span className="break-words">{r.reviewer_note}</span>
+                    </div>
+                  )}
+                </td>
+                <td className="px-3 py-3 text-center">
+                  <button
+                    type="button"
+                    onClick={() => onOpenPdf(r)}
+                    title="신청서 PDF 보기"
+                    className="inline-flex items-center gap-1 text-[20px] font-medium text-zinc-400 hover:text-brand-deep transition-colors cursor-pointer group-hover:text-zinc-600"
+                  >
+                    <FileText size={14} />
+                    <span className="hidden sm:inline">PDF</span>
+                  </button>
+                </td>
+                {!isManager && (
+                  <td className="px-3 py-3 text-center">
+                    {r.status === "pending" ? (
+                      <button
+                        onClick={() => onCancel(r.id)}
+                        disabled={cancellingId === r.id}
+                        title="신청 취소"
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-md text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer disabled:opacity-40"
+                      >
+                        {cancellingId === r.id
+                          ? <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-rose-400" />
+                          : <Trash2 size={14} />
+                        }
+                      </button>
+                    ) : (
+                      <span className="text-zinc-200 text-[20px]">—</span>
+                    )}
+                  </td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// ── PendingLeaveCard · 승인 대기 단일 카드 · 개선된 UI ─────────────────────
+interface PendingLeaveCardProps {
+  r: LeaveRequest;
+  reviewingId: string | null;
+  reviewNote: string;
+  processingId: string | null;
+  deletingId: string | null;
+  onSetReviewNote: (v: string) => void;
+  onSetReviewingId: (id: string | null) => void;
+  onReview: (id: string, status: "approved" | "rejected") => void;
+  onDelete: (r: LeaveRequest) => void;
+}
+
+const PendingLeaveCard: React.FC<PendingLeaveCardProps> = ({
+  r, reviewingId, reviewNote, processingId, deletingId,
+  onSetReviewNote, onSetReviewingId, onReview, onDelete,
+}) => {
+  const days = calcDays(r.start_date, r.end_date);
+  return (
+    <div className="group relative rounded-2xl border border-zinc-100 bg-white hover:border-zinc-200 hover:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] transition-all duration-150 py-4 px-5">
+
+      {/* 상단: 이름 · 유형 pill · 상태 · 삭제 */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap flex-1 min-w-0">
+          <span className="text-[22px] font-bold text-zinc-900 leading-tight">{r.employee_name}</span>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[19px] font-semibold border border-indigo-100">
+            {r.leave_type}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <StatusPill tone="amber" size="md" dot pulse>
+            대기 중
+          </StatusPill>
+          <button
+            onClick={() => onDelete(r)}
+            disabled={deletingId === r.id}
+            title="이력 삭제"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer disabled:opacity-40"
+          >
+            <Trash2 size={14} className={deletingId === r.id ? "animate-pulse" : ""} />
+          </button>
+        </div>
+      </div>
+
+      {/* 기간 */}
+      <div className="flex items-center gap-1.5 mt-2.5 text-[21px] text-zinc-700">
+        <CalendarDays size={15} className="text-zinc-400 shrink-0" />
+        <span className="tabular-nums font-semibold">{fmtDateYMD(r.start_date)}</span>
+        {r.start_date !== r.end_date && (
+          <>
+            <span className="text-zinc-400">~</span>
+            <span className="tabular-nums font-semibold">{fmtDateYMD(r.end_date)}</span>
+          </>
+        )}
+        <span className="text-zinc-400 font-normal tabular-nums">({days}일)</span>
+      </div>
+
+      {/* 사유 */}
+      {r.reason && (
+        <div className="mt-2.5 flex items-start gap-1.5 text-[20px] text-zinc-600 bg-zinc-50 border border-zinc-100 rounded-xl px-3 py-2">
+          <MessageSquareText size={14} className="text-zinc-400 mt-0.5 shrink-0" />
+          <span className="break-words leading-relaxed">{r.reason}</span>
+        </div>
+      )}
+
+      {/* 신청 시각 */}
+      <div className="mt-2 text-[19px] text-zinc-400 tabular-nums">
+        {fmtDateMD(r.created_at)} 신청
+      </div>
+
+      {/* 액션 영역 */}
+      {reviewingId === r.id ? (
+        <div className="mt-3 flex flex-col gap-2">
+          <input
+            lang="ko"
+            type="text"
+            value={reviewNote}
+            onChange={e => onSetReviewNote(e.target.value)}
+            placeholder="메모 (선택)"
+            className="w-full bg-white border border-zinc-200 rounded-xl px-3 py-2 text-[20px] focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onReview(r.id, "approved")}
+              disabled={processingId === r.id}
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[21px] font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            >
+              <CheckCircle2 size={16} />
+              {processingId === r.id ? "처리 중..." : "승인"}
+            </button>
+            <button
+              onClick={() => onReview(r.id, "rejected")}
+              disabled={processingId === r.id}
+              className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[21px] font-bold border-2 border-rose-500 text-rose-600 hover:bg-rose-50 active:bg-rose-100 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <XCircle size={16} />
+              {processingId === r.id ? "처리 중..." : "반려"}
+            </button>
+          </div>
+          <button
+            onClick={() => { onSetReviewingId(null); onSetReviewNote(""); }}
+            className="text-[20px] text-zinc-400 hover:text-zinc-600 text-center cursor-pointer py-1"
+          >
+            취소
+          </button>
+        </div>
+      ) : (
+        <div className="mt-3">
+          <button
+            onClick={() => { onSetReviewingId(r.id); onSetReviewNote(""); }}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[21px] font-bold bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-950 text-white shadow-sm transition-all cursor-pointer"
+          >
+            <ChevronDown size={16} className="rotate-[-90deg]" />
+            검토하기
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const LeavePage: React.FC<LeavePageProps> = ({
   onBack, authSession, onNavigate, onLogout, embedded = false, mode = "both",
@@ -129,7 +398,6 @@ export const LeavePage: React.FC<LeavePageProps> = ({
   } | null>(null);
 
   // ── Manager state ───────────────────────────────────────────────────────────
-  const [mgrTab, setMgrTab] = useState<ManagerTab>("pending");
   const [allRequests, setAllRequests] = useState<LeaveRequest[]>([]);
   const [allLoading, setAllLoading] = useState(false);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
@@ -403,7 +671,10 @@ export const LeavePage: React.FC<LeavePageProps> = ({
   };
 
   const pending = allRequests.filter(r => r.status === "pending");
-  const reviewed = allRequests.filter(r => r.status !== "pending");
+  // 전체 이력: 최근순 정렬
+  const allSorted = [...allRequests].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -643,150 +914,38 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                 </Card>
               )}
 
-              {displayLoading && displayRequests.length === 0 ? (
-                <div className="flex items-center justify-center py-8">
-                  <Spinner tone="zinc" label="로딩 중..." labelSize={16} />
-                </div>
-              ) : !displayLoading && displayRequests.length === 0 ? (
-                <EmptyState title="신청 이력 없음" hint={isManager ? "전체 직원 연차 신청이 없습니다" : "위 폼에서 신청하세요"} size="compact" />
-              ) : (
-                <div className={`overflow-x-auto rounded-lg border border-zinc-200 ${displayLoading ? "opacity-40 pointer-events-none" : ""}`}>
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-zinc-50 border-b border-zinc-200">
-                        {/* 2026-09-20 · 사용자 지시 · 체크박스 · 관리자만 · 직원은 pending row 개별 취소만 */}
-                        {isManager && (
-                          <th className="text-center px-3 py-3 w-10">
-                            <input
-                              type="checkbox"
-                              checked={displayRequests.length > 0 && selectedIds.size === displayRequests.length}
-                              ref={el => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < displayRequests.length; }}
-                              onChange={toggleSelectAll}
-                              className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                              aria-label="전체 선택"
-                            />
-                          </th>
-                        )}
-                        {isManager && (
-                          <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">신청자</th>
-                        )}
-                        <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">유형</th>
-                        <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">기간</th>
-                        <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">상태</th>
-                        <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">PDF</th>
-                        {!isManager && (
-                          <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">취소</th>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {displayRequests.map((r, idx) => {
-                        const tone: PillTone = r.status === "pending" ? "amber" : r.status === "approved" ? "emerald" : "rose";
-                        return (
-                          <tr
-                            key={r.id}
-                            className={`group transition-colors duration-100 hover:bg-zinc-50/60 ${idx !== 0 ? "border-t border-zinc-100" : ""} ${selectedIds.has(r.id) ? "bg-blue-50/40" : ""}`}
-                          >
-                            {/* 2026-09-20 · 사용자 지시 · 체크박스 · 관리자만 */}
-                            {isManager && (
-                              <td className="text-center px-3 py-3 w-10">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedIds.has(r.id)}
-                                  onChange={() => toggleSelectRow(r.id)}
-                                  className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                  aria-label={`${r.employee_name} ${r.leave_type} 선택`}
-                                />
-                              </td>
-                            )}
-                            {isManager && (
-                              <td className="px-4 py-3 font-semibold text-[20px] text-zinc-800 whitespace-nowrap">{r.employee_name}</td>
-                            )}
-                            <td className="px-4 py-3 font-semibold text-[20px] text-zinc-800 whitespace-nowrap">{r.leave_type}</td>
-                            <td className="px-4 py-3 text-[20px] text-zinc-600 whitespace-nowrap tabular-nums">
-                              {fmtDate(r.start_date)}
-                              {r.start_date !== r.end_date && (
-                                <span className="text-zinc-400"> ~ {fmtDate(r.end_date)}</span>
-                              )}
-                              <span className="text-zinc-400 text-[21px] ml-1.5 tabular-nums">
-                                ({calcDays(r.start_date, r.end_date)}일)
-                              </span>
-                            </td>
-                            <td className="px-3 py-3 text-center whitespace-nowrap">
-                              <StatusPill tone={tone} size="sm" dot pulse={r.status === "pending"}>
-                                {STATUS_LABEL[r.status]}
-                              </StatusPill>
-                              {r.reviewer_note && (
-                                <div className="mt-1 flex items-center justify-center gap-0.5 text-[21px] text-indigo-500">
-                                  <StickyNote size={12} className="shrink-0" />
-                                  <span className="break-words">{r.reviewer_note}</span>
-                                </div>
-                              )}
-                            </td>
-                            <td className="px-3 py-3 text-center">
-                              <button
-                                type="button"
-                                onClick={() => openPdfModal(r)}
-                                title="신청서 PDF 보기"
-                                className="inline-flex items-center gap-1 text-[21px] font-medium text-zinc-400 hover:text-brand-deep transition-colors cursor-pointer group-hover:text-zinc-600"
-                              >
-                                <FileText size={14} />
-                                <span className="hidden sm:inline">PDF</span>
-                              </button>
-                            </td>
-                            {!isManager && (
-                              <td className="px-3 py-3 text-center">
-                                {r.status === "pending" ? (
-                                  <button
-                                    onClick={() => handleCancel(r.id)}
-                                    disabled={cancellingId === r.id}
-                                    title="신청 취소"
-                                    className="inline-flex items-center justify-center w-8 h-8 rounded-md text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer disabled:opacity-40"
-                                  >
-                                    {cancellingId === r.id
-                                      ? <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-rose-400" />
-                                      : <Trash2 size={14} />
-                                    }
-                                  </button>
-                                ) : (
-                                  <span className="text-zinc-200 text-[20px]">—</span>
-                                )}
-                              </td>
-                            )}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <RequestHistoryTable
+                rows={displayRequests}
+                isManager={isManager}
+                loading={displayLoading}
+                selectedIds={selectedIds}
+                onToggleRow={toggleSelectRow}
+                onToggleAll={toggleSelectAll}
+                cancellingId={cancellingId}
+                deletingId={deletingId}
+                onCancel={handleCancel}
+                onDelete={handleDeleteLeaveRequest}
+                onOpenPdf={openPdfModal}
+              />
             </Card>
           </div>
         )}
 
-        {/* ── 관리자 뷰 (승인) · 변경 없음 ── */}
+        {/* ── 관리자 뷰 (승인) · 2026-09-20 재구성 ── */}
         {showApproval && (
-          <div className="flex flex-col gap-4">
-            <TabBar
-              level={2}
-              activeKey={mgrTab}
-              onSelect={(k) => setMgrTab(k as ManagerTab)}
-              badgeColor="amber"
-              tabs={[
-                { key: "pending", label: "승인 대기", icon: Clock, badge: pending.length },
-                { key: "all", label: "전체 목록", icon: CalendarDays },
-              ]}
-            />
+          <div className="flex flex-col gap-5">
 
+            {/* ── A. 승인 대기 · 개선된 카드 리스트 ── */}
             <Card>
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-[21px] font-bold text-zinc-900">
-                    {mgrTab === "pending" ? "승인 대기" : "전체 목록"}
-                  </span>
-                  <span className="text-[21px] tabular-nums text-zinc-400 font-medium">
-                    {(mgrTab === "pending" ? pending : reviewed).length}건
-                  </span>
+                <div className="flex items-center gap-2.5">
+                  <AccentBar />
+                  <span className="text-[21px] font-bold text-ink tracking-tight">승인 대기</span>
+                  {pending.length > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-amber-500 text-white text-[13px] font-bold tabular-nums leading-none">
+                      {pending.length}
+                    </span>
+                  )}
                 </div>
                 <button
                   onClick={loadAllRequests}
@@ -797,128 +956,102 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                 </button>
               </div>
 
-              {allLoading && (mgrTab === "pending" ? pending : reviewed).length > 0 && (
+              {allLoading && pending.length > 0 && (
+                <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mb-2 sticky top-0 z-10">
+                  <Spinner size={12} tone="amber" label="새로 불러오는 중..." labelSize={15} />
+                </Card>
+              )}
+              {allLoading && pending.length === 0 ? (
+                <div className="flex items-center justify-center py-10">
+                  <Spinner tone="zinc" label="로딩 중..." labelSize={15} />
+                </div>
+              ) : pending.length === 0 ? (
+                <EmptyState title="대기 중인 신청 없음" hint="현재 검토가 필요한 연차 신청이 없습니다" size="compact" />
+              ) : (
+                <div className={`flex flex-col gap-3 ${allLoading ? "opacity-40 pointer-events-none" : ""}`}>
+                  {pending.map(r => (
+                    <PendingLeaveCard
+                      key={r.id}
+                      r={r}
+                      reviewingId={reviewingId}
+                      reviewNote={reviewNote}
+                      processingId={processingId}
+                      deletingId={deletingId}
+                      onSetReviewNote={setReviewNote}
+                      onSetReviewingId={setReviewingId}
+                      onReview={handleReview}
+                      onDelete={handleDeleteLeaveRequest}
+                    />
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            {/* ── B. 전체 이력 표 · apply 뷰의 RequestHistoryTable 재사용 ── */}
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <AccentBar />
+                  <span className="text-[21px] font-bold text-ink tracking-tight">전체 이력</span>
+                  <span className="text-[20px] font-medium text-ink-soft tabular-nums">· {allSorted.length}건</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {selectedIds.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleBulkDelete(Array.from(selectedIds))}
+                      disabled={bulkDeleting}
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-rose-500 hover:bg-rose-600 active:bg-rose-700 disabled:opacity-40 text-white text-[20px] font-bold tracking-tight shadow-sm transition-all cursor-pointer"
+                    >
+                      <Trash2 size={13} />
+                      <span>선택 삭제 ({selectedIds.size})</span>
+                    </button>
+                  )}
+                  {allSorted.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleBulkDelete(allSorted.map(r => r.id))}
+                      disabled={bulkDeleting}
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-40 text-[20px] font-semibold transition-all cursor-pointer"
+                    >
+                      <Trash2 size={13} />
+                      <span>전체 삭제</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={loadAllRequests}
+                    disabled={allLoading}
+                    className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-all cursor-pointer"
+                  >
+                    <RefreshCw size={13} className={allLoading ? "animate-spin" : ""} />
+                  </button>
+                </div>
+              </div>
+
+              {allLoading && allSorted.length > 0 && (
                 <Card variant="flat" bg="bg-indigo-50" borderColor="border-indigo-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mb-2 sticky top-0 z-10">
                   <Spinner size={12} tone="brand" label="새로 불러오는 중..." labelSize={15} />
                 </Card>
               )}
-              {allLoading && (mgrTab === "pending" ? pending : reviewed).length === 0 ? (
-                <div className="flex items-center justify-center py-12">
-                  <Spinner tone="zinc" label="로딩 중..." labelSize={15} />
-                </div>
-              ) : (mgrTab === "pending" ? pending : reviewed).length === 0 ? (
-                <EmptyState title={mgrTab === "pending" ? "대기 중인 신청 없음" : "검토 완료 없음"} size="compact" />
-              ) : (
-                <div className={`flex flex-col gap-2 ${allLoading ? "opacity-40 pointer-events-none" : ""}`}>
-                  {(mgrTab === "pending" ? pending : reviewed).map(r => {
-                    const tone: PillTone = r.status === "pending" ? "amber" : r.status === "approved" ? "emerald" : "rose";
-                    return (
-                      <div
-                        key={r.id}
-                        className="group relative rounded-xl border border-zinc-100 bg-white hover:border-zinc-200 hover:shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all duration-150 p-3.5"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3 min-w-0 flex-1">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[21px] font-bold text-zinc-900 leading-tight">{r.employee_name}</span>
-                                <span className="text-[21px] font-semibold text-brand-deep bg-brand-tint px-2 py-0.5 rounded-full">
-                                  {r.leave_type}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5 mt-1.5 text-[21px] text-zinc-600">
-                                <CalendarDays size={15} className="text-zinc-400" />
-                                <span className="tabular-nums font-medium">{fmtDate(r.start_date)}</span>
-                                {r.start_date !== r.end_date && (
-                                  <>
-                                    <span className="text-zinc-400">~</span>
-                                    <span className="tabular-nums font-medium">{fmtDate(r.end_date)}</span>
-                                  </>
-                                )}
-                              </div>
-                              {r.reason && (
-                                <div className="mt-2 flex items-start gap-1.5 text-[21px] text-zinc-600 bg-zinc-50 border border-zinc-100 rounded-lg px-2.5 py-1.5">
-                                  <MessageSquareText size={14} className="text-zinc-400 mt-0.5 shrink-0" />
-                                  <span className="break-words">{r.reason}</span>
-                                </div>
-                              )}
-                              {r.reviewer_note && (
-                                <div className="mt-1.5 flex items-start gap-1.5 text-[21px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1.5">
-                                  <StickyNote size={14} className="text-indigo-400 mt-0.5 shrink-0" />
-                                  <span className="break-words"><span className="font-bold">내 메모:</span> {r.reviewer_note}</span>
-                                </div>
-                              )}
-                              <div className="mt-2 text-[21px] text-zinc-400 tabular-nums">
-                                {fmtDateTime(r.created_at)} 신청
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <StatusPill tone={tone} size="md" dot pulse={r.status === "pending"}>
-                              {STATUS_LABEL[r.status]}
-                            </StatusPill>
-                            <button
-                              onClick={() => handleDeleteLeaveRequest(r)}
-                              disabled={deletingId === r.id}
-                              title="이력 삭제"
-                              className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer disabled:opacity-40"
-                            >
-                              <Trash2 size={14} className={deletingId === r.id ? "animate-pulse" : ""} />
-                            </button>
-                          </div>
-                        </div>
 
-                        {r.status === "pending" && (
-                          reviewingId === r.id ? (
-                            <div className="mt-3 flex flex-col gap-2">
-                              <input
-                                lang="ko" type="text"
-                                value={reviewNote}
-                                onChange={e => setReviewNote(e.target.value)}
-                                placeholder="메모 (선택)"
-                                className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[21px] focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
-                              />
-                              <div className="grid grid-cols-2 gap-2">
-                                <button
-                                  onClick={() => handleReview(r.id, "approved")}
-                                  disabled={processingId === r.id}
-                                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[21px] font-semibold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white transition-all cursor-pointer disabled:opacity-50"
-                                >
-                                  <CheckCircle2 size={15} />
-                                  {processingId === r.id ? "처리 중..." : "승인"}
-                                </button>
-                                <button
-                                  onClick={() => handleReview(r.id, "rejected")}
-                                  disabled={processingId === r.id}
-                                  className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[21px] font-semibold bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white transition-all cursor-pointer disabled:opacity-50"
-                                >
-                                  <XCircle size={15} />
-                                  {processingId === r.id ? "처리 중..." : "반려"}
-                                </button>
-                              </div>
-                              <button
-                                onClick={() => { setReviewingId(null); setReviewNote(""); }}
-                                className="text-[21px] text-zinc-400 hover:text-zinc-600 text-center cursor-pointer py-1"
-                              >
-                                취소
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="mt-3">
-                              <button
-                                onClick={() => { setReviewingId(r.id); setReviewNote(""); }}
-                                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-[21px] font-semibold bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-950 text-white transition-all cursor-pointer"
-                              >
-                                검토하기
-                              </button>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <RequestHistoryTable
+                rows={allSorted}
+                isManager
+                loading={allLoading}
+                selectedIds={selectedIds}
+                onToggleRow={toggleSelectRow}
+                onToggleAll={() => {
+                  setSelectedIds(prev => {
+                    if (prev.size === allSorted.length) return new Set();
+                    return new Set(allSorted.map(r => r.id));
+                  });
+                }}
+                cancellingId={cancellingId}
+                deletingId={deletingId}
+                onCancel={handleCancel}
+                onDelete={handleDeleteLeaveRequest}
+                onOpenPdf={openPdfModal}
+              />
             </Card>
           </div>
         )}

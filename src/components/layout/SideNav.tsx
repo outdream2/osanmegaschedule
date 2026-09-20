@@ -2,6 +2,7 @@
 // 2026-08-11 · 사이드바 V2 · shadcn Sidebar + Radix Collapsible · 6그룹 접이식 트리
 // 2026-08-12 · V3 · Warm Cream + Soft Pill + Micro Glow · 시인성 강화 · chevron pill 강조
 // 디자인 참고: Notion · Anthropic · Attio · 2026 SaaS Warm Trend
+// 2026-09-20 · 승인대기 · pending 배지 · 60초 폴링 + approval-count-updated 이벤트
 import React, { useState, useCallback, useEffect } from "react";
 import { Collapsible } from "radix-ui";
 import { LogOut } from "lucide-react";
@@ -36,6 +37,8 @@ import {
 import { useSidebarWidth } from "../../hooks/useSidebar";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
+import { getLeavePendingCount } from "../../lib/leaveApi";
+import { getResignationPendingCount } from "../../lib/resignationsApi";
 // 2026-08-20 · #175 · 본인 재직 상태 · 사직서 작성 서브탭 gate
 import { useEmploymentStatus } from "../../hooks/useEmploymentStatus";
 // 2026-08-17 · 사용자 지시 · 사이드바 · logo2 사용 (기본 로고와 별개)
@@ -83,6 +86,7 @@ interface CollapsibleGroupProps {
   activeSubTab: string | null;
   onNavigate: (page: AppNavPage) => void;
   isVendor: boolean;
+  approvalBadge?: number;
 }
 
 const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
@@ -91,6 +95,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   activeSubTab,
   onNavigate,
   isVendor,
+  approvalBadge,
 }) => {
   const [open, setOpen] = useState<boolean>(() => readGroupOpen(group.id));
 
@@ -298,6 +303,11 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     style={active ? { filter: `drop-shadow(0 0 8px ${NAV_ACCENT[item.color].hex}) drop-shadow(0 0 16px ${NAV_ACCENT[item.color].hex}80)` } : undefined}
                   />
                   <span>{item.label}</span>
+                  {item.label === "승인대기" && (approvalBadge ?? 0) > 0 && (
+                    <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold tabular-nums leading-none shrink-0 group-data-[collapsible=icon]:hidden">
+                      {(approvalBadge ?? 0) > 99 ? "99+" : approvalBadge}
+                    </span>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );
@@ -394,6 +404,32 @@ export const SideNav: React.FC<SideNavProps> = ({
   onLogout,
 }) => {
   const isMobile = useIsMobile();
+  // 2026-09-20 · 승인대기 배지 · leave + resignation pending count
+  const [approvalBadge, setApprovalBadge] = useState(0);
+  const isManager = (authSession?.level ?? 0) >= 2;
+  const loadApprovalBadge = useCallback(async () => {
+    if (!isManager) return;
+    try {
+      const [lc, rc] = await Promise.all([
+        getLeavePendingCount().catch(() => 0),
+        getResignationPendingCount().catch(() => 0),
+      ]);
+      setApprovalBadge(lc + rc);
+    } catch { /* silent */ }
+  }, [isManager]);
+  useEffect(() => {
+    loadApprovalBadge();
+    const iv = setInterval(loadApprovalBadge, 60_000);
+    const handler = () => loadApprovalBadge();
+    window.addEventListener("approval-count-updated", handler);
+    window.addEventListener("mt-approval-change", handler);
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener("approval-count-updated", handler);
+      window.removeEventListener("mt-approval-change", handler);
+    };
+  }, [loadApprovalBadge]);
+
   // 2026-08-31 · 서브탭 활성 표시 fix · 현재 페이지 활성 서브탭 tracking
   const activeSubTab = useActiveSubTab(activePage);
   // 2026-08-12 · hideOnMobile 그룹은 반응형(모바일)에서 숨김 (거래처 그룹 등 · PC 관리자 전용)
@@ -520,6 +556,7 @@ export const SideNav: React.FC<SideNavProps> = ({
               activeSubTab={activeSubTab}
               onNavigate={onNavigate}
               isVendor={authSession?.role === "vendor"}
+              approvalBadge={approvalBadge}
             />
           )
         ))}
