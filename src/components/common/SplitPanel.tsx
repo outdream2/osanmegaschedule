@@ -278,26 +278,50 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   // 드래그 시작
   const startXRef = useRef<number>(0);
   const startWRef = useRef<number>(0);
+  // E-001 fix (2026-09-20) · 드래그 중 click 이벤트가 SideNav 등 하위 요소로 버블되어
+  //   sidebar:subtab CustomEvent 를 트리거하는 버그 방지
+  //   · isDraggingRef · mousedown~mouseup 구간 마킹 → capture phase click 차단
+  const isDraggingRef = useRef(false);
+
+  // click 차단 핸들러 (capture) · isDragging 시에만 stopPropagation + preventDefault
+  useEffect(() => {
+    const blockClick = (e: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+      e.stopPropagation();
+      e.preventDefault();
+      isDraggingRef.current = false;
+    };
+    window.addEventListener("click", blockClick, true);
+    return () => window.removeEventListener("click", blockClick, true);
+  }, []);
+
   const startResize = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     // 사용자가 드래그한 후에는 autoFitLeft 자동 측정 중단 (의도된 폭 우선)
     userAdjustedRef.current = true;
+    isDraggingRef.current = false; // 초기화 · move 감지 후 true 로 전환
     startXRef.current = e.clientX;
     startWRef.current = listWidth;
 
     const onMove = (ev: MouseEvent) => {
       const delta = ev.clientX - startXRef.current;
+      // 드래그 이동이 2px 이상이면 실제 드래그로 판정 (미세 클릭 오판 방지)
+      if (Math.abs(delta) >= 2) isDraggingRef.current = true;
       // 2026-09-02 · viewport 기반 동적 clamp · 우측 최소 320px 보장 · maxWidth 는 상한
       const dynMax = Math.min(maxWidth, window.innerWidth - 320);
       const eff = Math.max(minWidth, dynMax);
       const next = Math.max(minWidth, Math.min(eff, startWRef.current + delta));
       setListWidth(next);
     };
-    const onUp = () => {
+    const onUp = (ev: MouseEvent) => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
+      // E-001 fix · 드래그 후 mouseup 은 stopPropagation (하위 요소 mouseup 핸들러 차단)
+      if (isDraggingRef.current) {
+        ev.stopPropagation();
+      }
     };
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
