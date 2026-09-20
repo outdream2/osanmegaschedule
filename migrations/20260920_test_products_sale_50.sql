@@ -29,18 +29,18 @@ SELECT
   p.product_name,
   p.supplier,
   p.spec,
-  COALESCE(p.current_stock, 0) + 50,   -- opening = current + sold (역산)
+  COALESCE(NULLIF(p.current_stock::text, '')::integer, 0) + 50,   -- opening = current + sold (역산 · text→int cast)
   0,                                    -- purchase_qty
   50,                                   -- sale_qty · 사용자 지시
   0,                                    -- disposal_qty
-  COALESCE(p.current_stock, 0),         -- closing = 현재고 그대로
-  50 * COALESCE(p.sale_price, 0)        -- 판매액 = 50 × 판매가
+  COALESCE(NULLIF(p.current_stock::text, '')::integer, 0),         -- closing = 현재고 그대로
+  50 * COALESCE(NULLIF(p.sale_price::text, '')::numeric, 0)        -- 판매액 = 50 × 판매가
 FROM products p
 WHERE p.product_name LIKE '테스트%'
 ON CONFLICT (snapshot_date, product_code) DO UPDATE
 SET
   sale_qty     = 50,
-  total_amount = 50 * COALESCE((SELECT sale_price FROM products WHERE product_code = stock_history.product_code), 0);
+  total_amount = 50 * COALESCE(NULLIF((SELECT sale_price::text FROM products WHERE product_code = stock_history.product_code), '')::numeric, 0);
 
 -- 3. 검증 · 실행 후
 -- SELECT product_code, product_name, sale_qty, closing_stock, total_amount
