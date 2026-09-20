@@ -101,17 +101,22 @@ function isValidZoneCode(c: string): boolean {
 
 // 2026-09-07 · 창고2 = 창고1(6개) 제외 모든 유효 구역코드
 //   · 유효 구역코드만 (1~4자·숫자1-99·알파뉴메릭) · 상품코드·카테고리코드 오분류 방지
+// 2026-09-20 · 사용자 지시 fix · s1/s2/s3 항상 null 버그 · 매장 슬롯 순차 배정
+//   · 창고1(6개) 이외 · WAREHOUSE_2_CODES 는 창고2 · 그 외 (매장 구역) 은 s1/s2/s3 순차
 export function assignZonesToSlots(
   input: string | null | undefined,
   categoryCode?: string | null,
 ): SlotZones {
   const codes = String(input ?? "").split(/[\/,·]/).map(s => s.trim()).filter(Boolean);
   let w1: string | null = null; let w2: string | null = null;
+  const stores: string[] = [];
   for (const raw of codes) {
     const c = raw.toUpperCase().replace(/\s+/g, "");
     if (!isValidZoneCode(c)) continue;   // 유효하지 않은 코드 무시
     if (!w1 && WAREHOUSE_1_CODES.has(c)) { w1 = raw; continue; }
-    if (!w2) { w2 = raw; continue; }    // 창고1 제외 모두 창고2
+    if (!w2 && WAREHOUSE_2_CODES.has(c)) { w2 = raw; continue; }
+    // 창고1·창고2 명시 코드 아닌 경우 · 매장 진열 구역 · s1/s2/s3 순차
+    stores.push(raw);
   }
   // fallback · category_code 가 유효 창고1 코드면 사용
   if (!w1 && categoryCode) {
@@ -119,9 +124,9 @@ export function assignZonesToSlots(
     if (WAREHOUSE_1_CODES.has(cat)) w1 = categoryCode.trim();
   }
   return {
-    s1zone: null,
-    s2zone: null,
-    s3zone: null,
+    s1zone: stores[0] ?? null,
+    s2zone: stores[1] ?? null,
+    s3zone: stores[2] ?? null,
     w1zone: w1,
     w2zone: w2,
   };
