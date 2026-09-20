@@ -573,80 +573,78 @@ export const ProductCreateModal: React.FC<Props> = ({
                 </div>
               </Section>
 
-              {/* 분류 · 기타 */}
+              {/* 2026-09-20 · 사용자 지시 · 분류·기타 재구성 · 진열구역(맨위) → 규격·단위 → 브랜드·제조사 → 메모 */}
               <Section title="분류 · 기타">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Field icon={<Tags size={14} />} label="분류코드">
-                    <input
-                      lang="ko" type="text"
-                      value={form.category}
-                      onChange={(e) => set("category", e.target.value)}
-                      className={inputCls}
-                      placeholder="예: 감기약"
-                      maxLength={100}
+                {/* 1. 진열구역 + 상세구역 · 맨 위 · full-width */}
+                <div className="relative min-w-0">
+                  <Field icon={<MapPin size={14} />} label={
+                    <span className="flex items-center gap-2">
+                      진열구역
+                      {warehouseTag && (
+                        <span className={`text-[13px] font-bold px-1.5 py-0.5 rounded-md border tracking-tight ${warehouseTag.cls}`}>
+                          → {warehouseTag.label}
+                        </span>
+                      )}
+                    </span>
+                  }>
+                    <ZoneCategoryPicker
+                      value={form.location}
+                      onChange={(loc) => {
+                        set("location", loc ?? "");
+                        // 진열위치 변경 시 상세구역 초기화 (이전 값 버림)
+                        setForm(prev => ({
+                          ...prev,
+                          location: loc ?? "",
+                          shelf_positions: { ...EMPTY_SHELF },
+                        }));
+                      }}
                     />
+                  </Field>
+                </div>
+                {form.location.trim() && (
+                  <ShelfPositionSection
+                    location={form.location.trim()}
+                    warehouseTag={warehouseTag}
+                    shelfPositions={form.shelf_positions}
+                    storageLocations={storageLocations}
+                    onChange={(code, val) =>
+                      setForm(prev => ({
+                        ...prev,
+                        shelf_positions: { ...prev.shelf_positions, [code]: val },
+                      }))
+                    }
+                    productCode={isEdit ? form.product_code : undefined}
+                  />
+                )}
+                {/* 2. 규격 + 단위 · 나란히 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <Field icon={<Ruler size={14} />} label="규격">
+                    <input lang="ko" type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
                   </Field>
                   <Field icon={<Layers size={14} />} label="단위">
                     <input lang="ko" type="text" value={form.unit} onChange={(e) => set("unit", e.target.value)} className={inputCls} placeholder="개 · 박스 · 정" maxLength={30} />
                   </Field>
-                  <Field icon={<Ruler size={14} />} label="규격">
-                    <input lang="ko" type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
-                  </Field>
-                  {/* 2026-09-20 · 진열구역 선택 · 창고/매장 자동 결정 (사용자 지시) */}
-                  <div className="col-span-full relative min-w-0">
-                    <Field icon={<MapPin size={14} />} label={
-                      <span className="flex items-center gap-2">
-                        진열구역
-                        {warehouseTag && (
-                          <span className={`text-[13px] font-bold px-1.5 py-0.5 rounded-md border tracking-tight ${warehouseTag.cls}`}>
-                            → {warehouseTag.label}
-                          </span>
-                        )}
-                      </span>
-                    }>
-                      <ZoneCategoryPicker
-                        value={form.location}
-                        onChange={(loc) => {
-                          set("location", loc ?? "");
-                          // 진열위치 변경 시 상세구역 초기화 (이전 값 버림)
-                          setForm(prev => ({
-                            ...prev,
-                            location: loc ?? "",
-                            shelf_positions: { ...EMPTY_SHELF },
-                          }));
-                        }}
-                      />
-                    </Field>
-                  </div>
-                  {/* 2026-09-20 · 상세구역 · 진열위치 선택 시만 표시 · 창고1/2 중 하나 + 매장 추가 방식 */}
-                  {form.location.trim() && (
-                    <ShelfPositionSection
-                      location={form.location.trim()}
-                      warehouseTag={warehouseTag}
-                      shelfPositions={form.shelf_positions}
-                      storageLocations={storageLocations}
-                      onChange={(code, val) =>
-                        setForm(prev => ({
-                          ...prev,
-                          shelf_positions: { ...prev.shelf_positions, [code]: val },
-                        }))
-                      }
-                      productCode={isEdit ? form.product_code : undefined}
-                    />
-                  )}
                 </div>
-              </Section>
-
-              {/* 2026-09-14 · #83 · 사용자 지시 · "동일 분류 참조 상품" 섹션 제거 */}
-
-              {/* 기타 */}
-              <Section title="기타">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* 3. 브랜드 + 제조사 · 나란히 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <Field icon={<Award size={14} />} label="브랜드">
                     <input lang="ko" type="text" value={form.brand} onChange={(e) => set("brand", e.target.value)} className={inputCls} placeholder="예: 유한양행" maxLength={100} />
                   </Field>
                   <Field icon={<Factory size={14} />} label="제조사">
                     <input lang="ko" type="text" value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} placeholder="예: 한미약품" maxLength={100} />
+                  </Field>
+                </div>
+                {/* 4. 메모 · full-width · 분류코드 통합 (자유 텍스트) */}
+                <div className="mt-4">
+                  <Field icon={<Tags size={14} />} label="메모">
+                    <input
+                      lang="ko" type="text"
+                      value={form.category}
+                      onChange={(e) => set("category", e.target.value)}
+                      className={inputCls}
+                      placeholder="분류·비고 등 자유 메모 (예: 감기약)"
+                      maxLength={200}
+                    />
                   </Field>
                 </div>
               </Section>
