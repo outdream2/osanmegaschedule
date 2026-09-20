@@ -85,6 +85,9 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
 }));
 
 router.get("/api/display-requests", asyncHandler(async (req, res) => {
+  // 2026-09-20 · 사용자 지시 · 브라우저 304 캐시 · 신규 상품명 매칭 로직 반영 안 됨 · no-store 강제
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
   // scope=mine · employeeId 지정 시 담당자 본인 요청만 필터 (직원용 뷰)
   const scope = String(req.query.scope ?? "");
   const employeeIdRaw = req.query.employeeId;
