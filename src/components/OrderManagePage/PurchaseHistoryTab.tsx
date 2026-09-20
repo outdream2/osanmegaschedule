@@ -52,6 +52,11 @@ export const PurchaseHistoryTab: React.FC = () => {
   // ═══════════════════════════════════════════════════════════════════════
   const [viewMode, setViewMode] = useState<ViewMode>("by-vendor");
 
+  // ═══════════════════════════════════════════════════════════════════════
+  //  #324 · 판매상태 필터 (2026-09-20)
+  // ═══════════════════════════════════════════════════════════════════════
+  const [saleStatusFilter, setSaleStatusFilter] = useState<"all" | "selling" | "stopped">("all");
+
   // ─── 공급사 상세 모달 (T-COMMON-VendorInfoModal · 2026-08-06) ─────────────
   const { openVendorInfo, modalElement: vendorModalElement } = useVendorInfoModal();
 
@@ -528,11 +533,30 @@ export const PurchaseHistoryTab: React.FC = () => {
   }, [unionMode, selectedVendor?.id, periodMonths, periodSeason]);
 
   // 최종 render 용 rows · unionMode 여부에 따라 스왑
-  const displayLedgerRows = unionMode ? unionLedgerRows : ledgerRows;
-  const displayDetailRows = unionMode ? unionDetailRows : detailRows;
+  const _rawDisplayLedgerRows = unionMode ? unionLedgerRows : ledgerRows;
+  const _rawDisplayDetailRows = unionMode ? unionDetailRows : detailRows;
   const displayLedgerLoading = unionMode ? unionLoading : ledgerLoading;
   const displayDetailLoading = unionMode ? unionLoading : detailLoading;
   const displayLedgerError = unionMode ? unionError : ledgerError;
+
+  // 2026-09-20 · #324 · 공급사별 뷰 · 판매상태 필터 적용 (client-side lookupProduct 조인)
+  const displayLedgerRows = useMemo<PurchaseLedgerRow[]>(() => {
+    if (saleStatusFilter === "all") return _rawDisplayLedgerRows;
+    return _rawDisplayLedgerRows.filter(r => {
+      const cached = r.product_code ? lookupProduct(String(r.product_code)) : null;
+      const s = String((cached as any)?.sale_status ?? "").trim();
+      return saleStatusFilter === "selling" ? s === "판매중" : s !== "판매중";
+    });
+  }, [_rawDisplayLedgerRows, saleStatusFilter]);
+
+  const displayDetailRows = useMemo<PurchaseDetailRow[]>(() => {
+    if (saleStatusFilter === "all") return _rawDisplayDetailRows;
+    return _rawDisplayDetailRows.filter(r => {
+      const cached = r.product_code ? lookupProduct(String(r.product_code)) : null;
+      const s = String((cached as any)?.sale_status ?? "").trim();
+      return saleStatusFilter === "selling" ? s === "판매중" : s !== "판매중";
+    });
+  }, [_rawDisplayDetailRows, saleStatusFilter]);
 
   // ═══════════════════════════════════════════════════════════════════════
   //  상품별 뷰 · 데이터 로드 (#191)
@@ -835,6 +859,8 @@ export const PurchaseHistoryTab: React.FC = () => {
         sale_qty: sales ? sales.qty : null,
         current_stock: cached ? (cached.current_stock ?? null) : null,
         sale_amount: sales ? sales.amt : null,
+        // 2026-09-20 · #324 · productsCache 조인 · 판매상태 필터용
+        sale_status: cached ? (String((cached as any).sale_status ?? "").trim() || null) : null,
       });
     }
     return list;
@@ -843,7 +869,15 @@ export const PurchaseHistoryTab: React.FC = () => {
   // 상품 필터링 + 정렬
   const filteredProducts = useMemo<ProductSummary[]>(() => {
     // 2026-08-29 · 통일 로직 · matchesProductQuery
-    const list = productList.filter(p => matchesProductQuery(p, productSearch));
+    // 2026-09-20 · #324 · 판매상태 필터 적용
+    const saleOk = (status: string | null | undefined): boolean => {
+      if (saleStatusFilter === "all") return true;
+      const s = String(status ?? "").trim();
+      if (saleStatusFilter === "selling") return s === "판매중";
+      // stopped: "판매중" 이 아닌 것 (판매중지 · null 포함)
+      return s !== "판매중";
+    };
+    const list = productList.filter(p => matchesProductQuery(p, productSearch) && saleOk(p.sale_status));
     return list.sort((a, b) => {
       switch (productSort) {
         case "amount": {
@@ -885,7 +919,7 @@ export const PurchaseHistoryTab: React.FC = () => {
           return a.product_name.localeCompare(b.product_name, "ko");
       }
     });
-  }, [productList, productSearch, productSort]);
+  }, [productList, productSearch, productSort, saleStatusFilter]);
 
   // 선택 상품의 header + row 목록
   const selectedProduct = useMemo<ProductSummary | null>(() => {
@@ -923,12 +957,13 @@ export const PurchaseHistoryTab: React.FC = () => {
     )}
     <div className="flex flex-col gap-2 h-full min-h-0">
       {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · FilterBar */}
+      {/* 2026-09-20 · #324 · saleStatusFilter props 추가 */}
       <FilterBar
         viewMode={viewMode}
         setViewMode={setViewMode}
         selectedVendor={selectedVendor}
-        ledgerRowsCount={ledgerRows.length}
-        productListCount={productList.length}
+        ledgerRowsCount={displayLedgerRows.length}
+        productListCount={filteredProducts.length}
         summarySource={summarySource}
         summaryDiagnostics={summaryDiagnostics}
         detailSource={detailSource}
@@ -938,6 +973,8 @@ export const PurchaseHistoryTab: React.FC = () => {
         setPeriodSeason={setPeriodSeason}
         ledgerLoading={ledgerLoading}
         allDetailsLoading={allDetailsLoading}
+        saleStatusFilter={saleStatusFilter}
+        setSaleStatusFilter={setSaleStatusFilter}
         onRefreshVendor={() => {
           if (selectedVendor) loadVendorData(selectedVendor.company_name);
           loadSummary();

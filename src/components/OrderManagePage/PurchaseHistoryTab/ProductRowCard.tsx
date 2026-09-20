@@ -22,6 +22,8 @@ export interface ProductSummary {
   sale_amount?: number | null;
   // 2026-09-04 · productsCache 조인 · 현재고
   current_stock?: number | null;
+  // 2026-09-20 · #324 · 판매상태 필터용
+  sale_status?: string | null;
 }
 
 interface ProductRowCardProps {

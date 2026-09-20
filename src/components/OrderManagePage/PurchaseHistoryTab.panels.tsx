@@ -47,6 +47,9 @@ import type { VendorItem, DataSource, SourceDiagnostics, ViewMode, ProductSort }
 // 1) FilterBar · 상단 필터바 (viewMode 토글 · 기간 · 새로고침)
 // ═══════════════════════════════════════════════════════════════════════════
 
+// 2026-09-20 · #324 · 판매상태 필터 타입
+type SaleStatusFilter = "all" | "selling" | "stopped";
+
 interface FilterBarProps {
   viewMode: ViewMode;
   setViewMode: (v: ViewMode) => void;
@@ -62,6 +65,9 @@ interface FilterBarProps {
   setPeriodSeason: (v: SeasonKey | null) => void;
   ledgerLoading: boolean;
   allDetailsLoading: boolean;
+  // 2026-09-20 · #324 · 판매상태 필터
+  saleStatusFilter: SaleStatusFilter;
+  setSaleStatusFilter: (v: SaleStatusFilter) => void;
   onRefreshVendor: () => void;
   onRefreshProducts: () => void;
 }
@@ -69,44 +75,102 @@ interface FilterBarProps {
 export const FilterBar: React.FC<FilterBarProps> = ({
   viewMode, setViewMode, selectedVendor,
   ledgerRowsCount, productListCount,
-  summarySource, summaryDiagnostics, detailSource,
+  summarySource: _summarySource, summaryDiagnostics: _summaryDiagnostics, detailSource: _detailSource,
   periodMonths, setPeriodMonths, periodSeason, setPeriodSeason,
   ledgerLoading, allDetailsLoading,
+  saleStatusFilter, setSaleStatusFilter,
   onRefreshVendor, onRefreshProducts,
 }) => {
+  // 2026-09-20 · #324 · 판매상태 옵션 색상
+  const saleStatusOpts: { value: SaleStatusFilter; label: string; activeCls: string }[] = [
+    { value: "all",     label: "전체",    activeCls: "bg-zinc-700 text-white" },
+    { value: "selling", label: "판매중",  activeCls: "bg-emerald-600 text-white" },
+    { value: "stopped", label: "판매중지", activeCls: "bg-rose-500 text-white" },
+  ];
+
   return (
-    <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2 shrink-0`}>
-      <div className="flex items-center gap-2.5 shrink-0">
-        <AccentBar />
-        {viewMode === "by-vendor"
-          ? <Building2 size={16} className="text-brand-deep shrink-0" />
-          : <Package size={16} className="text-brand-deep shrink-0" />}
-        <span className="text-[17px] font-bold text-ink tracking-tight">매입이력</span>
+    <div className={`${CARD_BASE} px-4 py-2.5 flex flex-col gap-2 shrink-0`}>
+      {/* 행 1 · 타이틀 + 뷰모드 + 판매상태 + 새로고침 */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="flex items-center gap-2.5 shrink-0">
+          <AccentBar />
+          {viewMode === "by-vendor"
+            ? <Building2 size={16} className="text-brand-deep shrink-0" />
+            : <Package size={16} className="text-brand-deep shrink-0" />}
+          <span className="text-[17px] font-bold text-ink tracking-tight">매입이력</span>
+          {viewMode === "by-vendor" && selectedVendor && (
+            <StatusPill tone="brand" size="md">{ledgerRowsCount}건</StatusPill>
+          )}
+          {viewMode === "by-product" && (
+            <StatusPill tone="brand" size="md">{productListCount}종</StatusPill>
+          )}
+          {/* 2026-08-31 · 사용자 지시 · ERP·OCR 배지 제거 · summarySource/detailSource UI 미노출 */}
+        </div>
+
+        {/* 뷰 모드 토글 · 2026-08-29 · SegmentedControl pills variant 이관
+            2026-08-25 · 사용자 지시 · 공급사별 을 앞으로 · 기본 탭으로 (재변경) */}
+        <SegmentedControl<ViewMode>
+          value={viewMode}
+          onChange={setViewMode}
+          ariaLabel="매입이력 뷰 모드"
+          variant="pills"
+          size="sm"
+          options={[
+            { value: "by-vendor",  label: <><Building2 size={13} />공급사별</>, title: "공급사 단위로 매입이력 조회 · 기본 탭" },
+            { value: "by-product", label: <><Package size={13} />상품별</>,    title: "상품 단위로 매입이력 조회 (최근 1년)" },
+          ]}
+        />
+
+        {/* 2026-09-20 · #324 · 판매상태 필터 */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <InlineLabel size="sm">판매상태</InlineLabel>
+          <div className="flex items-center gap-1">
+            {saleStatusOpts.map(o => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => setSaleStatusFilter(o.value)}
+                className={`h-6 px-2.5 text-[14px] font-semibold rounded-md transition cursor-pointer ${
+                  saleStatusFilter === o.value
+                    ? o.activeCls
+                    : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 bg-transparent"
+                }`}
+                title={`판매상태 · ${o.label}`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 새로고침 */}
         {viewMode === "by-vendor" && selectedVendor && (
-          <StatusPill tone="brand" size="md">{ledgerRowsCount}건</StatusPill>
+          <button
+            type="button"
+            onClick={onRefreshVendor}
+            disabled={ledgerLoading}
+            className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-emerald-50 hover:border-emerald-300 text-zinc-400 hover:text-emerald-500 transition disabled:opacity-40 cursor-pointer"
+            title="새로고침"
+          >
+            <RefreshCw size={13} className={ledgerLoading ? "animate-spin" : ""} />
+          </button>
         )}
         {viewMode === "by-product" && (
-          <StatusPill tone="brand" size="md">{productListCount}종</StatusPill>
+          <button
+            type="button"
+            onClick={onRefreshProducts}
+            disabled={allDetailsLoading}
+            className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
+            title="상품별 매입이력 새로고침"
+          >
+            <RefreshCw size={13} className={allDetailsLoading ? "animate-spin" : ""} />
+          </button>
         )}
-        {/* 2026-08-31 · 사용자 지시 · ERP·OCR 배지 제거 · summarySource/detailSource UI 미노출 */}
       </div>
 
-      {/* 뷰 모드 토글 · 2026-08-29 · SegmentedControl pills variant 이관
-          2026-08-25 · 사용자 지시 · 공급사별 을 앞으로 · 기본 탭으로 (재변경) */}
-      <SegmentedControl<ViewMode>
-        value={viewMode}
-        onChange={setViewMode}
-        ariaLabel="매입이력 뷰 모드"
-        variant="pills"
-        size="sm"
-        options={[
-          { value: "by-vendor",  label: <><Building2 size={13} />공급사별</>, title: "공급사 단위로 매입이력 조회 · 기본 탭" },
-          { value: "by-product", label: <><Package size={13} />상품별</>,    title: "상품 단위로 매입이력 조회 (최근 1년)" },
-        ]}
-      />
-
-      {/* 2026-08-17 · 기간 UI 프레임워크 통일 · PeriodSelector 공통 · 딥네이비 */}
+      {/* 행 2 · 기간 필터 */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* 2026-08-17 · 기간 UI 프레임워크 통일 · PeriodSelector 공통 · 딥네이비 */}
         <InlineLabel size="sm">기간</InlineLabel>
         <PeriodSelector
           options={[
@@ -130,30 +194,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           hideLabel
         />
       </div>
-
-      {/* 새로고침 */}
-      {viewMode === "by-vendor" && selectedVendor && (
-        <button
-          type="button"
-          onClick={onRefreshVendor}
-          disabled={ledgerLoading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-emerald-50 hover:border-emerald-300 text-zinc-400 hover:text-emerald-500 transition disabled:opacity-40 cursor-pointer"
-          title="새로고침"
-        >
-          <RefreshCw size={13} className={ledgerLoading ? "animate-spin" : ""} />
-        </button>
-      )}
-      {viewMode === "by-product" && (
-        <button
-          type="button"
-          onClick={onRefreshProducts}
-          disabled={allDetailsLoading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-line bg-white hover:bg-sky-50 hover:border-sky-300 text-zinc-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
-          title="상품별 매입이력 새로고침"
-        >
-          <RefreshCw size={13} className={allDetailsLoading ? "animate-spin" : ""} />
-        </button>
-      )}
     </div>
   );
 };
