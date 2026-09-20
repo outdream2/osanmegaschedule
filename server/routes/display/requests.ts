@@ -173,13 +173,21 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
       //   · note 는 요청 사유 · 상품명 아님
       //   · products 매칭 · 양방향 앞0 정규화 · 이미 처리 (위 fallback)
       //   · 그래도 매칭 실패 · null · 클라이언트 "상품코드 XXX" 표시
+      // 2026-09-20 · 진단 로그 · 매칭 실패 원인 파악 (사용자 재보고 · 상품명 여전히 안 나옴)
+      const unmatchedFinal: string[] = [];
       for (const r of rows as any[]) {
         const c = String(r.product_code ?? "").trim();
         const info = c ? infoMap.get(c) : null;
+        if (c && !info) unmatchedFinal.push(c);
         r.product_name = info?.name?.trim() || null;
         r.product_spec = info?.spec ?? null;
         r.product_display_location = info?.display_location ?? info?.location ?? null;
         r.product_location_detail = info?.location_detail ?? null;
+      }
+      if (unmatchedFinal.length > 0) {
+        console.warn(`[display-requests] products 매칭 실패 ${unmatchedFinal.length}건 · codes:`, unmatchedFinal.slice(0, 10).join(","));
+      } else if (productCodes.length > 0) {
+        console.log(`[display-requests] products 매칭 성공 ${productCodes.length}/${productCodes.length}`);
       }
     } catch (e: any) {
       console.warn("[display-requests GET] products lookup 실패 (경고):", e?.message ?? e);
