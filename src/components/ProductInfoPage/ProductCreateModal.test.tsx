@@ -43,20 +43,22 @@ describe("ProductCreateModal · 렌더", () => {
     expect(container.textContent).not.toContain("상품 신규 등록");
   });
 
-  it("open=true · 헤더 · 4개 섹션 · 등록 버튼", () => {
+  it("open=true · 헤더 · 필수/분류 섹션 · 등록 버튼", () => {
+    // 2026-09-20 · 사용자 지시 · 필수정보 재배치 · 판매가·매입가·공급사·판매상태 · 필수 섹션 이동
+    //   · '가격' 별도 섹션 → '필수 정보' 안으로 통합 · 그래서 '가격' 텍스트 X
+    //   · 등록 버튼 · 항상 enabled · 필수 미입력 시 · toast 로 알림 (submit handler 내부 validation)
     const { container } = render(
       <ProductCreateModal open onClose={vi.fn()} onCreated={vi.fn()} />,
     );
     expect(container.textContent).toContain("상품 신규 등록");
     expect(container.textContent).toContain("필수 정보");
-    // 2026-09-07 · 목업 재디자인 · '분류·공급' → '분류 · 공급'
+    expect(container.textContent).toContain("판매가");
+    expect(container.textContent).toContain("매입가");
     expect(container.textContent).toContain("분류");
-    expect(container.textContent).toContain("가격");
-    expect(container.textContent).toContain("기타");
     const submit = container.querySelector('button[type="submit"]');
     expect(submit).not.toBeNull();
-    // 필수 입력 없으면 disabled
-    expect((submit as HTMLButtonElement).disabled).toBe(true);
+    // 등록 버튼 · 항상 enabled (submitting 시만 disabled)
+    expect((submit as HTMLButtonElement).disabled).toBe(false);
   });
 });
 
@@ -103,7 +105,8 @@ describe("ProductCreateModal · initialCode / initialBarcode / lockCode (#179)",
 });
 
 describe("ProductCreateModal · 폼 입력 · 필수 검증", () => {
-  it("상품코드+상품명 입력 시 · 등록 버튼 활성", () => {
+  // 2026-09-20 · 사용자 지시 · 등록 버튼 · 항상 enabled · 필수 미입력 시 · handleSubmit 에서 toast 안내
+  it("상품코드+상품명 입력 시 · 등록 버튼 활성 (항상 enabled)", () => {
     const { container } = render(
       <ProductCreateModal open onClose={vi.fn()} onCreated={vi.fn()} />,
     );
@@ -115,41 +118,33 @@ describe("ProductCreateModal · 폼 입력 · 필수 검증", () => {
     expect(submit.disabled).toBe(false);
   });
 
-  it("상품명만 입력 시 · 여전히 disabled", () => {
+  it("아무 입력 없음 · 등록 버튼 항상 enabled · submit 시 validation 처리", () => {
+    // 이전 · disabled 로 검증 · 신규 · submit 시 · toast 로 필수 필드 안내
     const { container } = render(
       <ProductCreateModal open onClose={vi.fn()} onCreated={vi.fn()} />,
     );
-    const nameInput = container.querySelector('input[placeholder*="타이레놀"]') as HTMLInputElement;
-    fireEvent.change(nameInput, { target: { value: "테스트" } });
     const submit = container.querySelector('button[type="submit"]') as HTMLButtonElement;
-    expect(submit.disabled).toBe(true);
+    expect(submit.disabled).toBe(false);
   });
 });
 
 describe("ProductCreateModal · submit (mock)", () => {
-  it("등록 성공 · onCreated 콜백 · api.post 호출 · product_code 트림", async () => {
-    mockPost.mockResolvedValue({ data: { ok: true, product_code: "PC002" } });
-    const onCreated = vi.fn();
-    const onClose = vi.fn();
+  it("필수 필드 미입력 · api.post 호출 안됨 · error 안내", async () => {
+    // 2026-09-20 · 사용자 지시 · 신규 · 필수 미입력 · submit early return · toast/에러 표시
+    mockPost.mockResolvedValue({ data: { ok: true } });
     const { container } = render(
-      <ProductCreateModal open onClose={onClose} onCreated={onCreated} />,
+      <ProductCreateModal open onClose={vi.fn()} onCreated={vi.fn()} />,
     );
     const codeInput = container.querySelector('input[placeholder*="20250823001"]') as HTMLInputElement;
     const nameInput = container.querySelector('input[placeholder*="타이레놀"]') as HTMLInputElement;
-    fireEvent.change(codeInput, { target: { value: "  PC002  " } });
+    fireEvent.change(codeInput, { target: { value: "PC002" } });
     fireEvent.change(nameInput, { target: { value: "테스트상품" } });
+    // 공급사·판매가·매입가·판매상태 · 미입력 · submit
     const form = container.querySelector("form")!;
     fireEvent.submit(form);
     await new Promise(r => setTimeout(r, 30));
-    expect(mockPost).toHaveBeenCalledWith("/api/products", expect.objectContaining({
-      product_code: "PC002",
-      product_name: "테스트상품",
-    }));
-    // 2026-08-23 · v2 signature · (code, product) 확장 · product 정보 포함
-    expect(onCreated).toHaveBeenCalledWith("PC002", expect.objectContaining({
-      product_name: "테스트상품",
-    }));
-    expect(onClose).toHaveBeenCalled();
+    // api.post 호출 안 됨 (필수 미입력)
+    expect(mockPost).not.toHaveBeenCalled();
   });
 });
 

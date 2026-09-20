@@ -20,6 +20,7 @@ import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import { CreateProductArrivalSchema } from "../../../src/shared/schemas/productArrivals";
 import { resetProductCache } from "../../productCache";
+import { buildInitialShelfPositions } from "../../../src/shared/warehouseZones";
 
 const router = Router();
 
@@ -130,7 +131,7 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
     let currentStock: number | null = null;
     const { data: prodRow, error: prodErr } = await supabase
       .from("products")
-      .select("purchase_price, current_stock")
+      .select("purchase_price, current_stock, category_code")
       .eq("product_code", productCode)
       .maybeSingle();
     if (prodErr) {
@@ -269,6 +270,61 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
       if (locErr) {
         console.warn(`[arrival→location] product_code=${productCode} · location=${itemLocation} · ${locErr.message}`);
         failedItems.push({ product_code: productCode, error: `location: ${locErr.message}`, step: "location" });
+      } else {
+        // #318 P3 · location 저장 성공 후 · inventory_checks.shelf_positions auto-sync
+        //   · PATCH /api/products/:code 의 shelf merge 패턴 동일 적용 (SSOT: products.ts:1149-1211)
+        //   · 기존 상세위치(사용자 입력 3자리) 보존 · 신규 슬롯만 null 로 추가
+        //   · 실패 · silent (매입 저장 자체는 이미 성공 · shelf 동기화만 지연)
+        try {
+          const categoryCode = (prodRow as any)?.category_code ?? null;
+          const autoSlots = buildInitialShelfPositions(itemLocation, categoryCode);
+
+          const { data: existingList } = await supabase
+            .from("inventory_checks")
+            .select("id, shelf_positions")
+            .eq("product_code", productCode)
+            .order("checked_at", { ascending: false })
+            .limit(1);
+          const existingIc = existingList?.[0] ?? null;
+          const existingPos = ((existingIc?.shelf_positions ?? {}) as Record<string, string | null>);
+
+          // 신규 슬롯 · null 로 추가 · 기존 상세위치 유지
+          const mergedPos: Record<string, string | null> = { ...existingPos };
+          for (const slotKey of Object.keys(autoSlots)) {
+            if (!(slotKey in mergedPos)) mergedPos[slotKey] = null;
+          }
+
+          if (existingIc) {
+            const { error: shelfErr } = await supabase
+              .from("inventory_checks")
+              .update({ shelf_positions: mergedPos })
+              .eq("product_code", productCode);
+            if (shelfErr) {
+              console.warn(`[arrival→shelf_sync] ${productCode} · update 실패 (경고): ${shelfErr.message}`);
+            } else {
+              console.log(`[arrival→shelf_sync] ${productCode} · shelf_positions 병합 · ${JSON.stringify(mergedPos)}`);
+            }
+          } else {
+            // inventory_checks row 없음 · 신규 생성 (정합성 복구)
+            const { error: shelfInsErr } = await supabase
+              .from("inventory_checks")
+              .insert([{
+                product_code: productCode,
+                shelf_positions: autoSlots,
+                checked_at: new Date().toISOString(),
+                status: "pending",
+                checked_by: "",
+                note: "",
+              }]);
+            if (shelfInsErr) {
+              console.warn(`[arrival→shelf_sync] ${productCode} · insert 실패 (경고): ${shelfInsErr.message}`);
+            } else {
+              console.log(`[arrival→shelf_sync] ${productCode} · inventory_checks 신규 생성 · ${JSON.stringify(autoSlots)}`);
+            }
+          }
+        } catch (e: any) {
+          console.warn(`[arrival→shelf_sync] ${productCode} · 예외 (경고): ${e?.message ?? e}`);
+        }
       }
     }
   }
