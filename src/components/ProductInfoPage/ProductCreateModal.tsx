@@ -306,8 +306,23 @@ export const ProductCreateModal: React.FC<Props> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canSubmit) return;
     setError(null);
+    // 2026-09-20 · 사용자 지시 · 필수정보 미입력 · 확인창 · 어느 필드 누락 · 명시
+    const missing: string[] = [];
+    if (!form.product_code.trim()) missing.push("상품코드");
+    if (!form.product_name.trim()) missing.push("상품명");
+    if (!form.supplier.trim()) missing.push("공급사");
+    else if (!vendors.some(v => (v.company_name ?? "").trim() === form.supplier.trim())) missing.push("공급사(목록에서 선택)");
+    if (parseNum(form.sale_price) === null) missing.push("판매가");
+    if (parseNum(form.purchase_price) === null) missing.push("매입가");
+    if (!form.sale_status.trim()) missing.push("판매 상태");
+    if (missing.length > 0) {
+      const msg = `필수 정보 · 미입력\n· ${missing.join("\n· ")}`;
+      setError(msg);
+      showError(msg);
+      return;
+    }
+    if (submitting) return;
     // 2026-09-10 · #63 · 사용자 지적 · 공급사 · vendors 목록 유효성 검증 필수 (자유 입력 금지)
     const supplierValue = form.supplier.trim();
     if (supplierValue) {
@@ -477,8 +492,8 @@ export const ProductCreateModal: React.FC<Props> = ({
                     />
                   </Field>
                 </div>
-                {/* 행 2 · 공급사 필수 (2026-09-20 · 필수 이동) */}
-                <div className="mt-4">
+                {/* 행 2 · 공급사 + 판매 상태 · 2026-09-20 · 사용자 지시 · 나란히 (2-col) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div ref={supplierWrapRef} className="relative min-w-0">
                     <Field icon={<Building2 size={14} />} label="공급사" required>
                       {(() => {
@@ -535,18 +550,6 @@ export const ProductCreateModal: React.FC<Props> = ({
                       </div>
                     </PortalDropdown>
                   </div>
-                </div>
-                {/* 행 3 · 판매가·매입가 필수 (2026-09-20 · 필수 이동) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <Field icon={<ShoppingCart size={14} />} label="판매가" required>
-                    <PriceInput value={form.sale_price} onChange={(v) => set("sale_price", v)} />
-                  </Field>
-                  <Field icon={<Coins size={14} />} label="매입가" required>
-                    <PriceInput value={form.purchase_price} onChange={(v) => set("purchase_price", v)} />
-                  </Field>
-                </div>
-                {/* 행 4 · 판매 상태 필수 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <Field icon={<Tags size={14} />} label="판매 상태" required>
                     <select
                       value={form.sale_status}
@@ -557,6 +560,15 @@ export const ProductCreateModal: React.FC<Props> = ({
                         <option key={opt} value={opt}>{opt}</option>
                       ))}
                     </select>
+                  </Field>
+                </div>
+                {/* 행 3 · 판매가·매입가 필수 (2026-09-20 · 필수 이동) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <Field icon={<ShoppingCart size={14} />} label="판매가" required>
+                    <PriceInput value={form.sale_price} onChange={(v) => set("sale_price", v)} />
+                  </Field>
+                  <Field icon={<Coins size={14} />} label="매입가" required>
+                    <PriceInput value={form.purchase_price} onChange={(v) => set("purchase_price", v)} />
                   </Field>
                 </div>
               </Section>
@@ -662,7 +674,7 @@ export const ProductCreateModal: React.FC<Props> = ({
             </button>
             <button
               type="submit"
-              disabled={!canSubmit}
+              disabled={submitting}
               className="h-10 px-5 rounded-[10px] text-[16px] font-bold text-white bg-brand-deep hover:bg-brand disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer transition-colors inline-flex items-center gap-1.5 shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_4px_10px_-4px_rgba(10,46,74,0.4)] hover:shadow-[0_6px_14px_-4px_rgba(10,46,74,0.55)]"
             >
               <Save size={16} strokeWidth={2.5} />
@@ -706,7 +718,8 @@ const Field: React.FC<{
   children: React.ReactNode;
 }> = ({ label, required, icon, children }) => (
   <label className="flex flex-col gap-1.5 min-w-0">
-    <span className="text-[15px] font-semibold text-ink tracking-tight inline-flex items-center gap-1.5">
+    {/* 2026-09-20 · 사용자 지시 · 라벨 폰트 +1 (15 → 16) */}
+    <span className="text-[16px] font-semibold text-ink tracking-tight inline-flex items-center gap-1.5">
       {icon && <span className="text-ink-soft">{icon}</span>}
       {label}
       {required && <span className="text-rose-500 font-bold">*</span>}
