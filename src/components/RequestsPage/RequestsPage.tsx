@@ -504,7 +504,16 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const isLeaveHidden = checkHidden("leave");
   const isVendorHidden = checkHidden("vendor") || checkHidden("business-manage");
   const isResignationHidden = checkHidden("resignation") || checkHidden("business-manage");
-  const TABS: [Tab, string, number, string, string, string, string][] = [
+
+  // 2026-09-20 · 사용자 지시 · 승인목록 / 요청목록 분리
+  //   · 승인 그룹 · leave · vendor · resignation (관리자만 · 결재 성격)
+  //   · 요청 그룹 · display · lunch (매장 처리·확인 성격)
+  //   · 현재 tab 이 속한 그룹만 TABS 에 노출 · 다른 그룹은 사이드바로 이동
+  const APPROVAL_TABS: Tab[] = ["leave", "vendor", "resignation"];
+  const REQUEST_TABS: Tab[] = ["display", "lunch"];
+  const currentGroup: "approval" | "request" = APPROVAL_TABS.includes(tab) ? "approval" : "request";
+
+  const ALL_TABS: [Tab, string, number, string, string, string, string][] = [
     ...(isDisplayHidden ? [] : ([
       ["display",   isManager ? "진열요청" : "내가 받은 요청",   displayTabCount,   "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
     ] as [Tab, string, number, string, string, string, string][])),
@@ -525,6 +534,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       ] as [Tab, string, number, string, string, string, string][])),
     ] as [Tab, string, number, string, string, string, string][]) : []),
   ];
+  // 2026-09-20 · 현재 그룹 (승인/요청) 만 노출
+  const TABS = ALL_TABS.filter(([key]) => (currentGroup === "approval" ? APPROVAL_TABS.includes(key) : REQUEST_TABS.includes(key)));
 
   // 공통 체크박스
   const Checkbox = ({ checked, onChange }: { checked: boolean; onChange: () => void }) => (
