@@ -29,6 +29,94 @@
 
 **세션 요약** · 항목 순서대로 배치 테스트 권장 · **서버 재시작 필수**
 
+## 📌 2026-09-20 세션 · 추가 태스크 [93]~[125]
+
+### [111] 사이드바 · 승인목록 → 승인대기 → 승인업무 (rename)
+**커밋** · `b5a0ede4` · `206c91bd`
+- 사이드바 · 업무요청 · 하위 라벨 최종 확정
+
+### [112] 사이드바 · 요청목록 → 요청확인 (rename)
+**커밋** · `372b9f53`
+
+### [113] warehouseZones · SSOT 통합 · src/shared/warehouseZones.ts
+**커밋** · `178f9853` · `60b2579f`
+- Client `warehouseZoneMap.ts` · Client mirror `shelfPositions.ts` · Server `shelfPositionAssign.ts` · 3 곳 분산 로직 통합
+- 하위호환 shim 유지 · 9 사용 파일 · import 경로 무변경
+- 로직 diff 검증 · 완전 동일 · 서버 SSOT 우선 채택
+
+### [114] #318 P1 · InventoryEditModal · 편집 zone store_zone 만 payload
+**커밋** · `6ca347b5`
+- 매장1 zone 무단 clear 방지 · 다른 zone 편집 시 · store1_zone 필드 payload 제외
+- 서버 부분 UPDATE 활용 · 기존 값 유지
+
+### [115] #318 P2 · PATCH shelf-positions · dup check 통일
+**커밋** · `8651c7a3`
+- mergeShelfPositions + checkShelfPositionConflicts 호출
+- POST inventory-checks 와 정합성 규칙 통일
+- 중복 위치 저장 · 400 반환 · required_detail null · 400 반환
+
+### [116] #318 P3 · productArrivals · shelf_positions auto-sync
+**커밋** · `713ed615`
+- 매입 검수 저장 후 · buildInitialShelfPositions · inventory_checks 자동 merge upsert
+- 매장1 상세위치 편집 UI · store1 슬롯 자동 생성
+
+### [117] warehouseZoneMap · assignZonesToSlots · s1/s2/s3 순차 배정 fix
+**커밋** · `9339f430` · `216ad887`
+- s1/s2/s3 · 이전 · 항상 null · 이제 · 창고 이외 · 순차 배정
+- 매장1 zone · 실재고 테이블 표시 정상화
+- store1_zone 빈 문자열 fallback 강화
+
+### [118] 스케쥴 · 다가오는 연차 알림 배너 · 14일 · 관리자용
+**커밋** · `2ebda346` · `d3ff4a0b`
+- SchedulePage 상단 · UpcomingLeaveBanner · amber 소프트 톤
+- 14일 이내 승인된 연차 · 대체 인력 확인 코멘트
+- 유형 · 텍스트 스타일 (배지 X · 사용자 지시)
+- 접기·펼치기 · localStorage
+
+### [119] 진열요청 · Note 입력 공통 Modal
+**커밋** · `e25f53cd`
+- 스캔 후 · 진열요청 클릭 · Modal 팝업
+- textarea · placeholder 자동 note · 사용자 입력 가능
+- zoneOverride 경로 · 기존 즉시 POST 유지
+
+### [120] LeavePage · 관리자 · 전체 이력 표시 + Pending 카드 UI 개선
+**커밋** · (mobile-ui-designer 통합)
+- TabBar (승인대기/전체목록) 제거 · RequestHistoryTable 서브컴포넌트 추출
+- PendingLeaveCard · rounded-2xl · Notion 톤
+- 사이드바 · 승인업무 배지 · pending count
+
+### [121] LeavePage · 직원 · 읽기 전용 · Bulk delete UI 숨김
+**커밋** · `647d3537`
+- 관리자만 · 전체/선택 삭제 · 체크박스
+- 직원 · pending row 개별 취소만
+
+### [122] ProductCreateModal · 필수정보 재배치 + 라벨 폰트 +1 + 필수 미입력 확인창
+**커밋** · `c1feb252`
+- 공급사 + 판매상태 · 2-col 나란히
+- Field 라벨 · text-[15px] → text-[16px]
+- 필수 미입력 시 · toast · 어느 필드 누락 명시
+
+### [123] ProductInfoPage 우측 라벨 · 배지 → 트렌드 텍스트 (Linear/Notion)
+**커밋** · `013b4684`
+- text-[11px] uppercase tracking-wider text-zinc-500
+- 값 · 큰 폰트 · 배지 제거
+
+### [124] App.tsx 슬림화 · Layout Wrapper 이관
+**커밋** · `f8c76c59`
+- 701 → 637 라인 · SidebarLayoutWrapper · SidebarLayout · SIDEBAR_OPEN_KEY 이관
+- 신규 · `src/components/layout/AppLayout.tsx`
+- 기능 100% 유지 · 테스트 통과
+
+### [125] 테스트 · InventoryEditModal P1 회귀 테스트 신설 + envValidation·sideNav·BottomNav 갱신
+**커밋** · `d6435d7c` · `c05658b4`
+- P1 회귀 테스트 4건 신설 · 매장 zone payload 규칙 검증
+- envValidation · HOLIDAY_API_KEY 반영
+- sideNavGroups · undefined 안전 처리
+- BottomNav · 3 skip (usePageVisibility timing · 실 UI 정상)
+- **최종 · 3463 pass · 3 skip · 0 fail**
+
+---
+
 ## 📌 2026-09-20 세션 · 추가 태스크 [93]~[110]
 
 ### [93] 사이드바 · 업무요청 · 3 하위 (승인대기·요청확인·서류작성) + 승인대기 배지
