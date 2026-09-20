@@ -128,11 +128,43 @@ export function useOrderModal({
     if (!orderModal) return;
     const totalItems = orderModal.suppliers.reduce((n, s) => n + s.items.length, 0);
     const noChannel = !orderModal.channels.email && !orderModal.channels.sms && !orderModal.channels.kakao;
-    const proceed = await confirm({
-      message: noChannel
-        ? `${orderModal.suppliers.length}개 공급사 · ${totalItems}개 상품\n\n발송 채널이 선택되지 않았습니다.\n발주서를 DB에 저장하고 상태만 '발주완료'로 변경합니다.\n공급사에게 별도로 연락해주세요.\n\n계속하시겠습니까?`
-        : `${orderModal.suppliers.length}개 공급사 · ${totalItems}개 상품에 발주서 ${orderModal.suppliers.length}건을 각각 발송합니다.\n\n계속하시겠습니까?`,
-    });
+    // 2026-09-20 · #321 · 사용자 지시 · 발주 발송 확인창 · 공급사별 상세내역 · 한번 더 확인
+    const preSendDetails: React.ReactNode = React.createElement("div", { className: "space-y-3 text-[15px]" },
+      React.createElement("div", { className: "rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-[14px] text-indigo-800 font-semibold" },
+        `${orderModal.suppliers.length}개 공급사 · 총 ${totalItems}개 상품 발송 예정`,
+      ),
+      React.createElement("div", { className: "flex flex-col gap-2.5 max-h-[360px] overflow-y-auto pr-1" },
+        ...orderModal.suppliers.map((s, si) => React.createElement("div", {
+          key: `pre-sup-${si}`,
+          className: "rounded-lg border border-line bg-white px-3 py-2",
+        },
+          React.createElement("div", { className: "flex items-center justify-between mb-1.5" },
+            React.createElement("b", { className: "text-[15px] text-zinc-800" }, `공급사 · ${s.supplier}`),
+            React.createElement("span", { className: "text-[13px] font-bold text-indigo-700 tabular-nums" }, `${s.items.length}건`),
+          ),
+          React.createElement("ul", { className: "flex flex-col gap-0.5" },
+            ...s.items.map((it, ii) => React.createElement("li", {
+              key: `pre-item-${si}-${ii}`,
+              className: "text-[14px] text-zinc-700 flex items-baseline gap-2",
+            },
+              React.createElement("span", { className: "flex-1 truncate" }, String(it.product_name ?? it.product_code ?? "")),
+              React.createElement("b", { className: "text-zinc-900 tabular-nums shrink-0" }, `${Number(it.order_qty ?? 0)}개`),
+            )),
+          ),
+        )),
+      ),
+      noChannel
+        ? React.createElement("div", { className: "text-[13px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-2 leading-relaxed" },
+            "⚠ 발송 채널이 선택되지 않았습니다. 발주서를 DB에 저장하고 상태만 '발주완료'로 변경합니다. 공급사에게 별도 연락 필요.",
+          )
+        : React.createElement("div", { className: "text-[14px] text-zinc-600" },
+            `위 내역으로 각 공급사에 발주서를 발송합니다.`,
+          ),
+      React.createElement("div", { className: "text-[14px] text-zinc-500 font-semibold" },
+        "발송 후 되돌릴 수 없습니다. 계속하시겠습니까?",
+      ),
+    );
+    const proceed = await confirm({ message: preSendDetails as any });
     if (!proceed) return;
     setSendingBulk(true);
     try {
