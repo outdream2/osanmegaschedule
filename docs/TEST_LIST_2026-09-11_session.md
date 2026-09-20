@@ -133,11 +133,19 @@
 - Fix · NULLIF + `::integer` · `::numeric` cast · 빈 문자열 안전
 - 사용자 · Supabase SQL Editor 실행 완료 확인
 
-### [128] App.tsx · Option C · Navigation Helpers 훅 (useAppNavigation) · 진행 중
-**커밋** · (백그라운드 agent · 완료 시 hash 반영)
-- L200-244 navigation 함수 · state · popstate effect · 훅으로 이관
-- 예상 감소 · 442 → ~390 (-50 라인)
-- 자동 검증 · TS + build + test 3463 pass 유지
+### [128] App.tsx · Option C · Navigation Helpers 훅 (useAppNavigation)
+**커밋** · `b28aa73e`
+- state 4개 (page · pendingEditEmpId · bmInitialEmployeeId · bmInitialFromPage) · 훅 이관
+- navigation 함수 7개 (navigate · handleNavigate · navigateInner · navigateInnerWithOptions · goBack · isHiddenPage) · useCallback 안정화
+- popstate useEffect · 훅 내부 이관 · 로직 100% 동일
+- App.tsx · 442 → 366 (-76 라인)
+- 신규 · `src/hooks/useAppNavigation.ts` (130 라인)
+- 테스트 · 3463 pass · 회귀 X
+
+### [129] 전체 탭 메뉴 · 글씨 +1
+**커밋** · `e530f292` (NavDesktopTab · +1)
+- NavDesktopTab · text-[19]→[20]·[20]→[21]·[21]→[22]
+- 백그라운드 agent · 나머지 탭 컴포넌트 (NavMobileTab · TabBar 등) · 진행 중
 
 ---
 
