@@ -91,7 +91,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       // 2026-09-20 · 사용자 지시 · 업무요청 아래 3개 하위 · 승인목록 · 요청목록 · 서류작성
       //   · 연차신청 · 스케줄 그룹으로 이동
       //   · 점심불참 · 확인 성격 · 요청목록 내부 탭에서 접근
-      { key: "requests",        label: "승인목록", icon: CheckSquare,  color: "indigo", subTab: "leave",           managerOnly: true },
+      { key: "requests",        label: "승인대기", icon: CheckSquare,  color: "indigo", subTab: "leave",           managerOnly: true },
       { key: "requests",        label: "요청목록", icon: Chat,         color: "indigo", subTab: "display",         managerOnly: true },
       { key: "approval-request", label: "서류작성", icon: PencilLine,   color: "indigo", subTab: "document-writer" },
     ],
