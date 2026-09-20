@@ -165,11 +165,19 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
         const c = String(r.product_code ?? "").trim();
         const info = c ? infoMap.get(c) : null;
         const productNameFromDb = info?.name?.trim() ?? "";
-        // 3차 fallback · note '<name> 진열 요청' 파싱
+        // 3차 fallback · note '<name> 진열 요청' 파싱 · 다양한 형식 대응
+        //   2026-09-20 · 사용자 재보고 · 진열요청 리스트 · 상품명 여전히 안 나옴 · 파서 강화
         let productName: string | null = productNameFromDb || null;
         if (!productName && r.note) {
-          const cleaned = String(r.note).replace(/\s*진열\s*(?:보충\s*)?요청\s*$/u, "").trim();
-          if (cleaned) productName = cleaned;
+          const raw = String(r.note).trim();
+          // 다양한 suffix 처리 · "진열 요청" · "진열보충 요청" · "보충요청" · "진열" · "요청"
+          const cleaned = raw
+            .replace(/\s*진열\s*(?:보충\s*)?요청\s*$/u, "")
+            .replace(/\s*보충\s*요청\s*$/u, "")
+            .replace(/\s*진열\s*$/u, "")
+            .trim();
+          if (cleaned && cleaned !== raw) productName = cleaned;
+          else if (cleaned) productName = cleaned; // note 전체가 상품명
         }
         r.product_name = productName;
         r.product_spec = info?.spec ?? null;

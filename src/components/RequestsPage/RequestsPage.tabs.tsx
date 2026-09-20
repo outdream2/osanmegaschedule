@@ -57,13 +57,19 @@ interface DisplayRequestTabProps {
   onAssignStaff?: (req: DisplayRequest) => void;
 }
 
+// 2026-09-20 · 사용자 지시 · 진열요청 상품명 안 나옴 · 4단계 fallback 강화
 const getProductName = (r: DisplayRequest): string => {
   const pn = String((r as any).product_name ?? "").trim();
   if (pn) return pn;
   if (r.note) {
-    const cleaned = r.note.replace(/\s*진열\s*요청\s*$/u, "").trim();
+    const cleaned = r.note
+      .replace(/\s*진열\s*(?:보충\s*)?요청\s*$/u, "")
+      .replace(/\s*보충\s*요청\s*$/u, "")
+      .trim();
     if (cleaned) return cleaned;
   }
+  const code = String((r as any).product_code ?? "").trim();
+  if (code) return `상품코드 ${code}`;
   return r.category || r.zone_label || "—";
 };
 
@@ -204,6 +210,7 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                 <th className="py-2.5 px-2 text-left">상품명</th>
                 <th className="py-2.5 px-2 text-left w-20">상태</th>
                 <th className="py-2.5 px-2 text-left w-24">진열위치</th>
+                <th className="py-2.5 px-2 text-left w-28">요청자</th>
                 <th className="py-2.5 px-2 text-left w-28">담당자</th>
                 <th className="py-2.5 px-2 text-left w-20">요청횟수</th>
                 <th className="py-2.5 px-2 text-left w-32">요청일</th>
@@ -260,6 +267,12 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                       ) : <span className="text-zinc-300 font-normal">—</span>}
                     </td>
                     <td className="px-2 py-2.5 align-middle">
+                      {/* 2026-09-20 · 사용자 지시 · 요청자 컬럼 · requested_by_name (서버 저장 시 표시) · 없으면 "—" */}
+                      {(r as any).requested_by_name
+                        ? <span className="font-medium text-zinc-700">{(r as any).requested_by_name}</span>
+                        : <span className="text-zinc-300">—</span>}
+                    </td>
+                    <td className="px-2 py-2.5 align-middle">
                       {/* 2026-09-11 · #75 · 사용자 지시 · 담당자 미지정 시 · [지정] 버튼 · 클릭 시 · onAssignStaff (신규 콜백) */}
                       {r.assigned_staff_name
                         ? <span className="font-semibold text-brand-deep">{r.assigned_staff_name}</span>
@@ -281,7 +294,13 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
                       </span>
                     </td>
                     <td className="px-2 py-2.5 align-middle tabular-nums text-zinc-500">
-                      <div>{fmtDate(r.requested_at)}{timeStr && <span className="text-zinc-400"> {timeStr}</span>}</div>
+                      {/* 2026-09-20 · 사용자 지시 · 요청일만 · 상세시간은 아래 줄바꿈 */}
+                      <div>{fmtDate(r.requested_at)}</div>
+                      {timeStr && (
+                        <div className="text-[13px] text-zinc-400 font-normal mt-0.5 tabular-nums">
+                          {timeStr}
+                        </div>
+                      )}
                       {showFirstAt && (
                         <div className="text-[13px] text-zinc-400 font-normal mt-0.5">
                           {fmtDate(firstAt!)} 처음
