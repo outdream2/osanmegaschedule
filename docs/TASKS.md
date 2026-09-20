@@ -121,6 +121,7 @@
 <!-- 2026-09-20 · display_requests 요청자 정보 · migration 20260920_display_requests_requester.sql 실행 완료 · 요청자 저장 활성 -->
 | **#302** | 공급사 재고확인 페이지 · **DB 매칭 확인** (VendorStockPage · 사용자 보고 · 2026-09-18) | 🔴 P1 | 정보 제대로 안 나옴 · vendor↔products·purchase_details 조인 로직 검증 필요 |
 | **#303** | xlsx CDN 스왑 · Option A · 0.20.3 · npm audit clean | 🟡 P2 | 리서치 완료 (agent) · 승인됨 (A) · 30분 |
+| **#310** | **반응형 리스트 → 카드 전환** · PC 한 줄 · 모바일 카드형 자동 (사용자 지시 · 2026-09-20) | 🔴 P1 | **전수** · 대원칙 등재 · Tailwind md: breakpoint · 페이지별 순차 · 회귀 X |
 <!-- 2026-09-18 · #115 · real_map DROP · 이미 2026-09-08 실행 완료 확인 (server.ts:95 주석) -->
 <!-- ~~#115~~ · real_map DROP · ✅ 완료 (2026-09-08 · Supabase SQL Editor) -->
 <!-- 2026-09-18 · T-RSTP-TOOLBAR 완료 · [46] 커밋 `780677f5` · flex-col + lg:flex-row 반응형 -->
