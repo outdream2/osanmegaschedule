@@ -700,7 +700,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200",
                   ].join(" ")}
                 >
-                  {k === "store" ? "매장" : k === "warehouse1" ? "창고1" : "창고2"}
+                  {k === "store" ? "매장구역도" : k === "warehouse1" ? "창고1" : "창고2"}
                 </button>
               ))}
             </div>
