@@ -116,7 +116,12 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
     next.shelf_positions = nextShelf;
 
     try {
-      await saveInventoryCheck({
+      // 2026-09-20 · #318 P1 fix (사용자 지시) · 편집한 zone 의 store_zone 필드만 payload 포함
+      //   · 이전 · 항상 store1_zone/store2_zone/store3_zone 3개 모두 payload · 다른 zone 편집 시
+      //     · 편집 안 한 store_zone · null 이면 DB 무단 clear (예 · 매장1 zone 사라짐)
+      //   · 신규 · zone 매장 편집 시에만 · 해당 store_zone 필드 포함 · 나머지는 undefined
+      //   · 서버 · payload 필드 없으면 · UPDATE skip · 기존 값 유지
+      const payload: Parameters<typeof saveInventoryCheck>[0] = {
         product_code:     productCode,
         product_name:     productName,
         checked_by:       checkedBy ?? "",
@@ -125,13 +130,16 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
         store1_stock:     next.s1,
         store2_stock:     next.s2,
         store3_stock:     next.s3,
-        store1_zone:      next.s1z,
-        store2_zone:      next.s2z,
-        store3_zone:      next.s3z,
         warehouse_stock:  next.w1, // 레거시 mirror
         // 2026-09-08 · 상세 진열위치 · 서버에서 병합 처리
         shelf_positions:  nextShelf,
-      });
+      };
+      // 편집한 zone 만 store_zone payload 에 추가
+      if (zone === "s1") payload.store1_zone = next.s1z;
+      else if (zone === "s2") payload.store2_zone = next.s2z;
+      else if (zone === "s3") payload.store3_zone = next.s3z;
+      // 창고 (w1·w2) 편집 · store_zone 필드 · payload 에 포함 X · 서버 skip
+      await saveInventoryCheck(payload);
       setCurrentValues(next);
       showSuccess("재고가 저장되었습니다");
       window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
