@@ -15,6 +15,8 @@ import { Spinner } from "../Spinner";
 import { IconTile } from "../IconTile";
 import { Modal } from "../Modal";
 import { useApiCall } from "../../../hooks/useApiCall";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../../lib/koreanInput";
 
 interface NewVendorModalProps {
   onClose: () => void;
@@ -143,7 +145,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
           <label className="flex flex-col gap-1">
             <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">담당자</span>
             <input
-              lang="ko" type="text"
+              type="text" {...KO_INPUT_PROPS}
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
               placeholder="이름"
@@ -176,7 +178,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
         <label className="flex flex-col gap-1">
           <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">사업자번호</span>
           <input
-            lang="ko" type="text"
+            type="text" {...KO_INPUT_PROPS}
             value={businessNumber}
             onChange={(e) => setBusinessNumber(e.target.value)}
             placeholder="000-00-00000"
@@ -186,8 +188,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
 
         <label className="flex flex-col gap-1">
           <span className="text-[12px] font-bold text-zinc-500 uppercase tracking-wider">비고</span>
-          <textarea
-            lang="ko" value={note}
+          <textarea {...KO_INPUT_PROPS} value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="추가 정보"
             rows={2}

@@ -7,6 +7,8 @@ import { Spinner } from "../common/Spinner";
 import { InlineField } from "./ProductInfoCard.inline";
 import type { ProductInfo } from "../../lib/productsCache";
 import type { InlineEditableKey } from "./ProductInfoCard.types";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface ProductInfoMetaProps {
   product: ProductInfo;
@@ -68,8 +70,7 @@ export const ProductInfoMeta: React.FC<ProductInfoMetaProps> = ({
             <p className="text-[15px] font-semibold text-zinc-500 mb-0.5">메모</p>
             {editingKey === "memo" ? (
               <div className="flex flex-col gap-1">
-                <textarea
-                  lang="ko" value={editingValue}
+                <textarea {...KO_INPUT_PROPS} value={editingValue}
                   onChange={e => onEditChange(e.target.value)}
                   onKeyDown={e => { if (e.key === "Escape") onCancel(); }}
                   disabled={editSaving}

@@ -21,6 +21,8 @@ import { Modal } from "../common/Modal";
 import { PeriodSelector, type PeriodOption } from "../common/PeriodSelector";
 import type { ArrivalItem } from "./helpers";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 const ARRIVAL_DAYS_PRESET: readonly PeriodOption<number>[] = [
   { value: 7,  label: "7일",  title: "최근 7일"  },
@@ -125,8 +127,7 @@ export const FinalDecisionCard: React.FC<FinalDecisionCardProps> = ({
               <ClipboardX size={12} />
               품목이상 상세 메모
             </label>
-            <textarea
-              lang="ko" value={mismatchMemo}
+            <textarea {...KO_INPUT_PROPS} value={mismatchMemo}
               onChange={(e) => setMismatchMemo(e.target.value)}
               rows={2}
               placeholder="예) 박카스디 10병 · 3개 부족 · 명세표 20 실물 17"

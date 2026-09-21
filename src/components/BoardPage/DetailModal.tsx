@@ -16,6 +16,8 @@ import type { AuthSession } from "../../types";
 import type { BoardPost, Employee, Status } from "./types";
 import { TYPE_META, STATUS_META, CATEGORIES } from "./constants";
 import { timeAgo, AuthorBadge } from "./utils";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export function DetailModal({
   postId, authSession, employees, isManager, initialEdit, onClose, onChanged,
@@ -228,7 +230,7 @@ export function DetailModal({
         <input ref={cmtFileRef} type="file" accept="image/*" multiple capture="environment" className="hidden"
           onChange={(e) => { handleCmtFiles(e.target.files); e.target.value = ""; }} />
         <input
-          lang="ko" type="text"
+          type="text" {...KO_INPUT_PROPS}
           value={commentBody}
           onChange={(e) => setCommentBody(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
@@ -291,7 +293,7 @@ export function DetailModal({
               </div>
               {editingPost ? (
                 <input
-                  lang="ko" type="text"
+                  type="text" {...KO_INPUT_PROPS}
                   value={editDraft.title}
                   onChange={e => setEditDraft(prev => ({ ...prev, title: e.target.value }))}
                   placeholder="제목"
@@ -309,8 +311,7 @@ export function DetailModal({
               </div>
               {editingPost ? (
                 <>
-                  <textarea
-                    lang="ko" value={editDraft.body}
+                  <textarea {...KO_INPUT_PROPS} value={editDraft.body}
                     onChange={e => setEditDraft(prev => ({ ...prev, body: e.target.value }))}
                     rows={6}
                     placeholder="본문"
@@ -422,8 +423,7 @@ export function DetailModal({
                       </div>
                       {editing ? (
                         <div className="flex flex-col gap-2">
-                          <textarea
-                            lang="ko" value={editingCommentBody}
+                          <textarea {...KO_INPUT_PROPS} value={editingCommentBody}
                             onChange={(e) => setEditingCommentBody(e.target.value)}
                             rows={3}
                             className="w-full px-2 py-1.5 text-[15px] border border-line rounded-lg focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint resize-none"

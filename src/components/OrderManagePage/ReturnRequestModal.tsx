@@ -18,6 +18,8 @@ import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 // 2026-08-25 · 프레임워크 · useToast (raw alert 제거)
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface ReturnRequestModalProps {
   item: any;                            // 트리거된 단일 상품 (기본)
@@ -362,7 +364,7 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
                       </td>
                       <td className="p-2">
                         <input
-                          lang="ko" type="text" value={r.memo}
+                          type="text" {...KO_INPUT_PROPS} value={r.memo}
                           onChange={e => updateLine(iIdx, { memo: e.target.value })}
                           placeholder="(선택)"
                           className="w-full border border-line rounded px-1.5 py-0.5 text-[14px] focus:outline-none focus:border-brand-deep"
@@ -396,8 +398,7 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
         {/* 특이사항 메모 */}
         <div className="px-6 py-3 border-t border-zinc-100 bg-zinc-50/50">
           <label className="text-[15px] text-zinc-500 font-bold block mb-1">특이사항 · 요청 메모</label>
-          <textarea
-            lang="ko" value={memo} onChange={e => setMemo(e.target.value)}
+          <textarea {...KO_INPUT_PROPS} value={memo} onChange={e => setMemo(e.target.value)}
             placeholder="공급사에 전달할 반품 사유·수거 요청 시간 등..."
             rows={2}
             className="w-full border border-line rounded px-2 py-1.5 text-[15px] focus:outline-none focus:border-brand-deep resize-none"

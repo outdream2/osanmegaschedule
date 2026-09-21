@@ -25,6 +25,8 @@ import { AmountField, FieldLabel, inputCls } from "./PaymentInfoTab.subcomponent
 import type { CreditCard } from "../../shared/schemas/creditCards";
 // 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
 import { displayVendorName } from "../../utils/vendorNameNormalize";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface PaymentEntryFormProps {
   selectedVendor: VendorItem;
@@ -271,7 +273,7 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
                 {bankName === "직접입력" ? (
                   <FieldLabel label="은행명 직접입력">
                     <input
-                      lang="ko" type="text"
+                      type="text" {...KO_INPUT_PROPS}
                       value={bankNameCustom}
                       onChange={e => setBankNameCustom(e.target.value)}
                       placeholder="은행 이름"
@@ -309,7 +311,7 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
               <div className="flex-1 min-w-0">
                 <FieldLabel label="결제 방법 설명">
                   <input
-                    lang="ko" type="text"
+                    type="text" {...KO_INPUT_PROPS}
                     value={etcNote}
                     onChange={e => setEtcNote(e.target.value)}
                     placeholder="예: 페이코 · 카카오페이 · 상계 · 어음 등"
@@ -391,8 +393,7 @@ export const PaymentEntryForm: React.FC<PaymentEntryFormProps> = ({
         {/* ── 그룹 D · 메모 ──────────────────────────────── */}
         <div className="px-4 py-3">
           <FieldLabel label="메모 (선택)">
-            <textarea
-              lang="ko" value={note}
+            <textarea {...KO_INPUT_PROPS} value={note}
               onChange={e => setNote(e.target.value)}
               placeholder="6월분 결제 · 부분 결제 · 특이사항 등"
               rows={2}

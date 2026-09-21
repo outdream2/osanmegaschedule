@@ -10,6 +10,8 @@ import { AddressSearchModal } from "../common/features/AddressSearchModal";
 import { Card } from "../common/Card";
 import { IconTile } from "../common/IconTile";
 import type { Employee } from "../../types";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props
@@ -176,7 +178,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
           <div>
             <label className={fldLabel}>계좌번호</label>
             <input
-              lang="ko" type="text"
+              type="text" {...KO_INPUT_PROPS}
               value={form.bankAccountNumber}
               onChange={(e) => {
                 const v = e.target.value;

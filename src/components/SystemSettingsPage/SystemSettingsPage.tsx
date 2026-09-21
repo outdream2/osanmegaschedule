@@ -32,6 +32,8 @@ import { StorageLocationsSection } from "./StorageLocationsSection";
 import { DriveAuthStatus } from "./DriveAuthStatus";
 // 2026-09-21 · #330 · 발주·판매 추천 규칙 관리자 편집 UI
 import { EventCategoryRulesEditor } from "./EventCategoryRulesEditor";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface Props {
   onBack: () => void;
@@ -207,8 +209,7 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                     {cur?.source === "env"  && <span className="text-[14px] font-bold text-zinc-500 bg-zinc-100 border border-line px-1.5 py-0.5 rounded">env 기본값</span>}
                   </label>
                   {meta.multiline ? (
-                    <textarea
-                      lang="ko" value={isEditing ? draftVal : ""}
+                    <textarea {...KO_INPUT_PROPS} value={isEditing ? draftVal : ""}
                       onChange={e => patchDraft(k, e.target.value)}
                       placeholder={placeholder}
                       rows={2}
@@ -216,7 +217,7 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                     />
                   ) : (
                     <input
-                      lang="ko" type="text"
+                      type="text" {...KO_INPUT_PROPS}
                       value={isEditing ? draftVal : ""}
                       onChange={e => patchDraft(k, e.target.value)}
                       placeholder={placeholder}

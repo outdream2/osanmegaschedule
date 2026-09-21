@@ -49,6 +49,8 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 import { ApiError } from "../../lib/apiClient";
 import type { AuthSession } from "../../types";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 // ═══════════════════════════════════════════════════════
 // Props
@@ -648,8 +650,7 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-[14px] font-bold text-ink-soft uppercase tracking-wider">반환 비고 (선택)</span>
-              <textarea
-                lang="ko" value={returnNote}
+              <textarea {...KO_INPUT_PROPS} value={returnNote}
                 onChange={(e) => setReturnNote(e.target.value)}
                 rows={2}
                 className="w-full px-2.5 py-2 rounded-lg border border-line bg-white text-[14px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition resize-y break-keep"

@@ -4,6 +4,8 @@
 import React from "react";
 import { Lock, LogIn, ShieldAlert } from "lucide-react";
 import { Modal } from "../common/Modal";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface AdminLoginModalProps {
   loginId: string;
@@ -42,7 +44,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       <div>
         <label className="block text-[12px] font-bold text-gray-400 uppercase tracking-wider mb-1">관리자 아이디 (osanmega)</label>
         <input
-          lang="ko" type="text" value={loginId} onChange={e => setLoginId(e.target.value)}
+          type="text" {...KO_INPUT_PROPS} value={loginId} onChange={e => setLoginId(e.target.value)}
           placeholder="아이디를 입력하세요" required autoFocus
           className="w-full text-xs rounded-xl border border-gray-300 focus:border-brand-deep focus:ring-2 focus:ring-brand-tint/10 p-3 bg-white focus:outline-none font-semibold text-gray-800 transition"
         />

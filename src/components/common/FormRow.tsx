@@ -9,7 +9,7 @@
 //   </FormRow>
 //
 //   <FormRow label="비고" hint="선택 입력" error={errors.note}>
-//     <textarea lang="ko" rows={3} />
+//     <textarea {...KO_INPUT_PROPS} rows={3} />
 //   </FormRow>
 
 import React from "react";

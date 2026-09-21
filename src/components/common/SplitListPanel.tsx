@@ -37,6 +37,8 @@ import { EmptyState } from "./EmptyState";
 import { StatusPill } from "./StatusPill";
 // 2026-08-26 · 사용자 지시 · 모든 검색창 최근 3개 · localStorage 저장
 import { useRecentSearches } from "../../hooks/useRecentSearches";
+// 2026-09-21 · #329 · 한글 IME 우선 SSOT
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export interface SplitListPanelProps {
   /** 패널 제목 (예: "직원" · "상품") */
@@ -189,7 +191,7 @@ export function SplitListPanel({
         className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
       />
       <input
-        lang="ko" type="text"
+        {...KO_INPUT_PROPS} type="text"
         value={search ?? ""}
         onChange={(e) => onSearchChange!(e.target.value)}
         onFocus={() => setRecentsOpen(true)}

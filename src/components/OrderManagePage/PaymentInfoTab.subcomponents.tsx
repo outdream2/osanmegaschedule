@@ -6,6 +6,8 @@ import { Wallet } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { SortHeader } from "../common/SortHeader";
 import type { VendorSortKey, SortDir } from "./PaymentInfoTab.types";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export const inputCls =
   "w-full h-9 px-3 text-[16px] border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition placeholder:text-zinc-300";
@@ -42,7 +44,7 @@ export const AmountField: React.FC<{
     <div className="relative">
       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[15px] font-bold text-zinc-400 select-none">₩</span>
       <input
-        lang="ko" type="text"
+        type="text" {...KO_INPUT_PROPS}
         inputMode="numeric"
         value={amount ? Number(amount).toLocaleString() : ""}
         onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}

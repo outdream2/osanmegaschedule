@@ -11,6 +11,8 @@ import { uploadImagesToCloudinary, type UploadedImage } from "../../lib/cloudina
 import type { AuthSession } from "../../types";
 import type { Employee, PostType } from "./types";
 import { TYPE_META, CATEGORIES } from "./constants";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export function ComposerModal({
   authSession, employees, onClose, onCreated,
@@ -109,7 +111,7 @@ export function ComposerModal({
 
           {/* 제목 */}
           <input
-            lang="ko" type="text"
+            type="text" {...KO_INPUT_PROPS}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="제목 (필수)"
@@ -129,8 +131,7 @@ export function ComposerModal({
           </div>
 
           {/* 본문 */}
-          <textarea
-            lang="ko" value={body}
+          <textarea {...KO_INPUT_PROPS} value={body}
             onChange={(e) => setBody(e.target.value)}
             placeholder="본문 · 상황을 자세히 남겨주세요"
             rows={5}

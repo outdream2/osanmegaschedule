@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { SectionCard, InlineField } from "./StaffManagePage.subcomponents";
 import type { Employee, EditDraft } from "./types";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface LatestContract {
   id?: number;
@@ -267,8 +269,7 @@ export const StaffConditionsSection: React.FC<StaffConditionsSectionProps> = ({
     {/* §11 메모 */}
     <SectionCard title="메모" icon={<ClipboardList size={11} />} group="personal" defaultOpen={false}>
       {editing ? (
-        <textarea
-          lang="ko" value={draft?.memo ?? ""}
+        <textarea {...KO_INPUT_PROPS} value={draft?.memo ?? ""}
           onChange={(e) => setField("memo", e.target.value)}
           placeholder="근무 특이사항 · 알러지 · 기타 참고 사항"
           rows={3}

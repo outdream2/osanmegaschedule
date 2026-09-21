@@ -41,6 +41,8 @@ import { VendorDetailPaymentPanel } from "./VendorDetailPaymentPanel";
 import { VendorDetailPurchasePanel } from "./VendorDetailPurchasePanel";
 // 2026-09-13 · #112 · 발주이력 · info 뷰 하단 · 컴팩트 섹션
 import { VendorOrderHistorySection } from "./VendorOrderHistorySection";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export const VendorDetailModal: React.FC<{
   vendor: Vendor;
@@ -477,7 +479,7 @@ export const VendorDetailModal: React.FC<{
               <div className="grid grid-cols-3 gap-3">
                 <Field label="회사명" required>
                   <input
-                    lang="ko" type="text"
+                    type="text" {...KO_INPUT_PROPS}
                     value={draft.company_name}
                     readOnly
                     className={`${inputCls} bg-zinc-50 cursor-not-allowed text-zinc-700`}
@@ -527,7 +529,7 @@ export const VendorDetailModal: React.FC<{
                     {/* 기타 선택 · 또는 목록에 없는 값 · 커스텀 입력 노출 */}
                     {(!VENDOR_ORDER_METHODS.some(m => m.name === draft.order_method) || draft.order_method === "") && draft.order_method !== null && (
                       <input
-                        lang="ko" type="text"
+                        type="text" {...KO_INPUT_PROPS}
                         value={draft.order_method || ""}
                         onChange={e => setDraft({ ...draft, order_method: e.target.value })}
                         placeholder="직접 입력"
@@ -563,7 +565,7 @@ export const VendorDetailModal: React.FC<{
               <div className="grid grid-cols-3 gap-3">
                 <Field label="사업자번호" accent="blue">
                   <input
-                    lang="ko" type="text"
+                    type="text" {...KO_INPUT_PROPS}
                     value={formatBizNumProgressive(draft.business_number)}
                     onChange={e => setDraft({ ...draft, business_number: normalizeBizNum(e.target.value) })}
                     placeholder="000-00-00000"
@@ -574,7 +576,7 @@ export const VendorDetailModal: React.FC<{
                 </Field>
                 <Field label="담당자 이름" required>
                   <input
-                    lang="ko" type="text"
+                    type="text" {...KO_INPUT_PROPS}
                     value={draft.contact_name}
                     readOnly
                     className={`${inputCls} bg-zinc-50 cursor-not-allowed text-zinc-700`}
@@ -583,7 +585,7 @@ export const VendorDetailModal: React.FC<{
                 </Field>
                 <Field label="담당자 연락처">
                   <input
-                    lang="ko" type="text"
+                    type="text" {...KO_INPUT_PROPS}
                     value={draft.phone}
                     readOnly
                     className={`${inputCls} bg-zinc-50 cursor-not-allowed text-zinc-700`}
@@ -604,12 +606,12 @@ export const VendorDetailModal: React.FC<{
                   />
                 </Field>
                 <Field label="팀장 이름" accent="blue">
-                  <input lang="ko" type="text" value={draft.team_leader_name}
+                  <input type="text" {...KO_INPUT_PROPS} value={draft.team_leader_name}
                     onChange={e => setDraft({ ...draft, team_leader_name: e.target.value })}
                     placeholder="담당자와 별개" className={inputCls} />
                 </Field>
                 <Field label="팀장 연락처" accent="blue">
-                  <input lang="ko" type="text" value={draft.team_leader_phone}
+                  <input type="text" {...KO_INPUT_PROPS} value={draft.team_leader_phone}
                     onChange={e => setDraft({ ...draft, team_leader_phone: e.target.value })}
                     placeholder="010-0000-0000" className={inputCls} />
                 </Field>
@@ -618,7 +620,7 @@ export const VendorDetailModal: React.FC<{
               {/* Row 4 · 긴급 연락처 [indigo] | (empty) | (empty) */}
               <div className="grid grid-cols-3 gap-3">
                 <Field label="긴급 연락처" accent="blue">
-                  <input lang="ko" type="text" value={draft.emergency_contact}
+                  <input type="text" {...KO_INPUT_PROPS} value={draft.emergency_contact}
                     onChange={e => setDraft({ ...draft, emergency_contact: e.target.value })}
                     placeholder="야간·주말·비상" className={inputCls} />
                 </Field>
@@ -629,8 +631,7 @@ export const VendorDetailModal: React.FC<{
               {/* Row 5 · 발주 특이사항 · textarea full · 구분선 */}
               <div className="pt-3 mt-1 border-t border-zinc-100">
                 <Field label="발주 특이사항">
-                  <textarea
-                    lang="ko" value={draft.special_notes}
+                  <textarea {...KO_INPUT_PROPS} value={draft.special_notes}
                     onChange={e => setDraft({ ...draft, special_notes: e.target.value })}
                     placeholder="월요일 발주 X · 최소주문 · 결제 조건 등"
                     className={`${inputCls} h-[84px] resize-none border-amber-200 focus:border-amber-500 focus:ring-amber-200`}

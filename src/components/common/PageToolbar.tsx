@@ -15,6 +15,8 @@
 import type { ReactNode } from "react";
 import { StatusPill } from "./StatusPill";
 import { AccentBar } from "./AccentBar";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export interface PageToolbarSearch {
   value: string;
@@ -73,7 +75,7 @@ export function PageToolbar({
       {/* 검색 · 딥네이비 focus · rounded-lg · h-10 · flex-1 */}
       {search && (
         <input
-          lang="ko" type="text"
+          type="text" {...KO_INPUT_PROPS}
           value={search.value}
           onChange={e => search.onChange(e.target.value)}
           placeholder={search.placeholder ?? "검색"}

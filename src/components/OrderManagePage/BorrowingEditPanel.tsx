@@ -45,6 +45,8 @@ import type { AuthSession } from "../../types";
 import { ProductSearchInput } from "../common/features/ProductSearchInput";
 // 2026-09-10 · #47 · 등록 후 PDF 저장 confirm
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 // ═══════════════════════════════════════════════════════
 // Props / EditMode
@@ -436,7 +438,7 @@ export const BorrowingEditPanel: React.FC<BorrowingEditPanelProps> = ({
                   }}
                 />
                 <input
-                  lang="ko" type="text"
+                  type="text" {...KO_INPUT_PROPS}
                   value={form.product_name}
                   onChange={(e) => set("product_name", e.target.value)}
                   className={inputCls}
@@ -447,7 +449,7 @@ export const BorrowingEditPanel: React.FC<BorrowingEditPanelProps> = ({
               <label className="flex flex-col gap-1">
                 <span className={labelCls}>상품코드</span>
                 <input
-                  lang="ko" type="text"
+                  type="text" {...KO_INPUT_PROPS}
                   value={form.product_code}
                   onChange={(e) => set("product_code", e.target.value)}
                   className={inputCls + " font-mono"}
@@ -487,8 +489,7 @@ export const BorrowingEditPanel: React.FC<BorrowingEditPanelProps> = ({
               </label>
               <label className="sm:col-span-2 flex flex-col gap-1">
                 <span className={labelCls}>사유·메모</span>
-                <textarea
-                  lang="ko" value={form.note}
+                <textarea {...KO_INPUT_PROPS} value={form.note}
                   onChange={(e) => set("note", e.target.value)}
                   rows={2}
                   className="w-full px-2.5 py-2 rounded-lg border border-line bg-white text-[15px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition resize-y break-keep"

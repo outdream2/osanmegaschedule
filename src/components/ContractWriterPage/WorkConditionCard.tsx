@@ -16,6 +16,8 @@ import { IconTile } from "../common/IconTile";
 import { Card } from "../common/Card";
 import { calcWageBase } from "../../lib/wageCalc";
 import type { ContractCategory } from "../../lib/contract";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props
@@ -172,7 +174,7 @@ export const WorkConditionCard: React.FC<WorkConditionCardProps> = ({
       </div>
       <div className={cardInner}>
         <div className={cardGroupLabel}><Notepad size={10} weight="bold" /> 담당업무</div>
-        <input lang="ko" type="text" value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
+        <input type="text" {...KO_INPUT_PROPS} value={form.jobDuty} onChange={(e) => upd("jobDuty", e.target.value)}
           placeholder="예: 약국 카운터 · OTC 판매 · 재고 관리" className={fldInput}
         />
         <div className="border-t border-zinc-100 pt-2">
@@ -330,7 +332,7 @@ export const WorkConditionCard: React.FC<WorkConditionCardProps> = ({
       <label className={fldLabel}>
         <Notepad size={10} weight="fill" className="inline mr-0.5" />추가 특약 (선택)
       </label>
-      <textarea lang="ko" value={form.additionalContent} onChange={(e) => upd("additionalContent", e.target.value)} rows={2}
+      <textarea {...KO_INPUT_PROPS} value={form.additionalContent} onChange={(e) => upd("additionalContent", e.target.value)} rows={2}
         placeholder="예: 수습기간 3개월 · 명절 상여 별도"
         className="w-full bg-white border border-line rounded-lg px-3 py-2 text-[12.5px] text-zinc-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-tint/60 focus:border-brand-deep transition resize-y placeholder:text-zinc-400 placeholder:font-normal"
       />

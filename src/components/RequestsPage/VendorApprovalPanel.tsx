@@ -17,6 +17,8 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { IconTile } from "../common/IconTile";
 import { StatusPill } from "../common/StatusPill";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface PendingVendor {
   id: number;
@@ -198,7 +200,7 @@ export const VendorApprovalPanel: React.FC = () => {
                 <div className="mb-4 flex items-center gap-2">
                   <MessageSquare size={15} className="text-rose-500 shrink-0" />
                   <input
-                    lang="ko" type="text"
+                    type="text" {...KO_INPUT_PROPS}
                     value={rejectReason}
                     onChange={e => setRejectReason(e.target.value)}
                     placeholder="거절 사유 (선택 · 500자)"

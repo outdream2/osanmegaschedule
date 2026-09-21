@@ -35,6 +35,8 @@ import type { CategoryKey, HrForm, SortKey } from "./types";
 import { MAX_UPLOAD_BYTES, CATEGORIES, CATEGORY_MAP, HR_FORM_SORT_CMP } from "./constants";
 import { fmtBytes, fmtDateTime, readFileAsDataUrl, downloadFile, fileIconInfo } from "./utils";
 import { CatChip, DropZone, EmptyState } from "./subcomponents";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface HrFormsPageProps {
   authSession: AuthSession | null;
@@ -283,7 +285,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                     양식명 <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    lang="ko" type="text"
+                    type="text" {...KO_INPUT_PROPS}
                     value={uploadTitle}
                     onChange={e => setUploadTitle(e.target.value)}
                     placeholder="예: 2026년 표준 근로계약서"
@@ -424,7 +426,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
 
           {/* 검색 */}
           <input
-            lang="ko" type="text"
+            type="text" {...KO_INPUT_PROPS}
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
             placeholder="양식명 · 파일명 · 업로더 검색"

@@ -4,6 +4,8 @@
 import React, { useState, useEffect } from "react";
 import { CUSTOM_OPTION } from "./constants";
 import type { SignKey } from "../../hooks/useContractSignatures";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export const SelectOrCustom: React.FC<{
   value: string;
@@ -43,7 +45,7 @@ export const SelectOrCustom: React.FC<{
       ) : (
         <>
           <input
-            lang="ko" type="text"
+            type="text" {...KO_INPUT_PROPS}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}

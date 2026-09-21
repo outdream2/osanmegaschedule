@@ -14,6 +14,8 @@ import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 import {
   listStockArrivals,
   createStockArrival,
@@ -310,8 +312,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
             />
-            <textarea
-              lang="ko" className="border border-line rounded-lg px-3 py-2.5 text-[15px] outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint resize-none transition"
+            <textarea {...KO_INPUT_PROPS} className="border border-line rounded-lg px-3 py-2.5 text-[15px] outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint resize-none transition"
               placeholder="내용 (선택)"
               maxLength={200}
               rows={2}

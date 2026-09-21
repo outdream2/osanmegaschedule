@@ -10,6 +10,8 @@ import type { Employee } from "./DisplayPage.types";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 import {
   DOW_ALL, DOW_LABELS,
   STATUS_LABEL, statusCell, statusDot,
@@ -203,7 +205,7 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
               바코드 스캔
             </button>
           </div>
-          <textarea lang="ko" value={draftProducts} onChange={(e) => onSetDraftProducts(e.target.value)} rows={2}
+          <textarea {...KO_INPUT_PROPS} value={draftProducts} onChange={(e) => onSetDraftProducts(e.target.value)} rows={2}
             placeholder="예: 타이레놀 500mg, 베아제, 판콜에이..."
             className="w-full px-3 py-2 text-sm rounded-xl border border-zinc-300 bg-white focus:border-brand-deep focus:ring-2 focus:ring-brand-tint outline-none transition resize-none" />
         </div>

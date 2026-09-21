@@ -32,6 +32,8 @@ import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { classifyArrivalSlot } from "../../lib/warehouseZoneMap";
 // 2026-08-28 · 사용자 지시 · 분류코드 참조 상품 리스트 (스크롤 · 클릭 시 자동 채움)
 import { Spinner } from "../common/Spinner";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 // 2026-08-26 · P0 fix · 모달 body overflow-hidden 안 · autocomplete dropdown clip fix
 //   · createPortal 로 body 에 렌더 · getBoundingClientRect 기준 fixed positioning
@@ -469,7 +471,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field icon={<Hash size={14} />} label={lockCode ? "상품코드 (스캔 고정)" : "상품코드"} required>
                     <input
-                      lang="ko" type="text"
+                      type="text" {...KO_INPUT_PROPS}
                       value={form.product_code}
                       onChange={(e) => set("product_code", e.target.value)}
                       className={inputCls + (lockCode ? " bg-zinc-100 text-zinc-500 cursor-not-allowed" : "")}
@@ -481,7 +483,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                   </Field>
                   <Field icon={<Type size={14} />} label="상품명" required>
                     <input
-                      lang="ko" type="text"
+                      type="text" {...KO_INPUT_PROPS}
                       inputMode="text"
                       autoCapitalize="off"
                       autoCorrect="off"
@@ -504,7 +506,7 @@ export const ProductCreateModal: React.FC<Props> = ({
                         const isValid = !s || vendors.some(v => (v.company_name ?? "").trim() === s);
                         return (
                           <input
-                            lang="ko" type="text"
+                            type="text" {...KO_INPUT_PROPS}
                             value={form.supplier}
                             onChange={(e) => { set("supplier", e.target.value); setSupplierOpen(true); }}
                             onFocus={() => setSupplierOpen(true)}
@@ -620,26 +622,26 @@ export const ProductCreateModal: React.FC<Props> = ({
                 {/* 2. 규격 + 단위 · 나란히 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <Field icon={<Ruler size={14} />} label="규격">
-                    <input lang="ko" type="text" value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
+                    <input type="text" {...KO_INPUT_PROPS} value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
                   </Field>
                   <Field icon={<Layers size={14} />} label="단위">
-                    <input lang="ko" type="text" value={form.unit} onChange={(e) => set("unit", e.target.value)} className={inputCls} placeholder="개 · 박스 · 정" maxLength={30} />
+                    <input type="text" {...KO_INPUT_PROPS} value={form.unit} onChange={(e) => set("unit", e.target.value)} className={inputCls} placeholder="개 · 박스 · 정" maxLength={30} />
                   </Field>
                 </div>
                 {/* 3. 브랜드 + 제조사 · 나란히 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <Field icon={<Award size={14} />} label="브랜드">
-                    <input lang="ko" type="text" value={form.brand} onChange={(e) => set("brand", e.target.value)} className={inputCls} placeholder="예: 유한양행" maxLength={100} />
+                    <input type="text" {...KO_INPUT_PROPS} value={form.brand} onChange={(e) => set("brand", e.target.value)} className={inputCls} placeholder="예: 유한양행" maxLength={100} />
                   </Field>
                   <Field icon={<Factory size={14} />} label="제조사">
-                    <input lang="ko" type="text" value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} placeholder="예: 한미약품" maxLength={100} />
+                    <input type="text" {...KO_INPUT_PROPS} value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} placeholder="예: 한미약품" maxLength={100} />
                   </Field>
                 </div>
                 {/* 4. 메모 · full-width · 분류코드 통합 (자유 텍스트) */}
                 <div className="mt-4">
                   <Field icon={<Tags size={14} />} label="메모">
                     <input
-                      lang="ko" type="text"
+                      type="text" {...KO_INPUT_PROPS}
                       value={form.category}
                       onChange={(e) => set("category", e.target.value)}
                       className={inputCls}

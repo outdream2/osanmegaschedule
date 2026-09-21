@@ -23,6 +23,8 @@ import { useSettings } from "../../hooks/useSettings";
 // 2026-08-21 · Framework Phase 3 · Card 프리미티브
 import { Card } from "./Card";
 import { TEXT } from "@/styles/tokens";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 
@@ -169,7 +171,7 @@ const NameField: React.FC<NameFieldProps> = ({
       {layout === "compact" && <label className={labelCls}>성명</label>}
       {layout === "grid"    && <span className={labelCls}><User size={9} />성명</span>}
       <input
-        lang="ko" type="text"
+        type="text" {...KO_INPUT_PROPS}
         value={value}
         onChange={(e) => { onChange(e.target.value); if (hasSearch) setSearchOpen(true); }}
         onFocus={() => hasSearch && setSearchOpen(true)}
@@ -355,7 +357,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
           {(isCompact || editing) ? (
             <div className="relative">
               <input
-                lang="ko" type="text"
+                type="text" {...KO_INPUT_PROPS}
                 value={values.employeeNumber ?? ""}
                 readOnly
                 disabled={disabled}
@@ -467,7 +469,7 @@ export const EmployeeInfoForm: React.FC<EmployeeInfoFormProps> = ({
             )}
             <div className="flex gap-1.5 items-center">
               <input
-                lang="ko" type="text"
+                type="text" {...KO_INPUT_PROPS}
                 value={values.address ?? ""}
                 onChange={(e) => upd("address", e.target.value)}
                 placeholder="경기도 오산시 ..."

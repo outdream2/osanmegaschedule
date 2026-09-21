@@ -17,6 +17,8 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { SplitPanel } from "../common/SplitPanel";
 import { CARD_ISSUERS, type CreditCard } from "../../shared/schemas/creditCards";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 const inputCls = "w-full h-10 px-3 text-[17px] border border-zinc-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition placeholder:text-zinc-300";
 const labelCls = "block text-[15px] font-semibold text-zinc-600 mb-1.5";
@@ -229,7 +231,7 @@ export const CardRegisterPage: React.FC = () => {
           <div>
             <label className={labelCls}>별칭 (선택)</label>
             <input
-              lang="ko" type="text"
+              type="text" {...KO_INPUT_PROPS}
               value={draft.alias}
               onChange={e => setDraft({ ...draft, alias: e.target.value })}
               placeholder="법인 삼성 SDI · 개인 국민 체크 등"
@@ -239,7 +241,7 @@ export const CardRegisterPage: React.FC = () => {
           <div>
             <label className={labelCls}>카드번호 뒷 4자리 (선택)</label>
             <input
-              lang="ko" type="text"
+              type="text" {...KO_INPUT_PROPS}
               inputMode="numeric"
               value={draft.last4}
               onChange={e => setDraft({ ...draft, last4: e.target.value.replace(/[^0-9]/g, "").slice(0, 4) })}
@@ -277,7 +279,7 @@ export const CardRegisterPage: React.FC = () => {
             <label className={labelCls}>카드 한도 (선택)</label>
             <div className="flex items-center gap-2">
               <input
-                lang="ko" type="text"
+                type="text" {...KO_INPUT_PROPS}
                 inputMode="numeric"
                 value={draft.credit_limit ? Number(draft.credit_limit.replace(/[^0-9]/g, "")).toLocaleString() : ""}
                 onChange={e => setDraft({ ...draft, credit_limit: e.target.value.replace(/[^0-9]/g, "") })}
@@ -303,8 +305,7 @@ export const CardRegisterPage: React.FC = () => {
           </div>
           <div className="col-span-2">
             <label className={labelCls}>비고 (선택)</label>
-            <textarea
-              lang="ko" value={draft.note}
+            <textarea {...KO_INPUT_PROPS} value={draft.note}
               onChange={e => setDraft({ ...draft, note: e.target.value })}
               placeholder="사용 목적 · 관리자 · 결제 조건 등"
               rows={2}

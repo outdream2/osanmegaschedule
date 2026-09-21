@@ -3,6 +3,8 @@ import React from "react";
 import { Plus, Trash2, MapPin, Check } from "lucide-react";
 // 2026-09-11 · #97 · deleteGroup confirm 추가
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export interface ZoneGroup {
   id: string;
@@ -148,7 +150,7 @@ export const ZoneGroupPanel: React.FC<ZoneGroupPanelProps> = ({
                     style={{ backgroundColor: g.color }}
                   />
                   <input
-                    lang="ko" type="text"
+                    type="text" {...KO_INPUT_PROPS}
                     value={g.name}
                     onClick={(e) => e.stopPropagation()}
                     onChange={(e) => updateGroup(g.id, { name: e.target.value })}

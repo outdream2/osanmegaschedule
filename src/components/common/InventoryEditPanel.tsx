@@ -12,6 +12,8 @@ import { ShelfPositionInput } from "./ShelfPositionInput";
 import type { ShelfPositions } from "../../lib/shelfPositions";
 // 2026-09-14 · framework audit · alert → useToast 통일
 import { useToast } from "../../hooks/useToast";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 // ─────────────────────────────────────────────────────────────
 // Types (InventoryValues 는 backwards compat 용 export 유지)
@@ -135,7 +137,7 @@ interface ZoneInputProps {
 }
 const ZoneInput: React.FC<ZoneInputProps> = ({ value, placeholder = "-", accentClass, onChange }) => (
   <input
-    lang="ko" type="text"
+    type="text" {...KO_INPUT_PROPS}
     value={value ?? ""}
     onChange={e => onChange(e.target.value.trim() === "" ? null : e.target.value)}
     placeholder={placeholder}

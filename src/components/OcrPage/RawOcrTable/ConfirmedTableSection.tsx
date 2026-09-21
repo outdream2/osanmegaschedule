@@ -7,6 +7,8 @@ import { api } from "../../../lib/apiClient";
 import { XlsxExportSection } from "./XlsxExportSection";
 import type { MatchedItem, CandidateInfo } from "./types";
 import { fmt } from "./utils";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../../lib/koreanInput";
 
 const CONF_NUM = new Set([
   "마스터 매입단가", "전표 매입단가", "매입수량", "매입총계", "판매단가", "이익률",
@@ -431,7 +433,7 @@ export const ConfirmedTableSection: React.FC<ConfirmedTableSectionProps> = ({
                               }`}>
                               {h === "거래일" ? (
                                 editingConfDate === pn ? (
-                                  <input lang="ko" type="text" inputMode="text" autoFocus
+                                  <input type="text" {...KO_INPUT_PROPS} inputMode="text" autoFocus
                                     value={editingConfDateVal}
                                     placeholder="YYYY-MM-DD"
                                     onChange={e => setEditingConfDateVal(e.target.value)}

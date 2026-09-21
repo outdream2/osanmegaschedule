@@ -20,6 +20,8 @@ import { ShelfPositionsBadge } from "./ShelfPositionsBadge";
 import type { ShelfPositions } from "../../lib/shelfPositions";
 // 2026-09-13 · #91 · ExpiryBadge · 상품명 옆 유통기한 임박 표시
 import { ExpiryBadge } from "./ExpiryBadge";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export interface ProductBasic {
   product_code: string;
@@ -209,7 +211,7 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
           {inEditMode && editingLoc ? (
             <form onSubmit={(e) => { e.preventDefault(); void submitLocation(); }} className="flex items-center gap-1">
               <input
-                lang="ko" type="text"
+                type="text" {...KO_INPUT_PROPS}
                 value={locDraft}
                 onChange={(e) => setLocDraft(e.target.value)}
                 onBlur={submitLocation}

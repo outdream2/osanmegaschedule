@@ -16,6 +16,8 @@ import { IconTile } from "../common/IconTile";
 import { AccentBar } from "../common/AccentBar";
 import { invalidateStorageLocationsCache } from "../../hooks/useStorageLocations";
 import type { StorageLocation } from "../../shared/schemas/settings";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 const CODE_REGEX = /^[a-z0-9_]{1,20}$/;
 
@@ -190,13 +192,13 @@ export const StorageLocationsSection: React.FC = () => {
                   </div>
                 </td>
                 <td className="px-3 py-2">
-                  <input type="text" value={it.code} onChange={(e) => patch(idx, { code: e.target.value })}
+                  <input type="text" {...KO_INPUT_PROPS} value={it.code} onChange={(e) => patch(idx, { code: e.target.value })}
                     className="w-full px-2 py-1 border border-line rounded text-[13px] font-mono focus:border-brand-deep outline-none"
                     placeholder="store4"
                   />
                 </td>
                 <td className="px-3 py-2">
-                  <input type="text" value={it.name} onChange={(e) => patch(idx, { name: e.target.value })}
+                  <input type="text" {...KO_INPUT_PROPS} value={it.name} onChange={(e) => patch(idx, { name: e.target.value })}
                     className="w-full px-2 py-1 border border-line rounded text-[13px] focus:border-brand-deep outline-none"
                     placeholder="매장4"
                   />

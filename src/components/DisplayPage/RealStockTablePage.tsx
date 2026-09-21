@@ -36,6 +36,8 @@ import { assignZonesToSlots } from "../../lib/warehouseZoneMap";
 import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 import type { Product, InvRow, Row, SortKey } from "./RealStockTablePage.types";
 import { SLOT_LABEL, CMP, PAGE_SIZE } from "./RealStockTablePage.utils";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export const RealStockTablePage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -457,7 +459,7 @@ export const RealStockTablePage: React.FC = () => {
               <div className="relative flex-1 min-w-[200px] lg:flex-none">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
                 <input
-                  lang="ko" type="text"
+                  type="text" {...KO_INPUT_PROPS}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="상품명 · 공급사 · 코드 · 진열위치 검색"

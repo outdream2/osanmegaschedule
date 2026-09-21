@@ -18,6 +18,8 @@ import {
 import { useMonthlyVat, type MonthlyVatRow } from "../hooks/useMonthlyVat";
 import { Spinner } from "../../common/Spinner";
 import { Card } from "../../common/Card";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../../lib/koreanInput";
 
 const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
 
@@ -293,7 +295,7 @@ const MoneyCellInput: React.FC<MoneyCellInputProps> = ({ value, onCommit, placeh
   }, [value]);
   return (
     <input
-      lang="ko" type="text"
+      type="text" {...KO_INPUT_PROPS}
       inputMode="numeric"
       value={text}
       onChange={e => setText(e.target.value.replace(/[^0-9]/g, ""))}

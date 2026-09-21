@@ -11,6 +11,8 @@ import { getErrorMessage } from "../../lib/errorMessage";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { UserCheck, Search, Users } from "lucide-react";
 import type { DisplayRequest } from "./types";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface EmployeeRow {
   id: number;
@@ -104,8 +106,7 @@ export const AssignStaffModal: React.FC<AssignStaffModalProps> = ({ open, onClos
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
           <input
-            lang="ko"
-            type="text"
+            type="text" {...KO_INPUT_PROPS}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="이름·직급·직군 검색..."

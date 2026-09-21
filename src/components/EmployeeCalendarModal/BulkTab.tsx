@@ -8,6 +8,8 @@ import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
 import type { Employee } from "../../types";
 import type { ScheduleTypeEntry } from "../../constants";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface BulkTabProps {
   employee: Employee;
@@ -172,7 +174,7 @@ export const BulkTab: React.FC<BulkTabProps> = ({
               <MessageSquare size={13} strokeWidth={2.2} /> 특이사항
             </label>
             <input
-              lang="ko" type="text"
+              type="text" {...KO_INPUT_PROPS}
               value={bulkActualHours}
               onChange={e => setBulkActualHours(e.target.value)}
               placeholder="예: 2시간 연장, 지각, 조퇴"
@@ -184,7 +186,7 @@ export const BulkTab: React.FC<BulkTabProps> = ({
               <MessageSquare size={13} strokeWidth={2.2} /> 메모
             </label>
             <input
-              lang="ko" type="text"
+              type="text" {...KO_INPUT_PROPS}
               value={bulkMemo}
               onChange={e => setBulkMemo(e.target.value)}
               placeholder="마우스 오버 시 표시될 메모"

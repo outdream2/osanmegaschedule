@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { X, Users, Package, Pencil, Check, XCircle } from "lucide-react";
 import { Badge } from "../common/Badge";
 import type { ZoneSection } from "../../constants/displayZones";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 // ─── Types (shared with DisplayPage) ──────────────────────────────────────────
 type ZoneStatus = "normal" | "low" | "empty";
@@ -137,7 +139,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
                 title="구역 번호"
               />
               <input
-                lang="ko" type="text"
+                type="text" {...KO_INPUT_PROPS}
                 value={editLabel}
                 onChange={(e) => setEditLabel(e.target.value)}
                 className="flex-1 min-w-0 h-7 px-1.5 text-[14px] font-bold text-ink border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
@@ -146,7 +148,7 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
               />
             </div>
             <input
-              lang="ko" type="text"
+              type="text" {...KO_INPUT_PROPS}
               value={editCategory}
               onChange={(e) => setEditCategory(e.target.value)}
               className="h-6 px-1.5 text-[15px] text-ink-soft border border-line rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"

@@ -17,6 +17,8 @@ import type { ConfirmedRecord } from "./OcrPage.types";
 import { fmtNum, toNum } from "./OcrPage.types";
 // 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
 import { displayVendorName } from "../../utils/vendorNameNormalize";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export const ConfirmedRecordsTab: React.FC = () => {
   const confirm = useConfirm();
@@ -214,7 +216,7 @@ export const ConfirmedRecordsTab: React.FC = () => {
           <label className="flex items-center gap-1.5 text-[15px] font-bold text-gray-600">
             공급처
             <input
-              lang="ko" type="text"
+              type="text" {...KO_INPUT_PROPS}
               list="ocr-conf-supplier-list"
               value={supplierFilter}
               onChange={e => setSupplierFilter(e.target.value)}

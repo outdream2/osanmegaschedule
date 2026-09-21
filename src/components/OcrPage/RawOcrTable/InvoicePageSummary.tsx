@@ -5,6 +5,8 @@ import { devLog } from "../../../lib/devLog";
 import { fmt, parseNumber } from "./utils";
 import type { SummaryEdit, DiscountInfo } from "./RawInvoiceCard.types";
 import type { RawPage } from "./types";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../../lib/koreanInput";
 
 interface InvoicePageSummaryProps {
   pn: number;
@@ -99,7 +101,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
               {/* ── 소계 입력 ── */}
               {isCustom ? (
                 <>
-                  <input lang="ko" type="text" inputMode="numeric"
+                  <input type="text" {...KO_INPUT_PROPS} inputMode="numeric"
                     value={(() => { const raw = String(pageSubtotalCustom[pn] ?? ""); const n = parseNumber(raw); return n > 0 ? fmt(n) : raw; })()}
                     onChange={e => { const raw = e.target.value.replace(/[^\d-]/g, ""); setPageSubtotalCustom(prev => ({ ...prev, [pn]: parseNumber(raw) })); }}
                     placeholder="금액"
@@ -119,7 +121,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
                     const vatAmount = vatOn ? Math.round(shown * 0.1) : 0;
                     return (
                       <>
-                        <input lang="ko" type="text" inputMode="numeric"
+                        <input type="text" {...KO_INPUT_PROPS} inputMode="numeric"
                           value={(() => {
                             if (editingSummary?.pn === pn && editingSummary.kind === "subtotal") return editingSummary.value;
                             return fmt(finalShown);
@@ -171,7 +173,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
               {(() => {
                 const totalDisc = discs.reduce((s, d) => s + d.amount, 0);
                 return (
-                  <input lang="ko" type="text" inputMode="numeric"
+                  <input type="text" {...KO_INPUT_PROPS} inputMode="numeric"
                     value={
                       editingSummary?.pn === pn && editingSummary.kind === "discount"
                         ? editingSummary.value
@@ -214,7 +216,7 @@ export const InvoicePageSummary: React.FC<InvoicePageSummaryProps> = ({
 
               {/* ── 미수금 ── */}
               <span className="text-[14px] font-semibold text-rose-700 ml-2" title="잔고 = 미수금 (동의어)">미수금</span>
-              <input lang="ko" type="text" inputMode="numeric"
+              <input type="text" {...KO_INPUT_PROPS} inputMode="numeric"
                 value={
                   editingSummary?.pn === pn && editingSummary.kind === "balance"
                     ? editingSummary.value

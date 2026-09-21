@@ -6,6 +6,8 @@ import { Calculator } from "@phosphor-icons/react";
 import type { ContractForm, WageComponents, CalcMode } from "./types";
 import { computeWageFromHourlyDual, computeHourlyFromTarget, computeActualPay, fmtWon } from "./wageCalc";
 import { WAGE_DIVISOR } from "./wageCalc";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface WageCalcModePanelProps {
   form: ContractForm;
@@ -106,7 +108,7 @@ const WageCalcModePanel: React.FC<WageCalcModePanelProps> = ({
           <div className="flex items-center gap-1.5">
             <span className="shrink-0">목표 월급</span>
             <input
-              lang="ko" type="text"
+              type="text" {...KO_INPUT_PROPS}
               inputMode="numeric"
               value={targetTotal}
               onChange={(e) => setTargetTotal(e.target.value.replace(/[^0-9]/g, ""))}

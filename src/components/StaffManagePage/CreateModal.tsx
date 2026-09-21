@@ -7,6 +7,8 @@ import { Modal } from "../common/Modal";
 import { Spinner } from "../common/Spinner";
 import type { Employee } from "./types";
 import { POSITIONS } from "./types";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export const CreateModal: React.FC<{
   onClose: () => void;
@@ -81,8 +83,7 @@ export const CreateModal: React.FC<{
         </div>
         <div>
           <label className="text-[14px] font-semibold text-zinc-500 uppercase tracking-wider block mb-1">메모</label>
-          <textarea
-            lang="ko" value={String(draft.memo ?? "")}
+          <textarea {...KO_INPUT_PROPS} value={String(draft.memo ?? "")}
             onChange={(e) => set("memo", e.target.value)}
             placeholder="(선택) 근무 특이사항 · 알러지 등"
             rows={2}

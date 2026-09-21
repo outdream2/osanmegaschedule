@@ -4,6 +4,8 @@ import { Schedule } from "../../types";
 import { SCHEDULE_TYPES, getTypeHex, isLightHex } from "../../constants";
 import type { ScheduleTypeEntry } from "../../constants";
 import { Clock, MessageSquare, Save, X, ToggleLeft, Settings2 } from "lucide-react";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface ScheduleCellProps {
   schedule?: Schedule;
@@ -362,7 +364,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 <Clock size={10} /> 근무 시간 (workingHours)
               </label>
               <input
-                lang="ko" type="text"
+                type="text" {...KO_INPUT_PROPS}
                 value={workingHours}
                 onChange={(e) => setWorkingHours(e.target.value)}
                 placeholder="예: 09:30-18:30"
@@ -376,7 +378,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 <MessageSquare size={10} /> 실근무/기타 (actualHours)
               </label>
               <input
-                lang="ko" type="text"
+                type="text" {...KO_INPUT_PROPS}
                 value={actualHours}
                 onChange={(e) => setActualHours(e.target.value)}
                 placeholder="예: 2시간 연장, 지각, 10-20 등"
@@ -390,7 +392,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 <MessageSquare size={10} className="text-blue-500" /> 마우스 오버 팝업 메모 (memo)
               </label>
               <input
-                lang="ko" type="text"
+                type="text" {...KO_INPUT_PROPS}
                 value={memo}
                 onChange={(e) => setMemo(e.target.value)}
                 placeholder="마우스를 올렸을 때 나타날 정보"

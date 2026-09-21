@@ -20,6 +20,8 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { getKstYmd } from "../../lib/kstDate";
 import { EventProductPanel, type EventLite } from "./EventProductPanel";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface EventRow extends EventLite {}
 
@@ -290,8 +292,7 @@ export const EventsSection: React.FC = () => {
             <label className="flex flex-col gap-1">
               <span className="text-[12px] font-semibold text-zinc-600">이름 *</span>
               <input
-                lang="ko"
-                type="text"
+                type="text" {...KO_INPUT_PROPS}
                 value={draft.name}
                 onChange={e => setDraft({ ...draft, name: e.target.value })}
                 placeholder="예: 크리스마스"

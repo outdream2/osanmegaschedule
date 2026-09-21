@@ -7,6 +7,8 @@ import { Employee } from "../../types";
 import { FilterSortLabel, FilterSortGroup, FilterSortRow } from "../common/FilterSortBar";
 // 2026-09-18 · #91 · Plan C · 매핑 상수 SSOT
 import { positionToCategory } from "./scheduleHelpers";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export type WorkplaceTab = "전체" | "매장" | "창고";
 // 2026-09-18 · #91 · Plan C · "기타" 신규 (매핑 안 된 신규 직군 대응)
@@ -102,7 +104,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
           <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap justify-end">
             <div className="relative flex-1 min-w-[140px] max-w-[240px]">
               <input
-                lang="ko" type="text"
+                type="text" {...KO_INPUT_PROPS}
                 placeholder="성명으로 조회"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

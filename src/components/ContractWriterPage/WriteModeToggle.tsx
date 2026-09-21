@@ -15,6 +15,8 @@ import { matchHangul } from "../../lib/hangulSearch";
 import { TIMING } from "../../constants/timing";
 import { api } from "../../lib/apiClient";
 import type { Employee } from "../../types";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Props
@@ -163,7 +165,7 @@ export const WriteModeToggle: React.FC<WriteModeToggleProps> = ({
             <div className="col-span-2 relative">
               <label className={fldLabel}>성명 *</label>
               <input
-                lang="ko" type="text"
+                type="text" {...KO_INPUT_PROPS}
                 value={form.employeeName}
                 onChange={(e) => {
                   const val = e.target.value;

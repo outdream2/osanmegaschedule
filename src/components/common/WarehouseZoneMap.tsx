@@ -15,6 +15,8 @@ import { IconTile } from "./IconTile";
 import { Spinner } from "./Spinner";
 import { StatusPill } from "./StatusPill";
 import { useKvSetting } from "../../hooks/useKvSetting";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 import {
   DEFAULT_WAREHOUSE_ZONES,
   WAREHOUSE_ZONES_KEY,
@@ -266,7 +268,7 @@ const ZoneBox: React.FC<ZoneBoxProps> = ({ item, tone, editing, onChange, size =
       <span className={`${t.num} font-bold ${isSm ? "text-[14px]" : "text-[16px]"} tabular-nums leading-none`}>{item.code}</span>
       {editing && labelDraft != null ? (
         <input
-          lang="ko" type="text"
+          type="text" {...KO_INPUT_PROPS}
           autoFocus
           value={labelDraft}
           onChange={(e) => setLabelDraft(e.target.value)}
@@ -286,7 +288,7 @@ const ZoneBox: React.FC<ZoneBoxProps> = ({ item, tone, editing, onChange, size =
       {(item.hint || editing) && (
         editing && hintDraft != null ? (
           <input
-            lang="ko" type="text"
+            type="text" {...KO_INPUT_PROPS}
             autoFocus
             value={hintDraft}
             onChange={(e) => setHintDraft(e.target.value)}

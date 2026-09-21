@@ -29,6 +29,8 @@ import {
 } from "./constants";
 import { readFileAsDataUrl, buildEducationCategories, fmtBytes } from "./utils";
 import { EmptyRightPanel, SubMenuListPanel } from "./subcomponents";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface PharmacistPageProps {
   authSession: AuthSession | null;
@@ -380,7 +382,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
                   {addCatOpen && (
                     <form onSubmit={handleAddCustomCat} className="px-3 pb-3 flex flex-col gap-2">
                       <input
-                        lang="ko" type="text"
+                        type="text" {...KO_INPUT_PROPS}
                         value={newCatTitle}
                         onChange={e => setNewCatTitle(e.target.value)}
                         placeholder="카테고리 제목 (예: 겨울철 감기 대응)"

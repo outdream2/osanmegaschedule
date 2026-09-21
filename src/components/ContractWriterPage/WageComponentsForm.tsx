@@ -5,6 +5,8 @@ import React from "react";
 import { Money } from "@phosphor-icons/react";
 import type { WageComponents, WageEntryKey, WageToggleableKey, WageDisabledMap } from "./types";
 import { computeWageTotal, fmtWon } from "./wageCalc";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface WageComponentsFormProps {
   wage: WageComponents;
@@ -152,7 +154,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                 <td className="px-1.5 py-1 align-middle text-right">
                   <div className="relative inline-block w-full">
                     <input
-                      lang="ko" type="text"
+                      type="text" {...KO_INPUT_PROPS}
                       inputMode="numeric"
                       value={entry.amount === 0 ? "" : String(entry.amount)}
                       onChange={(e) => updEntry(r.key, "amount", Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
@@ -194,7 +196,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                 </td>
                 <td className="px-1.5 py-1 align-middle text-right">
                   <input
-                    lang="ko" type="text"
+                    type="text" {...KO_INPUT_PROPS}
                     inputMode="numeric"
                     value={!enabled ? "" : String(wage.mealAllowance)}
                     onChange={(e) => { const n = Number(e.target.value.replace(/[^0-9]/g, "")) || 0; updFlat("mealAllowance", n); }}
@@ -231,7 +233,7 @@ const WageComponentsForm: React.FC<WageComponentsFormProps> = ({ wage, onChange,
                 </td>
                 <td className="px-1.5 py-1 align-middle text-right">
                   <input
-                    lang="ko" type="text"
+                    type="text" {...KO_INPUT_PROPS}
                     inputMode="numeric"
                     value={!enabled ? "" : String(wage.vehicleAllowance)}
                     onChange={(e) => { const n = Number(e.target.value.replace(/[^0-9]/g, "")) || 0; updFlat("vehicleAllowance", n); }}

@@ -3,6 +3,8 @@
 import React from "react";
 import { Info, MapPin, Pill, ScanLine, Search, X } from "lucide-react";
 import type { ProductInfo } from "../../lib/productsCache";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface ProductResult {
   code: string;
@@ -35,7 +37,7 @@ export const DisplaySearchBar: React.FC<DisplaySearchBarProps> = ({
   return (
     <div className="relative flex-1 min-w-[140px] sm:min-w-[200px] max-w-[360px]">
       <input
-        lang="ko" type="text"
+        type="text" {...KO_INPUT_PROPS}
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="약 · 증상 검색 (예: 감기약)"

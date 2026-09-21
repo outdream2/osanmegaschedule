@@ -20,6 +20,8 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 // 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
 import { displayVendorName } from "../../utils/vendorNameNormalize";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export interface OrderModalItem {
   order_request_id: string;
@@ -276,7 +278,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                           {it.unit_price ? (it.order_qty * it.unit_price).toLocaleString() + "원" : "-"}
                         </td>
                         <td className="p-2">
-                          <input lang="ko" type="text" value={it.memo ?? ""}
+                          <input type="text" {...KO_INPUT_PROPS} value={it.memo ?? ""}
                             onChange={e => onUpdateModalItem(sIdx, iIdx, { memo: e.target.value })}
                             placeholder="(선택)"
                             className="w-full border border-line rounded px-1.5 py-0.5 text-[14px] focus:outline-none focus:border-brand-deep"/>

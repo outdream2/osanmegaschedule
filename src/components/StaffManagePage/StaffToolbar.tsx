@@ -7,6 +7,8 @@ import { StatusPill } from "../common/StatusPill";
 import { InlineLabel } from "../common/InlineLabel";
 import type { Employee } from "./types";
 import { POSITIONS } from "./types";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 type FilterStatus = "active" | "pending_resignation" | "retired" | "all";
 
@@ -54,7 +56,7 @@ export const StaffToolbar: React.FC<StaffToolbarProps> = ({
     <div className="relative min-w-[160px]">
       <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
       <input
-        lang="ko" type="text"
+        type="text" {...KO_INPUT_PROPS}
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="이름 · 직군 · 연락처"

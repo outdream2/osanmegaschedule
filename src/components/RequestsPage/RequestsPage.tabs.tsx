@@ -19,6 +19,8 @@ import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
 import { ListToolbar } from "./ListToolbar";
 import type { DisplayRequest, OrderRequest, InventoryCheck } from "./types";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 const fmtDate = fmtDateMD;
 
@@ -125,7 +127,7 @@ export const DisplayRequestTab: React.FC<DisplayRequestTabProps> = ({
       <div className="relative">
         <MagnifyingGlass size={15} weight="bold" className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
         <input
-          lang="ko" type="text"
+          type="text" {...KO_INPUT_PROPS}
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="상품명·구역·담당자 검색..."

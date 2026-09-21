@@ -21,6 +21,8 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { useSortableTable } from "../../hooks/useSortableTable";
 import { matchesProductQuery } from "../../lib/productMatch";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export interface EventLite {
   id: number;
@@ -273,8 +275,7 @@ export const EventProductPanel: React.FC<EventProductPanelProps> = ({
           <div className="relative flex-1 min-w-0">
             <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
             <input
-              lang="ko"
-              type="text"
+              type="text" {...KO_INPUT_PROPS}
               value={filter}
               onChange={e => setFilter(e.target.value)}
               placeholder="매핑 상품 내 검색 (상품명·공급사·코드)"
@@ -756,8 +757,7 @@ const CategoryBulkAddModal: React.FC<CategoryBulkAddModalProps> = ({ open, onClo
           예: <span className="text-zinc-700 font-semibold">감기</span> · <span className="text-zinc-700 font-semibold">비타민</span> · <span className="text-zinc-700 font-semibold">진통제</span>
         </div>
         <input
-          lang="ko"
-          type="text"
+          type="text" {...KO_INPUT_PROPS}
           value={category}
           onChange={e => setCategory(e.target.value)}
           onKeyDown={e => {

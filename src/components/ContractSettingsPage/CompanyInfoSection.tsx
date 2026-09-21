@@ -6,6 +6,8 @@ import React from "react";
 import { Info, Warning, Check, FloppyDisk } from "@phosphor-icons/react";
 import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -77,7 +79,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
         <div className="flex flex-col gap-1">
           <label className="text-[15px] font-bold text-zinc-500">상호</label>
           <input
-            lang="ko" type="text"
+            type="text" {...KO_INPUT_PROPS}
             value={companyInfo.name}
             onChange={(e) => setCompanyInfo(prev => ({ ...prev, name: e.target.value }))}
             placeholder="예) 오산 메가타운 약국"
@@ -88,7 +90,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
         <div className="flex flex-col gap-1">
           <label className="text-[15px] font-bold text-zinc-500">대표자 이름</label>
           <input
-            lang="ko" type="text"
+            type="text" {...KO_INPUT_PROPS}
             value={companyInfo.representativeName}
             onChange={(e) => setCompanyInfo(prev => ({ ...prev, representativeName: e.target.value }))}
             placeholder="예) 강남성"
@@ -99,7 +101,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
         <div className="flex flex-col gap-1 col-span-2">
           <label className="text-[15px] font-bold text-zinc-500">사업장 주소</label>
           <input
-            lang="ko" type="text"
+            type="text" {...KO_INPUT_PROPS}
             value={companyInfo.address}
             onChange={(e) => setCompanyInfo(prev => ({ ...prev, address: e.target.value }))}
             placeholder="예) 경기도 오산시 경기대로 868-4 2층"
@@ -110,7 +112,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
         <div className="flex flex-col gap-1">
           <label className="text-[15px] font-bold text-zinc-500">사업자등록번호 <span className="text-zinc-400 font-normal">(선택)</span></label>
           <input
-            lang="ko" type="text"
+            type="text" {...KO_INPUT_PROPS}
             value={companyInfo.regNo}
             onChange={(e) => setCompanyInfo(prev => ({ ...prev, regNo: e.target.value }))}
             placeholder="예) 123-45-67890"
@@ -123,8 +125,7 @@ export const CompanyInfoSection: React.FC<CompanyInfoSectionProps> = ({
           <label className="text-[15px] font-bold text-zinc-500">
             임금지급일 <span className="text-zinc-400 font-normal">(근로계약서에 자동 반영)</span>
           </label>
-          <textarea
-            lang="ko" value={paymentDayText}
+          <textarea {...KO_INPUT_PROPS} value={paymentDayText}
             onChange={(e) => setPaymentDayText(e.target.value)}
             placeholder="예) 당월 01일부터 당월 말일 까지 근로한 부분에 대하여 당월 말일에 '을' 본인 명의의 통장으로 지급한다."
             disabled={!paymentDayLoaded}

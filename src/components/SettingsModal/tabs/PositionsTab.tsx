@@ -2,6 +2,8 @@
 // 2026-08-29 · #177 · SettingsModal 분리 · positions 탭 서브컴포넌트
 import React from "react";
 import { Plus, Trash2, GripVertical } from "lucide-react";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../../lib/koreanInput";
 
 export interface PositionsTabProps {
   positions: string[];
@@ -67,7 +69,7 @@ export const PositionsTab: React.FC<PositionsTabProps> = ({
     </div>
     <div className="flex gap-2 pt-1">
       <input
-        lang="ko" type="text"
+        type="text" {...KO_INPUT_PROPS}
         value={newPosition}
         onChange={(e) => setNewPosition(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPosition(); } }}

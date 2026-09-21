@@ -10,6 +10,8 @@ import type { OpenInvoiceRow } from "./VendorListEditor.types";
 import { fmtWon, inputCls, METHOD_OPTIONS } from "./VendorListEditor.utils";
 import { Spinner } from "../common/Spinner";
 import { useApiCall } from "../../hooks/useApiCall";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 const todayYmd = (): string => {
   const d = new Date();
@@ -229,7 +231,7 @@ const PaymentRegisterModal: React.FC<{
           </Field>
           <Field label="결제 금액 (원) *">
             <input
-              lang="ko" type="text"
+              type="text" {...KO_INPUT_PROPS}
               inputMode="numeric"
               value={amount}
               onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
@@ -255,7 +257,7 @@ const PaymentRegisterModal: React.FC<{
 
         <Field label="메모">
           <input
-            lang="ko" type="text"
+            type="text" {...KO_INPUT_PROPS}
             value={memo}
             onChange={e => setMemo(e.target.value)}
             placeholder="예: 6월분 결제 · 상계 처리 · 세금계산서 매칭 등"
@@ -335,7 +337,7 @@ const PaymentRegisterModal: React.FC<{
                         </td>
                         <td className="text-right px-2 py-1">
                           <input
-                            lang="ko" type="text"
+                            type="text" {...KO_INPUT_PROPS}
                             inputMode="numeric"
                             value={v?.alloc ?? ""}
                             disabled={disabled || !v?.checked}

@@ -27,6 +27,8 @@ import { Card } from "../common/Card";
 import type { AuthSession } from "../../types";
 import { AppNavHeader } from "../layout/AppNavHeader";
 import { Modal } from "../common/Modal";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface ReservationPageProps {
   onBack: () => void;
@@ -655,7 +657,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                   <Building2 size={11} /> 거래처명 <span className="text-rose-500 font-bold">*</span>
                 </label>
                 <input
-                  lang="ko" type="text"
+                  type="text" {...KO_INPUT_PROPS}
                   value={company}
                   onChange={e => setCompany(e.target.value)}
                   placeholder="(주)한국제약"
@@ -672,7 +674,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     <User size={11} /> 담당자 <span className="text-rose-500 font-bold">*</span>
                   </label>
                   <input
-                    lang="ko" type="text"
+                    type="text" {...KO_INPUT_PROPS}
                     value={contactName}
                     onChange={e => setContactName(e.target.value)}
                     placeholder="홍길동"
@@ -723,8 +725,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                 <label className="block text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   <MessageSquare size={11} /> 추가 요청사항
                 </label>
-                <textarea
-                  lang="ko" value={note}
+                <textarea {...KO_INPUT_PROPS} value={note}
                   onChange={e => setNote(e.target.value)}
                   placeholder="특이사항이 있으면 입력해 주세요"
                   rows={2}

@@ -34,6 +34,8 @@ import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { LeaveRequestPdfPreview, type LeaveRequestPdfData } from "./LeaveRequestPdfPreview";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface LeaveRequest {
   id: string;
@@ -397,8 +399,7 @@ const PendingLeaveCard: React.FC<PendingLeaveCardProps> = ({
       {reviewingId === r.id ? (
         <div className="mt-3 flex flex-col gap-2">
           <input
-            lang="ko"
-            type="text"
+            type="text" {...KO_INPUT_PROPS}
             value={reviewNote}
             onChange={e => onSetReviewNote(e.target.value)}
             placeholder="메모 (선택)"
@@ -879,8 +880,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                   {/* 사유 */}
                   <div className="px-2 py-2.5 flex items-center">
                     <input
-                      lang="ko"
-                      type="text"
+                      type="text" {...KO_INPUT_PROPS}
                       value={formReason}
                       onChange={e => setFormReason(e.target.value)}
                       placeholder="사유 입력 (선택)"
@@ -930,7 +930,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                   <div>
                     <div className="text-[21px] font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">사유 <span className="font-normal text-zinc-400">(선택)</span></div>
                     <input
-                      lang="ko" type="text" value={formReason}
+                      type="text" {...KO_INPUT_PROPS} value={formReason}
                       onChange={e => setFormReason(e.target.value)}
                       placeholder="사유 입력"
                       className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2.5 text-[21px] text-zinc-700 focus:outline-none focus:border-brand-deep transition"

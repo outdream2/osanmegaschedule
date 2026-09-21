@@ -2,6 +2,8 @@
 // 2026-08-23 · Framework Phase 4 · UploadDataModal 에서 분리
 import React, { useMemo } from "react";
 import { Card } from "../common/Card";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 type UnifiedLogEntry =
   | { kind: "products"; timestamp: string; count: number }
@@ -139,7 +141,7 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
           <span className="text-[14px] text-zinc-400">~</span>
           <input type="date" value={logFilter.to} onChange={e => setLogFilter(f => ({ ...f, to: e.target.value }))}
             className="text-[15px] tabular-nums border border-line rounded-lg px-2 py-1 bg-white text-zinc-700" title="종료일" />
-          <input lang="ko" type="text" placeholder="검색 (기간·파일명)" value={logFilter.search} onChange={e => setLogFilter(f => ({ ...f, search: e.target.value }))}
+          <input type="text" {...KO_INPUT_PROPS} placeholder="검색 (기간·파일명)" value={logFilter.search} onChange={e => setLogFilter(f => ({ ...f, search: e.target.value }))}
             className="flex-1 min-w-[100px] text-[15px] border border-line rounded-lg px-2 py-1 bg-white text-zinc-700 placeholder:text-zinc-300" />
           {(logFilter.type !== "all" || logFilter.from || logFilter.to || logFilter.search) && (
             <button type="button" onClick={() => setLogFilter({ type: "all", from: "", to: "", search: "" })}

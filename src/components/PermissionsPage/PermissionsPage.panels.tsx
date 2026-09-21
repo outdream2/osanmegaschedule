@@ -16,6 +16,8 @@ import { LevelSelect } from "./LevelSelect";
 import { PositionsField } from "./PositionsField";
 import { GROUP_COLOR_CLS } from "./constants";
 import type { PagePermissions } from "../../types";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1) PositionsTab · 직군 설정
@@ -120,7 +122,7 @@ export const PositionsTab: React.FC<PositionsTabProps> = ({
       </div>
       <div className="flex gap-2 pt-1">
         <input
-          lang="ko" type="text"
+          type="text" {...KO_INPUT_PROPS}
           value={newPositionInput}
           onChange={(e) => setNewPositionInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addNewPosition(); } }}
@@ -424,7 +426,7 @@ export const EmployeeLevelTab: React.FC<EmployeeLevelTabProps> = ({
           </span>
         </div>
         <input
-          lang="ko" type="text"
+          type="text" {...KO_INPUT_PROPS}
           value={empSearch}
           onChange={e => setEmpSearch(e.target.value)}
           placeholder="이름·직군 검색"

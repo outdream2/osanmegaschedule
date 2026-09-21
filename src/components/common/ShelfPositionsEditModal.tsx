@@ -17,6 +17,8 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import type { ShelfPositions } from "../../lib/shelfPositions";
 // 2026-09-15 · #191 Phase B · Modal 프레임워크화 · 인라인 backdrop → common/Modal 프리미티브
 import { Modal } from "./Modal";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export interface ShelfPositionsEditModalProps {
   productCode: string;
@@ -153,7 +155,7 @@ const BigDigitStepper: React.FC<{
           <Minus size={14} strokeWidth={2.5} />
         </button>
         <input
-          lang="ko" type="text"
+          type="text" {...KO_INPUT_PROPS}
           value={value}
           maxLength={1}
           onChange={(e) => {

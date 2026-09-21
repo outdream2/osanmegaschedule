@@ -103,6 +103,8 @@ export type {
 import { JOB_META, CLAUSE_GROUP_META } from "./constants";
 // 2026-08-22 · Framework Phase 4 · CompanyInfoSection 별도 파일 이관
 import { CompanyInfoSection } from "./CompanyInfoSection";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 컴포넌트
@@ -705,8 +707,7 @@ const ContractSettingsPage: React.FC<ContractSettingsPageProps> = ({
                         <div className={`flex items-center justify-center min-w-[22px] h-[22px] rounded-md ${grp.bg} ${grp.color} text-[14px] font-bold shrink-0 mt-1`}>
                           {idx + 1}
                         </div>
-                        <textarea
-                          lang="ko" value={text}
+                        <textarea {...KO_INPUT_PROPS} value={text}
                           onChange={(e) => updClause(grp.key, idx, e.target.value)}
                           rows={Math.max(2, Math.min(5, Math.ceil(text.length / 55) || 2))}
                           placeholder="내용을 입력하세요."

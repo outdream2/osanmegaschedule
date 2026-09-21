@@ -16,6 +16,8 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { Minus, Plus, AlertTriangle } from "lucide-react";
 import { api } from "../../lib/apiClient";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export interface ShelfPositionInputProps {
   value: string | null | undefined;   // 3자리 or null (미입력)
@@ -235,7 +237,7 @@ const DigitStepper: React.FC<DigitStepperProps> = ({ slotLabel, value, onUp, onD
           title={`${slotLabel} -`}
         ><Minus size={compact ? 10 : 12} /></button>
         <input
-          lang="ko" type="text"
+          type="text" {...KO_INPUT_PROPS}
           value={value}
           maxLength={1}
           onChange={(e) => {

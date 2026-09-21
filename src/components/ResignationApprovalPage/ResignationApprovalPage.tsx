@@ -19,6 +19,8 @@ import { Spinner } from "../common/Spinner";
 import { Badge } from "../common/Badge";
 import type { AuthSession } from "../../types";
 import { fmtDateYMD, fmtDateMD } from "../../lib/format";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface Resignation {
   id: number;
@@ -363,7 +365,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
                       reviewingId === r.id ? (
                         <div className="ml-4 flex flex-col gap-2 mt-2">
                           <input
-                            lang="ko" type="text"
+                            type="text" {...KO_INPUT_PROPS}
                             value={rejectReason}
                             onChange={e => setRejectReason(e.target.value)}
                             placeholder="반려 사유 (반려 시 필수)"

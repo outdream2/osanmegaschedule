@@ -13,6 +13,8 @@ import type { AuthSession, Employee } from "../../types";
 import { updateEmployee } from "../../lib/employeeApi";
 import { AddressSearchModal } from "../common/features/AddressSearchModal";
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface MyPageProps {
   authSession: AuthSession | null;
@@ -167,7 +169,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
           <div className="p-4 flex flex-col gap-2">
             <div className="flex gap-1.5 items-center">
               <input
-                lang="ko" type="text"
+                type="text" {...KO_INPUT_PROPS}
                 value={addressDraft}
                 onChange={e => setAddressDraft(e.target.value)}
                 placeholder="예: 경기도 오산시 …"

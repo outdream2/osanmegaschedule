@@ -22,6 +22,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X, Clock } from "lucide-react";
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export interface SearchBarProps {
   value: string;
@@ -117,8 +118,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         <Search size={13} className={`absolute left-2.5 ${iconColorClass} pointer-events-none`} />
         <input
           type="text"
-          lang="ko"
-          inputMode="text"
+          {...KO_INPUT_PROPS}
           autoComplete="off"
           value={value}
           onChange={e => onChange(e.target.value)}

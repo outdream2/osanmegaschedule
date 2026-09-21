@@ -1,5 +1,7 @@
 import React from "react";
 import { fmt, parseNumber } from "./utils";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../../lib/koreanInput";
 
 interface SupplierBalanceRecord {
   id: number;
@@ -69,7 +71,7 @@ export const InvoiceTableFooter: React.FC<InvoiceTableFooterProps> = ({
         )}
         <td className="px-3 py-2.5 text-right font-bold text-amber-700 text-sm whitespace-nowrap">
           {editingGrandTotal !== null ? (
-            <input lang="ko" type="text" inputMode="numeric" autoFocus
+            <input type="text" {...KO_INPUT_PROPS} inputMode="numeric" autoFocus
               value={editingGrandTotal}
               onChange={e => setEditingGrandTotal(e.target.value)}
               onBlur={() => {

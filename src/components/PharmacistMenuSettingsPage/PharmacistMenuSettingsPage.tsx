@@ -15,6 +15,8 @@ import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
 import type { AuthSession } from "../../types";
 import { TEXT } from "@/styles/tokens";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 export type PharmTabKey = "education" | "reference" | "video" | "docs";
 
@@ -286,7 +288,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
 
             <div className="flex flex-col sm:flex-row gap-2 items-stretch">
               <input
-                lang="ko" type="text"
+                type="text" {...KO_INPUT_PROPS}
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
                 placeholder="항목 이름 (예: 병용 금기 요약표)"
@@ -423,7 +425,7 @@ export const PharmacistMenuSettingsModal: React.FC<PharmacistMenuSettingsModalPr
                     <div className="flex-1 min-w-0">
                       {isEdit ? (
                         <input
-                          lang="ko" type="text"
+                          type="text" {...KO_INPUT_PROPS}
                           value={editingTitle}
                           onChange={e => setEditingTitle(e.target.value)}
                           className="w-full bg-white border border-sky-300 rounded-md px-2 py-1 text-sm font-semibold text-zinc-800 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"

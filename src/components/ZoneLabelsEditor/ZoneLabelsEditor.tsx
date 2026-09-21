@@ -28,6 +28,8 @@ import { Card } from "../common/Card";
 import { useToast } from "../../hooks/useToast";
 import { SET_ACTION_BAR, SET_BTN_PRIMARY, SET_BTN_SECONDARY, SET_INFO_BADGE } from "../../lib/settingsTypography";
 import type { AppNavPage } from "../layout/AppNavHeader";
+// 2026-09-21 · #329 · 한글 IME 우선
+import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 import {
   DEFAULT_MAPPINGS,
   getZoneMappings,
@@ -425,7 +427,7 @@ const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack
                               <div>
                                 <label className="sm:hidden block text-[14px] font-bold text-zinc-400 mb-0.5">부제</label>
                                 <input
-                                  lang="ko" type="text"
+                                  type="text" {...KO_INPUT_PROPS}
                                   value={m.subLabel ?? ""}
                                   placeholder="(선택) 카테고리·이름 등"
                                   maxLength={40}
