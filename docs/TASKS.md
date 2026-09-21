@@ -120,7 +120,7 @@
 |---|-----|-------|-----|
 <!-- 2026-09-18 · #56 · 실재고 매장 X 삭제 UI · 완료 (UI agent) -->
 <!-- 2026-09-18 · #149 · large-file 분리 · OcrPage 이미 702줄 (baseline 밖) · 나머지 · 회귀 위험 · 별도 세션 유지 -->
-| **#149** | large-file 분리 잔여 · PaymentInfoTab·OrderManagePage·LandingPage·ContractWriterPage 등 | 🟢 P3 | 별도 세션 · 파일당 신중 · 회귀 위험 큼 |
+<!-- #149 · 재검토 (2026-09-21) · Skip · 이유 · Framework audit baseline 11=현재 11 위반 증가 없음 · 파일들 정상 동작 · 최근 세션 편집 문제 없음 · 회귀 위험 > 이익 · 필요 시 as-needed 원칙으로 신규 기능 추가 시만 분리 -->
 <!-- 2026-09-20 · #301 완료 · SupplierTab 구조 재사용 (좌 리스트 · 우 상세) · 커밋 (multiple) -->
 <!-- 2026-09-20 · display_requests 요청자 정보 · migration 20260920_display_requests_requester.sql 실행 완료 · 요청자 저장 활성 -->
 <!-- 2026-09-20 · resignation_requests 테이블 · create_resignation_requests.sql 실행 완료 · 사직서 워크플로우 (B) 활성 · 승인 시 employees.retireDate 자동 -->
