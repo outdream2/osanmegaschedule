@@ -127,8 +127,8 @@
 <!-- #302 ✅ · products-search API · optimal_stock·min_stock 필드 누락 fix · 2026-09-21 완료 (`bd19450c`) -->
 <!-- #303 ✅ · xlsx 0.18.5 → 0.20.3 SheetJS CDN · TS·build 통과 · 2026-09-21 완료 -->
 <!-- #310 ✅ (부분 · 11 페이지 완료) · Top 5 (직원·거래처·발주요청·연차·결제입력) + 잔여 3 (ProductInfoPage·VendorStockPage·EventsSection) + #324-3차 (매입이력) · pass 3 (ScanPage·ProductArrivalPage·BoardPage 이미 카드형) · 2026-09-21 완료 · 잔여 전수는 후속 세션 -->
-| **#329** | **모든 입력창 · 한글 IME 우선 입력 · 전수 적용** (사용자 지시 · 2026-09-21) | 🟡 P2 | E-003 (바코드 스캔 상품명) 확장 · 전체 프로젝트 · 모든 `<input>` `<textarea>` · `lang="ko"` + `autoCapitalize="off"` + `autoCorrect="off"` + `spellCheck={false}` + `inputMode="text"` (또는 필드 성격에 맞는 값) · 예외 · type="number"·"tel"·"email"·"date"·"password" 등 숫자·특수 입력창은 제외 · SSOT 유틸 or ESLint 규칙 검토 · 회귀 X |
-| **#330** | **발주·판매 추천 관리자 편집 UI** (사용자 지시 · 2026-09-21) | 🟡 P2 | #326 후속 · `eventCategoryRules.ts` (SSOT 하드코딩) · 관리자 편집 페이지 신설 · ① 시스템설정 or 발주설정 신규 탭 "**추천 규칙**" · ② 이벤트 타입별 카테고리·가중치·D-N triggerBefore·reason 편집 · ③ 저수기 (2월·8월 초) 편집 · ④ KV DB 저장 (`kv_settings.event_category_rules`) · fallback · 하드코딩 SSOT · ⑤ 관리자만 (level ≥ 9) · CRUD · ⑥ 실시간 반영 · `/api/sales-auto-recommend` 서버측 · KV 우선 · legacy hardcoded fallback |
+<!-- #329 ✅ · 2026-09-21 완료 · `edb124d4` · KO_INPUT_PROPS SSOT + 80 파일 132건 <input> + 28건 <textarea> 전수 적용 · 예외 (type=number/tel/email/date/password/dynamic) · TS·build·vitest all pass -->
+<!-- #330 ✅ · 2026-09-21 완료 · `2cea0957` · 시스템설정 신규 탭 "추천 규칙" · KV app_settings.event_category_rules + SSOT fallback + 60초 서버 캐시 + 원본 복원 · authorize(9) POST/DELETE · Zod EventCategoryRulesPayloadSchema -->
 <!-- #311 ✅ · UpcomingLeaveBanner + useUpcomingLeaves + /api/upcoming-leaves · SchedulePage L561 통합 · 14일 이내 · 관리자 lv≥2 · 이미 완료 -->
 <!-- #312 ✅ · POST /api/approve-leave (server/routes/daily/leave.ts L118-146) · scheduleService.batchUpdateSchedules 자동 호출 · try/catch + 로그 · 실패 시 500 · 알림 발송 · 이미 완료 -->
 <!-- 2026-09-20 · #313 ✅ · c1feb252 · 공급사+판매상태 나란히 + 라벨 폰트 +1 + 필수 미입력 확인창 -->

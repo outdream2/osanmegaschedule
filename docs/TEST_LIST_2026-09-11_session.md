@@ -4131,3 +4131,44 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 1. 실재고 스캔 페이지 · 카드 리스트 · 모바일 동작 정상
 2. 상품입고 페이지 · 카드 리스트 · 모바일 동작 정상
 3. 게시판 · 글 목록 · 모바일/PC 레이아웃 정상
+
+### [117] #330 · 발주·판매 추천 관리자 편집 UI + KV 저장
+**커밋** · `2cea0957`
+- SSOT 하드코딩 규칙 · `src/lib/salesRecommendation/eventCategoryRules.ts` (기존)
+- 신규 · `src/shared/schemas/eventCategoryRules.ts` · Zod payload 스키마
+- 신규 · `server/routes/settings/eventCategoryRules.ts` · GET/POST/DELETE
+  - POST/DELETE · `authorize(9)` · JSON 검증 후 `app_settings.event_category_rules` upsert
+  - GET · KV 우선 · 없으면 · SSOT 반환 · source 필드 (kv/ssot)
+- `salesAutoRecommend.ts` · KV 우선 조회 + 60초 서버 캐시 (dev: no-cache) · `invalidateEventCategoryRulesCache`
+- 신규 · `src/components/SystemSettingsPage/EventCategoryRulesEditor.tsx`
+- `SystemSettingsPage` · 신규 탭 "**추천 규칙**" (Sparkle 아이콘 · amber)
+- 편집 대상 · 이벤트 타입별 규칙 (triggerBefore·카테고리·가중치·reason) + 저수기 (monthStart~monthEnd + dayEnd)
+- 원본 SSOT 복원 버튼 (danger) · DELETE endpoint → KV row 삭제 → 하드코딩 복귀
+
+**확인 절차**
+1. 관리자 lv≥9 로그인 → 시스템 설정 → **추천 규칙** 탭 선택
+2. 상단 · 소스 배지 (`SSOT` or `KV`) · 최종 저장 시각 표시
+3. 이벤트 규칙 카드별 · D-N · 카테고리(콤마) · 가중치(키+값) · reason 편집
+4. 저수기 카드별 · 시작월·종료월·종료일(선택)·라벨·reason 편집
+5. **저장** 클릭 → toast "저장되었습니다 · 캐시 무효화됨" · 소스 배지 `KV` 로 전환
+6. `/api/sales-auto-recommend` 로그 · `rules=kv` 확인 (dev · no-cache · 즉시 반영)
+7. **원본 SSOT 복원** 클릭 → confirm → 소스 배지 `SSOT` 복귀 · 편집 필드 초기값 리셋
+8. 규칙 추가 (Plus) · 규칙 삭제 (Trash) · 카테고리 콤마 분리 · 가중치 개별 삭제 (X) 동작
+9. 관리자 아닌 사용자 · 저장 버튼 미노출 · 조회 전용 배너 표시
+
+### [118] #329 · 한글 IME 우선 · 전수 적용
+**커밋** · `edb124d4`
+- SSOT · `src/lib/koreanInput.ts` · `KO_INPUT_PROPS = { lang, inputMode, autoCapitalize, autoCorrect, spellCheck }`
+- 배치 스크립트 · `scripts/apply-korean-ime.mjs` (`--dry` 옵션)
+- 80 파일 · `<input type="text">` 132건 + `<textarea>` 28건 · `lang="ko"` → `{...KO_INPUT_PROPS}` 치환
+- StorageLocationsSection · type="text" 2건 · 수동 추가 (기존 lang="ko" 없던 케이스)
+- 예외 · `type={dynamic}` · `type=number/tel/email/date/password` · 미적용 (안전)
+
+**확인 절차**
+1. **모바일** · 상품 검색·필터 입력 진입 → **한글 자판 자동 노출** (영문 아님)
+2. **모바일** · 자동 대문자화 · 자동 교정 · 맞춤법 표시 없음 (플랫폼 기본 OFF)
+3. **PC** · 입력 UX 회귀 없음 (lang="ko" 만 있던 것과 동일 동작 + spellCheck OFF)
+4. 로그인·비밀번호 · 숫자 필드 · 이메일 필드 · 영향 없음
+5. 게시판 글쓰기 · 제목·본문 · 한글 IME 즉시 활성
+6. 직원·상품·거래처 검색 · 한글 IME 즉시 활성
+7. 근로계약서 · 이름·주소·비고 · 한글 IME 즉시 활성
