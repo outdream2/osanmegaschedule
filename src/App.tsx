@@ -197,14 +197,37 @@ export default function App() {
   //   · 이벤트 리스너 · 'osan-push-token' (앱 → 웹 매 페이지 로드) · 자동 서버 저장
   //   · 배지 sync · WebView 인 경우만 · leave pending count → setAppBadge · 60s + approval-count-updated
   //   · 언마운트 시 cleanup (SPA 특성상 실질 무한 유지)
+  // 2026-09-21 · 랜딩 페이지 크래시 격리 · authSession 이 있을 때만 (로그인 후) initBadgeSync 실행
+  //   · isInsideWebView() 체크 이후에도 · 랜딩 페이지 iOS WebView 진입 시 · 401 → SESSION_EXPIRED → handleLogout → 무한 reload 가능성
+  //   · 로그인 전에는 push token listener 만 등록 (이벤트 대기) · badge sync 는 로그인 후 별도 useEffect 로 이동
   useEffect(() => {
-    const cleanupListener = initPushTokenListener();
-    const cleanupBadge = initBadgeSync();
+    let cleanupListener: (() => void) | null = null;
+    try {
+      const c1 = initPushTokenListener();
+      if (typeof c1 === "function") cleanupListener = c1;
+    } catch (e) {
+      devWarn(`[App] initPushTokenListener 실패 · ${(e as any)?.message ?? e}`);
+    }
     return () => {
-      cleanupListener();
-      cleanupBadge();
+      try { cleanupListener?.(); } catch { /* silent */ }
     };
   }, []);
+
+  // 2026-09-21 · 로그인 이후에만 · initBadgeSync (leave·resignation pending 조회) 실행
+  //   · 미로그인 상태 · 401 → refresh 실패 → SESSION_EXPIRED → 무한 reload 방지
+  useEffect(() => {
+    if (!authSession) return;
+    let cleanupBadge: (() => void) | null = null;
+    try {
+      const c = initBadgeSync();
+      if (typeof c === "function") cleanupBadge = c;
+    } catch (e) {
+      devWarn(`[App] initBadgeSync 실패 · ${(e as any)?.message ?? e}`);
+    }
+    return () => {
+      try { cleanupBadge?.(); } catch { /* silent */ }
+    };
+  }, [authSession]);
 
   // 2026-09-21 · #328 · 로그인 성공 후 push token 서버 저장 (localStorage 캐시 초기화 후 재등록)
   //   · authSession 새로 생성됨 감지 (login 이벤트) · 이전 캐시 clear → 강제 재등록
