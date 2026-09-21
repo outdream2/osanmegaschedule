@@ -39,6 +39,9 @@ export const SK_PUSH_SUBSCRIBED_AUTO = "megatown_push_subscribed_auto";
 /** 익명 푸시 구독 여부 · StockArrivalList.tsx */
 export const SK_ANON_PUSH_SUBSCRIBED = "anon_push_subscribed";
 
+/** 2026-09-21 · #328 · iOS WebView 앱 Expo Push Token 캐시 · pushNotifications.ts */
+export const SK_PUSH_TOKEN = "pushToken";
+
 // ── Android 카메라 (BarcodeScanner · 절대 수정 금지) ─────────────────────────
 /** Android 최적 카메라 ID 캐시 · BarcodeScanner.tsx */
 export const SK_ANDROID_BEST_CAMERA_ID = "android_best_camera_id";

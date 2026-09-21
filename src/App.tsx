@@ -28,6 +28,13 @@ import { AppFooter } from "./components/layout/AppFooter";
 import { SessionTimeoutWarning } from "./components/common/SessionTimeoutWarning";
 import { useAuth } from "./hooks/useAuth";
 import { usePushSubscription } from "./hooks/usePushSubscription";
+// 2026-09-21 · #328 · iOS WebView 앱 · Expo 푸시 토큰 등록 + 배지 sync
+import {
+  savePushToken,
+  deletePushToken,
+  initPushTokenListener,
+  initBadgeSync,
+} from "./lib/pushNotifications";
 import type { AuthSession } from "./types";
 import type { AppNavPage } from "./components/layout/AppNavHeader";
 import { useAppNavigation } from "./hooks/useAppNavigation";
@@ -186,6 +193,36 @@ export default function App() {
   // 로그인 직후 웹푸시 자동 구독 (권한 팝업 1회 · 이미 구독됐으면 skip)
   usePushSubscription({ employeeId: authSession?.employeeId ?? null, auto: true });
 
+  // 2026-09-21 · #328 · iOS WebView 앱 · Expo push token 등록 리스너 + 배지 sync
+  //   · 이벤트 리스너 · 'osan-push-token' (앱 → 웹 매 페이지 로드) · 자동 서버 저장
+  //   · 배지 sync · WebView 인 경우만 · leave pending count → setAppBadge · 60s + approval-count-updated
+  //   · 언마운트 시 cleanup (SPA 특성상 실질 무한 유지)
+  useEffect(() => {
+    const cleanupListener = initPushTokenListener();
+    const cleanupBadge = initBadgeSync();
+    return () => {
+      cleanupListener();
+      cleanupBadge();
+    };
+  }, []);
+
+  // 2026-09-21 · #328 · 로그인 성공 후 push token 서버 저장 (localStorage 캐시 초기화 후 재등록)
+  //   · authSession 새로 생성됨 감지 (login 이벤트) · 이전 캐시 clear → 강제 재등록
+  //   · 재로그인 (같은 유저) 도 safe · 서버 upsert · 캐시 대체
+  const previousEmployeeIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    const currentId = authSession?.employeeId ?? null;
+    const prevId = previousEmployeeIdRef.current;
+    if (currentId && currentId !== prevId) {
+      // 로그인 · 캐시 clear 후 재등록 (다른 유저로 전환 시에도 소유권 이전)
+      try {
+        localStorage.removeItem("pushToken");
+      } catch { /* ignore */ }
+      void savePushToken();
+    }
+    previousEmployeeIdRef.current = currentId;
+  }, [authSession?.employeeId]);
+
   // 2026-08-05 · T3 인증 미들웨어 원복으로 · 부트 세션 체크도 제거
   //   · Render 배포 직전 T3 재도입 시 · 이 useEffect 도 함께 복구 필요 (docs/TASKS.md T3-defer)
 
@@ -195,6 +232,8 @@ export default function App() {
     //   handleLogout 이 서버 쿠키 clear 없이 window.location.replace("/") 만 하면
     //   reload 후에도 같은 무효 쿠키 → 401 → refresh 실패 → SESSION_EXPIRED → handleLogout 재귀 → LOOP
     //   해결: /api/auth/logout 먼저 호출 (Set-Cookie: mt_auth=; Max-Age=0) → 확실히 쿠키 제거 → reload
+    // 2026-09-21 · #328 · iOS 앱 · push token 서버 삭제 (fire-and-forget · 401 되기 전 미리)
+    void deletePushToken();
     clearAuthSession();
     Object.keys(localStorage)
       .filter(k => k.startsWith("megatown_"))
