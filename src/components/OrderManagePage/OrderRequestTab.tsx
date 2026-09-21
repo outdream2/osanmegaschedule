@@ -267,7 +267,154 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
               </div>
               {/* 2026-08-24 · v3 목업 실적용 · 표 형식 · sticky thead · Attio/Linear 톤
                   상단 gradient accent (사용자 지시 · 랜딩 톤) · 헤더 폰트 +2 (12→14) */}
-              <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative rounded-xl border border-line bg-white ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+
+              {/* 모바일 (md 미만): 카드형 공급사 그룹 리스트 */}
+              {(() => {
+                const resolveSup = (r: OrderRequest): string => {
+                  const cv = [r.product_code, r.product_code.replace(/^0+/, ""), r.product_code.padStart(8, "0")];
+                  const p = cv.map(c => allProductsMap[c]).find(Boolean) as any;
+                  return ((p?.supplier || r.supplier || "").trim()) || "(공급사 미지정)";
+                };
+                const sortedReqs = [...displayedReqs].sort((a, b) => resolveSup(a).localeCompare(resolveSup(b), "ko"));
+                const bySup = new Map<string, OrderRequest[]>();
+                for (const rr of sortedReqs) {
+                  const s = resolveSup(rr);
+                  if (!bySup.has(s)) bySup.set(s, []);
+                  bySup.get(s)!.push(rr);
+                }
+                return (
+                  <div className={`md:hidden flex flex-col gap-2 mb-2 ${orderLoading ? "opacity-40 pointer-events-none" : ""}`}>
+                    {Array.from(bySup.entries()).map(([sup, rows]) => {
+                      const isCollapsed = collapsedGroups.has(sup);
+                      const subtotal = rows.reduce((s, rr) => {
+                        const price = prevPriceMap.get(rr.product_code) ?? 0;
+                        const codeVariants = [rr.product_code, rr.product_code.replace(/^0+/, ""), rr.product_code.padStart(8, "0")];
+                        const pData = codeVariants.map(c => allProductsMap[c]).find(Boolean) as any;
+                        const cur = Number(pData?.current_stock ?? rr.current_stock ?? 0);
+                        const opt = Number(pData?.optimal_stock ?? rr.optimal_stock ?? 0);
+                        const qty = orderQtyOverride.has(rr.product_code)
+                          ? orderQtyOverride.get(rr.product_code)!
+                          : Math.max(0, opt - cur);
+                        return s + qty * price;
+                      }, 0);
+                      return (
+                        <div key={sup} className="rounded-xl border border-line bg-white overflow-hidden">
+                          {/* 공급사 헤더 */}
+                          <div
+                            className="flex items-center gap-2 px-3 py-2.5 bg-gradient-to-b from-brand-tint/70 to-brand-tint/40 border-b border-brand/10 border-l-4 border-l-brand-deep/70 cursor-pointer"
+                            onClick={() => toggleGroupCollapse(sup)}
+                          >
+                            <span className={`text-[16px] font-bold text-brand-deep transition-transform ${isCollapsed ? "-rotate-90" : ""}`}>▾</span>
+                            <VendorCategoryBadge category={getVendorCategory(sup)} />
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); openSupplierInfo(sup); }}
+                              className="text-[15px] font-bold text-sky-800 hover:text-brand-deep cursor-pointer transition-colors break-keep"
+                            >
+                              {displayVendorName(sup) || sup}
+                            </button>
+                            <span className="text-[13px] text-ink-soft tabular-nums">{rows.length}건</span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setSupplierHistorySupplier(sup); }}
+                              className="inline-flex items-center gap-1 h-6 px-2 rounded-md text-[13px] font-semibold text-ink-soft hover:text-ink hover:bg-white/80 border border-line transition cursor-pointer"
+                            >
+                              <History size={10} />발주이력
+                            </button>
+                            {subtotal > 0 && (
+                              <span className="ml-auto text-[14px] font-bold text-brand-deep tabular-nums">{subtotal.toLocaleString()}원</span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); openOrderModal(rows); }}
+                              disabled={sendingBulk}
+                              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[13px] font-bold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-40 transition cursor-pointer shadow-sm shrink-0"
+                            >
+                              <Send size={10} />발주({rows.length})
+                            </button>
+                          </div>
+
+                          {/* 상품 카드 목록 */}
+                          {!isCollapsed && (
+                            <div className="divide-y divide-zinc-100">
+                              {rows.map((r) => {
+                                const codeVariants = [r.product_code, r.product_code.replace(/^0+/, ""), r.product_code.padStart(8, "0")];
+                                const pData = codeVariants.map(c => allProductsMap[c]).find(Boolean) as any;
+                                const cur = Number(pData?.current_stock ?? r.current_stock ?? 0);
+                                const opt = Number(pData?.optimal_stock ?? r.optimal_stock ?? 0);
+                                const short = opt - cur;
+                                const isCritical = short > 0 && cur === 0;
+                                const isShort = short > 0 && !isCritical;
+                                const isSelected = selectedOrder.has(r.id);
+                                const price = prevPriceMap.get(r.product_code) ?? null;
+                                const qty = orderQtyOverride.has(r.product_code)
+                                  ? orderQtyOverride.get(r.product_code)!
+                                  : Math.max(0, short);
+                                const amount = price != null ? qty * price : null;
+                                const cardBg = isSelected
+                                  ? "bg-sky-50/60"
+                                  : isCritical
+                                    ? "bg-rose-50/40"
+                                    : isShort
+                                      ? "bg-amber-50/30"
+                                      : "";
+                                return (
+                                  <div key={r.id} className={`px-3 py-2.5 min-h-[44px] ${cardBg}`}>
+                                    {/* 상품명 + 체크 */}
+                                    <div className="flex items-start gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleOne(r.id)}
+                                        className="mt-0.5 shrink-0 cursor-pointer"
+                                      >
+                                        {isSelected
+                                          ? <CheckSquare size={14} className="text-rose-500" />
+                                          : <Square size={14} className="text-zinc-300" />
+                                        }
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
+                                        className="flex-1 text-left text-[15px] font-semibold text-ink hover:text-sky-800 break-words whitespace-normal leading-snug cursor-pointer transition"
+                                      >
+                                        {r.product_name || "(상품명 없음)"}
+                                      </button>
+                                    </div>
+                                    {/* 재고 현황 + 발주 금액 */}
+                                    <div className="flex items-center gap-3 mt-1.5 ml-6 flex-wrap">
+                                      <span className="text-[13px] text-zinc-500 tabular-nums">
+                                        ERP <span className="font-bold text-zinc-700">{cur}</span>
+                                        {" "}/ 적정 <span className="font-bold text-zinc-700">{opt}</span>
+                                      </span>
+                                      {short > 0 && (
+                                        <span className="text-[13px] font-bold tabular-nums text-rose-600">부족 -{short}</span>
+                                      )}
+                                      {short < 0 && (
+                                        <span className="text-[13px] font-bold tabular-nums text-emerald-600">잉여 +{-short}</span>
+                                      )}
+                                      {price != null && (
+                                        <span className="text-[13px] text-zinc-400 tabular-nums">단가 {price.toLocaleString()}</span>
+                                      )}
+                                      {amount != null && amount > 0 && (
+                                        <span className="text-[14px] font-bold tabular-nums text-brand-deep ml-auto">{amount.toLocaleString()}원</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {displayedReqs.length === 0 && (
+                      <div className="text-center text-[17px] text-zinc-300 py-6">검색 결과 없음</div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <div className={`hidden md:block max-h-[50vh] lg:max-h-[75vh] overflow-auto relative rounded-xl border border-line bg-white ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <GradientAccent className="z-20" />
                 <table className="w-full text-[16px] sm:text-[17px] min-w-[720px] border-collapse [&_tbody_td]:text-[16px] sm:[&_tbody_td]:text-[17px] [&_thead_th]:text-[17px] sm:[&_thead_th]:text-[16px]">
                   <thead className="sticky top-0 z-10">
