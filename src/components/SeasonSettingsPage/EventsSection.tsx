@@ -374,57 +374,97 @@ export const EventsSection: React.FC = () => {
             const typeLabel = TYPE_OPTIONS.find(t => t.key === r.type)?.label ?? r.type;
             const cnt = productCounts[r.id];
             const isSelected = selectedEventId === r.id;
+            const actionButtons = (
+              <div className="flex items-center gap-1 shrink-0">
+                <span
+                  onClick={(e) => { e.stopPropagation(); startEdit(r); }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); startEdit(r); } }}
+                  className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-brand-deep hover:bg-white transition cursor-pointer"
+                  title="편집"
+                >
+                  <Pencil size={13} />
+                </span>
+                <span
+                  onClick={(e) => { e.stopPropagation(); void handleDelete(r); }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); void handleDelete(r); } }}
+                  aria-disabled={deletingId === r.id}
+                  className={`w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-rose-600 hover:bg-white transition cursor-pointer ${deletingId === r.id ? "opacity-40 pointer-events-none" : ""}`}
+                  title="삭제"
+                >
+                  <Trash2 size={13} className={deletingId === r.id ? "animate-pulse" : ""} />
+                </span>
+              </div>
+            );
             return (
               <button
                 key={r.id}
                 type="button"
                 onClick={() => handleSelect(r.id)}
-                className={`w-full text-left flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border transition-all cursor-pointer ${
+                className={[
+                  "w-full text-left rounded-lg border transition-all cursor-pointer",
                   isSelected
                     ? `${tone.activeBg} ${tone.activeBorder} ring-1 ring-brand-deep/25 shadow-sm`
-                    : `${tone.bg} hover:brightness-95`
-                }`}
+                    : `${tone.bg} hover:brightness-95`,
+                ].join(" ")}
               >
-                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-white/70 border border-current/20 shrink-0 ${tone.text}`}>
-                  {typeLabel}
-                </span>
-                <span className="text-[14px] font-bold text-zinc-900 break-words whitespace-normal leading-tight">{r.name}</span>
-                {(r.start_date || r.end_date) && (
-                  <span className="inline-flex items-center gap-1 text-[12px] text-zinc-600 tabular-nums shrink-0">
-                    <Calendar size={11} className="text-zinc-400" />
-                    {r.start_date ?? "?"}
-                    {r.end_date && r.end_date !== r.start_date && ` ~ ${r.end_date}`}
+                {/* PC (md 이상): 한 줄 레이아웃 */}
+                <div className="hidden md:flex md:items-center md:gap-2 px-3 py-2">
+                  <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-white/70 border border-current/20 shrink-0 ${tone.text}`}>
+                    {typeLabel}
                   </span>
-                )}
-                {r.recurring && <StatusPill tone="emerald" size="sm">매년</StatusPill>}
-                {cnt != null && cnt > 0 && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-zinc-700 bg-white/80 border border-zinc-200 rounded-md px-1.5 py-0.5 tabular-nums">
-                    <Package size={10} />
-                    {cnt}
-                  </span>
-                )}
-                <div className="ml-auto flex items-center gap-1">
-                  <span
-                    onClick={(e) => { e.stopPropagation(); startEdit(r); }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); startEdit(r); } }}
-                    className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-brand-deep hover:bg-white transition cursor-pointer"
-                    title="편집"
-                  >
-                    <Pencil size={13} />
-                  </span>
-                  <span
-                    onClick={(e) => { e.stopPropagation(); void handleDelete(r); }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); void handleDelete(r); } }}
-                    aria-disabled={deletingId === r.id}
-                    className={`w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-rose-600 hover:bg-white transition cursor-pointer ${deletingId === r.id ? "opacity-40 pointer-events-none" : ""}`}
-                    title="삭제"
-                  >
-                    <Trash2 size={13} className={deletingId === r.id ? "animate-pulse" : ""} />
-                  </span>
+                  <span className="text-[14px] font-bold text-zinc-900 break-words whitespace-normal leading-tight flex-1 min-w-0">{r.name}</span>
+                  {(r.start_date || r.end_date) && (
+                    <span className="inline-flex items-center gap-1 text-[12px] text-zinc-600 tabular-nums shrink-0">
+                      <Calendar size={11} className="text-zinc-400" />
+                      {r.start_date ?? "?"}
+                      {r.end_date && r.end_date !== r.start_date && ` ~ ${r.end_date}`}
+                    </span>
+                  )}
+                  {r.recurring && <StatusPill tone="emerald" size="sm">매년</StatusPill>}
+                  {cnt != null && cnt > 0 && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-zinc-700 bg-white/80 border border-zinc-200 rounded-md px-1.5 py-0.5 tabular-nums">
+                      <Package size={10} />
+                      {cnt}
+                    </span>
+                  )}
+                  <div className="ml-auto">
+                    {actionButtons}
+                  </div>
+                </div>
+
+                {/* 모바일 (md 미만): 2줄 카드 레이아웃 */}
+                <div className="md:hidden px-3 py-3 flex flex-col gap-1.5">
+                  {/* Row 1: 유형 + 이름 + 액션 */}
+                  <div className="flex items-start gap-2">
+                    <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-white/70 border border-current/20 shrink-0 mt-0.5 ${tone.text}`}>
+                      {typeLabel}
+                    </span>
+                    <span className="flex-1 min-w-0 text-[15px] font-bold text-zinc-900 whitespace-normal break-words break-keep leading-snug">
+                      {r.name}
+                    </span>
+                    {actionButtons}
+                  </div>
+                  {/* Row 2: 날짜 + 반복 + 상품수 */}
+                  <div className="flex items-center gap-2 flex-wrap pl-0.5">
+                    {(r.start_date || r.end_date) && (
+                      <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600 tabular-nums">
+                        <Calendar size={11} className="text-zinc-400" />
+                        {r.start_date ?? "?"}
+                        {r.end_date && r.end_date !== r.start_date && ` ~ ${r.end_date}`}
+                      </span>
+                    )}
+                    {r.recurring && <StatusPill tone="emerald" size="sm">매년</StatusPill>}
+                    {cnt != null && cnt > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[12px] font-bold text-zinc-700 bg-white/80 border border-zinc-200 rounded-md px-1.5 py-0.5 tabular-nums">
+                        <Package size={10} />
+                        {cnt}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </button>
             );
