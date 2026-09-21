@@ -179,25 +179,46 @@ export const CardRegisterPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleSelect(c)}
-                  className={`w-full text-left rounded-xl border-2 px-3.5 py-2.5 transition ${
+                  className={`w-full text-left rounded-xl border-2 transition ${
                     selectedId === c.id
                       ? "border-brand-deep bg-brand-tint/40"
                       : "border-line bg-white hover:border-brand-deep/40 hover:bg-zinc-50/50"
                   } ${!c.active ? "opacity-60" : ""}`}
                 >
-                  <div className="flex items-center gap-2">
+                  {/* PC 한 줄 뷰 (sm 이상) */}
+                  <div className="hidden sm:flex items-center gap-2 px-3.5 py-2.5">
                     <span className="text-[17px] font-bold text-ink">{c.issuer}</span>
                     {c.alias && <span className="text-[15px] text-zinc-600">· {c.alias}</span>}
                     {!c.active && <StatusPill tone="zinc" size="sm">비활성</StatusPill>}
                     <div className="ml-auto text-[15px] font-semibold text-brand-deep tabular-nums">
                       {c.billing_day}일 결제
                     </div>
+                    {c.last4 && (
+                      <span className="text-[14px] text-zinc-400 tabular-nums">···· {c.last4}</span>
+                    )}
                   </div>
-                  {c.last4 && (
-                    <div className="text-[14px] text-zinc-500 font-mono mt-0.5">
-                      **** **** **** {c.last4}
+                  {/* 모바일 카드 뷰 (sm 미만) */}
+                  <div className="sm:hidden px-3.5 py-3">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[16px] font-bold text-ink">{c.issuer}</span>
+                        {c.alias && (
+                          <span className="text-[14px] text-zinc-500 break-words whitespace-normal">
+                            {c.alias}
+                          </span>
+                        )}
+                        {!c.active && <StatusPill tone="zinc" size="sm">비활성</StatusPill>}
+                      </div>
+                      <span className="text-[14px] font-semibold text-brand-deep tabular-nums shrink-0">
+                        {c.billing_day}일 결제
+                      </span>
                     </div>
-                  )}
+                    {c.last4 && (
+                      <div className="text-[13px] text-zinc-400 tabular-nums">
+                        **** **** **** {c.last4}
+                      </div>
+                    )}
+                  </div>
                 </button>
               </li>
             ))}
