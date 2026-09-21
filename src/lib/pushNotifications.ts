@@ -157,7 +157,8 @@ export function requestPushTokenFromApp(): void {
 // ─────────────────────────────────────────────────
 export function setAppBadge(count: number): void {
   if (!isInsideWebView()) return;
-  const n = Math.max(0, Math.floor(count));
+  // 2026-09-21 · NaN·Infinity 안전 처리 · Number.isFinite 체크 (Math.floor(NaN)=NaN 방지)
+  const n = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
   try {
     window.ReactNativeWebView!.postMessage(JSON.stringify({ type: "setBadge", count: n }));
     devLog(`[PUSH-BADGE] setBadge=${n}`);
