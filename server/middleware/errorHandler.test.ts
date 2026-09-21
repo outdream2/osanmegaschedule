@@ -1,6 +1,21 @@
 // 2026-08-16 · 프레임워크 · errorHandler + HttpError 단위 테스트
+// 2026-09-21 · winston logger 마이그레이션 · console → logger mock 으로 변경
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { z, ZodError } from "zod";
+
+// winston logger mock · P1-4 이후 · errorHandler 는 logger 사용
+vi.mock("../lib/logger", () => ({
+  default: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
+import loggerMod from "../lib/logger";
+const logger: any = loggerMod;
+
 import {
   HttpError, badRequest, unauthorized, forbidden, notFound, errorHandler,
 } from "./errorHandler";
@@ -41,10 +56,12 @@ describe("HttpError · factory", () => {
 });
 
 describe("errorHandler", () => {
-  const origWarn = console.warn;
-  const origError = console.error;
-  beforeEach(() => { console.warn = vi.fn(); console.error = vi.fn(); });
-  afterEach(() => { console.warn = origWarn; console.error = origError; });
+  beforeEach(() => {
+    logger.warn.mockReset();
+    logger.error.mockReset();
+    logger.info.mockReset();
+    logger.debug.mockReset();
+  });
 
   it("HttpError 400 · status + error + code", () => {
     const { req, res, next } = mockReqRes();
@@ -53,19 +70,19 @@ describe("errorHandler", () => {
     expect(res.json).toHaveBeenCalledWith({ error: "bad", code: "X" });
   });
 
-  it("HttpError 500 · console.error 사용", () => {
+  it("HttpError 500 · logger.error 사용", () => {
     const { req, res, next } = mockReqRes();
     errorHandler(new HttpError(500, "boom"), req, res, next);
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(console.error).toHaveBeenCalled();
-    expect(console.warn).not.toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalled();
+    expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  it("HttpError 4xx · console.warn 사용", () => {
+  it("HttpError 4xx · logger.warn 사용", () => {
     const { req, res, next } = mockReqRes();
     errorHandler(unauthorized(), req, res, next);
-    expect(console.warn).toHaveBeenCalled();
-    expect(console.error).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
   });
 
   it("ZodError → 400 · code VALIDATION · 첫 issue message", () => {

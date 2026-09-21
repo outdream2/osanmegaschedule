@@ -1,4 +1,5 @@
 // 2026-08-20 · logsCleanup · 오래된 ocr-*.json 로그 파일 자동 정리
+// 2026-09-21 · P1-4 · winston logger 마이그레이션 후 · logger mock 추가
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("fs", () => {
@@ -13,7 +14,19 @@ vi.mock("fs", () => {
   };
 });
 
+// winston logger mock
+vi.mock("../lib/logger", () => ({
+  default: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
 import fs from "fs";
+import loggerMod from "../lib/logger";
+const logger: any = loggerMod;
 import { cleanupStaleLogs } from "./logsCleanup";
 
 const mockReaddir = fs.promises.readdir as unknown as ReturnType<typeof vi.fn>;
@@ -93,7 +106,8 @@ describe("cleanupStaleLogs · 정상 흐름", () => {
     mockUnlink.mockResolvedValue(undefined);
     await cleanupStaleLogs();
     expect(mockUnlink).toHaveBeenCalledTimes(3);
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining("3개"));
+    // 2026-09-21 · winston · console.log → logger.info
+    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining("3개"));
   });
 
   it("혼합 · 최근 + 오래된 · 오래된 것만 삭제", async () => {
