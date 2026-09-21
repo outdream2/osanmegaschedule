@@ -12,6 +12,8 @@ import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import { CreateLeaveRequestSchema, ReviewLeaveRequestSchema } from "../../../src/shared/schemas/leave";
 import type { LeaveBalanceResponse, LeaveStatsResponse } from "../../../src/shared/dtos/leave";
 import { nextKstYmd, compareYmd, getKstYmd } from "../../lib/kstDate";
+// 2026-09-21 · #328 · iOS 앱 Expo 푸시 알림 · 연차 승인 트리거
+import { sendPushSafe } from "../../services/expoPushService";
 
 const router = Router();
 
@@ -155,6 +157,16 @@ router.put("/api/leave-requests/:id", authorize(5), validateBody(ReviewLeaveRequ
     body: `${data.leave_type} (${data.start_date} ~ ${data.end_date}) 신청이 ${label}되었습니다.${reviewer_note ? ` — ${reviewer_note}` : ""}`,
     type: status === "approved" ? "success" : "alert",
   }).catch(() => null);
+
+  // 2026-09-21 · #328 · iOS 앱 Expo 푸시 알림 · 연차 승인·반려 결과 통지 (fire-and-forget)
+  //   · 기존 인앱 알림 · web push 유지 · Expo push 추가 (WebView 앱 홈화면 배지)
+  //   · sendPushSafe · 실패해도 응답 흐름 방해 X · 로그만 남김
+  sendPushSafe({
+    userId: Number(data.employee_id),
+    title: `연차 신청 ${label}`,
+    body: `${data.leave_type} (${data.start_date} ~ ${data.end_date}) 신청이 ${label}되었습니다.${reviewer_note ? ` — ${reviewer_note}` : ""}`,
+    url: "/",
+  });
 
   if (emp?.push_subscription) {
     await webpush.sendNotification(

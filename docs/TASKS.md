@@ -76,6 +76,9 @@
 | [65] | 직원관리 리스트 재설계 v3 · Linear/Attio 톤 · 동그란 아이콘 완전 제거 | `4fb61f1a` |
 | [66] | 발주추천 스코어 · 유틸 추출 · 회귀 테스트 8건 · expiry MIN 3소스 UNION | `5ee0bb96` |
 | [67] | #326 · 판매추천 자동화 · 공휴일·이벤트·계절 기간별 · SSOT 규칙 + /api/sales-auto-recommend + 자동추천 배너 (풀 스펙) | 대기 |
+| [68] | #328-1 · Frontend · savePushToken + osan-push-token 이벤트 리스너 (src/lib/pushNotifications.ts · App.tsx 통합) | 대기 |
+| [69] | #328-2 · Backend · push_tokens 테이블 + endpoint (POST·DELETE·test) + Expo Push Service | 대기 |
+| [70] | #328-3 · 배지 sync · setAppBadge (WebView) + approval-count-updated auto-sync + 연차 승인·반려 sendPushSafe 트리거 | 대기 |
 
 ---
 
