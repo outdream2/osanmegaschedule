@@ -3838,4 +3838,25 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 4. 매장 서브탭 · DisplayStoreMap / DisplayMobileList / DisplayProductPanel 정상 동작
 5. 창고1·창고2 WarehouseZoneMap 렌더링 100% 유지
 
+---
+
+### [90] #302 · 공급사 재고확인 · 적정재고·재고상태 정상 표시
+
+**커밋:** bd19450c
+**변경:** `server/routes/stock/products.ts` · `/api/products-search` cols 에 `optimal_stock`, `min_stock` 추가
+
+**진입:** 공급사 로그인 → 재고확인 페이지 (VendorStockPage)
+
+**테스트:**
+1. 서버 재시작 후 공급사 계정으로 로그인
+2. 재고확인 페이지 진입 → 제품 리스트 로드 확인
+3. "적정재고" 컬럼 · 값이 있는 상품에서 숫자 표시 확인 (이전: 모두 "-")
+4. 재고 상태 (상태 컬럼) · 정상/부족/없음 올바르게 구분 확인 (이전: 모두 "없음")
+5. 상태 기준: 현재고 > 최소재고 → 정상, 0 < 현재고 < 최소재고 → 부족, 현재고 = 0 → 없음
+
+**회귀 시나리오:**
+1. 일반 상품 검색 (/api/products-search?q=...) · 기존 동작 유지
+2. VendorStockModal · 적정재고·최소재고 컬럼 정상 표시
+3. 다른 API(OCR·SalesTrend·OrderManage 등) products-search 소비처 · 기존 동작 이상 없음
+
 ## 진행 중 태스크 (완료 시 추가)
