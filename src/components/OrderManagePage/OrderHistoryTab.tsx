@@ -371,13 +371,13 @@ export const OrderHistoryTab: React.FC = () => {
             {/* 2026-09-17 · 사용자 지시 · 상단 헤더 + 자동 정렬 · 헤더 클릭 asc/desc 토글 */}
             <div className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur-sm border-b-2 border-line px-4 py-2 flex items-center gap-2.5 text-[13px] font-bold tracking-tight text-zinc-600 uppercase">
               <span className="w-4 shrink-0" aria-hidden />
-              <SortHeader label="발주번호 · 공급사" columnKey="order_number" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="flex-1 min-w-[160px] justify-start shrink-0" />
+              <SortHeader label="발주번호 · 공급사" columnKey="order_number" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="flex-1 min-w-[130px] justify-start shrink-0" />
               <SortHeader label="발주일" columnKey="order_date" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="w-[74px] justify-start shrink-0" />
               <SortHeader label="희망" columnKey="desired_arrival" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="w-[74px] justify-start shrink-0" />
               <SortHeader label="종·개" columnKey="items" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="w-[86px] justify-start shrink-0" />
               <SortHeader label="총금액" columnKey="total_amount" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="ml-auto w-[100px] justify-end shrink-0" />
               <span className="w-[60px] text-right shrink-0" aria-hidden>PDF</span>
-              <span className="w-[92px] text-right shrink-0" aria-hidden>매입확인</span>
+              <span className="w-[104px] text-right shrink-0" aria-hidden>매입확인</span>
             </div>
             {sortedOrders.map((o) => {
               const key = String(o.order_number ?? o.sent_at);
@@ -395,8 +395,8 @@ export const OrderHistoryTab: React.FC = () => {
                     ) : (
                       <ChevronRight size={16} className="text-zinc-300 shrink-0" />
                     )}
-                    {/* 발주번호 (위) + 공급사 (아래) · 2줄 블록 · flex-1 */}
-                    <div className="flex-1 min-w-[160px] min-w-0 flex flex-col leading-tight">
+                    {/* 발주번호 (위) + 공급사 (아래) · 2줄 블록 · flex-1 · 폭 축소 (사용자 지시 #322) */}
+                    <div className="flex-1 min-w-[130px] min-w-0 flex flex-col leading-tight">
                       <span className="text-[15px] font-bold text-sky-700 tabular-nums">
                         #{o.order_number ?? "—"}
                       </span>
@@ -437,8 +437,8 @@ export const OrderHistoryTab: React.FC = () => {
                         PDF
                       </button>
                     </span>
-                    {/* 매입확인 */}
-                    <span className="w-[92px] shrink-0 flex justify-end">
+                    {/* 매입확인 · 2026-09-21 · #322 · 사용자 지시 · 한 줄 · 예쁘게 */}
+                    <span className="w-[104px] shrink-0 flex justify-end">
                       {o.status === "matched" ? (
                         <StatusPill tone="emerald" size="sm" dot>완료</StatusPill>
                       ) : (
@@ -446,7 +446,7 @@ export const OrderHistoryTab: React.FC = () => {
                           type="button"
                           onClick={(e) => { e.stopPropagation(); void handleMatch(o); }}
                           disabled={matchingKey === String(o.order_number)}
-                          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[13px] font-bold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 shadow-sm active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[13px] font-bold text-emerald-700 whitespace-nowrap hover:bg-emerald-100 hover:border-emerald-300 shadow-sm active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
                           title="발주-매입 매칭 확인 · status=matched"
                         >
                           {matchingKey === String(o.order_number)
