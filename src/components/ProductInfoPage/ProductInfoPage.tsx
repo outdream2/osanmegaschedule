@@ -824,7 +824,57 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
 
   const listBody = (
     <div className="h-[calc(100vh-240px)] overflow-y-auto overscroll-contain">
-      <table className="w-full text-[15px] border-collapse table-fixed">
+      {/* ── 모바일 카드뷰 (md 미만) ── */}
+      <div className="md:hidden flex flex-col divide-y divide-zinc-100">
+        {sortedList.map(r => {
+          const active = r.product_code === selectedCode;
+          const salePrice = (r as any).sale_price;
+          const stock = r.current_stock;
+          return (
+            <button
+              key={r.product_code}
+              type="button"
+              onClick={() => handleSelect(r.product_code)}
+              className={[
+                "w-full text-left px-4 py-3 transition-colors min-h-[44px] flex flex-col gap-1.5",
+                active
+                  ? "bg-brand-tint/60 border-l-2 border-brand-deep"
+                  : "hover:bg-zinc-50/70",
+              ].join(" ")}
+            >
+              {/* Row 1: 상품명 */}
+              <span className={`text-[16px] font-semibold leading-snug whitespace-normal break-words break-keep ${active ? "text-brand-deep" : "text-ink"}`}>
+                {r.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
+              </span>
+              {/* Row 2: 공급사 + 위치 */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {r.supplier && (
+                  <span className="text-[13px] font-medium text-zinc-500">{r.supplier}</span>
+                )}
+                {r.location && (
+                  <span className="text-[13px] font-medium text-zinc-400">{r.location}</span>
+                )}
+              </div>
+              {/* Row 3: 판매가 + 현재고 */}
+              <div className="flex items-center gap-3">
+                {typeof salePrice === "number" && salePrice > 0 && (
+                  <span className="text-[14px] font-semibold tabular-nums text-brand-deep">
+                    {salePrice.toLocaleString()}원
+                  </span>
+                )}
+                <span className={`text-[14px] font-semibold tabular-nums ${
+                  typeof stock === "number" && stock <= 0 ? "text-rose-600" : "text-zinc-600"
+                }`}>
+                  재고 {typeof stock === "number" ? stock : "-"}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── PC 표뷰 (md 이상) ── */}
+      <table className="hidden md:table w-full text-[15px] border-collapse table-fixed">
         <thead className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur-sm border-b-2 border-line">
           <tr className="text-[16px] font-bold tracking-tight uppercase text-zinc-500">
             <th className="text-left px-3 py-2 relative group overflow-hidden" style={{ width: nameColWidth, minWidth: 80, maxWidth: 320 }}>
