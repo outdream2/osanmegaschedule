@@ -5,7 +5,7 @@ import { supabase } from "../../../src/supabase/client";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
-import { uploadToDrive, deleteFromDrive, extractDriveFileId, isDriveReady } from "../../services/googleDriveService";
+import { uploadToDrive, deleteFromDrive, extractDriveFileId, isDriveReady, probeDriveAuth } from "../../services/googleDriveService";
 import { authorize, getSession } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
@@ -248,8 +248,13 @@ router.post("/api/employees/:id/resignation-file", authorize(1), resignationFile
 }));
 
 // T19+T21 · Drive 상태 확인 API (관리자 · 설정 확인용)
-router.get("/api/drive-status", asyncHandler(async (_req, res) => {
+// 2026-09-21 · E-002 · ?probe=1 · 실제 auth 유효성 검증 (about.get 호출)
+router.get("/api/drive-status", asyncHandler(async (req, res) => {
   const status = await isDriveReady();
+  if (String(req.query.probe ?? "") === "1") {
+    const probe = await probeDriveAuth();
+    return res.json({ ...status, probe });
+  }
   res.json(status);
 }));
 

@@ -403,7 +403,8 @@ router.post("/api/employee-contracts/upload", authorize(9), driveUpload.single("
   const nameTag = safeName(employeeName);
   const fileName = `${nameTag}_근로계약서_${dateTag}.pdf`;
 
-  // Drive 업로드 · 실패 시 500 (multer 이전 try/catch 와 달리 drive 업로드 자체 실패는 500)
+  // Drive 업로드 · 실패 시 사용자 친화 메시지 그대로 노출 (googleDriveService.humanizeDriveError 적용됨)
+  // 2026-09-21 · E-002 · invalid_grant 등 원인별 502 · 관리자 안내 메시지
   let driveUrl = "";
   let driveFileId = "";
   try {
@@ -411,7 +412,11 @@ router.post("/api/employee-contracts/upload", authorize(9), driveUpload.single("
     driveUrl = result.webViewLink;
     driveFileId = result.fileId;
   } catch (drvErr: any) {
-    throw new HttpError(500, `Google Drive 업로드 실패 · ${drvErr?.message ?? drvErr}`);
+    const message = drvErr?.message ?? "Google Drive 업로드 실패";
+    console.error(`[employee-contracts/upload] Drive 업로드 실패 · employee=${employeeName} · file=${fileName} · size=${req.file.size} · ${message}`);
+    // 인증 만료(invalid_grant) · 폴더 미설정 등은 서버 설정 문제 → 502 (Bad Gateway to Drive)
+    // 파일 크기·mime 오류 등은 이미 상위에서 걸림
+    throw new HttpError(502, message);
   }
 
   // 재계약 감지 · 기존 활성 계약 is_active=false (컬럼 미존재 시 skip)

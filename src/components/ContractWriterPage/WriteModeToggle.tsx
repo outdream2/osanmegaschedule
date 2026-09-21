@@ -1,7 +1,7 @@
 // src/components/ContractWriterPage/WriteModeToggle.tsx
 // 작성 방식 토글 + PDF 업로드 모드 패널
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   User, ClipboardText, DownloadSimple, X as XIcon,
 } from "@phosphor-icons/react";
@@ -13,6 +13,7 @@ import { IconTile } from "../common/IconTile";
 import { Badge } from "../common/Badge";
 import { matchHangul } from "../../lib/hangulSearch";
 import { TIMING } from "../../constants/timing";
+import { api } from "../../lib/apiClient";
 import type { Employee } from "../../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -48,12 +49,42 @@ const fldLabel = "block text-[14.5px] font-bold tracking-wide text-zinc-600 mb-1
 const cardInner = "rounded-lg border border-zinc-100 bg-zinc-50/60 p-2.5 flex flex-col gap-2";
 const cardGroupLabel = "text-[14px] font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 mb-0.5";
 
+// 2026-09-21 · E-002 · Drive 인증 사전 진단 (업로드 모드 진입 시 1회)
+interface DriveStatus {
+  ready: boolean;
+  mode: "oauth" | "service_account" | "none";
+  probe?: { ok: boolean; mode: string; reason?: string };
+}
+
 export const WriteModeToggle: React.FC<WriteModeToggleProps> = ({
   form, upd,
   writeMode, setWriteMode,
   uploadFile, setUploadFile, uploadBusy, uploadInputRef, handleUploadContract,
   employees, empLoading, empSearchOpen, setEmpSearchOpen, onSelectEmployee,
-}) => (
+}) => {
+  const [driveStatus, setDriveStatus] = useState<DriveStatus | null>(null);
+  const [statusLoading, setStatusLoading] = useState(false);
+
+  useEffect(() => {
+    if (writeMode !== "upload" || driveStatus !== null) return;
+    let cancelled = false;
+    (async () => {
+      setStatusLoading(true);
+      try {
+        const { data } = await api.get<DriveStatus>("/api/drive-status?probe=1");
+        if (!cancelled) setDriveStatus(data);
+      } catch {
+        if (!cancelled) setDriveStatus({ ready: false, mode: "none", probe: { ok: false, mode: "none", reason: "서버 응답 없음" } });
+      } finally {
+        if (!cancelled) setStatusLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [writeMode, driveStatus]);
+
+  const driveBad = driveStatus && (!driveStatus.ready || driveStatus.probe?.ok === false);
+
+  return (
   <>
     {/* ── T-R (2026-08-05) · 작성 방식 토글 ── */}
     <Card padding="none" className="p-2">
@@ -100,6 +131,27 @@ export const WriteModeToggle: React.FC<WriteModeToggleProps> = ({
           · 이력: employee_contracts 테이블 · 링크 (Drive URL) 로 저장 <br />
           · 하단 근로자 정보 · 계약 유형 · 기간 · 입력 후 업로드 필수
         </div>
+
+        {/* 2026-09-21 · E-002 · Drive 인증 사전 진단 배너 */}
+        {statusLoading && (
+          <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-[14px] text-zinc-500">
+            Google Drive 연동 상태 확인 중...
+          </div>
+        )}
+        {driveBad && (
+          <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[14px] text-rose-700 leading-relaxed">
+            <div className="font-bold mb-1">Google Drive 연동 문제 감지</div>
+            {driveStatus?.mode === "none" && (
+              <div>Drive 크레덴셜이 서버에 설정되어 있지 않습니다. 관리자에게 <b>src/keys/google-oauth.json</b> 배포를 요청하세요.</div>
+            )}
+            {driveStatus?.mode !== "none" && driveStatus?.probe?.reason && (
+              <div>사유: {driveStatus.probe.reason}</div>
+            )}
+            <div className="mt-1 text-[13px] text-rose-600">
+              업로드 시도는 가능하지만 서버 오류가 발생할 수 있습니다. 실패 시 관리자에게 refresh_token 재발급을 요청하세요.
+            </div>
+          </div>
+        )}
 
         {/* 근로자 기본 정보 · 업로드 필수 필드 */}
         <div className={cardInner}>
@@ -231,4 +283,5 @@ export const WriteModeToggle: React.FC<WriteModeToggleProps> = ({
       </Card>
     )}
   </>
-);
+  );
+};

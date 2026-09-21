@@ -180,9 +180,42 @@ async function initClient(): Promise<drive_v3.Drive | null> {
     lastInitFailAt = Date.now();
     return null;
   } catch (e: any) {
-    console.warn("[google-drive] 초기화 실패:", e?.message);
+    console.warn("[google-drive] 초기화 실패:", e?.message ?? e);
     lastInitFailAt = Date.now();
     return null;
+  }
+}
+
+/**
+ * OAuth refresh_token 유효성 사전 검증 · 부팅·요청 시 진단 용도.
+ * E-002 (2026-09-21) · invalid_grant 조기 감지.
+ */
+export async function probeDriveAuth(): Promise<{
+  ok: boolean;
+  mode: "oauth" | "service_account" | "none";
+  reason?: string;
+}> {
+  const client = await initClient();
+  const mode: "oauth" | "service_account" | "none" =
+    cached.config.oauth ? "oauth" :
+    cached.config.serviceAccountJson ? "service_account" : "none";
+  if (!client) {
+    return { ok: false, mode, reason: "미설정 · src/keys 없음" };
+  }
+  try {
+    // about.get · 최소 quota 소모 API · 토큰 유효성 확인
+    await client.about.get({ fields: "user" });
+    return { ok: true, mode };
+  } catch (e: any) {
+    const gErr = e?.response?.data?.error ?? "";
+    const gDesc = e?.response?.data?.error_description ?? "";
+    return {
+      ok: false,
+      mode,
+      reason: gErr === "invalid_grant"
+        ? "refresh_token 만료 · OAuth Playground 재발급 필요"
+        : (gDesc || e?.message || "unknown"),
+    };
   }
 }
 
@@ -206,6 +239,44 @@ export interface DriveUploadResult {
   size: number;
 }
 
+/**
+ * Google API 에러 → 사용자 친화 한국어 메시지 매핑.
+ * E-002 (2026-09-21) · refresh_token 만료 · 원인 안 보이는 문제 해결.
+ */
+function humanizeDriveError(err: any): string {
+  const raw = err?.response?.data ?? err?.errors ?? err;
+  const code = err?.code ?? err?.response?.status;
+  const gErr = err?.response?.data?.error ?? err?.errors?.[0]?.reason ?? "";
+  const gDesc = err?.response?.data?.error_description ?? err?.errors?.[0]?.message ?? "";
+  const msg = String(err?.message ?? "");
+
+  // 1) refresh_token 만료 · 재발급 필요 (테스트 앱 · 7일 만료)
+  if (gErr === "invalid_grant" || /invalid_grant/i.test(msg)) {
+    return "Google Drive 인증 토큰이 만료되었습니다 (invalid_grant). " +
+      "관리자가 OAuth Playground 에서 refresh_token 을 재발급해 src/keys/google-oauth.json 을 갱신해야 합니다. " +
+      "(원인: 테스트 상태 앱 · 7일 만료 · 프로덕션 게시 필요)";
+  }
+  // 2) 스코프 부족
+  if (gErr === "insufficient_permissions" || /insufficient/i.test(gDesc) || code === 403) {
+    return `Google Drive 권한 부족 (403). 스코프 · 폴더 편집 권한을 확인하세요. (${gDesc || msg})`;
+  }
+  // 3) 폴더 없음 · 잘못된 fileId
+  if (code === 404 || /notFound/i.test(gErr)) {
+    return `Google Drive 폴더 또는 파일을 찾을 수 없습니다 (404). 폴더 ID 를 확인하세요. (${gDesc || msg})`;
+  }
+  // 4) 용량 초과
+  if (/quota|storageQuotaExceeded/i.test(gErr) || /quota/i.test(gDesc)) {
+    return `Google Drive 저장 용량 초과. 개인 계정 15GB 확인. (${gDesc || msg})`;
+  }
+  // 5) 네트워크·타임아웃
+  if (code === "ETIMEDOUT" || code === "ECONNRESET" || /timeout/i.test(msg)) {
+    return `Google Drive 네트워크 오류 · 잠시 후 재시도하세요. (${msg})`;
+  }
+  // 6) 그 외 · 원문 반환
+  const detail = gDesc || gErr || msg || "unknown";
+  return `Google Drive 오류 · ${detail}${code ? ` (code=${code})` : ""}`;
+}
+
 export async function uploadToDrive(
   kind: FolderKind,
   buffer: Buffer,
@@ -213,42 +284,71 @@ export async function uploadToDrive(
   mimeType: string,
 ): Promise<DriveUploadResult> {
   const client = await initClient();
-  if (!client) throw new Error("Google Drive 미설정 · src/keys 확인 필요");
+  if (!client) {
+    // 미설정 원인 세분화
+    const hasKey = !!cached.config.oauth || !!cached.config.serviceAccountJson;
+    if (!hasKey) {
+      throw new Error(
+        "Google Drive 미설정 · src/keys/google-oauth.json 또는 서비스 계정 JSON 이 없습니다. " +
+        "관리자에게 Drive 연동을 요청하세요.",
+      );
+    }
+    // 키는 있으나 initClient 실패 (드문 케이스)
+    throw new Error("Google Drive 초기화 실패 · 서버 로그의 [google-drive] 초기화 실패 원인을 확인하세요.");
+  }
   const folderId = cached.config.folders[kind];
   if (!folderId) throw new Error(`Google Drive 폴더 ID 미설정 · ${kind}`);
 
-  const created = await client.files.create({
-    requestBody: {
-      name: fileName,
-      parents: [folderId],
-      mimeType,
-    },
-    media: {
-      mimeType,
-      body: Readable.from(buffer),
-    },
-    fields: "id, name, size, webViewLink, webContentLink",
-    supportsAllDrives: true,
-  });
-
-  const fileId = created.data.id!;
   try {
-    await client.permissions.create({
-      fileId,
-      requestBody: { role: "reader", type: "anyone" },
+    const created = await client.files.create({
+      requestBody: {
+        name: fileName,
+        parents: [folderId],
+        mimeType,
+      },
+      media: {
+        mimeType,
+        body: Readable.from(buffer),
+      },
+      fields: "id, name, size, webViewLink, webContentLink",
       supportsAllDrives: true,
     });
-  } catch (e: any) {
-    console.warn(`[google-drive] 공유 권한 설정 실패 (계속 진행) · ${e?.message}`);
-  }
 
-  return {
-    fileId,
-    webViewLink: created.data.webViewLink ?? `https://drive.google.com/file/d/${fileId}/view`,
-    webContentLink: created.data.webContentLink ?? undefined,
-    name: created.data.name ?? fileName,
-    size: Number(created.data.size ?? 0),
-  };
+    const fileId = created.data.id!;
+    try {
+      await client.permissions.create({
+        fileId,
+        requestBody: { role: "reader", type: "anyone" },
+        supportsAllDrives: true,
+      });
+    } catch (e: any) {
+      console.warn(`[google-drive] 공유 권한 설정 실패 (계속 진행) · ${e?.message}`);
+    }
+
+    console.log(`[google-drive] 업로드 성공 · kind=${kind} · name=${fileName} · size=${buffer.length} · fileId=${fileId}`);
+    return {
+      fileId,
+      webViewLink: created.data.webViewLink ?? `https://drive.google.com/file/d/${fileId}/view`,
+      webContentLink: created.data.webContentLink ?? undefined,
+      name: created.data.name ?? fileName,
+      size: Number(created.data.size ?? 0),
+    };
+  } catch (e: any) {
+    // 상세 원인 로그 · 사용자 친화 메시지로 rethrow
+    console.error(
+      `[google-drive] 업로드 실패 · kind=${kind} · name=${fileName} · size=${buffer.length}` +
+      ` · code=${e?.code ?? "?"} · status=${e?.response?.status ?? "?"}` +
+      ` · gError=${e?.response?.data?.error ?? "?"}` +
+      ` · gDesc=${e?.response?.data?.error_description ?? "?"}` +
+      ` · msg=${e?.message ?? "?"}`,
+    );
+    // invalid_grant · 캐시된 클라이언트 무효화 · 다음 요청에서 재시도 가능
+    if (e?.response?.data?.error === "invalid_grant" || /invalid_grant/i.test(String(e?.message ?? ""))) {
+      cached.driveClient = null;
+      initTried = false;
+    }
+    throw new Error(humanizeDriveError(e));
+  }
 }
 
 export async function deleteFromDrive(fileId: string): Promise<boolean> {
