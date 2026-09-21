@@ -25,11 +25,13 @@ import { AutoImportSection } from "./AutoImportSection";
 import { UploadDataModal } from "../LandingPage/UploadDataModal";
 // 2026-08-25 · 사용자 지시 · 세션 만료 시간 · 시스템 설정에 추가
 import { SessionTimeoutSection } from "../PermissionsPage/SessionTimeoutSection";
-import { Timer, MapPin, GoogleDriveLogo } from "@phosphor-icons/react";
+import { Timer, MapPin, GoogleDriveLogo, Sparkle } from "@phosphor-icons/react";
 // 2026-09-15 · T-SP-MASTER-UI · 매장·창고 마스터 관리
 import { StorageLocationsSection } from "./StorageLocationsSection";
 // 2026-09-21 · #327-③④ · Google Drive 인증 상태 상시 표시
 import { DriveAuthStatus } from "./DriveAuthStatus";
+// 2026-09-21 · #330 · 발주·판매 추천 규칙 관리자 편집 UI
+import { EventCategoryRulesEditor } from "./EventCategoryRulesEditor";
 
 interface Props {
   onBack: () => void;
@@ -41,7 +43,7 @@ interface Props {
 // ─── 카테고리별 키 그룹 ─────────────────────────────────────────────────────
 // 2026-08-24 · #253 · "auto-import" 탭 신규 추가 (자동 임포트 · Phase E)
 // 2026-08-26 · 사용자 지시 · "ocr-tenant" 카테고리 제거 (env 는 서버에서 계속 사용)
-type Cat = "db-auth" | "ai-ocr" | "sms" | "cdn" | "webpush" | "upload" | "auto-import" | "session" | "storage-locations" | "drive-auth";
+type Cat = "db-auth" | "ai-ocr" | "sms" | "cdn" | "webpush" | "upload" | "auto-import" | "session" | "storage-locations" | "drive-auth" | "reco-rules";
 
 const CAT_TABS: TabDef<Cat>[] = [
   { key: "db-auth",     label: "DB · 인증",       icon: Database,       color: "slate" },
@@ -58,6 +60,8 @@ const CAT_TABS: TabDef<Cat>[] = [
   { key: "storage-locations", label: "매장·창고", icon: MapPin,          color: "teal" },
   // 2026-09-21 · #327-③④ · Google Drive 인증 상태 (관리자 lv9)
   { key: "drive-auth",  label: "Drive 인증",     icon: GoogleDriveLogo, color: "indigo" },
+  // 2026-09-21 · #330 · 발주·판매 추천 규칙 (관리자 lv9)
+  { key: "reco-rules",  label: "추천 규칙",       icon: Sparkle,         color: "amber" },
 ];
 
 const CAT_KEYS: Record<Cat, string[]> = {
@@ -71,6 +75,7 @@ const CAT_KEYS: Record<Cat, string[]> = {
   "session":     [],  // 2026-08-25 · KV 기반 · env keys 없음
   "storage-locations": [],  // 2026-09-15 · T-SP-MASTER-UI · KV 기반 · env keys 없음
   "drive-auth":     [],  // 2026-09-21 · #327-③④ · env 없음 · google-oauth.json 파일 기반
+  "reco-rules":     [],  // 2026-09-21 · #330 · KV 기반 · env keys 없음
 };
 
 const KEY_LABELS: Record<string, { label: string; desc?: string; multiline?: boolean }> = {
@@ -182,8 +187,8 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
 
         <TabBar<Cat> level={2} tabs={CAT_TABS} activeKey={cat} onSelect={setCat} />
 
-        {/* ── 카테고리별 편집 폼 · KV 기반 탭 (upload · auto-import · session · storage-locations · drive-auth) 제외 ── */}
-        {cat !== "upload" && cat !== "auto-import" && cat !== "session" && cat !== "storage-locations" && cat !== "drive-auth" && (
+        {/* ── 카테고리별 편집 폼 · KV 기반 탭 (upload · auto-import · session · storage-locations · drive-auth · reco-rules) 제외 ── */}
+        {cat !== "upload" && cat !== "auto-import" && cat !== "session" && cat !== "storage-locations" && cat !== "drive-auth" && cat !== "reco-rules" && (
           <section className={CARD_BASE + " p-5 flex flex-col gap-4"}>
             {CAT_KEYS[cat].map(k => {
               const meta = KEY_LABELS[k] ?? { label: k };
@@ -261,8 +266,11 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
         {/* ── Drive 인증 상태 탭 · 2026-09-21 · #327-③④ ── */}
         {cat === "drive-auth" && <DriveAuthStatus active={(authSession?.level ?? 0) >= 9} />}
 
+        {/* ── 추천 규칙 탭 · 2026-09-21 · #330 ── */}
+        {cat === "reco-rules" && <EventCategoryRulesEditor canEdit={(authSession?.level ?? 0) >= 9} />}
+
         {/* ── 저장 액션바 · 공통 SET_ACTION_BAR (KV 기반 탭은 자체 저장 · 액션바 숨김) ── */}
-        {cat !== "auto-import" && cat !== "session" && cat !== "upload" && cat !== "storage-locations" && cat !== "drive-auth" && (
+        {cat !== "auto-import" && cat !== "session" && cat !== "upload" && cat !== "storage-locations" && cat !== "drive-auth" && cat !== "reco-rules" && (
         <div className={`${SET_ACTION_BAR} justify-between`}>
           <button onClick={load} className={SET_BTN_SECONDARY}>
             <ArrowsClockwise size={14} /> 다시 불러오기

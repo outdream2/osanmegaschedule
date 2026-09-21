@@ -26,11 +26,100 @@ import {
   EVENT_CATEGORY_RULES,
   OFF_SEASON_RANGES,
   matchCategoryWeight,
-  isOffSeason,
   type EventCategoryRule,
+  type OffSeasonRange,
 } from "../../../src/lib/salesRecommendation/eventCategoryRules";
+import { EventCategoryRulesPayloadSchema } from "../../../src/shared/schemas/eventCategoryRules";
 
 const router = Router();
+
+// ═══════════════════════════════════════════════════════════
+// 2026-09-21 · #330 · KV 우선 규칙 로딩 + 60초 캐시
+//   · app_settings.event_category_rules · JSON · null 시 하드코딩 SSOT fallback
+//   · dev · NODE_ENV !== 'production' · no-cache (즉시 반영)
+//   · POST/DELETE 후 · invalidateEventCategoryRulesCache() 호출
+// ═══════════════════════════════════════════════════════════
+const RULES_CACHE_TTL = 60 * 1000; // 60s
+interface RulesCacheEntry {
+  rules: EventCategoryRule[];
+  offSeason: OffSeasonRange[];
+  source: "kv" | "ssot";
+  at: number;
+}
+let rulesCache: RulesCacheEntry | null = null;
+
+export function invalidateEventCategoryRulesCache(): void {
+  rulesCache = null;
+}
+
+async function loadRules(): Promise<{
+  rules: EventCategoryRule[];
+  offSeason: OffSeasonRange[];
+  source: "kv" | "ssot";
+}> {
+  const isDev = process.env.NODE_ENV !== "production";
+  if (!isDev && rulesCache && Date.now() - rulesCache.at < RULES_CACHE_TTL) {
+    return { rules: rulesCache.rules, offSeason: rulesCache.offSeason, source: rulesCache.source };
+  }
+  try {
+    const { data } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "event_category_rules")
+      .maybeSingle();
+    const raw = data?.value;
+    if (raw && typeof raw === "object") {
+      const parsed = EventCategoryRulesPayloadSchema.safeParse(raw);
+      if (parsed.success) {
+        const kvRules: EventCategoryRule[] = parsed.data.rules.map(r => ({
+          eventType: r.eventType,
+          triggerBefore: r.triggerBefore,
+          categories: [...r.categories],
+          weights: r.weights ? { ...r.weights } : undefined,
+          reason: r.reason,
+        }));
+        const kvOff: OffSeasonRange[] = parsed.data.offSeason.map(o => ({
+          monthStart: o.monthStart,
+          monthEnd: o.monthEnd,
+          dayEnd: o.dayEnd,
+          label: o.label,
+          reason: o.reason,
+        }));
+        const entry: RulesCacheEntry = {
+          rules: kvRules,
+          offSeason: kvOff,
+          source: "kv",
+          at: Date.now(),
+        };
+        rulesCache = entry;
+        return { rules: entry.rules, offSeason: entry.offSeason, source: "kv" };
+      }
+      console.warn("[sales-auto-recommend] KV 규칙 · 검증 실패 · SSOT 폴백");
+    }
+  } catch (e: any) {
+    console.warn("[sales-auto-recommend] KV 규칙 조회 실패 · SSOT 폴백 · " + (e?.message ?? "?"));
+  }
+  const entry: RulesCacheEntry = {
+    rules: EVENT_CATEGORY_RULES.filter(r => r.eventType !== "custom"),
+    offSeason: OFF_SEASON_RANGES,
+    source: "ssot",
+    at: Date.now(),
+  };
+  rulesCache = entry;
+  return { rules: entry.rules, offSeason: entry.offSeason, source: "ssot" };
+}
+
+/** 저수기 판정 · KV/SSOT 통합 · isOffSeason 대체 */
+function isOffSeasonFrom(ranges: OffSeasonRange[], date: Date = new Date()): OffSeasonRange | null {
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  for (const range of ranges) {
+    if (month < range.monthStart || month > range.monthEnd) continue;
+    if (range.dayEnd != null && day > range.dayEnd) continue;
+    return range;
+  }
+  return null;
+}
 
 // ═══════════════════════════════════════════════════════════
 // 타입
@@ -108,6 +197,9 @@ function computeUrgency(
 router.get("/api/sales-auto-recommend", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
 
+  // 2026-09-21 · #330 · KV 우선 규칙 로딩 (60초 캐시 · dev no-cache)
+  const { rules: activeRules, offSeason: offSeasonRanges, source: rulesSource } = await loadRules();
+
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const daysParam = Math.max(1, Math.min(90, parseInt(String(req.query.days ?? "30"), 10) || 30));
@@ -133,7 +225,7 @@ router.get("/api/sales-auto-recommend", asyncHandler(async (req, res) => {
   // ─── 2. 각 이벤트 · 규칙 매칭 · triggerBefore 이하 필터 ───
   const matchedEvents: Array<{ ev: any; rule: EventCategoryRule; d: number | null }> = [];
   for (const ev of eventList) {
-    const rule = EVENT_CATEGORY_RULES.find(r => r.eventType === String(ev.type ?? "").toLowerCase());
+    const rule = activeRules.find(r => r.eventType === String(ev.type ?? "").toLowerCase());
     if (!rule) continue; // custom · 매칭 안됨 스킵
     const d = dayDiff(ev.start_date);
     // recurring 계절 · start_date null · 항상 활성화
@@ -145,7 +237,7 @@ router.get("/api/sales-auto-recommend", asyncHandler(async (req, res) => {
   }
 
   if (matchedEvents.length === 0) {
-    const offSeason = isOffSeason(now);
+    const offSeason = isOffSeasonFrom(offSeasonRanges, now);
     const response: AutoRecoResponse = {
       today,
       matched_events: [],
@@ -259,7 +351,7 @@ router.get("/api/sales-auto-recommend", asyncHandler(async (req, res) => {
   });
 
   // ─── 7. 응답 ───
-  const offSeason = isOffSeason(now);
+  const offSeason = isOffSeasonFrom(offSeasonRanges, now);
   const response: AutoRecoResponse = {
     today,
     matched_events: matchedEvents.map(m => ({
@@ -278,7 +370,7 @@ router.get("/api/sales-auto-recommend", asyncHandler(async (req, res) => {
     total_matched: items.length,
   };
 
-  console.log(`[sales-auto-recommend] today=${today} · matched_events=${matchedEvents.length} · items=${items.length} · off_season=${offSeason?.label ?? "-"}`);
+  console.log(`[sales-auto-recommend] today=${today} · matched_events=${matchedEvents.length} · items=${items.length} · off_season=${offSeason?.label ?? "-"} · rules=${rulesSource}`);
   res.json(response);
 }));
 

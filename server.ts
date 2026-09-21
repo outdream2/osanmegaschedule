@@ -30,6 +30,8 @@ import autoImportRouter  from "./server/routes/settings/autoImport";
 import eventsRouter      from "./server/routes/settings/events";
 // 2026-09-18 · C · 공휴일 API 연동 (data.go.kr 특일정보) · events 자동 동기
 import holidaysRouter    from "./server/routes/settings/holidays";
+// 2026-09-21 · #330 · 추천 규칙 편집 (KV) + SSOT fallback
+import eventCategoryRulesRouter from "./server/routes/settings/eventCategoryRules";
 import productsRouter, { stockCheckPublicRouter } from "./server/routes/stock/products";
 import requestsRouter    from "./server/routes/display/requests";
 import mismatchesRouter  from "./server/routes/display/mismatches";
@@ -259,6 +261,9 @@ async function startServer() {
 
   // 2026-09-18 · C · 공휴일 API · GET(캐시) + POST sync(관리자 lv≥9 내부 authorize) · requireAuth 아래
   app.use(holidaysRouter);
+
+  // 2026-09-21 · #330 · 추천 규칙 편집 (KV) · GET·POST·DELETE (POST/DELETE 는 authorize(9) 내부)
+  app.use(eventCategoryRulesRouter);
 
   // HR 서류 (근로계약서·사직서 등)
   app.use(hrFormsRouter);
