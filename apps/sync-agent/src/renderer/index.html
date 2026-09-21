@@ -3,18 +3,74 @@
   <head>
     <meta charset="UTF-8" />
     <!-- 2026-09-15 · CSP · dev 모드 · Vite HMR 위해 완화
-         · 배포 시 · main process 에서 · CSP 헤더 강제 (별도 설정) -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: ws: wss: http: https:;" />
+         · 배포 시 · main process 에서 · CSP 헤더 강제 (별도 설정)
+         · 2026-09-21 · E-004 · file: 스킴 추가 · Electron file:// 프로토콜 대응 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: file: ws: wss: http: https:;" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>메가타운 자동임포트</title>
+    <style>
+      /* 2026-09-21 · E-004 · 하얀 화면 방지 · body 배경 · 인라인 (Vite build 시 유지) */
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #F4F7FA;
+        font-family: 'Pretendard Variable', -apple-system, 'Segoe UI', 'Roboto', sans-serif;
+        color: #0F172A;
+        -webkit-font-smoothing: antialiased;
+      }
+      #boot-fallback {
+        padding: 40px;
+        color: #475569;
+        font-size: 15px;
+      }
+      #boot-fallback .title {
+        font-weight: 700;
+        font-size: 20px;
+        color: #0F172A;
+        margin-bottom: 8px;
+      }
+      #boot-fallback .error {
+        margin-top: 24px;
+        padding: 16px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        color: #991b1b;
+        font-size: 13px;
+        display: none;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+    </style>
   </head>
-  <body style="margin:0;padding:0;background:#F4F7FA;font-family:'Pretendard Variable',-apple-system,'Segoe UI',sans-serif">
+  <body>
     <div id="root">
-      <div style="padding:40px;color:#475569;font-size:15px">
-        <div style="font-weight:700;font-size:20px;color:#0F172A;margin-bottom:8px">📥 메가타운 자동임포트</div>
+      <div id="boot-fallback">
+        <div class="title">📥 메가타운 자동임포트</div>
         <div>로딩 중...</div>
+        <div id="boot-error" class="error"></div>
       </div>
     </div>
+    <script>
+      // 2026-09-21 · E-004 · 전역 에러 캡처 · 스크립트 로드 실패 시 · 사용자에게 노출
+      (function () {
+        function showError(msg) {
+          var el = document.getElementById('boot-error');
+          if (!el) return;
+          el.style.display = 'block';
+          el.textContent = '⚠ 렌더러 초기화 오류\n' + msg;
+        }
+        window.addEventListener('error', function (e) {
+          var m = e && e.message ? e.message : String(e);
+          if (e && e.filename) m += '\n(' + e.filename + ':' + e.lineno + ':' + e.colno + ')';
+          showError(m);
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+          var r = e && e.reason;
+          showError((r && (r.message || r.stack)) ? (r.message || r.stack) : String(r));
+        });
+      })();
+    </script>
     <script type="module" src="./src/main.tsx"></script>
   </body>
 </html>

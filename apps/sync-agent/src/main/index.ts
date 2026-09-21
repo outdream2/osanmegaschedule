@@ -143,8 +143,25 @@ function createMainWindow() {
   mainWindow.webContents.on("console-message", (_e, level, message, line, sourceId) => {
     console.log(`[renderer:${level}] ${message} (${sourceId}:${line})`);
   });
-  mainWindow.webContents.on("did-fail-load", (_e, errorCode, errorDescription, validatedURL) => {
-    console.error("[main] Renderer 로딩 실패:", { errorCode, errorDescription, validatedURL });
+  // 2026-09-21 · E-004 · did-fail-load · 하위 리소스 (JS/CSS) 실패 시 · 데이터 URL fallback
+  mainWindow.webContents.on("did-fail-load", (_e, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    console.error("[main] Renderer 로딩 실패:", { errorCode, errorDescription, validatedURL, isMainFrame });
+    // 메인 프레임 실패만 fallback (sub-resource 실패는 스킵 · 무한 루프 방지)
+    if (!isMainFrame) return;
+    if (errorCode === -3) return; // ERR_ABORTED · loadURL 재호출 등 정상 상황
+    mainWindow?.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`
+      <html><body style="font-family:sans-serif;padding:40px;color:#475569;background:#F4F7FA">
+        <h2 style="color:#dc2626;margin:0 0 12px">⚠ 렌더러 로딩 실패</h2>
+        <p style="margin:8px 0">URL: <code>${validatedURL}</code></p>
+        <p style="margin:8px 0">Error: <code>${errorCode} · ${errorDescription}</code></p>
+        <p style="margin:20px 0 8px;color:#64748b">앱을 재설치하거나 · 관리자에게 문의하세요.</p>
+        <button onclick="location.reload()" style="padding:8px 16px;background:#0A2E4A;color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">새로고침</button>
+      </body></html>
+    `)}`);
+  });
+  // 2026-09-21 · E-004 · Renderer 프로세스 크래시 감지
+  mainWindow.webContents.on("render-process-gone", (_e, details) => {
+    console.error("[main] Renderer 프로세스 크래시:", details);
   });
 }
 
