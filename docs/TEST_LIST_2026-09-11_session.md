@@ -4132,6 +4132,56 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 2. 상품입고 페이지 · 카드 리스트 · 모바일 동작 정상
 3. 게시판 · 글 목록 · 모바일/PC 레이아웃 정상
 
+---
+
+### [118] #310 잔여 · DashboardTab 판매 리스트 반응형 카드 전환
+**커밋** · `5791464e`
+
+**변경:** `src/components/SalesTrendPage/DashboardTab.tsx`
+- md 이상(768px+): 기존 7컬럼 표(#·상품명·판매·판매가·이익률·손실·재고) 그대로 유지
+- md 미만: `md:hidden` 카드 리스트 전환 · 순번+상품명 상단 + 판매/판매가/이익률/손실/재고 2열 그리드 하단
+- 선택 상태: border-l-2 border-teal-500 · onClick 완전 유지
+
+**확인 절차**
+1. 매출추이 > 판매 대시보드 탭 진입
+2. **PC(768px+)**: 기존 7컬럼 표 그대로 정상 표시
+3. **모바일(767px 이하)**: 카드형 전환 확인
+   - 순번 + 상품명(15px semibold) + 공급사명 Row1
+   - 판매/판매가/이익률/손실/재고 2열 그리드 Row2
+4. 상품 클릭 → 우측 상세 패널 표시 (기존 동작 유지)
+5. 정렬·검색·판매중 필터 · 모바일/PC 모두 정상 동작
+6. tabular-nums · 말줄임표 없음 확인
+
+---
+
+### [119] #310 잔여 · CardRegisterPage 카드 리스트 반응형 전환
+**커밋** · `ba0c064c`
+
+**변경:** `src/components/OrderManagePage/CardRegisterPage.tsx`
+- sm 이상(640px+): 기존 한 줄 flex(카드사·별칭·결제일·번호) 유지
+- sm 미만: 2줄 카드 뷰 (카드사+별칭 상단 + 결제일 우상단 + 번호뒷4자리 하단)
+
+**확인 절차**
+1. 매입 > 결제 > 결제카드등록 진입
+2. **PC(640px+)**: 한 줄 레이아웃 그대로
+3. **모바일(639px 이하)**: 2줄 카드형 확인
+   - Row1: 카드사명(16px bold) + 별칭 + 결제일(우측)
+   - Row2: **** **** **** 1234 (뒷4자리)
+4. 카드 선택 → 우측 편집 폼 열림 (기존 동작 유지)
+5. 비활성 카드 → 비활성 pill + opacity-60 유지
+
+---
+
+### [116-skip] SchedulePage 반응형 카드 전환 · SKIP
+**사유**: ScheduleGrid는 가로 스크롤 달력 표 구조 (날짜 컬럼 × 직원 행) · 카드형 전환 시 정보 손실 크고 복잡도 높음 · 스크롤 표 자체가 모바일에서도 의도된 UX · 별도 스펙 확정 후 진행
+
+---
+
+### [116-pass] StockCheckPage · BorrowingPage 작업 불필요
+**사유**:
+- **StockCheckPage**: 이미 flex 카드형 리스트 · 표 없음 · 반응형 추가 불필요
+- **BorrowingPage**: BorrowingCard 이미 카드형 컴포넌트 · SplitListPanel 좌측 카드 리스트 · 추가 작업 불필요
+
 ### [117] #330 · 발주·판매 추천 관리자 편집 UI + KV 저장
 **커밋** · `2cea0957`
 - SSOT 하드코딩 규칙 · `src/lib/salesRecommendation/eventCategoryRules.ts` (기존)
