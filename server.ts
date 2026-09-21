@@ -200,6 +200,11 @@ async function startServer() {
   //   · 이전 인라인 제거 · asyncHandler + HttpError 프레임워크 · 최신 saleActive 로직 (value !== false)
   app.use(stockCheckPublicRouter);
 
+  // 2026-09-21 · client-errors · 로그인 이전 브라우저 에러 (랜딩 페이지 크래시 등) 접수 · public 필수
+  //   · 이전 · L229 (requireAuth 이후 마운트) → 로그인 페이지 에러 401 삼킴 → 원인 불명
+  //   · fix · public 섹션 이동 · router 자체는 authorize 미적용 · anon POST 허용
+  app.use(clientErrorsRouter);
+
   // ── 2026-08-16 · #112-G · requireAuth 재활성화 · 아래 모든 /api/* 는 로그인 필수 ──
   //   · SPA 정적 자원 (/, /assets/*, /sw.js) · 미들웨어 내부 skip (path !startsWith("/api/"))
   //   · /products.json · /api 접두 없음 · 자동 통과
@@ -226,7 +231,7 @@ async function startServer() {
 
   // 알림·약사 메뉴 (로그인 필수로 이관)
   app.use(notificationsRouter);
-  app.use(clientErrorsRouter);
+  // 2026-09-21 · clientErrorsRouter · public 섹션(위)으로 이동 · 랜딩 페이지 에러 401 삼킴 fix
   app.use(pharmacistMenuItemsRouter);
 
   // 직원·스케줄 (개인정보 + DELETE 포함)
