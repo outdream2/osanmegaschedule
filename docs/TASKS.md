@@ -150,6 +150,7 @@
 <!-- E-003 ✅ · ProductCreateModal · 상품명 · autoFocus (lockCode) + autoCapitalize/Correct/spellCheck off · 2026-09-20 완료 -->
 <!-- E-002 ✅ · 근본 원인 · Google OAuth refresh_token 만료 (invalid_grant) · 코드 아닌 환경 문제 · googleDriveService · probeDriveAuth + /api/drive-status?probe=1 + rose 배너 · 관리자 조치 필요 (OAuth Playground 재발급 · 프로덕션 게시) · 2026-09-21 완료 (`965876c5`) -->
 | **E-002-fix** | **Google OAuth refresh_token 재발급 · 관리자 조치** (사용자 지시 대기 · 2026-09-21) | 🔴 P1 | 코드 아닌 환경 조치 · ① OAuth Playground · Drive API v3 · scope `drive.file` · authorize · exchange · refresh_token 복사 · ② `src/keys/google-oauth.json` · refresh_token 갱신 · ③ 서버 재시작 · ④ **근본 대책** · Google Cloud Console · OAuth 앱 Production 게시 (7일 만료 제거) |
+| **#327** | **Google Drive 파일 업로드 · 기능 확장·안정화** (사용자 지시 · 2026-09-21) | 🟡 P2 | E-002 코드 fix 후 · 추가 개선 · ① 계약서 외 이력서·연차서 등 폴더 통합 · ② 업로드 완료 후 Drive 파일 링크 저장 (employees·contracts 테이블) · ③ 관리자 대시보드 · Drive 인증 상태 상시 표시 · ④ refresh_token 만료 D-2 자동 알림 · ⑤ 실패 시 로컬 Supabase Storage 폴백 |
 <!-- E-004 ✅ · Electron 하얀 화면 · Vite crossorigin 자동 주입 · file:// origin=null · CORS 실패 근본 원인 · stripCrossoriginPlugin + boot fallback UI + window.api guard · 2026-09-21 완료 (`8854944a`) -->
 <!-- 2026-09-18 · #115 · real_map DROP · 이미 2026-09-08 실행 완료 확인 (server.ts:95 주석) -->
 <!-- ~~#115~~ · real_map DROP · ✅ 완료 (2026-09-08 · Supabase SQL Editor) -->
