@@ -51,7 +51,13 @@ export default defineConfig(() => {
             if (/[\\/]node_modules[\\/](recharts|d3)[\\/]/.test(id)) return "vendor-charts";
             if (/[\\/]node_modules[\\/](@ericblade|@undecaf|onnxruntime|@zxing)[\\/]/.test(id)) return "vendor-ocr";
             if (/[\\/]node_modules[\\/](xlsx|papaparse)[\\/]/.test(id)) return "vendor-xlsx";
-            if (/[\\/]node_modules[\\/](lucide-react)[\\/]/.test(id)) return "vendor-icons";
+            if (/[\\/]node_modules[\\/](lucide-react|@phosphor-icons)[\\/]/.test(id)) return "vendor-icons";
+            // 2026-09-21 · P1-3 · vendor-misc 2.2MB 분리 · 지연 로드 가능 무거운 라이브러리 별도 청크
+            if (/[\\/]node_modules[\\/]@huggingface[\\/]/.test(id)) return "vendor-transformers";
+            if (/[\\/]node_modules[\\/](pdfjs-dist|jspdf|html2canvas-pro)[\\/]/.test(id)) return "vendor-pdf";
+            if (/[\\/]node_modules[\\/](radix-ui|@radix-ui)[\\/]/.test(id)) return "vendor-radix";
+            if (/[\\/]node_modules[\\/](googleapis|@google|google-auth-library|gtoken|gaxios)[\\/]/.test(id)) return "vendor-google";
+            if (/[\\/]node_modules[\\/](cloudinary)[\\/]/.test(id)) return "vendor-cloudinary";
             return "vendor-misc";
           },
         },
