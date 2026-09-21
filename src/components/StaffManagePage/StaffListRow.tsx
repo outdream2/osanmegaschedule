@@ -21,6 +21,8 @@ interface StaffListRowProps {
   uploadBankbookForRow: (emp: Employee, f: File) => void;
   uploadResignationFileForRow: (emp: Employee, f: File) => void;
   onWriteContract?: (emp: Employee) => void;
+  /** 모바일 카드 뷰 모드 · md 미만에서 사용 */
+  cardView?: boolean;
 }
 
 // 사각형 서류 아이콘 버튼 · rounded-md · 원형 절대 금지
@@ -80,6 +82,7 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
   handleSelect, showError,
   uploadResumeForRow, uploadBankbookForRow, uploadResignationFileForRow,
   onWriteContract,
+  cardView = false,
 }) => {
   const isSelected = emp.id === selectedId;
   const ctMeta = contractTypeMeta(emp.contract_type);
@@ -181,6 +184,120 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
 
   // 퇴사자는 전체 텍스트 muted
   const dimCls = isRetired ? "opacity-50" : "";
+
+  // ── 카드 뷰 (모바일 md 미만) ──────────────────────────────────────────────
+  if (cardView) {
+    const cardCls = isSelected
+      ? "border-l-[3px] border-l-brand-deep bg-brand-tint/60"
+      : "border-l-[3px] border-l-transparent hover:bg-zinc-50/70";
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => handleSelect(emp)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleSelect(emp); }}
+        className={`cursor-pointer px-3 py-3 transition-colors duration-100 min-h-[44px] ${cardCls} ${dimCls}`}
+      >
+        {/* 상단: 이름 + 재직상태 */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <span className={`text-[16px] font-bold leading-tight whitespace-normal break-keep ${isSelected ? "text-brand-deep" : "text-zinc-800"}`}>
+              {emp.name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
+            </span>
+            {[emp.position, emp.rank].filter(Boolean).length > 0 && (
+              <span className={`ml-1.5 text-[13px] leading-tight whitespace-normal break-keep ${isSelected ? "text-brand-deep/60" : "text-zinc-500"}`}>
+                {[emp.position, emp.rank].filter(Boolean).join(" · ")}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={`text-[13px] font-semibold leading-tight ${statusCls}`}>{statusLabel}</span>
+            {dDayLabel && (
+              <span className={`text-[12px] font-bold tabular-nums ${dDayLabel.cls}`}>{dDayLabel.label}</span>
+            )}
+          </div>
+        </div>
+
+        {/* 하단: 계약유형 + 근속 + 서류 버튼 */}
+        <div className="flex items-center justify-between gap-2 mt-1.5">
+          <div className="flex items-center gap-2">
+            {contractLabel && (
+              <span className={`text-[12px] tabular-nums ${contractTextCls}`}>{contractLabel}</span>
+            )}
+            {tenure && (
+              <span className="text-[12px] text-zinc-400 tabular-nums">{tenure}</span>
+            )}
+          </div>
+          {/* 서류 버튼 */}
+          <div
+            className="flex items-center gap-[3px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DocBtn
+              hasFile={hasResume}
+              colorOn="text-emerald-500 hover:bg-emerald-50"
+              colorOff="text-zinc-300 hover:text-emerald-400 hover:bg-emerald-50"
+              onClick={openResume}
+              uploadHandler={(e) => {
+                const f = e.target.files?.[0]; e.target.value = "";
+                if (f) uploadResumeForRow(emp, f);
+              }}
+              accept=".pdf,.doc,.docx,.hwp,image/*"
+              title={hasResume ? "이력서 보기" : "이력서 업로드"}
+              icon={<Paperclip size={12} />}
+            />
+            <DocBtn
+              hasFile={hasBankbook}
+              colorOn="text-sky-500 hover:bg-sky-50"
+              colorOff="text-zinc-300 hover:text-sky-400 hover:bg-sky-50"
+              onClick={openBankbook}
+              uploadHandler={(e) => {
+                const f = e.target.files?.[0]; e.target.value = "";
+                if (f) uploadBankbookForRow(emp, f);
+              }}
+              accept="image/*"
+              title={hasBankbook ? "통장사본 보기" : "통장사본 업로드"}
+              icon={<Paperclip size={12} />}
+            />
+            {hasContractFile ? (
+              <DocBtn
+                hasFile
+                colorOn="text-indigo-500 hover:bg-indigo-50"
+                colorOff=""
+                onClick={openContract}
+                title="근로계약서 보기"
+                icon={<FileText size={12} />}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={writeContract}
+                title="근로계약서 작성"
+                className="w-[26px] h-[26px] flex items-center justify-center rounded-md text-zinc-300 hover:text-indigo-500 hover:bg-indigo-50 transition-colors cursor-pointer shrink-0"
+              >
+                <NotePencilIcon size={12} />
+              </button>
+            )}
+            {(isRetired || isPending) && (
+              <DocBtn
+                hasFile={hasResignationFile}
+                colorOn="text-rose-500 hover:bg-rose-50"
+                colorOff="text-zinc-300 hover:text-rose-400 hover:bg-rose-50"
+                onClick={openResignationFile}
+                uploadHandler={(e) => {
+                  const f = e.target.files?.[0]; e.target.value = "";
+                  if (f) uploadResignationFileForRow(emp, f);
+                }}
+                accept=".pdf,image/*"
+                title={hasResignationFile ? "사직서 보기" : "사직서 업로드"}
+                icon={<ExternalLink size={12} />}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <tr

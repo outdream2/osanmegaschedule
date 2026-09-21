@@ -97,7 +97,8 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
         <div className="text-center text-[15px] text-zinc-400 py-12">해당 조건의 직원이 없습니다</div>
       ) : (
         <div className={`${loading ? "opacity-40 pointer-events-none" : ""} transition-opacity`}>
-          <table className="w-full text-[15px] border-collapse">
+          {/* PC (md+): 테이블 */}
+          <table className="hidden md:table w-full text-[15px] border-collapse">
             {/* sticky 정렬 헤더 */}
             <thead className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur-sm border-b-2 border-zinc-200">
               <tr>
@@ -150,6 +151,25 @@ export const StaffListPanel: React.FC<StaffListPanelProps> = ({
               ))}
             </tbody>
           </table>
+
+          {/* 모바일 (md 미만): 카드형 */}
+          <div className="md:hidden flex flex-col divide-y divide-zinc-100">
+            {filtered.map((emp) => (
+              <StaffListRow
+                key={emp.id}
+                emp={emp}
+                selectedId={selectedId}
+                contractCountByEmp={contractCountByEmp}
+                handleSelect={handleSelect}
+                showError={showError}
+                uploadResumeForRow={uploadResumeForRow}
+                uploadBankbookForRow={uploadBankbookForRow}
+                uploadResignationFileForRow={uploadResignationFileForRow}
+                onWriteContract={onWriteContract}
+                cardView
+              />
+            ))}
+          </div>
         </div>
       )}
     </>
