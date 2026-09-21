@@ -185,10 +185,16 @@ export function initBadgeSync(): () => void {
   async function refresh(): Promise<void> {
     if (cancelled) return;
     try {
-      const { data } = await api.get<{ count: number }>("/api/leave-requests/pending-count");
+      // 2026-09-21 · 사용자 보고 · "알람 4개인데 1개 표시" · leave + resignation 합산으로 통일 (SideNav approvalBadge 와 동일)
+      const [leaveRes, resignationRes] = await Promise.all([
+        api.get<{ count: number }>("/api/leave-requests/pending-count").catch(() => ({ data: { count: 0 } })),
+        api.get<{ count: number }>("/api/resignation-requests/pending-count").catch(() => ({ data: { count: 0 } })),
+      ]);
       if (cancelled) return;
-      const n = Number(data?.count ?? 0);
-      setAppBadge(Number.isFinite(n) ? n : 0);
+      const lc = Number(leaveRes?.data?.count ?? 0);
+      const rc = Number(resignationRes?.data?.count ?? 0);
+      const total = (Number.isFinite(lc) ? lc : 0) + (Number.isFinite(rc) ? rc : 0);
+      setAppBadge(total);
     } catch (err: any) {
       // 401 등 · 미로그인 시 · 배지 clear
       if (err instanceof ApiError && err.status === 401) {

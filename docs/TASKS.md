@@ -157,6 +157,7 @@
 <!-- #327 ✅ · 5/5 완전 스코프 · Drive 폴더 통합 + 링크 저장 + 관리자 대시보드 상태 + D-2 알림 + Supabase 폴백 · 2026-09-21 완료 (`4cbfe492` `11970be8` `ef071cb6`) -->
 <!-- #328 ✅ · iOS Expo 푸시 알림 3단 완료 · Frontend (`84647050`) · Backend push_tokens+expo (`92469eb3`) · 배지 sync+연차 승인 트리거 (`30062557`) · 2026-09-21 -->
 <!-- E-004 ✅ · Electron 하얀 화면 · Vite crossorigin 자동 주입 · file:// origin=null · CORS 실패 근본 원인 · stripCrossoriginPlugin + boot fallback UI + window.api guard · 2026-09-21 완료 (`8854944a`) -->
+<!-- E-005 ✅ · iOS 앱 배지 count 4개인데 1개 표시 · initBadgeSync · leave only → leave + resignation 합산 (SideNav approvalBadge 와 통일) · 2026-09-21 완료 -->
 <!-- 2026-09-18 · #115 · real_map DROP · 이미 2026-09-08 실행 완료 확인 (server.ts:95 주석) -->
 <!-- ~~#115~~ · real_map DROP · ✅ 완료 (2026-09-08 · Supabase SQL Editor) -->
 <!-- 2026-09-18 · T-RSTP-TOOLBAR 완료 · [46] 커밋 `780677f5` · flex-col + lg:flex-row 반응형 -->
