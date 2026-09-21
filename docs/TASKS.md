@@ -126,7 +126,7 @@
 <!-- 2026-09-20 · resignation_requests 테이블 · create_resignation_requests.sql 실행 완료 · 사직서 워크플로우 (B) 활성 · 승인 시 employees.retireDate 자동 -->
 <!-- #302 ✅ · products-search API · optimal_stock·min_stock 필드 누락 fix · 2026-09-21 완료 (`bd19450c`) -->
 <!-- #303 ✅ · xlsx 0.18.5 → 0.20.3 SheetJS CDN · TS·build 통과 · 2026-09-21 완료 -->
-| **#310** | **반응형 리스트 → 카드 전환** · PC 한 줄 · 모바일 카드형 자동 (사용자 지시 · 2026-09-20) | 🔴 P1 | **전수** · 대원칙 등재 · Tailwind md: breakpoint · 페이지별 순차 · 회귀 X |
+<!-- #310 ✅ (부분 · 11 페이지 완료) · Top 5 (직원·거래처·발주요청·연차·결제입력) + 잔여 3 (ProductInfoPage·VendorStockPage·EventsSection) + #324-3차 (매입이력) · pass 3 (ScanPage·ProductArrivalPage·BoardPage 이미 카드형) · 2026-09-21 완료 · 잔여 전수는 후속 세션 -->
 <!-- #311 ✅ · UpcomingLeaveBanner + useUpcomingLeaves + /api/upcoming-leaves · SchedulePage L561 통합 · 14일 이내 · 관리자 lv≥2 · 이미 완료 -->
 <!-- #312 ✅ · POST /api/approve-leave (server/routes/daily/leave.ts L118-146) · scheduleService.batchUpdateSchedules 자동 호출 · try/catch + 로그 · 실패 시 500 · 알림 발송 · 이미 완료 -->
 <!-- 2026-09-20 · #313 ✅ · c1feb252 · 공급사+판매상태 나란히 + 라벨 폰트 +1 + 필수 미입력 확인창 -->
@@ -136,11 +136,11 @@
 <!-- 2026-09-20 · #317 ✅ · e25f53cd · 진열요청 · Note 입력 공통 Modal -->
 <!-- #318 ✅ · 전수 조사 완료 · 4곳 (ProductCreateModal·ProductInfoPage·RealStockTablePage·InventoryEditModal) + 서버 (productArrivals) · mergeShelfPositions 보호 메커니즘 · 모두 정합 · 코드 편집 없음 · 잠재적 엣지 케이스 (모두 null clear 지우기) · 사용자 지시 범위 밖 · 별도 요청 시 fix · 2026-09-21 완료 -->
 <!-- #319 ✅ · 8b006d6a · ShelfPositionPicker 신규 추출 · ProductCreateModal ShelfPositionSection 1:1 이관 · 나머지 3곳(InventoryEditPanel·RealStockTablePage·ArrivalRowCard) 구조 다름·교체 불가 분석 완료 · TS+build 통과 · 2026-09-21 완료 -->
-| **#320** | **근로계약서 작성 · 좌측 페이지 종합 개선** (사용자 지시 · 2026-09-20 · UI 위임 · 다중 chain) | 🟡 P2 | 업무요청 > 서류작성 > 근로계약서 작성 · **1차** (진행 중) · ① 직군 리스트 · settings 값 파생 (하드코딩 X) · ② 계약유형 · 연차 다음줄에 **근무요일** 추가 · ③ 담당업무 섹션에서 **보험 제거** · 하단 보험 섹션에 라벨 추가 · **2차** (chain 대기) · ④ **라벨 폰트 +4 · 전체 통일** (fldLabel 단일 상수 · 들쭉날쭉 X) · ⑤ **근로자 정보 카드** · 라벨+입력 · 라벨+선택 나란히 · **사번 성명 앞** · 사번 = 수정 불가 유일키 (readOnly + 시각적 lock 표시) · ⑥ 목업 (docs/UI_MOCKUP_2026-09-14.html) · 최신 트렌드 · Linear/Vercel 톤 · 세련·예쁨 · UI 대원칙 준수 |
-| **#321** | **발주 발송 · 확인창 · 공급사별 상세내역** (사용자 지시 · 2026-09-20) | 🟡 P2 | 발주서 · 발주 발송 버튼 클릭 시 · 확인창(dialog/modal) 표시 · `공급사 XX의 상품 YY *N개* / 상품 ZZ *M개*` 형식 · 공급사별 그룹핑 · 상품·수량 명시 · 한번 더 확인 후 실제 발송 · 오발주 방지 |
+<!-- #320 ✅ · 근로계약서 좌측 종합 개선 · 6항목 (①②③④⑤⑥) 완료 (`82935ccb` `487f01ec`) · 2026-09-21 -->
+<!-- #321 ✅ · 발주 발송 확인창 · 공급사별 상세 (`b9917c96`) · 2026-09-20 -->
 <!-- #322 ✅ · OrderHistoryTab · 발주번호+공급사 min-w 160→130 · 매입확인 92→104 + whitespace-nowrap · 2026-09-21 완료 -->
 <!-- #323 ✅ · 접힘 화살표 컬럼 · 인라인 확장 제거 · Q4=A · 우측 상세 패널로 충분 · 2026-09-21 완료 -->
-| **#324** | **매입이력 · 판매상태 필터 + 2행 레이아웃 + 상품별 표형식 + 반응형 카드** (사용자 지시 · 2026-09-20 · 다중 chain) | 🟡 P2 | ✅ **1차·2차 완료** · 1차 (`9397a0ac` · 판매상태 필터 · 2행) · 2차 (`cb3992a9` · 상품별 표형식·자동정렬 헤더) · **3차 남음** (반응형 좁은 폭 시 · SplitPanel 왼쪽 · **2~3줄 카드형** · #310 대원칙 · md: breakpoint · 공급사별·상품별 양쪽 · 별도 chain) |
+<!-- #324 ✅ · 매입이력 · 3차까지 완료 · 1차 판매상태 필터+2행 (`9397a0ac`) · 2차 상품별 표형식·자동정렬 (`cb3992a9`) · 3차 반응형 카드 (`d1e42cc5`) · 2026-09-21 -->
 
 ---
 
@@ -155,7 +155,7 @@
 <!-- E-002 ✅ · 근본 원인 · Google OAuth refresh_token 만료 (invalid_grant) · 코드 아닌 환경 문제 · googleDriveService · probeDriveAuth + /api/drive-status?probe=1 + rose 배너 · 관리자 조치 필요 (OAuth Playground 재발급 · 프로덕션 게시) · 2026-09-21 완료 (`965876c5`) -->
 | **E-002-fix** | **Google OAuth refresh_token 재발급 · 관리자 조치** (사용자 지시 대기 · 2026-09-21) | 🔴 P1 | 코드 아닌 환경 조치 · ① OAuth Playground · Drive API v3 · scope `drive.file` · authorize · exchange · refresh_token 복사 · ② `src/keys/google-oauth.json` · refresh_token 갱신 · ③ 서버 재시작 · ④ **근본 대책** · Google Cloud Console · OAuth 앱 Production 게시 (7일 만료 제거) |
 <!-- #327 ✅ · 5/5 완전 스코프 · Drive 폴더 통합 + 링크 저장 + 관리자 대시보드 상태 + D-2 알림 + Supabase 폴백 · 2026-09-21 완료 (`4cbfe492` `11970be8` `ef071cb6`) -->
-| **#328** | **iOS 앱 · Expo 푸시 알림 · 백엔드·프론트 통합** (사용자 보고 · 2026-09-21 · 앱 개발자 가이드 수령) | 🔴 P1 | osanmega.onrender.com · WebView 앱 v1.0.1 · **원인** · 서버 · 토큰 저장·전송 X · **Task 1 (Frontend)** · `window.OSAN_APP.pushToken` listener + `POST /api/push-token` · **Task 2 (Backend)** · push_tokens 테이블 (user_id·token·platform·created_at·last_used_at) + endpoint + Expo Push Service (`https://exp.host/--/api/v2/push/send`) 헬퍼 · badge/data.url 지원 · DeviceNotRegistered 시 토큰 삭제 · **Task 3** · postMessage `setBadge` · 알림 트리거 지점 (연차 승인·발주 발송·재고 알림 등) · 다중 device · unique token · 로그아웃 시 토큰 삭제 |
+<!-- #328 ✅ · iOS Expo 푸시 알림 3단 완료 · Frontend (`84647050`) · Backend push_tokens+expo (`92469eb3`) · 배지 sync+연차 승인 트리거 (`30062557`) · 2026-09-21 -->
 <!-- E-004 ✅ · Electron 하얀 화면 · Vite crossorigin 자동 주입 · file:// origin=null · CORS 실패 근본 원인 · stripCrossoriginPlugin + boot fallback UI + window.api guard · 2026-09-21 완료 (`8854944a`) -->
 <!-- 2026-09-18 · #115 · real_map DROP · 이미 2026-09-08 실행 완료 확인 (server.ts:95 주석) -->
 <!-- ~~#115~~ · real_map DROP · ✅ 완료 (2026-09-08 · Supabase SQL Editor) -->
@@ -164,7 +164,7 @@
      · 별도 페이지·라우트 없음 · 이미 요청 목표 달성 상태
      · 향후 · 2단 탭 (매장구역도 안에 [매장, 창고1, 창고2] 서브탭) 원할 시 · 사용자 명시 후 진행 -->
 | ~~T-WAREHOUSE-TAB~~ | ~~창고1/2 → 매장구역도 탭~~ | ⚠️ **재해석 · #325 로 재등재** · 이전 "flat 탭 있음" 판단 · 사용자 의도 오해 · 실제 요구는 **2단 탭 nesting** |
-| **#325** | **매장진열 · 매장구역도 안에 창고1·창고2 서브탭 nesting** (사용자 지시 · 서너 번 반복 · 2026-09-20) | 🔴 P1 | 매장진열 · 현재 flat 6탭 · **재구성** · 최상위 탭에서 창고1·창고2 제거 · **매장구역도(map) 클릭 시 · 내부 수평 서브탭 3개** · `매장구역도 · 창고1 · 창고2` (라벨 정확히) · 매장구역도 서브탭 = 기존 map view · 창고1 서브탭 = 기존 warehouse1 view · 창고2 서브탭 = 기존 warehouse2 view · 나머지 flat 탭 (stockTable·mismatch·zoneEdit) 유지 |
+<!-- #325 ✅ · 매장구역도 안 서브탭 nesting 3개 (매장구역도·창고1·창고2) · 완료 (`36f9356a` `795f8109`) · 2026-09-21 -->
 <!-- 2026-09-21 · #326 완료 · [67] 판매추천 자동화 · SSOT 규칙 + /api/sales-auto-recommend + SalesRecommendationPanel 배너 통합 -->
 
 ---
