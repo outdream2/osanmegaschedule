@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 854 |
+| 스캔 파일 | 856 |
 | 위반 파일 | 11 |
-| 클린 파일 | 843 (99%) |
+| 클린 파일 | 845 (99%) |
 | 총 위반 개수 | 11 |
 
 ## 🚨 규칙별 위반 현황
@@ -25,7 +25,7 @@
 |---:|---|---:|---:|---|
 | 1 | `src/components/LeavePage/LeavePage.tsx` | 1207 | 6 | large-file-warn(1) |
 | 2 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1051 | 6 | large-file-warn(1) |
-| 3 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1065 | 6 | large-file-warn(1) |
+| 3 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1115 | 6 | large-file-warn(1) |
 | 4 | `src/components/LandingPage/VendorListEditor.tsx` | 851 | 3 | large-file-warn(1) |
 | 5 | `src/components/OrderManagePage/OrderManagePage.tsx` | 837 | 3 | large-file-warn(1) |
 | 6 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 979 | 3 | large-file-warn(1) |
@@ -43,7 +43,7 @@
 |---|---:|---:|
 | `src/components/LeavePage/LeavePage.tsx` | 1207 | 6 |
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1051 | 6 |
-| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1065 | 6 |
+| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1115 | 6 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 851 | 3 |
 | `src/components/OrderManagePage/OrderManagePage.tsx` | 837 | 3 |
 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 979 | 3 |
