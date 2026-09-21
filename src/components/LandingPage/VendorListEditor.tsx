@@ -320,7 +320,85 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
       {/* 2026-08-04 · #101 · 컬럼 재정비 · 5개 (공급사·총잔고·총재고자산·총판매액·최근매입) */}
       {compact ? (
         <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-line shadow-sm">
-          <table className="w-full min-w-[420px] text-xs border-collapse">
+
+          {/* 모바일 (md 미만): 카드형 */}
+          <div className="md:hidden flex flex-col divide-y divide-zinc-100">
+            {compactSorted.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 text-zinc-400 py-12">
+                <Building2 size={28} className="opacity-25" />
+                <span className="text-[15px] font-semibold">
+                  {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
+                </span>
+              </div>
+            ) : compactSorted.map((v) => {
+              const isActive = activeId === v.id;
+              const catBorder = v.category ? (CATEGORY_LEFT_BORDER[v.category] ?? "border-l-zinc-200") : "border-l-zinc-200";
+              const catBg = v.category ? (CATEGORY_LEFT_BG[v.category] ?? "") : "";
+              const agg = supplierAggMap.get(normalizeSupplierKey(v.company_name));
+              const balanceVal = agg?.balance != null ? agg.balance : (v.latestBalance?.balance ?? null);
+              const hasBal = balanceVal != null;
+              const invDate = v.latestBalance?.invoice_date;
+              const fmtDate = (d: string | null | undefined): string => {
+                if (!d) return "-";
+                const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                return m ? `${m[1].slice(2)}.${m[2]}.${m[3]}` : d.slice(0, 10);
+              };
+              return (
+                <div
+                  key={v.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleVendorClick(v.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") handleVendorClick(v.id); }}
+                  className={[
+                    "cursor-pointer px-3 py-3 transition-all duration-150 border-l-[3px] min-h-[44px]",
+                    isActive
+                      ? "border-l-indigo-500 bg-indigo-50/60"
+                      : `${catBorder} ${catBg} hover:bg-zinc-50/80 active:bg-zinc-100`,
+                  ].join(" ")}
+                >
+                  {/* 상단: 공급사명 + 잔고 */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <VendorCategoryBadge category={v.category} className="text-[12px] mb-0.5" />
+                      <div className={`text-[16px] font-bold break-keep leading-snug ${isActive ? "text-indigo-900" : "text-zinc-800"}`}>
+                        {displayVendorName(v.company_name) || v.company_name}
+                      </div>
+                    </div>
+                    {hasBal && (
+                      <span
+                        className={`text-[15px] font-bold tabular-nums shrink-0 ${
+                          balanceVal! > 0 ? "text-sky-700" :
+                          balanceVal! < 0 ? "text-rose-700" : "text-zinc-400"
+                        }`}
+                      >
+                        {fmtWon(Math.abs(balanceVal!))}
+                      </span>
+                    )}
+                  </div>
+                  {/* 하단: 최근매입 + 재고자산/매입액 */}
+                  <div className="flex items-center gap-3 mt-1">
+                    {invDate && (
+                      <span className="text-[13px] text-zinc-400 tabular-nums">최근 {fmtDate(invDate)}</span>
+                    )}
+                    {agg?.purchaseTotal != null && agg.purchaseTotal > 0 && (
+                      <span className="text-[13px] font-semibold tabular-nums text-brand-deep">
+                        매입 {fmtWon(agg.purchaseTotal)}
+                      </span>
+                    )}
+                    {agg?.stockValue != null && agg.stockValue > 0 && (
+                      <span className="text-[13px] tabular-nums text-sky-600 ml-auto">
+                        재고 {fmtWon(agg.stockValue)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* PC (md+): 테이블 */}
+          <table className="hidden md:table w-full min-w-[420px] text-xs border-collapse">
             <thead>
               <tr>
                 {/* 공급사 헤더 (분류+이름 stacked) · 2026-08-04 #68 · 활성 컬럼 subtle 배경 */}
