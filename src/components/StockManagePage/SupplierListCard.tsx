@@ -196,9 +196,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
         <table className={`w-full text-[17px] hidden md:table ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
           <thead className="sticky top-0 z-10">
             <tr className="text-[17px] sm:text-[16px] font-bold text-zinc-500 border-b border-line bg-zinc-100/70 uppercase tracking-wider">
-              <th className="relative text-center py-2" style={{ width: getWidth("toggle"), minWidth: getWidth("toggle") }}>
-                <span {...resizerProps("toggle")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
-              </th>
+              {/* 2026-09-21 · #323 · toggle 컬럼 제거 · 우측 상세 패널로 충분 */}
               <th className="relative text-center py-2" style={{ width: getWidth("num"), minWidth: getWidth("num") }}>
                 #
                 <span {...resizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
@@ -326,24 +324,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                     onClick={() => onRowClick(sup, key)}
                     className={`cursor-pointer transition-colors ${isSelected ? "bg-brand-tint/60 hover:bg-brand-tint" : "hover:bg-brand-tint/30"}`}
                     title="클릭 → 오른쪽 패널에 상세">
-                    <td className="text-center align-middle py-1.5">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); onInlineToggle(key, sup); }}
-                        title={isInline ? "상품 목록 접기" : "상품 목록 인라인 펼치기"}
-                        className={`inline-flex items-center justify-center w-6 h-6 rounded-md transition-all cursor-pointer ${
-                          isInline
-                            ? "bg-brand-tint text-brand-deep"
-                            : "text-zinc-400 hover:bg-brand-tint/40 hover:text-brand-deep"
-                        }`}
-                      >
-                        <ChevronRight
-                          size={13}
-                          strokeWidth={2.4}
-                          className={`transition-transform duration-200 ${isInline ? "rotate-90" : ""}`}
-                        />
-                      </button>
-                    </td>
+                    {/* 2026-09-21 · #323 · 사용자 지시 · 접힘 화살표 컬럼 제거 · 우측 상세 패널로 충분 */}
                     <td className="text-center align-middle py-1.5 text-[17px] font-semibold text-zinc-400 tabular-nums">{i + 1}</td>
                     <td className="text-left px-3 py-1.5 align-top">
                       <div className="flex flex-col leading-tight gap-0.5">
@@ -397,7 +378,6 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                       )
                     )}
                   </tr>
-                  {isInline && <SupplierInlineExpansion loading={inlineLoading} rows={inlineRows} />}
                 </React.Fragment>
               );
             })}
@@ -438,16 +418,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                         {sup.code_conflict && <span className="text-[16px] font-semibold text-amber-500 shrink-0">⚠</span>}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); onInlineToggle(key, sup); }}
-                      title={isInline ? "상품 목록 접기" : "상품 목록 펼치기"}
-                      className={`inline-flex items-center justify-center w-6 h-6 rounded-md transition-all cursor-pointer shrink-0 ${
-                        isInline ? "bg-brand-tint text-brand-deep" : "text-zinc-400 hover:bg-brand-tint/40 hover:text-brand-deep"
-                      }`}
-                    >
-                      <ChevronRight size={13} strokeWidth={2.4} className={`transition-transform duration-200 ${isInline ? "rotate-90" : ""}`} />
-                    </button>
+                    {/* 2026-09-21 · #323 · 인라인 토글 버튼 제거 · 우측 상세 패널로 충분 */}
                   </div>
                   {/* 줄 2 · 재고자산 + 상품수 + 매입수량 */}
                   <div className="flex items-center gap-3 flex-wrap text-[14px]">
@@ -476,7 +447,6 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                     )}
                   </div>
                 </div>
-                {isInline && <SupplierInlineExpansion loading={inlineLoading} rows={inlineRows} />}
               </React.Fragment>
             );
           })}
