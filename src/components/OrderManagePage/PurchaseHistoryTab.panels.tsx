@@ -493,8 +493,8 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
           bodyClassName="bg-white rounded-xl border border-line shadow-sm flex-1 min-h-0 max-h-[calc(100dvh-200px)] flex flex-col overflow-hidden mt-2"
         >
           <>
-          {/* sticky 정렬 헤더 */}
-          <div className="sticky top-0 z-10">
+          {/* sticky 정렬 헤더 · md 이상에서만 표시 */}
+          <div className="sticky top-0 z-10 hidden md:block">
             <table className="w-full border-collapse table-fixed">
               <colgroup>
                 <col style={{ width: "auto", minWidth: 120 }} />
@@ -533,7 +533,9 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
               {productSearch ? "검색 결과 없음" : "해당 기간 매입 상품 없음"}
             </div>
           ) : (
-            <table className="w-full border-collapse table-fixed text-[14px]">
+            <>
+            {/* ─── PC 테이블 뷰 (md 이상) ─── */}
+            <table className="w-full border-collapse table-fixed text-[14px] hidden md:table">
               <colgroup>
                 <col style={{ width: "auto", minWidth: 120 }} />
                 <col style={{ width: 80 }} />
@@ -549,7 +551,7 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                   const saleQty = p.sale_qty ?? null;
                   const saleAmt = p.sale_amount ?? null;
                   const lastDate = p.last_purchase_date
-                    ? p.last_purchase_date.slice(5)   // MM-DD
+                    ? p.last_purchase_date.slice(5)
                     : null;
                   return (
                     <tr
@@ -561,7 +563,6 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                           : "hover:bg-zinc-50/70 border-transparent"
                       }`}
                     >
-                      {/* 상품명 */}
                       <td className="pl-3 pr-2 py-2.5 align-middle">
                         <div className={`text-[14px] font-semibold leading-tight whitespace-normal break-words break-keep ${
                           active ? "text-sky-800" : "text-ink"
@@ -569,13 +570,11 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                           {p.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
                         </div>
                       </td>
-                      {/* 코드 */}
                       <td className="pr-2 py-2.5 align-middle text-right">
                         <span className="text-[12px] text-zinc-400 tabular-nums">
                           {p.product_code ?? <span className="text-zinc-200">-</span>}
                         </span>
                       </td>
-                      {/* 매입액 */}
                       <td className="pr-2 py-2.5 align-middle text-right">
                         <span className={`text-[14px] font-bold tabular-nums ${
                           p.total_amount > 0 ? (active ? "text-sky-700" : "text-zinc-700") : "text-zinc-300"
@@ -589,7 +588,6 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                             : <span className="text-zinc-300 font-normal">-</span>}
                         </span>
                       </td>
-                      {/* 판매량 */}
                       <td className="pr-2 py-2.5 align-middle text-right">
                         <span className={`text-[14px] font-semibold tabular-nums ${
                           saleQty != null && saleQty > 0 ? "text-rose-600" : "text-zinc-300"
@@ -597,7 +595,6 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                           {saleQty != null ? `${saleQty.toLocaleString()}` : "-"}
                         </span>
                       </td>
-                      {/* 판매금액 */}
                       <td className="pr-2 py-2.5 align-middle text-right">
                         <span className={`text-[14px] font-bold tabular-nums ${
                           saleAmt != null && saleAmt > 0 ? "text-rose-700" : "text-zinc-300"
@@ -609,7 +606,6 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                             : "-"}
                         </span>
                       </td>
-                      {/* 최근매입 */}
                       <td className="pr-2 py-2.5 align-middle text-right">
                         <span className="text-[12px] text-zinc-400 tabular-nums whitespace-nowrap">
                           {lastDate ?? <span className="text-zinc-200">-</span>}
@@ -620,6 +616,84 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                 })}
               </tbody>
             </table>
+            {/* ─── 모바일 카드 뷰 (md 미만) ─── */}
+            <div className="md:hidden flex flex-col divide-y divide-zinc-100">
+              {filteredProducts.map(p => {
+                const key = String(p.product_code ?? "").trim() || p.product_name;
+                const active = selectedProductKey === key;
+                const saleQty = p.sale_qty ?? null;
+                const saleAmt = p.sale_amount ?? null;
+                const lastDate = p.last_purchase_date
+                  ? p.last_purchase_date.slice(5)
+                  : null;
+                const amtStr = p.total_amount > 0
+                  ? p.total_amount >= 10_000_000
+                    ? `${(p.total_amount / 10_000_000).toFixed(1)}천만`
+                    : p.total_amount >= 1_000_000
+                      ? `${Math.round(p.total_amount / 10_000)}만`
+                      : p.total_amount.toLocaleString()
+                  : null;
+                const saleAmtStr = saleAmt != null && saleAmt > 0
+                  ? saleAmt >= 1_000_000
+                    ? `${Math.round(saleAmt / 10_000)}만`
+                    : saleAmt.toLocaleString()
+                  : null;
+                return (
+                  <div
+                    key={`ptc-${key}`}
+                    onClick={() => setSelectedProductKey(key)}
+                    className={`cursor-pointer px-3 py-2.5 flex flex-col gap-1 border-l-2 transition-colors ${
+                      active
+                        ? "bg-sky-50 border-sky-500"
+                        : "hover:bg-zinc-50/70 border-transparent"
+                    }`}
+                  >
+                    {/* 줄 1 · 상품명 */}
+                    <div className={`text-[15px] font-semibold leading-snug break-words whitespace-normal break-keep ${
+                      active ? "text-sky-800" : "text-ink"
+                    }`}>
+                      {p.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
+                    </div>
+                    {/* 줄 2 · 코드 · 최근 */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {p.product_code && (
+                        <span className="text-[13px] text-zinc-400 tabular-nums">
+                          #{p.product_code}
+                        </span>
+                      )}
+                      {lastDate && (
+                        <span className="text-[13px] text-zinc-400 tabular-nums">
+                          최근 {lastDate}
+                        </span>
+                      )}
+                    </div>
+                    {/* 줄 3 · 매입액 · 판매금액 */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-[14px] font-bold tabular-nums ${
+                        amtStr ? (active ? "text-sky-700" : "text-zinc-700") : "text-zinc-300"
+                      }`}>
+                        {amtStr ?? "-"}
+                      </span>
+                      <div className="flex items-center gap-3">
+                        {saleQty != null && (
+                          <span className={`text-[13px] font-semibold tabular-nums ${
+                            saleQty > 0 ? "text-rose-500" : "text-zinc-300"
+                          }`}>
+                            판매 {saleQty.toLocaleString()}
+                          </span>
+                        )}
+                        {saleAmtStr && (
+                          <span className="text-[14px] font-bold tabular-nums text-rose-700">
+                            {saleAmtStr}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            </>
           )}
           </div>
           </>

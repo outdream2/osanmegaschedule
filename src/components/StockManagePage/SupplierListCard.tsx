@@ -191,7 +191,9 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
           />
         )
       ) : (
-        <table className={`w-full text-[17px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
+        <>
+        {/* ─── PC 테이블 뷰 (md 이상) ─── */}
+        <table className={`w-full text-[17px] hidden md:table ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
           <thead className="sticky top-0 z-10">
             <tr className="text-[17px] sm:text-[16px] font-bold text-zinc-500 border-b border-line bg-zinc-100/70 uppercase tracking-wider">
               <th className="relative text-center py-2" style={{ width: getWidth("toggle"), minWidth: getWidth("toggle") }}>
@@ -401,6 +403,85 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
             })}
           </tbody>
         </table>
+        {/* ─── 모바일 카드 뷰 (md 미만) ─── */}
+        <div className={`md:hidden flex flex-col divide-y divide-zinc-100 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+          {displayedXlsxSuppliers.map((sup, i) => {
+            const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
+            const isSelected = supplierSelectedKey === key;
+            const isInline = inlineExpanded.has(key);
+            const inlineRows = supplierRowsMap[key];
+            const inlineLoading = supplierRowsLoading.has(key);
+            const nm = sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
+            const cat = vendorCategoryMap[nm] ?? vendorCategoryMap[sup.supplier ?? ""] ?? null;
+            const displayName = displayVendorName(sup.supplier ?? "") || nm;
+            const c = cycleFor(sup.supplier);
+            return (
+              <React.Fragment key={key}>
+                <div
+                  onClick={() => onRowClick(sup, key)}
+                  className={`cursor-pointer px-3 py-2.5 flex flex-col gap-1.5 border-l-2 transition-colors ${
+                    isSelected ? "bg-brand-tint/60 border-brand-deep" : "hover:bg-brand-tint/30 border-transparent"
+                  }`}
+                >
+                  {/* 줄 1 · 번호 + 공급사명 + 인라인 토글 */}
+                  <div className="flex items-start gap-2">
+                    <span className="text-[14px] font-semibold tabular-nums text-zinc-400 shrink-0 mt-0.5">{i + 1}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {cat && <VendorCategoryBadge category={cat} />}
+                        <span className={`text-[16px] font-semibold break-words whitespace-normal leading-tight ${isSelected ? "text-sky-800" : "text-zinc-700"}`}>
+                          {displayName}
+                        </span>
+                        {sup.supplier_code && !embedded && (
+                          <span className="text-[14px] tabular-nums text-zinc-400 bg-zinc-100 rounded px-1 shrink-0">#{sup.supplier_code}</span>
+                        )}
+                        {sup.code_conflict && <span className="text-[16px] font-semibold text-amber-500 shrink-0">⚠</span>}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onInlineToggle(key, sup); }}
+                      title={isInline ? "상품 목록 접기" : "상품 목록 펼치기"}
+                      className={`inline-flex items-center justify-center w-6 h-6 rounded-md transition-all cursor-pointer shrink-0 ${
+                        isInline ? "bg-brand-tint text-brand-deep" : "text-zinc-400 hover:bg-brand-tint/40 hover:text-brand-deep"
+                      }`}
+                    >
+                      <ChevronRight size={13} strokeWidth={2.4} className={`transition-transform duration-200 ${isInline ? "rotate-90" : ""}`} />
+                    </button>
+                  </div>
+                  {/* 줄 2 · 재고자산 + 상품수 + 매입수량 */}
+                  <div className="flex items-center gap-3 flex-wrap text-[14px]">
+                    {!isGroupCollapsed("stock") && (
+                      <>
+                        <span className="font-bold tabular-nums text-zinc-700">{fmtWon(sup.totalStockAmount)}</span>
+                        <span className="text-zinc-400 tabular-nums">{sup.itemCount}종</span>
+                      </>
+                    )}
+                    {!isGroupCollapsed("purchase") && (
+                      <>
+                        <span className="tabular-nums text-zinc-500">매입 {fmt(sup.purchaseQty)}</span>
+                        {showExtraPurchaseColumns && (
+                          <span className="font-bold tabular-nums text-brand-deep">{fmtWon(Number(sup.purchaseAmount ?? 0))}</span>
+                        )}
+                        {showCycleColumn && c != null && (
+                          <span className="tabular-nums text-zinc-400">{c}일주기</span>
+                        )}
+                      </>
+                    )}
+                    {!hideSaleColumns && !isGroupCollapsed("sale") && (
+                      <>
+                        <span className="tabular-nums text-zinc-500">판매 {fmt(sup.saleQty)}</span>
+                        <span className="font-semibold tabular-nums text-zinc-600">{fmtWon(Number(sup.saleAmount ?? 0))}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {isInline && <SupplierInlineExpansion loading={inlineLoading} rows={inlineRows} />}
+              </React.Fragment>
+            );
+          })}
+        </div>
+        </>
       )}
     </SplitListPanel>
   );
