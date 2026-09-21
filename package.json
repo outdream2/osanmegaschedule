@@ -80,6 +80,7 @@
   "devDependencies": {
     "@sentry/browser": "^10.70.0",
     "@tailwindcss/vite": "^4.1.14",
+    "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",
