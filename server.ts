@@ -44,6 +44,8 @@ import vendorsRouter     from "./server/routes/purchase/vendors";
 import ocrRouter         from "./server/routes/ocr/ocr";
 // 2026-08-05 · 재고세기(YOLO) 기능 완전 제거 · stockCount·stockCounter·stockCounterConfig 파일 삭제됨
 import stockManageRouter from "./server/routes/stock/stockManage";
+// 2026-09-21 · #326 · 판매추천 자동화 · 공휴일·이벤트·계절 기간별 자동 추천
+import salesAutoRecommendRouter from "./server/routes/stock/salesAutoRecommend";
 // 2026-08-06 · T-LOSS-HISTORY · 손실추적 (DiffTab) 날짜별 스냅샷·이력·집계
 import lossTrackingRouter from "./server/routes/stock/lossTracking";
 import purchaseRouter    from "./server/routes/purchase/purchase";
@@ -264,6 +266,8 @@ async function startServer() {
 
   // 재고·상품
   app.use(stockManageRouter);
+  // 2026-09-21 · #326 · 판매추천 자동화 · GET /api/sales-auto-recommend
+  app.use(salesAutoRecommendRouter);
   app.use(lossTrackingRouter);       // T-LOSS-HISTORY · 손실추적 이력
   // 2026-08-18 · stockArrivalsRouter · public 섹션으로 이동 (line 155)
   app.use(productArrivalsRouter);
