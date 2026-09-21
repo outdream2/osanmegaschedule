@@ -16,11 +16,23 @@ export default defineConfig(() => {
     ],
     optimizeDeps: {
       exclude: ["@undecaf/zbar-wasm", "@ericblade/quagga2"],
+      // 2026-09-21 · React 19.3 · Vite HMR 이중 로드 방지 · React 관련 모듈 강제 pre-bundle
+      include: [
+        "react",
+        "react-dom",
+        "react-dom/client",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "prop-types",
+        "react-is",
+      ],
     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+      // 2026-09-21 · Vite dedupe · React·JSX 런타임 단일 인스턴스 강제
+      dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
     },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
