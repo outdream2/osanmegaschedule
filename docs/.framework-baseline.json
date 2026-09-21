@@ -1,5 +1,5 @@
 {
-  "created": "2026-09-20",
+  "created": "2026-09-21",
   "version": 1,
   "totalViolations": 11,
   "files": {
@@ -14,7 +14,7 @@
       "totalWeight": 6
     },
     "src/components/OrderManagePage/PurchaseHistoryTab.tsx": {
-      "lines": 1002,
+      "lines": 1051,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -32,6 +32,16 @@
         }
       ],
       "totalWeight": 6
+    },
+    "src/components/LandingPage/VendorListEditor.tsx": {
+      "lines": 851,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
     },
     "src/components/OrderManagePage/OrderManagePage.tsx": {
       "lines": 837,
@@ -65,16 +75,6 @@
     },
     "src/components/ProductArrivalPage/ProductArrivalPage.tsx": {
       "lines": 975,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/ProductInfoPage/ProductCreateModal.tsx": {
-      "lines": 841,
       "violations": [
         {
           "ruleId": "large-file-warn",

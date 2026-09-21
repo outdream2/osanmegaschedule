@@ -19,9 +19,8 @@ import { IconTile } from "../common/IconTile";
 import { ZoneCategoryPicker } from "../common/ZoneCategoryPicker";
 // 2026-09-14 · #82 · 상세구역 표시 · shelf_positions JSONB 배지
 import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
-// 2026-09-18 · 상세구역 5-slot 입력 · ShelfPositionInput 재사용
-import { ShelfPositionInput } from "../common/ShelfPositionInput";
-import { useStorageLocations } from "../../hooks/useStorageLocations";
+// 2026-09-21 · #319 · 공통 ShelfPositionPicker 교체
+import { ShelfPositionPicker } from "../common/features/ShelfPositionPicker";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { CreateProductSchema, type CreateProductInput } from "../../shared/schemas/products";
@@ -175,7 +174,6 @@ export const ProductCreateModal: React.FC<Props> = ({
   const isEdit = mode === "edit";
   const { toast, showSuccess, showError } = useToast();
   // 2026-09-18 · 5-slot ShelfPositionInput · 활성 창고/매장 목록
-  const storageLocations = useStorageLocations();
   const [form, setForm] = useState<Form>(EMPTY);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -607,17 +605,15 @@ export const ProductCreateModal: React.FC<Props> = ({
                   </Field>
                 </div>
                 {form.location.trim() && (
-                  <ShelfPositionSection
-                    location={form.location.trim()}
-                    warehouseTag={warehouseTag}
-                    shelfPositions={form.shelf_positions}
-                    storageLocations={storageLocations}
-                    onChange={(code, val) =>
+                  <ShelfPositionPicker
+                    value={form.shelf_positions}
+                    onChange={(next) =>
                       setForm(prev => ({
                         ...prev,
-                        shelf_positions: { ...prev.shelf_positions, [code]: val },
+                        shelf_positions: { ...prev.shelf_positions, ...next },
                       }))
                     }
+                    productLocation={form.location.trim()}
                     productCode={isEdit ? form.product_code : undefined}
                   />
                 )}
@@ -744,100 +740,5 @@ const PriceInput: React.FC<{ value: string; onChange: (v: string) => void }> = (
     />
   </div>
 );
-
-// ─── 2026-09-20 · 상세구역 섹션 · 진열위치 선택 시만 표시
-//   · 창고: classifyArrivalSlot 결과 기준 warehouse1 or warehouse2 중 하나만 표시
-//   · 매장: 매장1 기본 표시 · +매장2 +매장3 추가 버튼
-interface ShelfPositionSectionProps {
-  location: string;
-  warehouseTag: { label: string; cls: string } | null;
-  shelfPositions: ShelfPositionsDraft;
-  storageLocations: import("../../shared/schemas/settings").StorageLocation[];
-  onChange: (code: string, val: string | null) => void;
-  productCode?: string;
-}
-const ShelfPositionSection: React.FC<ShelfPositionSectionProps> = ({
-  location, warehouseTag, shelfPositions, storageLocations, onChange, productCode,
-}) => {
-  const [extraStores, setExtraStores] = React.useState<string[]>([]);
-
-  // 창고 슬롯: classifyArrivalSlot 결과로 warehouse1 or warehouse2 하나만
-  const warehouseSlot: "warehouse1" | "warehouse2" | null = (() => {
-    const slot = classifyArrivalSlot(location);
-    if (slot === "w1") return "warehouse1";
-    if (slot === "w2") return "warehouse2";
-    // 창고코드 아닌 경우: warehouseTag 없으면 둘 다 미표시 · warehouseTag 있으면 추론
-    if (warehouseTag?.label === "창고1") return "warehouse1";
-    if (warehouseTag?.label === "창고2") return "warehouse2";
-    return null;
-  })();
-
-  // 매장 슬롯: store1 기본 + 추가된 슬롯
-  const storeSlots: string[] = ["store1", ...extraStores];
-  const availableExtraStores = ["store2", "store3"].filter(s => !extraStores.includes(s));
-
-  const getLocInfo = (code: string) => storageLocations.find(l => l.code === code);
-
-  return (
-    <div className="col-span-full">
-      <div className="flex items-center gap-1.5 mb-2">
-        <MapPin size={14} className="text-ink-soft" />
-        <span className="text-[15px] font-semibold text-ink tracking-tight">상세구역</span>
-        <span className="text-[13px] text-ink-soft">(층·칸·순서 3자리 · 예: 332)</span>
-      </div>
-      <div className="flex flex-wrap gap-3 pt-1">
-        {/* 창고 슬롯 */}
-        {warehouseSlot && (() => {
-          const loc = getLocInfo(warehouseSlot);
-          if (!loc?.active) return null;
-          return (
-            <ShelfPositionInput
-              key={warehouseSlot}
-              label={loc.name}
-              required={false}
-              value={shelfPositions[warehouseSlot as keyof ShelfPositionsDraft] ?? null}
-              onChange={(v) => onChange(warehouseSlot, v)}
-              productCode={productCode}
-              displayLocation={location}
-              storageKey={warehouseSlot}
-            />
-          );
-        })()}
-        {/* 매장 슬롯 */}
-        {storeSlots.map(code => {
-          const loc = getLocInfo(code);
-          if (!loc?.active) return null;
-          return (
-            <ShelfPositionInput
-              key={code}
-              label={loc.name}
-              required={loc.required_detail}
-              value={shelfPositions[code as keyof ShelfPositionsDraft] ?? null}
-              onChange={(v) => onChange(code, v)}
-              productCode={productCode}
-              displayLocation={location}
-              storageKey={code}
-            />
-          );
-        })}
-        {/* 매장 추가 버튼 */}
-        {availableExtraStores.map(code => {
-          const loc = getLocInfo(code);
-          if (!loc?.active) return null;
-          return (
-            <button
-              key={code}
-              type="button"
-              onClick={() => setExtraStores(prev => [...prev, code])}
-              className="h-9 px-3 rounded-lg border border-dashed border-brand-tint text-[14px] font-semibold text-brand-deep hover:bg-brand-tint/50 transition-colors cursor-pointer flex items-center gap-1"
-            >
-              + {loc.name}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
 
 export default ProductCreateModal;
