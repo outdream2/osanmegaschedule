@@ -120,112 +120,205 @@ const RequestHistoryTable: React.FC<RequestHistoryTableProps> = ({
     );
   }
   return (
-    <div className={`overflow-x-auto rounded-lg border border-zinc-200 ${loading ? "opacity-40 pointer-events-none" : ""}`}>
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="bg-zinc-50 border-b border-zinc-200">
-            {isManager && (
-              <th className="text-center px-3 py-3 w-10">
-                <input
-                  type="checkbox"
-                  checked={rows.length > 0 && selectedIds.size === rows.length}
-                  ref={el => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < rows.length; }}
-                  onChange={onToggleAll}
-                  className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                  aria-label="전체 선택"
-                />
-              </th>
-            )}
-            {isManager && (
-              <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">신청자</th>
-            )}
-            <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">유형</th>
-            <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">기간</th>
-            <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">상태</th>
-            <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">PDF</th>
-            {!isManager && (
-              <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">취소</th>
-            )}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, idx) => {
-            const tone: PillTone = r.status === "pending" ? "amber" : r.status === "approved" ? "emerald" : "rose";
-            return (
-              <tr
-                key={r.id}
-                className={`group transition-colors duration-100 hover:bg-zinc-50/60 ${idx !== 0 ? "border-t border-zinc-100" : ""} ${selectedIds.has(r.id) ? "bg-blue-50/40" : ""}`}
-              >
-                {isManager && (
-                  <td className="text-center px-3 py-3 w-10">
+    <div className={loading ? "opacity-40 pointer-events-none" : ""}>
+      {/* 모바일 (md 미만): 카드형 */}
+      <div className="md:hidden flex flex-col divide-y divide-zinc-100 rounded-lg border border-zinc-200 overflow-hidden">
+        {rows.map((r) => {
+          const tone: PillTone = r.status === "pending" ? "amber" : r.status === "approved" ? "emerald" : "rose";
+          const days = calcDays(r.start_date, r.end_date);
+          const isSelected = selectedIds.has(r.id);
+          return (
+            <div
+              key={r.id}
+              className={`px-3 py-3 min-h-[44px] transition-colors ${isSelected ? "bg-blue-50/40" : "hover:bg-zinc-50/60"}`}
+            >
+              {/* 상단: 체크(관리자) + 이름(관리자) + 유형 + 상태 */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  {isManager && (
                     <input
                       type="checkbox"
-                      checked={selectedIds.has(r.id)}
+                      checked={isSelected}
                       onChange={() => onToggleRow(r.id)}
-                      className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      aria-label={`${r.employee_name} ${r.leave_type} 선택`}
+                      className="mt-0.5 w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer shrink-0"
                     />
-                  </td>
-                )}
-                {isManager && (
-                  <td className="px-4 py-3 font-semibold text-[20px] text-zinc-800 whitespace-nowrap">{r.employee_name}</td>
-                )}
-                <td className="px-4 py-3 font-semibold text-[20px] text-zinc-800 whitespace-nowrap">{r.leave_type}</td>
-                <td className="px-4 py-3 text-[20px] text-zinc-600 whitespace-nowrap tabular-nums">
-                  {fmtDateYMD(r.start_date)}
-                  {r.start_date !== r.end_date && (
-                    <span className="text-zinc-400"> ~ {fmtDateYMD(r.end_date)}</span>
                   )}
-                  <span className="text-zinc-400 text-[20px] ml-1.5 tabular-nums">
-                    ({calcDays(r.start_date, r.end_date)}일)
-                  </span>
-                </td>
-                <td className="px-3 py-3 text-center whitespace-nowrap">
+                  <div className="flex-1 min-w-0">
+                    {isManager && (
+                      <span className="text-[16px] font-bold text-zinc-800 break-keep">{r.employee_name}</span>
+                    )}
+                    <span className={`${isManager ? "ml-1.5" : ""} inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[14px] font-semibold border border-indigo-100`}>
+                      {r.leave_type}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
                   <StatusPill tone={tone} size="sm" dot pulse={r.status === "pending"}>
                     {STATUS_LABEL[r.status]}
                   </StatusPill>
+                </div>
+              </div>
+
+              {/* 기간 */}
+              <div className="flex items-center gap-1.5 mt-1.5 text-[15px] text-zinc-600 ml-0">
+                <CalendarDays size={13} className="text-zinc-400 shrink-0" />
+                <span className="tabular-nums">{fmtDateYMD(r.start_date)}</span>
+                {r.start_date !== r.end_date && (
+                  <>
+                    <span className="text-zinc-400">~</span>
+                    <span className="tabular-nums">{fmtDateYMD(r.end_date)}</span>
+                  </>
+                )}
+                <span className="text-zinc-400 tabular-nums">({days}일)</span>
+              </div>
+
+              {/* 비고 + 액션 */}
+              <div className="flex items-center justify-between gap-2 mt-1.5">
+                <div className="flex items-center gap-1 min-w-0">
                   {r.reviewer_note && (
-                    <div className="mt-1 flex items-center justify-center gap-0.5 text-[20px] text-indigo-500">
-                      <StickyNote size={12} className="shrink-0" />
+                    <span className="flex items-center gap-0.5 text-[13px] text-indigo-500">
+                      <StickyNote size={11} className="shrink-0" />
                       <span className="break-words">{r.reviewer_note}</span>
-                    </div>
+                    </span>
                   )}
-                </td>
-                <td className="px-3 py-3 text-center">
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => onOpenPdf(r)}
-                    title="신청서 PDF 보기"
-                    className="inline-flex items-center gap-1 text-[20px] font-medium text-zinc-400 hover:text-brand-deep transition-colors cursor-pointer group-hover:text-zinc-600"
+                    title="PDF 보기"
+                    className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[13px] text-zinc-400 hover:text-brand-deep hover:bg-zinc-50 border border-zinc-200 transition cursor-pointer"
                   >
-                    <FileText size={14} />
-                    <span className="hidden sm:inline">PDF</span>
+                    <FileText size={12} />PDF
                   </button>
-                </td>
-                {!isManager && (
-                  <td className="px-3 py-3 text-center">
-                    {r.status === "pending" ? (
-                      <button
-                        onClick={() => onCancel(r.id)}
-                        disabled={cancellingId === r.id}
-                        title="신청 취소"
-                        className="inline-flex items-center justify-center w-8 h-8 rounded-md text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer disabled:opacity-40"
-                      >
-                        {cancellingId === r.id
-                          ? <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-rose-400" />
-                          : <Trash2 size={14} />
-                        }
-                      </button>
-                    ) : (
-                      <span className="text-zinc-200 text-[20px]">—</span>
+                  {!isManager && r.status === "pending" && (
+                    <button
+                      onClick={() => onCancel(r.id)}
+                      disabled={cancellingId === r.id}
+                      title="취소"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-md text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer disabled:opacity-40"
+                    >
+                      {cancellingId === r.id
+                        ? <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-rose-400" />
+                        : <Trash2 size={13} />
+                      }
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* PC (md+): 테이블 */}
+      <div className="hidden md:block overflow-x-auto rounded-lg border border-zinc-200">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-zinc-50 border-b border-zinc-200">
+              {isManager && (
+                <th className="text-center px-3 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={rows.length > 0 && selectedIds.size === rows.length}
+                    ref={el => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < rows.length; }}
+                    onChange={onToggleAll}
+                    className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    aria-label="전체 선택"
+                  />
+                </th>
+              )}
+              {isManager && (
+                <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">신청자</th>
+              )}
+              <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">유형</th>
+              <th className="text-left px-4 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">기간</th>
+              <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">상태</th>
+              <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">PDF</th>
+              {!isManager && (
+                <th className="text-center px-3 py-3 text-[21px] font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">취소</th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, idx) => {
+              const tone: PillTone = r.status === "pending" ? "amber" : r.status === "approved" ? "emerald" : "rose";
+              return (
+                <tr
+                  key={r.id}
+                  className={`group transition-colors duration-100 hover:bg-zinc-50/60 ${idx !== 0 ? "border-t border-zinc-100" : ""} ${selectedIds.has(r.id) ? "bg-blue-50/40" : ""}`}
+                >
+                  {isManager && (
+                    <td className="text-center px-3 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(r.id)}
+                        onChange={() => onToggleRow(r.id)}
+                        className="w-4 h-4 rounded border-zinc-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        aria-label={`${r.employee_name} ${r.leave_type} 선택`}
+                      />
+                    </td>
+                  )}
+                  {isManager && (
+                    <td className="px-4 py-3 font-semibold text-[20px] text-zinc-800 whitespace-nowrap">{r.employee_name}</td>
+                  )}
+                  <td className="px-4 py-3 font-semibold text-[20px] text-zinc-800 whitespace-nowrap">{r.leave_type}</td>
+                  <td className="px-4 py-3 text-[20px] text-zinc-600 whitespace-nowrap tabular-nums">
+                    {fmtDateYMD(r.start_date)}
+                    {r.start_date !== r.end_date && (
+                      <span className="text-zinc-400"> ~ {fmtDateYMD(r.end_date)}</span>
+                    )}
+                    <span className="text-zinc-400 text-[20px] ml-1.5 tabular-nums">
+                      ({calcDays(r.start_date, r.end_date)}일)
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-center whitespace-nowrap">
+                    <StatusPill tone={tone} size="sm" dot pulse={r.status === "pending"}>
+                      {STATUS_LABEL[r.status]}
+                    </StatusPill>
+                    {r.reviewer_note && (
+                      <div className="mt-1 flex items-center justify-center gap-0.5 text-[20px] text-indigo-500">
+                        <StickyNote size={12} className="shrink-0" />
+                        <span className="break-words">{r.reviewer_note}</span>
+                      </div>
                     )}
                   </td>
-                )}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  <td className="px-3 py-3 text-center">
+                    <button
+                      type="button"
+                      onClick={() => onOpenPdf(r)}
+                      title="신청서 PDF 보기"
+                      className="inline-flex items-center gap-1 text-[20px] font-medium text-zinc-400 hover:text-brand-deep transition-colors cursor-pointer group-hover:text-zinc-600"
+                    >
+                      <FileText size={14} />
+                      <span className="hidden sm:inline">PDF</span>
+                    </button>
+                  </td>
+                  {!isManager && (
+                    <td className="px-3 py-3 text-center">
+                      {r.status === "pending" ? (
+                        <button
+                          onClick={() => onCancel(r.id)}
+                          disabled={cancellingId === r.id}
+                          title="신청 취소"
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-md text-zinc-300 hover:text-rose-500 hover:bg-rose-50 transition-all cursor-pointer disabled:opacity-40"
+                        >
+                          {cancellingId === r.id
+                            ? <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-rose-400" />
+                            : <Trash2 size={14} />
+                          }
+                        </button>
+                      ) : (
+                        <span className="text-zinc-200 text-[20px]">—</span>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
