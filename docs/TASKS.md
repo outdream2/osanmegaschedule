@@ -121,7 +121,7 @@
 <!-- 2026-09-20 · display_requests 요청자 정보 · migration 20260920_display_requests_requester.sql 실행 완료 · 요청자 저장 활성 -->
 <!-- 2026-09-20 · resignation_requests 테이블 · create_resignation_requests.sql 실행 완료 · 사직서 워크플로우 (B) 활성 · 승인 시 employees.retireDate 자동 -->
 <!-- #302 ✅ · products-search API · optimal_stock·min_stock 필드 누락 fix · 2026-09-21 완료 (`bd19450c`) -->
-| **#303** | xlsx CDN 스왑 · Option A · 0.20.3 · npm audit clean | 🟡 P2 | 리서치 완료 (agent) · 승인됨 (A) · 30분 |
+<!-- #303 ✅ · xlsx 0.18.5 → 0.20.3 SheetJS CDN · TS·build 통과 · 2026-09-21 완료 -->
 | **#310** | **반응형 리스트 → 카드 전환** · PC 한 줄 · 모바일 카드형 자동 (사용자 지시 · 2026-09-20) | 🔴 P1 | **전수** · 대원칙 등재 · Tailwind md: breakpoint · 페이지별 순차 · 회귀 X |
 | **#311** | **스케쥴표 · 연차 사용 직원 · 상단 알림** (사용자 지시 · 2026-09-20) | 🟡 P2 | 승인된 연차 · 1주일 전부터 · SchedulePage 상단 배너 · "대체인력 확인 요망" · 관리자 안내 |
 | **#312** | **승인 연차 · 스케쥴 자동 반영 검증** (사용자 지시 · 2026-09-20) | 🟢 P2 | 서버 · leave 승인 시 · schedule 업데이트 로직 확인 · 없으면 신설 |
