@@ -220,12 +220,20 @@ export function usePdfActions({
       if (authSession?.employeeId != null) fd.append("approved_by_id", String(authSession.employeeId));
 
       const { data: saved } = await api.post<any>("/api/employee-contracts/upload", fd);
-      setNotice({
-        tone: "ok",
-        text: saved?.pdf_url
-          ? `Google Drive 업로드 완료 · 링크: ${saved.pdf_url}`
-          : "Google Drive 업로드 완료",
-      });
+      // 2026-09-21 · #327-⑤ · Drive 실패 · Supabase Storage 폴백 사용 시 · 경고 tone 으로 안내
+      if (saved?._drive_fallback) {
+        setNotice({
+          tone: "err",
+          text: `Google Drive 업로드 실패 → 로컬 저장으로 폴백됨 · ${saved?._drive_error ?? ""} · 관리자에게 refresh_token 재발급 후 재업로드 요청하세요. (파일 URL: ${saved.pdf_url})`,
+        });
+      } else {
+        setNotice({
+          tone: "ok",
+          text: saved?.pdf_url
+            ? `Google Drive 업로드 완료 · 링크: ${saved.pdf_url}`
+            : "Google Drive 업로드 완료",
+        });
+      }
       clearDraft();
       setUploadFile(null);
       if (uploadInputRef.current) uploadInputRef.current.value = "";

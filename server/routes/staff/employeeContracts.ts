@@ -122,6 +122,50 @@ async function insertContractWithIsActiveFallback(
 }
 
 /**
+ * 2026-09-21 · #327-② · INSERT · drive_file_url · local_pdf_url · is_active 컬럼 미존재 (42703) 자동 fallback.
+ * 미존재 컬럼 이름 파싱 · payload 에서 제거 후 재시도 (최대 3회).
+ */
+async function insertContractWithDriveLinksFallback(
+  baseRow: Record<string, unknown>,
+): Promise<{ row: any; err: any }> {
+  const payload = { ...baseRow, is_active: true };
+  const optionalCols = ["drive_file_url", "local_pdf_url", "is_active"];
+  let attempt = 0;
+  let currentPayload: Record<string, unknown> = payload;
+  while (attempt < 4) {
+    const res = await supabase.from("employee_contracts").insert([currentPayload]).select("*").single();
+    if (!res.error) return { row: res.data, err: null };
+    if (!isMissingColumnError(res.error)) return { row: null, err: res.error };
+    // 42703 · 특정 컬럼 미존재 · 컬럼명 파싱
+    const colMatch = /column\s+"?([a-z_][a-z0-9_]*)"?/i.exec(res.error.message ?? "");
+    const missingCol = colMatch?.[1];
+    if (missingCol && missingCol in currentPayload) {
+      console.warn(`[employee-contracts] ${missingCol} 컬럼 없음 · 제외 후 재시도 (attempt=${attempt + 1})`);
+      const next = { ...currentPayload };
+      delete next[missingCol];
+      currentPayload = next;
+      attempt++;
+      continue;
+    }
+    // 미존재 컬럼 파싱 실패 시 · optionalCols 를 순차 제거
+    let removed = false;
+    for (const c of optionalCols) {
+      if (c in currentPayload) {
+        console.warn(`[employee-contracts] 컬럼 미존재 (heuristic) · ${c} 제거 후 재시도`);
+        const next = { ...currentPayload };
+        delete next[c];
+        currentPayload = next;
+        removed = true;
+        attempt++;
+        break;
+      }
+    }
+    if (!removed) return { row: null, err: res.error };
+  }
+  return { row: null, err: new Error("insert 재시도 초과") };
+}
+
+/**
  * employees 테이블 · 계약 관련 필드 동기 갱신 (best-effort).
  * contract_file_url + contract_type + contract_start + contract_end + probation_end_date
  * 개별 컬럼 미존재 (42703) 시 · 해당 컬럼만 제외 후 재시도.
@@ -378,6 +422,64 @@ const driveUpload = multer({
     cb(null, ok);
   },
 });
+/**
+ * 2026-09-21 · #327-⑤ · Drive 실패 시 · Supabase Storage 폴백.
+ * - 성공 시 · publicUrl · 실패 시 · null (로컬 파일시스템 폴백 · 상위 caller 처리)
+ * - contracts 버킷 없으면 · 조용히 null 반환 (관리자 안내 배너로 유도)
+ */
+async function uploadPdfToSupabaseFallback(
+  buffer: Buffer,
+  employeeName: string,
+  startDate: string | null,
+): Promise<{ url: string; storagePath: string; storage: "supabase" | "local" } | null> {
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const rand = Math.random().toString(36).slice(2, 8);
+  const dateTag = (startDate || `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`).replace(/-/g, "");
+  const nameTag = safeName(employeeName);
+  const objectPath = `${ym}/${now.getTime()}_${rand}_${nameTag}_${dateTag}.pdf`;
+
+  // Supabase Storage 시도
+  try {
+    const { error: upErr } = await supabase
+      .storage
+      .from(CONTRACTS_BUCKET)
+      .upload(objectPath, buffer, {
+        contentType: "application/pdf",
+        cacheControl: "31536000",
+        upsert: false,
+      });
+    if (!upErr) {
+      const { data: pub } = supabase.storage.from(CONTRACTS_BUCKET).getPublicUrl(objectPath);
+      if (pub?.publicUrl) {
+        return { url: pub.publicUrl, storagePath: objectPath, storage: "supabase" };
+      }
+      console.warn(`[employee-contracts/upload] Supabase getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
+    } else {
+      console.warn(`[employee-contracts/upload] Supabase Storage 실패 (bucket=${CONTRACTS_BUCKET}) · ${upErr.message}`);
+    }
+  } catch (e: any) {
+    console.warn(`[employee-contracts/upload] Supabase 예외 · ${e?.message ?? e}`);
+  }
+
+  // 로컬 fallback
+  try {
+    const dir = path.join(process.cwd(), "uploads", "contracts", ym);
+    fs.mkdirSync(dir, { recursive: true });
+    const fname = `${now.getTime()}_${rand}_${nameTag}_${dateTag}.pdf`;
+    const fpath = path.join(dir, fname);
+    fs.writeFileSync(fpath, buffer);
+    return {
+      url: `/uploads/contracts/${ym}/${fname}`,
+      storagePath: `${ym}/${fname}`,
+      storage: "local",
+    };
+  } catch (e: any) {
+    console.error(`[employee-contracts/upload] 로컬 fallback 실패 · ${e?.message ?? e}`);
+    return null;
+  }
+}
+
 router.post("/api/employee-contracts/upload", authorize(9), driveUpload.single("contract"), asyncHandler(async (req, res) => {
   if (!req.file) throw badRequest("PDF 파일이 없습니다");
 
@@ -403,20 +505,34 @@ router.post("/api/employee-contracts/upload", authorize(9), driveUpload.single("
   const nameTag = safeName(employeeName);
   const fileName = `${nameTag}_근로계약서_${dateTag}.pdf`;
 
-  // Drive 업로드 · 실패 시 사용자 친화 메시지 그대로 노출 (googleDriveService.humanizeDriveError 적용됨)
-  // 2026-09-21 · E-002 · invalid_grant 등 원인별 502 · 관리자 안내 메시지
+  // 2026-09-21 · #327-② · #327-⑤ · Drive 우선 · 실패 시 Supabase Storage · 로컬 순 fallback
+  // pdf_url = 최우선 사용 URL (drive > local) · drive_file_url = Drive 성공 시만 · local_pdf_url = fallback 시만
   let driveUrl = "";
   let driveFileId = "";
+  let driveError: string | null = null;
   try {
     const result = await uploadToDrive("contract", req.file.buffer, fileName, req.file.mimetype || "application/pdf");
     driveUrl = result.webViewLink;
     driveFileId = result.fileId;
   } catch (drvErr: any) {
-    const message = drvErr?.message ?? "Google Drive 업로드 실패";
-    console.error(`[employee-contracts/upload] Drive 업로드 실패 · employee=${employeeName} · file=${fileName} · size=${req.file.size} · ${message}`);
-    // 인증 만료(invalid_grant) · 폴더 미설정 등은 서버 설정 문제 → 502 (Bad Gateway to Drive)
-    // 파일 크기·mime 오류 등은 이미 상위에서 걸림
-    throw new HttpError(502, message);
+    driveError = drvErr?.message ?? "Google Drive 업로드 실패";
+    console.error(`[employee-contracts/upload] Drive 업로드 실패 → Supabase Storage 폴백 시도 · employee=${employeeName} · file=${fileName} · size=${req.file.size} · ${driveError}`);
+  }
+
+  let localUrl = "";
+  let localStorage: "supabase" | "local" | null = null;
+  let localStoragePath = "";
+  if (!driveUrl) {
+    // Drive 실패 · Supabase Storage 폴백 (⑤)
+    const fb = await uploadPdfToSupabaseFallback(req.file.buffer, employeeName, startDate);
+    if (!fb) {
+      // 완전 실패 · 502
+      throw new HttpError(502, `${driveError ?? "Google Drive 업로드 실패"} · Supabase Storage 폴백도 실패했습니다. 관리자에게 문의하세요.`);
+    }
+    localUrl = fb.url;
+    localStorage = fb.storage;
+    localStoragePath = fb.storagePath;
+    console.warn(`[employee-contracts/upload] Drive 실패 · ${localStorage} 폴백 성공 · path=${localStoragePath}`);
   }
 
   // 재계약 감지 · 기존 활성 계약 is_active=false (컬럼 미존재 시 skip)
@@ -424,25 +540,40 @@ router.post("/api/employee-contracts/upload", authorize(9), driveUpload.single("
     await deactivatePriorContracts(employeeId);
   }
 
-  // employee_contracts row insert · storage="drive" · pdf_url = Drive URL · is_active=true (fallback)
+  // 사용 URL 결정 · drive > local
+  const primaryUrl = driveUrl || localUrl;
+  const primaryStorage = driveUrl ? "drive" : (localStorage ?? "local");
+  const primaryStoragePath = driveUrl ? driveFileId : localStoragePath;
+
+  // employee_contracts row insert
+  // 2026-09-21 · #327-② · drive_file_url · local_pdf_url 분리 저장 · 컬럼 없으면 자동 fallback
   const insertRow: Record<string, unknown> = {
     employee_id: employeeId ?? 0,
     employee_name: employeeName,
     contract_type: contractType,
     start_date: startDate,
     end_date: endDate,
-    pdf_url: driveUrl,
+    pdf_url: primaryUrl,
     pdf_size: req.file.size,
-    storage_path: driveFileId,
-    storage: "drive",
+    storage_path: primaryStoragePath,
+    storage: primaryStorage,
     approved_by: approvedBy,
     approved_by_id: approvedById,
+    // 2026-09-21 · #327-② · 신규 컬럼 (migrations/20260921_drive_links.sql)
+    drive_file_url: driveUrl || null,
+    local_pdf_url: localUrl || null,
   };
 
-  const { row, err: insErr } = await insertContractWithIsActiveFallback(insertRow);
+  const { row, err: insErr } = await insertContractWithDriveLinksFallback(insertRow);
 
   if (insErr || !row) {
     if (insErr && isMissingTableError(insErr.message ?? "")) {
+      // insert 실패 · Storage 파일 정리 (best-effort)
+      if (localStorage === "supabase") {
+        await supabase.storage.from(CONTRACTS_BUCKET).remove([localStoragePath]).catch(() => null);
+      } else if (localStorage === "local") {
+        try { fs.unlinkSync(path.join(process.cwd(), "uploads", "contracts", localStoragePath)); } catch { /* noop */ }
+      }
       throw new HttpError(500, "employee_contracts 테이블이 없습니다. Supabase SQL Editor 에서 migrations/create_employee_contracts.sql 을 실행하세요.");
     }
     throw new HttpError(500, insErr?.message ?? "insert failed");
@@ -451,7 +582,7 @@ router.post("/api/employee-contracts/upload", authorize(9), driveUpload.single("
   // employees 동기 갱신 · 2026-08-17 · #143 · working_hours/annual_leave_days/employee_number
   if (employeeId && Number.isFinite(employeeId)) {
     await syncEmployeeContractFields(employeeId, {
-      contract_file_url: driveUrl,
+      contract_file_url: primaryUrl,
       contract_type: contractType ?? (row?.contract_type ?? null),
       contract_start: contractStart,
       contract_end: contractEnd,
@@ -462,7 +593,12 @@ router.post("/api/employee-contracts/upload", authorize(9), driveUpload.single("
     });
   }
 
-  return res.status(201).json(row);
+  // 2026-09-21 · #327-⑤ · Drive 실패 · 폴백 사용 시 · 응답에 fallback 정보 포함 (프론트 알림용)
+  return res.status(201).json({
+    ...row,
+    _drive_fallback: !driveUrl,
+    _drive_error: driveError,
+  });
 }));
 
 export default router;
