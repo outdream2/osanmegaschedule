@@ -965,7 +965,7 @@ const SupplierSearchInput: React.FC<SupplierSearchInputProps> = ({
                 onClick={() => onSelect(v)}
                 className="w-full text-left px-3 py-2 text-[15px] font-medium text-ink hover:bg-brand-tint/30 flex items-center gap-2 transition-colors border-b border-line/50 last:border-b-0"
               >
-                <span className="truncate flex-1">{v.company_name}</span>
+                <span className="break-keep whitespace-normal leading-tight flex-1">{v.company_name}</span>
                 {v.category && <span className="ml-auto text-[15px] text-ink-soft shrink-0">{v.category}</span>}
               </button>
             ))}
