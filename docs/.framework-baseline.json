@@ -1,10 +1,10 @@
 {
   "created": "2026-09-21",
   "version": 1,
-  "totalViolations": 11,
+  "totalViolations": 12,
   "files": {
     "src/components/LeavePage/LeavePage.tsx": {
-      "lines": 1114,
+      "lines": 1207,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -24,7 +24,7 @@
       "totalWeight": 6
     },
     "src/components/ProductInfoPage/ProductInfoPage.tsx": {
-      "lines": 1065,
+      "lines": 1115,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -85,6 +85,16 @@
     },
     "src/components/SalesTrendPage/DashboardCharts.tsx": {
       "lines": 948,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
+    "src/components/SalesTrendPage/DashboardTab.tsx": {
+      "lines": 811,
       "violations": [
         {
           "ruleId": "large-file-warn",

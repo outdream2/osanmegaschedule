@@ -543,68 +543,160 @@ export const DashboardTab: React.FC = () => {
                   size="compact"
                 />
               ) : (
-                <table
-                  className={`w-full text-[15px] ${loading ? "opacity-40 transition-opacity" : ""}`}
-                >
-                  <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
-                    <tr className="text-[14px] text-zinc-500 uppercase tracking-wider">
-                      <th className="text-left px-1 py-1.5 w-8">#</th>
-                      <th
-                        onClick={() => toggleSort("name")}
-                        className={`text-left px-2 py-1.5 min-w-[140px] cursor-pointer select-none hover:bg-zinc-100 ${
-                          sort === "name" ? "text-zinc-800 font-bold" : ""
-                        }`}
-                      >
-                        상품명{arrow("name", sort, dir)}
-                      </th>
-                      <th
-                        onClick={() => toggleSort("sale_qty")}
-                        className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-orange-100 bg-orange-50/60 ${
-                          sort === "sale_qty" ? "text-orange-700 font-bold" : "text-orange-500"
-                        }`}
-                      >
-                        판매{arrow("sale_qty", sort, dir)}
-                      </th>
-                      <th
-                        onClick={() => toggleSort("sale_amount")}
-                        className={`text-right px-1 py-1.5 w-20 cursor-pointer select-none hover:bg-indigo-100 bg-indigo-50/60 ${
-                          sort === "sale_amount" ? "text-indigo-700 font-bold" : "text-indigo-500"
-                        }`}
-                        title="판매가 기준 (products.sale_price)"
-                      >
-                        판매가{arrow("sale_amount", sort, dir)}
-                      </th>
-                      <th
-                        onClick={() => toggleSort("profit_rate")}
-                        className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-emerald-100 bg-emerald-50/60 ${
-                          sort === "profit_rate"
-                            ? "text-emerald-800 font-bold"
-                            : "text-emerald-600"
-                        }`}
-                        title="(판매가 − 사입가) / 판매가 × 100"
-                      >
-                        이익률{arrow("profit_rate", sort, dir)}
-                      </th>
-                      <th
-                        onClick={() => toggleSort("loss")}
-                        className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-rose-100 bg-rose-50/60 ${
-                          sort === "loss" ? "text-rose-700 font-bold" : "text-rose-500"
-                        }`}
-                        title="(시작재고 − 판매) − 종료재고"
-                      >
-                        손실{arrow("loss", sort, dir)}
-                      </th>
-                      <th
-                        onClick={() => toggleSort("closing_stock")}
-                        className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-100 bg-zinc-50/60 ${
-                          sort === "closing_stock" ? "text-zinc-800 font-bold" : "text-zinc-500"
-                        }`}
-                      >
-                        재고{arrow("closing_stock", sort, dir)}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-50">
+                <>
+                  {/* ── PC 표 (md 이상) ─────────────────────────────────── */}
+                  <table
+                    className={`hidden md:table w-full text-[15px] ${loading ? "opacity-40 transition-opacity" : ""}`}
+                  >
+                    <thead className="sticky top-0 bg-zinc-50 border-b-2 border-line z-10 shadow-sm">
+                      <tr className="text-[14px] text-zinc-500 uppercase tracking-wider">
+                        <th className="text-left px-1 py-1.5 w-8">#</th>
+                        <th
+                          onClick={() => toggleSort("name")}
+                          className={`text-left px-2 py-1.5 min-w-[140px] cursor-pointer select-none hover:bg-zinc-100 ${
+                            sort === "name" ? "text-zinc-800 font-bold" : ""
+                          }`}
+                        >
+                          상품명{arrow("name", sort, dir)}
+                        </th>
+                        <th
+                          onClick={() => toggleSort("sale_qty")}
+                          className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-orange-100 bg-orange-50/60 ${
+                            sort === "sale_qty" ? "text-orange-700 font-bold" : "text-orange-500"
+                          }`}
+                        >
+                          판매{arrow("sale_qty", sort, dir)}
+                        </th>
+                        <th
+                          onClick={() => toggleSort("sale_amount")}
+                          className={`text-right px-1 py-1.5 w-20 cursor-pointer select-none hover:bg-indigo-100 bg-indigo-50/60 ${
+                            sort === "sale_amount" ? "text-indigo-700 font-bold" : "text-indigo-500"
+                          }`}
+                          title="판매가 기준 (products.sale_price)"
+                        >
+                          판매가{arrow("sale_amount", sort, dir)}
+                        </th>
+                        <th
+                          onClick={() => toggleSort("profit_rate")}
+                          className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-emerald-100 bg-emerald-50/60 ${
+                            sort === "profit_rate"
+                              ? "text-emerald-800 font-bold"
+                              : "text-emerald-600"
+                          }`}
+                          title="(판매가 − 사입가) / 판매가 × 100"
+                        >
+                          이익률{arrow("profit_rate", sort, dir)}
+                        </th>
+                        <th
+                          onClick={() => toggleSort("loss")}
+                          className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-rose-100 bg-rose-50/60 ${
+                            sort === "loss" ? "text-rose-700 font-bold" : "text-rose-500"
+                          }`}
+                          title="(시작재고 − 판매) − 종료재고"
+                        >
+                          손실{arrow("loss", sort, dir)}
+                        </th>
+                        <th
+                          onClick={() => toggleSort("closing_stock")}
+                          className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-zinc-100 bg-zinc-50/60 ${
+                            sort === "closing_stock" ? "text-zinc-800 font-bold" : "text-zinc-500"
+                          }`}
+                        >
+                          재고{arrow("closing_stock", sort, dir)}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-50">
+                      {displayRows.map((p, i) => {
+                        const loss = calcLoss(p);
+                        const salePrice = Number(p.sale_price ?? 0);
+                        const purchasePrice = Number((p as any).purchase_price ?? 0);
+                        const profitRate =
+                          salePrice > 0 && purchasePrice > 0
+                            ? ((salePrice - purchasePrice) / salePrice) * 100
+                            : null;
+                        const isSelected =
+                          selected && String(selected.code) === String(p.product_code);
+                        return (
+                          <tr
+                            key={`dash-${p.product_code}-${i}`}
+                            className={`transition cursor-pointer ${
+                              isSelected
+                                ? "bg-teal-50 border-l-4 border-teal-500"
+                                : "hover:bg-zinc-50/60"
+                            }`}
+                            onClick={() => onProductClick(p)}
+                          >
+                            <td className="px-1 py-1.5 text-[14px] font-bold text-brand-deep align-top tabular-nums">
+                              {i + 1}
+                            </td>
+                            <td className="px-2 py-1.5 align-top">
+                              <div
+                                className="text-[15px] font-medium text-zinc-800 break-words whitespace-normal leading-tight"
+                                title={p.product_name}
+                              >
+                                {p.product_name}
+                              </div>
+                              {p.supplier && (
+                                <div className="text-[15px] text-zinc-400 break-words whitespace-normal mt-0.5">
+                                  {displayVendorName(p.supplier) || p.supplier}
+                                </div>
+                              )}
+                            </td>
+                            <td className="text-right px-1 py-1.5 tabular-nums font-bold text-orange-700 bg-orange-50/40 align-top">
+                              {fmt(Number(p.sale_qty ?? 0))}
+                            </td>
+                            <td
+                              className="text-right px-1 py-1.5 tabular-nums text-indigo-700 font-bold bg-indigo-50/40 align-top"
+                              title={salePrice > 0 ? `${salePrice.toLocaleString()}원` : undefined}
+                            >
+                              {salePrice > 0 ? fmtWon(salePrice) : "-"}
+                            </td>
+                            <td
+                              className={`text-right px-1 py-1.5 tabular-nums font-bold bg-emerald-50/40 align-top ${
+                                profitRate == null
+                                  ? "text-zinc-400"
+                                  : profitRate >= 30
+                                  ? "text-emerald-700"
+                                  : profitRate >= 10
+                                  ? "text-emerald-600"
+                                  : "text-rose-600"
+                              }`}
+                              title={
+                                profitRate != null
+                                  ? `(판매가 ${salePrice.toLocaleString()} - 사입가 ${purchasePrice.toLocaleString()}) / 판매가 = ${profitRate.toFixed(2)}%`
+                                  : "판매가 또는 사입가 미설정"
+                              }
+                            >
+                              {profitRate == null ? "-" : `${profitRate.toFixed(1)}%`}
+                            </td>
+                            <td
+                              className={`text-right px-1 py-1.5 tabular-nums bg-rose-50/40 align-top ${
+                                loss > 0
+                                  ? "text-rose-600 font-bold"
+                                  : loss < 0
+                                  ? "text-emerald-600 font-bold"
+                                  : "text-zinc-400"
+                              }`}
+                              title={`손실 = (시작${fmt(Number(p.opening_stock ?? 0))} − 판매${fmt(Number(p.sale_qty ?? 0))}) − 종료${fmt(Number(p.closing_stock ?? 0))}`}
+                            >
+                              {loss === 0
+                                ? "0"
+                                : loss > 0
+                                ? `-${fmt(loss)}`
+                                : `+${fmt(Math.abs(loss))}`}
+                            </td>
+                            <td className="text-right px-1 py-1.5 tabular-nums text-zinc-700 font-semibold bg-zinc-50/40 align-top">
+                              {fmt(Number(p.closing_stock ?? 0))}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+
+                  {/* ── 모바일 카드 리스트 (md 미만) ──────────────────── */}
+                  <div className={`md:hidden flex flex-col divide-y divide-zinc-100 ${loading ? "opacity-40 transition-opacity" : ""}`}>
                     {displayRows.map((p, i) => {
                       const loss = calcLoss(p);
                       const salePrice = Number(p.sale_price ?? 0);
@@ -616,82 +708,72 @@ export const DashboardTab: React.FC = () => {
                       const isSelected =
                         selected && String(selected.code) === String(p.product_code);
                       return (
-                        <tr
-                          key={`dash-${p.product_code}-${i}`}
-                          className={`transition cursor-pointer ${
+                        <div
+                          key={`dash-mob-${p.product_code}-${i}`}
+                          onClick={() => onProductClick(p)}
+                          className={`px-3 py-3 cursor-pointer transition-all ${
                             isSelected
-                              ? "bg-teal-50 border-l-4 border-teal-500"
+                              ? "bg-teal-50 border-l-2 border-teal-500"
                               : "hover:bg-zinc-50/60"
                           }`}
-                          onClick={() => onProductClick(p)}
                         >
-                          <td className="px-1 py-1.5 text-[14px] font-bold text-brand-deep align-top tabular-nums">
-                            {i + 1}
-                          </td>
-                          <td className="px-2 py-1.5 align-top">
-                            <div
-                              className="text-[15px] font-medium text-zinc-800 break-words whitespace-normal leading-tight"
-                              title={p.product_name}
-                            >
-                              {p.product_name}
-                            </div>
-                            {p.supplier && (
-                              <div className="text-[15px] text-zinc-400 break-words whitespace-normal mt-0.5">
-                                {displayVendorName(p.supplier) || p.supplier}
+                          {/* 상단: 순번 + 상품명 */}
+                          <div className="flex items-start gap-2 mb-1.5">
+                            <span className="text-[13px] font-bold text-brand-deep tabular-nums shrink-0 mt-0.5">
+                              {i + 1}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[15px] font-semibold text-zinc-800 break-words whitespace-normal leading-tight">
+                                {p.product_name}
                               </div>
-                            )}
-                          </td>
-                          <td className="text-right px-1 py-1.5 tabular-nums font-bold text-orange-700 bg-orange-50/40 align-top">
-                            {fmt(Number(p.sale_qty ?? 0))}
-                          </td>
-                          <td
-                            className="text-right px-1 py-1.5 tabular-nums text-indigo-700 font-bold bg-indigo-50/40 align-top"
-                            title={salePrice > 0 ? `${salePrice.toLocaleString()}원` : undefined}
-                          >
-                            {salePrice > 0 ? fmtWon(salePrice) : "-"}
-                          </td>
-                          <td
-                            className={`text-right px-1 py-1.5 tabular-nums font-bold bg-emerald-50/40 align-top ${
-                              profitRate == null
-                                ? "text-zinc-400"
-                                : profitRate >= 30
-                                ? "text-emerald-700"
-                                : profitRate >= 10
-                                ? "text-emerald-600"
-                                : "text-rose-600"
-                            }`}
-                            title={
-                              profitRate != null
-                                ? `(판매가 ${salePrice.toLocaleString()} - 사입가 ${purchasePrice.toLocaleString()}) / 판매가 = ${profitRate.toFixed(2)}%`
-                                : "판매가 또는 사입가 미설정"
-                            }
-                          >
-                            {profitRate == null ? "-" : `${profitRate.toFixed(1)}%`}
-                          </td>
-                          <td
-                            className={`text-right px-1 py-1.5 tabular-nums bg-rose-50/40 align-top ${
-                              loss > 0
-                                ? "text-rose-600 font-bold"
-                                : loss < 0
-                                ? "text-emerald-600 font-bold"
-                                : "text-zinc-400"
-                            }`}
-                            title={`손실 = (시작${fmt(Number(p.opening_stock ?? 0))} − 판매${fmt(Number(p.sale_qty ?? 0))}) − 종료${fmt(Number(p.closing_stock ?? 0))}`}
-                          >
-                            {loss === 0
-                              ? "0"
-                              : loss > 0
-                              ? `-${fmt(loss)}`
-                              : `+${fmt(Math.abs(loss))}`}
-                          </td>
-                          <td className="text-right px-1 py-1.5 tabular-nums text-zinc-700 font-semibold bg-zinc-50/40 align-top">
-                            {fmt(Number(p.closing_stock ?? 0))}
-                          </td>
-                        </tr>
+                              {p.supplier && (
+                                <div className="text-[13px] text-zinc-400 break-words whitespace-normal mt-0.5">
+                                  {displayVendorName(p.supplier) || p.supplier}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {/* 하단: 핵심 지표 그리드 */}
+                          <div className="grid grid-cols-2 gap-x-3 gap-y-1 pl-5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[12px] text-orange-500 font-semibold">판매</span>
+                              <span className="text-[13px] font-bold text-orange-700 tabular-nums">{fmt(Number(p.sale_qty ?? 0))}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[12px] text-indigo-500 font-semibold">판매가</span>
+                              <span className="text-[13px] font-bold text-indigo-700 tabular-nums">{salePrice > 0 ? fmtWon(salePrice) : "-"}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[12px] text-emerald-600 font-semibold">이익률</span>
+                              <span className={`text-[13px] font-bold tabular-nums ${
+                                profitRate == null ? "text-zinc-400"
+                                  : profitRate >= 30 ? "text-emerald-700"
+                                  : profitRate >= 10 ? "text-emerald-600"
+                                  : "text-rose-600"
+                              }`}>
+                                {profitRate == null ? "-" : `${profitRate.toFixed(1)}%`}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[12px] text-rose-500 font-semibold">손실</span>
+                              <span className={`text-[13px] font-bold tabular-nums ${
+                                loss > 0 ? "text-rose-600"
+                                  : loss < 0 ? "text-emerald-600"
+                                  : "text-zinc-400"
+                              }`}>
+                                {loss === 0 ? "0" : loss > 0 ? `-${fmt(loss)}` : `+${fmt(Math.abs(loss))}`}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between col-span-2">
+                              <span className="text-[12px] text-zinc-500 font-semibold">재고</span>
+                              <span className="text-[13px] font-semibold text-zinc-700 tabular-nums">{fmt(Number(p.closing_stock ?? 0))}</span>
+                            </div>
+                          </div>
+                        </div>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
