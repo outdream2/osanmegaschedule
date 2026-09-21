@@ -127,6 +127,7 @@
 <!-- #302 ✅ · products-search API · optimal_stock·min_stock 필드 누락 fix · 2026-09-21 완료 (`bd19450c`) -->
 <!-- #303 ✅ · xlsx 0.18.5 → 0.20.3 SheetJS CDN · TS·build 통과 · 2026-09-21 완료 -->
 <!-- #310 ✅ (부분 · 11 페이지 완료) · Top 5 (직원·거래처·발주요청·연차·결제입력) + 잔여 3 (ProductInfoPage·VendorStockPage·EventsSection) + #324-3차 (매입이력) · pass 3 (ScanPage·ProductArrivalPage·BoardPage 이미 카드형) · 2026-09-21 완료 · 잔여 전수는 후속 세션 -->
+| **#329** | **모든 입력창 · 한글 IME 우선 입력 · 전수 적용** (사용자 지시 · 2026-09-21) | 🟡 P2 | E-003 (바코드 스캔 상품명) 확장 · 전체 프로젝트 · 모든 `<input>` `<textarea>` · `lang="ko"` + `autoCapitalize="off"` + `autoCorrect="off"` + `spellCheck={false}` + `inputMode="text"` (또는 필드 성격에 맞는 값) · 예외 · type="number"·"tel"·"email"·"date"·"password" 등 숫자·특수 입력창은 제외 · SSOT 유틸 or ESLint 규칙 검토 · 회귀 X |
 <!-- #311 ✅ · UpcomingLeaveBanner + useUpcomingLeaves + /api/upcoming-leaves · SchedulePage L561 통합 · 14일 이내 · 관리자 lv≥2 · 이미 완료 -->
 <!-- #312 ✅ · POST /api/approve-leave (server/routes/daily/leave.ts L118-146) · scheduleService.batchUpdateSchedules 자동 호출 · try/catch + 로그 · 실패 시 500 · 알림 발송 · 이미 완료 -->
 <!-- 2026-09-20 · #313 ✅ · c1feb252 · 공급사+판매상태 나란히 + 라벨 폰트 +1 + 필수 미입력 확인창 -->
