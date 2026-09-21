@@ -6,6 +6,7 @@
 //   · order_requests 동기화 (스냅샷 컬럼) 포함
 
 import { supabase } from "../../src/supabase/client";
+import logger from "./logger";
 
 export interface RefillOptions {
   /** 기간 (일) · fromDate 없을 때 기본 · 1~365 */
@@ -146,7 +147,7 @@ export async function applyOptimalStock(payload: Array<{ product_code: string; o
     const chunk = payload.slice(i, i + CHUNK);
     const { error } = await supabase.from("products").upsert(chunk, { onConflict: "product_code" });
     if (error) {
-      console.error("[optimalStock] upsert error:", error.message);
+      logger.error(`[optimalStock] upsert error: ${error.message}`);
       failed += chunk.length;
     } else {
       updated += chunk.length;

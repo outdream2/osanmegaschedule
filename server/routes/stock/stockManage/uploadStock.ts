@@ -10,6 +10,7 @@ import { authorize } from "../../../middleware/requireAuth";
 import { HttpError, badRequest } from "../../../middleware/errorHandler";
 // 2026-09-14 · 캐시 제거 · clear 호출 · no-op stub (호환)
 import { clearSalesTrendCache } from "./helpers";
+import logger from "../../../lib/logger";
 
 const router = Router();
 
@@ -176,8 +177,8 @@ router.post("/api/upload-stock", authorize(9), express.raw({ type: "application/
     }
     if (xlsxRows.length === 0) throw badRequest("유효한 데이터가 없습니다");
 
-    console.log(`[upload-stock] snapshot=${snapshotDate} · start=${periodStartDate ?? "(none)"} · period=${periodType} · 파싱=${history.length}행 · rawDataRows=${dataRows.length}행 · headerRowIdx=${headerRowIdx}`);
-    console.log(`[upload-stock] col idx: code=${codeI} name=${nameI} sup=${supNameI} spec=${specI} closing=${stockI} opening=${openI} purchase=${purchI} sale=${saleI}`);
+    logger.info(`[upload-stock] snapshot=${snapshotDate} · start=${periodStartDate ?? "(none)"} · period=${periodType} · 파싱=${history.length}행 · rawDataRows=${dataRows.length}행 · headerRowIdx=${headerRowIdx}`);
+    logger.info(`[upload-stock] col idx: code=${codeI} name=${nameI} sup=${supNameI} spec=${specI} closing=${stockI} opening=${openI} purchase=${purchI} sale=${saleI}`);
 
     const updated = 0;
     const inserted = 0;
@@ -205,15 +206,15 @@ router.post("/api/upload-stock", authorize(9), express.raw({ type: "application/
           .delete()
           .eq("period_start_date", periodStartDate);
         if (delErr) {
-          console.warn(`[upload-stock] 기존 rows DELETE 실패 (${periodStartDate}):`, delErr.message);
+          logger.warn(`[upload-stock] 기존 rows DELETE 실패 (${periodStartDate}):`, delErr.message);
           deletedCount = 0;
         } else {
           deletedCount = existingCount;
-          console.log(`[upload-stock] 기간 ${periodStartDate} 기존 ${deletedCount}행 삭제 (덮어쓰기 확인됨)`);
+          logger.info(`[upload-stock] 기간 ${periodStartDate} 기존 ${deletedCount}행 삭제 (덮어쓰기 확인됨)`);
         }
       }
     } catch (e: any) {
-      console.warn("[upload-stock] period_start_date 감지/DELETE skip:", e?.message);
+      logger.warn("[upload-stock] period_start_date 감지/DELETE skip:", e?.message);
     }
 
     // ② stock_history upsert
@@ -235,34 +236,34 @@ router.post("/api/upload-stock", authorize(9), express.raw({ type: "application/
           .upsert(chunk, { onConflict: "snapshot_date,product_code" });
         if (!hErr) {
           historyInserted += chunk.length;
-          console.log(`[upload-stock] chunk ${chunkNo}/${totalChunks} · ${chunk.length}행 저장 성공 (누계 ${historyInserted})`);
+          logger.info(`[upload-stock] chunk ${chunkNo}/${totalChunks} · ${chunk.length}행 저장 성공 (누계 ${historyInserted})`);
           continue;
         }
         if (!periodStartUnsupported && /period_start_date/i.test(hErr.message)) {
           periodStartUnsupported = true;
-          console.warn(`[upload-stock] period_start_date 컬럼 없음 → fallback 재시도`);
+          logger.warn(`[upload-stock] period_start_date 컬럼 없음 → fallback 재시도`);
           const chunkFallback = chunkOrig.map(({ period_start_date, ...rest }) => rest);
           const { error: hErr2 } = await supabase
             .from("stock_history")
             .upsert(chunkFallback, { onConflict: "snapshot_date,product_code" });
           if (!hErr2) {
             historyInserted += chunkFallback.length;
-            console.log(`[upload-stock] chunk ${chunkNo}/${totalChunks} · fallback 성공 ${chunkFallback.length}행`);
+            logger.info(`[upload-stock] chunk ${chunkNo}/${totalChunks} · fallback 성공 ${chunkFallback.length}행`);
             continue;
           }
-          console.error(`[upload-stock] chunk ${chunkNo}/${totalChunks} · fallback 실패: ${hErr2.message}`);
+          logger.error(`[upload-stock] chunk ${chunkNo}/${totalChunks} · fallback 실패: ${hErr2.message}`);
           if (!historyError) historyError = hErr2.message;
           continue;
         }
-        console.error(`[upload-stock] chunk ${chunkNo}/${totalChunks} · 실패 (${chunk.length}행 손실): ${hErr.message}`);
+        logger.error(`[upload-stock] chunk ${chunkNo}/${totalChunks} · 실패 (${chunk.length}행 손실): ${hErr.message}`);
         if (chunk[0]) {
-          console.error(`  샘플 첫 행 code=${chunk[0].product_code} name=${chunk[0].product_name} sup=${chunk[0].supplier_name} snap=${chunk[0].snapshot_date}`);
+          logger.error(`  샘플 첫 행 code=${chunk[0].product_code} name=${chunk[0].product_name} sup=${chunk[0].supplier_name} snap=${chunk[0].snapshot_date}`);
         }
         if (!historyError) historyError = hErr.message;
       }
-      console.log(`[upload-stock] 완료: 저장 ${historyInserted}/${history.length}행 (${totalChunks}청크 중 성공)`);
+      logger.info(`[upload-stock] 완료: 저장 ${historyInserted}/${history.length}행 (${totalChunks}청크 중 성공)`);
     } catch (e: any) {
-      console.error("[upload-stock] stock_history 저장 예외:", e?.message, e?.stack);
+      logger.error("[upload-stock] stock_history 저장 예외:", e?.message, e?.stack);
       historyError = e?.message ?? "저장 예외";
     }
 

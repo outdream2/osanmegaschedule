@@ -4,6 +4,7 @@ import { supabase } from "../../../../src/supabase/client";
 import { asyncHandler } from "../../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../../middleware/errorHandler";
 import { splitVat, fetchVatIncluded } from "./helpers";
+import logger from "../../../lib/logger";
 
 const router = Router();
 
@@ -133,7 +134,7 @@ router.get("/api/supplier-purchase-detail", asyncHandler(async (req, res) => {
       data = null;
     }
   } catch (e: any) {
-    console.warn("[supplier-purchase-detail] purchase_details 실패:", e?.message);
+    logger.warn(`[supplier-purchase-detail] purchase_details 실패: ${e?.message}`);
     data = null;
   }
 

@@ -10,6 +10,7 @@ import { badRequest, HttpError } from "../../middleware/errorHandler";
 import { invalidateSaleActiveOnlyCache, resetProductCache } from "../../productCache";
 import { validateBody } from "../../middleware/zodValidate";
 import { z } from "zod";
+import logger from "../../lib/logger";
 import {
   UpsertSettingSchema,
   UpsertSeasonRangesSchema,
@@ -203,7 +204,7 @@ router.put("/api/zone-groups", authorize(9), validateBody(UpsertZoneGroupsSchema
   const { error } = await supabase.from("app_settings")
     .upsert({ key: "zone_groups", value: body, updated_at: new Date().toISOString() }, { onConflict: "key" });
   if (error) {
-    console.error(`[zone-groups PUT] upsert error: ${error.message} (code=${(error as any).code ?? "?"})`);
+    logger.error(`[zone-groups PUT] upsert error: ${error.message} (code=${(error as any).code ?? "?"})`);
     throw new HttpError(500, error.message);
   }
   res.json({ ok: true });
@@ -319,12 +320,12 @@ function applySmtpToEnv(cfg: Record<string, string>): void {
         const { error } = await supabase.from("app_settings")
           .upsert({ key: SMTP_KEY, value: nextCfg, updated_at: new Date().toISOString() }, { onConflict: "key" });
         if (error) {
-          console.warn(`[settings] SMTP · DB 자동 동기 실패 (경고): ${error.message}`);
+          logger.warn(`[settings] SMTP · DB 자동 동기 실패 (경고): ${error.message}`);
         } else {
-          console.log(`[settings] SMTP · .env 값으로 DB 자동 동기 · host=${envHost} · user=${envUser}`);
+          logger.info(`[settings] SMTP · .env 값으로 DB 자동 동기 · host=${envHost} · user=${envUser}`);
         }
       } else {
-        console.log(`[settings] SMTP loaded from .env · host=${envHost} · user=${envUser} · DB 동일`);
+        logger.debug(`[settings] SMTP loaded from .env · host=${envHost} · user=${envUser} · DB 동일`);
       }
       return; // .env 우선 · process.env 는 이미 .env 값
     }
@@ -339,10 +340,10 @@ function applySmtpToEnv(cfg: Record<string, string>): void {
         smtp_pass: String(raw.smtp_pass ?? ""),
         smtp_from: String(raw.smtp_from ?? ""),
       });
-      console.log(`[settings] SMTP loaded from DB (legacy · .env 없음) · host=${raw.smtp_host}`);
+      logger.debug(`[settings] SMTP loaded from DB (legacy · .env 없음) · host=${raw.smtp_host}`);
     }
   } catch (e: any) {
-    console.warn("[settings] SMTP boot load 실패:", e?.message);
+    logger.warn(`[settings] SMTP boot load 실패: ${e?.message}`);
   }
 })();
 
@@ -466,12 +467,12 @@ router.post("/api/zones", authorize(5), validateBody(UpsertZonesSchema), asyncHa
     .from("zone_assignments")
     .upsert(rowsWithDow, { onConflict: "zone_id" });
   if (error) {
-    console.error(`[zones POST] first upsert error: ${error.message} (code=${(error as any).code ?? "?"})`);
+    logger.error(`[zones POST] first upsert error: ${error.message} (code=${(error as any).code ?? "?"})`);
     // 마이그레이션 미적용 시 dow_map 없이 재시도 (하위 호환)
     const rowsNoDow = rowsWithDow.map(({ dow_map: _dm, ...rest }) => rest);
     const fb = await supabase.from("zone_assignments").upsert(rowsNoDow, { onConflict: "zone_id" });
     if (fb.error) {
-      console.error(`[zones POST] fallback upsert error: ${fb.error.message} (code=${(fb.error as any).code ?? "?"})`);
+      logger.error(`[zones POST] fallback upsert error: ${fb.error.message} (code=${(fb.error as any).code ?? "?"})`);
       throw new HttpError(500, fb.error.message);
     }
   }

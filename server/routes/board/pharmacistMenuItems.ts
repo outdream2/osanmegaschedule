@@ -30,6 +30,7 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, forbidden, notFound, HttpError } from "../../middleware/errorHandler";
 import { z } from "zod";
+import logger from "../../lib/logger";
 
 const CreatePharmMenuSchema = z.object({
   tab_key: z.string().max(50),
@@ -75,9 +76,7 @@ function ensureConfigured(): boolean {
   const api_key = process.env.CLOUDINARY_API_KEY;
   const api_secret = process.env.CLOUDINARY_API_SECRET;
   if (!cloud_name || !api_key || !api_secret) {
-    console.warn(
-      "[pharm-menu] Cloudinary env 미설정 · CLOUDINARY_CLOUD_NAME · CLOUDINARY_API_KEY · CLOUDINARY_API_SECRET 필요"
-    );
+    logger.warn("[pharm-menu] Cloudinary env 미설정 · CLOUDINARY_CLOUD_NAME · CLOUDINARY_API_KEY · CLOUDINARY_API_SECRET 필요");
     return false;
   }
   cloudinary.config({ cloud_name, api_key, api_secret, secure: true });
@@ -224,7 +223,7 @@ router.post("/api/pharmacist-menu-items", authorize(5), validateBody(CreatePharm
         ],
       });
     } catch (upErr: any) {
-      console.error(`[pharm-menu/upload] Cloudinary 업로드 실패 · ${upErr?.message ?? upErr}`);
+      logger.error(`[pharm-menu/upload] Cloudinary 업로드 실패 · ${upErr?.message ?? upErr}`);
       throw new HttpError(502, upErr?.message ?? "Cloudinary 업로드 실패");
     }
 
@@ -342,7 +341,7 @@ router.delete("/api/pharmacist-menu-items/:id", authorize(9), asyncHandler(async
         const rt = resourceTypeFromMime(row.mime_type);
         await cloudinary.uploader.destroy(row.storage_path, { resource_type: rt, invalidate: true });
       } else {
-        console.warn(`[pharm-menu/delete] Cloudinary 미설정 · 원본 정리 스킵 · id=${id} · public_id=${row.storage_path}`);
+        logger.warn(`[pharm-menu/delete] Cloudinary 미설정 · 원본 정리 스킵 · id=${id} · public_id=${row.storage_path}`);
       }
     } else if (row.storage === "supabase" && row.storage_path) {
       await supabase.storage.from(BUCKET).remove([row.storage_path]);
@@ -351,7 +350,7 @@ router.delete("/api/pharmacist-menu-items/:id", authorize(9), asyncHandler(async
       if (fs.existsSync(fpath)) fs.unlinkSync(fpath);
     }
   } catch (cleanupErr: any) {
-    console.warn(`[pharm-menu/delete] 원본 정리 실패 (무시) · id=${id} · ${cleanupErr?.message ?? cleanupErr}`);
+    logger.warn(`[pharm-menu/delete] 원본 정리 실패 (무시) · id=${id} · ${cleanupErr?.message ?? cleanupErr}`);
   }
 
   return res.json({ ok: true });

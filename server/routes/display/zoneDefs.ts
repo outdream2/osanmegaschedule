@@ -17,6 +17,7 @@ import {
   UpsertZoneDefsSchema,
   CreateZoneDefSchema,
 } from "../../../src/shared/schemas/zoneDefs";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -82,7 +83,7 @@ router.get("/api/zone-defs", asyncHandler(async (_req, res) => {
     if (r2.error) throw new HttpError(500, r2.error.message);
     data = (r2.data ?? []).map((r: any) => ({ ...r, warehouse: null }));
   } else if (r1.error) {
-    console.error("[zone-defs GET]", r1.error.message);
+    logger.error("[zone-defs GET] " + r1.error.message);
     throw new HttpError(500, r1.error.message);
   }
   const zones = (data as ZoneDefRow[] | null ?? []).map(rowToDto);
@@ -113,7 +114,7 @@ router.patch("/api/zone-defs/:id", authorize(9), validateBody(PatchZoneDefSchema
     .select("id, location, zone, category, detailed_category, assignee, cell_id, warehouse, updated_at")
     .maybeSingle();
   if (error) {
-    console.error("[zone-defs PATCH]", error.message);
+    logger.error("[zone-defs PATCH] " + error.message);
     throw new HttpError(500, error.message);
   }
   if (!data) throw new HttpError(404, `zone_defs id=${id} not found`);
@@ -132,7 +133,7 @@ router.put("/api/zone-defs", authorize(9), validateBody(UpsertZoneDefsSchema), a
     .upsert(rows, { onConflict: "cell_id" })
     .select("id, location, zone, category, detailed_category, assignee, cell_id, warehouse, updated_at");
   if (error) {
-    console.error("[zone-defs PUT]", error.message);
+    logger.error("[zone-defs PUT] " + error.message);
     throw new HttpError(500, error.message);
   }
   const result = (data as ZoneDefRow[] | null ?? []).map(rowToDto);
@@ -150,7 +151,7 @@ router.post("/api/zone-defs", authorize(9), validateBody(CreateZoneDefSchema), a
     .select("id, location, zone, category, detailed_category, assignee, cell_id, warehouse, updated_at")
     .single();
   if (error) {
-    console.error("[zone-defs POST]", error.message);
+    logger.error("[zone-defs POST] " + error.message);
     throw new HttpError(500, error.message);
   }
   res.status(201).json({ ok: true, zone: rowToDto(data as ZoneDefRow) });
@@ -162,7 +163,7 @@ router.delete("/api/zone-defs/:id", authorize(9), asyncHandler(async (req, res) 
   if (!Number.isFinite(id) || id <= 0) throw badRequest("잘못된 id");
   const { error } = await supabase.from("zone_defs").delete().eq("id", id);
   if (error) {
-    console.error("[zone-defs DELETE]", error.message);
+    logger.error("[zone-defs DELETE] " + error.message);
     throw new HttpError(500, error.message);
   }
   res.json({ ok: true, deleted: id });

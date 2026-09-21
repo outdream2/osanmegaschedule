@@ -4,6 +4,7 @@
 
 import fs from "fs";
 import path from "path";
+import logger from "../lib/logger";
 
 const LOGS_DIR = path.join(process.cwd(), "logs");
 const MAX_AGE_MS = 14 * 24 * 60 * 60 * 1000;
@@ -27,8 +28,8 @@ export async function cleanupStaleLogs(): Promise<void> {
         removed++;
       }
     }
-    if (removed > 0) console.log(`[logs-cleanup] ${removed}개 오래된 로그 파일 삭제 (>${MAX_AGE_MS / (24 * 60 * 60 * 1000)}일)`);
+    if (removed > 0) logger.info(`[logs-cleanup] ${removed}개 오래된 로그 파일 삭제 (>${MAX_AGE_MS / (24 * 60 * 60 * 1000)}일)`);
   } catch (e: any) {
-    console.warn("[logs-cleanup] 실패 (무시):", e?.message);
+    logger.warn(`[logs-cleanup] 실패 (무시): ${e?.message}`);
   }
 }

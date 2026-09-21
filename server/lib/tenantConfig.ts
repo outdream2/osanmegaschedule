@@ -13,6 +13,7 @@
 //   · GET/POST 는 authorize(9) 미들웨어 (JWT 쿠키)
 import fs from "fs";
 import path from "path";
+import logger from "./logger";
 
 const CONFIG_PATH = path.join(process.cwd(), "server", "tenant.config.json");
 
@@ -53,11 +54,11 @@ export function loadTenantConfig(): TenantConfig {
       }
     }
     if (applied > 0) {
-      console.log(`[tenantConfig] loaded · ${applied} keys · applied to process.env${aliased > 0 ? ` · aliased ${aliased} legacy` : ""}`);
+      logger.info(`[tenantConfig] loaded · ${applied} keys · applied to process.env${aliased > 0 ? ` · aliased ${aliased} legacy` : ""}`);
     }
     return cfg;
   } catch (e) {
-    console.warn("[tenantConfig] load failed · ignoring", e);
+    logger.warn(`[tenantConfig] load failed · ignoring: ${(e as any)?.message ?? e}`);
     return {};
   }
 }

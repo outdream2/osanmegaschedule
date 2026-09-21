@@ -11,6 +11,7 @@
 //   - inventory_checks · 직접 쿼리 (checked_at DESC + JS dedup) · 2026-09-08 RPC 제거
 
 import { supabase } from "../../src/supabase/client";
+import logger from "../lib/logger";
 
 export interface ProductWithInventory {
   product_code: string;
@@ -107,7 +108,7 @@ async function fetchLatestInventory(codes?: string[]): Promise<Map<string, {
     if (codes && codes.length > 0) q = q.in("product_code", codes);
     const { data, error } = await q.range(from, from + PAGE - 1);
     if (error) {
-      console.warn("[fetchLatestInventory] inventory_checks 조회 실패:", error.message);
+      logger.warn(`[fetchLatestInventory] inventory_checks 조회 실패: ${error.message}`);
       break;
     }
     if (!data || data.length === 0) break;

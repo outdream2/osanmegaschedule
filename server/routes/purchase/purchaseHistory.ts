@@ -8,6 +8,7 @@ import { supabase } from "../../../src/supabase/client";
 import { fetchAllWithRange } from "../../utils/supabaseFetchAll";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError } from "../../middleware/errorHandler";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -47,7 +48,7 @@ router.get("/api/products/purchase-history", asyncHandler(async (req, res) => {
       .not("product_code", "is", null)
       .order("purchase_date", { ascending: false, nullsFirst: false }), codes.length * perCodeLimit * 3);
   } catch (e: any) {
-    console.warn(`[purchase-history] 조회 실패: ${e?.message}`);
+    logger.warn(`[purchase-history] 조회 실패: ${e?.message}`);
     return res.json({ history: {}, note: e?.message });
   }
 

@@ -12,6 +12,7 @@ import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import { CreateLeaveRequestSchema, ReviewLeaveRequestSchema } from "../../../src/shared/schemas/leave";
 import type { LeaveBalanceResponse, LeaveStatsResponse } from "../../../src/shared/dtos/leave";
 import { nextKstYmd, compareYmd, getKstYmd } from "../../lib/kstDate";
+import logger from "../../lib/logger";
 // 2026-09-21 · #328 · iOS 앱 Expo 푸시 알림 · 연차 승인 트리거
 import { sendPushSafe } from "../../services/expoPushService";
 
@@ -140,9 +141,9 @@ router.put("/api/leave-requests/:id", authorize(5), validateBody(ReviewLeaveRequ
             memo: `연차 승인 (${data.leave_type})`,
           })),
         );
-        console.log(`[LEAVE APPROVE] emp=${data.employee_id} type=${scheduleType} dates=[${dates.join(",")}] · ${result.count}건 스케쥴 반영`);
+        logger.info(`[LEAVE APPROVE] emp=${data.employee_id} type=${scheduleType} dates=[${dates.join(",")}] · ${result.count}건 스케쥴 반영`);
       } catch (schedErr: any) {
-        console.error(`[LEAVE APPROVE FAILED] emp=${data.employee_id} type=${scheduleType} dates=[${dates.join(",")}]`, schedErr?.message ?? schedErr);
+        logger.error(`[LEAVE APPROVE FAILED] emp=${data.employee_id} type=${scheduleType} dates=[${dates.join(",")}] · ${schedErr?.message ?? schedErr}`);
         // 연차 승인은 완료된 상태에서 · schedule 반영 실패 · 클라이언트에 500 반환
         throw new HttpError(500, `연차는 승인되었으나 스케쥴 반영 실패: ${schedErr?.message ?? String(schedErr)}`);
       }
@@ -280,10 +281,10 @@ router.delete("/api/leave-requests/:id", authorize(5), asyncHandler(async (req, 
       .gte("date", startDate)
       .lte("date", endDate);
     if (schedErr) {
-      console.error(`[LEAVE DELETE · schedules cleanup failed]`, schedErr.message);
+      logger.warn(`[LEAVE DELETE · schedules cleanup failed] ${schedErr.message}`);
       // 스케쥴 삭제 실패는 경고만 · leave_requests 삭제는 이미 성공
     } else {
-      console.log(`[LEAVE DELETE] emp=${empId} · ${startDate}~${endDate} · schedules 정리`);
+      logger.info(`[LEAVE DELETE] emp=${empId} · ${startDate}~${endDate} · schedules 정리`);
     }
   }
   res.json({ ok: true });

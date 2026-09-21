@@ -32,6 +32,7 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import { CreateResignationSchema, ReviewResignationSchema } from "../../../src/shared/schemas/resignations";
+import logger from "../../lib/logger";
 
 // ─── Storage 설정 ────────────────────────────────────────────────────────────
 // Supabase 대시보드에서 "resignation-signatures" 버킷을 Public으로 생성 필요
@@ -55,7 +56,7 @@ async function uploadSignatureToStorage(
   // 서명 이미지 크기 상한 · 2MB
   const MAX_BYTES = 2 * 1024 * 1024;
   if (buffer.length > MAX_BYTES) {
-    console.warn(`[resignations/signature] 크기 초과 · emp=${employeeId} · ${(buffer.length / 1024).toFixed(0)}KB > 2048KB · Storage 업로드 생략`);
+    logger.warn(`[resignations/signature] 크기 초과 · emp=${employeeId} · ${(buffer.length / 1024).toFixed(0)}KB > 2048KB · Storage 업로드 생략`);
     return null;
   }
 
@@ -74,19 +75,19 @@ async function uploadSignatureToStorage(
       });
 
     if (upErr) {
-      console.warn(`[resignations/signature] Storage 업로드 실패 · emp=${employeeId} · ${upErr.message}`);
+      logger.warn(`[resignations/signature] Storage 업로드 실패 · emp=${employeeId} · ${upErr.message}`);
       return null;
     }
 
     const { data: pub } = supabase.storage.from(SIGNATURE_BUCKET).getPublicUrl(objectPath);
     if (!pub?.publicUrl) {
-      console.warn(`[resignations/signature] getPublicUrl 실패 · path=${objectPath}`);
+      logger.warn(`[resignations/signature] getPublicUrl 실패 · path=${objectPath}`);
       return null;
     }
 
     return pub.publicUrl;
   } catch (err: any) {
-    console.warn(`[resignations/signature] Storage 예외 · emp=${employeeId} · ${err?.message ?? err}`);
+    logger.warn(`[resignations/signature] Storage 예외 · emp=${employeeId} · ${err?.message ?? err}`);
     return null;
   }
 }
@@ -124,7 +125,7 @@ router.get("/api/resignations", asyncHandler(async (req, res) => {
   if (error) {
     // 테이블 미생성 시 · 빈 배열 + 안내 (500 대신 200)
     if (/relation .* does not exist|table .* not found/i.test(error.message)) {
-      console.warn("[resignations] resignation_requests 테이블 미생성 · migrations/create_resignation_requests.sql 실행 필요");
+      logger.warn("[resignations] resignation_requests 테이블 미생성 · migrations/create_resignation_requests.sql 실행 필요");
       return res.json([]);
     }
     throw new HttpError(500, error.message);

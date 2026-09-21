@@ -14,6 +14,7 @@ import type { NextEmployeeNumberResponse } from "../../../src/shared/dtos/employ
 import { UpsertScheduleSchema, BatchScheduleSchema, CopyScheduleSchema } from "../../../src/shared/schemas/schedules";
 import { CreateEmployeeSchema, UpdateEmployeeSchema } from "../../../src/shared/schemas/employees";
 import { getKstYmd } from "../../lib/kstDate";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -218,7 +219,7 @@ router.post("/api/employees/:id/resignation-file", authorize(1), resignationFile
 
   if (upErr) {
     // Storage 실패 → 로컬 fallback
-    console.warn(`[resignation-file] Supabase Storage 실패 · fallback 로컬 · bucket=${RESIGNATION_FILE_BUCKET} · reason=${upErr.message}`);
+    logger.warn(`[resignation-file] Supabase Storage 실패 · fallback 로컬 · bucket=${RESIGNATION_FILE_BUCKET} · reason=${upErr.message}`);
     const localName = `${Date.now()}_${safeName}_사직서.${ext}`;
     fs.writeFileSync(path.join(resignationsLocalDir, localName), req.file.buffer);
     fileUrl = `/uploads/resignations/${localName}`;

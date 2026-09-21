@@ -7,6 +7,7 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { CreateOcrConfirmedItemsSchema } from "../../../src/shared/schemas/ocrConfirmed";
+import logger from "../../lib/logger";
 
 const router = Router();
 const TABLE = "ocr_confirmed_items";
@@ -40,9 +41,7 @@ CREATE TABLE IF NOT EXISTS ocr_confirmed_items (
 (async () => {
   const { error } = await supabase.from(TABLE).select("id").limit(1);
   if (error && /relation|does not exist/i.test(error.message)) {
-    console.warn(`\n[SETUP REQUIRED] '${TABLE}' 테이블이 없습니다.`);
-    console.warn("[SETUP REQUIRED] Supabase SQL Editor에서 아래 SQL을 실행하세요:\n");
-    console.warn(CREATE_SQL);
+    logger.warn(`[SETUP REQUIRED] '${TABLE}' 테이블이 없습니다. Supabase SQL Editor에서 CREATE_SQL 실행 필요`);
   }
 })();
 

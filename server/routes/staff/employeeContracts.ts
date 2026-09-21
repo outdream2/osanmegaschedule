@@ -28,6 +28,7 @@ import { authorize } from "../../middleware/requireAuth";
 import { validateBody } from "../../middleware/zodValidate";
 import { HttpError, badRequest } from "../../middleware/errorHandler";
 import { CreateEmployeeContractSchema } from "../../../src/shared/schemas/employeeContracts";
+import logger from "../../lib/logger";
 // 2026-08-13 · #107 · 계약서 업로드 알림 · 사용자 지시로 제거 (알림 hook 미사용)
 
 const router = Router();
@@ -73,10 +74,10 @@ async function deactivatePriorContracts(employeeId: number): Promise<void> {
 
     if (selErr) {
       if (isMissingColumnError(selErr)) {
-        console.warn("[employee-contracts] is_active 컬럼 없음 · 재계약 감지 skip (ALTER TABLE 필요)");
+        logger.warn("[employee-contracts] is_active 컬럼 없음 · 재계약 감지 skip (ALTER TABLE 필요)");
         return;
       }
-      console.warn("[employee-contracts] 기존 활성 계약 조회 실패:", selErr.message);
+      logger.warn(`[employee-contracts] 기존 활성 계약 조회 실패: ${selErr.message}`);
       return;
     }
 
@@ -89,15 +90,15 @@ async function deactivatePriorContracts(employeeId: number): Promise<void> {
       .eq("is_active", true);
     if (deactErr) {
       if (isMissingColumnError(deactErr)) {
-        console.warn("[employee-contracts] is_active 컬럼 없음 · UPDATE skip");
+        logger.warn("[employee-contracts] is_active 컬럼 없음 · UPDATE skip");
         return;
       }
-      console.warn("[employee-contracts] 재계약 비활성화 실패:", deactErr.message);
+      logger.warn(`[employee-contracts] 재계약 비활성화 실패: ${deactErr.message}`);
     } else {
-      console.log(`[employee-contracts] 재계약 감지 · 기존 ${existing.length}건 · is_active=false 처리 · employee_id=${employeeId}`);
+      logger.info(`[employee-contracts] 재계약 감지 · 기존 ${existing.length}건 · is_active=false 처리 · employee_id=${employeeId}`);
     }
   } catch (e: any) {
-    console.warn("[employee-contracts] 재계약 감지 예외 (무시):", e?.message ?? e);
+    logger.warn(`[employee-contracts] 재계약 감지 예외 (무시): ${e?.message ?? e}`);
   }
 }
 
@@ -113,7 +114,7 @@ async function insertContractWithIsActiveFallback(
   if (!first.error) return { row: first.data, err: null };
 
   if (isMissingColumnError(first.error)) {
-    console.warn("[employee-contracts] is_active 컬럼 없음 · is_active 제거 후 INSERT 재시도");
+    logger.warn("[employee-contracts] is_active 컬럼 없음 · is_active 제거 후 INSERT 재시도");
     const retry = await supabase.from("employee_contracts").insert([baseRow]).select("*").single();
     return { row: retry.data, err: retry.error };
   }
@@ -140,7 +141,7 @@ async function insertContractWithDriveLinksFallback(
     const colMatch = /column\s+"?([a-z_][a-z0-9_]*)"?/i.exec(res.error.message ?? "");
     const missingCol = colMatch?.[1];
     if (missingCol && missingCol in currentPayload) {
-      console.warn(`[employee-contracts] ${missingCol} 컬럼 없음 · 제외 후 재시도 (attempt=${attempt + 1})`);
+      logger.warn(`[employee-contracts] ${missingCol} 컬럼 없음 · 제외 후 재시도 (attempt=${attempt + 1})`);
       const next = { ...currentPayload };
       delete next[missingCol];
       currentPayload = next;
@@ -151,7 +152,7 @@ async function insertContractWithDriveLinksFallback(
     let removed = false;
     for (const c of optionalCols) {
       if (c in currentPayload) {
-        console.warn(`[employee-contracts] 컬럼 미존재 (heuristic) · ${c} 제거 후 재시도`);
+        logger.warn(`[employee-contracts] 컬럼 미존재 (heuristic) · ${c} 제거 후 재시도`);
         const next = { ...currentPayload };
         delete next[c];
         currentPayload = next;
@@ -199,20 +200,20 @@ async function syncEmployeeContractFields(
       const colMatch = /column\s+"?([a-z_][a-z0-9_]*)"?/i.exec(error.message ?? "");
       const missingCol = colMatch?.[1];
       if (missingCol && missingCol in payload) {
-        console.warn(`[employee-contracts] employees.${missingCol} 컬럼 없음 · 제외 후 재시도`);
+        logger.warn(`[employee-contracts] employees.${missingCol} 컬럼 없음 · 제외 후 재시도`);
         delete payload[missingCol];
         if (Object.keys(payload).length > 0) {
           await syncEmployeeContractFields(employeeId, payload as any);
         }
         return;
       }
-      console.warn(`[employee-contracts] employees 동기 갱신 · 컬럼 미존재 (무시): ${error.message}`);
+      logger.warn(`[employee-contracts] employees 동기 갱신 · 컬럼 미존재 (무시): ${error.message}`);
       return;
     }
 
-    console.warn(`[employee-contracts] employees 동기 갱신 실패 (무시) · id=${employeeId} · ${error.message}`);
+    logger.warn(`[employee-contracts] employees 동기 갱신 실패 (무시) · id=${employeeId} · ${error.message}`);
   } catch (e: any) {
-    console.warn(`[employee-contracts] employees 동기 갱신 예외 (무시) · ${e?.message ?? e}`);
+    logger.warn(`[employee-contracts] employees 동기 갱신 예외 (무시) · ${e?.message ?? e}`);
   }
 }
 
@@ -269,7 +270,7 @@ router.get("/api/employee-contracts", asyncHandler(async (req, res) => {
   const { data, error } = await q;
   if (error) {
     if (isMissingTableError(error.message)) {
-      console.warn("[employee-contracts] employee_contracts 테이블 미생성 · migrations/create_employee_contracts.sql 실행 필요");
+      logger.warn("[employee-contracts] employee_contracts 테이블 미생성 · migrations/create_employee_contracts.sql 실행 필요");
       return res.json([]);
     }
     throw new HttpError(500, error.message);
@@ -326,17 +327,17 @@ router.post("/api/employee-contracts", authorize(9), validateBody(CreateEmployee
           upsert: false,
         });
       if (upErr) {
-        console.warn(`[employee-contracts/upload] Supabase Storage 실패 · fallback 로컬 · bucket=${CONTRACTS_BUCKET} · reason=${upErr.message}`);
+        logger.warn(`[employee-contracts/upload] Supabase Storage 실패 · fallback 로컬 · bucket=${CONTRACTS_BUCKET} · reason=${upErr.message}`);
       } else {
         const { data: pub } = supabase.storage.from(CONTRACTS_BUCKET).getPublicUrl(objectPath);
         if (pub?.publicUrl) {
           pdfUrl = pub.publicUrl;
         } else {
-          console.warn(`[employee-contracts/upload] getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
+          logger.warn(`[employee-contracts/upload] getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
         }
       }
     } catch (supErr: any) {
-      console.warn(`[employee-contracts/upload] Supabase 예외 · fallback 로컬 · ${supErr?.message ?? supErr}`);
+      logger.warn(`[employee-contracts/upload] Supabase 예외 · fallback 로컬 · ${supErr?.message ?? supErr}`);
     }
 
     // 2) 로컬 fallback
@@ -349,7 +350,7 @@ router.post("/api/employee-contracts", authorize(9), validateBody(CreateEmployee
       pdfUrl = `/uploads/contracts/${ym}/${fname}`;
       storage = "local";
       storagePath = `${ym}/${fname}`;
-      console.log(`[employee-contracts/upload] Local fallback · path=${pdfUrl}`);
+      logger.info(`[employee-contracts/upload] Local fallback · path=${pdfUrl}`);
     }
 
     // 3-A) 재계약 감지 · 기존 활성 계약 is_active=false (컬럼 미존재 시 skip)
@@ -454,12 +455,12 @@ async function uploadPdfToSupabaseFallback(
       if (pub?.publicUrl) {
         return { url: pub.publicUrl, storagePath: objectPath, storage: "supabase" };
       }
-      console.warn(`[employee-contracts/upload] Supabase getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
+      logger.warn(`[employee-contracts/upload] Supabase getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
     } else {
-      console.warn(`[employee-contracts/upload] Supabase Storage 실패 (bucket=${CONTRACTS_BUCKET}) · ${upErr.message}`);
+      logger.warn(`[employee-contracts/upload] Supabase Storage 실패 (bucket=${CONTRACTS_BUCKET}) · ${upErr.message}`);
     }
   } catch (e: any) {
-    console.warn(`[employee-contracts/upload] Supabase 예외 · ${e?.message ?? e}`);
+    logger.warn(`[employee-contracts/upload] Supabase 예외 · ${e?.message ?? e}`);
   }
 
   // 로컬 fallback
@@ -475,7 +476,7 @@ async function uploadPdfToSupabaseFallback(
       storage: "local",
     };
   } catch (e: any) {
-    console.error(`[employee-contracts/upload] 로컬 fallback 실패 · ${e?.message ?? e}`);
+    logger.error(`[employee-contracts/upload] 로컬 fallback 실패 · ${e?.message ?? e}`);
     return null;
   }
 }
@@ -516,7 +517,7 @@ router.post("/api/employee-contracts/upload", authorize(9), driveUpload.single("
     driveFileId = result.fileId;
   } catch (drvErr: any) {
     driveError = drvErr?.message ?? "Google Drive 업로드 실패";
-    console.error(`[employee-contracts/upload] Drive 업로드 실패 → Supabase Storage 폴백 시도 · employee=${employeeName} · file=${fileName} · size=${req.file.size} · ${driveError}`);
+    logger.error(`[employee-contracts/upload] Drive 업로드 실패 → Supabase Storage 폴백 시도 · employee=${employeeName} · file=${fileName} · size=${req.file.size} · ${driveError}`);
   }
 
   let localUrl = "";
@@ -532,7 +533,7 @@ router.post("/api/employee-contracts/upload", authorize(9), driveUpload.single("
     localUrl = fb.url;
     localStorage = fb.storage;
     localStoragePath = fb.storagePath;
-    console.warn(`[employee-contracts/upload] Drive 실패 · ${localStorage} 폴백 성공 · path=${localStoragePath}`);
+    logger.warn(`[employee-contracts/upload] Drive 실패 · ${localStorage} 폴백 성공 · path=${localStoragePath}`);
   }
 
   // 재계약 감지 · 기존 활성 계약 is_active=false (컬럼 미존재 시 skip)

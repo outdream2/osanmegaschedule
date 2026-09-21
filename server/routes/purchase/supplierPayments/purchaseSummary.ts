@@ -3,6 +3,7 @@ import { Router } from "express";
 import { supabase } from "../../../../src/supabase/client";
 import { asyncHandler } from "../../../middleware/asyncHandler";
 import { HttpError } from "../../../middleware/errorHandler";
+import logger from "../../../lib/logger";
 
 const router = Router();
 
@@ -121,7 +122,7 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
       from += PAGE;
     }
     if (pdSkippedNullSupplier > 0) {
-      console.warn(`[supplier-purchase-summary] purchase_details · supplier_name NULL 로 스킵된 행 ${pdSkippedNullSupplier}개`);
+      logger.warn(`[supplier-purchase-summary] purchase_details · supplier_name NULL 로 스킵된 행 ${pdSkippedNullSupplier}개`);
       try {
         const { data: skipRows } = await supabase
           .from("purchase_details")
@@ -132,13 +133,13 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
         if (skipRows && skipRows.length > 0) {
           const codes = Array.from(new Set(skipRows.map((r: any) => r.supplier_code).filter(Boolean))).slice(0, 10);
           const prodCodes = Array.from(new Set(skipRows.map((r: any) => r.product_code).filter(Boolean))).slice(0, 10);
-          console.warn(`[supplier-purchase-summary] 매핑 실패 supplier_code 예시:`, codes);
-          console.warn(`[supplier-purchase-summary] 매핑 실패 product_code 예시:`, prodCodes);
+          logger.warn(`[supplier-purchase-summary] 매핑 실패 supplier_code 예시: ${codes.join(",")}`);
+          logger.warn(`[supplier-purchase-summary] 매핑 실패 product_code 예시: ${prodCodes.join(",")}`);
         }
       } catch { /* silent */ }
     }
   } catch (e: any) {
-    console.warn("[supplier-purchase-summary] purchase_details 실패:", e?.message);
+    logger.warn(`[supplier-purchase-summary] purchase_details 실패: ${e?.message}`);
   }
 
   // ─── 2026-08-09 · OCR fallback 제거 ───

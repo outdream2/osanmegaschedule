@@ -7,6 +7,7 @@ import { fetchAllWithRange } from "../../../utils/supabaseFetchAll";
 import { asyncHandler } from "../../../middleware/asyncHandler";
 import { HttpError } from "../../../middleware/errorHandler";
 import { inSeasonMonths } from "./helpers";
+import logger from "../../../lib/logger";
 // 2026-09-14 · 사용자 대원칙 · topSalesCache 제거 · 매 요청 실시간 조회
 
 const router = Router();
@@ -185,9 +186,9 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             agg.purchase_last_amount  = info.lastAmount;
           }
         }
-        console.log(`[top-sales/season] purchase_details 조인: ${purchaseInfoMap.size}개 상품 · distinct date 카운트`);
+        logger.info(`[top-sales/season] purchase_details 조인: ${purchaseInfoMap.size}개 상품 · distinct date 카운트`);
       } catch (e: any) {
-        console.warn(`[top-sales/season] purchase_details 조인 실패:`, e?.message);
+        logger.warn(`[top-sales/season] purchase_details 조인 실패:`, e?.message);
       }
 
       const aggRows = Array.from(byCode.values()).map(({ first_snap: _fs, last_snap: _ls, ...rest }) => rest);
@@ -381,12 +382,12 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         }
         const missingCodes = codesInResult.filter(c => !purchaseInfoMap.has(c));
         const singleDate = [...purchaseInfoMap.entries()].filter(([, v]) => v.count === 1);
-        console.log(`[top-sales/months] purchase_details 조인: ${purchaseInfoMap.size}/${codesInResult.length}개 매치 · 누락 ${missingCodes.length}개 · 1회만 매입 ${singleDate.length}개`);
+        logger.info(`[top-sales/months] purchase_details 조인: ${purchaseInfoMap.size}/${codesInResult.length}개 매치 · 누락 ${missingCodes.length}개 · 1회만 매입 ${singleDate.length}개`);
         if (missingCodes.length > 0 && missingCodes.length <= 20) {
-          console.log(`[top-sales/months] 누락 codes 샘플:`, missingCodes.slice(0, 10));
+          logger.info(`[top-sales/months] 누락 codes 샘플:`, missingCodes.slice(0, 10));
         }
       } catch (e: any) {
-        console.warn(`[top-sales/months] purchase_details 조인 실패:`, e?.message);
+        logger.warn(`[top-sales/months] purchase_details 조인 실패:`, e?.message);
       }
       // 2026-07-28 · 회전율 = 최근매입일 ~ 그 전매입일 사이 판매량
       const salesByCodeByDate = new Map<string, Map<string, { qty: number; amount: number }>>();
@@ -588,7 +589,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       }
       dates = Array.from(set).sort((a, b) => b.localeCompare(a));
     } catch (e: any) {
-      console.warn("[top-sales] dates 조회 실패, 계속:", e?.message);
+      logger.warn("[top-sales] dates 조회 실패, 계속:", e?.message);
     }
     const dates_with_period = dates.map(dt => ({ snapshot_date: dt, period_type: dateToPeriodMap.get(dt) ?? null }));
     const targetPeriodType = dateToPeriodMap.get(targetDate) ?? null;
@@ -665,7 +666,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         }
       }
     } catch (e: any) {
-      console.warn("[top-sales] products fetch 실패:", e?.message);
+      logger.warn("[top-sales] products fetch 실패:", e?.message);
     }
 
     // ═══ purchase_details 조인 · 최근/최초 매입일 + 매입 금액 + 횟수
@@ -706,9 +707,9 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         }
       }
       for (const info of purchaseInfoMap.values()) info.count = info.dateSet.size;
-      console.log(`[top-sales] purchase_details 조인: ${purchaseInfoMap.size}개 상품 · distinct date 카운트`);
+      logger.info(`[top-sales] purchase_details 조인: ${purchaseInfoMap.size}개 상품 · distinct date 카운트`);
     } catch (e: any) {
-      console.warn("[top-sales] purchase_details 조인 실패 (계속 진행):", e?.message);
+      logger.warn("[top-sales] purchase_details 조인 실패 (계속 진행):", e?.message);
     }
 
     // 2026-07-29 · 매입이력 필드는 무조건 purchase_details 만 사용

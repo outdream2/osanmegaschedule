@@ -6,6 +6,7 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { UpsertSupplierBalanceConfigSchema } from "../../../src/shared/schemas/supplierBalanceConfig";
+import logger from "../../lib/logger";
 
 const router = Router();
 const TABLE = "supplier_balance_configs";
@@ -21,9 +22,7 @@ CREATE TABLE IF NOT EXISTS supplier_balance_configs (
 (async () => {
   const { error } = await supabase.from(TABLE).select("supplier_name").limit(1);
   if (error && /relation|does not exist/i.test(error.message)) {
-    console.warn(`\n[SETUP REQUIRED] '${TABLE}' 테이블이 없습니다.`);
-    console.warn("[SETUP REQUIRED] Supabase SQL Editor에서 아래 SQL을 실행하세요:\n");
-    console.warn(CREATE_SQL);
+    logger.warn(`[SETUP REQUIRED] '${TABLE}' 테이블이 없습니다. Supabase SQL Editor에서 CREATE_SQL 실행 필요`);
   }
 })();
 

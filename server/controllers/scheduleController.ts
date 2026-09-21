@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { scheduleService } from "../services/scheduleService";
+import logger from "../lib/logger";
 
 export class ScheduleController {
   /**
@@ -19,7 +20,7 @@ export class ScheduleController {
       const result = await scheduleService.getMonthlySchedule(year, month);
       res.json(result);
     } catch (error: any) {
-      console.error("Error in getSchedules controller:", error);
+      logger.error(`[scheduleController] getSchedules: ${error?.message ?? error}`);
       res.status(500).json({ error: error.message || "Internal server error" });
     }
   }
@@ -48,7 +49,7 @@ export class ScheduleController {
 
       res.json(result);
     } catch (error: any) {
-      console.error("Error in updateSchedule controller:", error);
+      logger.error(`[scheduleController] updateSchedule: ${error?.message ?? error}`);
       res.status(500).json({ error: error.message || "Internal server error" });
     }
   }
@@ -67,7 +68,7 @@ export class ScheduleController {
       const result = await scheduleService.batchUpdateSchedules(items);
       res.json(result);
     } catch (error: any) {
-      console.error("Error in batchUpdateSchedules controller:", error);
+      logger.error(`[scheduleController] batchUpdateSchedules: ${error?.message ?? error}`);
       res.status(500).json({ error: error.message || "Internal server error" });
     }
   }
@@ -90,7 +91,7 @@ export class ScheduleController {
       );
       res.json(result);
     } catch (error: any) {
-      console.error("Error in copySchedules controller:", error);
+      logger.error(`[scheduleController] copySchedules: ${error?.message ?? error}`);
       res.status(500).json({ error: error.message || "Internal server error" });
     }
   }
@@ -147,7 +148,7 @@ export class ScheduleController {
 
       res.status(201).json(result);
     } catch (error: any) {
-      console.error("Error causing employee creation failure:", error);
+      logger.error(`[scheduleController] createEmployee: ${error?.message ?? error}`);
       res.status(500).json({ error: error.message || "Internal server error" });
     }
   }
@@ -263,7 +264,7 @@ export class ScheduleController {
       });
       res.json(result);
     } catch (error: any) {
-      console.error("Error in updateEmployee controller:", error);
+      logger.error(`[scheduleController] updateEmployee: ${error?.message ?? error}`);
       res.status(500).json({ error: error.message || "Internal server error" });
     }
   }
@@ -283,7 +284,7 @@ export class ScheduleController {
       await scheduleService.deleteEmployee(id);
       res.json({ message: "Employee deleted successfully" });
     } catch (error: any) {
-      console.error("Error in deleteEmployee controller:", error);
+      logger.error(`[scheduleController] deleteEmployee: ${error?.message ?? error}`);
       res.status(500).json({ error: error.message || "Internal server error" });
     }
   }

@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildInitialShelfPositions } from "../../src/shared/warehouseZones";
+import logger from "../lib/logger";
 
 export { buildInitialShelfPositions };
 
@@ -49,7 +50,7 @@ export async function applyInitialShelfPositionsForCodes(
       .select("product_code, product_name, location, display_location, category_code, sale_status")
       .in("product_code", chunk);
     if (error) {
-      console.warn("[applyShelfPositions] products 조회 실패:", error.message);
+      logger.warn(`[applyShelfPositions] products 조회 실패: ${error.message}`);
       continue;
     }
     products.push(...((data ?? []) as any[]));
@@ -67,7 +68,7 @@ export async function applyInitialShelfPositionsForCodes(
       .in("product_code", chunk)
       .order("checked_at", { ascending: false });
     if (error) {
-      console.warn("[applyShelfPositions] inventory_checks 조회 실패:", error.message);
+      logger.warn(`[applyShelfPositions] inventory_checks 조회 실패: ${error.message}`);
       continue;
     }
     for (const r of (data ?? []) as any[]) {
@@ -110,7 +111,7 @@ export async function applyInitialShelfPositionsForCodes(
         .from("inventory_checks")
         .update({ shelf_positions: merged })
         .eq("id", existing.id);
-      if (error) { failed++; console.warn(`[applyShelfPositions] UPDATE 실패 · ${code} · ${error.message}`); }
+      if (error) { failed++; logger.warn(`[applyShelfPositions] UPDATE 실패 · ${code} · ${error.message}`); }
       else updated++;
     } else {
       const insertRow: Record<string, unknown> = {
@@ -141,7 +142,7 @@ export async function applyInitialShelfPositionsForCodes(
         const retry = await supabase.from("inventory_checks").insert([insertRow]);
         insErr = retry.error ?? null;
       }
-      if (insErr) { failed++; console.warn(`[applyShelfPositions] INSERT 실패 · ${code} · ${insErr.message}`); }
+      if (insErr) { failed++; logger.warn(`[applyShelfPositions] INSERT 실패 · ${code} · ${insErr.message}`); }
       else inserted++;
     }
   }
@@ -168,7 +169,7 @@ export async function backfillAllShelfPositions(
       .eq("sale_status", "판매중")
       .range(offset, offset + PAGE - 1);
     if (error) {
-      console.warn("[backfillAllShelfPositions] products 조회 실패:", error.message);
+      logger.warn(`[backfillAllShelfPositions] products 조회 실패: ${error.message}`);
       break;
     }
     if (!data || data.length === 0) break;

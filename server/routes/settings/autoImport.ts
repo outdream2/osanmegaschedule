@@ -36,6 +36,7 @@ import {
   DEFAULT_AUTO_IMPORT_CONFIG,
   type AutoImportStatus,
 } from "../../../src/shared/schemas/autoImport";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -151,7 +152,7 @@ router.post(
       }
     } catch (notifyErr: any) {
       // 알림·이력 실패는 heartbeat 흐름 안 막음
-      console.warn("[auto-import heartbeat] notify/log failed:", notifyErr?.message ?? notifyErr);
+      logger.warn(`[auto-import heartbeat] notify/log failed: ${notifyErr?.message ?? notifyErr}`);
     }
     // Python 이 사용할 정보 · 다음 config 반영 필요 여부
     res.json({ ok: true, received_at: status.updated_at });

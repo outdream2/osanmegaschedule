@@ -39,6 +39,7 @@ import { resolveSeasonMonths } from "../settings/settings";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
+import logger from "../../lib/logger";
 
 const router = express.Router();
 
@@ -256,8 +257,8 @@ router.post(
       throw new HttpError(400, "유효한 매입 데이터가 없습니다");
     }
 
-    console.log(`[upload-purchase] 파싱 ${parsed.length}행 · skip ${skipped.length}행 · headers=${JSON.stringify(headers)}`);
-    console.log(`[upload-purchase] col idx: date=${dateI} sup=${supNameI} code=${codeI} name=${nameI} qty=${qtyI} price=${priceI} amount=${amountI} returnQty=${returnQtyI} returnAmt=${returnAmtI}`);
+    logger.debug(`[upload-purchase] 파싱 ${parsed.length}행 · skip ${skipped.length}행 · headers=${JSON.stringify(headers)}`);
+    logger.debug(`[upload-purchase] col idx: date=${dateI} sup=${supNameI} code=${codeI} name=${nameI} qty=${qtyI} price=${priceI} amount=${amountI} returnQty=${returnQtyI} returnAmt=${returnAmtI}`);
 
     // 임포트 시점에는 products 조인 하지 않음 (2026-07-15 사용자 정책)
     //   · xlsx 원본 그대로 저장 → 최소 실패 지점
@@ -299,7 +300,7 @@ router.post(
       }
       // 프로브 row 삭제 (이미 저장됐다면)
       await supabase.from("purchase_details").delete().like("product_code", "__PROBE__%");
-      console.log(`[upload-purchase] 스키마 감지: stripPeriodCols=${stripPeriodCols} · useSimpleInsert=${useSimpleInsert}`);
+      logger.debug(`[upload-purchase] 스키마 감지: stripPeriodCols=${stripPeriodCols} · useSimpleInsert=${useSimpleInsert}`);
     }
 
     // 2) 같은 기간 재임포트: 기존 rows 삭제
@@ -318,16 +319,16 @@ router.post(
         if (existingCount > 0) {
           const { error: delErr } = await supabase.from("purchase_details").delete()
             .gte("purchase_date", inferredFrom).lte("purchase_date", inferredTo);
-          if (delErr) { console.warn(`[upload-purchase] 기간 삭제 실패 (계속): ${delErr.message}`); }
+          if (delErr) { logger.warn(`[upload-purchase] 기간 삭제 실패 (계속): ${delErr.message}`); }
           else {
             deletedCount = existingCount;
-            console.log(`[upload-purchase] 기간 ${inferredFrom} ~ ${inferredTo} 기존 ${deletedCount}행 삭제 (덮어쓰기 확인됨)`);
+            logger.info(`[upload-purchase] 기간 ${inferredFrom} ~ ${inferredTo} 기존 ${deletedCount}행 삭제 (덮어쓰기 확인됨)`);
             useSimpleInsert = true;
           }
         }
       } catch (e: any) {
         if (e instanceof HttpError) throw e;
-        console.warn(`[upload-purchase] 기간 확인/삭제 예외: ${e?.message}`);
+        logger.warn(`[upload-purchase] 기간 확인/삭제 예외: ${e?.message}`);
       }
     }
 
@@ -344,7 +345,7 @@ router.post(
       const chunk = preprocessRows(parsed.slice(i, i + CHUNK));
       const { error } = await doInsert(chunk);
       if (error) {
-        console.error(`[upload-purchase] chunk ${i}: ${error.message}`);
+        logger.error(`[upload-purchase] chunk ${i}: ${error.message}`);
         if (!firstError) firstError = error.message;
       } else {
         inserted += chunk.length;
@@ -372,7 +373,7 @@ router.post(
         { key: "purchase_import_log", value: newLogs, updated_at: new Date().toISOString() },
         { onConflict: "key" }
       );
-    } catch (e: any) { console.warn("[upload-purchase] 로그 저장 실패 (계속):", e?.message); }
+    } catch (e: any) { logger.warn(`[upload-purchase] 로그 저장 실패 (계속): ${e?.message}`); }
 
     return res.json({
       ok: true,
@@ -598,7 +599,7 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
         };
       });
     } catch (e: any) {
-      console.warn("[purchase-details] products 조인 실패 (계속):", e?.message);
+      logger.warn(`[purchase-details] products 조인 실패 (계속): ${e?.message}`);
     }
   }
 
@@ -650,7 +651,7 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
         return { ...r, cycle_days: info.days, purchase_count_total: info.count, first_purchase_date: info.firstDate, last_purchase_date: info.lastDate };
       });
     } catch (e: any) {
-      console.warn("[purchase-details] 매입주기 계산 실패 (계속):", e?.message);
+      logger.warn(`[purchase-details] 매입주기 계산 실패 (계속): ${e?.message}`);
     }
   }
 

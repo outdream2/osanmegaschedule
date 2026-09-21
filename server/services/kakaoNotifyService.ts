@@ -27,6 +27,7 @@
 //   3) attachment · 카카오 알림톡은 이미지 첨부 제약 있음 · SMS/LMS/MMS fallback 고려
 //   4) 결과 로깅 · notifications 테이블에 messageId · status 기록 (재전송 · 상태조회)
 
+import logger from "../lib/logger";
 import {
   sendAlimtalk as sendAlimtalkViaSolapi,
   getSolApiStatus,
@@ -91,9 +92,7 @@ export function isKakaoConfigured(): { configured: boolean; missing: string[] } 
 export async function sendKakaoAlimtalk(input: SendKakaoAlimtalkInput): Promise<KakaoSendResult> {
   const status = isKakaoConfigured();
   if (!status.configured) {
-    console.warn(
-      `[kakaoNotifyService] 카카오 API 미구성 · 미설정 env: ${status.missing.join(", ")} · to=${maskPhone(input.to)} · template=${input.templateId}`,
-    );
+    logger.warn(`[kakaoNotifyService] 카카오 API 미구성 · 미설정 env: ${status.missing.join(", ")} · to=${maskPhone(input.to)} · template=${input.templateId}`);
     return { ok: false, reason: "카카오 API 미구성" };
   }
 
@@ -102,7 +101,7 @@ export async function sendKakaoAlimtalk(input: SendKakaoAlimtalkInput): Promise<
   //   · PDF 첨부 불가 · URL 을 템플릿 변수에 삽입 or SMS/LMS fallback 사용
   //   · 지금은 attachment 를 로그로만 남기고 · vars 에 삽입은 라우트 담당
   if (input.attachment) {
-    console.log(`[kakaoNotifyService] attachment 참고 · ${input.attachment} · 템플릿 변수로 삽입 필요`);
+    logger.debug(`[kakaoNotifyService] attachment 참고 · ${input.attachment} · 템플릿 변수로 삽입 필요`);
   }
 
   const payload: AlimtalkPayload = {
@@ -122,15 +121,11 @@ export async function sendKakaoAlimtalk(input: SendKakaoAlimtalkInput): Promise<
         : (raw && typeof raw === "object" && "groupInfo" in raw && (raw as any).groupInfo?.groupId)
           ? ((raw as any).groupInfo.groupId as string)
           : undefined;
-    console.log(
-      `[kakaoNotifyService] 발송 성공 · to=${maskPhone(input.to)} · template=${input.templateId} · messageId=${messageId ?? "n/a"}`,
-    );
+    logger.info(`[kakaoNotifyService] 발송 성공 · to=${maskPhone(input.to)} · template=${input.templateId} · messageId=${messageId ?? "n/a"}`);
     return { ok: true, messageId, raw };
   } catch (err: any) {
     const reason = err?.message ?? "알 수 없는 벤더 에러";
-    console.error(
-      `[kakaoNotifyService] 발송 실패 · to=${maskPhone(input.to)} · template=${input.templateId} · ${reason}`,
-    );
+    logger.error(`[kakaoNotifyService] 발송 실패 · to=${maskPhone(input.to)} · template=${input.templateId} · ${reason}`);
     return { ok: false, reason };
   }
 }

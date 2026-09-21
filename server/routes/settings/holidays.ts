@@ -24,6 +24,7 @@ import { supabase } from "../../../src/supabase/client";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { authorize } from "../../middleware/requireAuth";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -64,7 +65,7 @@ async function fetchHolidays(year: number): Promise<Holiday[]> {
     try {
       const resp = await fetch(url);
       if (!resp.ok) {
-        console.warn(`[holidays] fetch fail · year=${year} month=${m} · status=${resp.status}`);
+        logger.warn(`[holidays] fetch fail · year=${year} month=${m} · status=${resp.status}`);
         continue;
       }
       const json: any = await resp.json();
@@ -80,7 +81,7 @@ async function fetchHolidays(year: number): Promise<Holiday[]> {
         holidays.push({ date, name, is_holiday: isHoliday });
       }
     } catch (e: any) {
-      console.warn(`[holidays] fetch error · year=${year} month=${m} · ${e?.message ?? e}`);
+      logger.warn(`[holidays] fetch error · year=${year} month=${m} · ${e?.message ?? e}`);
       // 개별 월 실패는 전체 실패 X · 다음 월 계속
     }
   }
@@ -205,7 +206,7 @@ router.post("/api/holidays/sync", authorize(9), asyncHandler(async (req, res) =>
         })
         .eq("id", existingRow.id);
       if (uErr) {
-        console.warn(`[holidays/sync] update fail · id=${existingRow.id} name=${r.name} · ${uErr.message}`);
+        logger.warn(`[holidays/sync] update fail · id=${existingRow.id} name=${r.name} · ${uErr.message}`);
         errors.push({ name: r.name, date: r.start_date, error: uErr.message });
         continue;
       }
@@ -224,7 +225,7 @@ router.post("/api/holidays/sync", authorize(9), asyncHandler(async (req, res) =>
         .select()
         .single();
       if (iErr) {
-        console.warn(`[holidays/sync] insert fail · name=${r.name} date=${r.start_date} · ${iErr.message}`);
+        logger.warn(`[holidays/sync] insert fail · name=${r.name} date=${r.start_date} · ${iErr.message}`);
         errors.push({ name: r.name, date: r.start_date, error: iErr.message });
         continue;
       }
@@ -235,7 +236,7 @@ router.post("/api/holidays/sync", authorize(9), asyncHandler(async (req, res) =>
   }
 
   const synced = created + updated;
-  console.log(`[holidays/sync] year=${year} · ranges=${targets.length} · created=${created} · updated=${updated} · skipped=${skipped} · errors=${errors.length}`);
+  logger.info(`[holidays/sync] year=${year} · ranges=${targets.length} · created=${created} · updated=${updated} · skipped=${skipped} · errors=${errors.length}`);
 
   res.json({
     ok: true,

@@ -40,6 +40,7 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, forbidden, notFound, HttpError } from "../../middleware/errorHandler";
 import { CreateHrFormSchema } from "../../../src/shared/schemas/hrForms";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -159,17 +160,17 @@ router.post("/api/hr-forms", authorize(5), validateBody(CreateHrFormSchema), asy
         upsert: false,
       });
     if (upErr) {
-      console.warn(`[hr-forms/upload] Supabase Storage 실패 · fallback 로컬 · bucket=${HR_FORMS_BUCKET} · reason=${upErr.message}`);
+      logger.warn(`[hr-forms/upload] Supabase Storage 실패 · fallback 로컬 · bucket=${HR_FORMS_BUCKET} · reason=${upErr.message}`);
     } else {
       const { data: pub } = supabase.storage.from(HR_FORMS_BUCKET).getPublicUrl(objectPath);
       if (pub?.publicUrl) {
         fileUrl = pub.publicUrl;
       } else {
-        console.warn(`[hr-forms/upload] getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
+        logger.warn(`[hr-forms/upload] getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
       }
     }
   } catch (supErr: any) {
-    console.warn(`[hr-forms/upload] Supabase 예외 · fallback 로컬 · ${supErr?.message ?? supErr}`);
+    logger.warn(`[hr-forms/upload] Supabase 예외 · fallback 로컬 · ${supErr?.message ?? supErr}`);
   }
 
   // 2) 로컬 fallback
@@ -182,7 +183,7 @@ router.post("/api/hr-forms", authorize(5), validateBody(CreateHrFormSchema), asy
     fileUrl = `/uploads/hr-forms/${category}/${ym}/${fname}`;
     storage = "local";
     storagePath = `${category}/${ym}/${fname}`;
-    console.log(`[hr-forms/upload] Local fallback · path=${fileUrl}`);
+    logger.debug(`[hr-forms/upload] Local fallback · path=${fileUrl}`);
   }
 
   // 3) 메타 insert
@@ -257,7 +258,7 @@ router.delete("/api/hr-forms/:id", authorize(9), asyncHandler(async (req, res) =
       if (fs.existsSync(fpath)) fs.unlinkSync(fpath);
     }
   } catch (cleanupErr: any) {
-    console.warn(`[hr-forms/delete] 원본 정리 실패 (무시) · id=${id} · ${cleanupErr?.message ?? cleanupErr}`);
+    logger.warn(`[hr-forms/delete] 원본 정리 실패 (무시) · id=${id} · ${cleanupErr?.message ?? cleanupErr}`);
   }
 
   res.json({ ok: true });

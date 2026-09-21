@@ -5,6 +5,7 @@ import { queryPurchaseDetails } from "../../../utils/purchaseDetailsQuery";
 import { asyncHandler } from "../../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../../middleware/errorHandler";
 import { splitVat, fetchVatIncluded } from "./helpers";
+import logger from "../../../lib/logger";
 
 const router = Router();
 
@@ -176,7 +177,7 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
       }
     }
   } catch (e: any) {
-    console.error("[balance] cogs 계산 실패:", e?.message);
+    logger.error(`[balance] cogs 계산 실패: ${e?.message}`);
   }
 
   const values: Record<string, { purchase: number; payment: number; balance: number; cogs: number; stock_asset: number }> = {};

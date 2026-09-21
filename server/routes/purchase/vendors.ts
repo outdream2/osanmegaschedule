@@ -14,6 +14,7 @@ import { CreateVendorSchema, UpdateVendorSchema } from "../../../src/shared/sche
 import { z } from "zod";
 // 2026-09-03 · 사용자 지시 · 거래처 승인 요청 시 · 관리자 알림 발송
 import { notificationsService } from "../../services/notificationsService";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -104,7 +105,7 @@ router.post("/api/upload-vendors", authorize(9), express.raw({ type: "applicatio
     // business_number 컬럼 없으면 마이그레이션 미적용 → 재시도 (컬럼 제외)
     if (error && hasBizNumCol && /business_number/.test(error.message)) {
       hasBizNumCol = false;
-      console.warn(`[upload-vendors] business_number 컬럼 미존재 · 마이그레이션 필요 · 이후 skip`);
+      logger.warn("[upload-vendors] business_number 컬럼 미존재 · 마이그레이션 필요 · 이후 skip");
       delete payload.business_number;
       ({ error } = await doOp());
     }
@@ -112,7 +113,7 @@ router.post("/api/upload-vendors", authorize(9), express.raw({ type: "applicatio
     else if (existingId != null) updated++;
     else inserted++;
   }
-  console.log(`[upload-vendors] total=${cleaned.length} inserted=${inserted} updated=${updated} failed=${failed}`);
+  logger.info(`[upload-vendors] total=${cleaned.length} inserted=${inserted} updated=${updated} failed=${failed}`);
   if (inserted > 0 || updated > 0) invalidateVendorCache();
   return res.json({ ok: true, count: cleaned.length, inserted, updated, failed, errors });
 }));
@@ -387,7 +388,7 @@ router.patch("/api/vendors/:id", authorize(0), validateBody(UpdateVendorSchema),
   // 2026-09-13 · #111 · 저장 실패 원인 추적 · 로그 강화 (fallback path 명확화)
   const r1 = await supabase.from("vendors").update(updates).eq("id", id).select(SELECT_FULL).single();
   if (!r1.error) { invalidateVendorCache(); return res.json(r1.data); }
-  console.warn(`[VENDOR PATCH · fallback trigger] id=${id} · err=${r1.error.message} · keys=[${Object.keys(updates).join(",")}]`);
+  logger.warn(`[VENDOR PATCH · fallback trigger] id=${id} · err=${r1.error.message} · keys=[${Object.keys(updates).join(",")}]`);
   // 2026-08-23 · #178·#192 · 신규 컬럼 없음 fallback (마이그레이션 미실행)
   //   · order_method · region · invoice_method · order_status · special_notes · approval_status
   if (/order_method|region|invoice_method|order_status|special_notes|approval_status/i.test(r1.error.message)) {
@@ -437,7 +438,7 @@ router.patch("/api/vendors/:id", authorize(0), validateBody(UpdateVendorSchema),
     return res.json({ ...r2.data, email: null, vat_included: null });
   }
   // 2026-09-13 · #111 · 최종 실패 · 원인·시도 payload 전체 로그
-  console.error(`[VENDOR PATCH FAILED] id=${id} · error=${r1.error.message} · attempted_keys=[${Object.keys(updates).join(",")}]`);
+  logger.error(`[VENDOR PATCH FAILED] id=${id} · error=${r1.error.message} · attempted_keys=[${Object.keys(updates).join(",")}]`);
   throw new HttpError(500, `공급사 저장 실패: ${r1.error.message}`);
 }));
 
@@ -578,9 +579,9 @@ router.post("/api/vendors/:id/approval-request", authorize(0), validateBody(z.ob
     type: "warning",
     push: { url: "/", tag: `vendor-approval-${id}` },
   }).then(r => {
-    console.log(`[approval-request] 관리자 알림 발송 완료 · inApp=${r.inApp} · push=${r.push} · 공급사=${vendor.company_name}`);
+    logger.info(`[approval-request] 관리자 알림 발송 완료 · inApp=${r.inApp} · push=${r.push} · 공급사=${vendor.company_name}`);
   }).catch((e: any) => {
-    console.warn("[approval-request] 관리자 알림 발송 실패:", e?.message);
+    logger.warn(`[approval-request] 관리자 알림 발송 실패: ${e?.message}`);
   });
 
   res.json({ ok: true, status: "requested", requested_at: new Date().toISOString() });
@@ -608,7 +609,7 @@ router.post("/api/vendors/:id/approve", authorize(9), validateBody(z.object({}))
     body: `${vendorBefore?.company_name ?? "(공급사)"} · 승인 완료 · 재고확인 활성화됨`,
     type: "success",
   }).catch((e: any) => {
-    console.warn("[vendor-approve] 관리자 알림 발송 실패:", e?.message);
+    logger.warn(`[vendor-approve] 관리자 알림 발송 실패: ${e?.message}`);
   });
   res.json({ ok: true, status: "approved", approved_at: new Date().toISOString(), approved_by: approvedBy });
 }));

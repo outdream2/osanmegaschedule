@@ -32,6 +32,7 @@ import {
   CompleteDisplayRequestSchema,
   PatchDisplayRequestSchema,
 } from "../../../src/shared/schemas/displayRequests";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -60,7 +61,7 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   // 2026-09-01 · fix · allSettled 결과 · rejected → 기본값 · fulfilled → 원본
   const unwrap = <T,>(r: PromiseSettledResult<T>): T | { count: number; data: unknown; error: unknown } => {
     if (r.status === "fulfilled") return r.value;
-    console.warn("[pending-counts] query rejected:", r.reason);
+    logger.warn("[pending-counts] query rejected: " + r.reason);
     return { count: 0, data: [], error: r.reason };
   };
   const [display, order, _mismatchPlaceholder, leave, lunch, inventory, ret, resignation, vendor] = results.map(unwrap) as any[];
@@ -133,7 +134,7 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
         .from("products")
         .select("product_code, product_name, spec, display_location, location")
         .in("product_code", productCodes);
-      console.log(`[display-requests DIAG] products.in query · codes=[${productCodes.slice(0,3).join(",")}] · found=${prods?.length ?? 0} · err=${prodsErr?.message ?? "none"}`);
+      logger.debug(`[display-requests DIAG] products.in query · codes=[${productCodes.slice(0,3).join(",")}] · found=${prods?.length ?? 0} · err=${prodsErr?.message ?? "none"}`);
       const infoMap = new Map<string, { name: string; spec: string | null; display_location: string | null; location: string | null; location_detail: string | null }>();
       for (const p of prods ?? []) {
         const c = String(p.product_code ?? "").trim();
@@ -224,12 +225,12 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
         r.product_location_detail = detail;
       }
       if (unmatchedFinal.length > 0) {
-        console.warn(`[display-requests] products 매칭 실패 ${unmatchedFinal.length}건 · codes:`, unmatchedFinal.slice(0, 10).join(","));
+        logger.warn(`[display-requests] products 매칭 실패 ${unmatchedFinal.length}건 · codes: ${unmatchedFinal.slice(0, 10).join(",")}`);
       } else if (productCodes.length > 0) {
-        console.log(`[display-requests] products 매칭 성공 ${productCodes.length}/${productCodes.length}`);
+        logger.debug(`[display-requests] products 매칭 성공 ${productCodes.length}/${productCodes.length}`);
       }
     } catch (e: any) {
-      console.warn("[display-requests GET] products lookup 실패 (경고):", e?.message ?? e);
+      logger.warn("[display-requests GET] products lookup 실패 (경고): " + (e?.message ?? e));
       // 2026-09-20 · products 조회 실패 시 · product_name null · 클라이언트에서 fallback 표시
       //   · note 파싱 fallback 제거 (사용자 지시 · products 만 상품명 기준)
     }
@@ -373,7 +374,7 @@ router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayReq
         try {
           await notificationsService.create({ employee_id: emp.id, title, body: bodyText, type: "alert" });
         } catch (e: any) {
-          console.warn(`[display-request] DB 알림 실패 emp=${emp.id}:`, e?.message);
+          logger.warn(`[display-request] DB 알림 실패 emp=${emp.id}: ${e?.message}`);
         }
         if (emp.push_subscription) {
           try {
@@ -422,10 +423,10 @@ router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayReq
           }
         }
       } catch (e: any) {
-        console.warn("[display-request] 관리자 알림 실패:", e?.message);
+        logger.warn("[display-request] 관리자 알림 실패: " + e?.message);
       }
     } catch (e: any) {
-      console.warn("[display-request] 알림 예외:", e?.message);
+      logger.warn("[display-request] 알림 예외: " + e?.message);
     }
   })();
 
@@ -490,7 +491,7 @@ router.patch("/api/display-requests/:id/prepare", authorize(3), validateBody(Pre
             }
           }
         }
-      } catch (e: any) { console.warn("[display-request/prepare] 알림 실패:", e?.message); }
+      } catch (e: any) { logger.warn("[display-request/prepare] 알림 실패: " + e?.message); }
     })();
   }
 
@@ -553,7 +554,7 @@ router.patch("/api/display-requests/:id/complete", authorize(3), validateBody(Co
           ).catch(() => null)
         ),
       ]);
-    } catch (e: any) { console.warn("[display-request/complete] 관리자 알림 실패:", e?.message); }
+    } catch (e: any) { logger.warn("[display-request/complete] 관리자 알림 실패: " + e?.message); }
   })();
 
   res.json({ ok: true });
@@ -802,7 +803,7 @@ router.patch("/api/order-history/:orderNumber/match", authorize(2), asyncHandler
   if (error) throw new HttpError(500, error.message);
   const count = (data ?? []).length;
   if (count === 0) throw new HttpError(404, "해당 발주번호의 ordered 상태 항목 없음");
-  console.log(`[ORDER MATCH] order_number=${orderNumber} · ${count}건 · status='matched'`);
+  logger.info(`[ORDER MATCH] order_number=${orderNumber} · ${count}건 · status='matched'`);
   res.json({ ok: true, count, order_number: orderNumber });
 }));
 
@@ -1017,7 +1018,7 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
           outcomes.push("email:sent");
           dispatch.email_status = "sent";
         } catch (e: any) {
-          console.error("[bulk-send] email 발송 실패:", e?.message);
+          logger.error("[bulk-send] email 발송 실패: " + e?.message);
           outcomes.push(`email:error(${e?.message ?? "unknown"})`);
           dispatch.email_status = "error";
         }
@@ -1095,7 +1096,7 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
           .update({ status: "ordered", sent_at: now })
           .in("id", requestIds);
         if (updErr && !/column|does not exist/i.test(updErr.message)) {
-          console.error(`[bulk-send] status UPDATE 실패 (${supName}): ${updErr.message}`);
+          logger.error(`[bulk-send] status UPDATE 실패 (${supName}): ${updErr.message}`);
           throw new HttpError(500, `발주 상태 업데이트 실패: ${updErr.message}`);
         }
         // 아이템별 order_qty·unit_price 및 공통 메타 · 개별 UPDATE
@@ -1117,13 +1118,13 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
             })
             .eq("id", it.order_request_id);
           if (metaErr && !/column|does not exist/i.test(metaErr.message)) {
-            console.warn(`[bulk-send] 메타 UPDATE 실패 (id=${it.order_request_id}): ${metaErr.message}`);
+            logger.warn(`[bulk-send] 메타 UPDATE 실패 (id=${it.order_request_id}): ${metaErr.message}`);
           }
         }
-        console.log(`[bulk-send] UPDATE 완료 (${supName}) · ${requestIds.length}건 status=ordered + 메타`);
+        logger.info(`[bulk-send] UPDATE 완료 (${supName}) · ${requestIds.length}건 status=ordered + 메타`);
       } catch (e: any) {
         if (e instanceof HttpError) throw e;
-        console.warn(`[bulk-send] UPDATE 예외 (${supName}): ${e?.message}`);
+        logger.warn(`[bulk-send] UPDATE 예외 (${supName}): ${e?.message}`);
       }
     }
 
@@ -1131,13 +1132,13 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
     try {
       const { error } = await supabase.from("order_dispatches").insert([dispatch]);
       if (error && !/relation|does not exist/i.test(error.message)) {
-        console.error("[bulk-send] dispatch insert 실패:", error.message);
+        logger.error("[bulk-send] dispatch insert 실패: " + error.message);
       }
     } catch (e: any) {
-      console.warn("[bulk-send] dispatch insert 예외:", e?.message);
+      logger.warn("[bulk-send] dispatch insert 예외: " + e?.message);
     }
 
-    console.log(`[bulk-send] ${supName} · ${items.length}건 · ${outcomes.join(", ")}`);
+    logger.info(`[bulk-send] ${supName} · ${items.length}건 · ${outcomes.join(", ")}`);
 
     results.push({
       supplier: supName,
@@ -1376,7 +1377,7 @@ router.post("/api/inventory-checks", authorize(1), validateBody(CreateInventoryC
       if (alt?.[1]) colName = alt[1];
     }
     if (colName && colName in payload) {
-      console.warn(`[inventory-checks] 컬럼 미존재 · strip 후 재시도: ${colName}`);
+      logger.warn(`[inventory-checks] 컬럼 미존재 · strip 후 재시도: ${colName}`);
       delete payload[colName];
     } else if (attempt > 0) {
       break;

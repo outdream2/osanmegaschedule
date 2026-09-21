@@ -8,6 +8,7 @@
 
 import webpush from "web-push";
 import { supabase } from "../../src/supabase/client";
+import logger from "../lib/logger";
 
 export interface Notification {
   id: number;
@@ -39,7 +40,7 @@ async function sendPushToIds(ids: number[], push: PushOptions): Promise<{ sent: 
       .in("id", ids)
       .not("push_subscription", "is", null);
     if (error) {
-      console.warn("[sendPushToIds] subscription fetch failed:", error.message);
+      logger.warn(`[sendPushToIds] subscription fetch failed: ${error.message}`);
       return { sent: 0, skipped: ids.length };
     }
     // 2026-09-03 · 한글 깨짐 fix · payload · Buffer UTF-8 명시
@@ -61,7 +62,7 @@ async function sendPushToIds(ids: number[], push: PushOptions): Promise<{ sent: 
         sent++;
       } catch (err: any) {
         if (err.statusCode === 410 || err.statusCode === 404) expiredIds.push(row.id as number);
-        else console.warn(`[sendPushToIds ${row.id}] push failed:`, err.statusCode ?? err.message);
+        else logger.warn(`[sendPushToIds ${row.id}] push failed: ${err.statusCode ?? err.message}`);
       }
     }
     if (expiredIds.length > 0) {
@@ -69,7 +70,7 @@ async function sendPushToIds(ids: number[], push: PushOptions): Promise<{ sent: 
     }
     return { sent, skipped: ids.length - sent };
   } catch (err: any) {
-    console.warn("[sendPushToIds] unexpected:", err?.message ?? err);
+    logger.warn(`[sendPushToIds] unexpected: ${err?.message ?? err}`);
     return { sent: 0, skipped: ids.length };
   }
 }
@@ -83,7 +84,7 @@ async function insertNotifications(rows: Array<{
   if (rows.length === 0) return 0;
   const { error } = await supabase.from("notifications").insert(rows);
   if (error) {
-    console.warn("[insertNotifications] insert failed:", error.message);
+    logger.warn(`[insertNotifications] insert failed: ${error.message}`);
     return 0;
   }
   return rows.length;
@@ -155,7 +156,7 @@ export const notificationsService = {
   }): Promise<{ inApp: number; push: number }> {
     try {
       const { data: admins, error } = await supabase.from("employees").select("id").gte("level", 9);
-      if (error) { console.warn("[notifyAllAdmins] admin fetch failed:", error.message); return { inApp: 0, push: 0 }; }
+      if (error) { logger.warn(`[notifyAllAdmins] admin fetch failed: ${error.message}`); return { inApp: 0, push: 0 }; }
       const ids = (admins ?? []).map((a) => a.id as number).filter((n) => typeof n === "number");
       if (ids.length === 0) return { inApp: 0, push: 0 };
       const inApp = await insertNotifications(ids.map((id) => ({
@@ -168,7 +169,7 @@ export const notificationsService = {
         ? (await sendPushToIds(ids, { title: params.push.title ?? params.title, body: params.push.body ?? params.body, url: params.push.url, tag: params.push.tag })).sent
         : 0;
       return { inApp, push };
-    } catch (err: any) { console.warn("[notifyAllAdmins] unexpected:", err?.message ?? err); return { inApp: 0, push: 0 }; }
+    } catch (err: any) { logger.warn(`[notifyAllAdmins] unexpected: ${err?.message ?? err}`); return { inApp: 0, push: 0 }; }
   },
 
   // 2026-08-13 · #107 · 단일 담당자 알림 · 인앱 + optional web push
@@ -226,7 +227,7 @@ export const notificationsService = {
     try {
       let query = supabase.from("employees").select('id, "retireDate"');
       const { data, error } = await query;
-      if (error) { console.warn("[notifyAllEmployees] fetch failed:", error.message); return { inApp: 0, push: 0 }; }
+      if (error) { logger.warn(`[notifyAllEmployees] fetch failed: ${error.message}`); return { inApp: 0, push: 0 }; }
       const activeOnly = params.activeOnly !== false;
       const ids = (data ?? [])
         .filter((e: any) => !activeOnly || !e.retireDate)
@@ -243,6 +244,6 @@ export const notificationsService = {
         ? (await sendPushToIds(ids, { title: params.push.title ?? params.title, body: params.push.body ?? params.body, url: params.push.url, tag: params.push.tag })).sent
         : 0;
       return { inApp, push };
-    } catch (err: any) { console.warn("[notifyAllEmployees] unexpected:", err?.message ?? err); return { inApp: 0, push: 0 }; }
+    } catch (err: any) { logger.warn(`[notifyAllEmployees] unexpected: ${err?.message ?? err}`); return { inApp: 0, push: 0 }; }
   },
 };

@@ -11,6 +11,7 @@
 // 반환 · { valid, vendorId, canonicalName, error }
 
 import { supabase } from "../../src/supabase/client";
+import logger from "./logger";
 
 export interface VendorValidationResult {
   valid: boolean;
@@ -40,7 +41,7 @@ async function loadVendorMap(): Promise<Map<string, { id: number; canonical: str
       m.set(key, { id: (v as any).id, canonical });
     }
   } catch (e: any) {
-    console.error("[vendorValidation] vendors 조회 실패:", e?.message);
+    logger.error(`[vendorValidation] vendors 조회 실패: ${e?.message}`);
   }
   return m;
 }

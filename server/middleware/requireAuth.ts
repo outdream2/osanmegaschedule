@@ -16,6 +16,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
+import logger from "../lib/logger";
 
 /**
  * 2026-08-18 · JWT_SECRET 자동 파생 (프로젝트 내 해결)
@@ -76,15 +77,9 @@ const DEFAULT_MAX_AGE = ACCESS_MAX_AGE;      // 하위호환 export
 const REMEMBER_MAX_AGE = REFRESH_MAX_AGE;
 
 if (!JWT_SECRET) {
-  console.warn(
-    "[requireAuth] WARNING: JWT_SECRET 없음 + SUPABASE_KEY 도 없음 · 인증 비활성. " +
-    "SUPABASE_KEY 설정 시 자동 파생 됩니다."
-  );
+  logger.warn("[requireAuth] WARNING: JWT_SECRET 없음 + SUPABASE_KEY 도 없음 · 인증 비활성. SUPABASE_KEY 설정 시 자동 파생 됩니다.");
 } else if (!process.env.JWT_SECRET) {
-  console.log(
-    "[requireAuth] JWT_SECRET · SUPABASE_KEY 로부터 자동 파생 (HMAC-SHA256). " +
-    "명시적 설정 원하면 process.env.JWT_SECRET 에 값 지정."
-  );
+  logger.info("[requireAuth] JWT_SECRET · SUPABASE_KEY 로부터 자동 파생 (HMAC-SHA256). 명시적 설정 원하면 process.env.JWT_SECRET 에 값 지정.");
 }
 
 export interface JwtPayload {
@@ -195,7 +190,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     const hasCookie = !!req.cookies?.[COOKIE_NAME];
     const hasHeader = typeof req.headers["authorization"] === "string";
     const secretSet = !!JWT_SECRET;
-    console.warn(`[requireAuth 401] ${req.method} ${req.originalUrl} · cookie=${hasCookie} · authHeader=${hasHeader} · secretSet=${secretSet}`);
+    logger.warn(`[requireAuth 401] ${req.method} ${req.originalUrl} · cookie=${hasCookie} · authHeader=${hasHeader} · secretSet=${secretSet}`);
     res.status(401).json({ error: "인증이 필요합니다. 다시 로그인해주세요.", code: "UNAUTHORIZED" });
     return;
   }

@@ -13,6 +13,7 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { UpsertZoneLabelsSchema, CreateZoneLabelSchema } from "../../../src/shared/schemas/zoneLabels";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -31,12 +32,12 @@ router.get("/api/zone-labels", asyncHandler(async (_req, res) => {
     const msg = error.message ?? "";
     if (/could not find the table|does not exist|schema cache/i.test(msg)) {
       if (!_missingWarned) {
-        console.warn("[zone-labels GET] zone_labels 테이블 미존재 · migrations/create_zone_labels_2026-08-05.sql 실행 필요 · 이후 warning 침묵");
+        logger.warn("[zone-labels GET] zone_labels 테이블 미존재 · migrations/create_zone_labels_2026-08-05.sql 실행 필요 · 이후 warning 침묵");
         _missingWarned = true;
       }
       return res.json({ mappings: [], _missing: true });
     }
-    console.error("[zone-labels GET]", msg);
+    logger.error("[zone-labels GET] " + msg);
     throw new HttpError(500, msg);
   }
   // T-SLIM E · 표준 shape · { mappings, count } · 프론트는 mappings 만 소비 (count 추가 필드)
@@ -60,7 +61,7 @@ router.put("/api/zone-labels", authorize(9), validateBody(UpsertZoneLabelsSchema
     .upsert(rows, { onConflict: "zone_id" })
     .select("zone_id, number, sub_label, updated_at");
   if (error) {
-    console.error("[zone-labels PUT]", error.message);
+    logger.error("[zone-labels PUT] " + error.message);
     throw new HttpError(500, error.message);
   }
   res.json({ ok: true, updated: data?.length ?? 0 });
@@ -83,7 +84,7 @@ router.post("/api/zone-labels", authorize(9), validateBody(CreateZoneLabelSchema
     .select("zone_id, number, sub_label, updated_at")
     .single();
   if (error) {
-    console.error("[zone-labels POST]", error.message);
+    logger.error("[zone-labels POST] " + error.message);
     throw new HttpError(500, error.message);
   }
   res.json({ ok: true, row: data });
@@ -95,7 +96,7 @@ router.delete("/api/zone-labels/:zoneId", authorize(9), asyncHandler(async (req,
   if (!zone_id) throw badRequest("zoneId 필수");
   const { error } = await supabase.from("zone_labels").delete().eq("zone_id", zone_id);
   if (error) {
-    console.error("[zone-labels DELETE]", error.message);
+    logger.error("[zone-labels DELETE] " + error.message);
     throw new HttpError(500, error.message);
   }
   res.json({ ok: true });

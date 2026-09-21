@@ -23,6 +23,7 @@ import { HttpError } from "../../middleware/errorHandler";
 import { authorize } from "../../middleware/requireAuth";
 import { validateBody } from "../../middleware/zodValidate";
 import { z } from "zod";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -170,14 +171,14 @@ export async function runTodaySnapshot(): Promise<SnapshotResult> {
       .upsert(payload, { onConflict: "snapshot_date,product_code" });
     if (error) {
       if (isMissingRelation(error)) {
-        console.warn("[loss-tracking/snapshot] loss_tracking_daily 테이블 미존재 · migration 실행 필요");
+        logger.warn("[loss-tracking/snapshot] loss_tracking_daily 테이블 미존재 · migration 실행 필요");
         return { ok: false, snapshot_date, saved: 0, error: "TABLE_MISSING", hint: "migrations/loss_tracking_daily.sql 실행 필요" };
       }
       throw error;
     }
     return { ok: true, snapshot_date, saved: payload.length };
   } catch (err: any) {
-    console.error("[loss-tracking/runTodaySnapshot]", err?.message);
+    logger.error(`[loss-tracking/runTodaySnapshot] ${err?.message}`);
     return { ok: false, snapshot_date, saved: 0, error: err?.message ?? "snapshot 실패" };
   }
 }
@@ -192,10 +193,10 @@ export function scheduleSnapshotBackground(): void {
     try {
       const r = await runTodaySnapshot();
       if (!r.ok && r.error && r.error !== "TABLE_MISSING") {
-        console.warn("[loss-tracking/bg]", r.error);
+        logger.warn(`[loss-tracking/bg] ${r.error}`);
       }
     } catch (e: any) {
-      console.warn("[loss-tracking/bg] 백그라운드 스냅샷 실패:", e?.message);
+      logger.warn(`[loss-tracking/bg] 백그라운드 스냅샷 실패: ${e?.message}`);
     }
   });
 }

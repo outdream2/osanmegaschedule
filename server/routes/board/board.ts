@@ -21,6 +21,7 @@ import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler"
 import { CreatePostSchema, CreateCommentSchema } from "../../../src/shared/schemas/board";
 import { PatchCommentSchema, AcceptCommentSchema, ReactPostSchema } from "../../../src/shared/schemas/boardPatches";
 import { z } from "zod";
+import logger from "../../lib/logger";
 
 const UploadImageSchema = z.object({
   data_url: z.string(),
@@ -80,12 +81,12 @@ router.post("/api/board/upload-image", authorize(1), validateBody(UploadImageSch
       });
     if (upErr) {
       // 버킷 없음 · 정책 미설정 등 · 로컬 fallback 로 진행
-      console.warn(`[board/upload] Supabase Storage 실패 · fallback 로컬 · bucket=${BOARD_BUCKET} · reason=${upErr.message}`);
+      logger.warn(`[board/upload] Supabase Storage 실패 · fallback 로컬 · bucket=${BOARD_BUCKET} · reason=${upErr.message}`);
     } else {
       const { data: pub } = supabase.storage.from(BOARD_BUCKET).getPublicUrl(objectPath);
       const publicUrl = pub?.publicUrl;
       if (publicUrl) {
-        console.log(`[board/upload] Supabase Storage · path=${objectPath}`);
+        logger.debug(`[board/upload] Supabase Storage · path=${objectPath}`);
         return res.json({
           image_url: publicUrl,
           public_id: `board/${objectPath}`,
@@ -94,11 +95,11 @@ router.post("/api/board/upload-image", authorize(1), validateBody(UploadImageSch
           storage: "supabase",
         });
       }
-      console.warn(`[board/upload] Supabase getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
+      logger.warn(`[board/upload] Supabase getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
     }
   } catch (supErr: any) {
     // 네트워크 · SDK 예외 등 · 로컬 fallback
-    console.warn(`[board/upload] Supabase Storage 예외 · fallback 로컬 · ${supErr?.message ?? supErr}`);
+    logger.warn(`[board/upload] Supabase Storage 예외 · fallback 로컬 · ${supErr?.message ?? supErr}`);
   }
 
   // 2) 로컬 파일시스템 fallback (dev · Supabase 미설정 · 오류 상황)
@@ -107,7 +108,7 @@ router.post("/api/board/upload-image", authorize(1), validateBody(UploadImageSch
   const fpath = path.join(dir, fname);
   fs.writeFileSync(fpath, buffer);
   const publicUrl = `/uploads/board/${ym}/${fname}`;
-  console.log(`[board/upload] Local fallback · path=${publicUrl}`);
+  logger.debug(`[board/upload] Local fallback · path=${publicUrl}`);
   return res.json({
     image_url: publicUrl,
     public_id: `board/${ym}/${fname}`,
@@ -140,7 +141,7 @@ async function pushToEmployees(empIds: number[], title: string, body: string, ur
       })
     );
   } catch (err: any) {
-    console.warn("[board push] failed:", err?.message);
+    logger.warn(`[board push] failed: ${err?.message}`);
   }
 }
 
@@ -153,7 +154,7 @@ async function saveNotifications(empIds: number[], title: string, body: string, 
     }));
     await supabase.from("notifications").insert(rows);
   } catch (err: any) {
-    console.warn("[board notifications insert] failed:", err?.message);
+    logger.warn(`[board notifications insert] failed: ${err?.message}`);
   }
 }
 
@@ -284,7 +285,7 @@ router.post("/api/board/posts", authorize(1), validateBody(CreatePostSchema), as
         pushToEmployees(notifyIds, title, bodyText, "/"),
       ]);
     } catch (err: any) {
-      console.warn("[board notify create] failed:", err?.message);
+      logger.warn(`[board notify create] failed: ${err?.message}`);
     }
   })();
 
@@ -424,7 +425,7 @@ router.post("/api/board/posts/:id/comments", authorize(1), validateBody(CreateCo
         pushToEmployees([...notifyIds], title, bodyText, "/"),
       ]);
     } catch (err: any) {
-      console.warn("[board comment notify] failed:", err?.message);
+      logger.warn(`[board comment notify] failed: ${err?.message}`);
     }
   })();
 

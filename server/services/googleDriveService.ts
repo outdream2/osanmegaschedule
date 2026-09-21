@@ -21,6 +21,7 @@ import { Readable } from "stream";
 import fs from "fs";
 import path from "path";
 import { supabase } from "../../src/supabase/client";
+import logger from "../lib/logger";
 
 // 사용자 제공 · Drive 폴더 ID · 2026-09-21 · #327-① · leave · misc 추가
 // leave · misc 폴더 · 미설정 시 contract 폴더로 fallback (사용자 확인 후 별도 폴더 발급 가능)
@@ -109,19 +110,19 @@ function loadKeyFromFile(): { oauth: OAuthCreds | null; sa: any | null; folders:
                 if (typeof v === "string" && v.trim()) folders[k] = v.trim();
               }
             }
-            console.log(`[google-drive] OAuth 크레덴셜 로드 (파일): ${filePath} · issued_at=${issuedAt ?? "?"}`);
+            logger.info(`[google-drive] OAuth 크레덴셜 로드 (파일): ${filePath} · issued_at=${issuedAt ?? "?"}`);
           }
           // Service Account JSON 감지 (레거시)
           else if (parsed.type === "service_account" && parsed.private_key) {
             sa = parsed;
-            console.log(`[google-drive] Service Account 키 로드 (파일): ${filePath}`);
+            logger.info(`[google-drive] Service Account 키 로드 (파일): ${filePath}`);
           }
         } catch (e: any) {
-          console.warn(`[google-drive] 파일 파싱 실패 (${f}):`, e?.message);
+          logger.warn(`[google-drive] 파일 파싱 실패 (${f}): ${e?.message}`);
         }
       }
     } catch (e: any) {
-      console.warn(`[google-drive] 디렉토리 읽기 실패 (${dir}):`, e?.message);
+      logger.warn(`[google-drive] 디렉토리 읽기 실패 (${dir}): ${e?.message}`);
     }
   }
   return { oauth, sa, folders };
@@ -159,12 +160,12 @@ async function loadConfig(): Promise<DriveConfig> {
             refresh_token: String(v.refresh_token),
             issued_at: typeof v.issued_at === "string" ? v.issued_at : null,
           };
-          console.log("[google-drive] OAuth 크레덴셜 로드 (Supabase)");
+          logger.info("[google-drive] OAuth 크레덴셜 로드 (Supabase)");
         }
       }
       if (row.key === "google_service_account" && !config.serviceAccountJson) {
         config.serviceAccountJson = row.value ?? null;
-        if (config.serviceAccountJson) console.log("[google-drive] Service Account 키 로드 (Supabase)");
+        if (config.serviceAccountJson) logger.info("[google-drive] Service Account 키 로드 (Supabase)");
       }
       if (row.key === "google_drive_folders") {
         const v = row.value ?? {};
@@ -175,7 +176,7 @@ async function loadConfig(): Promise<DriveConfig> {
       }
     }
   } catch (e: any) {
-    console.warn("[google-drive] app_settings 조회 실패:", e?.message);
+    logger.warn(`[google-drive] app_settings 조회 실패: ${e?.message}`);
   }
 
   return config;
@@ -217,7 +218,7 @@ async function initClient(): Promise<drive_v3.Drive | null> {
       oAuth2Client.setCredentials({ refresh_token: config.oauth.refresh_token });
       const client = google.drive({ version: "v3", auth: oAuth2Client });
       cached.driveClient = client;
-      console.log("[google-drive] OAuth 초기화 완료 · 폴더: resume=", config.folders.resume, "contract=", config.folders.contract);
+      logger.info(`[google-drive] OAuth 초기화 완료 · 폴더: resume=${config.folders.resume} contract=${config.folders.contract}`);
       return client;
     }
 
@@ -229,15 +230,15 @@ async function initClient(): Promise<drive_v3.Drive | null> {
       });
       const client = google.drive({ version: "v3", auth });
       cached.driveClient = client;
-      console.log("[google-drive] Service Account 초기화 완료 · 폴더: resume=", config.folders.resume, "contract=", config.folders.contract);
+      logger.info(`[google-drive] Service Account 초기화 완료 · 폴더: resume=${config.folders.resume} contract=${config.folders.contract}`);
       return client;
     }
 
-    console.warn("[google-drive] OAuth · Service Account 모두 미설정 · Drive 통합 비활성");
+    logger.warn("[google-drive] OAuth · Service Account 모두 미설정 · Drive 통합 비활성");
     lastInitFailAt = Date.now();
     return null;
   } catch (e: any) {
-    console.warn("[google-drive] 초기화 실패:", e?.message ?? e);
+    logger.warn(`[google-drive] 초기화 실패: ${e?.message ?? e}`);
     lastInitFailAt = Date.now();
     return null;
   }
@@ -387,7 +388,7 @@ export async function uploadToDrive(
   const { folderId, usedKind } = resolveDriveFolder(kind, cached.config.folders);
   if (!folderId) throw new Error(`Google Drive 폴더 ID 미설정 · ${kind}`);
   if (usedKind !== kind) {
-    console.log(`[google-drive] 폴더 fallback · 요청=${kind} · 사용=${usedKind} · folderId=${folderId}`);
+    logger.info(`[google-drive] 폴더 fallback · 요청=${kind} · 사용=${usedKind} · folderId=${folderId}`);
   }
 
   try {
@@ -413,10 +414,10 @@ export async function uploadToDrive(
         supportsAllDrives: true,
       });
     } catch (e: any) {
-      console.warn(`[google-drive] 공유 권한 설정 실패 (계속 진행) · ${e?.message}`);
+      logger.warn(`[google-drive] 공유 권한 설정 실패 (계속 진행) · ${e?.message}`);
     }
 
-    console.log(`[google-drive] 업로드 성공 · kind=${kind} · name=${fileName} · size=${buffer.length} · fileId=${fileId}`);
+    logger.info(`[google-drive] 업로드 성공 · kind=${kind} · name=${fileName} · size=${buffer.length} · fileId=${fileId}`);
     return {
       fileId,
       webViewLink: created.data.webViewLink ?? `https://drive.google.com/file/d/${fileId}/view`,
@@ -426,7 +427,7 @@ export async function uploadToDrive(
     };
   } catch (e: any) {
     // 상세 원인 로그 · 사용자 친화 메시지로 rethrow
-    console.error(
+    logger.error(
       `[google-drive] 업로드 실패 · kind=${kind} · name=${fileName} · size=${buffer.length}` +
       ` · code=${e?.code ?? "?"} · status=${e?.response?.status ?? "?"}` +
       ` · gError=${e?.response?.data?.error ?? "?"}` +
@@ -449,7 +450,7 @@ export async function deleteFromDrive(fileId: string): Promise<boolean> {
     await client.files.delete({ fileId, supportsAllDrives: true });
     return true;
   } catch (e: any) {
-    console.warn(`[google-drive] 삭제 실패 · fileId=${fileId} · ${e?.message}`);
+    logger.warn(`[google-drive] 삭제 실패 · fileId=${fileId} · ${e?.message}`);
     return false;
   }
 }

@@ -19,6 +19,7 @@ import {
   CreateBorrowingPartySchema,
   AddBorrowingSignatureSchema,
 } from "../../../src/shared/schemas/borrowings";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -99,7 +100,7 @@ router.post("/api/borrowings", authorize(5), validateBody(CreateBorrowingSchema)
       }));
     if (sigRows.length > 0) {
       const { error: sigErr } = await supabase.from("borrowing_signatures").insert(sigRows);
-      if (sigErr) console.warn("[borrowings POST · signatures]", sigErr.message);
+      if (sigErr) logger.warn("[borrowings POST · signatures] " + sigErr.message);
     }
   }
   res.json({ ok: true, row: data });
@@ -137,7 +138,7 @@ router.get("/api/borrowings/parties", authorize(1), asyncHandler(async (req, res
       });
     }
   } catch (e: any) {
-    console.warn("[borrowings/parties] company_info 조회 실패:", e?.message);
+    logger.warn("[borrowings/parties] company_info 조회 실패: " + e?.message);
   }
 
   // 2) vendors · 공급사 · 실시간 · vendors 테이블에서
@@ -161,7 +162,7 @@ router.get("/api/borrowings/parties", authorize(1), asyncHandler(async (req, res
       });
     }
   } catch (e: any) {
-    console.warn("[borrowings/parties] vendors 조회 실패:", e?.message);
+    logger.warn("[borrowings/parties] vendors 조회 실패: " + e?.message);
   }
 
   // 3) external · borrowing_parties 테이블 (사용자 신규 등록만)
@@ -181,7 +182,7 @@ router.get("/api/borrowings/parties", authorize(1), asyncHandler(async (req, res
       externalParties.push({ ...p, id: `party-${p.id}` });
     }
   } catch (e: any) {
-    console.warn("[borrowings/parties] borrowing_parties 조회 실패:", e?.message);
+    logger.warn("[borrowings/parties] borrowing_parties 조회 실패: " + e?.message);
   }
 
   const rows = [...selfParties, ...vendorParties, ...externalParties];

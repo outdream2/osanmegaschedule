@@ -17,6 +17,7 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
 import { z } from "zod";
+import logger from "../../lib/logger";
 
 const InvoiceImageUploadSchema = z.object({
   data_url: z.string().optional(),
@@ -36,9 +37,7 @@ function ensureConfigured(): boolean {
   const api_key = process.env.CLOUDINARY_API_KEY;
   const api_secret = process.env.CLOUDINARY_API_SECRET;
   if (!cloud_name || !api_key || !api_secret) {
-    console.warn(
-      "[invoice-images] Cloudinary env 미설정 · CLOUDINARY_CLOUD_NAME · CLOUDINARY_API_KEY · CLOUDINARY_API_SECRET 필요"
-    );
+    logger.warn("[invoice-images] Cloudinary env 미설정 · CLOUDINARY_CLOUD_NAME · CLOUDINARY_API_KEY · CLOUDINARY_API_SECRET 필요");
     return false;
   }
   cloudinary.config({ cloud_name, api_key, api_secret, secure: true });
@@ -109,7 +108,7 @@ router.post("/api/invoice-images/upload", authorize(2), validateBody(InvoiceImag
       ],
     });
   } catch (upErr: any) {
-    console.error(`[invoice-images/upload] Cloudinary 업로드 실패: ${upErr?.message ?? upErr}`);
+    logger.error(`[invoice-images/upload] Cloudinary 업로드 실패: ${upErr?.message ?? upErr}`);
     throw new HttpError(502, upErr?.message ?? "Cloudinary 업로드 실패");
   }
 

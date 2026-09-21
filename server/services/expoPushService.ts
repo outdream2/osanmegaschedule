@@ -16,6 +16,7 @@
 // 로그 prefix · [EXPO-PUSH]
 
 import { supabase } from "../../src/supabase/client";
+import logger from "../lib/logger";
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
 const MAX_BATCH = 100;
@@ -87,7 +88,7 @@ async function callExpoApi(messages: ExpoPushMessage[]): Promise<ExpoPushRespons
         body: JSON.stringify(messages),
       });
       if (!res.ok) {
-        console.warn(`[EXPO-PUSH] HTTP ${res.status} · attempt ${attempt + 1}/${MAX_RETRIES + 1}`);
+        logger.warn(`[EXPO-PUSH] HTTP ${res.status} · attempt ${attempt + 1}/${MAX_RETRIES + 1}`);
         if (attempt < MAX_RETRIES) {
           await sleep(RETRY_BASE_DELAY_MS * Math.pow(2, attempt));
           continue;
@@ -97,7 +98,7 @@ async function callExpoApi(messages: ExpoPushMessage[]): Promise<ExpoPushRespons
       const json = (await res.json()) as ExpoPushResponse;
       return json;
     } catch (err: any) {
-      console.warn(`[EXPO-PUSH] network error · attempt ${attempt + 1} · ${err?.message ?? err}`);
+      logger.warn(`[EXPO-PUSH] network error · attempt ${attempt + 1} · ${err?.message ?? err}`);
       if (attempt < MAX_RETRIES) {
         await sleep(RETRY_BASE_DELAY_MS * Math.pow(2, attempt));
         continue;
@@ -130,7 +131,7 @@ async function sendPushToTokens(
       continue;
     }
     if (response.errors && response.errors.length > 0) {
-      console.warn(`[EXPO-PUSH] response errors:`, response.errors);
+      logger.warn(`[EXPO-PUSH] response errors`, { errors: response.errors });
     }
     const tickets = response.data ?? [];
     tickets.forEach((ticket, idx) => {
@@ -143,7 +144,7 @@ async function sendPushToTokens(
         if (errCode === "DeviceNotRegistered") {
           expiredTokens.push(token);
         } else {
-          console.warn(`[EXPO-PUSH] ticket error · token=${token.slice(0, 32)}... · ${ticket.message ?? errCode ?? "unknown"}`);
+          logger.warn(`[EXPO-PUSH] ticket error · token=${token.slice(0, 32)}... · ${ticket.message ?? errCode ?? "unknown"}`);
         }
       }
     });
@@ -158,13 +159,13 @@ async function sendPushToTokens(
         .update({ active: false })
         .in("token", expiredTokens);
       if (error) {
-        console.warn(`[EXPO-PUSH] deactivate failed · ${error.message}`);
+        logger.warn(`[EXPO-PUSH] deactivate failed · ${error.message}`);
       } else {
         deactivated = expiredTokens.length;
-        console.log(`[EXPO-PUSH] deactivated ${deactivated} expired tokens`);
+        logger.info(`[EXPO-PUSH] deactivated ${deactivated} expired tokens`);
       }
     } catch (err: any) {
-      console.warn(`[EXPO-PUSH] deactivate exception · ${err?.message ?? err}`);
+      logger.warn(`[EXPO-PUSH] deactivate exception · ${err?.message ?? err}`);
     }
   }
 
@@ -181,7 +182,7 @@ export async function sendPush(params: SendPushParams): Promise<SendPushResult> 
   const empty: SendPushResult = { sent: 0, failed: 0, skipped: 0, deactivated: 0 };
 
   if (!userId || !title) {
-    console.warn(`[EXPO-PUSH] sendPush · missing userId/title · skip`);
+    logger.warn(`[EXPO-PUSH] sendPush · missing userId/title · skip`);
     return empty;
   }
 
@@ -192,12 +193,12 @@ export async function sendPush(params: SendPushParams): Promise<SendPushResult> 
       .eq("user_id", userId)
       .eq("active", true);
     if (error) {
-      console.warn(`[EXPO-PUSH] token fetch failed · user=${userId} · ${error.message}`);
+      logger.warn(`[EXPO-PUSH] token fetch failed · user=${userId} · ${error.message}`);
       return empty;
     }
     const tokens = (rows ?? []).map((r) => String(r.token)).filter((t) => t.length > 0);
     if (tokens.length === 0) {
-      console.log(`[EXPO-PUSH] no active tokens · user=${userId} · skip`);
+      logger.debug(`[EXPO-PUSH] no active tokens · user=${userId} · skip`);
       return empty;
     }
 
@@ -207,7 +208,7 @@ export async function sendPush(params: SendPushParams): Promise<SendPushResult> 
       .update({ last_used_at: new Date().toISOString() })
       .in("token", tokens)
       .then(({ error: uErr }) => {
-        if (uErr) console.warn(`[EXPO-PUSH] last_used_at update warn · ${uErr.message}`);
+        if (uErr) logger.warn(`[EXPO-PUSH] last_used_at update warn · ${uErr.message}`);
       });
 
     const payload: Omit<ExpoPushMessage, "to"> = {
@@ -220,12 +221,10 @@ export async function sendPush(params: SendPushParams): Promise<SendPushResult> 
     };
 
     const result = await sendPushToTokens(tokens, payload);
-    console.log(
-      `[EXPO-PUSH] user=${userId} · sent=${result.sent} · failed=${result.failed} · deactivated=${result.deactivated}`,
-    );
+    logger.info(`[EXPO-PUSH] user=${userId} · sent=${result.sent} · failed=${result.failed} · deactivated=${result.deactivated}`);
     return { ...result, skipped: 0 };
   } catch (err: any) {
-    console.error(`[EXPO-PUSH] sendPush unexpected · user=${userId} · ${err?.message ?? err}`);
+    logger.error(`[EXPO-PUSH] sendPush unexpected · user=${userId} · ${err?.message ?? err}`);
     return empty;
   }
 }
@@ -235,6 +234,6 @@ export async function sendPush(params: SendPushParams): Promise<SendPushResult> 
  */
 export function sendPushSafe(params: SendPushParams): void {
   sendPush(params).catch((err) => {
-    console.warn(`[EXPO-PUSH] sendPushSafe · ${err?.message ?? err}`);
+    logger.warn(`[EXPO-PUSH] sendPushSafe · ${err?.message ?? err}`);
   });
 }

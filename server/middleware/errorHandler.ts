@@ -5,6 +5,7 @@
 //   · 그 외 · 500 + 개발 모드만 스택 노출
 import type { Request, Response, NextFunction, ErrorRequestHandler } from "express";
 import { ZodError } from "zod";
+import logger from "../lib/logger";
 
 export class HttpError extends Error {
   status: number;
@@ -26,16 +27,16 @@ export const errorHandler: ErrorRequestHandler = (err, req: Request, res: Respon
   const isDev = process.env.NODE_ENV !== "production";
   if (err instanceof ZodError) {
     const msg = err.issues[0]?.message ?? "잘못된 요청 형식";
-    console.warn(`[400 ZodError] ${req.method} ${req.originalUrl} · ${msg}`);
+    logger.warn(`[400 ZodError] ${req.method} ${req.originalUrl} · ${msg}`);
     return res.status(400).json({ error: msg, code: "VALIDATION" });
   }
   if (err instanceof HttpError) {
-    if (err.status >= 500) console.error(`[${err.status}] ${req.method} ${req.originalUrl} · ${err.message}`);
-    else console.warn(`[${err.status}] ${req.method} ${req.originalUrl} · ${err.message}`);
+    if (err.status >= 500) logger.error(`[${err.status}] ${req.method} ${req.originalUrl} · ${err.message}`);
+    else logger.warn(`[${err.status}] ${req.method} ${req.originalUrl} · ${err.message}`);
     return res.status(err.status).json({ error: err.message, code: err.code });
   }
   // 알 수 없는 에러 · 500
   const message = err?.message ?? "서버 오류";
-  console.error(`[500] ${req.method} ${req.originalUrl} · ${message}`, isDev ? err?.stack : "");
+  logger.error(`[500] ${req.method} ${req.originalUrl} · ${message}${isDev && err?.stack ? ` · ${err.stack}` : ""}`);
   return res.status(500).json({ error: message, ...(isDev ? { stack: err?.stack?.split("\n").slice(0, 5) } : {}) });
 };

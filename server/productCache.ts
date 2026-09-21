@@ -1,5 +1,6 @@
 import { supabase } from "../src/supabase/client";
 import { normSupplier } from "./ocr/match";
+import logger from "./lib/logger";
 
 export interface ProductInfo {
   code: string;
@@ -166,7 +167,7 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
     const map: Record<string, ProductInfo> = {};
     // 2026-08-30 · null-guard · supabase client 미초기화 시 · 빈 map 반환 (crash 방지)
     if (!supabase) {
-      console.warn("[productCache] supabase client null · empty map 반환");
+      logger.warn("[productCache] supabase client null · empty map 반환");
       return map;
     }
     let from = 0;

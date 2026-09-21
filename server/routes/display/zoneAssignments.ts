@@ -12,6 +12,7 @@ import {
   UpsertZoneDaySchema,
   CopyZoneDayMonthSchema,
 } from "../../../src/shared/schemas/zoneAssignments";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -64,7 +65,7 @@ async function notifyZoneAssignees(
           type: "info",
         });
       } catch (e: any) {
-        console.warn(`[zone-notify] DB insert 실패 · emp=${emp.id}:`, e?.message);
+        logger.warn(`[zone-notify] DB insert 실패 · emp=${emp.id}: ${e?.message}`);
       }
       // 2) 웹푸시 (best-effort)
       if (emp.push_subscription) {
@@ -81,13 +82,13 @@ async function notifyZoneAssignees(
             // 만료된 subscription 정리
             await supabase.from("employees").update({ push_subscription: null }).eq("id", emp.id);
           } else {
-            console.warn(`[zone-notify] push 실패 · emp=${emp.id}:`, err?.message);
+            logger.warn(`[zone-notify] push 실패 · emp=${emp.id}: ${err?.message}`);
           }
         }
       }
     }));
   } catch (e: any) {
-    console.warn("[zone-notify] 예외 (무시):", e?.message);
+    logger.warn("[zone-notify] 예외 (무시): " + e?.message);
   }
 }
 // zone_assignments 테이블은 settings.ts에서 zone_id 기반 구역 배치 데이터로 사용 중.
@@ -133,18 +134,18 @@ CREATE TABLE IF NOT EXISTS zone_day_assignments (
 (async () => {
   const { error } = await supabase.from(TABLE).select("dow").limit(1);
   if (error && /relation|does not exist/i.test(error.message)) {
-    console.warn(`\n[SETUP REQUIRED] '${TABLE}' 테이블이 없습니다.`);
-    console.warn("[SETUP REQUIRED] Supabase SQL Editor에서 아래 SQL을 실행하세요:\n");
-    console.warn(CREATE_SQL);
+    logger.warn(`[SETUP REQUIRED] '${TABLE}' 테이블이 없습니다.`);
+    logger.warn("[SETUP REQUIRED] Supabase SQL Editor에서 아래 SQL을 실행하세요");
+    logger.warn(CREATE_SQL);
   }
 })();
 
 (async () => {
   const { error } = await supabase.from(DAY_TABLE).select("date").limit(1);
   if (error && /relation|does not exist/i.test(error.message)) {
-    console.warn(`\n[SETUP REQUIRED] '${DAY_TABLE}' 테이블이 없습니다.`);
-    console.warn("[SETUP REQUIRED] Supabase SQL Editor에서 아래 SQL을 실행하세요:\n");
-    console.warn(CREATE_DAY_SQL);
+    logger.warn(`[SETUP REQUIRED] '${DAY_TABLE}' 테이블이 없습니다.`);
+    logger.warn("[SETUP REQUIRED] Supabase SQL Editor에서 아래 SQL을 실행하세요");
+    logger.warn(CREATE_DAY_SQL);
   }
 })();
 
@@ -223,7 +224,7 @@ router.put("/api/zone-assignments/:dow", authorize(5), validateBody(UpsertZoneAs
       const { [missing]: _d, ...rest } = currentDow;
       void _d;
       currentDow = rest;
-      console.warn(`[zone-dow PUT] 컬럼 '${missing}' 없음 → 제외하고 재시도`);
+      logger.warn(`[zone-dow PUT] 컬럼 '${missing}' 없음 → 제외하고 재시도`);
       continue;
     }
     if (/relation|table.*does not exist/i.test(error.message)) break;
@@ -234,7 +235,7 @@ router.put("/api/zone-assignments/:dow", authorize(5), validateBody(UpsertZoneAs
     if (/relation|table.*does not exist/i.test(error.message)) {
       throw new HttpError(503, `zone_dow_templates 테이블이 없습니다.\n${CREATE_SQL}`);
     }
-    console.error("[zone-dow PUT] error:", error);
+    logger.error("[zone-dow PUT] error: " + error?.message);
     throw new HttpError(500, error.message);
   }
   return res.json({ ok: true });
@@ -326,7 +327,7 @@ router.put("/api/zone-day/:date", authorize(5), validateBody(UpsertZoneDaySchema
       const { [missingCol]: _drop, ...rest } = currentPayload;
       void _drop;
       currentPayload = rest;
-      console.warn(`[zone-day PUT] 컬럼 '${missingCol}' 없음 → 제외하고 재시도 (attempt=${attempt + 1})`);
+      logger.warn(`[zone-day PUT] 컬럼 '${missingCol}' 없음 → 제외하고 재시도 (attempt=${attempt + 1})`);
       continue;
     }
     // 관계(테이블) 자체가 없는 경우
@@ -339,7 +340,7 @@ router.put("/api/zone-day/:date", authorize(5), validateBody(UpsertZoneDaySchema
     if (/relation|table.*does not exist/i.test(error.message)) {
       throw new HttpError(503, `zone_day_assignments 테이블이 없습니다.\n${CREATE_DAY_SQL}`);
     }
-    console.error("[zone-day PUT] error:", error);
+    logger.error("[zone-day PUT] error: " + error?.message);
     throw new HttpError(500, error.message);
   }
   // 확정 저장 시 배정된 직원들에게 알림 발송 (실패해도 저장 성공 유지)
@@ -413,7 +414,7 @@ router.post("/api/zone-day/copy-month", authorize(5), validateBody(CopyZoneDayMo
 
   const { error: upErr } = await supabase.from(DAY_TABLE).upsert(payloads, { onConflict: "date" });
   if (upErr) {
-    console.error("[zone-day copy-month] error:", upErr);
+    logger.error("[zone-day copy-month] error: " + upErr?.message);
     throw new HttpError(500, upErr.message);
   }
   return res.json({ ok: true, count: payloads.length });

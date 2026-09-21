@@ -21,6 +21,7 @@ import { badRequest, notFound, HttpError } from "../../middleware/errorHandler";
 import { CreateProductArrivalSchema } from "../../../src/shared/schemas/productArrivals";
 import { resetProductCache } from "../../productCache";
 import { buildInitialShelfPositions } from "../../../src/shared/warehouseZones";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -135,7 +136,7 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
       .eq("product_code", productCode)
       .maybeSingle();
     if (prodErr) {
-      console.warn(`[arrival→products lookup] ${productCode} · ${prodErr.message}`);
+      logger.warn(`[arrival→products lookup] ${productCode} · ${prodErr.message}`);
     }
     if (prodRow) {
       if (unitPrice === 0 && prodRow.purchase_price != null) {
@@ -206,7 +207,7 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
           .update(prodUpdate)
           .eq("product_code", productCode);
         if (stErr) {
-          console.warn(`[arrival→products update] ${productCode} · stock=+${qty} price=${unitPrice} · ${stErr.message}`);
+          logger.warn(`[arrival→products update] ${productCode} · stock=+${qty} price=${unitPrice} · ${stErr.message}`);
           failedItems.push({ product_code: productCode, error: `stock: ${stErr.message}`, step: "stock" });
         }
       }
@@ -253,7 +254,7 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
           .update(prodUpdate)
           .eq("product_code", productCode);
         if (stErr) {
-          console.warn(`[arrival→products] ${productCode} · stock=+${qty} price=${unitPrice} · ${stErr.message}`);
+          logger.warn(`[arrival→products] ${productCode} · stock=+${qty} price=${unitPrice} · ${stErr.message}`);
           failedItems.push({ product_code: productCode, error: `stock: ${stErr.message}`, step: "stock" });
         }
       }
@@ -268,7 +269,7 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
         .update({ location: itemLocation, display_location: itemLocation })
         .eq("product_code", productCode);
       if (locErr) {
-        console.warn(`[arrival→location] product_code=${productCode} · location=${itemLocation} · ${locErr.message}`);
+        logger.warn(`[arrival→location] product_code=${productCode} · location=${itemLocation} · ${locErr.message}`);
         failedItems.push({ product_code: productCode, error: `location: ${locErr.message}`, step: "location" });
       } else {
         // #318 P3 · location 저장 성공 후 · inventory_checks.shelf_positions auto-sync
@@ -300,9 +301,9 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
               .update({ shelf_positions: mergedPos })
               .eq("product_code", productCode);
             if (shelfErr) {
-              console.warn(`[arrival→shelf_sync] ${productCode} · update 실패 (경고): ${shelfErr.message}`);
+              logger.warn(`[arrival→shelf_sync] ${productCode} · update 실패 (경고): ${shelfErr.message}`);
             } else {
-              console.log(`[arrival→shelf_sync] ${productCode} · shelf_positions 병합 · ${JSON.stringify(mergedPos)}`);
+              logger.debug(`[arrival→shelf_sync] ${productCode} · shelf_positions 병합 · ${JSON.stringify(mergedPos)}`);
             }
           } else {
             // inventory_checks row 없음 · 신규 생성 (정합성 복구)
@@ -317,13 +318,13 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
                 note: "",
               }]);
             if (shelfInsErr) {
-              console.warn(`[arrival→shelf_sync] ${productCode} · insert 실패 (경고): ${shelfInsErr.message}`);
+              logger.warn(`[arrival→shelf_sync] ${productCode} · insert 실패 (경고): ${shelfInsErr.message}`);
             } else {
-              console.log(`[arrival→shelf_sync] ${productCode} · inventory_checks 신규 생성 · ${JSON.stringify(autoSlots)}`);
+              logger.debug(`[arrival→shelf_sync] ${productCode} · inventory_checks 신규 생성 · ${JSON.stringify(autoSlots)}`);
             }
           }
         } catch (e: any) {
-          console.warn(`[arrival→shelf_sync] ${productCode} · 예외 (경고): ${e?.message ?? e}`);
+          logger.warn(`[arrival→shelf_sync] ${productCode} · 예외 (경고): ${e?.message ?? e}`);
         }
       }
     }

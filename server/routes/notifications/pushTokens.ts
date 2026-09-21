@@ -17,6 +17,7 @@ import { authorize } from "../../middleware/requireAuth";
 import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
 import { sendPush } from "../../services/expoPushService";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -65,9 +66,7 @@ router.post(
         .eq("id", existing.id);
       if (updErr) throw new HttpError(500, updErr.message);
       const reassigned = Number(existing.user_id) !== userId;
-      console.log(
-        `[PUSH-TOKEN] ${reassigned ? "reassign" : "refresh"} · user=${userId} · platform=${platform} · token=${token.slice(0, 32)}...`,
-      );
+      logger.debug(`[PUSH-TOKEN] ${reassigned ? "reassign" : "refresh"} · user=${userId} · platform=${platform} · token=${token.slice(0, 32)}...`);
       res.json({ ok: true, action: reassigned ? "reassigned" : "refreshed" });
       return;
     }
@@ -80,9 +79,7 @@ router.post(
       active: true,
     });
     if (insErr) throw new HttpError(500, insErr.message);
-    console.log(
-      `[PUSH-TOKEN] insert · user=${userId} · platform=${platform} · token=${token.slice(0, 32)}...`,
-    );
+    logger.debug(`[PUSH-TOKEN] insert · user=${userId} · platform=${platform} · token=${token.slice(0, 32)}...`);
     res.json({ ok: true, action: "created" });
   }),
 );
@@ -108,7 +105,7 @@ router.delete(
     }
     const { error } = await q;
     if (error) throw new HttpError(500, error.message);
-    console.log(`[PUSH-TOKEN] delete · user=${userId} · token=${token.slice(0, 32)}...`);
+    logger.debug(`[PUSH-TOKEN] delete · user=${userId} · token=${token.slice(0, 32)}...`);
     res.json({ ok: true });
   }),
 );
