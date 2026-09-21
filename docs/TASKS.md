@@ -123,8 +123,8 @@
 <!-- #302 ✅ · products-search API · optimal_stock·min_stock 필드 누락 fix · 2026-09-21 완료 (`bd19450c`) -->
 <!-- #303 ✅ · xlsx 0.18.5 → 0.20.3 SheetJS CDN · TS·build 통과 · 2026-09-21 완료 -->
 | **#310** | **반응형 리스트 → 카드 전환** · PC 한 줄 · 모바일 카드형 자동 (사용자 지시 · 2026-09-20) | 🔴 P1 | **전수** · 대원칙 등재 · Tailwind md: breakpoint · 페이지별 순차 · 회귀 X |
-| **#311** | **스케쥴표 · 연차 사용 직원 · 상단 알림** (사용자 지시 · 2026-09-20) | 🟡 P2 | 승인된 연차 · 1주일 전부터 · SchedulePage 상단 배너 · "대체인력 확인 요망" · 관리자 안내 |
-| **#312** | **승인 연차 · 스케쥴 자동 반영 검증** (사용자 지시 · 2026-09-20) | 🟢 P2 | 서버 · leave 승인 시 · schedule 업데이트 로직 확인 · 없으면 신설 |
+<!-- #311 ✅ · UpcomingLeaveBanner + useUpcomingLeaves + /api/upcoming-leaves · SchedulePage L561 통합 · 14일 이내 · 관리자 lv≥2 · 이미 완료 -->
+<!-- #312 ✅ · POST /api/approve-leave (server/routes/daily/leave.ts L118-146) · scheduleService.batchUpdateSchedules 자동 호출 · try/catch + 로그 · 실패 시 500 · 알림 발송 · 이미 완료 -->
 <!-- 2026-09-20 · #313 ✅ · c1feb252 · 공급사+판매상태 나란히 + 라벨 폰트 +1 + 필수 미입력 확인창 -->
 <!-- 2026-09-20 · #314 · 부분 · 인라인 ShelfPositionSection · ProductCreateModal 내부 (공통 파일 추출은 다음 세션) -->
 <!-- 2026-09-20 · #315 · 부분 · s1zone 항상 null 버그 fix (9339f430 · 216ad887) · 매장1 구역 표시 정상화 -->
