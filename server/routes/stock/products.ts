@@ -248,7 +248,8 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
       ...(padded !== q ? [`product_code.eq.${padded}`] : []),
     ].join(",");
 
-    const cols = "product_code,product_name,spec,supplier,category_code,category,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,current_stock,sale_status,hidden";
+    // 2026-09-21 · #302 · optimal_stock,min_stock 누락 fix · VendorStockPage 재고상태 판정·적정재고 표시용
+    const cols = "product_code,product_name,spec,supplier,category_code,category,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,current_stock,optimal_stock,min_stock,sale_status,hidden";
     // 2026-09-18 · 사용자 지시 fix · limit query param 존중 · supplier only 시 최대 1000
     const rawLimit = Number(req.query.limit ?? 40);
     const limitVal = Math.min(Math.max(Number.isFinite(rawLimit) ? rawLimit : 40, 1), 1000);
@@ -263,7 +264,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
 
     // 2차 fallback 1: hidden 컬럼 없으면 제외하고 재시도
     if (error && /"?hidden"?|does not exist|column/i.test(error.message) && /hidden/i.test(error.message)) {
-      const cols2 = "product_code,product_name,spec,supplier,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,current_stock,sale_status";
+      const cols2 = "product_code,product_name,spec,supplier,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,current_stock,optimal_stock,min_stock,sale_status";
       let q2 = supabase.from("products").select(cols2);
       if (!supplierOnly) q2 = q2.or(buildOr(true));
       if (supplier.length >= 2) q2 = q2.ilike("supplier", `%${supplier}%`);
