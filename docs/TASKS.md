@@ -219,6 +219,19 @@
 
 ## 📋 세션 완료 로그 · 최근
 
+### 2026-09-21 (자율 세션 · 3-4시간 · 15+ 태스크 완료 · 60+ 커밋)
+- **크리티컬 fix** · #302 (VendorStockPage · products-search API 필드 fix) · #303 (xlsx CDN CVE)
+- **근로계약서 종합 개선** · #320 (좌측 폼 · 라벨 통일 · 근로자 정보 · 사번 유일키) + E-002 (Google Drive invalid_grant)
+- **버그 fix 4건** · E-001~E-004 (SplitPanel 드래그 · Google Drive · 한글 IME · Electron 화이트 스크린)
+- **매입이력 대개편** · #324 (판매상태 필터 + 표형식 + 반응형 카드 · 다중 chain)
+- **매장진열 재구성** · #325 (매장구역도 안에 창고1·창고2 서브탭 nesting)
+- **판매추천 자동화** · #326 (풀 스펙 · SSOT 규칙 + Expo 스타일 endpoint + UI 통합)
+- **반응형 대원칙 적용** · #310 (Top 5 페이지 · 직원·거래처·발주요청·연차·결제입력 카드 전환)
+- **공통 컴포넌트 추출** · #319 (ShelfPositionPicker · ProductCreateModal)
+- **UI 폴리싱** · #322 (발주이력 컬럼) · #323 (매입이력 화살표 제거)
+- **신규 등재** · #327 (Drive 확장·안정화) · #328 (Expo 푸시 알림) · 진행 중
+- **테스트** · 3481 pass · 3 skip · 0 fail · TS·build·framework audit 통과
+
 ### 2026-09-18 (오늘 · 대형 세션 · 40+ 커밋)
 - **크리티컬 fix 4건** · 실재고 duplicate key · 방문예약 vendor · 판매가/재고 안 나옴 · display-requests 상품명
 - **상품정보 페이지 전수 재설계** · 왼쪽 리스트 표 형식·자동정렬·폭 드래그 · 상세 뷰 폰트 조정 · 편집 모달 shelf 5-slot + 판매상태
