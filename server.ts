@@ -67,7 +67,7 @@ import creditCardsRouter from "./server/routes/purchase/creditCards";
 // 2026-08-09 · SolAPI 카카오 알림톡 · credentials 미설정 시 status 만 응답 · 향후 확장 (사용자 승인 후)
 import { handleSolApiStatus } from "./server/lib/notification/solapiClient";
 // 2026-08-29 · #176/#214 · 발주요청 · 물류팀장 카톡 전송 API (뼈대) · KAKAO_API_KEY 미설정 시 gracefully 미구성 응답
-import kakaoSendRouter from "./server/routes/notification/kakaoSend";
+import kakaoSendRouter from "./server/routes/notifications/kakaoSend";
 // 2026-09-21 · #328 · iOS 앱 Expo 푸시 알림 · 토큰 CRUD + test endpoint
 import pushTokensRouter from "./server/routes/notifications/pushTokens";
 import ocrConfirmedRouter from "./server/routes/purchase/ocrConfirmed";
