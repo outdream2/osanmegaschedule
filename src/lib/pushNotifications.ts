@@ -186,15 +186,22 @@ export function initBadgeSync(): () => void {
   async function refresh(): Promise<void> {
     if (cancelled) return;
     try {
-      // 2026-09-21 · 사용자 보고 · "알람 4개인데 1개 표시" · leave + resignation 합산으로 통일 (SideNav approvalBadge 와 동일)
-      const [leaveRes, resignationRes] = await Promise.all([
+      // 2026-09-22 · 사용자 보고 · "거래처 승인 5개인데 앱 배지 안 나옴"
+      //   · 이전 · leave + resignation 만 · vendor·display·order 등 누락
+      //   · fix · 모든 pending 유형 통합 (approvals: leave+resignation · requests: vendor+display+order+mismatch+lunch+inventory+return)
+      const [leaveRes, resignationRes, pendingCountsRes] = await Promise.all([
         api.get<{ count: number }>("/api/leave-requests/pending-count").catch(() => ({ data: { count: 0 } })),
         api.get<{ count: number }>("/api/resignation-requests/pending-count").catch(() => ({ data: { count: 0 } })),
+        api.get<Record<string, number>>("/api/requests/pending-counts").catch(() => ({ data: {} as Record<string, number> })),
       ]);
       if (cancelled) return;
       const lc = Number(leaveRes?.data?.count ?? 0);
       const rc = Number(resignationRes?.data?.count ?? 0);
-      const total = (Number.isFinite(lc) ? lc : 0) + (Number.isFinite(rc) ? rc : 0);
+      const counts = (pendingCountsRes?.data ?? {}) as Record<string, number>;
+      // pending-counts · vendor·display·order·mismatch·lunch·inventory·return
+      const reqSum = Object.values(counts).reduce((s: number, v) => s + (Number.isFinite(Number(v)) ? Number(v) : 0), 0);
+      const total = (Number.isFinite(lc) ? lc : 0) + (Number.isFinite(rc) ? rc : 0) + reqSum;
+      devLog(`[PUSH-BADGE] refresh · leave=${lc} resignation=${rc} requests=${reqSum} total=${total}`);
       setAppBadge(total);
     } catch (err: any) {
       // 401 등 · 미로그인 시 · 배지 clear

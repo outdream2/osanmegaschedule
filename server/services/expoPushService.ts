@@ -211,12 +211,18 @@ export async function sendPush(params: SendPushParams): Promise<SendPushResult> 
         if (uErr) logger.warn(`[EXPO-PUSH] last_used_at update warn · ${uErr.message}`);
       });
 
+    // 2026-09-22 · 앱 개발자 스펙 준수 · data.url 반드시 https://osanmega.onrender.com 로 시작
+    //   · iOS WebView 앱 · 알림 탭 시 이 URL 로 열림 · 상대경로 X · 도메인 필수
+    //   · env PUSH_BASE_URL · 프로덕션·개발 오버라이드 가능
+    const PUSH_BASE_URL = process.env.PUSH_BASE_URL || "https://osanmega.onrender.com";
+    const rawUrl = url ?? "/";
+    const absoluteUrl = rawUrl.startsWith("http") ? rawUrl : `${PUSH_BASE_URL}${rawUrl.startsWith("/") ? rawUrl : "/" + rawUrl}`;
     const payload: Omit<ExpoPushMessage, "to"> = {
       title,
       body,
       sound: "default",
       priority: "high",
-      data: { url: url ?? "/", ...(data ?? {}) },
+      data: { url: absoluteUrl, ...(data ?? {}) },
       ...(typeof badge === "number" ? { badge } : {}),
     };
 
