@@ -66,6 +66,8 @@ import creditCardsRouter from "./server/routes/purchase/creditCards";
 import { handleSolApiStatus } from "./server/lib/notification/solapiClient";
 // 2026-08-29 · #176/#214 · 발주요청 · 물류팀장 카톡 전송 API (뼈대) · KAKAO_API_KEY 미설정 시 gracefully 미구성 응답
 import kakaoSendRouter from "./server/routes/notification/kakaoSend";
+// 2026-09-21 · #328 · iOS 앱 Expo 푸시 알림 · 토큰 CRUD + test endpoint
+import pushTokensRouter from "./server/routes/notifications/pushTokens";
 import ocrConfirmedRouter from "./server/routes/purchase/ocrConfirmed";
 import { ocrDeletedRowsRouter } from "./server/routes/purchase/ocrDeletedRows";
 import boardRouter from "./server/routes/board/board";
@@ -246,6 +248,9 @@ async function startServer() {
   //   POST /api/notifications/kakao-send · authorize(3)
   //   GET  /api/notifications/kakao-send/status · authorize(3)
   app.use(kakaoSendRouter);
+
+  // 2026-09-21 · #328 · Expo 푸시 토큰 등록·삭제·테스트 · authorize(1) 내부
+  app.use(pushTokensRouter);
 
   // 2026-09-18 · C · 공휴일 API · GET(캐시) + POST sync(관리자 lv≥9 내부 authorize) · requireAuth 아래
   app.use(holidaysRouter);
