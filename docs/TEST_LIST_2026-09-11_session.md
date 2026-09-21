@@ -3922,3 +3922,33 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 4. 새로고침 버튼 → 데이터 재로드
 5. 판매량/판매금액 없는 상품 → "-" 회색 표시 (null 처리 유지)
 6. 모바일 · 상품 클릭 → 모달 팝업 (mobileRightAsModal 유지)
+
+---
+
+### [92] #319 · 공통 ShelfPositionPicker · ProductCreateModal 교체
+
+**커밋:** 8b006d6a
+**변경:** ShelfPositionPicker.tsx 신규 · ProductCreateModal.tsx ShelfPositionSection 교체
+
+**진입:** 상품정보 > 상품 신규 등록 (+ 버튼) or 상품 편집 (연필 버튼)
+
+**테스트:**
+1. 상품 신규 등록 모달 열기
+2. "진열구역" 필드에 값 입력 (예: "26" 창고코드 or "1A" 매장코드)
+3. 진열구역 입력 후 → **상세구역 섹션 표시** 확인
+   - 창고 코드(24/25/26/27/7B/8A) 입력 시 → 창고1 슬롯만 표시
+   - 그 외 코드 입력 시 → 창고2 슬롯만 표시
+   - 매장 관련 코드 → 매장1 슬롯 기본 표시 + 매장2/3 추가 버튼
+4. ShelfPositionInput (층·칸·순서 stepper) 정상 동작 확인
+   - +/- 버튼 · 숫자/알파벳 입력 · 값 변경 확인
+   - "지우기" 버튼 → null 처리
+5. 매장2/3 추가 버튼 → 슬롯 추가 표시
+6. **상품 저장** → shelf_positions JSONB 정상 저장 확인
+   - 저장 후 상품 상세 클릭 → 상세구역 배지에 입력한 값 표시
+7. 상품 **편집** 모달 → 기존 shelf_positions 값 초기화 확인
+
+**회귀 시나리오:**
+1. 진열구역 변경 시 → 상세구역 초기화(EMPTY_SHELF) 동작 유지
+2. 저장 payload · shelf_positions 필드 shape 동일 (warehouse1/2/store1/2/3)
+3. 상품 신규 등록 전체 flow · 공급사·판매가·매입가 등 다른 필드 영향 없음
+4. 모달 열기/닫기 반복 → 상태 초기화 정상
