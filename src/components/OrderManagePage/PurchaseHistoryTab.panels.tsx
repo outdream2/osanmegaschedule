@@ -6,6 +6,7 @@
 
 import React from "react";
 import { Building2, Package, RefreshCw, Info, ArrowRight, X } from "lucide-react";
+import { SortHeader } from "../common/SortHeader";
 import { SegmentedControl } from "../common/SegmentedControl";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
@@ -41,7 +42,7 @@ import ProductPurchaseDetailPanel, {
 // 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import type { Vendor as VendorRecord } from "../LandingPage/VendorListEditor";
-import type { VendorItem, DataSource, SourceDiagnostics, ViewMode, ProductSort } from "./PurchaseHistoryTab.types";
+import type { VendorItem, DataSource, SourceDiagnostics, ViewMode, ProductSort, ProductSortDir } from "./PurchaseHistoryTab.types";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 1) FilterBar · 상단 필터바 (viewMode 토글 · 기간 · 새로고침)
@@ -421,23 +422,55 @@ interface ByProductPanelProps {
   setProductSearch: (v: string) => void;
   productSort: ProductSort;
   setProductSort: (v: ProductSort) => void;
+  // #324-2차 · 표형식 · 정렬 방향 · 헤더 클릭 핸들러
+  productSortDir: ProductSortDir;
+  toggleProductSort: (k: ProductSort) => void;
   allDetailsLoading: boolean;
   allDetailsError: string | null;
   loadAllDetails: (force?: boolean) => void;
 }
 
+// ─── SortTh (th 래퍼 · ProductInfoPage 패턴 통일) ────────────────────────────
+const SortTh: React.FC<{
+  label: React.ReactNode;
+  colKey: ProductSort;
+  activeKey: ProductSort;
+  dir: ProductSortDir;
+  onToggle: (k: ProductSort) => void;
+  className?: string;
+  align?: "left" | "right";
+}> = ({ label, colKey, activeKey, dir, onToggle, className = "", align = "left" }) => (
+  <th
+    className={`py-2 text-[12px] font-bold tracking-wide uppercase select-none ${
+      align === "right" ? "text-right pr-2" : "text-left pl-3"
+    } ${className}`}
+  >
+    <SortHeader
+      label={label}
+      columnKey={colKey}
+      activeKey={activeKey}
+      activeDir={dir}
+      onToggle={onToggle}
+      arrowStyle="arrow"
+      activeColor="brand"
+      align={align}
+    />
+  </th>
+);
+
 export const ByProductPanel: React.FC<ByProductPanelProps> = ({
   filteredProducts, filteredAllDetails,
   selectedProductKey, setSelectedProductKey,
   selectedProduct, selectedProductRows,
-  productSearch, setProductSearch, productSort, setProductSort,
+  productSearch, setProductSearch,
+  productSort, setProductSort: _setProductSort, // backward compat · toggleProductSort 사용
+  productSortDir, toggleProductSort,
   allDetailsLoading, allDetailsError, loadAllDetails,
 }) => {
   return (
     <SplitPanel
       key="by-product"
-      storageKey="purchaseHistory.byProduct.leftWidth.v2"
-      /* 2026-09-11 · #78 · defaultWidth 제거 · SplitPanel 자동 5:5 */
+      storageKey="purchaseHistory.byProduct.leftWidth.v3"
       minWidth={320}
       maxWidth={1200}
       dividerColor="sky"
@@ -451,53 +484,39 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
       mobileOpen={!!selectedProductKey}
       onMobileClose={() => setSelectedProductKey(null)}
       left={
-        /* 2026-08-23 · #198 Phase 3 · ByProductPanel · SplitListPanel v3 이관
-           · search + sort chips (6개 · 커스텀 색상) · filters slot
-           · 그리드 header + list · children slot
-           · custom loading/error/empty · body children 내부 유지 (v3 loading prop 미사용) */
+        /* #324-2차 · 표형식 + 자동정렬 헤더 (SplitListPanel 프레임워크 유지) */
         <SplitListPanel
           topAccent
           search={productSearch}
           onSearchChange={setProductSearch}
           searchPlaceholder="상품명 · 코드 검색"
-          filters={
-            <div className="flex flex-col gap-2 w-full">
-              <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-[16px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">정렬</span>
-                {([
-                  { k: "amount"   as const, label: "매입액",   color: "sky" as const },
-                  { k: "recent"   as const, label: "최근매입", color: "sky" as const },
-                  { k: "count"    as const, label: "매입건수", color: "sky" as const },
-                  { k: "sale_qty" as const, label: "판매량",   color: "rose" as const },
-                  { k: "sale_amt" as const, label: "판매금액", color: "rose" as const },
-                  { k: "name"     as const, label: "가나다",   color: "sky" as const },
-                ]).map(o => {
-                  const activeCls = o.color === "rose" ? "bg-rose-500 text-white" : "bg-sky-500 text-white";
-                  return (
-                    <button
-                      key={o.k}
-                      type="button"
-                      onClick={() => setProductSort(o.k)}
-                      className={`h-6 px-2 text-[16px] font-semibold rounded transition cursor-pointer ${
-                        productSort === o.k
-                          ? activeCls
-                          : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
-                      }`}
-                    >{o.label}</button>
-                  );
-                })}
-              </div>
-            </div>
-          }
           bodyClassName="bg-white rounded-xl border border-line shadow-sm flex-1 min-h-0 max-h-[calc(100dvh-200px)] flex flex-col overflow-hidden mt-2"
         >
           <>
-          <div className="px-3 py-1.5 border-b border-zinc-100 bg-zinc-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[17px] font-bold text-zinc-500 uppercase tracking-wider">
-            <span>상품</span>
-            <span className="text-right whitespace-nowrap text-amber-600">매입</span>
-            <span className="text-right whitespace-nowrap text-rose-600">판매</span>
-            <span className="text-right whitespace-nowrap">최근</span>
+          {/* sticky 정렬 헤더 */}
+          <div className="sticky top-0 z-10">
+            <table className="w-full border-collapse table-fixed">
+              <colgroup>
+                <col style={{ width: "auto", minWidth: 120 }} />
+                <col style={{ width: 80 }} />
+                <col style={{ width: 88 }} />
+                <col style={{ width: 80 }} />
+                <col style={{ width: 80 }} />
+                <col style={{ width: 68 }} />
+              </colgroup>
+              <thead className="bg-zinc-50/95 backdrop-blur-sm border-b-2 border-zinc-200">
+                <tr className="text-zinc-500">
+                  <SortTh label="상품명" colKey="name" activeKey={productSort} dir={productSortDir} onToggle={toggleProductSort} />
+                  <th className="py-2 text-[12px] font-bold tracking-wide uppercase select-none text-right pr-2 text-zinc-400">코드</th>
+                  <SortTh label="매입액" colKey="amount" activeKey={productSort} dir={productSortDir} onToggle={toggleProductSort} align="right" />
+                  <SortTh label="판매량" colKey="sale_qty" activeKey={productSort} dir={productSortDir} onToggle={toggleProductSort} align="right" />
+                  <SortTh label="판매금액" colKey="sale_amt" activeKey={productSort} dir={productSortDir} onToggle={toggleProductSort} align="right" />
+                  <SortTh label="최근" colKey="recent" activeKey={productSort} dir={productSortDir} onToggle={toggleProductSort} align="right" />
+                </tr>
+              </thead>
+            </table>
           </div>
+          {/* 본문 */}
           <div className="flex-1 min-h-0 overflow-y-auto">
           {allDetailsLoading ? (
             <ListLoading label="상품 매입이력 불러오는 중..." tone="sky" />
@@ -510,23 +529,97 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
               />
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="py-8 text-center text-[17px] text-zinc-300">
+            <div className="py-8 text-center text-[16px] text-zinc-300">
               {productSearch ? "검색 결과 없음" : "해당 기간 매입 상품 없음"}
             </div>
           ) : (
-            <div className="divide-y divide-zinc-50">
-              {filteredProducts.map(p => {
-                const key = String(p.product_code ?? "").trim() || p.product_name;
-                return (
-                  <ProductRowCard
-                    key={`prc-${key}`}
-                    product={p}
-                    active={selectedProductKey === key}
-                    onSelect={() => setSelectedProductKey(key)}
-                  />
-                );
-              })}
-            </div>
+            <table className="w-full border-collapse table-fixed text-[14px]">
+              <colgroup>
+                <col style={{ width: "auto", minWidth: 120 }} />
+                <col style={{ width: 80 }} />
+                <col style={{ width: 88 }} />
+                <col style={{ width: 80 }} />
+                <col style={{ width: 80 }} />
+                <col style={{ width: 68 }} />
+              </colgroup>
+              <tbody className="divide-y divide-zinc-100">
+                {filteredProducts.map(p => {
+                  const key = String(p.product_code ?? "").trim() || p.product_name;
+                  const active = selectedProductKey === key;
+                  const saleQty = p.sale_qty ?? null;
+                  const saleAmt = p.sale_amount ?? null;
+                  const lastDate = p.last_purchase_date
+                    ? p.last_purchase_date.slice(5)   // MM-DD
+                    : null;
+                  return (
+                    <tr
+                      key={`ptr-${key}`}
+                      onClick={() => setSelectedProductKey(key)}
+                      className={`cursor-pointer transition-colors border-l-2 ${
+                        active
+                          ? "bg-sky-50 border-sky-500"
+                          : "hover:bg-zinc-50/70 border-transparent"
+                      }`}
+                    >
+                      {/* 상품명 */}
+                      <td className="pl-3 pr-2 py-2.5 align-middle">
+                        <div className={`text-[14px] font-semibold leading-tight whitespace-normal break-words break-keep ${
+                          active ? "text-sky-800" : "text-ink"
+                        }`}>
+                          {p.product_name || <span className="text-zinc-400 font-normal">(이름없음)</span>}
+                        </div>
+                      </td>
+                      {/* 코드 */}
+                      <td className="pr-2 py-2.5 align-middle text-right">
+                        <span className="text-[12px] text-zinc-400 tabular-nums">
+                          {p.product_code ?? <span className="text-zinc-200">-</span>}
+                        </span>
+                      </td>
+                      {/* 매입액 */}
+                      <td className="pr-2 py-2.5 align-middle text-right">
+                        <span className={`text-[14px] font-bold tabular-nums ${
+                          p.total_amount > 0 ? (active ? "text-sky-700" : "text-zinc-700") : "text-zinc-300"
+                        }`}>
+                          {p.total_amount > 0
+                            ? p.total_amount >= 10_000_000
+                              ? `${(p.total_amount / 10_000_000).toFixed(1)}천만`
+                              : p.total_amount >= 1_000_000
+                                ? `${Math.round(p.total_amount / 10_000)}만`
+                                : p.total_amount.toLocaleString()
+                            : <span className="text-zinc-300 font-normal">-</span>}
+                        </span>
+                      </td>
+                      {/* 판매량 */}
+                      <td className="pr-2 py-2.5 align-middle text-right">
+                        <span className={`text-[14px] font-semibold tabular-nums ${
+                          saleQty != null && saleQty > 0 ? "text-rose-600" : "text-zinc-300"
+                        }`}>
+                          {saleQty != null ? `${saleQty.toLocaleString()}` : "-"}
+                        </span>
+                      </td>
+                      {/* 판매금액 */}
+                      <td className="pr-2 py-2.5 align-middle text-right">
+                        <span className={`text-[14px] font-bold tabular-nums ${
+                          saleAmt != null && saleAmt > 0 ? "text-rose-700" : "text-zinc-300"
+                        }`}>
+                          {saleAmt != null && saleAmt > 0
+                            ? saleAmt >= 1_000_000
+                              ? `${Math.round(saleAmt / 10_000)}만`
+                              : saleAmt.toLocaleString()
+                            : "-"}
+                        </span>
+                      </td>
+                      {/* 최근매입 */}
+                      <td className="pr-2 py-2.5 align-middle text-right">
+                        <span className="text-[12px] text-zinc-400 tabular-nums whitespace-nowrap">
+                          {lastDate ?? <span className="text-zinc-200">-</span>}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
           </div>
           </>
@@ -536,7 +629,7 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
         <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
         {!selectedProduct ? (
           <div className="flex flex-col gap-2 flex-1 min-h-0 overflow-auto">
-            {/* 2026-08-25 · v9 · 상단 gradient accent */}
+            {/* 상단 gradient accent */}
             <div className="relative bg-white rounded-xl border border-line shadow-sm px-4 py-2.5 flex items-center gap-2 shrink-0 overflow-hidden">
               <GradientAccent size="thin" className="z-10 rounded-t-xl" />
               <Package size={14} className="text-sky-500 shrink-0" />

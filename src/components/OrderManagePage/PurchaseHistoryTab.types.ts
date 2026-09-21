@@ -36,3 +36,6 @@ export type ViewMode = "by-vendor" | "by-product";
 // 상품 리스트 정렬 (#191)
 // 2026-08-04 · 판매량(sale_qty) · 판매금액(sale_amt) 정렬 추가 (사용자 요청)
 export type ProductSort = "amount" | "recent" | "name" | "count" | "sale_qty" | "sale_amt";
+
+// #324-2차 · 상품별 표형식 · 정렬 방향
+export type ProductSortDir = "asc" | "desc";

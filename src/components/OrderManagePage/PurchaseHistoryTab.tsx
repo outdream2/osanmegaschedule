@@ -38,7 +38,7 @@ import { api, ApiError } from "../../lib/apiClient";
 import { devLog, devWarn } from "../../lib/devLog";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-21 · Framework Phase 4 · large-file 분리
-import type { VendorItem, SummaryResponse, DataSource, SourceDiagnostics, ViewMode, ProductSort } from "./PurchaseHistoryTab.types";
+import type { VendorItem, SummaryResponse, DataSource, SourceDiagnostics, ViewMode, ProductSort, ProductSortDir } from "./PurchaseHistoryTab.types";
 // 2026-08-22 · Framework Phase 4 · 3섹션 별도 컴포넌트 이관
 import { FilterBar, ByVendorPanel, ByProductPanel } from "./PurchaseHistoryTab.panels";
 
@@ -148,6 +148,16 @@ export const PurchaseHistoryTab: React.FC = () => {
 
   const [productSearch, setProductSearch] = useState("");
   const [productSort, setProductSort] = useState<ProductSort>("amount");
+  // #324-2차 · 표형식 · 정렬 방향 (amount/recent/count/sale_qty/sale_amt → desc default · name → asc default)
+  const [productSortDir, setProductSortDir] = useState<ProductSortDir>("desc");
+  const toggleProductSort = (k: ProductSort) => {
+    if (productSort === k) {
+      setProductSortDir(d => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setProductSort(k);
+      setProductSortDir(k === "name" ? "asc" : "desc");
+    }
+  };
 
   // 선택 상품 (product_code · 없으면 product_name key)
   const [selectedProductKey, setSelectedProductKey] = useState<string | null>(null);
@@ -878,48 +888,48 @@ export const PurchaseHistoryTab: React.FC = () => {
       return s !== "판매중";
     };
     const list = productList.filter(p => matchesProductQuery(p, productSearch) && saleOk(p.sale_status));
+    // #324-2차 · productSortDir 반영 · dirSign
+    const ds = productSortDir === "asc" ? 1 : -1;
     return list.sort((a, b) => {
       switch (productSort) {
         case "amount": {
-          if (b.total_amount !== a.total_amount) return b.total_amount - a.total_amount;
+          if (a.total_amount !== b.total_amount) return ds * (a.total_amount - b.total_amount);
           return a.product_name.localeCompare(b.product_name, "ko");
         }
         case "recent": {
           const da = a.last_purchase_date ?? "";
           const db = b.last_purchase_date ?? "";
-          if (db !== da) return db.localeCompare(da);
+          if (da !== db) return ds * da.localeCompare(db);
           return a.product_name.localeCompare(b.product_name, "ko");
         }
         case "count": {
-          if (b.purchase_count !== a.purchase_count) return b.purchase_count - a.purchase_count;
+          if (a.purchase_count !== b.purchase_count) return ds * (a.purchase_count - b.purchase_count);
           return a.product_name.localeCompare(b.product_name, "ko");
         }
         case "sale_qty": {
-          // 2026-08-04 · 판매량 desc · null 은 항상 뒤 (사용자 요청)
           const va = a.sale_qty ?? null;
           const vb = b.sale_qty ?? null;
           if (va == null && vb == null) return a.product_name.localeCompare(b.product_name, "ko");
           if (va == null) return 1;
           if (vb == null) return -1;
-          if (vb !== va) return vb - va;
+          if (va !== vb) return ds * (va - vb);
           return a.product_name.localeCompare(b.product_name, "ko");
         }
         case "sale_amt": {
-          // 2026-08-04 · 판매금액 desc · null 은 항상 뒤 (사용자 요청)
           const va = a.sale_amount ?? null;
           const vb = b.sale_amount ?? null;
           if (va == null && vb == null) return a.product_name.localeCompare(b.product_name, "ko");
           if (va == null) return 1;
           if (vb == null) return -1;
-          if (vb !== va) return vb - va;
+          if (va !== vb) return ds * (va - vb);
           return a.product_name.localeCompare(b.product_name, "ko");
         }
         case "name":
         default:
-          return a.product_name.localeCompare(b.product_name, "ko");
+          return ds * a.product_name.localeCompare(b.product_name, "ko");
       }
     });
-  }, [productList, productSearch, productSort, saleStatusFilter]);
+  }, [productList, productSearch, productSort, productSortDir, saleStatusFilter]);
 
   // 선택 상품의 header + row 목록
   const selectedProduct = useMemo<ProductSummary | null>(() => {
@@ -1023,6 +1033,8 @@ export const PurchaseHistoryTab: React.FC = () => {
             setProductSearch={setProductSearch}
             productSort={productSort}
             setProductSort={setProductSort}
+            productSortDir={productSortDir}
+            toggleProductSort={toggleProductSort}
             allDetailsLoading={allDetailsLoading}
             allDetailsError={allDetailsError}
             loadAllDetails={loadAllDetails}
