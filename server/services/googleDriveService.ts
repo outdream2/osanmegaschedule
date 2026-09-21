@@ -22,10 +22,13 @@ import fs from "fs";
 import path from "path";
 import { supabase } from "../../src/supabase/client";
 
-// 사용자 제공 · Drive 폴더 ID
-const DRIVE_FOLDERS_DEFAULT = {
+// 사용자 제공 · Drive 폴더 ID · 2026-09-21 · #327-① · leave · misc 추가
+// leave · misc 폴더 · 미설정 시 contract 폴더로 fallback (사용자 확인 후 별도 폴더 발급 가능)
+const DRIVE_FOLDERS_DEFAULT: Record<FolderKind, string | null> = {
   resume: "1gEYUWD-PHzsewJkomuzWkpQA960rLkUv",
   contract: "1taDuOluNZxHSd_uJ7qr32xRVYFpD-IXe",
+  leave: null,   // 미설정 · misc → contract fallback
+  misc: null,    // 미설정 · contract fallback
 };
 
 const KEY_FILE_DIRS = [
@@ -33,12 +36,16 @@ const KEY_FILE_DIRS = [
   path.join(process.cwd(), "keys"),
 ];
 
-type FolderKind = "resume" | "contract";
+// 2026-09-21 · #327-① · 폴더 kind 통합 · resume/contract/leave/misc
+export type FolderKind = "resume" | "contract" | "leave" | "misc";
 
 interface OAuthCreds {
   client_id: string;
   client_secret: string;
   refresh_token: string;
+  // 2026-09-21 · #327-④ · refresh_token 발급 시점 (ISO 8601) · 만료 D-2 알림용
+  // 파일 (google-oauth.json) 에 issued_at 이 있으면 로드 · 없으면 파일 mtime 사용
+  issued_at?: string | null;
 }
 
 interface DriveConfig {
@@ -49,7 +56,11 @@ interface DriveConfig {
 
 let cached: { driveClient: drive_v3.Drive | null; config: DriveConfig } = {
   driveClient: null,
-  config: { oauth: null, serviceAccountJson: null, folders: { resume: null, contract: null } },
+  config: {
+    oauth: null,
+    serviceAccountJson: null,
+    folders: { resume: null, contract: null, leave: null, misc: null },
+  },
 };
 let initTried = false;
 let lastInitFailAt = 0;
@@ -59,9 +70,10 @@ const RETRY_COOLDOWN_MS = 60 * 1000;
  * src/keys 폴더에서 · OAuth JSON 또는 Service Account JSON 을 자동 감지 로드
  * 우선순위: OAuth > Service Account (OAuth 가 있으면 그것을 사용)
  */
-function loadKeyFromFile(): { oauth: OAuthCreds | null; sa: any | null } {
+function loadKeyFromFile(): { oauth: OAuthCreds | null; sa: any | null; folders: Partial<Record<FolderKind, string>> } {
   let oauth: OAuthCreds | null = null;
   let sa: any | null = null;
+  const folders: Partial<Record<FolderKind, string>> = {};
   for (const dir of KEY_FILE_DIRS) {
     try {
       if (!fs.existsSync(dir)) continue;
@@ -74,12 +86,30 @@ function loadKeyFromFile(): { oauth: OAuthCreds | null; sa: any | null } {
           if (!parsed || typeof parsed !== "object") continue;
           // OAuth JSON 감지 · refresh_token 존재
           if (parsed.refresh_token && parsed.client_id && parsed.client_secret) {
+            // 2026-09-21 · #327-④ · issued_at · 파일에 있으면 우선 · 없으면 file mtime
+            let issuedAt: string | null = null;
+            if (parsed.issued_at && typeof parsed.issued_at === "string") {
+              issuedAt = parsed.issued_at;
+            } else {
+              try {
+                const st = fs.statSync(filePath);
+                issuedAt = st.mtime.toISOString();
+              } catch { /* mtime 실패 시 null 유지 */ }
+            }
             oauth = {
               client_id: String(parsed.client_id),
               client_secret: String(parsed.client_secret),
               refresh_token: String(parsed.refresh_token),
+              issued_at: issuedAt,
             };
-            console.log(`[google-drive] OAuth 크레덴셜 로드 (파일): ${filePath}`);
+            // 2026-09-21 · #327-① · folders 필드 지원 · JSON 안에 폴더 매핑 추가 가능
+            if (parsed.folders && typeof parsed.folders === "object") {
+              for (const k of ["resume", "contract", "leave", "misc"] as const) {
+                const v = parsed.folders[k];
+                if (typeof v === "string" && v.trim()) folders[k] = v.trim();
+              }
+            }
+            console.log(`[google-drive] OAuth 크레덴셜 로드 (파일): ${filePath} · issued_at=${issuedAt ?? "?"}`);
           }
           // Service Account JSON 감지 (레거시)
           else if (parsed.type === "service_account" && parsed.private_key) {
@@ -94,7 +124,7 @@ function loadKeyFromFile(): { oauth: OAuthCreds | null; sa: any | null } {
       console.warn(`[google-drive] 디렉토리 읽기 실패 (${dir}):`, e?.message);
     }
   }
-  return { oauth, sa };
+  return { oauth, sa, folders };
 }
 
 async function loadConfig(): Promise<DriveConfig> {
@@ -108,6 +138,10 @@ async function loadConfig(): Promise<DriveConfig> {
   const fromFile = loadKeyFromFile();
   if (fromFile.oauth) config.oauth = fromFile.oauth;
   if (fromFile.sa) config.serviceAccountJson = fromFile.sa;
+  // 2026-09-21 · #327-① · 파일 folders override
+  for (const k of ["resume", "contract", "leave", "misc"] as const) {
+    if (fromFile.folders[k]) config.folders[k] = fromFile.folders[k]!;
+  }
 
   // 2) DB fallback · 파일 없으면 · 폴더 ID override
   try {
@@ -119,7 +153,12 @@ async function loadConfig(): Promise<DriveConfig> {
       if (row.key === "google_oauth_refresh" && !config.oauth) {
         const v = row.value ?? {};
         if (v.refresh_token && v.client_id && v.client_secret) {
-          config.oauth = v as OAuthCreds;
+          config.oauth = {
+            client_id: String(v.client_id),
+            client_secret: String(v.client_secret),
+            refresh_token: String(v.refresh_token),
+            issued_at: typeof v.issued_at === "string" ? v.issued_at : null,
+          };
           console.log("[google-drive] OAuth 크레덴셜 로드 (Supabase)");
         }
       }
@@ -129,8 +168,10 @@ async function loadConfig(): Promise<DriveConfig> {
       }
       if (row.key === "google_drive_folders") {
         const v = row.value ?? {};
-        if (v.resume) config.folders.resume = v.resume;
-        if (v.contract) config.folders.contract = v.contract;
+        // 2026-09-21 · #327-① · leave · misc 지원
+        for (const k of ["resume", "contract", "leave", "misc"] as const) {
+          if (typeof v[k] === "string" && v[k].trim()) config.folders[k] = v[k].trim();
+        }
       }
     }
   } catch (e: any) {
@@ -138,6 +179,22 @@ async function loadConfig(): Promise<DriveConfig> {
   }
 
   return config;
+}
+
+/**
+ * 2026-09-21 · #327-① · kind → folderId 해석 유틸.
+ * leave · misc · 미설정 시 misc → contract 순으로 fallback.
+ * 관리자 확인 후 별도 폴더 발급 가능하도록 확장 가능한 구조.
+ */
+export function resolveDriveFolder(
+  kind: FolderKind,
+  folders: Record<FolderKind, string | null>,
+): { folderId: string | null; usedKind: FolderKind } {
+  if (folders[kind]) return { folderId: folders[kind], usedKind: kind };
+  // misc 로 fallback · misc 도 없으면 contract 로 최종 fallback
+  if (kind !== "misc" && folders.misc) return { folderId: folders.misc, usedKind: "misc" };
+  if (folders.contract) return { folderId: folders.contract, usedKind: "contract" };
+  return { folderId: null, usedKind: kind };
 }
 
 async function initClient(): Promise<drive_v3.Drive | null> {
@@ -186,26 +243,53 @@ async function initClient(): Promise<drive_v3.Drive | null> {
   }
 }
 
+// 2026-09-21 · #327-④ · OAuth 테스트 앱 refresh_token 유효기간 (7일)
+// 프로덕션 게시 시 무기한 · 유효성은 probe 로 검증 (heuristic)
+const REFRESH_TOKEN_LIFETIME_DAYS = 7;
+
 /**
  * OAuth refresh_token 유효성 사전 검증 · 부팅·요청 시 진단 용도.
  * E-002 (2026-09-21) · invalid_grant 조기 감지.
+ * 2026-09-21 · #327-④ · issued_at 기반 만료 예상일 (expires_at) 추가.
  */
-export async function probeDriveAuth(): Promise<{
+export interface ProbeDriveAuthResult {
   ok: boolean;
   mode: "oauth" | "service_account" | "none";
   reason?: string;
-}> {
+  // 2026-09-21 · #327-④ · 만료 예상일 · 관리자 대시보드 D-2 알림용
+  issued_at?: string | null;
+  expires_at?: string | null;
+  days_left?: number | null;
+}
+
+export async function probeDriveAuth(): Promise<ProbeDriveAuthResult> {
   const client = await initClient();
   const mode: "oauth" | "service_account" | "none" =
     cached.config.oauth ? "oauth" :
     cached.config.serviceAccountJson ? "service_account" : "none";
+
+  // 만료 예상일 계산 (OAuth 만)
+  const issuedAt = cached.config.oauth?.issued_at ?? null;
+  let expiresAt: string | null = null;
+  let daysLeft: number | null = null;
+  if (mode === "oauth" && issuedAt) {
+    try {
+      const issuedMs = new Date(issuedAt).getTime();
+      if (Number.isFinite(issuedMs)) {
+        const expiresMs = issuedMs + REFRESH_TOKEN_LIFETIME_DAYS * 24 * 60 * 60 * 1000;
+        expiresAt = new Date(expiresMs).toISOString();
+        daysLeft = Math.ceil((expiresMs - Date.now()) / (24 * 60 * 60 * 1000));
+      }
+    } catch { /* issued_at 파싱 실패 시 null */ }
+  }
+
   if (!client) {
-    return { ok: false, mode, reason: "미설정 · src/keys 없음" };
+    return { ok: false, mode, reason: "미설정 · src/keys 없음", issued_at: issuedAt, expires_at: expiresAt, days_left: daysLeft };
   }
   try {
     // about.get · 최소 quota 소모 API · 토큰 유효성 확인
     await client.about.get({ fields: "user" });
-    return { ok: true, mode };
+    return { ok: true, mode, issued_at: issuedAt, expires_at: expiresAt, days_left: daysLeft };
   } catch (e: any) {
     const gErr = e?.response?.data?.error ?? "";
     const gDesc = e?.response?.data?.error_description ?? "";
@@ -215,6 +299,9 @@ export async function probeDriveAuth(): Promise<{
       reason: gErr === "invalid_grant"
         ? "refresh_token 만료 · OAuth Playground 재발급 필요"
         : (gDesc || e?.message || "unknown"),
+      issued_at: issuedAt,
+      expires_at: expiresAt,
+      days_left: daysLeft,
     };
   }
 }
@@ -296,8 +383,12 @@ export async function uploadToDrive(
     // 키는 있으나 initClient 실패 (드문 케이스)
     throw new Error("Google Drive 초기화 실패 · 서버 로그의 [google-drive] 초기화 실패 원인을 확인하세요.");
   }
-  const folderId = cached.config.folders[kind];
+  // 2026-09-21 · #327-① · 폴더 kind 통합 · leave/misc 미설정 시 misc → contract fallback
+  const { folderId, usedKind } = resolveDriveFolder(kind, cached.config.folders);
   if (!folderId) throw new Error(`Google Drive 폴더 ID 미설정 · ${kind}`);
+  if (usedKind !== kind) {
+    console.log(`[google-drive] 폴더 fallback · 요청=${kind} · 사용=${usedKind} · folderId=${folderId}`);
+  }
 
   try {
     const created = await client.files.create({
