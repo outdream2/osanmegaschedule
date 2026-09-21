@@ -295,121 +295,168 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
           />
         )
       ) : (
-        <table
-          className={`w-full text-[16px] min-w-[480px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}
-          style={{ borderCollapse: "separate", borderSpacing: 0 }}
-        >
-          <thead className="sticky top-0 z-10 bg-zinc-100/70 border-b border-line">
-            <tr>
-              <th className="text-center py-2 w-8 text-[15px] font-bold text-zinc-500 uppercase tracking-wider">#</th>
-              <SortTh
-                sortKey="name"
-                currentKey={sortKey}
-                currentDir={sortDir}
-                onToggle={toggleSort}
-                className="text-left px-3"
-              >
-                상품명
-              </SortTh>
-              <SortTh
-                sortKey="current_stock"
-                currentKey={sortKey}
-                currentDir={sortDir}
-                onToggle={toggleSort}
-                className="text-right px-3 w-20"
-              >
-                현재고
-              </SortTh>
-              <SortTh
-                sortKey="sale_qty"
-                currentKey={sortKey}
-                currentDir={sortDir}
-                onToggle={toggleSort}
-                className="text-right px-3 w-20"
-              >
-                판매량
-              </SortTh>
-              <SortTh
-                sortKey="optimal_stock"
-                currentKey={sortKey}
-                currentDir={sortDir}
-                onToggle={toggleSort}
-                className="text-right px-3 w-20"
-              >
-                적정재고
-              </SortTh>
-              <SortTh
-                sortKey="status"
-                currentKey={sortKey}
-                currentDir={sortDir}
-                onToggle={toggleSort}
-                className="text-center px-3 w-20"
-              >
-                상태
-              </SortTh>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100">
+        <>
+          {/* ── 모바일 카드뷰 (md 미만) ── */}
+          <div className={`md:hidden flex flex-col divide-y divide-zinc-100 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {sorted.map((p, idx) => {
               const level = getStockLevel(p);
               const pillTone = level === "normal" ? "emerald" : level === "low" ? "amber" : "rose";
               const pillLabel = level === "normal" ? "정상" : level === "low" ? "부족" : "없음";
               const isSelected = selectedProduct?.code === p.code;
               const cur = Number(p.current_stock ?? 0);
-              const saleQty = p.last_snapshot_qty;
-
               return (
-                <tr
-                  key={`${p.code}-${idx}`}
+                <button
+                  key={`${p.code}-${idx}-m`}
+                  type="button"
                   onClick={() => handleProductClick(p)}
-                  className={`cursor-pointer transition-colors ${
+                  className={[
+                    "w-full text-left px-4 py-3 transition-colors min-h-[44px] flex flex-col gap-1.5",
                     isSelected
-                      ? "bg-brand-tint/60 hover:bg-brand-tint"
-                      : "hover:bg-brand-tint/30"
-                  }`}
-                  title="클릭 → 오른쪽 패널에 상세"
+                      ? "bg-brand-tint/60 border-l-2 border-brand-deep"
+                      : "hover:bg-brand-tint/30",
+                  ].join(" ")}
                 >
-                  <td className="text-center py-2 text-[16px] font-semibold text-zinc-400 tabular-nums">
-                    {idx + 1}
-                  </td>
-                  <td className="text-left px-3 py-2 align-top">
-                    <div className="flex flex-col leading-tight gap-0.5">
-                      <span
-                        className={`text-[17px] font-semibold break-words whitespace-normal leading-snug ${
-                          isSelected ? "text-sky-800" : "text-zinc-700"
-                        }`}
-                      >
-                        {p.name}
-                      </span>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[15px] text-zinc-400 font-medium">{p.code}</span>
-                        {p.spec && (
-                          <span className="text-[14px] text-zinc-300 break-words whitespace-normal">{p.spec}</span>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className={`text-right px-3 py-2 text-[17px] tabular-nums font-semibold ${
-                    level === "none" ? "text-rose-600" : level === "low" ? "text-amber-600" : "text-zinc-700"
-                  }`}>
-                    {cur > 0 ? cur.toLocaleString() : <span className="text-rose-400 font-bold">0</span>}
-                  </td>
-                  <td className="text-right px-3 py-2 text-[17px] tabular-nums font-semibold text-zinc-500">
-                    {fmtNum(saleQty)}
-                  </td>
-                  <td className="text-right px-3 py-2 text-[17px] tabular-nums font-semibold text-zinc-500">
-                    {fmtNum(p.optimal_stock)}
-                  </td>
-                  <td className="text-center px-3 py-2">
-                    <StatusPill tone={pillTone} size="xs" dot>
-                      {pillLabel}
-                    </StatusPill>
-                  </td>
-                </tr>
+                  {/* Row 1: 상품명 */}
+                  <span className={`text-[16px] font-semibold leading-snug whitespace-normal break-words break-keep ${isSelected ? "text-sky-800" : "text-zinc-700"}`}>
+                    {p.name}
+                  </span>
+                  {/* Row 2: 코드 + 규격 */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[13px] text-zinc-400 font-medium">{p.code}</span>
+                    {p.spec && <span className="text-[13px] text-zinc-300 whitespace-normal break-words">{p.spec}</span>}
+                  </div>
+                  {/* Row 3: 재고 수치 + 상태 */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className={`text-[14px] font-semibold tabular-nums ${level === "none" ? "text-rose-600" : level === "low" ? "text-amber-600" : "text-zinc-700"}`}>
+                      현재고 {cur > 0 ? cur.toLocaleString() : "0"}
+                    </span>
+                    {p.last_snapshot_qty != null && (
+                      <span className="text-[13px] font-medium text-zinc-500 tabular-nums">판매 {fmtNum(p.last_snapshot_qty)}</span>
+                    )}
+                    <StatusPill tone={pillTone} size="xs" dot>{pillLabel}</StatusPill>
+                  </div>
+                </button>
               );
             })}
-          </tbody>
-        </table>
+          </div>
+
+          {/* ── PC 표뷰 (md 이상) ── */}
+          <table
+            className={`hidden md:table w-full text-[16px] min-w-[480px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}
+            style={{ borderCollapse: "separate", borderSpacing: 0 }}
+          >
+            <thead className="sticky top-0 z-10 bg-zinc-100/70 border-b border-line">
+              <tr>
+                <th className="text-center py-2 w-8 text-[15px] font-bold text-zinc-500 uppercase tracking-wider">#</th>
+                <SortTh
+                  sortKey="name"
+                  currentKey={sortKey}
+                  currentDir={sortDir}
+                  onToggle={toggleSort}
+                  className="text-left px-3"
+                >
+                  상품명
+                </SortTh>
+                <SortTh
+                  sortKey="current_stock"
+                  currentKey={sortKey}
+                  currentDir={sortDir}
+                  onToggle={toggleSort}
+                  className="text-right px-3 w-20"
+                >
+                  현재고
+                </SortTh>
+                <SortTh
+                  sortKey="sale_qty"
+                  currentKey={sortKey}
+                  currentDir={sortDir}
+                  onToggle={toggleSort}
+                  className="text-right px-3 w-20"
+                >
+                  판매량
+                </SortTh>
+                <SortTh
+                  sortKey="optimal_stock"
+                  currentKey={sortKey}
+                  currentDir={sortDir}
+                  onToggle={toggleSort}
+                  className="text-right px-3 w-20"
+                >
+                  적정재고
+                </SortTh>
+                <SortTh
+                  sortKey="status"
+                  currentKey={sortKey}
+                  currentDir={sortDir}
+                  onToggle={toggleSort}
+                  className="text-center px-3 w-20"
+                >
+                  상태
+                </SortTh>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {sorted.map((p, idx) => {
+                const level = getStockLevel(p);
+                const pillTone = level === "normal" ? "emerald" : level === "low" ? "amber" : "rose";
+                const pillLabel = level === "normal" ? "정상" : level === "low" ? "부족" : "없음";
+                const isSelected = selectedProduct?.code === p.code;
+                const cur = Number(p.current_stock ?? 0);
+                const saleQty = p.last_snapshot_qty;
+
+                return (
+                  <tr
+                    key={`${p.code}-${idx}`}
+                    onClick={() => handleProductClick(p)}
+                    className={`cursor-pointer transition-colors ${
+                      isSelected
+                        ? "bg-brand-tint/60 hover:bg-brand-tint"
+                        : "hover:bg-brand-tint/30"
+                    }`}
+                    title="클릭 → 오른쪽 패널에 상세"
+                  >
+                    <td className="text-center py-2 text-[16px] font-semibold text-zinc-400 tabular-nums">
+                      {idx + 1}
+                    </td>
+                    <td className="text-left px-3 py-2 align-top">
+                      <div className="flex flex-col leading-tight gap-0.5">
+                        <span
+                          className={`text-[17px] font-semibold break-words whitespace-normal leading-snug ${
+                            isSelected ? "text-sky-800" : "text-zinc-700"
+                          }`}
+                        >
+                          {p.name}
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[15px] text-zinc-400 font-medium">{p.code}</span>
+                          {p.spec && (
+                            <span className="text-[14px] text-zinc-300 break-words whitespace-normal">{p.spec}</span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className={`text-right px-3 py-2 text-[17px] tabular-nums font-semibold ${
+                      level === "none" ? "text-rose-600" : level === "low" ? "text-amber-600" : "text-zinc-700"
+                    }`}>
+                      {cur > 0 ? cur.toLocaleString() : <span className="text-rose-400 font-bold">0</span>}
+                    </td>
+                    <td className="text-right px-3 py-2 text-[17px] tabular-nums font-semibold text-zinc-500">
+                      {fmtNum(saleQty)}
+                    </td>
+                    <td className="text-right px-3 py-2 text-[17px] tabular-nums font-semibold text-zinc-500">
+                      {fmtNum(p.optimal_stock)}
+                    </td>
+                    <td className="text-center px-3 py-2">
+                      <StatusPill tone={pillTone} size="xs" dot>
+                        {pillLabel}
+                      </StatusPill>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </>
       )}
     </SplitListPanel>
   );
