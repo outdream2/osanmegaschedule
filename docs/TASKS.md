@@ -130,7 +130,7 @@
 <!-- 2026-09-20 · #315 · 부분 · s1zone 항상 null 버그 fix (9339f430 · 216ad887) · 매장1 구역 표시 정상화 -->
 <!-- 2026-09-20 · #316 ✅ · 013b4684 · ProductInfoPage 우측 라벨 · 트렌드 텍스트 -->
 <!-- 2026-09-20 · #317 ✅ · e25f53cd · 진열요청 · Note 입력 공통 Modal -->
-| **#318** | **매장 상세위치 저장 pipeline · 전수 조사** (사용자 지시 · 2026-09-20 · 잔여) | 🟡 P2 | 상품 등록·편집 · 실재고 · 상품입고 · 저장 시 store1 detail 확인 · Task #315 부분 fix 후 잔여 |
+<!-- #318 ✅ · 전수 조사 완료 · 4곳 (ProductCreateModal·ProductInfoPage·RealStockTablePage·InventoryEditModal) + 서버 (productArrivals) · mergeShelfPositions 보호 메커니즘 · 모두 정합 · 코드 편집 없음 · 잠재적 엣지 케이스 (모두 null clear 지우기) · 사용자 지시 범위 밖 · 별도 요청 시 fix · 2026-09-21 완료 -->
 | **#319** | **공통 ShelfPositionPicker 컴포넌트 추출** (사용자 지시 · 2026-09-20 · 잔여) | 🟢 P3 | ProductCreateModal · RealStockTablePage · ProductArrivalPage · InventoryEditModal · 4곳 공통화 · 별도 세션 |
 | **#320** | **근로계약서 작성 · 좌측 페이지 종합 개선** (사용자 지시 · 2026-09-20 · UI 위임 · 다중 chain) | 🟡 P2 | 업무요청 > 서류작성 > 근로계약서 작성 · **1차** (진행 중) · ① 직군 리스트 · settings 값 파생 (하드코딩 X) · ② 계약유형 · 연차 다음줄에 **근무요일** 추가 · ③ 담당업무 섹션에서 **보험 제거** · 하단 보험 섹션에 라벨 추가 · **2차** (chain 대기) · ④ **라벨 폰트 +4 · 전체 통일** (fldLabel 단일 상수 · 들쭉날쭉 X) · ⑤ **근로자 정보 카드** · 라벨+입력 · 라벨+선택 나란히 · **사번 성명 앞** · 사번 = 수정 불가 유일키 (readOnly + 시각적 lock 표시) · ⑥ 목업 (docs/UI_MOCKUP_2026-09-14.html) · 최신 트렌드 · Linear/Vercel 톤 · 세련·예쁨 · UI 대원칙 준수 |
 | **#321** | **발주 발송 · 확인창 · 공급사별 상세내역** (사용자 지시 · 2026-09-20) | 🟡 P2 | 발주서 · 발주 발송 버튼 클릭 시 · 확인창(dialog/modal) 표시 · `공급사 XX의 상품 YY *N개* / 상품 ZZ *M개*` 형식 · 공급사별 그룹핑 · 상품·수량 명시 · 한번 더 확인 후 실제 발송 · 오발주 방지 |
