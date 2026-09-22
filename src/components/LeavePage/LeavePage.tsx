@@ -17,8 +17,11 @@ import { EmptyState } from "../common/EmptyState";
 import {
   CalendarDays, Clock, CheckCircle2, XCircle,
   RefreshCw, Trash2, FileText, Download,
-  MessageSquareText, StickyNote, ChevronDown,
+  MessageSquareText, StickyNote, ChevronDown, ChevronRight,
 } from "lucide-react";
+import { useSortableTable } from "../../hooks/useSortableTable";
+import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
+import { SortHeader } from "../common/SortHeader";
 import type { AuthSession } from "../../types";
 import { fmtDateYMD, fmtDateMD } from "../../lib/format";
 import { getKstYmd } from "../../lib/kstDate";
@@ -322,6 +325,174 @@ const RequestHistoryTable: React.FC<RequestHistoryTableProps> = ({
         </table>
       </div>
     </div>
+  );
+};
+
+// ── PendingPCTable · PC(md+) 전용 · 승인대기 표 형식 ────────────────────────
+type PendingColKey = "name" | "type" | "period" | "reason";
+
+interface PendingPCTableProps {
+  rows: LeaveRequest[];
+  loading: boolean;
+  reviewingId: string | null;
+  reviewNote: string;
+  processingId: string | null;
+  deletingId: string | null;
+  onSetReviewNote: (v: string) => void;
+  onSetReviewingId: (id: string | null) => void;
+  onReview: (id: string, status: "approved" | "rejected") => void;
+  onDelete: (r: LeaveRequest) => void;
+}
+
+const PENDING_CMPS: Record<PendingColKey, (a: LeaveRequest, b: LeaveRequest) => number> = {
+  name:   (a, b) => a.employee_name.localeCompare(b.employee_name, "ko"),
+  type:   (a, b) => a.leave_type.localeCompare(b.leave_type, "ko"),
+  period: (a, b) => a.start_date.localeCompare(b.start_date),
+  reason: (a, b) => (a.reason ?? "").localeCompare(b.reason ?? "", "ko"),
+};
+
+const PendingPCTable: React.FC<PendingPCTableProps> = ({
+  rows, loading,
+  reviewingId, reviewNote, processingId, deletingId,
+  onSetReviewNote, onSetReviewingId, onReview, onDelete,
+}) => {
+  const { sorted, sortKey, sortDir, toggleSort } =
+    useSortableTable<LeaveRequest, PendingColKey>(rows, "period", PENDING_CMPS, "asc");
+
+  return (
+    <TableListWrap loading={loading} topAccent={false} maxHeight="none" className="overflow-visible">
+      <table className="w-full border-collapse">
+        <thead className={tableHeadCls()}>
+          <tr>
+            <th className={tableThCls("left", "pl-4 w-[130px]")}>
+              <SortHeader label="직원명" columnKey="name" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="chevron" activeColor="zinc" />
+            </th>
+            <th className={tableThCls("left", "w-[110px]")}>
+              <SortHeader label="유형" columnKey="type" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="chevron" activeColor="zinc" />
+            </th>
+            <th className={tableThCls("left", "w-[220px]")}>
+              <SortHeader label="기간" columnKey="period" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="chevron" activeColor="zinc" />
+            </th>
+            <th className={tableThCls("left")}>
+              <SortHeader label="사유" columnKey="reason" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="chevron" activeColor="zinc" />
+            </th>
+            <th className={tableThCls("center", "w-[180px] pr-4")}>액션</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((r, idx) => {
+            const days = calcDays(r.start_date, r.end_date);
+            const isReviewing = reviewingId === r.id;
+            return (
+              <React.Fragment key={r.id}>
+                {/* 기본 행 */}
+                <tr
+                  className={[
+                    "group border-t border-zinc-100 transition-colors duration-100",
+                    idx === 0 ? "border-t-0" : "",
+                    isReviewing
+                      ? "bg-amber-50/60"
+                      : "hover:bg-zinc-50/60",
+                  ].join(" ")}
+                >
+                  {/* 직원명 */}
+                  <td className={tableTdCls("left", "pl-4 py-3")}>
+                    <span className="text-[18px] font-bold text-zinc-900 break-keep">{r.employee_name}</span>
+                  </td>
+                  {/* 유형 */}
+                  <td className={tableTdCls("left", "py-3")}>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-[15px] font-semibold border border-indigo-100 break-keep">
+                      {r.leave_type}
+                    </span>
+                  </td>
+                  {/* 기간 */}
+                  <td className={tableTdCls("left", "py-3")}>
+                    <span className="text-[17px] text-zinc-700 tabular-nums">
+                      {fmtDateYMD(r.start_date)}
+                      {r.start_date !== r.end_date && (
+                        <span className="text-zinc-400"> ~ {fmtDateYMD(r.end_date)}</span>
+                      )}
+                      <span className="text-zinc-400 ml-1 tabular-nums">({days}일)</span>
+                    </span>
+                  </td>
+                  {/* 사유 */}
+                  <td className={tableTdCls("left", "py-3 max-w-[260px]")}>
+                    {r.reason ? (
+                      <span className="text-[16px] text-zinc-600 break-words leading-snug">{r.reason}</span>
+                    ) : (
+                      <span className="text-[15px] text-zinc-300">—</span>
+                    )}
+                  </td>
+                  {/* 액션 버튼 */}
+                  <td className={tableTdCls("center", "pr-4 py-2.5")}>
+                    {isReviewing ? (
+                      <button
+                        onClick={() => { onSetReviewingId(null); onSetReviewNote(""); }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md text-[14px] font-medium text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 transition cursor-pointer"
+                      >
+                        <ChevronDown size={13} />
+                        접기
+                      </button>
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          onClick={() => { onSetReviewingId(r.id); onSetReviewNote(""); }}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-[15px] font-bold bg-zinc-900 hover:bg-zinc-700 text-white transition-all cursor-pointer shadow-sm"
+                        >
+                          <ChevronRight size={13} />
+                          검토
+                        </button>
+                        <button
+                          onClick={() => onDelete(r)}
+                          disabled={deletingId === r.id}
+                          title="이력 삭제"
+                          className="w-7 h-7 inline-flex items-center justify-center rounded-md text-zinc-300 hover:text-rose-600 hover:bg-rose-50 transition-all cursor-pointer disabled:opacity-40"
+                        >
+                          <Trash2 size={13} className={deletingId === r.id ? "animate-pulse" : ""} />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+
+                {/* 검토 패널 (inline expand) */}
+                {isReviewing && (
+                  <tr className="bg-amber-50/40 border-t border-amber-100">
+                    <td colSpan={5} className="px-4 py-3">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 max-w-[640px]">
+                        <input
+                          type="text"
+                          value={reviewNote}
+                          onChange={e => onSetReviewNote(e.target.value)}
+                          placeholder="메모 (선택 입력)"
+                          className="flex-1 min-w-0 bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[16px] focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-200 transition"
+                        />
+                        <button
+                          onClick={() => onReview(r.id, "approved")}
+                          disabled={processingId === r.id}
+                          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-[16px] font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-sm transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                        >
+                          <CheckCircle2 size={15} />
+                          {processingId === r.id ? "처리 중..." : "승인"}
+                        </button>
+                        <button
+                          onClick={() => onReview(r.id, "rejected")}
+                          disabled={processingId === r.id}
+                          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-[16px] font-bold border-2 border-rose-500 text-rose-600 hover:bg-rose-50 active:bg-rose-100 transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                        >
+                          <XCircle size={15} />
+                          {processingId === r.id ? "처리 중..." : "반려"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </TableListWrap>
   );
 };
 
@@ -1061,11 +1232,12 @@ export const LeavePage: React.FC<LeavePageProps> = ({
               ) : pending.length === 0 ? (
                 <EmptyState title="대기 중인 신청 없음" hint="현재 검토가 필요한 연차 신청이 없습니다" size="compact" />
               ) : (
-                <div className={`flex flex-col gap-3 ${allLoading ? "opacity-40 pointer-events-none" : ""}`}>
-                  {pending.map(r => (
-                    <PendingLeaveCard
-                      key={r.id}
-                      r={r}
+                <>
+                  {/* PC (md+) · 표 형식 */}
+                  <div className="hidden md:block">
+                    <PendingPCTable
+                      rows={pending}
+                      loading={allLoading}
                       reviewingId={reviewingId}
                       reviewNote={reviewNote}
                       processingId={processingId}
@@ -1075,8 +1247,26 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                       onReview={handleReview}
                       onDelete={handleDeleteLeaveRequest}
                     />
-                  ))}
-                </div>
+                  </div>
+
+                  {/* 모바일 (md 미만) · 카드 형식 유지 */}
+                  <div className={`md:hidden flex flex-col gap-3 ${allLoading ? "opacity-40 pointer-events-none" : ""}`}>
+                    {pending.map(r => (
+                      <PendingLeaveCard
+                        key={r.id}
+                        r={r}
+                        reviewingId={reviewingId}
+                        reviewNote={reviewNote}
+                        processingId={processingId}
+                        deletingId={deletingId}
+                        onSetReviewNote={setReviewNote}
+                        onSetReviewingId={setReviewingId}
+                        onReview={handleReview}
+                        onDelete={handleDeleteLeaveRequest}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
             </Card>
 
