@@ -288,8 +288,14 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     })),
     [activePage, activeSubTab],
   );
-  const handleBreadcrumbNav = (page: AppNavPage) => {
+  // 2026-09-22 · subTab 파라미터 전달 fix · 이전 · subTab 무시되어 잘못된 페이지 이동
+  const handleBreadcrumbNav = (page: AppNavPage, subTab?: string) => {
     if (page === "landing" && onBack) onBack();
+    else if (subTab) {
+      try { localStorage.setItem(`sidebar.subtab.${page}`, subTab); } catch { /* silent */ }
+      try { window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page, subTab } })); } catch { /* silent */ }
+      onNavigate?.(page);
+    }
     else onNavigate?.(page);
   };
 
