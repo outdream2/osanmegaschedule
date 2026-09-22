@@ -128,6 +128,13 @@
 <!-- #303 ✅ · xlsx 0.18.5 → 0.20.3 SheetJS CDN · TS·build 통과 · 2026-09-21 완료 -->
 <!-- #310 ✅ (부분 · 11 페이지 완료) · Top 5 (직원·거래처·발주요청·연차·결제입력) + 잔여 3 (ProductInfoPage·VendorStockPage·EventsSection) + #324-3차 (매입이력) · pass 3 (ScanPage·ProductArrivalPage·BoardPage 이미 카드형) · 2026-09-21 완료 · 잔여 전수는 후속 세션 -->
 <!-- #329 ✅ · 2026-09-21 완료 · `edb124d4` · KO_INPUT_PROPS SSOT + 80 파일 132건 <input> + 28건 <textarea> 전수 적용 · 예외 (type=number/tel/email/date/password/dynamic) · TS·build·vitest all pass -->
+| **#331** | **연차승인 · 승인대기 · PC 한 줄 표 + 목업 톤 적용** (사용자 지시 · 2026-09-22) | 🟡 P2 | ✅ 완료 (`a7059e2e...` agent · 미커밋 · 검증 필요) · PendingPCTable · md+ 표 + md 미만 카드 · SortHeader 정렬 · inline expand row |
+| **#332** | **Breadcrumb · 각 페이지 링크 연결 (subTab 전달 fix)** (사용자 지시 · 2026-09-22) | ✅ 완료 (`76619702`) | handleBreadcrumbNav · subTab 파라미터 누락 · 잘못된 서브탭 이동 · fix · localStorage + sidebar:subtab 이벤트 |
+| **E-007** | **진열요청 · 요청자 미표시** (사용자 보고 · 2026-09-22) | 🔴 P1 | display_requests · requested_by_id·requested_by_name 컬럼 · migration `20260920_display_requests_requester.sql` 미실행 시 · 서버 fallback 후 · null 저장 · 사용자 · Supabase Editor 실행 확인 필요 |
+| **#333** | **구역불일치 페이지 완전 제거** (사용자 지시 · 2026-09-22) | 🟡 P2 | 요청확인 탭에서 이미 제거 · MismatchPanel.tsx 잔존 · 서버 endpoint `/api/zone-mismatches` · 완전 제거 검토 |
+| **#334** | **스케쥴표 · "2시간 연장" → "2시간\n연장" 줄바꿈** (사용자 지시 · 2026-09-22) | ✅ 완료 (미커밋) | ScheduleCell.tsx · displayActualHours 렌더 · `(\d+시간)\s+` 정규식 replace + whitespace-pre-line + truncate 제거 |
+| **#335** | **직원정보 월별스케쥴 모달 · 일괄등록 스크롤 안 됨** (사용자 보고 · 2026-09-22) | 🟡 P2 | BulkTab.tsx · 모달 내부 스크롤 미동작 원인 조사 · overflow·max-height 확인 필요 |
+| **#336** | **직원정보 월별스케쥴 모달 · 일괄등록 라벨 폰트 +2** (사용자 지시 · 2026-09-22) | 🟢 P3 | BulkTab.tsx · 모든 label 폰트 크기 +2 |
 <!-- #330 ✅ · 2026-09-21 완료 · `2cea0957` · 시스템설정 신규 탭 "추천 규칙" · KV app_settings.event_category_rules + SSOT fallback + 60초 서버 캐시 + 원본 복원 · authorize(9) POST/DELETE · Zod EventCategoryRulesPayloadSchema -->
 <!-- #311 ✅ · UpcomingLeaveBanner + useUpcomingLeaves + /api/upcoming-leaves · SchedulePage L561 통합 · 14일 이내 · 관리자 lv≥2 · 이미 완료 -->
 <!-- #312 ✅ · POST /api/approve-leave (server/routes/daily/leave.ts L118-146) · scheduleService.batchUpdateSchedules 자동 호출 · try/catch + 로그 · 실패 시 500 · 알림 발송 · 이미 완료 -->

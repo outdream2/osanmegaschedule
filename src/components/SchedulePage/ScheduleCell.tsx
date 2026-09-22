@@ -183,9 +183,10 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
           </div>
         )}
 
-        {/* Row 3: Actual Notes (실근무/특이사항) · 폰트 +2 */}
+        {/* Row 3: Actual Notes (실근무/특이사항) · 폰트 +2
+            2026-09-22 · 사용자 지시 · "2시간 연장" → "2시간\n연장" 줄바꿈 · truncate 제거 + whitespace-pre-line */}
         {displayActualHours && (
-          <div className={`text-[12px] sm:text-[14px] font-bold leading-none truncate tracking-tighter mt-0.5 px-1 py-0.5 rounded text-center shrink-0 ${
+          <div className={`text-[12px] sm:text-[14px] font-bold leading-tight tracking-tighter mt-0.5 px-1 py-0.5 rounded text-center shrink-0 whitespace-pre-line break-keep ${
             displayActualHours.includes("지각")
               ? "text-amber-700 bg-amber-50 border border-amber-200"
               : displayActualHours.includes("조퇴")
@@ -197,7 +198,8 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
             {displayActualHours.includes("지각") && "⚠️ "}
             {displayActualHours.includes("조퇴") && "🏃 "}
             {displayActualHours.includes("결근") && "🚨 "}
-            {displayActualHours}
+            {/* 시간 다음 공백 → 줄바꿈 · 예: "2시간 연장" → "2시간\n연장" */}
+            {displayActualHours.replace(/(\d+시간)\s+/, "$1\n")}
           </div>
         )}
 
