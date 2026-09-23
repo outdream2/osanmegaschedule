@@ -643,7 +643,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               if (t.key === "need") badge = lowStockFiltered.length;
               else if (t.key === "order") badge = orderReqsFiltered.length;
               else if (t.key === "critical") {
-                badge = products.filter(p => { const cur = Number(p.current_stock ?? NaN); return Number.isFinite(cur) && cur <= 3; }).length;
+                // 2026-09-23 · #351 · 사용자 지시 · 품절임박 · CriticalTab 과 동일 로직 · 현재고 / 적정재고 ≤ 0.1
+                badge = products.filter(p => {
+                  const cur = Number(p.current_stock ?? NaN);
+                  const opt = Number(p.optimal_stock ?? 0);
+                  if (!Number.isFinite(cur)) return false;
+                  if (opt <= 0) return false;
+                  return cur / opt <= 0.1;
+                }).length;
               }
               return { k: t.key, label: t.label, icon: t.icon, color: t.color, badge: badge && badge > 0 ? badge : undefined };
             }),

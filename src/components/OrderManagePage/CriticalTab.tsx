@@ -53,10 +53,17 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
   // 2026-08-29 · #154 · 판매중 필터 (default active) · 판매중지 품절임박 자동 제외
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "critical.saleFilter" });
 
+  // 2026-09-23 · #351 · 사용자 지시 · 품절임박 = 현재고가 적정재고의 10% 이하
+  //   · 이전 · cur <= 3 (하드코딩) · 근거 불명 · 규모별 편차 큼
+  //   · 이후 · cur / opt <= 0.1 · 상대 비율 · 실질 부족 반영
+  //   · optimal_stock=0/null · 계산 불가 · 제외
   const critical = useMemo(() => products
     .filter(p => {
       const cur = Number(p.current_stock ?? NaN);
-      if (!(Number.isFinite(cur) && cur <= 3)) return false;
+      const opt = Number(p.optimal_stock ?? 0);
+      if (!Number.isFinite(cur)) return false;
+      if (opt <= 0) return false;
+      if (cur / opt > 0.1) return false;
       return saleMatches(p.sale_status);
     })
     .sort((a, b) => Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0)), [products, saleMatches]);
@@ -125,23 +132,29 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
       searchPlaceholder="상품명 · 코드 · 공급사 검색"
       countDisplay={<StatusPill tone="amber" size="md">{filtered.length}건</StatusPill>}
       filters={
-        <div className="flex items-center gap-2 flex-wrap">
-          <CategoryChips
-            value={categoryFilter}
-            onChange={(v) => setCategoryFilter(String(v))}
-            options={chipOptions as any}
-            size="sm"
-            ariaLabel="공급사 분류 필터"
-          />
-          {/* 2026-08-29 · #154 · 판매중 필터 */}
-          <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
+        <div className="flex flex-col gap-1.5">
+          {/* 2026-09-23 · #351 · 사용자 지시 · 품절임박 기준 설명 · UI 명시 */}
+          <div className="text-[13px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1">
+            현재고가 적정재고의 10% 이하 상품 · 판매중만 표시
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <CategoryChips
+              value={categoryFilter}
+              onChange={(v) => setCategoryFilter(String(v))}
+              options={chipOptions as any}
+              size="sm"
+              ariaLabel="공급사 분류 필터"
+            />
+            {/* 2026-08-29 · #154 · 판매중 필터 */}
+            <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
+          </div>
         </div>
       }
       bodyClassName="flex-1 min-h-0 overflow-auto"
     >
       {filtered.length === 0 ? (
         <div className="py-12 text-center text-[17px] font-semibold text-zinc-400">
-          {categoryFilter === "all" ? "품절임박 상품 없음 (ERP재고 3개 이하)" : `${categoryFilter} · 품절임박 상품 없음`}
+          {categoryFilter === "all" ? "품절임박 상품 없음 · 현재고가 적정재고의 10% 이하 없음" : `${categoryFilter} · 품절임박 상품 없음`}
         </div>
       ) : (
         <table className="w-full text-[16px] tabular-nums">
