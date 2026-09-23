@@ -1,5 +1,6 @@
 // src/components/SchedulePage/scheduleHelpers.ts
 // 2026-08-22 · #framework-4 · SchedulePage 분리 · 순수 헬퍼 함수
+// #342 · 2026-09-23 · positionToCategoryDynamic import · wageRateKeys 기반 동적 필터 지원
 import { Employee, MonthlySummary } from "../../types";
 import {
   isPharmPosition as isPharm,
@@ -8,13 +9,15 @@ import {
   isOtherPosition,
 } from "../../lib/employeeCategory";
 import type { ScheduleTypeEntry } from "../../constants";
+import { positionToCategoryDynamic } from "./usePositionCategories";
 
 export const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 
 // 2026-09-18 · #91 · Plan C 하이브리드 · position → category 매핑 상수화
 // - 신규 직군(settings.positions)이 추가되어도 아래 매핑에 없으면 "기타"로 분류
 // - 필터 탭·요약 카운트·인건비 집계 모두 이 상수를 SSOT로 사용
-export type PositionCategory = "약사" | "사원" | "창고" | "매장" | "기타";
+// #342 · 2026-09-23 · string 으로 완화 · settings.wageRates keys 기반 동적 카테고리 지원
+export type PositionCategory = string;
 
 /**
  * position (원본 문자열) → PositionCategory 매핑
@@ -48,7 +51,11 @@ export function positionToCategory(pos: string): PositionCategory {
   return "기타";
 }
 
-/** 활성 카테고리 순서 (탭·요약 행 정렬용) */
+/**
+ * 활성 카테고리 순서 (탭·요약 행 정렬용)
+ * @deprecated #342 · settings.wageRates 기반 동적 순서를 권장 · usePositionCategories 훅 사용
+ * 하위 호환을 위해 유지
+ */
 export const POSITION_CATEGORY_ORDER: PositionCategory[] = ["약사", "사원", "창고", "매장", "기타"];
 
 export const getTodayStr = (): string => {
@@ -245,25 +252,41 @@ export const buildFilteredEmployees = (
   sortBy: string,
   sortOrder: "asc" | "desc",
   todayFirst: boolean,
-  todayStr: string
+  todayStr: string,
+  /** #342 · settings.wageRates keys · 동적 카테고리 매칭 · 없으면 레거시 폴백 */
+  wageRateKeys: string[] = [],
 ): Employee[] => {
   const filtered = employees.filter(emp => {
     if (positionTab !== "전체") {
-      // 2026-09-18 · #91 · Plan C · positionToCategory 상수 활용
-      // - 회귀 방지 · 기존 필터 규칙 그대로 유지
-      // - 신규 필터 "기타" · 매핑 안 된 신규 직군 노출
-      // 2026-09-23 · #341 fix · 매장 필터 · position 기반으로 통일 (기존 workplace 필드 · null 많아 매칭 실패)
-      //   · workplace 유지는 fallback · position "매장" or positionToCategory === "매장" · 우선
+      // #342 · 2026-09-23 · 동적 카테고리 매칭
+      // - wageRateKeys 있으면 positionToCategoryDynamic 사용 (settings SSOT)
+      // - wageRateKeys 없으면 레거시 positionToCategory 폴백 유지
+      // - 약사 · isPharm() 특수 판정 유지 (하드코딩 허용 · 별도 태스크)
+      // - 창고(물류) · isLogistics() 특수 판정 유지
+      // - 기타 · 매칭 안 된 직군 fallback
       const pharm     = isPharm(emp.position);
-      const staff     = emp.position === "캐셔" || emp.position === "사원";
-      const warehouse = !pharm && (isLogistics(emp.position) || emp.position === "창고");
-      const store     = !pharm && (positionToCategory(emp.position) === "매장" || emp.position === "매장" || emp.workplace === "매장");
-      const etc       = positionToCategory(emp.position) === "기타" && !pharm;
-      if (positionTab === "약사")      { if (!pharm)     return false; }
-      else if (positionTab === "사원") { if (!staff)     return false; }
-      else if (positionTab === "창고") { if (!warehouse) return false; }
-      else if (positionTab === "매장") { if (!store)     return false; }
-      else if (positionTab === "기타") { if (!etc)       return false; }
+
+      if (positionTab === "약사") {
+        if (!pharm) return false;
+      } else if (positionTab === "기타") {
+        const cat = wageRateKeys.length > 0
+          ? positionToCategoryDynamic(emp.position, wageRateKeys)
+          : positionToCategory(emp.position);
+        if (cat !== "기타" || pharm) return false;
+      } else {
+        // settings.wageRates 에 등록된 직군 탭
+        // 약사 제외 후 동적 카테고리 매칭 · 창고 계열 물류 포함 유지
+        if (pharm) return false;
+        const cat = wageRateKeys.length > 0
+          ? positionToCategoryDynamic(emp.position, wageRateKeys)
+          : positionToCategory(emp.position);
+        // 2026-09-23 · #341 fix 유지 · 매장 탭 · workplace fallback
+        if (positionTab === "매장") {
+          if (cat !== "매장" && emp.position !== "매장" && emp.workplace !== "매장") return false;
+        } else {
+          if (cat !== positionTab) return false;
+        }
+      }
     }
     if (searchQuery.trim() !== "") {
       return emp.name.toLowerCase().includes(searchQuery.toLowerCase().trim());

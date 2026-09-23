@@ -32,8 +32,9 @@ interface ScheduleGridProps {
   showSummary: "hidden" | "summary" | "labor";
   currentSummaryList: MonthlySummary[];
   /** 2026-08-31 · #50 · 필터 상태 · 합계 행 · 필터별 표시
-   *  2026-09-18 · #91 · Plan C · "기타" 신규 · 매핑 안 된 신규 직군 대응 */
-  positionTab?: "전체" | "약사" | "사원" | "창고" | "매장" | "기타";
+   *  2026-09-18 · #91 · Plan C · "기타" 신규 · 매핑 안 된 신규 직군 대응
+   *  #342 · 2026-09-23 · string 으로 완화 · settings.wageRates SSOT 파생 */
+  positionTab?: string;
   draggedRowId: number | null;
   dragOverRowId: number | null;
   settingsScheduleTypes: ScheduleTypeEntry[];

@@ -1,25 +1,27 @@
 // src/components/ScheduleFilterBar.tsx
 // 2026-08-17 · 공통 FilterSortLabel/Group/Row · 재사용 프레임워크 · 최신 트렌드 통일
+// #342 · 2026-09-23 · 필터 탭 직군 · settings.wageRates SSOT 파생 · 하드코딩 제거
 import React from "react";
 import { SK_EMPLOYEE_ORDER } from "../../lib/storageKeys";
 import { useConfirm } from "../../hooks/useConfirm";
 import { Employee } from "../../types";
 import { FilterSortLabel, FilterSortGroup, FilterSortRow } from "../common/FilterSortBar";
-// 2026-09-18 · #91 · Plan C · 매핑 상수 SSOT
-import { positionToCategory } from "./scheduleHelpers";
+// #342 · settings.wageRates 기반 동적 카테고리
+import { usePositionCategories, positionToCategoryDynamic } from "./usePositionCategories";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
+import type { WageRate } from "../../hooks/useSettings";
 
 export type WorkplaceTab = "전체" | "매장" | "창고";
-// 2026-09-18 · #91 · Plan C · "기타" 신규 (매핑 안 된 신규 직군 대응)
-export type PositionTab = "전체" | "약사" | "사원" | "창고" | "매장" | "기타";
+// #342 · string 으로 완화 · settings.wageRates keys 기반 동적 직군 지원
+export type PositionTab = string;
 export type SortBy = "none" | "today" | "workplace" | "name" | "position";
 export type SortOrder = "asc" | "desc";
 
 interface ScheduleFilterBarProps {
   employees: Employee[];
   positionTab: PositionTab;
-  setPositionTab: React.Dispatch<React.SetStateAction<PositionTab>>;
+  setPositionTab: (tab: string) => void;
   searchQuery: string;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
   sortBy: SortBy;
@@ -29,6 +31,8 @@ interface ScheduleFilterBarProps {
   onResetCustomOrder: () => void | Promise<void>;
   /** 직원 등록 · 지정 안 하면 노출 안 함 */
   onCreateEmployee?: () => void;
+  /** #342 · settings.wageRates · 필터 탭 직군 동적 파생 */
+  wageRates?: Record<string, WageRate>;
 }
 
 export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
@@ -43,20 +47,28 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
   setSortOrder,
   onResetCustomOrder,
   onCreateEmployee,
+  wageRates = {},
 }) => {
   const confirm = useConfirm();
 
-  // 2026-08-17 · 공용 FilterSortBar 프레임워크 · 옵션 데이터화
-  // 2026-09-18 · #91 · Plan C · "기타" 탭 · positionToCategory === "기타" · count > 0 일 때만 노출
-  const etcCount = employees.filter(e => e.position !== "약사" && positionToCategory(e.position) === "기타").length;
-  const filterOptions = [
-    { key: "전체", label: "전체", count: employees.length },
-    { key: "약사", label: "약사", count: employees.filter(e => e.position === "약사").length },
-    { key: "사원", label: "사원", count: employees.filter(e => e.position === "캐셔" || e.position === "사원").length },
-    { key: "창고", label: "창고", count: employees.filter(e => e.position !== "약사" && (e.position.includes("물류") || e.position === "창고")).length },
-    { key: "매장", label: "매장", count: employees.filter(e => e.position !== "약사" && e.workplace === "매장").length },
-    ...(etcCount > 0 ? [{ key: "기타", label: "기타", count: etcCount }] : []),
-  ] as { key: string; label: string; count: number }[];
+  // #342 · settings.wageRates keys 기반 동적 카테고리 목록
+  // wageRates 가 비어있으면 레거시 폴백 순서 사용 (usePositionCategories 내부 처리)
+  const categoryOrder = usePositionCategories(wageRates);
+  const wageRateKeys = Object.keys(wageRates);
+
+  // 카테고리별 직원 수 계산 · positionToCategoryDynamic 사용
+  // "전체" / "기타" 는 별도 처리
+  const etcCount = employees.filter(e => positionToCategoryDynamic(e.position, wageRateKeys) === "기타").length;
+
+  const filterOptions = categoryOrder.flatMap((cat): { key: string; label: string; count: number }[] => {
+    if (cat === "전체") return [{ key: "전체", label: "전체", count: employees.length }];
+    if (cat === "기타") {
+      // "기타" 탭 · count > 0 일 때만 노출 (기존 규칙 유지)
+      return etcCount > 0 ? [{ key: "기타", label: "기타", count: etcCount }] : [];
+    }
+    const count = employees.filter(e => positionToCategoryDynamic(e.position, wageRateKeys) === cat).length;
+    return [{ key: cat, label: cat, count }];
+  });
   const sortOptions = [
     { key: "today", label: "출근" },
     { key: "position", label: "직군", sortDir: sortBy === "position" ? sortOrder : undefined },
@@ -74,7 +86,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
           <FilterSortGroup
             options={filterOptions}
             active={positionTab}
-            onSelect={setPositionTab as (k: string) => void as any}
+            onSelect={setPositionTab}
           />
         </FilterSortRow>
 

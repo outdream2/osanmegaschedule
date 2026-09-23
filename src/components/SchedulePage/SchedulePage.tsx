@@ -222,14 +222,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
   }, [employees]);
 
   // ── Filter & Sort ─────────────────────────────────────────────────────────
-  // 2026-09-18 · #91 · Plan C · "기타" 신규 · 매핑 안 된 신규 직군 대응
-  const [positionTab, setPositionTab]   = useState<"전체" | "약사" | "사원" | "창고" | "매장" | "기타">("전체");
+  // #342 · 2026-09-23 · string 으로 완화 · settings.wageRates SSOT 파생
+  const [positionTab, setPositionTab]   = useState<string>("전체");
   const [searchQuery, setSearchQuery]   = useState("");
   const [sortBy, setSortBy]             = useState<"none" | "today" | "workplace" | "position" | "name">("today");
   const [sortOrder, setSortOrder]       = useState<"asc" | "desc">("asc");
   const [todayFirst, setTodayFirst]     = useState(true);
 
-  const filteredEmployees = buildFilteredEmployees(employees, positionTab, searchQuery, sortBy, sortOrder, todayFirst, todayStr);
+  // #342 · wageRateKeys 전달 · 동적 카테고리 매칭
+  const wageRateKeys = React.useMemo(() => Object.keys(settingsWageRates), [settingsWageRates]);
+  const filteredEmployees = buildFilteredEmployees(employees, positionTab, searchQuery, sortBy, sortOrder, todayFirst, todayStr, wageRateKeys);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const getTypeHoursMapFn = useCallback((position: string, employmentType = "") =>
@@ -529,6 +531,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
           showNotification("정렬 순서가 기본값으로 초기화되었습니다.");
         }}
         onCreateEmployee={undefined}
+        wageRates={settingsWageRates}
       />
 
       {/* Search Insights */}
