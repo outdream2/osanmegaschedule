@@ -6,6 +6,7 @@
 import React, { useState } from "react";
 import { AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import type { UpcomingLeaveBannerRow } from "../../hooks/useUpcomingLeaves";
+import { getLeaveTypeColor } from "../../lib/scheduleColorScheme";
 
 const SK_LEAVE_BANNER_OPEN = "upcoming-leave-banner-open";
 
@@ -23,14 +24,8 @@ interface TypeTextProps {
   type: string;
 }
 
-const TYPE_COLOR: Record<string, string> = {
-  월차:    "text-amber-700",
-  오전반차: "text-sky-700",
-  오후반차: "text-indigo-700",
-};
-
 const TypeText: React.FC<TypeTextProps> = ({ type }) => {
-  const cls = TYPE_COLOR[type] ?? "text-zinc-600";
+  const cls = getLeaveTypeColor(type);
   return <span className={`text-[14px] font-semibold ${cls}`}>{type}</span>;
 };
 
