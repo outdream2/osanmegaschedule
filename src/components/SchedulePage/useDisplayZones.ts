@@ -57,6 +57,13 @@ export function useDisplayZones() {
     });
   }, []);
 
+  // unmount 시 pending timer 정리 · 언마운트 후 setState 방지
+  useEffect(() => {
+    return () => {
+      if (pendingSaveRef.current !== null) clearTimeout(pendingSaveRef.current);
+    };
+  }, []);
+
   const saveZonesDebounced = (nextZones: DisplayZoneSlim[]) => {
     if (pendingSaveRef.current) clearTimeout(pendingSaveRef.current);
     pendingSaveRef.current = setTimeout(() => {
