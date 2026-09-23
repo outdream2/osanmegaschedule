@@ -252,8 +252,11 @@ export const Modal: React.FC<ModalProps> = ({
             )}
           </div>
         )}
-        {/* 2026-08-23 v3 · bodyPadding=none · 내부 wrapper 이미 padding 있을 때 */}
-        <div className={bodyPadding === "none" ? "flex-1 overflow-y-auto min-h-0" : "modal-body"}>
+        {/* 2026-08-23 v3 · bodyPadding=none · 내부 wrapper 이미 padding 있을 때
+            2026-09-23 · flex flex-col 추가 · 내부에 sticky header + 스크롤 body 구조 지원 (DayTimelineModal 등)
+              · 단일 자식 · 종전 동작 유지 (flex child = intrinsic height + overflow scroll)
+              · 다중 자식 · flex-col + 자식 개별 scroll 가능 · nested scroll bug 해소 */}
+        <div className={bodyPadding === "none" ? "flex-1 overflow-y-auto min-h-0 flex flex-col" : "modal-body"}>
           {children}
         </div>
         {footer != null && (

@@ -616,8 +616,8 @@ export const DayTimelineModal: React.FC<Props> = ({
           isAutoSuggested={isAutoSuggested}
         />
 
-        {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 select-none">
+        {/* Scrollable body · 2026-09-23 · min-h-0 추가 · flex 하위 scroll 정상 동작 (사용자 보고) */}
+        <div className="overflow-y-auto flex-1 min-h-0 select-none">
           {/* ── 근무시간 섹션 (WorkTimeSection · 별도 파일 이관) ── */}
           <WorkTimeSection
             workers={workers}

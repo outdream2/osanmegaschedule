@@ -135,6 +135,9 @@
 | **#334** | **스케쥴표 · "2시간 연장" → "2시간\n연장" 줄바꿈** (사용자 지시 · 2026-09-22) | ✅ 완료 (미커밋) | ScheduleCell.tsx · displayActualHours 렌더 · `(\d+시간)\s+` 정규식 replace + whitespace-pre-line + truncate 제거 |
 | **#335** | **직원정보 월별스케쥴 모달 · 일괄등록 스크롤 안 됨** (사용자 보고 · 2026-09-22) | 🟡 P2 | BulkTab.tsx · 모달 내부 스크롤 미동작 원인 조사 · overflow·max-height 확인 필요 |
 | **#336** | **직원정보 월별스케쥴 모달 · 일괄등록 라벨 폰트 +2** (사용자 지시 · 2026-09-22) | 🟢 P3 | BulkTab.tsx · 모든 label 폰트 크기 +2 |
+| **#337** | **스케쥴표 날짜 클릭 모달 · 세로 스크롤 안 됨** (사용자 보고 · 2026-09-23) | ✅ 완료 (미커밋) | Modal.tsx bodyPadding=none · `flex flex-col` 추가 · nested scroll bug fix · DayTimelineModal HeaderBar sticky + body scroll 정상 |
+| **#338** | **구역·점심·휴게 배정 · 약사 이름 색상** (사용자 보고 · 2026-09-23) | ✅ 완료 (미커밋) | ZoneSection.tsx · 약사 chip color · `#2563eb` (blue) → `#dc2626` (red-600) · 눈에 잘 띄게 |
+| **#339** | **EmployeeProfileCard · 직군 · settings 대조** (사용자 지시 A · 2026-09-23) | 🟡 P2 | position · `settings.wageRates` 존재 목록 대조 · 없으면 zinc fallback color · 일관성 |
 <!-- #330 ✅ · 2026-09-21 완료 · `2cea0957` · 시스템설정 신규 탭 "추천 규칙" · KV app_settings.event_category_rules + SSOT fallback + 60초 서버 캐시 + 원본 복원 · authorize(9) POST/DELETE · Zod EventCategoryRulesPayloadSchema -->
 <!-- #311 ✅ · UpcomingLeaveBanner + useUpcomingLeaves + /api/upcoming-leaves · SchedulePage L561 통합 · 14일 이내 · 관리자 lv≥2 · 이미 완료 -->
 <!-- #312 ✅ · POST /api/approve-leave (server/routes/daily/leave.ts L118-146) · scheduleService.batchUpdateSchedules 자동 호출 · try/catch + 로그 · 실패 시 500 · 알림 발송 · 이미 완료 -->
