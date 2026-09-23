@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-09-21 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-09-23 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -8,22 +8,22 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 856 |
-| 위반 파일 | 11 |
-| 클린 파일 | 845 (99%) |
-| 총 위반 개수 | 11 |
+| 스캔 파일 | 867 |
+| 위반 파일 | 12 |
+| 클린 파일 | 855 (99%) |
+| 총 위반 개수 | 12 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `large-file-warn` | 11 | 11 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 12 | 12 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
 | # | 파일 | 라인 | 총 위반 | 위반 상세 |
 |---:|---|---:|---:|---|
-| 1 | `src/components/LeavePage/LeavePage.tsx` | 1207 | 6 | large-file-warn(1) |
+| 1 | `src/components/LeavePage/LeavePage.tsx` | 1397 | 6 | large-file-warn(1) |
 | 2 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1051 | 6 | large-file-warn(1) |
 | 3 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1115 | 6 | large-file-warn(1) |
 | 4 | `src/components/LandingPage/VendorListEditor.tsx` | 851 | 3 | large-file-warn(1) |
@@ -32,16 +32,17 @@
 | 7 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 801 | 3 | large-file-warn(1) |
 | 8 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 975 | 3 | large-file-warn(1) |
 | 9 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 | large-file-warn(1) |
-| 10 | `src/components/ScanPage/ScanPage.tsx` | 964 | 3 | large-file-warn(1) |
-| 11 | `src/components/SchedulePage/SchedulePage.tsx` | 802 | 3 | large-file-warn(1) |
+| 10 | `src/components/SalesTrendPage/DashboardTab.tsx` | 811 | 3 | large-file-warn(1) |
+| 11 | `src/components/ScanPage/ScanPage.tsx` | 964 | 3 | large-file-warn(1) |
+| 12 | `src/components/SchedulePage/SchedulePage.tsx` | 802 | 3 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (11개)
+## 📝 모든 위반 파일 (12개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
 | 파일 | 라인 | 위반 |
 |---|---:|---:|
-| `src/components/LeavePage/LeavePage.tsx` | 1207 | 6 |
+| `src/components/LeavePage/LeavePage.tsx` | 1397 | 6 |
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1051 | 6 |
 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1115 | 6 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 851 | 3 |
@@ -50,6 +51,7 @@
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 801 | 3 |
 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 975 | 3 |
 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 |
+| `src/components/SalesTrendPage/DashboardTab.tsx` | 811 | 3 |
 | `src/components/ScanPage/ScanPage.tsx` | 964 | 3 |
 | `src/components/SchedulePage/SchedulePage.tsx` | 802 | 3 |
 
