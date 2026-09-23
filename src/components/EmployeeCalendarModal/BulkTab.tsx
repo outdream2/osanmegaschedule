@@ -1,6 +1,7 @@
 // 2026-08-22 · Framework Phase 4 · EmployeeCalendarModal.tsx large-file 분리
 // BulkTab · 일괄 스케줄 등록 탭 (날짜 선택 + 근무 조건 + 저장)
 //   · props-driven pure display · 상태·핸들러 부모 유지
+// 2026-09-23 · #340 · Section 1 날짜 선택 · chip 그리드 → CalendarGrid 교체
 
 import React from "react";
 import { Lock, MessageSquare, CheckCircle } from "lucide-react";
@@ -10,6 +11,8 @@ import type { Employee } from "../../types";
 import type { ScheduleTypeEntry } from "../../constants";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
+// 2026-09-23 · #340 · CalendarGrid 공통 컴포넌트
+import { CalendarGrid } from "./CalendarGrid";
 
 interface BulkTabProps {
   employee: Employee;
@@ -36,6 +39,14 @@ interface BulkTabProps {
   activeTypes: ScheduleTypeEntry[] | { value: string; label: string }[];
   typeHoursMap?: Record<string, string>;
   onCancel: () => void;
+  // 2026-09-23 · #340 · CalendarGrid 에 필요한 달력 데이터
+  year: number;
+  month: number;
+  monthStr: string;
+  firstDow: number;
+  weeks: (number | null)[][];
+  schedMap: Record<number, { type: string; workingHours: string; actualHours: string; memo: string }>;
+  scheduleTypeEntries?: ScheduleTypeEntry[];
 }
 
 export const BulkTab: React.FC<BulkTabProps> = ({
@@ -44,7 +55,16 @@ export const BulkTab: React.FC<BulkTabProps> = ({
   setBulkType, setBulkWorkingHours, isBulkSaving,
   daysList, getDayDetails, selectAll, deselectAll, selectWeekdays, selectWeekends, toggleWeekday,
   handleBulkTypeChange, handleBulkSave, activeTypes, typeHoursMap, onCancel,
+  year, month, monthStr, firstDow, weeks, schedMap, scheduleTypeEntries,
 }) => {
+  const handleCalendarDayClick = (dayOrDate: number | string) => {
+    const fullDate = typeof dayOrDate === "string" ? dayOrDate : `${year}-${monthStr}-${String(dayOrDate).padStart(2, "0")}`;
+    if (bulkSelectedDates.includes(fullDate)) {
+      setBulkSelectedDates(bulkSelectedDates.filter(d => d !== fullDate));
+    } else {
+      setBulkSelectedDates([...bulkSelectedDates, fullDate]);
+    }
+  };
   return (
     // 2026-09-23 · #335 · 스크롤 fix · min-h-0 추가 (flex-col 부모에서 flex-1 자식 스크롤 정상 동작)
     <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-5 text-ink">
@@ -97,36 +117,23 @@ export const BulkTab: React.FC<BulkTabProps> = ({
           ))}
         </div>
 
-        <Card bg="bg-zinc-50/60" variant="flat" padding="none" className="grid grid-cols-7 gap-1.5 p-2">
-          {daysList.map((dayNum) => {
-            const { dayWord, dayIndex, fullDate } = getDayDetails(dayNum);
-            const isChecked = bulkSelectedDates.includes(fullDate);
-            return (
-              <label
-                key={dayNum}
-                className={`flex flex-col items-center justify-center py-1.5 border rounded-lg cursor-pointer text-center select-none transition-colors ${
-                  isChecked
-                    ? "bg-brand-deep border-brand-deep text-white"
-                    : "bg-white border-line hover:border-brand hover:bg-brand-tint"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => {
-                    if (isChecked) setBulkSelectedDates(bulkSelectedDates.filter(d => d !== fullDate));
-                    else setBulkSelectedDates([...bulkSelectedDates, fullDate]);
-                  }}
-                  className="sr-only"
-                />
-                <span className={`text-[15px] font-medium ${isChecked ? "text-white/80" : dayIndex === 6 ? "text-sky-500" : dayIndex === 0 ? "text-rose-500" : "text-ink-soft"}`}>
-                  {dayWord}
-                </span>
-                <span className="text-[16px] font-bold tabular-nums">{dayNum}</span>
-              </label>
-            );
-          })}
-        </Card>
+        {/* 2026-09-23 · #340 · CalendarGrid · 기존 스케쥴 색상 표시 + 선택 토글 */}
+        <div className="bg-zinc-50/60 rounded-xl border border-zinc-100 p-2">
+          <CalendarGrid
+            year={year}
+            month={month}
+            monthStr={monthStr}
+            firstDow={firstDow}
+            weeks={weeks}
+            schedMap={schedMap}
+            scheduleTypeEntries={scheduleTypeEntries}
+            hireDate={employee.hireDate}
+            retireDate={employee.retireDate}
+            mode="select"
+            selectedDates={bulkSelectedDates}
+            onDayClick={handleCalendarDayClick}
+          />
+        </div>
       </section>
 
       {/* Section 2 · 근무 조건 */}

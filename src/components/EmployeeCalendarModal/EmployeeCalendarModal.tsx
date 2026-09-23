@@ -9,6 +9,8 @@ import type { ScheduleTypeEntry } from "../../constants";
 import { ZoneAssignTab, type LogisticsZoneProps } from "./ZoneAssignTab";
 // 2026-08-22 · Framework Phase 4 · BulkTab 별도 파일 이관
 import { BulkTab } from "./BulkTab";
+// 2026-09-23 · #340 · CalendarGrid 공통 컴포넌트
+import { CalendarGrid } from "./CalendarGrid";
 import { EmployeeInfoForm, type EmployeeInfoValues } from "../common/EmployeeInfoForm";
 import { EmployeeProfileCard } from "../common/EmployeeProfileCard";
 import { AccentBar } from "../common/AccentBar";
@@ -485,97 +487,27 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             )}
 
         {/* ── CALENDAR TAB · 2026-08-17 · 사용자 지시 · 살짝 스크롤 허용 · 최신 트렌드 · 세련 ── */}
+        {/* 2026-09-23 · #340 · 달력 그리드 → CalendarGrid 공통 컴포넌트로 교체 */}
         {activeTab === "calendar" && (
           <>
             <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3">
-              <div className="grid grid-cols-7 mb-2">
-                {DAY_LABELS.map((d, i) => (
-                  <div key={d} className={`text-center text-[14px] font-bold py-1.5 tracking-wide ${i === 0 ? "text-rose-500" : i === 6 ? "text-sky-500" : "text-ink-soft"}`}>
-                    {d}
-                  </div>
-                ))}
-              </div>
-
-              {/* weeks · 자연 높이 · 스크롤 허용 */}
-              <div className="flex flex-col gap-1.5">
-                {weeks.map((week, wi) => (
-                  <div key={wi} className="grid grid-cols-7 gap-1.5">
-                    {week.map((day, di) => {
-                      if (!day) return <div key={di} />;
-                      const sc = schedMap[day];
-                      const dayStr = `${year}-${monthStr}-${String(day).padStart(2, "0")}`;
-                      // 입사일 · 퇴사일 · 재직기간 밖 여부
-                      const isHireDay   = !!employee.hireDate   && dayStr === employee.hireDate;
-                      const isRetireDay = !!employee.retireDate && dayStr === employee.retireDate;
-                      const beforeHire  = !!employee.hireDate   && dayStr < employee.hireDate;
-                      const afterRetire = !!employee.retireDate && dayStr > employee.retireDate;
-                      const outOfEmployment = beforeHire || afterRetire;
-                      const dayBgHex = !outOfEmployment && sc?.type ? getTypeHex(sc.type, scheduleTypeEntries) : null;
-                      const dayIsLight = dayBgHex ? isLightHex(dayBgHex) : true;
-                      const isToday = (
-                        new Date().getFullYear() === year &&
-                        new Date().getMonth() + 1 === month &&
-                        new Date().getDate() === day
-                      );
-                      const isEditing = editingDay === day;
-                      const dow = (firstDow + day - 1) % 7;
-                      const canClick = !outOfEmployment && isAdmin && onUpdate;
-                      return (
-                        <div
-                          key={di}
-                          onClick={canClick ? () => handleDayQuickCycle(day) : undefined}
-                          title={
-                            isHireDay ? `입사일 (${employee.hireDate})` :
-                            isRetireDay ? `퇴사일 (${employee.retireDate})` :
-                            outOfEmployment ? (beforeHire ? "입사일 이전 — 근무 불가" : "퇴사일 이후 — 근무 불가") : undefined
-                          }
-                          className={`relative rounded-xl p-1.5 flex flex-col items-center min-h-[64px] border transition-all overflow-hidden ${
-                            outOfEmployment ? "bg-zinc-100 border-line cursor-not-allowed opacity-70" :
-                            (dayBgHex ? "border-transparent" : "bg-white border-zinc-100")
-                          } ${isHireDay ? "ring-2 ring-emerald-500" : ""} ${isRetireDay ? "ring-2 ring-rose-500" : ""} ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""} ${
-                            isEditing ? "ring-2 ring-blue-500 scale-105 z-10 shadow-md" : ""
-                          } ${pendingChanges[dayStr] ? "ring-2 ring-amber-400" : ""} ${canClick ? "cursor-pointer hover:shadow-sm hover:scale-[1.02]" : ""}`}
-                          style={dayBgHex ? { backgroundColor: dayBgHex } : undefined}
-                        >
-                          {/* 입사일/퇴사일 배지 (셀 우상단) */}
-                          {isHireDay && (
-                            <span className="absolute -top-1.5 -right-1 text-[12px] font-bold px-1 py-px rounded bg-emerald-500 text-white leading-none shadow-sm z-10">
-                              입사
-                            </span>
-                          )}
-                          {isRetireDay && (
-                            <span className="absolute -top-1.5 -right-1 text-[12px] font-bold px-1 py-px rounded bg-rose-500 text-white leading-none shadow-sm z-10">
-                              퇴사
-                            </span>
-                          )}
-                          <span className={`text-[15px] font-bold leading-none mb-0.5 ${
-                            dow === 0 ? "text-rose-500" : dow === 6 ? "text-sky-500" : "text-zinc-600"
-                          }`}>
-                            {day}
-                          </span>
-                          {outOfEmployment ? (
-                            <span className="text-[13px] text-zinc-400 font-medium">─</span>
-                          ) : sc?.type ? (
-                            <>
-                              {/* 2026-08-17 · 사용자 지시 · 셀에는 type 글씨만 · 시간은 아래 범례 · 폰트 +2 (12→14) */}
-                              <span className={`text-[14px] font-extrabold leading-tight ${dayIsLight ? "text-zinc-900" : "text-white"}`}>
-                                {sc.type}
-                              </span>
-                              {sc.actualHours && (
-                                <span className="text-[14px] text-indigo-600 leading-tight font-semibold mt-0.5">
-                                  {sc.actualHours}
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-[13px] text-zinc-200">-</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
+              <CalendarGrid
+                year={year}
+                month={month}
+                monthStr={monthStr}
+                firstDow={firstDow}
+                weeks={weeks}
+                schedMap={schedMap}
+                scheduleTypeEntries={scheduleTypeEntries}
+                hireDate={employee.hireDate}
+                retireDate={employee.retireDate}
+                mode="view"
+                editingDay={editingDay}
+                pendingChanges={pendingChanges}
+                isAdmin={isAdmin}
+                onUpdateDefined={!!onUpdate}
+                onDayClick={(dayOrDate) => handleDayQuickCycle(dayOrDate as number)}
+              />
 
               {/* 2026-08-17 · 사용자 지시 · 달력 아래 · 근무형태별 시간 범례 (오픈/미들/마감 등) */}
               {typeHoursMap && Object.keys(typeHoursMap).length > 0 && (
@@ -761,6 +693,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
         )}
 
         {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · BulkTab */}
+        {/* 2026-09-23 · #340 · 달력 그리드 통합 · CalendarGrid 공통 추출 */}
         {activeTab === "bulk" && (
           <BulkTab
             employee={employee}
@@ -787,6 +720,13 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             activeTypes={activeTypes}
             typeHoursMap={typeHoursMap}
             onCancel={() => setActiveTab("calendar")}
+            year={year}
+            month={month}
+            monthStr={monthStr}
+            firstDow={firstDow}
+            weeks={weeks}
+            schedMap={schedMap}
+            scheduleTypeEntries={scheduleTypeEntries}
           />
         )}
 
