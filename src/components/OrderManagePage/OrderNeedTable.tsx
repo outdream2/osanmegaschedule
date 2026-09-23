@@ -176,6 +176,9 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                 </>
               )}
               <th className="text-center px-1 py-2.5 cursor-default font-bold text-amber-700 bg-amber-50/50 border-l border-amber-100 whitespace-nowrap">수량</th>
+              {/* 2026-09-23 · #347 · 사용자 지시 · 수량 옆 · 단가·금액 */}
+              <th className="text-right px-2 py-2.5 cursor-default font-bold text-amber-700 bg-amber-50/30 whitespace-nowrap" style={{ minWidth: 80 }}>단가</th>
+              <th className="text-right px-2 py-2.5 cursor-default font-bold text-amber-800 bg-amber-50/40 whitespace-nowrap" style={{ minWidth: 90 }}>금액</th>
               <th className="text-center px-2 py-2.5 cursor-default font-bold text-brand-deep bg-brand-tint/50 border-l border-brand/10" style={{ minWidth: 120 }}>발주</th>
             </tr>
           </thead>
@@ -200,11 +203,27 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                 </>
               )}
               <td className="bg-zinc-100" />
+              {/* 2026-09-23 · #347 · 단가·금액 합계 열 · 단가는 상품별 상이 · 표시 X · 금액 합계만 */}
+              <td className="bg-zinc-100" />
+              <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-amber-800 bg-zinc-100">
+                {(() => {
+                  const total = sorted.reduce((sum, p) => {
+                    const code = getCode(p);
+                    const qty = orderQtyOverride?.get(code) ?? Math.max(1, Number(p.optimal_stock ?? 0) - Number(p.current_stock ?? 0));
+                    const price = Number(p.purchase_price ?? 0);
+                    return sum + qty * price;
+                  }, 0);
+                  return total > 0 ? total.toLocaleString() : "-";
+                })()}
+              </td>
               <td className="bg-zinc-100" />
             </tr>
 
             {sorted.map(p => {
               const cur = Number(p.current_stock), opt = Number(p.optimal_stock);
+              const unitPrice = Number(p.purchase_price ?? 0);
+              const orderQty = orderQtyOverride?.get(getCode(p)) ?? Math.max(1, opt - cur);
+              const lineAmount = orderQty * unitPrice;
               const code = getCode(p);
               const name = getName(p);
               const alreadyRequested = requestedCodes.has(code);
@@ -292,6 +311,13 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                           autoSize
                         />
                       </div>
+                    </td>
+                    {/* 2026-09-23 · #347 · 사용자 지시 · 수량 옆 · 단가·금액 · 서버 purchase_price */}
+                    <td className="text-right px-2 py-1.5 tabular-nums font-semibold text-[16px] text-amber-700 bg-amber-50/10 align-middle whitespace-nowrap">
+                      {unitPrice > 0 ? unitPrice.toLocaleString() : "-"}
+                    </td>
+                    <td className="text-right px-2 py-1.5 tabular-nums font-bold text-[16px] text-amber-800 bg-amber-50/20 align-middle whitespace-nowrap">
+                      {lineAmount > 0 ? lineAmount.toLocaleString() : "-"}
                     </td>
                     <td className="text-center px-1 py-1.5 align-middle whitespace-nowrap">
                       {/* 2026-09-10 · 사용자 지시 · N일전 배지 + 요청됨 버튼 · 가로 나란히 (N일전 앞) */}

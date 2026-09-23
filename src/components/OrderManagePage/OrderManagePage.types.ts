@@ -31,6 +31,8 @@ export interface ProductInfo {
   supplier?: string | null;
   /** 2026-08-29 · #154 · 판매중 필터 · 서버 /api/stock-manage/low-stock 이미 반환 */
   sale_status?: string | null;
+  /** 2026-09-23 · #347 · 발주필요 리스트 · 단가 표시 (사용자 지시) */
+  purchase_price?: number | null;
 }
 
 export interface GoodsReceipt {
