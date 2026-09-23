@@ -4206,6 +4206,23 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 8. 규칙 추가 (Plus) · 규칙 삭제 (Trash) · 카테고리 콤마 분리 · 가중치 개별 삭제 (X) 동작
 9. 관리자 아닌 사용자 · 저장 버튼 미노출 · 조회 전용 배너 표시
 
+### [120] #333 · 구역불일치 탭 완전 제거 (RequestsPage)
+**커밋** · `540b4b2c`
+- MismatchPanel.tsx 삭제
+- RequestsPage.tsx: mismatch state·loadMismatches·deleteMismatch·렌더블록·MapPin import 제거
+- types.ts: ZoneMismatch 인터페이스 제거 · Tab 유니온에서 "mismatch" 제거
+- ZoneMismatchTab.tsx 유지 (DisplayPage/MismatchPage 계속 사용)
+- 서버 endpoint 유지 (DisplayPage ZoneMismatchTab 호출 중)
+
+**확인 절차**
+1. 요청확인 페이지 진입 · 탭 목록 · **구역불일치 탭 없음** 확인
+2. 진열요청 탭 · 점심불참 탭 · 연차승인 · 거래처승인 · 사직서승인 · **정상 작동** (회귀 없음)
+3. (관리자 계정) 승인 그룹 탭 · leave/vendor/resignation · 정상
+4. DisplayPage (매장 > 진열) > 구역불일치 탭 · **여전히 작동** (ZoneMismatchTab 유지)
+5. 서버 재시작 · `/api/zone-mismatches` GET · DisplayPage 내 배치구역 불일치 데이터 정상 로드
+
+---
+
 ### [118] #329 · 한글 IME 우선 · 전수 적용
 **커밋** · `edb124d4`
 - SSOT · `src/lib/koreanInput.ts` · `KO_INPUT_PROPS = { lang, inputMode, autoCapitalize, autoCorrect, spellCheck }`
