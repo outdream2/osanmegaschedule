@@ -4242,6 +4242,28 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 
 ---
 
+### [P2-2] 서버 `any` 타입 정리 · AuthUser·AuthedRequest SSOT 도입
+**커밋** · `b526d920`
+- 신규 · `server/types/auth.ts` · `AuthUser` + `AuthedRequest` 인터페이스 SSOT
+- `server/middleware/requireAuth.ts` · `JwtPayload`에 `jti` 필드 추가 · `(req as any).authUser` → `AuthedRequest` 2곳
+- `server/routes/auth/auth.ts` · `delete (emp/vendor as any).password_hash` → 구조분해 · `(decoded as any).jti` → `decoded.jti` · `catch (err: any)` → `catch`
+- `server/routes/notifications/pushTokens.ts` · `(req as any).authUser` 3곳 → `AuthedRequest`
+- `server/routes/schedule/schedules.ts` · `(req as any).authUser` + `(emp as any).name/resume_url` 4곳
+- `server/routes/display/requests.ts` · `(req as any).authUser` → `AuthedRequest`
+- `server/routes/purchase/vendors.ts` · `(req as any).authUser` 2곳 → `AuthedRequest`
+- `server/services/googleDriveService.ts` · `(data ?? []) as any[]` → `data ?? []`
+- `server/routes/staff/employeeContracts.ts` · `payload as any` → `payload` (index sig 추가)
+- TS 0 errors · vitest 3740 passed · 회귀 없음
+
+**확인 절차** (기능 무변경 · TS 타입만 개선)
+1. 직원 로그인 · 정상 토큰 발급 · /api/auth/login
+2. 거래처 로그인 · /api/auth/vendor-login
+3. SSO 토큰 발급·소비 · /api/auth/sso-token + /api/auth/sso-consume
+4. 푸시 토큰 등록 · /api/push-token (POST)
+5. 거래처 정보 수정 · /api/vendors/:id (PATCH)
+
+---
+
 ### [121] B-2 · useEditScheduleForm 훅 추출 · ScheduleCell 리팩터
 **커밋** · `9c9454e1`
 - 신규 · `src/components/SchedulePage/useEditScheduleForm.ts` (91줄)
