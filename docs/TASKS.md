@@ -141,6 +141,10 @@
 | **#340** | **BulkTab · 달력 그리드 통합 (CalendarGrid 공통 추출)** (사용자 지시 · 2026-09-23) | 🟡 P2 | ✅ 완료 (`23341e04`) |
 | **#341** | **스케쥴표 · 필터별 합계 · 매장 안 됨** (사용자 보고 · 2026-09-23) | 🟡 P2 | scheduleHelpers L258 · `emp.workplace === "매장"` · workplace 필드 체크 · 만약 직원 데이터 · workplace null · 매장 필터 시 · 빈 결과 · 근무지 필드 채워졌는지 확인 or position 기반으로 통일 |
 | **#342** | **스케쥴표 · 필터탭 직군 · settings 파생** (사용자 지시 · 2026-09-23) | 🟡 P2 | 현재 · PositionCategory 하드코딩 · `약사·사원·창고·매장·기타` · scheduleHelpers.ts L17 · **`settings.wageRates` KV 기반 동적 파생** 필요 · #339 (EmployeeProfileCard) 와 통일 · SSOT · 하드코딩 금지 |
+| **#343** | **유통기한 임박 리스트 · 기간 필터 삭제** (사용자 지시 · 2026-09-23) | 🟡 P2 | ProductArrivalPage · ExpiryListTab · 상단 PeriodSelector (기간 필터) 완전 제거 · 항상 전체 임박 리스트 표시 |
+| **#344** | **발주 발송 확인 팝업 · 공급사 이름·담당자 연락처 표시** (사용자 지시 · 2026-09-23) | 🟡 P2 | OrderRequestPage · 발주 발송 확인창 · 각 공급사 · 담당자·연락처 함께 표시 · 발송 후 되돌릴 수 없음 안내 유지 · #321 (`b9917c96`) 상세 팝업 확장 |
+| **#345** | **발주요청페이지 · 우측 상세정보 · 상품정보 탭 추가 · ProductCreateModal 그대로 연동** (사용자 지시 · 2026-09-23) | 🟡 P2 | 왼쪽 리스트 상품명 클릭 → 우측 상세정보 · **상품정보 탭 신규** · 상품정보수정 모달 (`ProductCreateModal.tsx`) 내용 그대로 표시 · 재고위치 탭에 있는 상품정보와 중복되는 부분 · 재고위치 탭에서 제거 · 통합 |
+| **#346** | **발주요청 · 수량/단가/발주금액 미입력 시 경고창 + 채우기 유도** (사용자 지시 · 2026-09-23) | 🔴 P1 | 발주 발송 클릭 전 · 각 라인 · 수량 · 단가 · 발주금액 필수값 검증 · 하나라도 비어있으면 · 경고창 (Modal or Confirm) · 미입력 라인 하이라이트 · 사용자가 채우도록 강제 · 채운 후 재확인 · 그때만 발송 가능 |
 <!-- #330 ✅ · 2026-09-21 완료 · `2cea0957` · 시스템설정 신규 탭 "추천 규칙" · KV app_settings.event_category_rules + SSOT fallback + 60초 서버 캐시 + 원본 복원 · authorize(9) POST/DELETE · Zod EventCategoryRulesPayloadSchema -->
 <!-- #311 ✅ · UpcomingLeaveBanner + useUpcomingLeaves + /api/upcoming-leaves · SchedulePage L561 통합 · 14일 이내 · 관리자 lv≥2 · 이미 완료 -->
 <!-- #312 ✅ · POST /api/approve-leave (server/routes/daily/leave.ts L118-146) · scheduleService.batchUpdateSchedules 자동 호출 · try/catch + 로그 · 실패 시 500 · 알림 발송 · 이미 완료 -->
