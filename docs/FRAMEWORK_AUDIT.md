@@ -8,19 +8,19 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 1085 |
-| 위반 파일 | 95 |
-| 클린 파일 | 990 (91%) |
-| 총 위반 개수 | 524 |
+| 스캔 파일 | 1088 |
+| 위반 파일 | 97 |
+| 클린 파일 | 991 (91%) |
+| 총 위반 개수 | 526 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `large-file-warn` | 12 | 12 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 13 | 13 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 | `no-raw-console-server` | 274 | 28 | medium | logger.info / logger.warn / logger.error (server/lib/logger.ts) |
 | `no-any-server` | 237 | 67 | medium | 구체 타입 · unknown + type guard · zod 스키마 추론 |
-| `prefer-modal-primitive` | 1 | 1 | medium | Modal 프리미티브 (src/components/common/Modal.tsx) |
+| `prefer-modal-primitive` | 2 | 2 | medium | Modal 프리미티브 (src/components/common/Modal.tsx) |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
@@ -57,7 +57,7 @@
 | 29 | `server/routes/purchase/supplierPayments/purchaseDetail.ts` | 170 | 6 | no-any-server(6) |
 | 30 | `server/routes/purchase/vat.ts` | 553 | 6 | no-any-server(6) |
 
-## 📝 모든 위반 파일 (95개)
+## 📝 모든 위반 파일 (97개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -105,13 +105,14 @@
 | `server/routes/settings/events.ts` | 269 | 4 |
 | `server/routes/settings/settings.ts` | 483 | 4 |
 | `server/routes/stock/lossTracking.ts` | 297 | 4 |
-| `server/routes/stock/products.ts` | 1348 | 4 |
+| `server/routes/stock/products.ts` | 1349 | 4 |
 | `server/services/googleDriveService.ts` | 466 | 4 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 851 | 3 |
-| `src/components/OrderManagePage/OrderManagePage.tsx` | 837 | 3 |
+| `src/components/OrderManagePage/OrderManagePage.tsx` | 844 | 3 |
 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 979 | 3 |
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 801 | 3 |
-| `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 975 | 3 |
+| `src/components/OrderManagePage/SalesRecommendationPanel.tsx` | 843 | 3 |
+| `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 937 | 3 |
 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 |
 | `src/components/SalesTrendPage/DashboardTab.tsx` | 811 | 3 |
 | `src/components/ScanPage/ScanPage.tsx` | 964 | 3 |
@@ -121,6 +122,7 @@
 | `server/routes/settings/holidays.ts` | 254 | 3 |
 | `server/services/scheduleService.ts` | 356 | 3 |
 | `src/components/NotificationBell.tsx` | 305 | 2 |
+| `src/components/OrderManagePage/EventProductAddModal.tsx` | 103 | 2 |
 | `server/ocr/engines/gemini.ts` | 146 | 2 |
 | `server/ocr/pipeline/benchmark.ts` | 177 | 2 |
 | `server/ocr/pipeline/stages/01-preprocess.ts` | 24 | 2 |
@@ -134,7 +136,7 @@
 | `server/routes/purchase/returnRequests.ts` | 200 | 2 |
 | `server/routes/purchase/supplierPayments/payments.ts` | 243 | 2 |
 | `server/routes/purchase/supplierPayments/purchaseSummary.ts` | 238 | 2 |
-| `server/routes/staff/employeeContracts.ts` | 606 | 2 |
+| `server/routes/staff/employeeContracts.ts` | 607 | 2 |
 | `server/routes/stock/stockManage/salesTrend.ts` | 304 | 2 |
 | `server/services/notificationsService.ts` | 250 | 2 |
 | `server/lib/optimalStock.ts` | 258 | 1 |

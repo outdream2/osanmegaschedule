@@ -1,7 +1,7 @@
 {
   "created": "2026-09-23",
   "version": 1,
-  "totalViolations": 524,
+  "totalViolations": 526,
   "files": {
     "server/ocr/pipeline/stages/03-vendor-match.ts": {
       "lines": 684,
@@ -476,7 +476,7 @@
       "totalWeight": 4
     },
     "server/routes/stock/products.ts": {
-      "lines": 1348,
+      "lines": 1349,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -506,7 +506,7 @@
       "totalWeight": 3
     },
     "src/components/OrderManagePage/OrderManagePage.tsx": {
-      "lines": 837,
+      "lines": 844,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -535,8 +535,18 @@
       ],
       "totalWeight": 3
     },
+    "src/components/OrderManagePage/SalesRecommendationPanel.tsx": {
+      "lines": 843,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
     "src/components/ProductArrivalPage/ProductArrivalPage.tsx": {
-      "lines": 975,
+      "lines": 937,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -627,6 +637,16 @@
     },
     "src/components/NotificationBell.tsx": {
       "lines": 305,
+      "violations": [
+        {
+          "ruleId": "prefer-modal-primitive",
+          "count": 1
+        }
+      ],
+      "totalWeight": 2
+    },
+    "src/components/OrderManagePage/EventProductAddModal.tsx": {
+      "lines": 103,
       "violations": [
         {
           "ruleId": "prefer-modal-primitive",
@@ -766,7 +786,7 @@
       "totalWeight": 2
     },
     "server/routes/staff/employeeContracts.ts": {
-      "lines": 606,
+      "lines": 607,
       "violations": [
         {
           "ruleId": "no-any-server",

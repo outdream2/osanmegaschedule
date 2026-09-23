@@ -16,6 +16,8 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-09-21 · #326 · 자동 판매추천 · 서브컴포넌트 (파일 사이즈 관리)
 // 2026-09-23 · #348 · 사용자 지시 · 자동 판매추천 제거 · 사용자 선택 (이벤트 리스트 · 상품추가 버튼) 방식 전환
 // import { SalesAutoRecommendSection, type AutoRecoResponse } from "./SalesAutoRecommendSection";
+// 2026-09-23 · #348-2 · #349 · 이벤트 상품 다중 선택 · 발주필요 추가 모달 (별도 파일 · framework audit 준수)
+import { EventProductAddModal } from "./EventProductAddModal";
 
 // 2026-09-13 · #55 · 임박 이벤트 · GET /api/events/today
 // 2026-09-14 · #85 · products 배열 · [발주 추가] 액션
@@ -145,6 +147,35 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
   const [expiryImminent, setExpiryImminent] = useState<ExpiryImminentProduct[]>([]);
   // 2026-09-21 · #326 · 자동 판매추천 · 이벤트/계절 기간별
   // 2026-09-23 · #348 · 자동 판매추천 제거 · autoReco state 제거
+  // 2026-09-23 · #348-2 · #349 · 사용자 지시 · 이벤트별 상품추가 모달 · 다중 선택 · 발주필요 추가
+  const [productAddEvent, setProductAddEvent] = useState<EventToday | null>(null);
+  const [productAddSelected, setProductAddSelected] = useState<Set<string>>(new Set());
+  const [productAddSubmitting, setProductAddSubmitting] = useState(false);
+  const openProductAddModal = React.useCallback((ev: EventToday) => {
+    setProductAddEvent(ev);
+    setProductAddSelected(new Set());
+  }, []);
+  const toggleProductAddSelect = React.useCallback((code: string) => {
+    setProductAddSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code); else next.add(code);
+      return next;
+    });
+  }, []);
+  const confirmProductAdd = React.useCallback(async () => {
+    if (!productAddEvent || !onRequestProduct || productAddSelected.size === 0) return;
+    setProductAddSubmitting(true);
+    const products = productAddEvent.products ?? [];
+    for (const code of productAddSelected) {
+      const p = products.find(x => x.product_code === code);
+      if (!p) continue;
+      if (requestedCodes?.has(code)) continue;
+      try { onRequestProduct(code, p.product_name); } catch { /* ignore */ }
+    }
+    setProductAddSubmitting(false);
+    setProductAddEvent(null);
+    setProductAddSelected(new Set());
+  }, [productAddEvent, productAddSelected, onRequestProduct, requestedCodes]);
   // 2026-09-14 · 사용자 지시 · 이벤트 추가 · 사용자가 이벤트 리스트에서 선택 가능
   //   · GET /api/events · 전체 이벤트 (지난·현재·향후) · 사용자 pick → eventsToday 에 병합
   //   · 원래 오늘 이벤트 (auto) 는 originalEventIds 로 추적 · 수동 추가된 것만 해제 가능
@@ -365,6 +396,18 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                         </span>
                       )}
                     </button>
+                    {/* 2026-09-23 · #348-2 · #349 · 사용자 지시 · 이벤트 옆 · 상품추가 버튼 · 모달 · 다중 선택 · 발주필요 추가 */}
+                    {productCount > 0 && onRequestProduct && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openProductAddModal(ev); }}
+                        className="self-start inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
+                        title="이 이벤트 상품 · 다중 선택 · 발주필요 추가"
+                      >
+                        <Plus size={12} strokeWidth={2.5} />
+                        상품추가
+                      </button>
+                    )}
                     {/* 2026-09-14 · #85 · 이벤트 상품 리스트 · 확장 시 표시 · [발주 추가] 액션 */}
                     {isExpanded && evProducts.length > 0 && (
                       <div className="flex flex-col gap-1 pl-2 border-l-2 border-brand-tint/60 ml-2">
@@ -663,6 +706,18 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
             </div>
           )}
         </Card>
+        {/* 2026-09-23 · #348-2 · #349 · 이벤트 상품 다중 선택 · 발주필요 추가 모달 */}
+        {productAddEvent && (
+          <EventProductAddModal
+            event={productAddEvent}
+            requestedCodes={requestedCodes}
+            selected={productAddSelected}
+            onToggle={toggleProductAddSelect}
+            onConfirm={() => void confirmProductAdd()}
+            onClose={() => { setProductAddEvent(null); setProductAddSelected(new Set()); }}
+            submitting={productAddSubmitting}
+          />
+        )}
       </div>
     );
   }
