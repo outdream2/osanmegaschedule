@@ -104,8 +104,7 @@ export function useScheduleData(
 
       setEmployees(merged);
 
-      const todayMeta = { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
-      const primaryIdx = months.findIndex(m => m.year === todayMeta.year && m.month === todayMeta.month);
+      const primaryIdx = months.findIndex(m => m.year === currentYear && m.month === currentMonth);
       if (primaryIdx !== -1) {
         setSummary(responses[primaryIdx].data.summary || []);
       } else if (responses.length > 0) {
@@ -149,9 +148,7 @@ export function useScheduleData(
         return { ...emp, schedules: existing };
       }));
 
-      const primaryYear = new Date().getFullYear();
-      const primaryMonth = new Date().getMonth() + 1;
-      const summaryRes = await api.get<any>(`/api/schedules?year=${primaryYear}&month=${primaryMonth}`);
+      const summaryRes = await api.get<any>(`/api/schedules?year=${currentYear}&month=${currentMonth}`);
       setSummary(summaryRes.data.summary || []);
 
       showNotification(`${data.date.split("-").slice(1).join("/")} 스케줄이 성공적으로 변경되었습니다.`);
