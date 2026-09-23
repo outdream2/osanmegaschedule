@@ -50,6 +50,9 @@ export default defineConfig({
       "src/components/OrderManagePage/**/*.test.tsx",
       // 2026-08-23 · StockManagePage · #185 SupplierFilterBar 등 · jsdom
       "src/components/StockManagePage/**/*.test.tsx",
+      // 2026-09-23 · B-1 · ScheduleCell refactor safety net
+      "src/components/SchedulePage/**/*.test.tsx",
+      "src/components/SchedulePage/**/*.test.ts",
     ],
     globals: false,
     environment: "node", // 기본 · jsdom 은 파일별 지시자 opt-in
