@@ -128,6 +128,54 @@ export function useOrderModal({
     if (!orderModal) return;
     const totalItems = orderModal.suppliers.reduce((n, s) => n + s.items.length, 0);
     const noChannel = !orderModal.channels.email && !orderModal.channels.sms && !orderModal.channels.kakao;
+
+    // 2026-09-23 · #346 · P1 · 사용자 지시 · 수량/단가/발주금액 미입력 검증 · 데이터 없이 발송 방지
+    const invalidItems: Array<{ supplier: string; product: string; issues: string[] }> = [];
+    for (const s of orderModal.suppliers) {
+      for (const it of s.items) {
+        const issues: string[] = [];
+        const qty = Number(it.order_qty ?? 0);
+        const price = Number(it.unit_price ?? 0);
+        if (!qty || qty <= 0) issues.push("수량");
+        if (!price || price <= 0) issues.push("단가");
+        if (qty * price <= 0) issues.push("금액");
+        if (issues.length > 0) {
+          invalidItems.push({
+            supplier: s.supplier,
+            product: String(it.product_name ?? it.product_code ?? ""),
+            issues,
+          });
+        }
+      }
+    }
+    if (invalidItems.length > 0) {
+      const warnContent: React.ReactNode = React.createElement("div", { className: "space-y-3 text-[15px]" },
+        React.createElement("div", { className: "rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-[14px] text-rose-800 font-bold" },
+          `⚠ 발송 불가 · 필수값 누락 · ${invalidItems.length}건`,
+        ),
+        React.createElement("div", { className: "flex flex-col gap-1.5 max-h-[320px] overflow-y-auto pr-1" },
+          ...invalidItems.map((v, i) => React.createElement("div", {
+            key: `invalid-${i}`,
+            className: "rounded-md border border-rose-200 bg-white px-2.5 py-1.5 text-[14px]",
+          },
+            React.createElement("div", { className: "flex items-baseline gap-2" },
+              React.createElement("b", { className: "text-zinc-500 text-[13px] shrink-0" }, v.supplier),
+              React.createElement("span", { className: "text-zinc-800 truncate flex-1" }, v.product),
+            ),
+            React.createElement("div", { className: "text-[13px] text-rose-700 font-semibold mt-0.5" },
+              `누락: ${v.issues.join(" · ")}`,
+            ),
+          )),
+        ),
+        React.createElement("div", { className: "text-[13px] text-zinc-600 font-semibold leading-relaxed" },
+          "발주 발송 전 · 위 상품들의 필수값(수량·단가·금액)을 모두 채워주세요. 데이터가 없는 상태로 발주는 발송할 수 없습니다.",
+        ),
+      );
+      await confirm({ message: warnContent as any, confirmLabel: "돌아가서 채우기", cancelLabel: "닫기", danger: true });
+      return;
+    }
+
+    // 2026-09-20 · #321 · 사용자 지시 · 발주 발송 확인창 · 공급사별 상세내역 · 한번 더 확인
     // 2026-09-20 · #321 · 사용자 지시 · 발주 발송 확인창 · 공급사별 상세내역 · 한번 더 확인
     const preSendDetails: React.ReactNode = React.createElement("div", { className: "space-y-3 text-[15px]" },
       React.createElement("div", { className: "rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-[14px] text-indigo-800 font-semibold" },
