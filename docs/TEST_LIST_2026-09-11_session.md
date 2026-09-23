@@ -4239,3 +4239,30 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 5. 게시판 글쓰기 · 제목·본문 · 한글 IME 즉시 활성
 6. 직원·상품·거래처 검색 · 한글 IME 즉시 활성
 7. 근로계약서 · 이름·주소·비고 · 한글 IME 즉시 활성
+
+---
+
+### [121] B-2 · useEditScheduleForm 훅 추출 · ScheduleCell 리팩터
+**커밋** · `9c9454e1`
+- 신규 · `src/components/SchedulePage/useEditScheduleForm.ts` (91줄)
+  - `ScheduleFormValues` · `UseEditScheduleFormOptions` · `UseEditScheduleFormReturn` 인터페이스
+  - `SCHEDULE_CYCLE` 상수 (export) — 기존 CYCLE 배열 이동
+  - form state 4개 (`type·workingHours·actualHours·memo`) + `saving` → 훅 내부
+  - `useEffect([isOpen, initialSchedule])` → popover 열릴 때 form 리셋 로직 → 훅 내부
+  - `applyPreset` · `handleTypeChange` · `handleSave` → 훅 반환
+- 수정 · `ScheduleCell.tsx` 429→408줄 (21줄 감소)
+  - 4개 `useState` + `isSaving` → `useEditScheduleForm` 훅 1개로 교체
+  - `CYCLE` 상수 제거 → `SCHEDULE_CYCLE` import
+  - `handleSave` · `applyPreset` inline 로직 제거 → 훅 위임
+  - `handleQuickCycle` · `isOpen` · popover UI 로직 · props 시그니처 · `onUpdate` 호출 · 전부 무변경
+- TS 0 error · vitest 29 pass (ScheduleCell) · 전체 3588 pass · 회귀 없음
+
+**확인 절차**
+1. 스케쥴 페이지 (`/schedule`) 진입 · 달력 셀 정상 렌더
+2. (관리자) 셀 클릭 → 오픈→미들→마감→휴무 순환 · CYCLE 동작 확인
+3. (관리자) 편집(톱니) 버튼 클릭 → popover 열림
+4. popover 내 근무유형 변경 · 근무시간 자동 채움 확인
+5. 원클릭 근태(지각/조퇴/결근) 버튼 · 값 변경 정상
+6. 저장 클릭 → popover 닫힘 · 셀 값 갱신
+7. 취소 클릭 → popover 닫힘 · 원래 값 유지
+8. API 실패 시 → popover 그대로 열려 있음 (재시도 가능)
