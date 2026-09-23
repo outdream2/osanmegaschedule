@@ -182,24 +182,36 @@ export function useOrderModal({
         `${orderModal.suppliers.length}개 공급사 · 총 ${totalItems}개 상품 발송 예정`,
       ),
       React.createElement("div", { className: "flex flex-col gap-2.5 max-h-[360px] overflow-y-auto pr-1" },
-        ...orderModal.suppliers.map((s, si) => React.createElement("div", {
-          key: `pre-sup-${si}`,
-          className: "rounded-lg border border-line bg-white px-3 py-2",
-        },
-          React.createElement("div", { className: "flex items-center justify-between mb-1.5" },
-            React.createElement("b", { className: "text-[15px] text-zinc-800" }, `공급사 · ${s.supplier}`),
-            React.createElement("span", { className: "text-[13px] font-bold text-indigo-700 tabular-nums" }, `${s.items.length}건`),
-          ),
-          React.createElement("ul", { className: "flex flex-col gap-0.5" },
-            ...s.items.map((it, ii) => React.createElement("li", {
-              key: `pre-item-${si}-${ii}`,
-              className: "text-[14px] text-zinc-700 flex items-baseline gap-2",
-            },
-              React.createElement("span", { className: "flex-1 truncate" }, String(it.product_name ?? it.product_code ?? "")),
-              React.createElement("b", { className: "text-zinc-900 tabular-nums shrink-0" }, `${Number(it.order_qty ?? 0)}개`),
-            )),
-          ),
-        )),
+        ...orderModal.suppliers.map((s, si) => {
+          // 2026-09-23 · #344 · 사용자 지시 · 발송 확인창 · 담당자·연락처 표시
+          const contactBits: string[] = [];
+          if (s.supplier_contact) contactBits.push(String(s.supplier_contact));
+          if (s.supplier_phone) contactBits.push(String(s.supplier_phone));
+          else if (s.supplier_email) contactBits.push(String(s.supplier_email));
+          const contactLine = contactBits.length > 0 ? contactBits.join(" · ") : "담당자·연락처 미등록";
+          const contactMissing = contactBits.length === 0;
+          return React.createElement("div", {
+            key: `pre-sup-${si}`,
+            className: "rounded-lg border border-line bg-white px-3 py-2",
+          },
+            React.createElement("div", { className: "flex items-center justify-between mb-1" },
+              React.createElement("b", { className: "text-[15px] text-zinc-800" }, `공급사 · ${s.supplier}`),
+              React.createElement("span", { className: "text-[13px] font-bold text-indigo-700 tabular-nums" }, `${s.items.length}건`),
+            ),
+            React.createElement("div", {
+              className: `text-[13px] font-semibold mb-1.5 ${contactMissing ? "text-amber-700" : "text-zinc-500"}`,
+            }, contactLine),
+            React.createElement("ul", { className: "flex flex-col gap-0.5" },
+              ...s.items.map((it, ii) => React.createElement("li", {
+                key: `pre-item-${si}-${ii}`,
+                className: "text-[14px] text-zinc-700 flex items-baseline gap-2",
+              },
+                React.createElement("span", { className: "flex-1 truncate" }, String(it.product_name ?? it.product_code ?? "")),
+                React.createElement("b", { className: "text-zinc-900 tabular-nums shrink-0" }, `${Number(it.order_qty ?? 0)}개`),
+              )),
+            ),
+          );
+        }),
       ),
       noChannel
         ? React.createElement("div", { className: "text-[13px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-2 leading-relaxed" },
