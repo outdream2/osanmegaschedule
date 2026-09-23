@@ -70,7 +70,8 @@ interface ProductRow {
   sale_price?: number | null;
 }
 
-interface ProductDetail extends ProductRow {
+// 2026-09-23 · #345 후속 · 외부에서 재사용 가능하도록 export (OrderRequestTab 상품정보 탭 등)
+export interface ProductDetail extends ProductRow {
   warehouse_stock?: number | null;   // 창고1 (warehouse1_stock alias)
   warehouse1_stock?: number | null;
   warehouse2_stock?: number | null;  // 창고2
@@ -119,7 +120,8 @@ interface DetailProps {
   onEditClick?: (product: ProductDetail) => void;
 }
 
-const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, canEdit, onSaved, onEditClick }) => {
+// 2026-09-23 · #345 후속 · 외부에서 재사용 가능하도록 export
+export const ProductDetailView: React.FC<DetailProps> = ({ product, loading, error, canEdit, onSaved, onEditClick }) => {
   const { toast, showSuccess, showError } = useToast();
   const confirm = useConfirm();
   const [editing, setEditing] = useState(false);

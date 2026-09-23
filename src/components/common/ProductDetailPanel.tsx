@@ -6,7 +6,7 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
-import { X, Package, TrendingUp, ChevronRight, ChevronDown, Building2, ClipboardList, History, Info, Pencil } from "lucide-react";
+import { X, Package, TrendingUp, ChevronRight, ChevronDown, Building2, ClipboardList, History, Info } from "lucide-react";
 import { Spinner } from "./Spinner";
 import { Card } from "./Card";
 import { CollapseCard } from "./CollapseCard";
@@ -15,6 +15,9 @@ import { ProductInfoCard, PurchaseHistorySection } from "../ScanPage/ProductInfo
 import { type ProductInfo, lookupProduct } from "../../lib/productsCache";
 // 2026-09-23 · #345 · 사용자 지시 · 상품정보 탭 · ProductCreateModal 편집 모달 연동
 import { ProductCreateModal } from "../ProductInfoPage/ProductCreateModal";
+// 2026-09-23 · #345 후속 · 사용자 지시 · 상품정보 탭 · ProductInfoPage 우측 상세 모듈 (ProductDetailView) 재사용
+import { ProductDetailView, type ProductDetail } from "../ProductInfoPage/ProductInfoPage";
+import { getProductByCode } from "../../lib/productsApi";
 import { SeasonButtons } from "./SeasonButtons";
 import { AccentBar } from "./AccentBar";
 import { InlineLabel } from "./InlineLabel";
@@ -419,6 +422,22 @@ const ProductDetailChartMode: React.FC<{
   const [chartTab, setChartTab] = useState<"flow" | "purchase" | "order" | "inventory" | "info">("flow");
   // 2026-09-23 · #345 · 사용자 지시 · 상품정보 편집 모달
   const [editOpen, setEditOpen] = useState(false);
+  // 2026-09-23 · #345 후속 · 사용자 지시 · info 탭 · 상품 상세 조회 (ProductDetailView 재사용)
+  const [infoDetail, setInfoDetail] = useState<ProductDetail | null>(null);
+  const [infoLoading, setInfoLoading] = useState(false);
+  const [infoError, setInfoError] = useState<string | null>(null);
+  const [infoReloadKey, setInfoReloadKey] = useState(0);
+  useEffect(() => {
+    if (chartTab !== "info" || !product.code) { return; }
+    let alive = true;
+    setInfoLoading(true);
+    setInfoError(null);
+    getProductByCode<ProductDetail>(product.code)
+      .then(d => { if (alive) setInfoDetail(d ?? null); })
+      .catch((e: any) => { if (alive) setInfoError(e?.message ?? "상품 상세 조회 실패"); })
+      .finally(() => { if (alive) setInfoLoading(false); });
+    return () => { alive = false; };
+  }, [chartTab, product.code, infoReloadKey]);
   return (
     <>
       {/* 상단 헤더 카드 · 상품명 + 공급사 + 공급사조회 (2026-07-31) */}
@@ -462,29 +481,17 @@ const ProductDetailChartMode: React.FC<{
             </div>
           )}
           {chartTab === "info" && (
-            <div className="p-3 flex flex-col gap-3">
-              {/* 2026-09-23 · #345 · 사용자 지시 · 상품정보 = ProductCreateModal 편집 모달 · 인라인 필드 제거 */}
-              <div className="rounded-xl border border-line bg-white p-4 flex flex-col gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-brand-tint flex items-center justify-center shrink-0">
-                    <Info size={18} className="text-brand-deep" strokeWidth={2.2} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[15px] font-bold text-ink">상품정보</div>
-                    <div className="text-[13px] text-zinc-500 mt-0.5">상품명·규격·공급사·단가·판매상태 등 · 편집 모달 오픈</div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditOpen(true)}
-                  disabled={!editable}
-                  className="w-full inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg text-[15px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-                >
-                  <Pencil size={14} strokeWidth={2.4} />
-                  상품정보 수정
-                </button>
-              </div>
-            </div>
+            /* 2026-09-23 · #345 후속 · 사용자 지시 · ProductInfoPage 우측 상세 모듈 (ProductDetailView) 재사용
+                · 수정 클릭 시 · 인라인 편집 대신 · ProductCreateModal 열림 (onEditClick prop)
+                · onSaved · reload · 상세 재조회 */
+            <ProductDetailView
+              product={infoDetail}
+              loading={infoLoading}
+              error={infoError}
+              canEdit={editable}
+              onSaved={() => setInfoReloadKey(k => k + 1)}
+              onEditClick={() => setEditOpen(true)}
+            />
           )}
         </div>
       </div>
@@ -497,7 +504,21 @@ const ProductDetailChartMode: React.FC<{
           mode="edit"
           initialCode={product.code}
           lockCode
-          initialProduct={{
+          initialProduct={infoDetail ? {
+            product_code: infoDetail.product_code,
+            product_name: infoDetail.product_name,
+            supplier: (infoDetail as any).supplier ?? null,
+            category: (infoDetail as any).category ?? null,
+            unit: (infoDetail as any).unit ?? null,
+            spec: (infoDetail as any).spec ?? null,
+            location: (infoDetail as any).location ?? null,
+            optimal_stock: (infoDetail as any).optimal_stock ?? null,
+            sale_price: infoDetail.sale_price ?? null,
+            purchase_price: infoDetail.purchase_price ?? null,
+            brand: (infoDetail as any).brand ?? null,
+            manufacturer: (infoDetail as any).manufacturer ?? null,
+            sale_status: (infoDetail as any).sale_status ?? null,
+          } as any : {
             product_code: product.code,
             product_name: product.name ?? "",
             supplier: product.supplier ?? null,
@@ -506,6 +527,8 @@ const ProductDetailChartMode: React.FC<{
           } as any}
           onCreated={(_code, updated) => {
             setEditOpen(false);
+            // 상세 재조회 트리거 · onProductUpdate 부모 동기화
+            setInfoReloadKey(k => k + 1);
             if (updated && onProductUpdate) {
               onProductUpdate({
                 name: updated.product_name ?? product.name,
