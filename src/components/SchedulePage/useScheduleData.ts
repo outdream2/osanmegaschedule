@@ -375,15 +375,17 @@ export function useScheduleData(
     if (copyDayAssignments) {
       try {
         const daysInCur = new Date(currentYear, currentMonth, 0).getDate();
-        for (let d = 1; d <= daysInCur; d++) {
-          const dateStr = `${monthPrefix}-${String(d).padStart(2, "0")}`;
-          const r = await api.get<any>(`/api/zone-day/${dateStr}`);
-          if (r.data && !r.data._empty && (
+        const days = Array.from({ length: daysInCur }, (_, i) =>
+          `${monthPrefix}-${String(i + 1).padStart(2, "0")}`
+        );
+        const results = await Promise.all(days.map(d => api.get<any>(`/api/zone-day/${d}`)));
+        curDayHasData = results.some(r =>
+          r.data && !r.data._empty && (
             Object.keys(r.data.zone_slots ?? {}).length > 0 ||
             Object.keys(r.data.lunch_slots ?? {}).length > 0 ||
             Object.keys(r.data.rest_slots ?? {}).length > 0
-          )) { curDayHasData = true; break; }
-        }
+          )
+        );
       } catch { /* skip */ }
     }
 

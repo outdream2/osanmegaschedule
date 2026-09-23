@@ -19,13 +19,47 @@ import type { AuthedRequest } from "../../types/auth";
 
 const router = Router();
 
+// ── [R-1] 확정 스케줄 서버 검증 헬퍼 ─────────────────────────────────────────
+// 2026-09-23 · Top5 2위 · DevTools 우회 차단 · lock 상태 DB 직접 검증
+//   · level ≥ 9 관리자 · lock 무시 허용 (긴급 수정 목적)
+//   · 연차 승인 자동 반영(scheduleService.batchUpdateSchedules 직접 호출)은 라우터 미경유 → 자동 예외 처리
+async function assertScheduleNotLocked(yearMonth: string, authLevel: number): Promise<void> {
+  if (authLevel >= 9) return; // 관리자 lv≥9 는 lock 무시
+  const key = `schedule_lock_${yearMonth}`;
+  const { data, error } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("key", key)
+    .maybeSingle();
+  if (error) {
+    logger.warn(`[schedule-lock] app_settings 조회 실패 · key=${key} · ${error.message} · lock 검증 skip`);
+    return; // DB 오류 시 fail-open (서비스 중단 방지)
+  }
+  if (data?.value === true) {
+    logger.warn(`[schedule-lock] LOCK 위반 시도 · key=${key} · authLevel=${authLevel}`);
+    throw new HttpError(403, "확정된 달은 수정할 수 없습니다. 관리자(lv≥9)만 수정 가능합니다.", "SCHEDULE_LOCKED");
+  }
+}
+
 router.get("/api/schedules", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   return scheduleController.getSchedules(req, res);
 }));
 // 2026-08-29 · 보안 S0 N4 fix · 스케줄 write · 매니저(lv5)+ 만
-router.put("/api/schedules", authorize(5), validateBody(UpsertScheduleSchema), asyncHandler((req, res) => scheduleController.updateSchedule(req, res)));
-router.post("/api/schedules/batch", authorize(5), validateBody(BatchScheduleSchema), asyncHandler((req, res) => scheduleController.batchUpdateSchedules(req, res)));
+// 2026-09-23 · [R-1] · 확정 달 서버 lock 검증 추가 · lv≥9 예외
+router.put("/api/schedules", authorize(5), validateBody(UpsertScheduleSchema), asyncHandler(async (req, res) => {
+  const authLevel = (req as AuthedRequest).authUser?.level ?? 0;
+  const yearMonth = String(req.body.date ?? "").slice(0, 7); // YYYY-MM
+  await assertScheduleNotLocked(yearMonth, authLevel);
+  return scheduleController.updateSchedule(req, res);
+}));
+router.post("/api/schedules/batch", authorize(5), validateBody(BatchScheduleSchema), asyncHandler(async (req, res) => {
+  const authLevel = (req as AuthedRequest).authUser?.level ?? 0;
+  // 배치: 첫 번째 item의 date 기준으로 yearMonth 추출 (같은 월 내 배치 전제)
+  const firstDate = String(req.body.items?.[0]?.date ?? "").slice(0, 7);
+  await assertScheduleNotLocked(firstDate, authLevel);
+  return scheduleController.batchUpdateSchedules(req, res);
+}));
 router.post("/api/schedules/copy", authorize(5), validateBody(CopyScheduleSchema), asyncHandler((req, res) => scheduleController.copySchedules(req, res)));
 // 2026-08-29 · 보안 S0 · 직원 신규 등록 · 관리자(lv9) 전용
 router.post("/api/employees", authorize(9), validateBody(CreateEmployeeSchema.partial()), asyncHandler((req, res) => scheduleController.createEmployee(req, res)));
