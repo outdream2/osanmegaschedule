@@ -46,17 +46,18 @@ export const BulkTab: React.FC<BulkTabProps> = ({
   handleBulkTypeChange, handleBulkSave, activeTypes, typeHoursMap, onCancel,
 }) => {
   return (
-    <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 text-ink">
+    // 2026-09-23 · #335 · 스크롤 fix · min-h-0 추가 (flex-col 부모에서 flex-1 자식 스크롤 정상 동작)
+    <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 space-y-5 text-ink">
 
       {isLocked && (
         <Card bg="bg-amber-50" borderColor="border-amber-200" variant="flat" rounded="lg" padding="sm" className="flex items-center gap-2">
           <Lock size={14} className="text-amber-500 shrink-0" />
-          <span className="text-[14px] font-semibold text-amber-800">이달 스케줄이 확정된 상태입니다. 메인에서 확정해제 후 사용하세요.</span>
+          <span className="text-[16px] font-semibold text-amber-800">이달 스케줄이 확정된 상태입니다. 메인에서 확정해제 후 사용하세요.</span>
         </Card>
       )}
 
       {employee.description && (
-        <Card bg="bg-amber-50/70" borderColor="border-amber-100" variant="flat" rounded="lg" padding="sm" className="text-[14px] text-amber-800">
+        <Card bg="bg-amber-50/70" borderColor="border-amber-100" variant="flat" rounded="lg" padding="sm" className="text-[16px] text-amber-800">
           <span className="font-bold mr-1.5">비고</span>{employee.description}
         </Card>
       )}
@@ -67,18 +68,18 @@ export const BulkTab: React.FC<BulkTabProps> = ({
           <div className="flex items-center gap-2.5">
             <AccentBar />
             <h3 className="text-[16px] font-bold tracking-tight text-ink">날짜 선택</h3>
-            <span className="text-[14px] font-medium text-ink-soft tabular-nums">· {bulkSelectedDates.length}일</span>
+            <span className="text-[16px] font-medium text-ink-soft tabular-nums">· {bulkSelectedDates.length}일</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            <button type="button" onClick={selectAll} className="px-2.5 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">전체</button>
-            <button type="button" onClick={deselectAll} className="px-2.5 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">해제</button>
-            <button type="button" onClick={selectWeekdays} className="px-2.5 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">평일</button>
-            <button type="button" onClick={selectWeekends} className="px-2.5 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">주말</button>
+            <button type="button" onClick={selectAll} className="px-2.5 py-1.5 text-[16px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">전체</button>
+            <button type="button" onClick={deselectAll} className="px-2.5 py-1.5 text-[16px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">해제</button>
+            <button type="button" onClick={selectWeekdays} className="px-2.5 py-1.5 text-[16px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">평일</button>
+            <button type="button" onClick={selectWeekends} className="px-2.5 py-1.5 text-[16px] font-semibold text-ink-soft hover:text-ink hover:bg-zinc-100 rounded-lg cursor-pointer transition-colors">주말</button>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[14px] font-semibold text-ink-soft shrink-0">요일:</span>
+          <span className="text-[16px] font-semibold text-ink-soft shrink-0">요일:</span>
           {[
             { label: "월", val: 1 }, { label: "화", val: 2 }, { label: "수", val: 3 },
             { label: "목", val: 4 }, { label: "금", val: 5 },
@@ -89,7 +90,7 @@ export const BulkTab: React.FC<BulkTabProps> = ({
               key={w.val}
               type="button"
               onClick={() => toggleWeekday(w.val)}
-              className="min-w-[36px] px-2.5 py-1.5 text-[14px] font-semibold text-ink border border-line rounded-lg hover:border-brand-deep hover:bg-brand-tint transition-colors cursor-pointer"
+              className="min-w-[36px] px-2.5 py-1.5 text-[16px] font-semibold text-ink border border-line rounded-lg hover:border-brand-deep hover:bg-brand-tint transition-colors cursor-pointer"
             >
               {w.label}
             </button>
@@ -136,17 +137,17 @@ export const BulkTab: React.FC<BulkTabProps> = ({
         </div>
 
         <div className="space-y-2">
-          <label className="block text-[14px] font-semibold text-ink-soft">근태 빠른 지정</label>
+          <label className="block text-[16px] font-semibold text-ink-soft">근태 빠른 지정</label>
           <div className="flex flex-wrap gap-1.5">
-            <button type="button" onClick={() => setBulkActualHours("")} className="px-3 py-1.5 text-[14px] font-semibold text-ink-soft hover:text-ink border border-line hover:border-ink-soft rounded-lg cursor-pointer transition-colors">초기화</button>
-            <button type="button" onClick={() => { setBulkActualHours("지각"); setBulkWorkingHours(typeHoursMap?.["오픈"] ?? ""); }} className="px-3 py-1.5 text-[14px] font-semibold text-amber-800 border border-amber-200 hover:bg-amber-50 rounded-lg cursor-pointer transition-colors">지각</button>
-            <button type="button" onClick={() => setBulkActualHours("조퇴")} className="px-3 py-1.5 text-[14px] font-semibold text-violet-800 border border-violet-200 hover:bg-violet-50 rounded-lg cursor-pointer transition-colors">조퇴</button>
-            <button type="button" onClick={() => { setBulkActualHours("결근"); setBulkType("결근"); setBulkWorkingHours(""); }} className="px-3 py-1.5 text-[14px] font-semibold text-rose-800 border border-rose-200 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors">결근</button>
+            <button type="button" onClick={() => setBulkActualHours("")} className="px-3 py-1.5 text-[16px] font-semibold text-ink-soft hover:text-ink border border-line hover:border-ink-soft rounded-lg cursor-pointer transition-colors">초기화</button>
+            <button type="button" onClick={() => { setBulkActualHours("지각"); setBulkWorkingHours(typeHoursMap?.["오픈"] ?? ""); }} className="px-3 py-1.5 text-[16px] font-semibold text-amber-800 border border-amber-200 hover:bg-amber-50 rounded-lg cursor-pointer transition-colors">지각</button>
+            <button type="button" onClick={() => setBulkActualHours("조퇴")} className="px-3 py-1.5 text-[16px] font-semibold text-violet-800 border border-violet-200 hover:bg-violet-50 rounded-lg cursor-pointer transition-colors">조퇴</button>
+            <button type="button" onClick={() => { setBulkActualHours("결근"); setBulkType("결근"); setBulkWorkingHours(""); }} className="px-3 py-1.5 text-[16px] font-semibold text-rose-800 border border-rose-200 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors">결근</button>
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="block text-[14px] font-semibold text-ink-soft">근무 패턴</label>
+          <label className="block text-[16px] font-semibold text-ink-soft">근무 패턴</label>
           <div className="flex flex-wrap gap-1.5">
             {activeTypes.map((t: any) => {
               const hours = typeHoursMap?.[t.value];
@@ -155,7 +156,7 @@ export const BulkTab: React.FC<BulkTabProps> = ({
                   key={t.value}
                   type="button"
                   onClick={() => handleBulkTypeChange(t.value)}
-                  className={`px-3 py-1.5 text-[14px] font-semibold rounded-lg border transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 text-[16px] font-semibold rounded-lg border transition-colors cursor-pointer ${
                     bulkType === t.value
                       ? "bg-brand-deep text-white border-brand-deep"
                       : "bg-white text-ink border-line hover:border-brand-deep hover:bg-brand-tint"
@@ -170,7 +171,7 @@ export const BulkTab: React.FC<BulkTabProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="text-[14px] font-semibold text-ink-soft mb-1.5 flex items-center gap-1.5">
+            <label className="text-[16px] font-semibold text-ink-soft mb-1.5 flex items-center gap-1.5">
               <MessageSquare size={13} strokeWidth={2.2} /> 특이사항
             </label>
             <input
@@ -182,7 +183,7 @@ export const BulkTab: React.FC<BulkTabProps> = ({
             />
           </div>
           <div>
-            <label className="text-[14px] font-semibold text-ink-soft mb-1.5 flex items-center gap-1.5">
+            <label className="text-[16px] font-semibold text-ink-soft mb-1.5 flex items-center gap-1.5">
               <MessageSquare size={13} strokeWidth={2.2} /> 메모
             </label>
             <input
