@@ -120,7 +120,7 @@ export function useScheduleData(
     } finally {
       setIsLoading(false);
     }
-  }, [currentYear]);
+  }, [currentYear, currentMonth]);
 
   // ── Cell Update ───────────────────────────────────────────────────────────
   const handleCellUpdate = useCallback(async (data: CellUpdateData) => {
@@ -156,7 +156,7 @@ export function useScheduleData(
       console.error("Failed to update cell schedule:", err);
       showNotification("스케줄 정보 저장에 실패했습니다.", "error");
     }
-  }, [employees, showNotification]);
+  }, [employees, showNotification, currentYear, currentMonth]);
 
   // ── Undo ──────────────────────────────────────────────────────────────────
   const handleUndo = useCallback(async () => {
