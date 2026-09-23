@@ -409,7 +409,8 @@ export function useScheduleData(
       }
       if (copyDayAssignments) {
         const r = await api.post<any>("/api/zone-day/copy-month", {
-          targetYear: currentYear, targetMonth: currentMonth, overwrite: needsDayOverwrite || true,
+          // 2026-09-23 · 기능 검증 BUG #1 fix · `|| true` 제거 · needsDayOverwrite 실제 값 전달
+          targetYear: currentYear, targetMonth: currentMonth, overwrite: needsDayOverwrite,
         });
         msgs.push(`일별 근무설정 ${r.data.count || 0}건`);
       }
