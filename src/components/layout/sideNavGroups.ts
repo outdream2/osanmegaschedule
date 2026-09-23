@@ -420,13 +420,23 @@ export function buildBreadcrumb(currentPage: AppNavPage, activeSubTab?: string |
     return [home, { label: matchedGroup.label }];
   }
   const seg: BreadcrumbSegment[] = [home];
+  // 2026-09-23 · 사용자 지시 · "홈 > 매장 > 판매 모두 링크" · 모든 segment 클릭 가능
+  //   · 그룹 · topTab.key + 그룹 첫 하위 subTab (default 이동 대상)
+  //   · 페이지 · currentPage + activeSubTab (자기 자신 재이동 · state reset · 안전)
   const groupPage = matchedGroup.topTab?.key as AppNavPage | undefined;
+  // 그룹 클릭 시 이동 대상 subTab · 첫 하위 item 의 subTab (없으면 undefined)
+  const groupDefaultSubTab = matchedGroup.items[0]?.subTab ?? undefined;
   seg.push({
     label: matchedGroup.label,
-    page: groupPage && groupPage !== currentPage ? groupPage : undefined,
+    page: groupPage,
+    subTab: groupDefaultSubTab,
   });
   const pageLabel = matchedItem?.label ?? String(currentPage);
-  seg.push({ label: pageLabel });
+  seg.push({
+    label: pageLabel,
+    page: currentPage,
+    subTab: matchedItem?.subTab ?? activeSubTab ?? undefined,
+  });
   return seg;
 }
 

@@ -39,7 +39,9 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
       {items.map((it, i) => {
         const isLast = i === items.length - 1;
         const isFirst = i === 0;
-        const clickable = !isLast && it.page && onNavigate;
+        // 2026-09-23 · 사용자 지시 · 모든 segment 클릭 가능 (홈·그룹·현재페이지)
+        //   · 현재 페이지 클릭 시 · 서브탭 재설정 (state reset 안전)
+        const clickable = !!(it.page && onNavigate);
         const content = (
           <span className="inline-flex items-center gap-1">
             {isFirst && showHomeIcon && <House size={13} weight="fill" className="opacity-80" />}
@@ -59,8 +61,13 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
                   }
                   onNavigate!(it.page!, it.subTab);
                 }}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-brand-deep/70 hover:text-brand-deep hover:bg-brand-tint/40 transition cursor-pointer"
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md transition cursor-pointer ${
+                  isLast
+                    ? "text-ink font-bold hover:bg-brand-tint/40"
+                    : "text-brand-deep/70 hover:text-brand-deep hover:bg-brand-tint/40"
+                }`}
                 title={`${it.label} 로 이동`}
+                aria-current={isLast ? "page" : undefined}
               >
                 {content}
               </button>
