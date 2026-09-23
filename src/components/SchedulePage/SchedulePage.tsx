@@ -471,9 +471,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
   useEffect(() => {
     if (calendarEmployee) {
       const updated = employees.find(e => e.id === calendarEmployee.id);
-      if (updated) setCalendarEmployee(updated);
+      if (updated && updated !== calendarEmployee) setCalendarEmployee(updated);
     }
-  }, [employees]);
+  }, [employees, calendarEmployee]);
 
   // Open edit modal from navigation
   useEffect(() => {
