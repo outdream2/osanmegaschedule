@@ -211,7 +211,8 @@ export default function App() {
       devWarn(`[App] initPushTokenListener 실패 · ${(e as any)?.message ?? e}`);
     }
     try {
-      const c2 = initBadgeSync();
+      // 2026-09-23 · #E-008 · NotificationBell unread count 와 통일 · employeeId 전달
+      const c2 = initBadgeSync(authSession?.employeeId ?? null);
       if (typeof c2 === "function") cleanupBadge = c2;
     } catch (e) {
       devWarn(`[App] initBadgeSync 실패 · ${(e as any)?.message ?? e}`);

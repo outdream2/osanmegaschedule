@@ -176,7 +176,7 @@ export function setAppBadge(count: number): void {
 // · 서버 조회 · GET /api/leave-requests/pending-count · 승인대기 갯수
 //   · 필요시 · 사직서 pending 도 통합 (기존 SideNav 참조) · 초기에는 leave 만 (사용자 지시 · scope 최소화)
 // ─────────────────────────────────────────────────
-export function initBadgeSync(): () => void {
+export function initBadgeSync(employeeId?: number | null): () => void {
   if (typeof window === "undefined") return () => {};
   if (!isInsideWebView()) return () => {}; // WebView 아니면 완전 no-op
 
@@ -186,23 +186,21 @@ export function initBadgeSync(): () => void {
   async function refresh(): Promise<void> {
     if (cancelled) return;
     try {
-      // 2026-09-22 · 사용자 보고 · "거래처 승인 5개인데 앱 배지 안 나옴"
-      //   · 이전 · leave + resignation 만 · vendor·display·order 등 누락
-      //   · fix · 모든 pending 유형 통합 (approvals: leave+resignation · requests: vendor+display+order+mismatch+lunch+inventory+return)
-      const [leaveRes, resignationRes, pendingCountsRes] = await Promise.all([
-        api.get<{ count: number }>("/api/leave-requests/pending-count").catch(() => ({ data: { count: 0 } })),
-        api.get<{ count: number }>("/api/resignation-requests/pending-count").catch(() => ({ data: { count: 0 } })),
-        api.get<Record<string, number>>("/api/requests/pending-counts").catch(() => ({ data: {} as Record<string, number> })),
-      ]);
+      // 2026-09-23 · 사용자 보고 · "웹 5개 · 앱 1개" · NotificationBell metric 과 통일
+      //   · 이전 · leave + resignation + pending-counts (승인·요청 관련만) · notifications 테이블 unread 누락
+      //   · fix · NotificationBell 과 동일 · GET /api/notifications?employeeId=X · unread count
+      //   · 앱 배지 = 웹 상단 NotificationBell 뱃지 · 완전 동일 metric
+      if (!employeeId) {
+        setAppBadge(0);
+        return;
+      }
+      const { data: list } = await api.get<Array<{ id: number; read: boolean | null }>>(
+        `/api/notifications?employeeId=${employeeId}&limit=100`
+      );
       if (cancelled) return;
-      const lc = Number(leaveRes?.data?.count ?? 0);
-      const rc = Number(resignationRes?.data?.count ?? 0);
-      const counts = (pendingCountsRes?.data ?? {}) as Record<string, number>;
-      // pending-counts · vendor·display·order·mismatch·lunch·inventory·return
-      const reqSum = Object.values(counts).reduce((s: number, v) => s + (Number.isFinite(Number(v)) ? Number(v) : 0), 0);
-      const total = (Number.isFinite(lc) ? lc : 0) + (Number.isFinite(rc) ? rc : 0) + reqSum;
-      devLog(`[PUSH-BADGE] refresh · leave=${lc} resignation=${rc} requests=${reqSum} total=${total}`);
-      setAppBadge(total);
+      const unread = Array.isArray(list) ? list.filter(n => !n.read).length : 0;
+      devLog(`[PUSH-BADGE] refresh · notifications unread=${unread}`);
+      setAppBadge(unread);
     } catch (err: any) {
       // 401 등 · 미로그인 시 · 배지 clear
       if (err instanceof ApiError && err.status === 401) {
