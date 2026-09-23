@@ -274,7 +274,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
           {(positionTab === "전체" || positionTab === "약사") && (
             <SummaryRow summaries={currentSummaryList} label="약사" showMonthTotal={showMonthTotal} />
           )}
-          {(positionTab === "전체" || positionTab === "사원") && (
+          {(positionTab === "전체" || positionTab === "사원" || positionTab === "매장") && (
             <SummaryRow summaries={currentSummaryList} label="사원" showMonthTotal={showMonthTotal} />
           )}
           {positionTab === "전체" && currentSummaryList.some(s => s.logisticsCount > 0) && (
