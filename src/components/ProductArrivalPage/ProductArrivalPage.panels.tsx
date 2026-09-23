@@ -547,7 +547,7 @@ export const ArrivalDetailModal: React.FC<ArrivalDetailModalProps> = ({
 // ═══════════════════════════════════════════════════════════════════════════
 // 4) ExpiryListTab · 유통기한 임박 리스트
 //   · GET /api/product-arrivals/expiring · verified_expiring=true 행
-//   · 남은 기간별 필터 (전체 · 1/2/3/6개월 · 1년)
+//   · 2026-09-23 · #343 사용자 지시 · 기간 필터 제거 · 전체 임박 리스트 표시
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface ExpiryRow {
@@ -563,17 +563,6 @@ interface ExpiryRow {
   verified_by: string | null;
   expiry_date: string | null; // 서버에서 파싱
 }
-
-type ExpiryPeriod = "전체" | "1개월" | "2개월" | "3개월" | "6개월" | "1년";
-
-const EXPIRY_PERIODS: { label: ExpiryPeriod; days: number | null }[] = [
-  { label: "전체",  days: null },
-  { label: "1개월", days: 30 },
-  { label: "2개월", days: 60 },
-  { label: "3개월", days: 90 },
-  { label: "6개월", days: 180 },
-  { label: "1년",   days: 365 },
-];
 
 function daysRemaining(expiryDate: string | null): number | null {
   if (!expiryDate) return null;
@@ -596,7 +585,6 @@ export const ExpiryListTab: React.FC = () => {
   const [rows, setRows] = useState<ExpiryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [period, setPeriod] = useState<ExpiryPeriod>("3개월");
 
   const load = () => {
     setLoading(true);
@@ -609,22 +597,17 @@ export const ExpiryListTab: React.FC = () => {
 
   useEffect(() => { load(); }, []);
 
+  // 2026-09-23 · #343 · 기간 필터 삭제 · 전체 임박 리스트 · 남은일수 오름차순 정렬
   const filtered = useMemo(() => {
-    const p = EXPIRY_PERIODS.find(p => p.label === period);
     return rows
       .map(r => ({ ...r, _days: daysRemaining(r.expiry_date) }))
-      .filter(r => {
-        if (p?.days === null) return true;
-        if (r._days === null) return false;
-        return r._days <= p.days;
-      })
       .sort((a, b) => {
         if (a._days === null && b._days === null) return 0;
         if (a._days === null) return 1;
         if (b._days === null) return -1;
         return a._days - b._days;
       });
-  }, [rows, period]);
+  }, [rows]);
 
   return (
     <div className={`${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 py-4 flex flex-col gap-4`}>
@@ -645,16 +628,7 @@ export const ExpiryListTab: React.FC = () => {
         </button>
       </div>
 
-      {/* 기간 필터 */}
-      <PeriodSelector
-        options={EXPIRY_PERIODS.map(p => ({ value: p.label, label: p.label }))}
-        value={period}
-        onChange={(v) => setPeriod(v as ExpiryPeriod)}
-        accent="rose"
-        size="sm"
-      />
-
-      {/* 테이블 */}
+      {/* 테이블 · 2026-09-23 · #343 · 기간 필터 제거 · 전체 임박 상품 */}
       {loading && (
         <div className="flex items-center justify-center py-16">
           <div className="text-[15px] text-zinc-400 font-medium">불러오는 중...</div>
@@ -666,7 +640,7 @@ export const ExpiryListTab: React.FC = () => {
       {!loading && !error && filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 gap-2 text-zinc-400">
           <Clock size={32} strokeWidth={1.5} />
-          <div className="text-[16px] font-bold">해당 기간 내 유통기한 임박 상품 없음</div>
+          <div className="text-[16px] font-bold">유통기한 임박 상품 없음</div>
         </div>
       )}
       {!loading && filtered.length > 0 && (
