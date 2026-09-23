@@ -252,10 +252,12 @@ export const buildFilteredEmployees = (
       // 2026-09-18 · #91 · Plan C · positionToCategory 상수 활용
       // - 회귀 방지 · 기존 필터 규칙 그대로 유지
       // - 신규 필터 "기타" · 매핑 안 된 신규 직군 노출
+      // 2026-09-23 · #341 fix · 매장 필터 · position 기반으로 통일 (기존 workplace 필드 · null 많아 매칭 실패)
+      //   · workplace 유지는 fallback · position "매장" or positionToCategory === "매장" · 우선
       const pharm     = isPharm(emp.position);
       const staff     = emp.position === "캐셔" || emp.position === "사원";
       const warehouse = !pharm && (isLogistics(emp.position) || emp.position === "창고");
-      const store     = !pharm && emp.workplace === "매장";
+      const store     = !pharm && (positionToCategory(emp.position) === "매장" || emp.position === "매장" || emp.workplace === "매장");
       const etc       = positionToCategory(emp.position) === "기타" && !pharm;
       if (positionTab === "약사")      { if (!pharm)     return false; }
       else if (positionTab === "사원") { if (!staff)     return false; }
