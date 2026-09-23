@@ -28,11 +28,13 @@ export interface SubTabDef<K extends string> {
   color: string;
 }
 
+// 2026-09-23 · #350 · 사용자 지시 · 탭 순서 변경 · 발주필요 → 발주요청 → 발주이력 → 품절임박(끝)
+//   · 자주 쓰는 탭 앞으로 · 품절임박 · 부수 정보 · 맨 끝
 export const PURCHASE_ORDER_DEFAULT_TABS: SubTabDef<PurchaseOrderKey>[] = [
-  { key: "order",    label: "발주요청", icon: ShoppingCart,  color: "sky"    },
   { key: "need",     label: "발주필요", icon: ClipboardList, color: "rose"   },
-  { key: "critical", label: "품절임박", icon: AlertTriangle, color: "amber"  },
+  { key: "order",    label: "발주요청", icon: ShoppingCart,  color: "sky"    },
   { key: "history",  label: "발주이력", icon: Package,       color: "indigo" },
+  { key: "critical", label: "품절임박", icon: AlertTriangle, color: "amber"  },
 ];
 
 export const PURCHASE_DEFAULT_TABS: SubTabDef<PurchaseKey>[] = [
