@@ -14,7 +14,8 @@ import type { ProductInfo } from "./OrderManagePage.types";
 // 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-09-21 · #326 · 자동 판매추천 · 서브컴포넌트 (파일 사이즈 관리)
-import { SalesAutoRecommendSection, type AutoRecoResponse } from "./SalesAutoRecommendSection";
+// 2026-09-23 · #348 · 사용자 지시 · 자동 판매추천 제거 · 사용자 선택 (이벤트 리스트 · 상품추가 버튼) 방식 전환
+// import { SalesAutoRecommendSection, type AutoRecoResponse } from "./SalesAutoRecommendSection";
 
 // 2026-09-13 · #55 · 임박 이벤트 · GET /api/events/today
 // 2026-09-14 · #85 · products 배열 · [발주 추가] 액션
@@ -143,7 +144,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
   // 2026-09-14 · 사용자 지시 · 유통기한 임박 상품 · 우측 판넬 신규 섹션
   const [expiryImminent, setExpiryImminent] = useState<ExpiryImminentProduct[]>([]);
   // 2026-09-21 · #326 · 자동 판매추천 · 이벤트/계절 기간별
-  const [autoReco, setAutoReco] = useState<AutoRecoResponse | null>(null);
+  // 2026-09-23 · #348 · 자동 판매추천 제거 · autoReco state 제거
   // 2026-09-14 · 사용자 지시 · 이벤트 추가 · 사용자가 이벤트 리스트에서 선택 가능
   //   · GET /api/events · 전체 이벤트 (지난·현재·향후) · 사용자 pick → eventsToday 에 병합
   //   · 원래 오늘 이벤트 (auto) 는 originalEventIds 로 추적 · 수동 추가된 것만 해제 가능
@@ -239,13 +240,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
       } catch {
         if (alive) setExpiryImminent([]);
       }
-      // 2026-09-21 · #326 · 자동 판매추천 fetch · 실패 무시 (안전)
-      try {
-        const { data } = await api.get<AutoRecoResponse>(`/api/sales-auto-recommend?days=30`);
-        if (alive) setAutoReco(data ?? null);
-      } catch {
-        if (alive) setAutoReco(null);
-      }
+      // 2026-09-23 · #348 · 자동 판매추천 fetch 제거 · 사용자 선택 방식으로 전환
     })();
     return () => { alive = false; };
   }, []);
@@ -541,12 +536,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
               </div>
             </div>
           )}
-          {/* 2026-09-21 · #326 · 자동 판매추천 (저수기 경고 + 이벤트 매칭 + 추천 상품 리스트) */}
-          <SalesAutoRecommendSection
-            autoReco={autoReco}
-            requestedCodes={requestedCodes}
-            onRequestProduct={onRequestProduct}
-          />
+          {/* 2026-09-23 · #348 · 자동 판매추천 섹션 제거 · 사용자 지시 · 이벤트 리스트 + 상품추가 버튼 방식 */}
 
           {/* 2026-09-14 · 사용자 지시 · 유통기한 임박 상품 · 발주필요 우측 판넬 · [발주 추가] 액션 */}
           {expiryImminent.length > 0 && (() => {
@@ -662,11 +652,10 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
               </div>
             </div>
           )}
-          {/* 상품 미선택 안내 · 추천/이벤트/유통기한 임박/자동추천 모두 없을 때만 */}
+          {/* 상품 미선택 안내 · 추천/이벤트/유통기한 임박 모두 없을 때만 · #348 · 자동추천 조건 제거 */}
           {(!recommendations || recommendations.length === 0)
             && eventsToday.length === 0
-            && expiryImminent.length === 0
-            && (!autoReco || (autoReco.items.length === 0 && !autoReco.off_season)) && (
+            && expiryImminent.length === 0 && (
             <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center min-h-[240px]">
               <TrendingUp size={40} className="text-zinc-300" strokeWidth={1.5} />
               <div className="text-[16px] font-bold text-ink">판매 추천 정보</div>
