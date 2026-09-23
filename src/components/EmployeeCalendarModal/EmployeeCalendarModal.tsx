@@ -22,6 +22,8 @@ import { api } from "../../lib/apiClient";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { KO_INPUT_PROPS } from "../../lib/koreanInput"; // 2026-09-21 · #329 · 한글 IME 우선
+// 2026-09-23 · B-3 · 편집 form 공통 훅
+import { useEditScheduleForm, SCHEDULE_CYCLE } from "../SchedulePage/useEditScheduleForm";
 
 export type { LogisticsZoneProps };
 
@@ -114,11 +116,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
 
   // ── Calendar tab state ──────────────────────────────────────────
   const [editingDay, setEditingDay] = useState<number | null>(null);
-  const [editType, setEditType] = useState("");
-  const [editWorkingHours, setEditWorkingHours] = useState("");
-  const [editActualHours, setEditActualHours] = useState("");
-  const [editMemo, setEditMemo] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  // 2026-09-23 · B-3 · 편집 대상 day 의 schedule · useEditScheduleForm initialSchedule 로 전달
+  const [editingDaySchedule, setEditingDaySchedule] = useState<Schedule | null>(null);
 
   // 달력 셀 편집 · 로컬 pending 에 저장 후 [저장] 클릭 시 batch 반영 (2026-08-10)
   const [pendingChanges, setPendingChanges] = useState<
@@ -196,15 +195,25 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     .reduce((s, [, n]) => s + n, 0);
 
   // ── Calendar tab handlers ───────────────────────────────────────
-  const CYCLE = ["오픈", "미들", "마감", "휴무"];
+  // 2026-09-23 · B-3 · 편집 form state · useEditScheduleForm 훅으로 통합
+  const editForm = useEditScheduleForm({
+    initialSchedule: editingDaySchedule,
+    isOpen: editingDay !== null,
+    typeHoursMap,
+    onSave: async (values) => {
+      // 편집 패널 저장 → pending 에만 반영 (서버는 batch [저장] 버튼)
+      if (editingDay === null) return;
+      const dayStr = String(editingDay).padStart(2, "0");
+      const date = `${year}-${monthStr}-${dayStr}`;
+      setPendingChanges(prev => ({ ...prev, [date]: values }));
+    },
+  });
 
   const openEditDay = (day: number) => {
     if (!isAdmin || !onUpdate) return;
     const sc = schedMap[day];
-    setEditType(sc?.type || "");
-    setEditWorkingHours(sc?.workingHours || "");
-    setEditActualHours(sc?.actualHours || "");
-    setEditMemo(sc?.memo || "");
+    // editingDaySchedule → 훅 리셋 트리거
+    setEditingDaySchedule(sc ? { date: "", type: sc.type, workingHours: sc.workingHours, actualHours: sc.actualHours, memo: sc.memo } as Schedule : null);
     setEditingDay(day);
   };
 
@@ -213,8 +222,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     if (!isAdmin || !onUpdate) return;
     const sc = schedMap[day];
     const cur = sc?.type || "";
-    const idx = CYCLE.indexOf(cur);
-    const nextType = CYCLE[(idx + 1) % CYCLE.length];
+    const idx = SCHEDULE_CYCLE.indexOf(cur as typeof SCHEDULE_CYCLE[number]);
+    const nextType = SCHEDULE_CYCLE[(idx + 1) % SCHEDULE_CYCLE.length];
     const nextWh = typeHoursMap?.[nextType] ?? "";
     const dayStr = String(day).padStart(2, "0");
     const date = `${year}-${monthStr}-${dayStr}`;
@@ -230,30 +239,22 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     }));
   };
 
-  // 편집 패널 [저장] · pending 에만 반영 (서버는 상단 batch [저장] 버튼)
-  const saveWith = (overrides: { type?: string; workingHours?: string; actualHours?: string; memo?: string } = {}) => {
+  // 편집 패널 · 프리셋 버튼 클릭 → applyPreset 후 pending 즉시 반영
+  const quickApplyType = (presetType: string) => {
+    editForm.applyPreset(presetType);
     if (editingDay === null) return;
     const dayStr = String(editingDay).padStart(2, "0");
     const date = `${year}-${monthStr}-${dayStr}`;
-    const payload = {
-      type: overrides.type ?? editType ?? "휴무",
-      workingHours: overrides.workingHours ?? editWorkingHours,
-      actualHours: overrides.actualHours ?? editActualHours,
-      memo: overrides.memo ?? editMemo,
-    };
-    setEditType(payload.type);
-    setEditWorkingHours(payload.workingHours);
-    setEditActualHours(payload.actualHours);
-    setEditMemo(payload.memo);
-    setPendingChanges(prev => ({ ...prev, [date]: payload }));
-  };
-
-  const quickApplyType = (presetType: string) => {
-    let wh = typeHoursMap?.[presetType] ?? editWorkingHours;
-    if (["휴무", "월차", "지정휴무"].includes(presetType)) wh = "";
-    setEditType(presetType);
-    setEditWorkingHours(wh);
-    saveWith({ type: presetType, workingHours: wh });
+    const wh = typeHoursMap?.[presetType] ?? "";
+    setPendingChanges(prev => ({
+      ...prev,
+      [date]: {
+        type: presetType,
+        workingHours: wh,
+        actualHours: editForm.values.actualHours,
+        memo: editForm.values.memo,
+      },
+    }));
   };
 
   // batch 저장 · pendingChanges 를 서버에 순차 반영
@@ -550,12 +551,12 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   {activeTypes.map((t) => {
                     const btnHex = getTypeHex(t.value, scheduleTypeEntries);
                     const btnLight = isLightHex(btnHex);
-                    const isActive = editType === t.value;
+                    const isActive = editForm.values.type === t.value;
                     return (
                       <button
                         key={t.value}
                         type="button"
-                        disabled={isSaving}
+                        disabled={editForm.saving}
                         onClick={() => quickApplyType(t.value)}
                         className={`px-3 py-1.5 text-[14px] font-semibold rounded-lg border transition-colors cursor-pointer disabled:opacity-40 ${
                           isActive
@@ -564,13 +565,13 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                         }`}
                         style={isActive ? { backgroundColor: btnHex } : undefined}
                       >
-                        {isActive && isSaving ? "저장중..." : t.label}
+                        {isActive && editForm.saving ? "저장중..." : t.label}
                       </button>
                     );
                   })}
                   <button
                     type="button"
-                    disabled={isSaving}
+                    disabled={editForm.saving}
                     onClick={() => quickApplyType("결근")}
                     className="px-3 py-1.5 text-[14px] font-semibold text-rose-800 border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
                   >
@@ -589,8 +590,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     </label>
                     <input
                       type="text" {...KO_INPUT_PROPS}
-                      value={editWorkingHours}
-                      onChange={e => setEditWorkingHours(e.target.value)}
+                      value={editForm.values.workingHours}
+                      onChange={e => editForm.setWorkingHours(e.target.value)}
                       placeholder="09:30-18:30"
                       className="w-full text-[14px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-2.5 py-1.5 bg-white focus:outline-none transition-colors"
                     />
@@ -601,8 +602,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     </label>
                     <input
                       type="text" {...KO_INPUT_PROPS}
-                      value={editActualHours}
-                      onChange={e => setEditActualHours(e.target.value)}
+                      value={editForm.values.actualHours}
+                      onChange={e => editForm.setActualHours(e.target.value)}
                       placeholder="지각, 조퇴..."
                       className="w-full text-[14px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-2.5 py-1.5 bg-white focus:outline-none transition-colors"
                     />
@@ -613,8 +614,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   <label className="text-[15px] font-semibold text-ink-soft mb-1 block">메모</label>
                   <input
                     type="text" {...KO_INPUT_PROPS}
-                    value={editMemo}
-                    onChange={e => setEditMemo(e.target.value)}
+                    value={editForm.values.memo}
+                    onChange={e => editForm.setMemo(e.target.value)}
                     placeholder="메모 (마우스 오버 시 표시)"
                     className="w-full text-[14px] rounded-lg border border-line focus:border-brand-deep focus:ring-2 focus:ring-brand-tint px-2.5 py-1.5 bg-white focus:outline-none transition-colors"
                   />
@@ -630,8 +631,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => { saveWith(); setEditingDay(null); }}
-                    disabled={isSaving}
+                    onClick={async (e) => { await editForm.handleSave(e as unknown as React.FormEvent); setEditingDay(null); }}
+                    disabled={editForm.saving}
                     className="h-9 px-4 text-[14px] font-semibold bg-brand-deep hover:bg-[#0d3a5c] text-white rounded-lg inline-flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
                   >
                     <Save size={13} strokeWidth={2.2} />
