@@ -28,6 +28,7 @@ import { buildInitialShelfPositions, applyInitialShelfPositionsForCodes, backfil
 // 2026-09-20 · #318 P2 · PATCH shelf-positions · POST inventory-checks 와 동일 pipeline 으로 통일
 import { mergeShelfPositions, checkShelfPositionConflicts, fetchProductDisplayLoc } from "../display/inventoryChecksShelfMerge";
 import { getStorageLocations } from "../settings/settings";
+import logger from "../../lib/logger";
 
 const router = Router();
 
@@ -211,7 +212,7 @@ router.get("/api/products-by-category", asyncHandler(async (req, res) => {
   else q = q.ilike("category", `%${category}%`);
   const { data, error } = await q.order("product_name", { ascending: true }).limit(100);
   if (error) {
-    console.error("[products-by-category] error:", error.message);
+    logger.error("[products-by-category] error: " + error.message);
     throw new HttpError(500, error.message);
   }
   return res.json(data ?? []);
@@ -282,7 +283,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
       data = r3.data; error = r3.error;
     }
     if (error) {
-      console.error("[products-search] error:", error.message, "q:", q);
+      logger.error(`[products-search] error: ${error.message} q: ${q}`);
       throw new HttpError(500, error.message);
     }
     // 실재고 (inventory_checks) · 최근 스냅샷 (stock_history) 병합 조회
@@ -379,9 +380,9 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
   const magic4 = `${buf[0]?.toString(16).padStart(2, "0")}${buf[1]?.toString(16).padStart(2, "0")}${buf[2]?.toString(16).padStart(2, "0")}${buf[3]?.toString(16).padStart(2, "0")}`;
   const isXlsx = buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04;
   const isXls  = buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0;
-  console.log(`[upload] 파일 접수 · size=${buf.length}b · magic=0x${magic4} · isXlsx=${isXlsx} · isXls=${isXls}`);
+  logger.debug(`[upload] 파일 접수 · size=${buf.length}b · magic=0x${magic4} · isXlsx=${isXlsx} · isXls=${isXls}`);
   if (!isXlsx && !isXls) {
-    console.warn(`[upload] ❌ 매직 바이트 실패 · 실제=0x${magic4} · 기대 xlsx=0x504b0304 (PK..) · xls=0xd0cf11e0`);
+    logger.warn(`[upload] ❌ 매직 바이트 실패 · 실제=0x${magic4} · 기대 xlsx=0x504b0304 (PK..) · xls=0xd0cf11e0`);
     throw badRequest(`형식이 다른 파일입니다. xlsx/xls 여부 확인 필요 (파일 시그니처: 0x${magic4}, size: ${buf.length}b). 상품리스트 xlsx 파일인지 확인하세요.`);
   }
   let wbCheck, picked, headerRow: any[] = [];
@@ -390,21 +391,21 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
     picked = pickBestSheet(wbCheck);
     headerRow = XLSX.utils.sheet_to_json<any[]>(picked.ws, { header: 1 })[0] ?? [];
   } catch (parseErr: any) {
-    console.error(`[upload] ❌ xlsx 파싱 실패:`, parseErr?.message);
+    logger.error(`[upload] ❌ xlsx 파싱 실패: ${parseErr?.message}`);
     throw badRequest(`엑셀 파싱 실패: ${parseErr?.message ?? "알 수 없는 오류"}`);
   }
   // 2026-08-27 · 사용자 지시 · 여러 시트 중 · 상품리스트 시트 자동 선택 (메가타운/통합 등)
-  console.log(`[upload] 시트 · 총 ${wbCheck.SheetNames.length}개 (${wbCheck.SheetNames.join(", ")}) · 선택="${picked.name}" · 헤더 컬럼수=${headerRow.length}`);
-  console.log(`[upload] 헤더 앞 10개:`, headerRow.slice(0, 10).map(v => JSON.stringify(v)).join(" · "));
+  logger.info(`[upload] 시트 · 총 ${wbCheck.SheetNames.length}개 (${wbCheck.SheetNames.join(", ")}) · 선택="${picked.name}" · 헤더 컬럼수=${headerRow.length}`);
+  logger.info(`[upload] 헤더 앞 10개: ${headerRow.slice(0, 10).map(v => JSON.stringify(v)).join(" · ")}`);
   if (headerRow.length < COL_KEYS.length) {
-    console.warn(`[upload] ❌ 컬럼 부족 · 실제=${headerRow.length} · 기대 최소=${COL_KEYS.length}`);
-    console.warn(`[upload] 기대 컬럼 (COL_KEYS):`, COL_KEYS.slice(0, 15).join(", "), "...");
+    logger.warn(`[upload] ❌ 컬럼 부족 · 실제=${headerRow.length} · 기대 최소=${COL_KEYS.length}`);
+    logger.warn(`[upload] 기대 컬럼 (COL_KEYS): ${COL_KEYS.slice(0, 15).join(", ")} ...`);
     throw badRequest(`형식이 다른 파일입니다. 컬럼 수 부족 (선택 시트 "${picked.name}" · 실제 ${headerRow.length}개 · 기대 ${COL_KEYS.length}개). 표준 상품리스트 xlsx 를 다시 확인해주세요.`);
   }
   const rows = xlsxToRows(buf);
   if (rows.length === 0) throw badRequest("엑셀에 데이터가 없습니다");
   const t0 = Date.now();
-  console.log(`[upload] parsed ${rows.length} rows`);
+  logger.info(`[upload] parsed ${rows.length} rows`);
   // 2026-08-26 · 사용자 버그 fix · ON CONFLICT DO UPDATE cannot affect row twice
   //   · xlsx 안 · 같은 product_code 중복 시 · Postgres upsert 실패
   //   · 해결 · 마지막 값 우선 · Map 으로 dedupe (마지막 등장 값 유지)
@@ -434,7 +435,7 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
   }
   const dedupedRows = Array.from(dedupMap.values());
   if (dupCount > 0 || emptyCount > 0) {
-    console.log(`[upload] dedup · ${rows.length} → ${dedupedRows.length} (중복 ${dupCount} · 빈코드 ${emptyCount} 제외 · 마지막 값 유지)`);
+    logger.info(`[upload] dedup · ${rows.length} → ${dedupedRows.length} (중복 ${dupCount} · 빈코드 ${emptyCount} 제외 · 마지막 값 유지)`);
   }
 
   // 2026-08-28 · 사용자 지시 (Phase A) · dead 컬럼 30개 필터 (UI 미참조 · DB 저장 skip · 성능·용량 절약)
@@ -456,7 +457,7 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
       if (k in r) { delete (r as any)[k]; strippedCount++; }
     }
   }
-  if (strippedCount > 0) console.log(`[upload] dead 컬럼 필터 · ${DEAD_COLS.size}개 정의 · 실 제거 필드 ${strippedCount}건`);
+  if (strippedCount > 0) logger.info(`[upload] dead 컬럼 필터 · ${DEAD_COLS.size}개 정의 · 실 제거 필드 ${strippedCount}건`);
   // 2026-08-26 · 성능 개선 · chunk 500→1000 · PARALLEL 3→5 · Postgres 1KB row 기준 여유
   // 2026-08-27 · location 컬럼 없을 시 방어 · 첫 chunk 실패 시 location 필드 제거 후 재시도
   const CHUNK_SIZE = 1000;
@@ -468,7 +469,7 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
     const r = await supabase.from("products").upsert(payload, { onConflict: "product_code" });
     if (r.error && /column.*location.*(does not exist|schema cache)/i.test(r.error.message) && !stripLocationField) {
       // 첫 감지 · location 컬럼 없음 · 이후 모든 chunk 에서 필터
-      console.warn("[upload] location 컬럼 없음 · SQL 마이그레이션 필요 · 이 임포트는 location 제외 진행");
+      logger.warn("[upload] location 컬럼 없음 · SQL 마이그레이션 필요 · 이 임포트는 location 제외 진행");
       stripLocationField = true;
       const retryPayload = chunk.map(({ location, ...rest }) => rest);
       return supabase.from("products").upsert(retryPayload, { onConflict: "product_code" });
@@ -482,14 +483,14 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
     const results = await Promise.all(batch.map(upsertOne));
     for (const { error: upsertErr } of results) {
       if (upsertErr) {
-        console.error("[upload] upsert error:", upsertErr);
+        logger.error("[upload] upsert error: " + upsertErr?.message);
         throw new HttpError(500, `업서트 실패: ${upsertErr.message}`);
       }
     }
-    console.log(`[upload] upserted chunks ${i + 1}~${Math.min(i + PARALLEL, chunks.length)} / ${chunks.length} · ${Date.now() - tChunk}ms`);
+    logger.debug(`[upload] upserted chunks ${i + 1}~${Math.min(i + PARALLEL, chunks.length)} / ${chunks.length} · ${Date.now() - tChunk}ms`);
   }
   const upsertMs = Date.now() - t0;
-  console.log(`[upload] upsert done · 총 ${upsertMs}ms · rows=${dedupedRows.length}`);
+  logger.info(`[upload] upsert done · 총 ${upsertMs}ms · rows=${dedupedRows.length}`);
   // 2026-08-27 · 사용자 지시 · 다음 임포트부터는 업데이트만 · 기존 상품 삭제 X
   //   · 이 시점 (6,450건 · 사용자 정리 완료) 이 출발 데이터
   //   · 엑셀에 있는 코드만 upsert (UPDATE / INSERT) · 엑셀에 없는 기존 상품은 그대로 유지
@@ -513,7 +514,7 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
         .select("product_code, optimal_stock_backup")
         .not("optimal_stock_backup", "is", null)
         .range(from, from + PAGE - 1);
-      if (fetchErr) { console.warn("[upload] restore fetch 실패:", fetchErr.message); break; }
+      if (fetchErr) { logger.warn("[upload] restore fetch 실패: " + fetchErr.message); break; }
       if (!rows || rows.length === 0) break;
       // 2026-09-08 · CRITICAL-2 · N+1 sequential → Promise.all 병렬 배치 (50개 단위)
       //   · 이전 · 7,000 sequential UPDATE · 몇 분 소요
@@ -531,14 +532,14 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
       if (rows.length < PAGE) break;
       from += PAGE;
     }
-    console.log(`[upload] restore 직접쿼리 · ${restoredCount}건 · ${Date.now() - tRestore}ms`);
+    logger.debug(`[upload] restore 직접쿼리 · ${restoredCount}건 · ${Date.now() - tRestore}ms`);
   } catch (e: any) {
-    console.warn("[upload] restore_optimal_stock exception:", e.message);
+    logger.warn("[upload] restore_optimal_stock exception: " + e.message);
   }
   const tCache = Date.now();
   resetProductCache();
   const tLog = Date.now();
-  console.log(`[upload] resetProductCache · ${tLog - tCache}ms`);
+  logger.debug(`[upload] resetProductCache · ${tLog - tCache}ms`);
 
   // 2026-09-18 · 사용자 지시 · 계층 1 · xlsx 임포트 완료 후 · shelf_positions 자동 배정
   //   · 방금 upsert 한 상품들 대상 · location 있으면 · inventory_checks.shelf_positions 자동 채움
@@ -548,9 +549,9 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
   try {
     const uploadedCodes = dedupedRows.map(r => String((r as any).product_code ?? "").trim()).filter(Boolean);
     autoShelfResult = await applyInitialShelfPositionsForCodes(supabase, uploadedCodes, { onlyActive: true });
-    console.log(`[upload] shelf-positions auto-assign · 신규 ${autoShelfResult.inserted}건 · 병합 ${autoShelfResult.updated}건 · skip ${autoShelfResult.skipped} · fail ${autoShelfResult.failed} · ${autoShelfResult.ms}ms`);
+    logger.info(`[upload] shelf-positions auto-assign · 신규 ${autoShelfResult.inserted}건 · 병합 ${autoShelfResult.updated}건 · skip ${autoShelfResult.skipped} · fail ${autoShelfResult.failed} · ${autoShelfResult.ms}ms`);
   } catch (autoErr: any) {
-    console.warn(`[upload] shelf-positions auto-assign 실패 (경고 · 임포트는 성공): ${autoErr?.message ?? autoErr}`);
+    logger.warn(`[upload] shelf-positions auto-assign 실패 (경고 · 임포트는 성공): ${autoErr?.message ?? autoErr}`);
   }
 
   const { data: logData } = await supabase.from("app_settings").select("value").eq("key", "product_import_log").maybeSingle();
@@ -558,8 +559,8 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
   const newEntry = { timestamp: new Date().toISOString(), count: rows.length, restored: restoredCount, hidden: hiddenCount, deleted: deletedCount, shelfAutoInserted: autoShelfResult.inserted, shelfAutoUpdated: autoShelfResult.updated };
   const logs = [newEntry, ...prevLogs].slice(0, 20);
   await supabase.from("app_settings").upsert({ key: "product_import_log", value: logs, updated_at: new Date().toISOString() }, { onConflict: "key" });
-  console.log(`[upload] app_settings log · ${Date.now() - tLog}ms`);
-  console.log(`[upload] ==== 전체 소요 ${Date.now() - t0}ms (upsert ${upsertMs}ms + post ${Date.now() - t0 - upsertMs}ms) ====`);
+  logger.debug(`[upload] app_settings log · ${Date.now() - tLog}ms`);
+  logger.info(`[upload] ==== 전체 소요 ${Date.now() - t0}ms (upsert ${upsertMs}ms + post ${Date.now() - t0 - upsertMs}ms) ====`);
   res.json({
     ok: true,
     count: rows.length,
@@ -578,7 +579,7 @@ router.post("/api/upload-products", authorize(9), express.raw({ type: "applicati
 router.post("/api/products/backfill-shelf-positions", authorize(9), asyncHandler(async (_req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const result = await backfillAllShelfPositions(supabase);
-  console.log(`[backfill-shelf-positions] 완료 · 신규 ${result.inserted} · 병합 ${result.updated} · skip ${result.skipped} · fail ${result.failed} · ${result.ms}ms`);
+  logger.info(`[backfill-shelf-positions] 완료 · 신규 ${result.inserted} · 병합 ${result.updated} · skip ${result.skipped} · fail ${result.failed} · ${result.ms}ms`);
   res.json({ ok: true, ...result });
 }));
 
@@ -690,10 +691,10 @@ router.delete("/api/products/:code", authorize(9), asyncHandler(async (req, res)
       if ((count ?? 0) > 0) {
         const { error: delErr } = await supabase.from(t).delete().eq("product_code", code);
         if (delErr) {
-          console.warn(`[products DELETE] ${t} 정리 실패 (경고 · 계속 진행): ${delErr.message}`);
+          logger.warn(`[products DELETE] ${t} 정리 실패 (경고 · 계속 진행): ${delErr.message}`);
         } else {
           cleanup[t] = count!;
-          console.log(`[products DELETE] ${t} orphan 정리 · ${count}건 · ${code}`);
+          logger.info(`[products DELETE] ${t} orphan 정리 · ${count}건 · ${code}`);
         }
       }
     } catch {
@@ -703,11 +704,11 @@ router.delete("/api/products/:code", authorize(9), asyncHandler(async (req, res)
 
   const { error } = await supabase.from("products").delete().eq("product_code", code);
   if (error) {
-    console.error("[products DELETE] error:", error.message);
+    logger.error("[products DELETE] error: " + error.message);
     throw new HttpError(500, error.message);
   }
   resetProductCache();
-  console.log(`[products DELETE] 삭제 완료 · ${code} · cleanup=${JSON.stringify(cleanup)}`);
+  logger.info(`[products DELETE] 삭제 완료 · ${code} · cleanup=${JSON.stringify(cleanup)}`);
   res.json({ ok: true, product_code: code, cleanup });
 }));
 
@@ -727,7 +728,7 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
     .select("product_code, expiry_date")
     .not("expiry_date", "is", null);
   if (icErr) {
-    console.error("[expiry-imminent GET] inventory_checks error:", icErr.message);
+    logger.error("[expiry-imminent GET] inventory_checks error: " + icErr.message);
     throw new HttpError(500, icErr.message);
   }
   mergeMinExpiry(icRows as ExpiryRow[] | null, minExpiry);
@@ -739,7 +740,7 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
     .not("expiry_date", "is", null)
     .eq("hidden", false);
   if (prodExpErr) {
-    console.error("[expiry-imminent GET] products.expiry_date error:", prodExpErr.message);
+    logger.error("[expiry-imminent GET] products.expiry_date error: " + prodExpErr.message);
     throw new HttpError(500, prodExpErr.message);
   }
   mergeMinExpiry(prodExpiry as ExpiryRow[] | null, minExpiry);
@@ -751,7 +752,7 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
     .eq("verified_expiring", true)
     .not("expiry_date", "is", null);
   if (paErr) {
-    console.error("[expiry-imminent GET] purchase_details error:", paErr.message);
+    logger.error("[expiry-imminent GET] purchase_details error: " + paErr.message);
     // 3단계 실패 · 1·2단계는 유지 · warn 만 (BC)
   } else {
     mergeMinExpiry(paRows as ExpiryRow[] | null, minExpiry);
@@ -774,7 +775,7 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
       .in("product_code", chunk)
       .eq("hidden", false);
     if (error) {
-      console.error("[expiry-imminent GET] products error:", error.message);
+      logger.error("[expiry-imminent GET] products error: " + error.message);
       throw new HttpError(500, error.message);
     }
     products.push(...(data ?? []));
@@ -810,7 +811,7 @@ router.get("/api/products/hidden", asyncHandler(async (_req, res) => {
     .order("product_name", { ascending: true })
     .limit(500);
   if (error) {
-    console.error("[hidden GET] error:", error.message);
+    logger.error("[hidden GET] error: " + error.message);
     throw new HttpError(500, error.message);
   }
   res.setHeader("Cache-Control", "no-store");
@@ -959,7 +960,7 @@ router.post("/api/products/refill-optimal-stock", authorize(9), validateBody(Ref
     // 2026-09-09 · 사용자 지시 · 재계산 후 · 발주필요 리스트 자동 반영
     //   · low-stock 2분 캐시 · 재계산 결과 즉시 반영되도록 무효화
     clearLowStockCache();
-    console.log(`[refill-optimal-stock] since=${result.since} until=${result.until} · history=${result.totalHistoryRows} · sales=${result.productsWithSales} · zeroed=${result.productsZeroed} · updated=${result.productsUpdated} · orderReqs=${result.orderRequestsUpdated} · total=${result.elapsedMs}ms (sale ${result.saleMs}ms + product ${result.productMs}ms + order ${result.orderMs}ms)`);
+    logger.info(`[refill-optimal-stock] since=${result.since} until=${result.until} · history=${result.totalHistoryRows} · sales=${result.productsWithSales} · zeroed=${result.productsZeroed} · updated=${result.productsUpdated} · orderReqs=${result.orderRequestsUpdated} · total=${result.elapsedMs}ms (sale ${result.saleMs}ms + product ${result.productMs}ms + order ${result.orderMs}ms)`);
     return res.json({
       ok: true,
       updated: result.productsUpdated,
@@ -1028,7 +1029,7 @@ router.patch("/api/products/:code/shelf-positions", authorize(1), validateBody(S
   }
 
   if (existing) {
-    console.log("[inventory_checks PATCH shelf-positions] update", { code, existingId: existing.id, merged });
+    logger.debug(`[inventory_checks PATCH shelf-positions] update code=${code} existingId=${existing.id}`, { merged });
     // product_code 로 update · UNIQUE 제약 후 · 실질적 upsert 효과
     const { error } = await supabase
       .from("inventory_checks")
@@ -1038,7 +1039,7 @@ router.patch("/api/products/:code/shelf-positions", authorize(1), validateBody(S
       if (/column .* does not exist|schema cache/i.test(error.message ?? "")) {
         throw new HttpError(503, "shelf_positions 컬럼 미배포");
       }
-      console.error("[inventory_checks PATCH shelf-positions] update error:", error.message);
+      logger.error("[inventory_checks PATCH shelf-positions] update error: " + error.message);
       throw new HttpError(500, error.message);
     }
   } else {
@@ -1059,7 +1060,7 @@ router.patch("/api/products/:code/shelf-positions", authorize(1), validateBody(S
       checked_by: "",
       note: "",
     };
-    console.log("[inventory_checks PATCH shelf-positions] insert", { code, insertRow });
+    logger.debug(`[inventory_checks PATCH shelf-positions] insert code=${code}`, { insertRow });
     let { error } = await supabase.from("inventory_checks").insert([insertRow]);
     // 컬럼 미존재 시 · 해당 컬럼 strip 후 재시도 (스키마 편차 대비)
     let attempt = 0;
@@ -1072,12 +1073,12 @@ router.patch("/api/products/:code/shelf-positions", authorize(1), validateBody(S
         throw new HttpError(503, "shelf_positions 컬럼 미배포 (inventory_checks)");
       }
       delete (insertRow as any)[colName];
-      console.warn("[inventory_checks PATCH shelf-positions] insert strip:", colName);
+      logger.warn("[inventory_checks PATCH shelf-positions] insert strip: " + colName);
       const retry = await supabase.from("inventory_checks").insert([insertRow]);
       error = retry.error;
     }
     if (error) {
-      console.error("[inventory_checks PATCH shelf-positions] insert error:", error.message);
+      logger.error("[inventory_checks PATCH shelf-positions] insert error: " + error.message);
       throw new HttpError(500, error.message);
     }
   }
@@ -1137,13 +1138,13 @@ router.patch("/api/products/:code", authorize(1), validateBody(UpdateProductSche
     if (!colName || !(colName in updates)) break;
     delete updates[colName];
     patchStripped.push(colName);
-    console.warn(`[products PATCH] DB 컬럼 미존재 · strip 후 재시도: ${colName}`);
+    logger.warn(`[products PATCH] DB 컬럼 미존재 · strip 후 재시도: ${colName}`);
     if (Object.keys(updates).length === 0) { updErr = null; break; }
     const { error } = await doUpdate(updates);
     updErr = error ?? null;
   }
   if (updErr) {
-    console.error("[products PATCH] error:", updErr.message);
+    logger.error("[products PATCH] error: " + updErr.message);
     throw new HttpError(500, updErr.message);
   }
 
@@ -1184,8 +1185,8 @@ router.patch("/api/products/:code", authorize(1), validateBody(UpdateProductSche
           .from("inventory_checks")
           .update({ shelf_positions: mergedPos })
           .eq("product_code", code);
-        if (mergeErr) console.warn(`[products PATCH] inventory_checks shelf_positions 재배정 실패 (경고): ${mergeErr.message}`);
-        else console.log(`[products PATCH] inventory_checks shelf_positions 재배정 · ${code} · ${JSON.stringify(mergedPos)}`);
+        if (mergeErr) logger.warn(`[products PATCH] inventory_checks shelf_positions 재배정 실패 (경고): ${mergeErr.message}`);
+        else logger.debug(`[products PATCH] inventory_checks shelf_positions 재배정 · ${code} · ${JSON.stringify(mergedPos)}`);
       } else {
         // inventory_checks row 없음 · 신규 생성 (products 만 있는 상품 · 정합성 복구)
         const insertRow: Record<string, unknown> = {
@@ -1204,11 +1205,11 @@ router.patch("/api/products/:code", authorize(1), validateBody(UpdateProductSche
           note: "",
         };
         const { error: insErr2 } = await supabase.from("inventory_checks").insert([insertRow]);
-        if (insErr2) console.warn(`[products PATCH] inventory_checks 신규 생성 실패 (경고): ${insErr2.message}`);
-        else console.log(`[products PATCH] inventory_checks 신규 생성 (location 변경 계기) · ${code}`);
+        if (insErr2) logger.warn(`[products PATCH] inventory_checks 신규 생성 실패 (경고): ${insErr2.message}`);
+        else logger.debug(`[products PATCH] inventory_checks 신규 생성 (location 변경 계기) · ${code}`);
       }
     } catch (e: any) {
-      console.warn(`[products PATCH] inventory_checks 동기 예외 (경고): ${e?.message ?? e}`);
+      logger.warn(`[products PATCH] inventory_checks 동기 예외 (경고): ${e?.message ?? e}`);
     }
   }
 
@@ -1271,18 +1272,18 @@ router.post("/api/products", authorize(5), validateBody(CreateProductSchema), as
     if (!colName || !(colName in row)) break;
     delete row[colName];
     stripped.push(colName);
-    console.warn(`[products POST] DB 컬럼 미존재 · strip 후 재시도: ${colName}`);
+    logger.warn(`[products POST] DB 컬럼 미존재 · strip 후 재시도: ${colName}`);
     const { error } = await doInsert(row);
     insErr = error ?? null;
   }
   if (insErr) {
-    console.error("[products POST] insert error:", insErr.message);
+    logger.error("[products POST] insert error: " + insErr.message);
     throw new HttpError(500, insErr.message);
   }
   if (stripped.length > 0) {
-    console.log(`[products POST] 신규 등록 (strip: ${stripped.join(", ")}) · ${code} · ${input.product_name}`);
+    logger.info(`[products POST] 신규 등록 (strip: ${stripped.join(", ")}) · ${code} · ${input.product_name}`);
   } else {
-    console.log(`[products POST] 신규 등록 · ${code} · ${input.product_name}`);
+    logger.info(`[products POST] 신규 등록 · ${code} · ${input.product_name}`);
   }
 
   // 2026-09-15 · #61 B안 · 사용자 원칙 · 상품테이블 ↔ 실재고테이블 자동 연동
@@ -1330,13 +1331,13 @@ router.post("/api/products", authorize(5), validateBody(CreateProductSchema), as
         icErr = retry.error;
       }
       if (icErr) {
-        console.warn(`[products POST] inventory_checks 자동 생성 실패 (경고 · 상품 등록은 성공): ${icErr.message}`);
+        logger.warn(`[products POST] inventory_checks 자동 생성 실패 (경고 · 상품 등록은 성공): ${icErr.message}`);
       } else {
-        console.log(`[products POST] inventory_checks 자동 생성 · ${code} · shelf_positions=${JSON.stringify(shelfPositions)}`);
+        logger.info(`[products POST] inventory_checks 자동 생성 · ${code} · shelf_positions=${JSON.stringify(shelfPositions)}`);
       }
     }
   } catch (e: any) {
-    console.warn(`[products POST] inventory_checks 자동 생성 예외 (경고 · 상품 등록은 성공): ${e?.message ?? e}`);
+    logger.warn(`[products POST] inventory_checks 자동 생성 예외 (경고 · 상품 등록은 성공): ${e?.message ?? e}`);
   }
 
   resetProductCache();
