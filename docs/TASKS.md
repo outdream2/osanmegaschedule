@@ -138,6 +138,7 @@
 | **#337** | **스케쥴표 날짜 클릭 모달 · 세로 스크롤 안 됨** (사용자 보고 · 2026-09-23) | ✅ 완료 (미커밋) | Modal.tsx bodyPadding=none · `flex flex-col` 추가 · nested scroll bug fix · DayTimelineModal HeaderBar sticky + body scroll 정상 |
 | **#338** | **구역·점심·휴게 배정 · 약사 이름 색상** (사용자 보고 · 2026-09-23) | ✅ 완료 (미커밋) | ZoneSection.tsx · 약사 chip color · `#2563eb` (blue) → `#dc2626` (red-600) · 눈에 잘 띄게 |
 | **#339** | **EmployeeProfileCard · 직군 · settings 대조** (사용자 지시 A · 2026-09-23) | 🟡 P2 | position · `settings.wageRates` 존재 목록 대조 · 없으면 zinc fallback color · 일관성 |
+| **#340** | **BulkTab · 달력 그리드 통합 (CalendarGrid 공통 추출)** (사용자 지시 · 2026-09-23) | 🟡 P2 | 진행 중 (`aecf6b85...` agent) · 일괄등록 날짜 선택 · 앞 탭 calendar 달력 내용 표시 · CalendarGrid 공통 컴포넌트 · **하드코딩 절대 금지** · scheduleTypeEntries·DAY_LABELS·settings KV SSOT 참조 · 색상·라벨·근무시간 · 모두 파생 |
 <!-- #330 ✅ · 2026-09-21 완료 · `2cea0957` · 시스템설정 신규 탭 "추천 규칙" · KV app_settings.event_category_rules + SSOT fallback + 60초 서버 캐시 + 원본 복원 · authorize(9) POST/DELETE · Zod EventCategoryRulesPayloadSchema -->
 <!-- #311 ✅ · UpcomingLeaveBanner + useUpcomingLeaves + /api/upcoming-leaves · SchedulePage L561 통합 · 14일 이내 · 관리자 lv≥2 · 이미 완료 -->
 <!-- #312 ✅ · POST /api/approve-leave (server/routes/daily/leave.ts L118-146) · scheduleService.batchUpdateSchedules 자동 호출 · try/catch + 로그 · 실패 시 500 · 알림 발송 · 이미 완료 -->

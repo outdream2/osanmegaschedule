@@ -126,10 +126,10 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                 }
               };
 
-              // select 모드에서 선택된 셀은 brand-deep 배경 오버라이드
+              // select 모드에서 선택된 셀은 brand-deep 배경 오버라이드 (CSS var 참조 · 하드코딩 금지)
               const selectBgStyle =
                 mode === "select" && isSelected
-                  ? { backgroundColor: "#0f2742" } // brand-deep
+                  ? { backgroundColor: "var(--color-brand-deep)" }
                   : dayBgHex && !isSelected
                   ? { backgroundColor: dayBgHex }
                   : undefined;
@@ -153,8 +153,8 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                 isToday && !isSelected ? "ring-2 ring-indigo-400 ring-offset-1" : "",
                 isEditing ? "ring-2 ring-blue-500 scale-105 z-10 shadow-md" : "",
                 hasPending ? "ring-2 ring-amber-400" : "",
-                // select 모드: 선택된 셀 brand-deep ring
-                mode === "select" && isSelected ? "ring-2 ring-[#0f2742] ring-offset-1" : "",
+                // select 모드: 선택된 셀 brand-deep ring (Tailwind 토큰 · 하드코딩 금지)
+                mode === "select" && isSelected ? "ring-2 ring-brand-deep ring-offset-1" : "",
               ]
                 .filter(Boolean)
                 .join(" ");
