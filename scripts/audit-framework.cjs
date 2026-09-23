@@ -10,14 +10,21 @@ const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
 const SRC = path.join(ROOT, "src");
+const SERVER = path.join(ROOT, "server");
 const OUTPUT = path.join(ROOT, "docs", "FRAMEWORK_AUDIT.md");
 const BASELINE = path.join(ROOT, "docs", ".framework-baseline.json");
 
 // ────────────────────────────────────────────────────────────
 // Rule definitions · pattern + severity + fix hint
 // ────────────────────────────────────────────────────────────
+//
+// scope 옵션 (2026-09-23 · P3-4)
+//   · "src"    · src/**/*.{ts,tsx}  (기본값 · 클라이언트 컴포넌트)
+//   · "server" · server/**/*.ts     (Node 백엔드)
+//   · "all"    · 양쪽 모두
+// ────────────────────────────────────────────────────────────
 const RULES = [
-  { id: "raw-fetch", severity: "high", weight: 3,
+  { id: "raw-fetch", severity: "high", weight: 3, scope: "src",
     // 2026-08-21 · JSDoc/주석 라인 안 매칭 · pattern 개선 (line-start 공백 뒤 * 이면 skip)
     pattern: /^(?!\s*[*/]).*\bfetch\s*\(\s*["`']\//gm,
     fix: "apiClient (api.get/post/put)",
@@ -31,51 +38,94 @@ const RULES = [
     //  - geminiEngine   · Gemini 전용 · OCR SSE 관련
     //  - OcrPage.tsx    · /api/ocr?stream=1 · SSE 스트리밍
     skip: /apiClient|test|errorReporter|App\.tsx|main\.tsx|productsCache|zoneLabels|geminiEngine|OcrPage\/OcrPage/ },
-  { id: "raw-alert", severity: "high", weight: 3,
+  { id: "raw-alert", severity: "high", weight: 3, scope: "src",
     pattern: /(?<!\/\/.*)\balert\s*\(/g,
     fix: "useToast (showError·showSuccess)",
     skip: /test|alert\?/ },
-  { id: "raw-loader2", severity: "medium", weight: 2,
+  { id: "raw-loader2", severity: "medium", weight: 2, scope: "src",
     pattern: /<Loader2\s+size=\{[^}]+\}\s+className="animate-spin"/g,
     fix: "Spinner 프리미티브",
     skip: /Spinner|Button|ListLoading|test/ },
-  { id: "raw-card-wrapper", severity: "medium", weight: 2,
+  { id: "raw-card-wrapper", severity: "medium", weight: 2, scope: "src",
     // 2026-08-21 · 정확도 개선 · <div|<section|<article|<aside 만 · <input/<select/<textarea 제외
     //   (form input 은 Card wrapper 대상 아님 · false positive 방지)
     pattern: /<(?:div|section|article|aside)\b[^>]*className="[^"]*bg-white\s+border\s+border-line\s+rounded-(xl|lg|2xl)[^"]*"/g,
     fix: "Card 프리미티브 (padding·variant·clip)",
     skip: /Card\.tsx|Panel\.tsx|Toolbar\.tsx|ImageUploadField|test/ },
-  { id: "raw-confirm", severity: "medium", weight: 2,
+  { id: "raw-confirm", severity: "medium", weight: 2, scope: "src",
     pattern: /(?<!\/\/.*)\bwindow\.confirm\s*\(/g,
     fix: "useConfirm (ConfirmDialog 프리미티브)",
     // 2026-08-21 · window.confirm 만 잡음 · 로컬 `const confirm = useConfirm()` 은 정상 사용
     skip: /useConfirm|test/ },
   // 2026-08-21 · tier 화 · 500-라인 borderline · 800+ 실질 문제 · 2000+ 시급
-  { id: "large-file-critical", severity: "high", weight: 8,
+  { id: "large-file-critical", severity: "high", weight: 8, scope: "src",
     pattern: null,
     fix: "2000+라인 · 시급 · 서브 컴포넌트/훅 분리 필수",
     skip: null,
     lineThreshold: 2000 },
-  { id: "large-file-warn", severity: "medium", weight: 3,
+  { id: "large-file-warn", severity: "medium", weight: 3, scope: "src",
     pattern: null,
     fix: "800-2000라인 · 서브 컴포넌트 분리 권장",
     skip: null,
     lineThreshold: 800,
     lineCeiling: 2000 },
+  // ────────────────────────────────────────────────────────────
+  // 2026-09-23 · P3-4 · ESLint 룰 확장 (audit 통합)
+  // ────────────────────────────────────────────────────────────
+  // 1. no-raw-console-server
+  //   · 서버 라우트·서비스 · console.log/warn/error 금지 · logger.* 사용
+  //   · 예외 · logger.ts (자체 구현) · envValidation.ts (부팅 시)
+  //   · scope: server
+  { id: "no-raw-console-server", severity: "medium", weight: 2, scope: "server",
+    pattern: /(?<!\/\/[^\n]*)(?<!\*[^\n]*)\bconsole\.(?:log|warn|error|info|debug)\s*\(/g,
+    fix: "logger.info / logger.warn / logger.error (server/lib/logger.ts)",
+    // 예외:
+    //  - logger.ts        · 자체 구현
+    //  - envValidation.ts · 부팅 · logger 초기화 전
+    //  - test / test.ts   · 테스트 파일
+    skip: /server[\\/]lib[\\/]logger\.ts$|server[\\/]lib[\\/]envValidation\.ts$|\.test\.ts$/ },
+  // 2. no-any-server (완화)
+  //   · 서버 코드 · 명시적 `: any` 사용 금지 · catch (err: any) 는 허용
+  //   · scope: server
+  { id: "no-any-server", severity: "medium", weight: 1, scope: "server",
+    // ": any" 매치 · but catch(err: any) 및 // eslint-disable-next-line 인접 라인 제외 · 주석 라인 제외
+    // 주석 안 (//... : any) 매칭 방지 · 라인 시작 공백 뒤 // 또는 * 은 skip
+    pattern: /^(?!\s*(?:\/\/|\*)).*?(?<!catch\s*\([^)]{0,50}):\s*any\b(?![^\n]*eslint-disable)/gm,
+    fix: "구체 타입 · unknown + type guard · zod 스키마 추론",
+    skip: /\.test\.ts$|\.d\.ts$/ },
+  // 3. prefer-modal-primitive
+  //   · src/**/*.tsx · raw <div className="fixed inset-0 ... bg-black/..."> 인라인 모달 금지
+  //   · Modal 프리미티브 (src/components/common/Modal.tsx) 사용
+  //   · scope: src
+  { id: "prefer-modal-primitive", severity: "medium", weight: 2, scope: "src",
+    // <div ... fixed inset-0 ... bg-black/ ... > 매치 · 한 줄 안에서 검색
+    // false positive 방지: image viewer / camera overlay / sheet primitive 등 skip
+    pattern: /<(?:div|section)\b[^>]{0,200}\bfixed\s+inset-0\b[^>]{0,200}\bbg-black\/(?:\d+)/g,
+    fix: "Modal 프리미티브 (src/components/common/Modal.tsx)",
+    // 예외:
+    //  - Modal.tsx        · 자체 구현
+    //  - ui/sheet.tsx     · Radix Sheet primitive
+    //  - BarcodeScanner   · 카메라 오버레이
+    //  - PanZoomImage     · 이미지 뷰어
+    //  - PageImageViewer  · OCR 페이지 이미지
+    //  - ImageZoomModal   · 이미지 확대 (자체 dialog)
+    skip: /components[\\/]common[\\/]Modal\.tsx$|ui[\\/]sheet\.tsx$|BarcodeScanner|PanZoomImage|PageImageViewer|ImageZoomModal|test/ },
 ];
 
 // ────────────────────────────────────────────────────────────
 // File walker
 // ────────────────────────────────────────────────────────────
-function walk(dir, out = []) {
+// 2026-09-23 · P3-4 · scope 지원 · file 마다 어느 root(src|server) 소속인지 태그
+function walk(dir, scope, out = []) {
+  if (!fs.existsSync(dir)) return out;
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const e of entries) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) {
       if (["node_modules", "dist", "coverage", ".git", "logs"].includes(e.name)) continue;
-      walk(p, out);
+      walk(p, scope, out);
     } else if (/\.(tsx|ts)$/.test(e.name) && !/\.d\.ts$/.test(e.name)) {
-      out.push(p);
+      out.push({ path: p, scope });
     }
   }
   return out;
@@ -84,13 +134,18 @@ function walk(dir, out = []) {
 // ────────────────────────────────────────────────────────────
 // Scan
 // ────────────────────────────────────────────────────────────
-function scanFile(filePath) {
+function scanFile(fileEntry) {
+  const filePath = fileEntry.path;
+  const fileScope = fileEntry.scope; // "src" | "server"
   const content = fs.readFileSync(filePath, "utf8");
   const relPath = path.relative(ROOT, filePath).replace(/\\/g, "/");
   const violations = [];
   const lineCount = content.split("\n").length;
 
   for (const rule of RULES) {
+    // scope 필터 (2026-09-23 · P3-4)
+    const ruleScope = rule.scope || "src";
+    if (ruleScope !== "all" && ruleScope !== fileScope) continue;
     if (rule.skip && rule.skip.test(relPath)) continue;
 
     if (rule.id === "large-file-critical" || rule.id === "large-file-warn") {
@@ -284,7 +339,11 @@ function main() {
   const flags = parseArgs(process.argv);
   if (flags.help) { printHelp(); process.exit(0); }
 
-  const files = walk(SRC);
+  // 2026-09-23 · P3-4 · src (기존) + server (신규) · scope 태그 유지
+  const files = [
+    ...walk(SRC, "src"),
+    ...walk(SERVER, "server"),
+  ];
   const results = files.map(scanFile);
   const agg = aggregate(results);
   const totalViolations = Object.values(agg.ruleTotals).reduce((s, r) => s + r.count, 0);

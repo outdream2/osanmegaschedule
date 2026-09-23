@@ -5,6 +5,7 @@ import { supabase } from "../../../src/supabase/client";
 import { notificationsService } from "../../services/notificationsService";
 // 2026-08-16 · #112-E1 Phase 2 · 매니저(lv 2+) 만 DELETE
 import { authorize, getSession } from "../../middleware/requireAuth";
+import type { AuthedRequest } from "../../types/auth";
 // 2026-08-05 · T-PERF-1a · inventory-checks 변경 시 low-stock 캐시 무효화
 import { clearLowStockCache } from "../stock/stockManage";
 // 2026-08-06 · T-LOSS-HISTORY · 실재고 저장 시 · 오늘 손실 스냅샷 fire-and-forget
@@ -254,7 +255,7 @@ router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayReq
   const note = String(b.note ?? "");
   let productName: string | null = null;
   // 2026-09-20 · 사용자 지시 · 요청자 정보 · JWT 에서 추출 (마이그레이션 20260920_display_requests_requester.sql 후 활성)
-  const authUser = (req as any).authUser as { sub?: number; name?: string } | undefined;
+  const authUser = (req as AuthedRequest).authUser;
   const requesterId = authUser?.sub != null ? Number(authUser.sub) : null;
   const requesterName = authUser?.name ?? null;
 

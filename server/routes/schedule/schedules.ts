@@ -15,6 +15,7 @@ import { UpsertScheduleSchema, BatchScheduleSchema, CopyScheduleSchema } from ".
 import { CreateEmployeeSchema, UpdateEmployeeSchema } from "../../../src/shared/schemas/employees";
 import { getKstYmd } from "../../lib/kstDate";
 import logger from "../../lib/logger";
+import type { AuthedRequest } from "../../types/auth";
 
 const router = Router();
 
@@ -61,7 +62,7 @@ router.get("/api/employees", authorize(1), asyncHandler(async (_req, res) => {
 router.get("/api/employees/:id", asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isFinite(id) || id <= 0) throw badRequest("잘못된 직원 ID");
-  const auth = (req as any).authUser as { sub?: number; level?: number } | undefined;
+  const auth = (req as AuthedRequest).authUser;
   const level = auth?.level ?? 0;
   const isSelf = auth?.sub === id;
   if (!isSelf && level < 7) throw new HttpError(403, "본인 또는 관리자만 조회 가능합니다", "FORBIDDEN");
@@ -138,10 +139,10 @@ router.post("/api/employees/:id/resume", authorize(1), resumeUpload.single("resu
   if (!emp) throw notFound("직원을 찾을 수 없습니다");
   const ts = getKstYmd().replace(/-/g, "");
   const ext = req.file.originalname.split(".").pop() || "pdf";
-  const fileName = `${(emp as any).name || `emp${id}`}_이력서_${ts}.${ext}`;
+  const fileName = `${emp.name || `emp${id}`}_이력서_${ts}.${ext}`;
   const result = await uploadToDrive("resume", req.file.buffer, fileName, req.file.mimetype);
   // 기존 이력서 삭제 (교체) · 실패해도 계속
-  const oldId = extractDriveFileId(String((emp as any).resume_url ?? ""));
+  const oldId = extractDriveFileId(String(emp.resume_url ?? ""));
   if (oldId && oldId !== result.fileId) {
     await deleteFromDrive(oldId).catch(() => null);
   }
@@ -159,7 +160,7 @@ router.post("/api/employees/:id/resume", authorize(1), resumeUpload.single("resu
 router.delete("/api/employees/:id/resume", authorize(9), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const { data: emp } = await supabase.from("employees").select("resume_url").eq("id", id).maybeSingle();
-  const oldId = extractDriveFileId(String((emp as any)?.resume_url ?? ""));
+  const oldId = extractDriveFileId(String(emp?.resume_url ?? ""));
   if (oldId) await deleteFromDrive(oldId).catch(() => null);
   const { error } = await supabase.from("employees").update({ resume_url: null }).eq("id", id);
   if (error) throw new HttpError(500, error.message);
@@ -203,7 +204,7 @@ router.post("/api/employees/:id/resignation-file", authorize(1), resignationFile
 
   const ts = getKstYmd().replace(/-/g, "");
   const ext = req.file.originalname.split(".").pop() || "pdf";
-  const safeName = ((emp as any).name || `emp${id}`).replace(/[^가-힣a-zA-Z0-9]/g, "_");
+  const safeName = (emp.name || `emp${id}`).replace(/[^가-힣a-zA-Z0-9]/g, "_");
   const objectPath = `${id}/${safeName}_사직서_${ts}_${Date.now()}.${ext}`;
 
   let fileUrl: string;

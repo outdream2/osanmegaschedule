@@ -183,6 +183,7 @@ async function syncEmployeeContractFields(
     working_hours?: string | null;
     annual_leave_days?: number | null;
     employee_number?: string | null;
+    [key: string]: unknown;
   },
 ): Promise<void> {
   const payload: Record<string, unknown> = {};
@@ -203,7 +204,7 @@ async function syncEmployeeContractFields(
         logger.warn(`[employee-contracts] employees.${missingCol} 컬럼 없음 · 제외 후 재시도`);
         delete payload[missingCol];
         if (Object.keys(payload).length > 0) {
-          await syncEmployeeContractFields(employeeId, payload as any);
+          await syncEmployeeContractFields(employeeId, payload);
         }
         return;
       }

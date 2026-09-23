@@ -18,6 +18,7 @@ import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
 import { sendPush } from "../../services/expoPushService";
 import logger from "../../lib/logger";
+import type { AuthedRequest } from "../../types/auth";
 
 const router = Router();
 
@@ -40,7 +41,7 @@ router.post(
   authorize(1),
   validateBody(RegisterTokenSchema),
   asyncHandler(async (req, res) => {
-    const authUser = (req as any).authUser as { sub: number } | undefined;
+    const authUser = (req as AuthedRequest).authUser;
     const userId = Number(authUser?.sub ?? 0);
     if (!userId) throw new HttpError(401, "인증 정보 없음", "UNAUTHORIZED");
     const { token, platform } = req.body as { token: string; platform: string };
@@ -92,7 +93,7 @@ router.delete(
   "/api/push-token/:token",
   authorize(1),
   asyncHandler(async (req, res) => {
-    const authUser = (req as any).authUser as { sub: number; level?: number } | undefined;
+    const authUser = (req as AuthedRequest).authUser;
     const userId = Number(authUser?.sub ?? 0);
     if (!userId) throw new HttpError(401, "인증 정보 없음", "UNAUTHORIZED");
     const token = String(req.params.token ?? "");
@@ -125,7 +126,7 @@ router.post(
   authorize(1),
   validateBody(TestPushSchema),
   asyncHandler(async (req, res) => {
-    const authUser = (req as any).authUser as { sub: number; level?: number } | undefined;
+    const authUser = (req as AuthedRequest).authUser;
     const userId = Number(authUser?.sub ?? 0);
     if (!userId) throw new HttpError(401, "인증 정보 없음", "UNAUTHORIZED");
     const { targetUserId, title, body } = req.body as {

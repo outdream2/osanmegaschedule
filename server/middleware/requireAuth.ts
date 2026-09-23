@@ -17,6 +17,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import logger from "../lib/logger";
+import type { AuthedRequest } from "../types/auth";
 
 /**
  * 2026-08-18 · JWT_SECRET 자동 파생 (프로젝트 내 해결)
@@ -90,6 +91,8 @@ export interface JwtPayload {
   rememberMe?: boolean;
   /** 2026-08-16 · S10 · "refresh" 이면 refresh token · 그 외 access */
   typ?: "access" | "refresh" | "sso";
+  /** 2026-09-01 · SSO jti 재사용 방지 */
+  jti?: string;
 }
 
 // ─────────────────────────────────────────────────
@@ -194,7 +197,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     res.status(401).json({ error: "인증이 필요합니다. 다시 로그인해주세요.", code: "UNAUTHORIZED" });
     return;
   }
-  (req as any).authUser = payload;
+  (req as AuthedRequest).authUser = payload;
   next();
 }
 
@@ -216,7 +219,7 @@ export function authorize(minLevel: number) {
       res.status(401).json({ error: "인증이 필요합니다. 다시 로그인해주세요.", code: "UNAUTHORIZED" });
       return;
     }
-    (req as any).authUser = payload;
+    (req as AuthedRequest).authUser = payload;
     if ((payload.level ?? 0) < minLevel) {
       res.status(403).json({ error: "권한이 부족합니다.", code: "FORBIDDEN" });
       return;

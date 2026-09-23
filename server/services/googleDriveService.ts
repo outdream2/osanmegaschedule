@@ -150,7 +150,7 @@ async function loadConfig(): Promise<DriveConfig> {
       .from("app_settings")
       .select("key, value")
       .in("key", ["google_service_account", "google_oauth_refresh", "google_drive_folders"]);
-    for (const row of (data ?? []) as any[]) {
+    for (const row of data ?? []) {
       if (row.key === "google_oauth_refresh" && !config.oauth) {
         const v = row.value ?? {};
         if (v.refresh_token && v.client_id && v.client_secret) {

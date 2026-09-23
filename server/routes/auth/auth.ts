@@ -27,21 +27,22 @@ router.post("/api/auth/login", validateBody(LoginSchema), asyncHandler(async (re
   if (!emp) throw new HttpError(401, "핸드폰번호를 찾을 수 없습니다");
   if (!emp.password_hash) throw new HttpError(401, "비밀번호가 설정되지 않았습니다");
   const ok = await bcrypt.compare(password, emp.password_hash);
-  delete (emp as any).password_hash;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { password_hash: _ph1, ...empSafe } = emp;
   if (!ok) {
     audit("LOGIN_FAIL", { ...auditContext(req), phone, reason: "wrong_password" }, "warn");
     throw unauthorized("핸드폰번호 또는 비밀번호가 올바르지 않습니다");
   }
-  const level: number = emp.level ?? 1;
+  const level: number = empSafe.level ?? 1;
   if (level === 0) throw unauthorized("접근 권한이 없습니다");
   const role = level >= 9 ? "superadmin" : level >= 2 ? "manager" : "employee";
   try {
-    issueToken(res, { sub: emp.id, name: emp.name, role, level, rememberMe }, Boolean(rememberMe));
-  } catch (err: any) {
+    issueToken(res, { sub: empSafe.id, name: empSafe.name, role, level, rememberMe }, Boolean(rememberMe));
+  } catch {
     throw new HttpError(500, "인증 시스템 설정 오류 · 관리자에게 문의 (JWT_SECRET 미설정)");
   }
-  audit("LOGIN_SUCCESS", { ...auditContext(req), userId: emp.id, name: emp.name, level });
-  const body: LoginResponse = { id: emp.id, name: emp.name, role, level, rank: emp.rank ?? null };
+  audit("LOGIN_SUCCESS", { ...auditContext(req), userId: empSafe.id, name: empSafe.name, level });
+  const body: LoginResponse = { id: empSafe.id, name: empSafe.name, role, level, rank: empSafe.rank ?? null };
   res.status(200).json(body);
 }));
 
@@ -76,22 +77,23 @@ router.post("/api/auth/vendor-login", validateBody(VendorLoginSchema), asyncHand
   const hashPrefix = String(vendor.password_hash).slice(0, 4);   // $2a$ · $2b$ · $2y$
   const hashLen    = String(vendor.password_hash).length;
   const ok = await bcrypt.compare(String(password), vendor.password_hash);
-  delete (vendor as any).password_hash;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { password_hash: _vph, ...vendorSafe } = vendor;
   if (!ok) {
-    audit("VENDOR_LOGIN_FAIL", { ...auditContext(req), phone: cleanPhone, reason: "wrong_password", vendorId: vendor.id, hashPrefix, hashLen }, "warn");
-    logger.warn(`[vendor-login] BCRYPT FAIL · vendor.id=${vendor.id} name=${vendor.company_name} · hash prefix=${hashPrefix} len=${hashLen} · 비밀번호 불일치 (pgcrypto crypt() vs bcryptjs.compare() 호환성 or 다른 hash)`);
+    audit("VENDOR_LOGIN_FAIL", { ...auditContext(req), phone: cleanPhone, reason: "wrong_password", vendorId: vendorSafe.id, hashPrefix, hashLen }, "warn");
+    logger.warn(`[vendor-login] BCRYPT FAIL · vendor.id=${vendorSafe.id} name=${vendorSafe.company_name} · hash prefix=${hashPrefix} len=${hashLen} · 비밀번호 불일치 (pgcrypto crypt() vs bcryptjs.compare() 호환성 or 다른 hash)`);
     throw unauthorized("핸드폰번호 또는 비밀번호가 올바르지 않습니다");
   }
   try {
-    issueToken(res, { sub: vendor.id, name: vendor.company_name, role: "vendor", level: 0 }, false);
+    issueToken(res, { sub: vendorSafe.id, name: vendorSafe.company_name, role: "vendor", level: 0 }, false);
   } catch {
     throw new HttpError(500, "인증 시스템 설정 오류 · 관리자에게 문의 (JWT_SECRET 미설정)");
   }
-  audit("VENDOR_LOGIN_SUCCESS", { ...auditContext(req), vendorId: vendor.id, name: vendor.company_name });
+  audit("VENDOR_LOGIN_SUCCESS", { ...auditContext(req), vendorId: vendorSafe.id, name: vendorSafe.company_name });
   const body: VendorLoginResponse = {
-    id: vendor.id,
-    name: vendor.company_name,
-    contactName: vendor.contact_name ?? "",
+    id: vendorSafe.id,
+    name: vendorSafe.company_name,
+    contactName: vendorSafe.contact_name ?? "",
     role: "vendor",
     level: 0,
   };
@@ -157,7 +159,7 @@ router.post("/api/auth/sso-consume", asyncHandler(async (req, res) => {
   }
   if (decoded.typ !== "sso") throw unauthorized("SSO 토큰 타입 오류");
   // 2026-09-01 · jti 재사용 방지 · 동일 SSO 토큰 두 번 이상 소비 시 401
-  const jti = (decoded as any).jti;
+  const jti = decoded.jti;
   if (!jti) throw unauthorized("SSO 토큰 형식 오류 (jti 없음)");
   if (consumeSsoJti(String(jti))) {
     audit("SSO_REPLAY_BLOCKED", { ...auditContext(req), jti, userId: decoded.sub }, "warn");
@@ -238,7 +240,6 @@ router.post("/api/auth/change-password", authorize(1), validateBody(ChangePasswo
   if (!emp) throw notFound("직원을 찾을 수 없습니다");
   if (!emp.password_hash) throw badRequest("비밀번호가 설정되어 있지 않습니다. 관리자에게 문의하세요.");
   const ok = await bcrypt.compare(currentPassword, emp.password_hash);
-  delete (emp as any).password_hash;
   if (!ok) throw unauthorized("현재 비밀번호가 올바르지 않습니다");
   const password_hash = await bcrypt.hash(newPassword, 12);
   const { error: updErr } = await supabase
@@ -269,7 +270,6 @@ router.post("/api/auth/vendor-change-password", authorize(0), validateBody(Vendo
   if (!vendor) throw notFound("거래처를 찾을 수 없습니다");
   if (!vendor.password_hash) throw badRequest("비밀번호가 설정되어 있지 않습니다. 관리자에게 문의하세요.");
   const ok = await bcrypt.compare(currentPassword, vendor.password_hash);
-  delete (vendor as any).password_hash;
   if (!ok) throw unauthorized("현재 비밀번호가 올바르지 않습니다");
   const password_hash = await bcrypt.hash(newPassword, 12);
   const { error: updErr } = await supabase.from("vendors").update({ password_hash }).eq("id", vendorId);

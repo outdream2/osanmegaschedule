@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { supabase } from "../../../src/supabase/client";
 import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
 import { authorize } from "../../middleware/requireAuth";
+import type { AuthedRequest } from "../../types/auth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
@@ -313,7 +314,7 @@ router.post("/api/vendors", authorize(5), validateBody(CreateVendorSchema), asyn
 router.patch("/api/vendors/:id", authorize(0), validateBody(UpdateVendorSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
-  const authUser = (req as any).authUser as { sub: number; role: string; level: number } | undefined;
+  const authUser = (req as AuthedRequest).authUser;
   const isVendorSelf = authUser?.role === "vendor" && Number(authUser.sub) === id;
   const isManagerPlus = (authUser?.level ?? 0) >= 5;
   if (!isVendorSelf && !isManagerPlus) throw forbidden("본인 정보만 수정 가능합니다");
@@ -533,7 +534,7 @@ router.post("/api/vendors/:id/set-password", authorize(9), validateBody(SetPassw
 router.post("/api/vendors/:id/approval-request", authorize(0), validateBody(z.object({})), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
-  const authUser = (req as any).authUser as { sub: number; role: string; level: number } | undefined;
+  const authUser = (req as AuthedRequest).authUser;
   if (authUser?.role !== "vendor") throw forbidden("거래처(vendor) 세션만 승인 요청 가능합니다");
   if (Number(authUser.sub) !== id) throw forbidden("본인 공급사만 승인 요청 가능합니다");
   // 2026-09-02 · 사용자 지시 · 필수 5필드로 축소

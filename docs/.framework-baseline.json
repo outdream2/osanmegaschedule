@@ -1,10 +1,288 @@
 {
-  "created": "2026-09-21",
+  "created": "2026-09-23",
   "version": 1,
-  "totalViolations": 12,
+  "totalViolations": 524,
   "files": {
+    "server/ocr/pipeline/stages/03-vendor-match.ts": {
+      "lines": 684,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 70
+        }
+      ],
+      "totalWeight": 140
+    },
+    "server/routes/ocr/coreRouter.ts": {
+      "lines": 741,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 41
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 20
+        }
+      ],
+      "totalWeight": 102
+    },
+    "server/ocr/parsing/parse.ts": {
+      "lines": 2998,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 31
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 12
+        }
+      ],
+      "totalWeight": 74
+    },
+    "server/ocr/engines/ppuPaddle.ts": {
+      "lines": 729,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 33
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 5
+        }
+      ],
+      "totalWeight": 71
+    },
+    "server/routes/ocr/parseRouter.ts": {
+      "lines": 186,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 13
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 7
+        }
+      ],
+      "totalWeight": 33
+    },
+    "server/ocr/pipeline/stages/05-normalize.ts": {
+      "lines": 248,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 12
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 25
+    },
+    "server/routes/display/requests.ts": {
+      "lines": 1554,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 20
+        }
+      ],
+      "totalWeight": 20
+    },
+    "server/ocr/pipeline/stages/09-totals.ts": {
+      "lines": 147,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 9
+        }
+      ],
+      "totalWeight": 18
+    },
+    "server/ocr/tables/slanetTable.ts": {
+      "lines": 278,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 5
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 6
+        }
+      ],
+      "totalWeight": 16
+    },
+    "server/ocr/tables/tableLayout.ts": {
+      "lines": 171,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 7
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 16
+    },
+    "server/routes/purchase/purchase.ts": {
+      "lines": 723,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 11
+        }
+      ],
+      "totalWeight": 11
+    },
+    "server/routes/stock/salesAutoRecommend.ts": {
+      "lines": 378,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 4
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 3
+        }
+      ],
+      "totalWeight": 11
+    },
+    "server/ocr/pipeline/stages/04-template.ts": {
+      "lines": 43,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 5
+        }
+      ],
+      "totalWeight": 10
+    },
+    "server/routes/ocr/helpers.ts": {
+      "lines": 264,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 5
+        }
+      ],
+      "totalWeight": 10
+    },
+    "server/ocr/logging/diagnostics.ts": {
+      "lines": 246,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 4
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 9
+    },
+    "server/ocr/pipeline/stages/02-ocr-engine.ts": {
+      "lines": 99,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 4
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 9
+    },
+    "server/ocr/tables/tableStructure.ts": {
+      "lines": 126,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 3
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 3
+        }
+      ],
+      "totalWeight": 9
+    },
+    "server/routes/purchase/vendors.ts": {
+      "lines": 639,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 9
+        }
+      ],
+      "totalWeight": 9
+    },
+    "server/ocr/parsing/preprocess.ts": {
+      "lines": 159,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 4
+        }
+      ],
+      "totalWeight": 8
+    },
+    "server/ocr/pipeline/runner.ts": {
+      "lines": 78,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 4
+        }
+      ],
+      "totalWeight": 8
+    },
+    "server/routes/board/board.ts": {
+      "lines": 519,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 8
+        }
+      ],
+      "totalWeight": 8
+    },
+    "server/routes/settings/eventCategoryRules.ts": {
+      "lines": 169,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 4
+        }
+      ],
+      "totalWeight": 8
+    },
+    "server/ocr/logging/fieldMatchLog.ts": {
+      "lines": 229,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 2
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 3
+        }
+      ],
+      "totalWeight": 7
+    },
     "src/components/LeavePage/LeavePage.tsx": {
-      "lines": 1207,
+      "lines": 1397,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -32,6 +310,190 @@
         }
       ],
       "totalWeight": 6
+    },
+    "server/ocr/pipeline/stages/08-verify.ts": {
+      "lines": 34,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 3
+        }
+      ],
+      "totalWeight": 6
+    },
+    "server/routes/purchase/supplierPayments/balance.ts": {
+      "lines": 498,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 6
+        }
+      ],
+      "totalWeight": 6
+    },
+    "server/routes/purchase/supplierPayments/purchaseDetail.ts": {
+      "lines": 170,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 6
+        }
+      ],
+      "totalWeight": 6
+    },
+    "server/routes/purchase/vat.ts": {
+      "lines": 553,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 6
+        }
+      ],
+      "totalWeight": 6
+    },
+    "server/routes/stock/stockManage/topSales.ts": {
+      "lines": 764,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 6
+        }
+      ],
+      "totalWeight": 6
+    },
+    "server/lib/auditLogger.ts": {
+      "lines": 79,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 2
+        },
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 5
+    },
+    "server/routes/display/zoneDefs.ts": {
+      "lines": 173,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 5
+        }
+      ],
+      "totalWeight": 5
+    },
+    "server/routes/ocr/diagRouter.ts": {
+      "lines": 54,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 5
+        }
+      ],
+      "totalWeight": 5
+    },
+    "server/routes/payment/borrowings.ts": {
+      "lines": 308,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 5
+        }
+      ],
+      "totalWeight": 5
+    },
+    "server/routes/stock/productArrivals.ts": {
+      "lines": 669,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 5
+        }
+      ],
+      "totalWeight": 5
+    },
+    "server/utils/xlsx.ts": {
+      "lines": 251,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 5
+        }
+      ],
+      "totalWeight": 5
+    },
+    "server/ocr/pipeline/stages/10-fallback.ts": {
+      "lines": 79,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 4
+    },
+    "server/routes/ocr/matchRouter.ts": {
+      "lines": 161,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 4
+    },
+    "server/routes/settings/events.ts": {
+      "lines": 269,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 4
+        }
+      ],
+      "totalWeight": 4
+    },
+    "server/routes/settings/settings.ts": {
+      "lines": 483,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 4
+        }
+      ],
+      "totalWeight": 4
+    },
+    "server/routes/stock/lossTracking.ts": {
+      "lines": 297,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 4
+        }
+      ],
+      "totalWeight": 4
+    },
+    "server/routes/stock/products.ts": {
+      "lines": 1348,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 4
+        }
+      ],
+      "totalWeight": 4
+    },
+    "server/services/googleDriveService.ts": {
+      "lines": 466,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 4
+        }
+      ],
+      "totalWeight": 4
     },
     "src/components/LandingPage/VendorListEditor.tsx": {
       "lines": 851,
@@ -122,6 +584,426 @@
         }
       ],
       "totalWeight": 3
+    },
+    "server/controllers/scheduleController.ts": {
+      "lines": 294,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 3
+        }
+      ],
+      "totalWeight": 3
+    },
+    "server/productCache.ts": {
+      "lines": 400,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 3
+        }
+      ],
+      "totalWeight": 3
+    },
+    "server/routes/settings/holidays.ts": {
+      "lines": 254,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 3
+        }
+      ],
+      "totalWeight": 3
+    },
+    "server/services/scheduleService.ts": {
+      "lines": 356,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 3
+        }
+      ],
+      "totalWeight": 3
+    },
+    "src/components/NotificationBell.tsx": {
+      "lines": 305,
+      "violations": [
+        {
+          "ruleId": "prefer-modal-primitive",
+          "count": 1
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/ocr/engines/gemini.ts": {
+      "lines": 146,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/ocr/pipeline/benchmark.ts": {
+      "lines": 177,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/ocr/pipeline/stages/01-preprocess.ts": {
+      "lines": 24,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/ocr/pipeline/stages/06-math-fill.ts": {
+      "lines": 34,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/ocr/pipeline/stages/07-filter.ts": {
+      "lines": 25,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/ocr/pipeline/stages/10b-rearrange.ts": {
+      "lines": 69,
+      "violations": [
+        {
+          "ruleId": "no-raw-console-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/routes/daily/leave.ts": {
+      "lines": 294,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/routes/display/zoneAssignments.ts": {
+      "lines": 424,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/routes/display/zoneLabels.ts": {
+      "lines": 106,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/routes/ocr/templatesRouter.ts": {
+      "lines": 38,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/routes/purchase/returnRequests.ts": {
+      "lines": 200,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/routes/purchase/supplierPayments/payments.ts": {
+      "lines": 243,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/routes/purchase/supplierPayments/purchaseSummary.ts": {
+      "lines": 238,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/routes/staff/employeeContracts.ts": {
+      "lines": 606,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/routes/stock/stockManage/salesTrend.ts": {
+      "lines": 304,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/services/notificationsService.ts": {
+      "lines": 250,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/lib/optimalStock.ts": {
+      "lines": 258,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/lib/ownershipCheck.ts": {
+      "lines": 41,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/ocr/parsing/metadataKV.ts": {
+      "lines": 407,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/ocr/parsing/schema.ts": {
+      "lines": 279,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/ocr/pipeline/types.ts": {
+      "lines": 119,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/daily/reservations.ts": {
+      "lines": 54,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/display/mismatches.ts": {
+      "lines": 128,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/purchase/creditCards.ts": {
+      "lines": 178,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/purchase/ocrDeletedRows.ts": {
+      "lines": 112,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/purchase/purchaseHistory.ts": {
+      "lines": 110,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/purchase/supplierBalanceConfig.ts": {
+      "lines": 87,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/settings/autoImport.ts": {
+      "lines": 413,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/staff/contractClauses.ts": {
+      "lines": 168,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/staff/staff.ts": {
+      "lines": 90,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/stock/stockManage/periodCoverage.ts": {
+      "lines": 53,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/stock/stockManage/productHistory.ts": {
+      "lines": 44,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/stock/stockManage/stockRaw.ts": {
+      "lines": 41,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/stock/stockManage/trending.ts": {
+      "lines": 259,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/routes/stock/stockManage/uploadStock.ts": {
+      "lines": 314,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/utils/productInventoryQuery.ts": {
+      "lines": 282,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
+    },
+    "server/utils/purchaseDetailsQuery.ts": {
+      "lines": 243,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 1
+        }
+      ],
+      "totalWeight": 1
     }
   }
 }
