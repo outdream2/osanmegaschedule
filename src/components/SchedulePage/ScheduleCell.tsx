@@ -7,6 +7,7 @@ import { Clock, MessageSquare, Save, X, ToggleLeft, Settings2 } from "lucide-rea
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 import { useEditScheduleForm, SCHEDULE_CYCLE } from "./useEditScheduleForm";
+import { usePopoverPosition } from "./usePopoverPosition";
 
 interface ScheduleCellProps {
   schedule?: Schedule;
@@ -77,15 +78,11 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   const cellRef = useRef<HTMLDivElement>(null);
   // Days 20+ default to right-align (popup opens leftward) to stay in viewport
   const dayNum = parseInt(dateStr.split("-")[2]);
-  const [popoverAlign, setPopoverAlign] = useState<"left" | "right">(dayNum >= 20 ? "right" : "left");
-
-  // Detect if cell is near right viewport edge and flip popover alignment
-  useEffect(() => {
-    if (isOpen && cellRef.current) {
-      const rect = cellRef.current.getBoundingClientRect();
-      setPopoverAlign(dayNum >= 20 || rect.left + 288 > window.innerWidth * 0.72 ? "right" : "left");
-    }
-  }, [isOpen]);
+  const popoverAlign = usePopoverPosition({
+    anchorRef: cellRef,
+    isOpen,
+    forceRight: dayNum >= 20,
+  });
 
   // Close popover when clicking outside
   useEffect(() => {
