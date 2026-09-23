@@ -4314,3 +4314,23 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 4. 신규 서버 파일에 `: any` 추가 → pre-commit 실패 유도 (선택 검증)
 5. `catch (err: any)` 유지 시 pre-commit 통과 (예외 정상)
 6. 신규 `<div className="fixed inset-0 ... bg-black/50">` 추가 시 pre-commit 실패 유도 (선택 검증)
+
+---
+
+### [R-1] 확정 스케줄 서버 lock 검증 (Top5 2위 · 보안·데이터정합성)
+**커밋** · `ba9486c5` · `server/routes/schedule/schedules.ts` + `schedules.test.ts` (신설 16개)
+
+**변경 내용**
+- `assertScheduleNotLocked(yearMonth, authLevel)` 헬퍼 신설 · `app_settings` KV 직접 조회
+- `PUT /api/schedules` + `POST /api/schedules/batch` · 라우터에서 lock 검증 추가
+- lv≥9 관리자 · lock 무시 허용 (긴급 수정 목적)
+- DB 오류 시 fail-open (서비스 중단 방지)
+- `logger.warn` · lock 위반 시도 감사 로그
+
+**확인 절차**
+1. 관리자(lv5) · 특정 월 스케줄 확정 (확정 버튼 클릭)
+2. DevTools 콘솔 → `fetch('/api/schedules', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({employeeId:1, date:'YYYY-MM-01', type:'근무', workingHours:'', actualHours:'', memo:''})})` 실행
+3. 기대값: 403 응답 · `{"error":"확정된 달은 수정할 수 없습니다. 관리자(lv≥9)만 수정 가능합니다.","code":"SCHEDULE_LOCKED"}`
+4. lv9+ 계정으로 동일 요청 → 200 정상 저장 확인
+5. 확정 해제 후 lv5 계정 요청 → 200 정상 확인 (정상 흐름 회귀 없음)
+6. 연차 승인 (관리자) → 스케줄 자동 반영 정상 확인 (자동 반영은 서비스 직접 호출 · lock 미영향)
