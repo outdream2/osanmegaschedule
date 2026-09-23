@@ -6,6 +6,7 @@ import type { ScheduleTypeEntry } from "../../constants";
 import { Clock, MessageSquare, Save, X, ToggleLeft, Settings2 } from "lucide-react";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
+import { useEditScheduleForm, SCHEDULE_CYCLE } from "./useEditScheduleForm";
 
 interface ScheduleCellProps {
   schedule?: Schedule;
@@ -41,30 +42,42 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 }) => {
   const activeScheduleTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
   const [isOpen, setIsOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Form states initialized from schedule prop
-  const [type, setType] = useState(schedule?.type || "");
-  const [workingHours, setWorkingHours] = useState(schedule?.workingHours || "");
-  const [actualHours, setActualHours] = useState(schedule?.actualHours || "");
-  const [memo, setMemo] = useState(schedule?.memo || "");
+  const {
+    values,
+    setType,
+    setWorkingHours,
+    setActualHours,
+    setMemo,
+    applyPreset,
+    handleTypeChange,
+    saving: isSaving,
+    handleSave,
+  } = useEditScheduleForm({
+    initialSchedule: schedule ?? null,
+    isOpen,
+    typeHoursMap,
+    onSave: async (formValues) => {
+      await onUpdate({
+        employeeId,
+        date: dateStr,
+        type: formValues.type || "휴무",
+        workingHours: formValues.workingHours,
+        actualHours: formValues.actualHours,
+        memo: formValues.memo,
+      });
+      setIsOpen(false);
+    },
+  });
+
+  const { type, workingHours, actualHours, memo } = values;
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const cellRef = useRef<HTMLDivElement>(null);
   // Days 20+ default to right-align (popup opens leftward) to stay in viewport
   const dayNum = parseInt(dateStr.split("-")[2]);
   const [popoverAlign, setPopoverAlign] = useState<"left" | "right">(dayNum >= 20 ? "right" : "left");
-
-  // Reset draft states when popover opens or schedule changes
-  useEffect(() => {
-    if (isOpen) {
-      setType(schedule?.type || "");
-      setWorkingHours(schedule?.workingHours || "");
-      setActualHours(schedule?.actualHours || "");
-      setMemo(schedule?.memo || "");
-    }
-  }, [isOpen, schedule]);
 
   // Detect if cell is near right viewport edge and flip popover alignment
   useEffect(() => {
@@ -95,13 +108,11 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   const cellBgHex = displayType ? getTypeHex(displayType, scheduleTypeEntries) : null;
   const cellIsLight = cellBgHex ? isLightHex(cellBgHex) : true;
 
-  const CYCLE = ["오픈", "미들", "마감", "휴무"];
-
   const handleQuickCycle = async () => {
     if (!isAdmin) return;
     const cur = schedule?.type || "";
-    const idx = CYCLE.indexOf(cur);
-    const nextType = CYCLE[(idx + 1) % CYCLE.length];
+    const idx = SCHEDULE_CYCLE.indexOf(cur as typeof SCHEDULE_CYCLE[number]);
+    const nextType = SCHEDULE_CYCLE[(idx + 1) % SCHEDULE_CYCLE.length];
     const nextWh = typeHoursMap?.[nextType] ?? "";
     try {
       await onUpdate({
@@ -112,32 +123,6 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
       });
     } catch (err) {
       console.error("Failed to cycle schedule:", err);
-    }
-  };
-
-  // Handle preset clicks for fast logging
-  const applyPreset = (presetType: string) => {
-    setType(presetType);
-    setWorkingHours(typeHoursMap?.[presetType] ?? "");
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    try {
-      await onUpdate({
-        employeeId,
-        date: dateStr,
-        type: type || "휴무", // default to Rest day if empty
-        workingHours,
-        actualHours,
-        memo,
-      });
-      setIsOpen(false);
-    } catch (err) {
-      console.error("Failed to update schedule cell:", err);
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -341,14 +326,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
               </label>
               <select
                 value={type}
-                onChange={(e) => {
-                  const newType = e.target.value;
-                  const oldAutoHours = typeHoursMap?.[type] ?? "";
-                  setType(newType);
-                  if (!workingHours || workingHours === oldAutoHours) {
-                    setWorkingHours(typeHoursMap?.[newType] ?? "");
-                  }
-                }}
+                onChange={(e) => handleTypeChange(e.target.value)}
                 className="w-full text-[15px] rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white cursor-pointer focus:outline-none"
               >
                 <option value="">-- 없음 --</option>
