@@ -407,12 +407,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
   // Load month lock
   useEffect(() => { loadMonthLock(); }, [currentYear, currentMonth, loadMonthLock]);
 
-  // Load year leave stats
-  useEffect(() => {
-    api.get<any>(`/api/leave-stats?year=${currentYear}`)
-      .then(res => {})
-      .catch(() => {});
-  }, [currentYear]);
 
   // Ctrl+Z undo
   useEffect(() => {
