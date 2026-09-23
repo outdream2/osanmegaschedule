@@ -112,7 +112,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   }, [initialTopTab]);
 
   // Level-2 서브탭 상태
-  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history">("need");
+  // 2026-09-23 · 대원칙 · 페이지 기본화면 = 첫 탭메뉴 · #350 재확인 · 발주요청 first
+  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history">("order");
   // 2026-08-29 · #193 Phase B · scan/productarrival/productinfo/return · 매장>상품·반품 서브탭으로 완전 이관 · 매입 union 축소
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "purchase-history">(() => {
     const s = initialPurchaseSubTab as string | undefined;
