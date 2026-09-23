@@ -6,13 +6,15 @@
 // 2026-08-17 · apiClient 마이그레이션
 import React, { useEffect, useRef, useState } from "react";
 import { api } from "../../lib/apiClient";
-import { X, Package, TrendingUp, ChevronRight, ChevronDown, Building2, ClipboardList, History, Info } from "lucide-react";
+import { X, Package, TrendingUp, ChevronRight, ChevronDown, Building2, ClipboardList, History, Info, Pencil } from "lucide-react";
 import { Spinner } from "./Spinner";
 import { Card } from "./Card";
 import { CollapseCard } from "./CollapseCard";
 import { StatusPill } from "./StatusPill";
 import { ProductInfoCard, PurchaseHistorySection } from "../ScanPage/ProductInfoCard";
 import { type ProductInfo, lookupProduct } from "../../lib/productsCache";
+// 2026-09-23 · #345 · 사용자 지시 · 상품정보 탭 · ProductCreateModal 편집 모달 연동
+import { ProductCreateModal } from "../ProductInfoPage/ProductCreateModal";
 import { SeasonButtons } from "./SeasonButtons";
 import { AccentBar } from "./AccentBar";
 import { InlineLabel } from "./InlineLabel";
@@ -415,6 +417,8 @@ const ProductDetailChartMode: React.FC<{
 }> = ({ product, onProductUpdate, onRealMapUpdate, context, editable, onSupplierInfoOpen }) => {
   // 2026-08-24 · 5탭 통합 · flow · purchase · order · inventory · info
   const [chartTab, setChartTab] = useState<"flow" | "purchase" | "order" | "inventory" | "info">("flow");
+  // 2026-09-23 · #345 · 사용자 지시 · 상품정보 편집 모달
+  const [editOpen, setEditOpen] = useState(false);
   return (
     <>
       {/* 상단 헤더 카드 · 상품명 + 공급사 + 공급사조회 (2026-07-31) */}
@@ -442,6 +446,7 @@ const ProductDetailChartMode: React.FC<{
           )}
           {chartTab === "inventory" && (
             <div className="p-2">
+              {/* 2026-09-23 · #345 · 사용자 지시 · financial 제거 · 상품정보 탭과 중복 방지 */}
               <ProductInfoCard
                 product={product}
                 context={context}
@@ -450,30 +455,67 @@ const ProductDetailChartMode: React.FC<{
                 onProductUpdate={onProductUpdate}
                 sections={{
                   header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
-                  orderRequest: true, financial: true, purchaseHistory: false,
+                  orderRequest: true, financial: false, purchaseHistory: false,
                   productMeta: false, extraInfo: false,
                 }}
               />
             </div>
           )}
           {chartTab === "info" && (
-            <div className="p-2">
-              <ProductInfoCard
-                product={product}
-                context={context}
-                editable={editable}
-                onRealMapUpdate={onRealMapUpdate}
-                onProductUpdate={onProductUpdate}
-                sections={{
-                  header: false, zoneAssignment: false, stockStatus: false, actualStockInput: false,
-                  orderRequest: false, financial: false, purchaseHistory: false,
-                  productMeta: true, extraInfo: true,
-                }}
-              />
+            <div className="p-3 flex flex-col gap-3">
+              {/* 2026-09-23 · #345 · 사용자 지시 · 상품정보 = ProductCreateModal 편집 모달 · 인라인 필드 제거 */}
+              <div className="rounded-xl border border-line bg-white p-4 flex flex-col gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-brand-tint flex items-center justify-center shrink-0">
+                    <Info size={18} className="text-brand-deep" strokeWidth={2.2} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[15px] font-bold text-ink">상품정보</div>
+                    <div className="text-[13px] text-zinc-500 mt-0.5">상품명·규격·공급사·단가·판매상태 등 · 편집 모달 오픈</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditOpen(true)}
+                  disabled={!editable}
+                  className="w-full inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg text-[15px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                >
+                  <Pencil size={14} strokeWidth={2.4} />
+                  상품정보 수정
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* 2026-09-23 · #345 · 상품정보 편집 모달 · 기존 ProductCreateModal 재사용 (mode=edit) */}
+      {editOpen && (
+        <ProductCreateModal
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          mode="edit"
+          initialCode={product.code}
+          lockCode
+          initialProduct={{
+            product_code: product.code,
+            product_name: product.name ?? "",
+            supplier: product.supplier ?? null,
+            spec: product.spec ?? null,
+            location: (product as any).location ?? null,
+          } as any}
+          onCreated={(_code, updated) => {
+            setEditOpen(false);
+            if (updated && onProductUpdate) {
+              onProductUpdate({
+                name: updated.product_name ?? product.name,
+                supplier: updated.supplier ?? product.supplier,
+                spec: updated.spec ?? product.spec,
+              } as any);
+            }
+          }}
+        />
+      )}
     </>
   );
 };

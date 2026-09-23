@@ -143,7 +143,7 @@
 | **#342** | **스케쥴표 · 필터탭 직군 · settings 파생** (사용자 지시 · 2026-09-23) | 🟡 P2 | 현재 · PositionCategory 하드코딩 · `약사·사원·창고·매장·기타` · scheduleHelpers.ts L17 · **`settings.wageRates` KV 기반 동적 파생** 필요 · #339 (EmployeeProfileCard) 와 통일 · SSOT · 하드코딩 금지 |
 | **#343** | **유통기한 임박 리스트 · 기간 필터 삭제** (사용자 지시 · 2026-09-23) | 🟡 P2 | ProductArrivalPage · ExpiryListTab · 상단 PeriodSelector (기간 필터) 완전 제거 · 항상 전체 임박 리스트 표시 |
 <!-- #344 ✅ · 발주 발송 확인창 · 공급사 아래 · 담당자·연락처 line · 미등록 시 amber 강조 · 2026-09-23 완료 -->
-| **#345** | **발주요청페이지 · 우측 상세정보 · 상품정보 탭 추가 · ProductCreateModal 그대로 연동** (사용자 지시 · 2026-09-23) | 🟡 P2 | 왼쪽 리스트 상품명 클릭 → 우측 상세정보 · **상품정보 탭 신규** · 상품정보수정 모달 (`ProductCreateModal.tsx`) 내용 그대로 표시 · 재고위치 탭에 있는 상품정보와 중복되는 부분 · 재고위치 탭에서 제거 · 통합 |
+<!-- #345 ✅ · 상품정보 탭 · 수정 버튼 → ProductCreateModal edit 모달 · 재고위치 탭 · financial 섹션 제거 · 2026-09-23 완료 -->
 | **#346** | **발주요청 · 수량/단가/발주금액 미입력 시 경고창 + 채우기 유도** (사용자 지시 · 2026-09-23) | 🔴 P1 | 발주 발송 클릭 전 · 각 라인 · 수량 · 단가 · 발주금액 필수값 검증 · 하나라도 비어있으면 · 경고창 (Modal or Confirm) · 미입력 라인 하이라이트 · 사용자가 채우도록 강제 · 채운 후 재확인 · 그때만 발송 가능 |
 | **#347** | **발주필요 리스트 · 수량 옆 · 단가·금액 컬럼 추가** (사용자 지시 · 2026-09-23) | 🔴 P1 | 발주 필요 리스트 (OrderNeedTab · OrderRequestPage 등) · 각 상품 항목 · **수량 옆에 단가·금액** 표시 · 사용자가 발송 전 확인·수정 가능 · #346 와 연계 (미입력 방지) |
 | **#348** | **발주필요 우측 · 이벤트 자동 표시 X · 이벤트추가 버튼 · 현재±3개월 이벤트 선택** (사용자 지시 · 2026-09-23) | 🟡 P2 | 현재 · 우측 패널 · 명절이 자동으로 먼저 표시 X · 대신 · "이벤트추가" 버튼 · 클릭 시 · **현재 시점 기준 ±3개월 (중간)** 범위 이벤트 목록 팝업 · 사용자가 선택해서 추가 · 자동 표시 로직 제거 |
@@ -179,6 +179,7 @@
 <!-- E-002 ✅ · 근본 원인 · Google OAuth refresh_token 만료 (invalid_grant) · 코드 아닌 환경 문제 · googleDriveService · probeDriveAuth + /api/drive-status?probe=1 + rose 배너 · 관리자 조치 필요 (OAuth Playground 재발급 · 프로덕션 게시) · 2026-09-21 완료 (`965876c5`) -->
 | **E-002-fix** | **Google OAuth refresh_token 재발급 · 관리자 조치** (사용자 지시 대기 · 2026-09-21) | 🔴 P1 | 코드 아닌 환경 조치 · ① OAuth Playground · Drive API v3 · scope `drive.file` · authorize · exchange · refresh_token 복사 · ② `src/keys/google-oauth.json` · refresh_token 갱신 · ③ 서버 재시작 · ④ **근본 대책** · Google Cloud Console · OAuth 앱 Production 게시 (7일 만료 제거) |
 <!-- E-009 ✅ · shouldMarkOrdered = true · 최신 사용자 의도 (Option A · 발송 액션 = 이력 저장) 우선 · #75 정책 상위 override · requestIds.length > 0 guard 유지 · 2026-09-23 완료 -->
+| **E-010** | **발주서 내용과 발주이력 안 맞는 문제** (사용자 보고 · 2026-09-23) | 🔴 P1 | 발주서 (OrderModal · 발송 직전 UI) 와 실제 저장된 발주이력 (order_history · order_requests status=ordered) 의 필드 값 (수량·단가·공급사·메모 등) 불일치 · 재현 필요 · 서버 UPDATE 로직 (bulk-send L1106) · 클라 → 서버 payload · order_requests 저장 필드 · 전수 대조 · fix |
 <!-- #327 ✅ · 5/5 완전 스코프 · Drive 폴더 통합 + 링크 저장 + 관리자 대시보드 상태 + D-2 알림 + Supabase 폴백 · 2026-09-21 완료 (`4cbfe492` `11970be8` `ef071cb6`) -->
 <!-- #328 ✅ · iOS Expo 푸시 알림 3단 완료 · Frontend (`84647050`) · Backend push_tokens+expo (`92469eb3`) · 배지 sync+연차 승인 트리거 (`30062557`) · 2026-09-21 -->
 <!-- E-004 ✅ · Electron 하얀 화면 · Vite crossorigin 자동 주입 · file:// origin=null · CORS 실패 근본 원인 · stripCrossoriginPlugin + boot fallback UI + window.api guard · 2026-09-21 완료 (`8854944a`) -->
