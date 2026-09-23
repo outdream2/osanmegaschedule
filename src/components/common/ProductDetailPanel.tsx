@@ -15,9 +15,10 @@ import { ProductInfoCard, PurchaseHistorySection } from "../ScanPage/ProductInfo
 import { type ProductInfo, lookupProduct } from "../../lib/productsCache";
 // 2026-09-23 · #345 · 사용자 지시 · 상품정보 탭 · ProductCreateModal 편집 모달 연동
 import { ProductCreateModal } from "../ProductInfoPage/ProductCreateModal";
-// 2026-09-23 · #345 후속 · 사용자 지시 · 상품정보 탭 · ProductInfoPage 우측 상세 모듈 (ProductDetailView) 재사용
-import { ProductDetailView, type ProductDetail } from "../ProductInfoPage/ProductInfoPage";
+// 2026-09-23 · #345 후속 · 사용자 지시 · 상품정보 탭 · ProductCreateModal 배치와 동일한 조회 UI
+import { type ProductDetail } from "../ProductInfoPage/ProductInfoPage";
 import { getProductByCode } from "../../lib/productsApi";
+import { ProductInfoModalStyleView } from "./ProductInfoModalStyleView";
 import { SeasonButtons } from "./SeasonButtons";
 import { AccentBar } from "./AccentBar";
 import { InlineLabel } from "./InlineLabel";
@@ -481,15 +482,15 @@ const ProductDetailChartMode: React.FC<{
             </div>
           )}
           {chartTab === "info" && (
-            /* 2026-09-23 · #345 후속 · 사용자 지시 · ProductInfoPage 우측 상세 모듈 (ProductDetailView) 재사용
-                · 수정 클릭 시 · 인라인 편집 대신 · ProductCreateModal 열림 (onEditClick prop)
-                · onSaved · reload · 상세 재조회 */
-            <ProductDetailView
+            /* 2026-09-23 · #345 후속 재확인 · 사용자 지시 · ProductCreateModal 배치와 동일한 조회 UI
+                · 필수 정보 (상품코드·상품명·공급사·판매상태·판매가·매입가)
+                · 분류·기타 (진열구역·상세위치·규격·단위·브랜드·제조사·메모)
+                · 수정 버튼 · ProductCreateModal 편집 모달 열림 */
+            <ProductInfoModalStyleView
               product={infoDetail}
               loading={infoLoading}
               error={infoError}
               canEdit={editable}
-              onSaved={() => setInfoReloadKey(k => k + 1)}
               onEditClick={() => setEditOpen(true)}
             />
           )}
