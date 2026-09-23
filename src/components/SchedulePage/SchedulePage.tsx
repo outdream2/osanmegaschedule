@@ -231,7 +231,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
 
   // #342 · wageRateKeys 전달 · 동적 카테고리 매칭
   const wageRateKeys = React.useMemo(() => Object.keys(settingsWageRates), [settingsWageRates]);
-  const filteredEmployees = buildFilteredEmployees(employees, positionTab, searchQuery, sortBy, sortOrder, todayFirst, todayStr, wageRateKeys);
+  const filteredEmployees = React.useMemo(
+    () => buildFilteredEmployees(employees, positionTab, searchQuery, sortBy, sortOrder, todayFirst, todayStr, wageRateKeys),
+    [employees, positionTab, searchQuery, sortBy, sortOrder, todayFirst, todayStr, wageRateKeys],
+  );
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const getTypeHoursMapFn = useCallback((position: string, employmentType = "") =>
