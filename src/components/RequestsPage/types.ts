@@ -31,24 +31,6 @@ export interface OrderRequest {
   note: string; requested_at: string;
 }
 
-// 2026-09-20 · 재설계 · 실재고 총합 vs ERP 현재고 차이 자동 계산
-export interface ZoneMismatch {
-  id: string;
-  product_code: string;
-  product_name: string;
-  supplier: string | null;
-  erp_stock: number;
-  real_total: number;
-  warehouse_stock: number;
-  store_stock: number;
-  diff: number;           // erp_stock - real_total · 양수=재고부족 · 음수=재고초과
-  sale_status: string | null;
-  registered_at: string;
-  // legacy (하위호환 · UI 표시 안 함)
-  spec_zone?: string;
-  real_zone?: string;
-}
-
 export interface LunchRequest {
   id: number; employee_id: number; employee_name: string;
   date: string; eating: boolean; memo: string | null; updated_at: string;
@@ -73,4 +55,5 @@ export interface InventoryCheck {
 
 // 2026-08-25 · #192 · vendor 승인 탭 추가
 // 2026-09-08 · resignation 승인 탭 추가 (business-manage 에서 이관 · 승인 요청 통합)
-export type Tab = "display" | "order" | "mismatch" | "lunch" | "inventory" | "leave" | "vendor" | "resignation";
+// 2026-09-23 · #333 · mismatch 탭 제거
+export type Tab = "display" | "order" | "lunch" | "inventory" | "leave" | "vendor" | "resignation";

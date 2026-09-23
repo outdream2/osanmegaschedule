@@ -9,7 +9,7 @@ import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { SK_SUBTAB_REQUESTS } from "../../lib/storageKeys";
 import { dispatchApprovalChange, useApprovalRefreshListener } from "../../lib/approvalEvents";
 import { TIMING } from "../../constants/timing";
-import { ShoppingCart, Square, CheckSquare, ClipboardList, Package, MapPin, Coffee, CalendarDays, Handshake, FileText } from "lucide-react";
+import { ShoppingCart, Square, CheckSquare, ClipboardList, Package, Coffee, CalendarDays, Handshake, FileText } from "lucide-react";
 // 2026-09-10 · #50 · 사용자 지시 · 탭 메뉴 · 매입이력 스타일 통일 · TabBar 프리미티브
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
@@ -31,13 +31,12 @@ import { VendorApprovalPanel } from "./VendorApprovalPanel";
 // 2026-09-08 · 사직서 승인 탭 · 승인 요청 통합 (business-manage 에서 이관)
 import ResignationApprovalPage from "../ResignationApprovalPage/ResignationApprovalPage";
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · types
-import type { DisplayRequest, OrderRequest, ZoneMismatch, LunchRequest, InventoryCheck, Tab } from "./types";
+import type { DisplayRequest, OrderRequest, LunchRequest, InventoryCheck, Tab } from "./types";
 // 2026-08-22 · Framework Phase 4 · 3탭 별도 컴포넌트 이관 (Display/Order/Inventory)
 import { DisplayRequestTab, OrderRequestTab, InventoryCheckTab } from "./RequestsPage.tabs";
 // 2026-09-11 · #75 · 담당자 지정 모달
 import { AssignStaffModal } from "./AssignStaffModal";
-// 2026-08-26 · Framework Phase 4 · large-file 분리 · 구역불일치·점심불참 패널
-import { MismatchPanel } from "./MismatchPanel";
+// 2026-08-26 · Framework Phase 4 · large-file 분리 · 점심불참 패널
 import { LunchPanel } from "./LunchPanel";
 // 2026-09-08 · 사용자 지시 · 메뉴 안보이기 설정 시 · 요청목록 탭도 자동 숨김
 import { usePagePermissions } from "../../hooks/usePagePermissions";
@@ -98,12 +97,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [products, setProducts] = useState<ProductInfo[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
 
-  // 구역불일치
-  const [mismatches, setMismatches] = useState<ZoneMismatch[]>([]);
-  const [mismatchLoading, setMismatchLoading] = useState(false);
-  const [mismatchError, setMismatchError] = useState<string | null>(null);
-  const [selectedMismatch, setSelectedMismatch] = useState<Set<string>>(new Set());
-
   // 점심신청
   const [lunchRequests, setLunchRequests] = useState<LunchRequest[]>([]);
   const [lunchLoading, setLunchLoading] = useState(false);
@@ -116,7 +109,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [requestingInvOrder, setRequestingInvOrder] = useState<Set<string>>(new Set());
 
   // 빠른 탭 갯수 (pending-counts 엔드포인트)
-  const [tabCounts, setTabCounts] = useState<{display:number; order:number; mismatch:number; lunch:number; inventory:number; vendor?:number; resignation?:number} | null>(null);
+  const [tabCounts, setTabCounts] = useState<{display:number; order:number; lunch:number; inventory:number; vendor?:number; resignation?:number} | null>(null);
 
   // 2026-08-12 · 연차승인 탭 · pending 건수 별도 폴링 (leave-requests/pending-count)
   const [leavePendingCount, setLeavePendingCount] = useState<number>(0);
@@ -266,16 +259,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     finally { setOrderLoading(false); }
   }, []);
 
-  const loadMismatches = useCallback(async () => {
-    setMismatchLoading(true);
-    setMismatchError(null);
-    try {
-      const { data } = await api.get<any>("/api/zone-mismatches");
-      setMismatches(data);
-    } catch (e: any) { setMismatchError(e?.message ?? "네트워크 오류"); setMismatches([]); }
-    finally { setMismatchLoading(false); }
-  }, []);
-
   const loadProducts = useCallback(async () => {
     setProductsLoading(true);
     try {
@@ -323,14 +306,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     } catch {}
   }, []);
 
-  useEffect(() => { loadTabCounts(); loadDisplayReqs(); loadOrderReqs(); loadMismatches(); loadLunch(); loadInventoryChecks(); loadLeavePendingCount(); }, []);
+  useEffect(() => { loadTabCounts(); loadDisplayReqs(); loadOrderReqs(); loadLunch(); loadInventoryChecks(); loadLeavePendingCount(); }, []);
   // 2026-08-18 · 승인 요청 상태 변경 시 · 탭 카운트 + 리스트 즉시 재로드
   useApprovalRefreshListener(() => {
     loadTabCounts();
     loadLeavePendingCount();
     loadDisplayReqs();
     loadOrderReqs();
-    loadMismatches();
     loadLunch();
   });
   useEffect(() => {
@@ -361,7 +343,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         if (!prev) return;
         if (tab === "display"   && counts.display   !== prev.display)   loadDisplayReqs();
         if (tab === "order"     && counts.order     !== prev.order)     loadOrderReqs();
-        if (tab === "mismatch"  && counts.mismatch  !== prev.mismatch)  loadMismatches();
         if (tab === "inventory" && counts.inventory !== prev.inventory) loadInventoryChecks();
         if (tab === "lunch"     && counts.lunch     !== prev.lunch)     loadLunch();
         // 2026-08-12 · 연차 pending 카운트 · 별도 API · 매 폴링 갱신
@@ -369,7 +350,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       } catch {}
     }, 30_000);
     return () => clearInterval(interval);
-  }, [tab, loadDisplayReqs, loadOrderReqs, loadMismatches, loadInventoryChecks, loadLunch]);
+  }, [tab, loadDisplayReqs, loadOrderReqs, loadInventoryChecks, loadLunch]);
 
   // ── 단건 삭제 헬퍼 ──
   async function deleteOne(url: string) { await api.del(url); }
@@ -388,14 +369,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     setOrderReqs(prev => prev.filter(r => !ids.includes(r.id)));
     setSelectedOrder(new Set());
     dispatchApprovalChange("order");
-  };
-
-  // ── 불일치 삭제 ── 2026-08-18 · 배지 갱신 dispatch
-  const deleteMismatch = async (ids: string[]) => {
-    await Promise.all(ids.map(id => deleteOne(`/api/zone-mismatches/${id}`)));
-    setMismatches(prev => prev.filter(r => !ids.includes(r.id)));
-    setSelectedMismatch(new Set());
-    dispatchApprovalChange("mismatch");
   };
 
   // ── 실재고 삭제 ──
@@ -481,7 +454,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   // 탭 갯수: 로딩 중이면 pending-counts 값을, 로딩 완료 후엔 실제 데이터 값을 사용
   const displayTabCount   = displayLoading   ? (tabCounts?.display   ?? 0) : pending.length;
   const orderTabCount     = orderLoading     ? (tabCounts?.order     ?? 0) : orderReqs.length;
-  const mismatchTabCount  = mismatchLoading  ? (tabCounts?.mismatch  ?? 0) : mismatches.length;
   const inventoryTabCount = inventoryLoading ? (tabCounts?.inventory ?? 0) : inventoryChecks.length;
   const lunchTabCount     = lunchLoading     ? (tabCounts?.lunch     ?? 0) : lunchRequests.filter(r => !r.eating).length;
 
@@ -507,12 +479,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
   // 2026-09-20 · 사용자 지시 · 승인대기 / 요청확인 분리
   //   · 승인 그룹 · leave · vendor · resignation (관리자만 · 결재 성격)
-  //   · 요청 그룹 · display · lunch · inventory · mismatch (매장 처리·확인)
-  //     - 재고 확인 · 구역 불일치 · 점심 불참 · 요청확인 포함 (사용자 지시)
+  //   · 요청 그룹 · display · lunch (매장 처리·확인)
   //   · 현재 tab 이 속한 그룹만 TABS 에 노출
   const APPROVAL_TABS: Tab[] = ["leave", "vendor", "resignation"];
-  // 2026-09-20 · 사용자 지시 · 재고확인 (inventory) · 요청확인 그룹에서 제거
-  const REQUEST_TABS: Tab[] = ["display", "lunch", "mismatch"];
+  // 2026-09-23 · #333 · mismatch 탭 제거
+  const REQUEST_TABS: Tab[] = ["display", "lunch"];
   const currentGroup: "approval" | "request" = APPROVAL_TABS.includes(tab) ? "approval" : "request";
 
   const ALL_TABS: [Tab, string, number, string, string, string, string][] = [
@@ -523,8 +494,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       ...(isLunchHidden ? [] : ([
         ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       ] as [Tab, string, number, string, string, string, string][])),
-      // 2026-09-20 · 사용자 지시 · 요청확인 그룹 · 구역 불일치 (재고확인 제거)
-      ["mismatch",  "구역불일치", mismatchTabCount,  "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-rose-100 text-rose-700",      "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       ...(isLeaveHidden ? [] : ([
         ["leave",     "연차승인",   leavePendingCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       ] as [Tab, string, number, string, string, string, string][])),
@@ -567,7 +536,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             const meta: Record<Tab, { icon: any; color: any }> = {
               display:     { icon: ClipboardList, color: "sky"     },
               order:       { icon: Package,       color: "amber"   },
-              mismatch:    { icon: MapPin,        color: "rose"    },
               lunch:       { icon: Coffee,        color: "orange"  },
               inventory:   { icon: Package,       color: "violet"  },
               leave:       { icon: CalendarDays,  color: "indigo"  },
@@ -634,21 +602,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             onDeleteAll={async () => { if (await confirm({ message: `발주요청 전체 ${orderReqs.length}건을 삭제할까요?`, danger: true })) deleteOrder(orderReqs.map(r => r.id)); }}
             onRefresh={loadOrderReqs}
             onRequestOrder={handleRequestOrder}
-          />
-        )}
-
-        {/* ── 구역불일치 · 2026-08-26 MismatchPanel 이관 ── */}
-        {tab === "mismatch" && (
-          <MismatchPanel
-            mismatches={mismatches}
-            mismatchLoading={mismatchLoading}
-            mismatchError={mismatchError}
-            selectedMismatch={selectedMismatch}
-            onToggleAll={() => toggleAll(mismatches, selectedMismatch, setSelectedMismatch)}
-            onToggleOne={(id) => toggleOne(selectedMismatch, id, setSelectedMismatch)}
-            onDeleteSelected={() => deleteMismatch([...selectedMismatch])}
-            onDeleteAll={async () => { if (await confirm({ message: `구역불일치 전체 ${mismatches.length}건을 삭제할까요?`, danger: true })) deleteMismatch(mismatches.map(r => r.id)); }}
-            onRefresh={loadMismatches}
           />
         )}
 
