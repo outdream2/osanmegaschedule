@@ -1070,18 +1070,18 @@ router.post("/api/order-requests/bulk-send", authorize(1), validateBody(BulkSend
 
     dispatch.status = outcomes.some(o => /:sent$/.test(o) || /skipped\(/.test(o)) ? "sent" : "dry_run";
 
-    // 2026-09-05 · 사용자 지시 · 실제 전송이 없으면(no_recipient 등) ordered 로 마킹하지 않음
-    //   · 발송 채널 미선택(no_channel) = 의도적 DB 저장 → ordered 허용
-    //   · 채널 선택 + 적어도 1채널 :sent → ordered 허용
-    //   · 채널 선택 + 전부 no_recipient/no_env 등 → ordered 금지 · 발주요청에 그대로 남겨야 함
-    // 2026-09-11 · #113 · 사용자 신고 fix · 발주는 됐는데 이력에 안 남음
-    //   · 원인 · line 862 · dispatch.status='sent' 는 `skipped()` 도 포함 (line 862 outcomes.some 매치 조건 · sent OR skipped)
-    //   · 하지만 · anySentForSupplier 는 · :sent 만 · skipped 제외 → 미스매치 → dispatch=sent 인데 status=requested 유지
-    //   · fix · dispatch.status==='sent' 이면 · order_requests.status='ordered' 마킹 (일관성)
+    // 2026-09-23 · E-009 · 사용자 지시 (Option A · 최신 정책) · 발송 버튼 누른 시점 · 이력 저장
+    //   · 사용자 보고 · "3개 공급사 발주 했는데 발주이력에 1건만 저장" · 3건 모두 저장 기대
+    //   · 이전 정책 (#75 · 2026-09-05) · no_recipient 시 마킹 X · vendor 정보 수정 후 재발송 유도
+    //   · 최신 정책 우선 · 발송 액션 = 의도 표명 · 채널 실패해도 · 이력에 남김 · 사후 수동 통지
+    //   · 클라이언트 #346 (수량·단가·금액 필수값 검증) 이미 도입 · 빈 발주 방지 · 이 gate 필요성 낮음
+    //   · requestIds.length > 0 guard 는 유지 · 빈 리스트 마킹 방지
     const noChannels = !channels.email && !channels.sms && !channels.kakao;
     const anySentForSupplier = outcomes.some(o => /:sent$/.test(o));
     const dispatchSent = dispatch.status === "sent";
-    const shouldMarkOrdered = noChannels || anySentForSupplier || dispatchSent;
+    const shouldMarkOrdered = true; // E-009 · 항상 마킹 · (이전 조건 참조: noChannels || anySentForSupplier || dispatchSent)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _prevGate = noChannels || anySentForSupplier || dispatchSent; // 참조용 · 롤백 편의
 
     const requestIds: string[] = items
       .map((it: any) => it.order_request_id)
