@@ -22,6 +22,8 @@ import { Modal } from "./Modal";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient · alert → useToast
 import { api } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-09-23 · #339 · 직군 · settings.wageRates 존재 목록 대조 (SSOT · 하드코딩 X)
+import { useSettings } from "../../hooks/useSettings";
 
 interface Props {
   employee: Employee;
@@ -46,6 +48,8 @@ interface LatestContract {
 export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChange, onEdit }) => {
   const [localEmployee, setLocalEmployee] = useState<Employee>(employee);
   useEffect(() => { setLocalEmployee(employee); }, [employee]);
+  // 2026-09-23 · #339 · 직군 · settings.wageRates 존재 대조 · SSOT 파생
+  const { settings } = useSettings();
 
   // 2026-08-10 · B Step 4 · 사번(우선) or employeeId 로 최신 계약서 근로정보 fetch
   // 2026-08-21 · Framework Phase 3 · fetch → apiClient
@@ -145,10 +149,29 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
               );
             })()}
           </div>
-          {/* 2026-08-17 · 사용자 지시 · 이름 아래 · 직군 · 근무형태 2개만 (rank 제외) · 폰트 +4 */}
-          <div className="text-[17px] text-ink-soft font-semibold mt-0.5 tracking-tight">
-            {[localEmployee.position, localEmployee.employmentType].filter(Boolean).join(" · ")}
-          </div>
+          {/* 2026-08-17 · 사용자 지시 · 이름 아래 · 직군 · 근무형태 2개만 (rank 제외) · 폰트 +4
+              2026-09-23 · #339 · 직군 · settings.wageRates 존재 목록 대조 · 미등록 시 zinc-400 + 힌트 */}
+          {(() => {
+            const wageRatesKeys = Object.keys(settings?.wageRates ?? {});
+            const pos = localEmployee.position?.trim() ?? "";
+            const posRegistered = pos && wageRatesKeys.includes(pos);
+            const posLabel = pos || null;
+            const empLabel = localEmployee.employmentType || null;
+            return (
+              <div className="text-[17px] font-semibold mt-0.5 tracking-tight flex flex-wrap items-center gap-x-1">
+                {posLabel && (
+                  <span
+                    className={posRegistered ? "text-ink-soft" : "text-zinc-400"}
+                    title={!posRegistered ? "시스템설정 직군 목록에 미등록" : undefined}
+                  >
+                    {posLabel}
+                  </span>
+                )}
+                {posLabel && empLabel && <span className="text-ink-soft">·</span>}
+                {empLabel && <span className="text-ink-soft">{empLabel}</span>}
+              </div>
+            );
+          })()}
           </div>
         </div>
         {onEdit && (
