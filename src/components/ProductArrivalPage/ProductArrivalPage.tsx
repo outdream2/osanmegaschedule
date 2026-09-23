@@ -18,7 +18,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { SplitPanel } from "../common/SplitPanel";
 import {
   ScanLine, AlertCircle, PackagePlus, Clock,
-  Minus, Plus, RotateCcw, ClipboardCheck,
+  Minus, Plus, ClipboardCheck,
   Barcode, Building2, Box, Hash, ArrowUpDown, ArrowUp, ArrowDown,
   Package, Warehouse, Store,
 } from "lucide-react";
@@ -341,17 +341,6 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     setItems(prev => prev.filter(it => it.key !== key));
   };
 
-  const resetAll = async () => {
-    if (items.length === 0) return;
-    if (!await confirm({ message: "리스트를 모두 초기화하시겠습니까?", danger: true })) return;
-    setItems([]);
-    setFinalDecision(null);
-    setNotFoundCode(null);
-    setLastAddedKey(null);
-    setLastScannedProduct(null);
-    setLastScannedCode(null);
-  };
-
   // ── 정렬
   const { sorted: sortedItems, sortKey, sortDir, toggleSort: handleSort } = useSortableTable<ArrivalItem, ArrivalSortKey>(
     items, "addedAt", ARRIVAL_CMP, "desc",
@@ -393,20 +382,6 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           onBack={onBack}
           onNavigate={onNavigate}
           onLogout={onLogout}
-          rightSlot={
-            arrivalTab === "input" && items.length > 0 ? (
-              <button
-                onClick={resetAll}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
-                  text-zinc-500 hover:text-zinc-800 bg-white border border-line
-                  hover:bg-zinc-50 hover:border-zinc-300 shadow-sm
-                  transition-all duration-150 cursor-pointer"
-              >
-                <RotateCcw size={12} />
-                초기화
-              </button>
-            ) : undefined
-          }
         />
       )}
 
@@ -437,14 +412,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 거래명세표와 실제 입고물품·수량 일치 확인
               </p>
             </div>
-            {arrivalTab === "input" && counts.total > 0 && (
-              <div className="ml-auto flex items-center gap-2 shrink-0">
-                <StatusPill tone="brand" size="md">{counts.total}건 / {counts.totalQty}개</StatusPill>
-                {counts.pending > 0 && (
-                  <StatusPill tone="amber" size="md" dot pulse>{counts.pending}건 미결</StatusPill>
-                )}
-              </div>
-            )}
+            {/* Pill 영역: 공간 항상 확보 · input+데이터 있을 때만 visible */}
+            <div className={`ml-auto flex items-center gap-2 shrink-0 ${arrivalTab === "input" && counts.total > 0 ? "visible" : "invisible pointer-events-none"}`}>
+              <StatusPill tone="brand" size="md">{counts.total}건 / {counts.totalQty}개</StatusPill>
+              {counts.pending > 0 && (
+                <StatusPill tone="amber" size="md" dot pulse>{counts.pending}건 미결</StatusPill>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -459,14 +433,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 <PackagePlus size={13} className="text-white" />
               </div>
               <span className="text-[15px] font-bold text-ink tracking-tight">상품 입고 검수</span>
-              {arrivalTab === "input" && counts.total > 0 && (
-                <>
-                  <StatusPill tone="brand" size="md">{counts.total}건 / {counts.totalQty}개</StatusPill>
-                  {counts.pending > 0 && (
-                    <StatusPill tone="amber" size="md" dot pulse>{counts.pending}건 미결</StatusPill>
-                  )}
-                </>
-              )}
+              {/* Pill 영역: 공간 항상 확보 · input+데이터 있을 때만 visible */}
+              <div className={`flex items-center gap-2 ${arrivalTab === "input" && counts.total > 0 ? "visible" : "invisible pointer-events-none"}`}>
+                <StatusPill tone="brand" size="md">{counts.total}건 / {counts.totalQty}개</StatusPill>
+                {counts.pending > 0 && (
+                  <StatusPill tone="amber" size="md" dot pulse>{counts.pending}건 미결</StatusPill>
+                )}
+              </div>
             </>
           )}
           {/* 탭 버튼 */}
@@ -496,17 +469,6 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               );
             })}
           </div>
-          {/* 초기화 버튼 (embedded · 입고 탭 · 아이템 있을 때) */}
-          {embedded && arrivalTab === "input" && items.length > 0 && (
-            <button
-              onClick={resetAll}
-              className="ml-1 flex items-center gap-1 px-2 py-1 rounded-md text-[12px] font-bold
-                text-zinc-400 hover:text-zinc-700 bg-zinc-50 border border-line
-                hover:bg-white hover:border-zinc-300 transition cursor-pointer"
-            >
-              <RotateCcw size={11} />초기화
-            </button>
-          )}
         </div>
       </div>
 
