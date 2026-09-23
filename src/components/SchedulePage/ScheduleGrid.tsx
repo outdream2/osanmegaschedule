@@ -195,8 +195,6 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
               emp={emp} empIdx={empIdx} isAdmin={isAdmin} userLevel={userLevel}
               currentYear={currentYear} draggedRowId={draggedRowId} dragOverRowId={dragOverRowId}
               onNameClick={onEmployeeNameClick}
-              onEditClick={onEmployeeEditClick}
-              onDeleteClick={onEmployeeDeleteClick}
             />
 
             {displayDates.map((dateStr, dateIdx) => {

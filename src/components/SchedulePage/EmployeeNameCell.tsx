@@ -24,8 +24,6 @@ interface EmployeeNameCellProps {
   draggedRowId: number | null;
   dragOverRowId: number | null;
   onNameClick: (emp: Employee) => void;
-  onEditClick: (emp: Employee) => void;
-  onDeleteClick: (id: number, name: string) => void;
 }
 
 const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
@@ -37,8 +35,6 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
   draggedRowId,
   dragOverRowId: _dragOverRowId,
   onNameClick,
-  onEditClick: _onEditClick,
-  onDeleteClick: _onDeleteClick,
 }) => {
   /* 월차 잔여 계산 (기존 유지 · 표시 X) */
   const leaveTotal = Number.isFinite(Number(emp.annual_leave_days))
