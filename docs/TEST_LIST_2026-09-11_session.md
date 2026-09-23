@@ -4288,3 +4288,29 @@ BorrowingPage · PDF 저장 기능 없음. 계약서 · 인쇄·이메일 어려
 6. 저장 클릭 → popover 닫힘 · 셀 값 갱신
 7. 취소 클릭 → popover 닫힘 · 원래 값 유지
 8. API 실패 시 → popover 그대로 열려 있음 (재시도 가능)
+
+---
+
+### [122] P3-4 · ESLint 룰 3건 audit 확장
+**커밋** · `b526d920` (병렬 에이전트 커밋 · P2-2 와 함께 스테이징됨) · 후속 문서 커밋 = 본 커밋
+- 신규 룰 3건 (`scripts/audit-framework.cjs`)
+  - **`no-raw-console-server`** (medium · scope: server) · `console.log/warn/error/info/debug` 금지 · 예외 `server/lib/logger.ts` · `server/lib/envValidation.ts` · `*.test.ts`
+  - **`no-any-server`** (medium · scope: server) · `: any` 명시적 타입 금지 · 예외 `catch (err: any)` (variable-width lookbehind) · `// eslint-disable-next-line` · 주석 라인 · `*.test.ts` · `*.d.ts`
+  - **`prefer-modal-primitive`** (medium · scope: src) · raw `<div className="fixed inset-0 ... bg-black/...">` 금지 · Modal 프리미티브 사용 · 예외 `Modal.tsx` · `ui/sheet.tsx` · `BarcodeScanner` · `PanZoomImage` · `PageImageViewer` · `ImageZoomModal`
+- 인프라 확장 · `walk()` 에 `scope` 태그 (src/server) · `scanFile()` scope 필터 · `main()` src+server 병행 스캔
+- Baseline 재설정 · `docs/.framework-baseline.json` · 12 → 524 위반 · 95 파일 · pre-commit `--check-new` 통과 (신규 증가 방지 가드레일 유지)
+- Pre-commit 통합 · `.husky/pre-commit` (기존 유지) · 자동 실행
+- 위반 breakdown (baseline 시점)
+  - `no-raw-console-server` · 274 위반 · 28 파일 (OCR pipeline 다수)
+  - `no-any-server` · 237 위반 · 67 파일
+  - `prefer-modal-primitive` · 1 위반 · 1 파일 (NotificationBell.tsx)
+  - `large-file-warn` · 12 · 12 파일 (기존)
+- 검증 · TS 0 error · vitest 3740 pass · build OK · pre-commit gate exit 0
+
+**확인 절차**
+1. `npm run audit` 실행 → 리포트 `docs/FRAMEWORK_AUDIT.md` 4개 규칙 표시 (no-raw-console-server / no-any-server / prefer-modal-primitive / large-file-warn)
+2. `npm run audit:check` (pre-commit) → EXIT 0 (baseline 신규 증가 없음)
+3. 신규 서버 파일에 `console.log` 추가 → pre-commit 실패 유도 (선택 검증)
+4. 신규 서버 파일에 `: any` 추가 → pre-commit 실패 유도 (선택 검증)
+5. `catch (err: any)` 유지 시 pre-commit 통과 (예외 정상)
+6. 신규 `<div className="fixed inset-0 ... bg-black/50">` 추가 시 pre-commit 실패 유도 (선택 검증)
