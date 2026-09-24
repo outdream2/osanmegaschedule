@@ -355,6 +355,12 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                   </button>
                 )}
               </div>
+              {/* 2026-09-24 · 사용자 지시 · 안내 코멘트 · 통계설정 상품 등록 유도 */}
+              <div className="text-[12.5px] text-zinc-500 leading-relaxed bg-zinc-50 border border-line rounded-md px-3 py-2">
+                <span className="font-semibold text-zinc-700">💡 이벤트별 추천 상품</span> · 이벤트 클릭 → 등록된 상품 표시 · <span className="font-semibold text-brand-deep">[상품추가]</span> 로 발주필요에 즉시 추가.
+                <br />
+                등록된 상품이 없는 이벤트는 <span className="font-semibold text-brand-deep">통계설정 → 계절별 추천 상품</span> 에서 상품을 등록하세요.
+              </div>
               {eventsToday.map(ev => {
                 const tone = TYPE_TONE[ev.type] ?? TYPE_TONE.custom;
                 const d = dayDiff(ev.start_date);
