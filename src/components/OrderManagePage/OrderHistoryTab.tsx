@@ -615,15 +615,15 @@ export const OrderHistoryTab: React.FC = () => {
                                     </td>
                                   </tr>
 
-                                  {/* 상세 행 */}
+                                  {/* 상세 행 · 2026-09-24 · 사용자 지시 · accent bar · PO 헤더와 동일 색상 (하위내용 시각 연결) */}
                                   {isOpen && (
                                     <tr>
-                                      {/* accent bar 연속 */}
+                                      {/* accent bar 연속 · 헤더와 동일 톤 */}
                                       <td className="py-0">
-                                        <div className={`w-1 h-full min-h-[1px] ${isMatched ? "bg-emerald-400/40" : "bg-sky-400/40"}`} />
+                                        <div className={`w-1 h-full min-h-[1px] ${isMatched ? "bg-emerald-400" : "bg-sky-400"}`} />
                                       </td>
                                       <td colSpan={6} className="py-0 pl-1 pr-3">
-                                        <div className="bg-zinc-50/70 border-l-2 border-zinc-200 ml-0.5 mb-2 mt-0 rounded-r-lg overflow-hidden">
+                                        <div className={`bg-zinc-50/70 border-l-2 ${isMatched ? "border-emerald-300" : "border-sky-300"} ml-0.5 mb-2 mt-0 rounded-r-lg overflow-hidden`}>
                                           {/* 2026-09-24 · 사용자 지시 · 담당자·이메일·전화 · 공급사 옆으로 이동 · 상세에서 제거
                                               · 메모만 · 있을 때 · 상세 상단 유지 */}
                                           {o.memo && (
@@ -631,41 +631,48 @@ export const OrderHistoryTab: React.FC = () => {
                                               메모 · {o.memo}
                                             </div>
                                           )}
-                                          {/* 2026-09-24 · 사용자 지시 · 하위구조 · 세련되게 · 라벨 +2
-                                              · 테이블 → 카드 리스트 (indent · 왼쪽 accent bar · 상품명 hero + 수량×단가 요약) */}
-                                          <ul className="flex flex-col divide-y divide-zinc-100">
-                                            {o.items.map((it, i) => (
-                                              <li key={it.id} className="flex items-center gap-3 pl-4 pr-3 py-2.5 hover:bg-white/60 transition group">
-                                                <span className="text-[13px] text-zinc-300 font-medium tabular-nums w-5 text-right shrink-0 group-hover:text-zinc-500">
-                                                  {String(i + 1).padStart(2, "0")}
-                                                </span>
-                                                <div className="flex-1 min-w-0 flex flex-col leading-tight gap-0.5">
-                                                  <span className="text-[16px] font-bold text-zinc-800 break-words leading-snug">
-                                                    {it.product_name}
-                                                  </span>
-                                                  <span className="text-[13px] text-zinc-400 tabular-nums font-medium">
-                                                    {it.product_code}
-                                                  </span>
-                                                </div>
-                                                <div className="flex items-baseline gap-1.5 shrink-0 tabular-nums">
-                                                  <span className="text-[16px] font-bold text-rose-600">
-                                                    {Number(it.order_qty).toLocaleString()}개
-                                                  </span>
-                                                  {it.unit_price > 0 && (
-                                                    <>
-                                                      <span className="text-[13px] text-zinc-300">×</span>
-                                                      <span className="text-[14px] text-zinc-500">
-                                                        {it.unit_price.toLocaleString()}원
+                                          {/* 2026-09-24 · 사용자 지시 · 하위구조 · 헤더 있는 테이블 · 세련되게
+                                              · 상품 코드 · 상품명 위 (2줄) · 헤더 · Linear/Notion 얇은 톤 · 라벨 +2 */}
+                                          <table className="w-full text-[15px] tabular-nums">
+                                            <thead>
+                                              <tr className="text-[13px] font-semibold text-zinc-500 border-b border-zinc-200 bg-zinc-50/50">
+                                                <th className="text-center px-3 py-2 w-10">#</th>
+                                                <th className="text-left px-3 py-2 min-w-[220px]">상품</th>
+                                                <th className="text-right px-3 py-2 w-16">수량</th>
+                                                <th className="text-right px-3 py-2 w-28">단가</th>
+                                                <th className="text-right px-3 py-2 w-32">금액</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-zinc-100">
+                                              {o.items.map((it, i) => (
+                                                <tr key={it.id} className="hover:bg-white/60">
+                                                  <td className="text-center px-3 py-2.5 text-[14px] text-zinc-400 tabular-nums font-medium align-middle">
+                                                    {String(i + 1).padStart(2, "0")}
+                                                  </td>
+                                                  <td className="text-left px-3 py-2.5 align-middle">
+                                                    {/* 2026-09-24 · 사용자 지시 · 코드 · md+ 상품명 앞 · md 이하 (반응형) 위 */}
+                                                    <div className="flex flex-col md:flex-row md:items-baseline md:gap-2 leading-snug">
+                                                      <span className="text-[13px] text-zinc-400 tabular-nums font-medium shrink-0">
+                                                        {it.product_code}
                                                       </span>
-                                                    </>
-                                                  )}
-                                                </div>
-                                                <span className="text-[16px] font-bold text-emerald-700 tabular-nums shrink-0 w-28 text-right">
-                                                  {it.line_amount > 0 ? fmtWon(it.line_amount) : "—"}
-                                                </span>
-                                              </li>
-                                            ))}
-                                          </ul>
+                                                      <span className="text-[16px] font-bold text-zinc-800 whitespace-normal break-words">
+                                                        {it.product_name}
+                                                      </span>
+                                                    </div>
+                                                  </td>
+                                                  <td className="text-right px-3 py-2.5 align-middle text-[15px] font-bold text-rose-600 tabular-nums">
+                                                    {Number(it.order_qty).toLocaleString()}
+                                                  </td>
+                                                  <td className="text-right px-3 py-2.5 align-middle text-[15px] text-zinc-500 tabular-nums">
+                                                    {it.unit_price > 0 ? fmtWon(it.unit_price) : "—"}
+                                                  </td>
+                                                  <td className="text-right px-3 py-2.5 align-middle text-[16px] font-bold text-emerald-700 tabular-nums">
+                                                    {it.line_amount > 0 ? fmtWon(it.line_amount) : "—"}
+                                                  </td>
+                                                </tr>
+                                              ))}
+                                            </tbody>
+                                          </table>
                                         </div>
                                       </td>
                                     </tr>

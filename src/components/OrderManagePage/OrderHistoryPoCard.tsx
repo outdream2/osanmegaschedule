@@ -153,44 +153,48 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
             </button>
           </div>
 
-          {/* 상세 영역 */}
+          {/* 상세 영역 · 2026-09-24 · 사용자 지시 · 왼쪽 accent bar · 하위 계층 색상 연결 */}
           {isOpen && (
-            <div className="border-t border-zinc-100 bg-zinc-50/60 px-3.5 py-3 space-y-2.5">
-              {/* 2026-09-24 · 사용자 지시 · 담당자·연락처 · 헤더로 이동 · 상세에서 제거
-                  · 메모만 · 있을 때 · 상단 유지 */}
+            <div className={`border-t ${isMatched ? "border-emerald-100" : "border-sky-100"} bg-zinc-50/60 pl-3.5 pr-3.5 py-3 space-y-2.5 border-l-2 ${isMatched ? "border-l-emerald-300" : "border-l-sky-300"}`}>
+              {/* 메모만 · 상단 유지 */}
               {o.memo && (
                 <div className="text-[13px] text-zinc-500 italic">
                   메모 · {o.memo}
                 </div>
               )}
-              {/* 아이템 목록 · 2026-09-24 · 세련된 카드 리스트 · 라벨 +2 */}
+              {/* 헤더 · Linear/Notion 얇은 톤 · 라벨 +2 */}
+              <div className="flex items-center gap-2.5 text-[13px] font-semibold text-zinc-500 border-b border-zinc-200 pb-1.5">
+                <span className="w-5 text-right">#</span>
+                <span className="flex-1">상품</span>
+                <span className="w-16 text-right">수량</span>
+                <span className="w-24 text-right">단가</span>
+                <span className="w-20 text-right">금액</span>
+              </div>
+              {/* 아이템 목록 · 2026-09-24 · 카드 리스트 · 코드 상품명 위 · 반응형 */}
               <ul className="flex flex-col divide-y divide-zinc-100">
                 {o.items.map((it, i) => (
                   <li
                     key={it.id}
-                    className="flex items-start gap-2.5 py-2"
+                    className="flex items-center gap-2.5 py-2"
                   >
-                    <span className="text-[13px] text-zinc-300 tabular-nums w-5 shrink-0 text-right font-medium">
+                    <span className="text-[13px] text-zinc-400 tabular-nums w-5 shrink-0 text-right font-medium">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <div className="flex-1 min-w-0 flex flex-col leading-tight gap-0.5">
-                      <span className="text-[15px] font-bold text-zinc-800 break-words leading-snug">
-                        {it.product_name}
-                      </span>
+                    <div className="flex-1 min-w-0 flex flex-col leading-tight">
                       <span className="text-[13px] text-zinc-400 tabular-nums font-medium">
                         {it.product_code}
                       </span>
-                      <span className="text-[13px] tabular-nums flex items-baseline gap-1">
-                        <span className="text-rose-600 font-bold">{Number(it.order_qty).toLocaleString()}개</span>
-                        {it.unit_price > 0 && (
-                          <>
-                            <span className="text-zinc-300">×</span>
-                            <span className="text-zinc-500">{it.unit_price.toLocaleString()}원</span>
-                          </>
-                        )}
+                      <span className="text-[15px] font-bold text-zinc-800 break-words leading-snug mt-0.5">
+                        {it.product_name}
                       </span>
                     </div>
-                    <span className="text-[15px] font-bold text-emerald-700 tabular-nums shrink-0">
+                    <span className="text-[15px] font-bold text-rose-600 tabular-nums shrink-0 w-16 text-right">
+                      {Number(it.order_qty).toLocaleString()}
+                    </span>
+                    <span className="text-[14px] text-zinc-500 tabular-nums shrink-0 w-24 text-right">
+                      {it.unit_price > 0 ? fmtWon(it.unit_price) : "—"}
+                    </span>
+                    <span className="text-[15px] font-bold text-emerald-700 tabular-nums shrink-0 w-20 text-right">
                       {it.line_amount > 0 ? fmtWon(it.line_amount) : "—"}
                     </span>
                   </li>
