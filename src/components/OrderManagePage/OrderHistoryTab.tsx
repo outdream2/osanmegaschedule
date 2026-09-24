@@ -541,27 +541,27 @@ export const OrderHistoryTab: React.FC = () => {
                                       <div className="text-[12px] text-zinc-400 tabular-nums font-medium leading-none mb-0.5">
                                         #{o.order_number ?? "—"}
                                       </div>
-                                      {/* 2026-09-24 · 사용자 지시 · 공급사 옆에 · 담당자·전화·이메일 · 한 줄 인라인 · 라벨 텍스트 */}
-                                      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 leading-snug">
-                                        <span className="inline-flex items-baseline gap-1">
-                                          <span className="text-[11px] text-zinc-400 font-semibold">공급사</span>
+                                      {/* 2026-09-24 · 사용자 지시 · 공급사 옆 · 담당자·전화·이메일 인라인 · 라벨 폰트 +2 */}
+                                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 leading-snug">
+                                        <span className="inline-flex items-baseline gap-1.5">
+                                          <span className="text-[13px] text-zinc-400 font-semibold">공급사</span>
                                           <span className="text-[16px] font-bold text-zinc-800 whitespace-normal break-words">
                                             {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
                                           </span>
                                         </span>
                                         {o.supplier_contact && (
-                                          <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600">
-                                            <span className="text-[11px] text-zinc-400 font-semibold">담당자</span>{o.supplier_contact}
+                                          <span className="inline-flex items-center gap-1.5 text-[15px] text-zinc-600">
+                                            <span className="text-[13px] text-zinc-400 font-semibold">담당자</span>{o.supplier_contact}
                                           </span>
                                         )}
                                         {o.supplier_phone && (
-                                          <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600 tabular-nums">
-                                            <span className="text-[11px] text-zinc-400 font-semibold">연락처</span>{o.supplier_phone}
+                                          <span className="inline-flex items-center gap-1.5 text-[15px] text-zinc-600 tabular-nums">
+                                            <span className="text-[13px] text-zinc-400 font-semibold">연락처</span>{o.supplier_phone}
                                           </span>
                                         )}
                                         {o.supplier_email && (
-                                          <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600 truncate max-w-[240px]">
-                                            <span className="text-[11px] text-zinc-400 font-semibold">이메일</span>{o.supplier_email}
+                                          <span className="inline-flex items-center gap-1.5 text-[15px] text-zinc-600 truncate max-w-[260px]">
+                                            <span className="text-[13px] text-zinc-400 font-semibold">이메일</span>{o.supplier_email}
                                           </span>
                                         )}
                                       </div>
@@ -631,33 +631,41 @@ export const OrderHistoryTab: React.FC = () => {
                                               메모 · {o.memo}
                                             </div>
                                           )}
-                                          {/* 아이템 테이블 · 2026-09-24 · 사용자 지시 · 헤더 최신 트렌드 (Linear/Notion) · 작고 세련되게 */}
-                                          <table className="w-full text-[15px] tabular-nums">
-                                            <thead>
-                                              <tr className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider border-b border-zinc-200">
-                                                <th className="text-center px-2 py-1.5 w-8">#</th>
-                                                <th className="text-left px-2 py-1.5 min-w-[120px]">코드</th>
-                                                <th className="text-left px-2 py-1.5 min-w-[200px]">상품명</th>
-                                                <th className="text-right px-2 py-1.5 w-14">수량</th>
-                                                <th className="text-right px-2 py-1.5 w-24">단가</th>
-                                                <th className="text-right px-2 py-1.5 w-28">금액</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-zinc-100">
-                                              {o.items.map((it, i) => (
-                                                <tr key={it.id} className="hover:bg-sky-50/20">
-                                                  <td className={tableTdCls("center", "text-zinc-400 text-[13px]")}>{i + 1}</td>
-                                                  <td className={tableTdCls("left", "text-zinc-500 text-[13px] tabular-nums font-medium whitespace-nowrap")}>
+                                          {/* 2026-09-24 · 사용자 지시 · 하위구조 · 세련되게 · 라벨 +2
+                                              · 테이블 → 카드 리스트 (indent · 왼쪽 accent bar · 상품명 hero + 수량×단가 요약) */}
+                                          <ul className="flex flex-col divide-y divide-zinc-100">
+                                            {o.items.map((it, i) => (
+                                              <li key={it.id} className="flex items-center gap-3 pl-4 pr-3 py-2.5 hover:bg-white/60 transition group">
+                                                <span className="text-[13px] text-zinc-300 font-medium tabular-nums w-5 text-right shrink-0 group-hover:text-zinc-500">
+                                                  {String(i + 1).padStart(2, "0")}
+                                                </span>
+                                                <div className="flex-1 min-w-0 flex flex-col leading-tight gap-0.5">
+                                                  <span className="text-[16px] font-bold text-zinc-800 break-words leading-snug">
+                                                    {it.product_name}
+                                                  </span>
+                                                  <span className="text-[13px] text-zinc-400 tabular-nums font-medium">
                                                     {it.product_code}
-                                                  </td>
-                                                  <td className={tableTdCls("left", "text-zinc-800 font-semibold whitespace-normal break-words")}>{it.product_name}</td>
-                                                  <td className={tableTdCls("num", "font-bold text-rose-600")}>{it.order_qty}</td>
-                                                  <td className={tableTdCls("num", "text-zinc-500 text-[14px]")}>{it.unit_price > 0 ? fmtWon(it.unit_price) : "—"}</td>
-                                                  <td className={tableTdCls("num", "font-bold text-emerald-700")}>{it.line_amount > 0 ? fmtWon(it.line_amount) : "—"}</td>
-                                                </tr>
-                                              ))}
-                                            </tbody>
-                                          </table>
+                                                  </span>
+                                                </div>
+                                                <div className="flex items-baseline gap-1.5 shrink-0 tabular-nums">
+                                                  <span className="text-[16px] font-bold text-rose-600">
+                                                    {Number(it.order_qty).toLocaleString()}개
+                                                  </span>
+                                                  {it.unit_price > 0 && (
+                                                    <>
+                                                      <span className="text-[13px] text-zinc-300">×</span>
+                                                      <span className="text-[14px] text-zinc-500">
+                                                        {it.unit_price.toLocaleString()}원
+                                                      </span>
+                                                    </>
+                                                  )}
+                                                </div>
+                                                <span className="text-[16px] font-bold text-emerald-700 tabular-nums shrink-0 w-28 text-right">
+                                                  {it.line_amount > 0 ? fmtWon(it.line_amount) : "—"}
+                                                </span>
+                                              </li>
+                                            ))}
+                                          </ul>
                                         </div>
                                       </td>
                                     </tr>

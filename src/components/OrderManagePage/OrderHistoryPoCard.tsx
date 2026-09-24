@@ -88,27 +88,27 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
               <div className="text-[13px] text-zinc-400 tabular-nums font-medium">
                 #{o.order_number ?? "—"}
               </div>
-              {/* 2026-09-24 · 사용자 지시 · 공급사 옆 · 담당자·연락처·이메일 인라인 · 라벨 텍스트 */}
-              <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 leading-snug">
-                <span className="inline-flex items-baseline gap-1">
-                  <span className="text-[11px] text-zinc-400 font-semibold">공급사</span>
+              {/* 2026-09-24 · 사용자 지시 · 공급사 옆 · 담당자·연락처·이메일 · 라벨 폰트 +2 */}
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 leading-snug">
+                <span className="inline-flex items-baseline gap-1.5">
+                  <span className="text-[13px] text-zinc-400 font-semibold">공급사</span>
                   <span className="text-[17px] font-bold text-zinc-800 whitespace-normal break-words">
                     {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
                   </span>
                 </span>
                 {o.supplier_contact && (
-                  <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600">
-                    <span className="text-[11px] text-zinc-400 font-semibold">담당자</span>{o.supplier_contact}
+                  <span className="inline-flex items-center gap-1.5 text-[15px] text-zinc-600">
+                    <span className="text-[13px] text-zinc-400 font-semibold">담당자</span>{o.supplier_contact}
                   </span>
                 )}
                 {o.supplier_phone && (
-                  <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600 tabular-nums">
-                    <span className="text-[11px] text-zinc-400 font-semibold">연락처</span>{o.supplier_phone}
+                  <span className="inline-flex items-center gap-1.5 text-[15px] text-zinc-600 tabular-nums">
+                    <span className="text-[13px] text-zinc-400 font-semibold">연락처</span>{o.supplier_phone}
                   </span>
                 )}
                 {o.supplier_email && (
-                  <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600 truncate max-w-[240px]">
-                    <span className="text-[11px] text-zinc-400 font-semibold">이메일</span>{o.supplier_email}
+                  <span className="inline-flex items-center gap-1.5 text-[15px] text-zinc-600 truncate max-w-[260px]">
+                    <span className="text-[13px] text-zinc-400 font-semibold">이메일</span>{o.supplier_email}
                   </span>
                 )}
               </div>
@@ -163,29 +163,39 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
                   메모 · {o.memo}
                 </div>
               )}
-              {/* 아이템 목록 */}
-              <div className="space-y-0.5">
+              {/* 아이템 목록 · 2026-09-24 · 세련된 카드 리스트 · 라벨 +2 */}
+              <ul className="flex flex-col divide-y divide-zinc-100">
                 {o.items.map((it, i) => (
-                  <div
+                  <li
                     key={it.id}
-                    className="flex items-baseline gap-2 py-1.5 border-b border-zinc-100 last:border-0"
+                    className="flex items-start gap-2.5 py-2"
                   >
-                    <span className="text-[12px] text-zinc-400 tabular-nums w-4 shrink-0 text-center">{i + 1}</span>
-                    <span className="text-[12px] text-zinc-500 tabular-nums shrink-0 whitespace-nowrap">
-                      {it.product_code}
+                    <span className="text-[13px] text-zinc-300 tabular-nums w-5 shrink-0 text-right font-medium">
+                      {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="flex-1 text-[14px] font-medium text-zinc-700 whitespace-normal break-words leading-snug">
-                      {it.product_name}
-                    </span>
-                    <span className="text-[13px] font-bold text-rose-600 tabular-nums shrink-0">
-                      {it.order_qty}개
-                    </span>
-                    <span className="text-[13px] text-emerald-700 font-bold tabular-nums shrink-0">
+                    <div className="flex-1 min-w-0 flex flex-col leading-tight gap-0.5">
+                      <span className="text-[15px] font-bold text-zinc-800 break-words leading-snug">
+                        {it.product_name}
+                      </span>
+                      <span className="text-[13px] text-zinc-400 tabular-nums font-medium">
+                        {it.product_code}
+                      </span>
+                      <span className="text-[13px] tabular-nums flex items-baseline gap-1">
+                        <span className="text-rose-600 font-bold">{Number(it.order_qty).toLocaleString()}개</span>
+                        {it.unit_price > 0 && (
+                          <>
+                            <span className="text-zinc-300">×</span>
+                            <span className="text-zinc-500">{it.unit_price.toLocaleString()}원</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    <span className="text-[15px] font-bold text-emerald-700 tabular-nums shrink-0">
                       {it.line_amount > 0 ? fmtWon(it.line_amount) : "—"}
                     </span>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           )}
         </div>
