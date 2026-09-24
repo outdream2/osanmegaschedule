@@ -4,11 +4,19 @@
 // 2026-08-12 · UI 리디자인 · 폰트 +2 · 굵기 완화 · 발주일·희망입고일 · 헤더 · 상품수 옆
 // 2026-09-17 · 사용자 지시 · 헤더 한 줄 재정리 · 발주번호(위)+공급사(아래) · 발주일/희망 간단 (26/9/11) · 금액 · PDF · 매입확인
 //   · 상단 헤더 + 자동 정렬 (useSortableTable) · 상세내역 시각 구분 강화
+// 2026-09-24 · UI 개선 · 한눈에 들어오는 3-level 계층 · 정보 압축 · 반응형 카드 전환
 
 import React, { useEffect, useRef, useState } from "react";
-import { Package, ChevronDown, ChevronRight, Mail, Phone, User, Calendar, CalendarCheck, FileDown, ListTree } from "lucide-react";
+import {
+  Package, ChevronDown, ChevronRight,
+  Mail, Phone, User, FileDown,
+  CheckCircle2, Tags,
+} from "lucide-react";
+// Mail/Phone/User/FileDown/CheckCircle2 → PC 테이블 상세 행에서 직접 사용
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { shortDate } from "../../lib/dateFormat";
+import { OrderHistoryPoCard } from "./OrderHistoryPoCard";
+import type { OrderHistoryPoCardOrder } from "./OrderHistoryPoCard";
 // 2026-09-08 · 사용자 지시 · 발주이력 각 행 PDF 다운 · html2canvas + jsPDF
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
@@ -23,8 +31,6 @@ import { SearchBar } from "../common/SearchBar";
 import { matchesProductQuery } from "../../lib/productMatch";
 // 2026-08-30 · 사용자 지시 · 공급사명 검색 프로젝트 전체 endpoint 통합 · matchesSupplierQuery 프리미티브
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
-import { AccentBar } from "../common/AccentBar";
-import { SortHeader } from "../common/SortHeader";
 import { GradientAccent } from "../common/GradientAccent";
 import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
@@ -39,7 +45,6 @@ import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-08-25 · 사용자 지시 · 공급사 분류 필터 · vendors 훅 재사용
 import { useVendors } from "../../hooks/useVendors";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
-import { Tags, CheckCircle2 } from "lucide-react";
 // 2026-09-13 · #117 · 매입확인 버튼 · confirm
 import { useConfirm } from "../../hooks/useConfirm";
 
@@ -72,6 +77,24 @@ interface OrderHistoryOrder {
   total_amount: number;
 }
 
+/** 발주일 → 희망일 축약 (예: "9/23→9/26") · 한 칸에 표현 */
+function dateRange(orderDate: string | null, arrival: string | null): string {
+  const od = shortDate(orderDate);
+  const ar = shortDate(arrival);
+  if (!od && !ar) return "—";
+  if (!ar) return od;
+  if (!od) return ar;
+  return `${od}→${ar}`;
+}
+
+/** 상품 코드 뒤 4자리만 (title 로 전체 노출) */
+function shortCode(code: string): string {
+  if (!code) return "—";
+  return code.length > 4 ? `…${code.slice(-4)}` : code;
+}
+
+// ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
+
 export const OrderHistoryTab: React.FC = () => {
   const { toast, showError, showSuccess } = useToast();
   const confirm = useConfirm();
@@ -100,9 +123,9 @@ export const OrderHistoryTab: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [days, setDays] = useState(90);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  // 2026-09-24 · 사용자 지시 · 날짜별 그룹핑 · 날짜 헤더 클릭 시 · 그 날의 모든 발주 상세 한꺼번에 노출
-  //   · 최신 날짜 · default 자동 open (첫 로드 후)
+  // 2026-09-24 · collapsed set · 기본 open (열림이 기본) · 클릭 시 추가 = 접힘
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  // 2026-09-24 · 날짜별 그룹핑 · 날짜 헤더 클릭 시 그룹 접기/펼치기
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [datesInitialized, setDatesInitialized] = useState(false);
   // 2026-09-08 · 사용자 지시 · 각 행 PDF 다운 · 오프스크린 프리뷰 + html2canvas + jsPDF
@@ -137,7 +160,6 @@ export const OrderHistoryTab: React.FC = () => {
     const key = String(o.order_number ?? o.sent_at);
     setPdfSavingKey(key);
     setPdfTarget(orderToModalState(o));
-    // React 다음 프레임에서 프리뷰가 마운트된 후 캡처
     await new Promise(r => setTimeout(r, 100));
     try {
       const node = pdfRef.current;
@@ -172,7 +194,6 @@ export const OrderHistoryTab: React.FC = () => {
   const [supplierSearch, setSupplierSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   // 2026-08-25 · 사용자 지시 · 공급사 분류 필터 (dropdown · 카테고리 매칭 · 건수 병기)
-  //   · 초기: 공급사명 dropdown → 재수정 (v2): 공급사 분류 (위탁·선결제·60회전·90회전·기타) dropdown
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const { getVendorCategory } = useVendors();
   const { vendorCategories: dbVendorCategories } = useReferenceValues();
@@ -181,7 +202,6 @@ export const OrderHistoryTab: React.FC = () => {
     setLoading(true);
     setError(null);
     setNotice(null);
-    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
     api.get<{ orders?: OrderHistoryOrder[]; notice?: string }>(`/api/order-history?days=${days}`)
       .then(({ data }) => {
         setOrders(Array.isArray(data?.orders) ? data.orders : []);
@@ -199,8 +219,9 @@ export const OrderHistoryTab: React.FC = () => {
     load();
   }, [load]);
 
-  const toggle = (k: string) =>
-    setExpanded((prev) => {
+  // 2026-09-24 · 정비 · collapsed set 기반 토글 (기본 open · 클릭 시 collapse)
+  const togglePo = (k: string) =>
+    setCollapsed((prev) => {
       const n = new Set(prev);
       if (n.has(k)) n.delete(k);
       else n.add(k);
@@ -208,8 +229,7 @@ export const OrderHistoryTab: React.FC = () => {
     });
 
   const fmtWon = (n: number) => n.toLocaleString() + "원";
-  // 2026-08-23 · #180 · A안 · 공급사·상품 별도 필터 (AND 조건 · 각 검색어 입력 시 교집합)
-  // 2026-08-25 · 사용자 지시 · 공급사 분류 (vendor category) 필터 · 검색과 AND
+
   const orderCategory = React.useCallback((o: OrderHistoryOrder): string => {
     const s = String(displayVendorName(o.supplier ?? "")).trim();
     if (!s) return "미지정";
@@ -221,9 +241,7 @@ export const OrderHistoryTab: React.FC = () => {
     const qP = productSearch.trim().toLowerCase();
     if (!qS && !qP && categoryFilter === "all") return orders;
     return orders.filter(o => {
-      // 2026-08-30 · 공급사 검색 통일 · matchesSupplierQuery (초성·정제명·부분일치)
       const supplierMatch = matchesSupplierQuery({ supplier: o.supplier ?? undefined }, supplierSearch);
-      // 2026-08-29 · 통일 로직 · matchesProductQuery (초성 + 부분 + 코드 + 바코드)
       const productMatch = !productSearch.trim() || o.items.some(it => matchesProductQuery(it, productSearch));
       const categoryMatch = categoryFilter === "all" || orderCategory(o) === categoryFilter;
       return supplierMatch && productMatch && categoryMatch;
@@ -232,13 +250,9 @@ export const OrderHistoryTab: React.FC = () => {
 
   // 2026-08-25 · 공급사 분류별 건수 (검색 반영 · 분류 필터 자체는 제외)
   const categoryCounts = React.useMemo(() => {
-    const qS = supplierSearch.trim().toLowerCase();
-    const qP = productSearch.trim().toLowerCase();
-    const base = (qS || qP)
+    const base = (supplierSearch.trim() || productSearch.trim())
       ? orders.filter(o => {
-          // 2026-09-18 · 사용자 지시 · matchesSupplierQuery 통일 · "(주)" 무시 양방향
           const supplierMatch = matchesSupplierQuery({ supplier: o.supplier ?? undefined }, supplierSearch);
-          // 2026-08-29 · 통일 로직 · matchesProductQuery (초성 + 부분 + 코드 + 바코드)
           const productMatch = !productSearch.trim() || o.items.some(it => matchesProductQuery(it, productSearch));
           return supplierMatch && productMatch;
         })
@@ -259,11 +273,11 @@ export const OrderHistoryTab: React.FC = () => {
     }
     return ordered;
   }, [orders, supplierSearch, productSearch, orderCategory, dbVendorCategories]);
+
   const totalAmount = filteredOrders.reduce((s, o) => s + (o.total_amount ?? 0), 0);
   const totalItems = filteredOrders.reduce((s, o) => s + o.items.length, 0);
 
-  // 2026-09-17 · 사용자 지시 · 자동 정렬 · 헤더 클릭 시 asc/desc 토글
-  //   · 기본 · 발송일 최신순 (sent_at desc)
+  // 2026-09-17 · 자동 정렬
   type OrderSortKey = "order_number" | "supplier" | "order_date" | "desired_arrival" | "total_amount" | "sent_at" | "items";
   const comparators = React.useMemo<Record<OrderSortKey, Comparator<OrderHistoryOrder>>>(() => ({
     order_number: (a, b) => String(a.order_number ?? "").localeCompare(String(b.order_number ?? ""), "ko", { numeric: true }),
@@ -281,28 +295,21 @@ export const OrderHistoryTab: React.FC = () => {
     "desc",
   );
 
-  // 2026-09-24 · 사용자 지시 · 최신 트렌드 · 발주이력 날짜별 그룹핑
-  //   · 이전 · flat list · PO 마다 개별 행
-  //   · 이후 · 날짜별 헤더 아래 · 그 날짜의 여러 PO (여러 공급사) · 한꺼번에 상세내역
-  //   · SaaS 표준 (Odoo · NetSuite · QuickBooks) 참조 · 세션·batch 시각화
+  // 2026-09-24 · 날짜별 그룹핑
   const groupedByDate = React.useMemo(() => {
     const map = new Map<string, OrderHistoryOrder[]>();
     for (const o of sortedOrders) {
-      // 그룹 키 · order_date 우선 · 없으면 sent_at slice(0,10) · 둘 다 없으면 '(날짜 없음)'
       const dateKey = String(o.order_date ?? o.sent_at?.slice(0, 10) ?? "unknown");
       if (!map.has(dateKey)) map.set(dateKey, []);
       map.get(dateKey)!.push(o);
     }
-    // 날짜 desc 정렬 (최신 날짜 위)
-    const sortedEntries = Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
-    return sortedEntries;
+    return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
   }, [sortedOrders]);
 
   // 첫 로드 · 최신 날짜 자동 open
   React.useEffect(() => {
     if (!datesInitialized && groupedByDate.length > 0) {
-      const latest = groupedByDate[0][0];
-      setExpandedDates(new Set([latest]));
+      setExpandedDates(new Set([groupedByDate[0][0]]));
       setDatesInitialized(true);
     }
   }, [groupedByDate, datesInitialized]);
@@ -314,18 +321,55 @@ export const OrderHistoryTab: React.FC = () => {
     return next;
   });
 
-  // 그룹별 요약 (건수 · 총 금액 · 총 종·수량)
-  function groupSummary(orders: OrderHistoryOrder[]): { count: number; totalAmount: number; totalItems: number; totalQty: number } {
-    let totalAmount = 0, totalItems = 0, totalQty = 0;
-    for (const o of orders) {
-      totalAmount += Number(o.total_amount ?? 0);
-      totalItems += o.items.length;
+  // 그룹별 요약
+  function groupSummary(grpOrders: OrderHistoryOrder[]) {
+    let totalAmt = 0, totalItm = 0, totalQty = 0;
+    for (const o of grpOrders) {
+      totalAmt += Number(o.total_amount ?? 0);
+      totalItm += o.items.length;
       totalQty += Number(o.total_qty ?? 0);
     }
-    return { count: orders.length, totalAmount, totalItems, totalQty };
+    return { count: grpOrders.length, totalAmount: totalAmt, totalItems: totalItm, totalQty };
   }
 
-  // 2026-09-17 · 짧은 날짜 포맷 (2026-09-18 · lib/dateFormat.ts 로 추출 · 재사용·테스트 지원)
+  // ─── 정렬 헤더 헬퍼 ──────────────────────────────────────────────────────────
+  const SortTh: React.FC<{
+    label: string;
+    col: OrderSortKey;
+    className?: string;
+  }> = ({ label, col, className = "" }) => (
+    <th
+      className={`${tableThCls("left")} cursor-pointer select-none whitespace-nowrap ${className}`}
+      onClick={() => toggleSort(col)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <span className="text-[11px] text-zinc-400">
+          {sortKey === col ? (sortDir === "asc" ? "↑" : "↓") : "↕"}
+        </span>
+      </span>
+    </th>
+  );
+
+  const SortThNum: React.FC<{
+    label: string;
+    col: OrderSortKey;
+    className?: string;
+  }> = ({ label, col, className = "" }) => (
+    <th
+      className={`${tableThCls("num")} cursor-pointer select-none whitespace-nowrap ${className}`}
+      onClick={() => toggleSort(col)}
+    >
+      <span className="inline-flex items-center justify-end gap-1 w-full">
+        {label}
+        <span className="text-[11px] text-zinc-400">
+          {sortKey === col ? (sortDir === "asc" ? "↑" : "↓") : "↕"}
+        </span>
+      </span>
+    </th>
+  );
+
+  // ─── 렌더 ─────────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -333,7 +377,7 @@ export const OrderHistoryTab: React.FC = () => {
       <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
     )}
     <div className="flex flex-col gap-2">
-      {/* 상단 툴바 · 2026-08-17 · PageToolbar 프레임워크 · PeriodSelector 공통 · 조회기간 통일 */}
+      {/* 상단 툴바 */}
       <PageToolbar
         icon={<Package size={18} strokeWidth={2.2} />}
         title="발주이력"
@@ -363,8 +407,7 @@ export const OrderHistoryTab: React.FC = () => {
         }
       />
 
-      {/* 2026-08-23 · #180 · A안 · 공급사·상품 별도 검색창 2개 · AND filter */}
-      {/* 2026-08-25 · 사용자 지시 · 공급사 분류 필터 (dropdown · 건수 병기) 추가 · 3열 grid */}
+      {/* 필터 바 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <div className="relative inline-flex items-center">
           <Tags size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
@@ -372,7 +415,7 @@ export const OrderHistoryTab: React.FC = () => {
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="w-full h-9 pl-9 pr-8 rounded-lg bg-white border border-line text-[14px] font-semibold text-ink hover:border-brand-deep/60 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors cursor-pointer"
-            title="공급사 분류 필터 (위탁·선결제·60회전·90회전·기타)"
+            title="공급사 분류 필터"
           >
             <option value="all">전체 분류</option>
             {categoryCounts.map(([cat, n]) => (
@@ -380,28 +423,20 @@ export const OrderHistoryTab: React.FC = () => {
             ))}
           </select>
         </div>
-        <SearchBar
-          value={supplierSearch}
-          onChange={setSupplierSearch}
-          placeholder="공급사 검색"
-        />
-        <SearchBar
-          value={productSearch}
-          onChange={setProductSearch}
-          placeholder="상품명 검색"
-        />
+        <SearchBar value={supplierSearch} onChange={setSupplierSearch} placeholder="공급사 검색" />
+        <SearchBar value={productSearch} onChange={setProductSearch} placeholder="상품명 검색" />
       </div>
 
-      {/* 마이그레이션 안내 · 폰트 +2 */}
+      {/* 마이그레이션 안내 */}
       {notice && (
         <Card variant="flat" bg="bg-amber-50" borderColor="border-amber-200" padding="sm" className="text-[14px] text-amber-800">
-          <div className="font-bold mb-0.5">📌 마이그레이션 필요</div>
-          <div className="font-mono text-[15px]">{notice}</div>
+          <div className="font-bold mb-0.5">마이그레이션 필요</div>
+          <div className="text-[15px] font-medium">{notice}</div>
           <div className="text-[15px] mt-1">Supabase SQL Editor 에서 실행 후 · 발주 완료 시 자동 저장 시작</div>
         </Card>
       )}
 
-      {/* 리스트 · 2026-08-24 · v3 리스트 프레임워크 · 상단 gradient accent */}
+      {/* 리스트 */}
       <Card clip padding="none" className="relative">
         <GradientAccent className="z-20 rounded-t-md" />
         {loading ? (
@@ -409,195 +444,261 @@ export const OrderHistoryTab: React.FC = () => {
             <Spinner size={16} tone="zinc" label="불러오는 중..." labelSize={15} />
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-rose-600 text-[17px] font-bold">⚠ {error}</div>
+          <div className="p-8 text-center text-rose-600 text-[17px] font-bold">{error}</div>
         ) : filteredOrders.length === 0 ? (
           <div className="p-12 text-center text-zinc-400 text-[17px]">
-            {(supplierSearch.trim() || productSearch.trim()) ? "검색 결과 없음 · 다른 검색어로 시도하세요" : "발주 이력 없음 · 발주 완료 시 여기에 표시"}
+            {(supplierSearch.trim() || productSearch.trim())
+              ? "검색 결과 없음 · 다른 검색어로 시도하세요"
+              : "발주 이력 없음 · 발주 완료 시 여기에 표시"}
           </div>
         ) : (
           <div className="divide-y divide-zinc-100">
-            {/* 2026-09-17 · 사용자 지시 · 상단 헤더 + 자동 정렬 · 헤더 클릭 asc/desc 토글 */}
-            <div className="sticky top-0 z-10 bg-zinc-50/95 backdrop-blur-sm border-b-2 border-line px-4 py-2 flex items-center gap-2.5 text-[13px] font-bold tracking-tight text-zinc-600 uppercase">
-              <span className="w-4 shrink-0" aria-hidden />
-              <SortHeader label="발주번호 · 공급사" columnKey="order_number" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="flex-1 min-w-[130px] justify-start shrink-0" />
-              <SortHeader label="발주일" columnKey="order_date" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="w-[74px] justify-start shrink-0" />
-              <SortHeader label="희망" columnKey="desired_arrival" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="w-[74px] justify-start shrink-0" />
-              <SortHeader label="종·개" columnKey="items" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="w-[86px] justify-start shrink-0" />
-              <SortHeader label="총금액" columnKey="total_amount" activeKey={sortKey} activeDir={sortDir} onToggle={toggleSort} arrowStyle="arrow" activeColor="brand" className="ml-auto w-[100px] justify-end shrink-0" />
-              <span className="w-[60px] text-right shrink-0" aria-hidden>PDF</span>
-              <span className="w-[104px] text-right shrink-0" aria-hidden>매입확인</span>
-            </div>
-            {/* 2026-09-24 · 사용자 지시 · 최신 트렌드 · 발주이력 날짜별 그룹핑
-                · 날짜 헤더 클릭 → 그 날의 모든 공급사 발주 · 상세내역 한꺼번에 노출 */}
+
             {groupedByDate.map(([dateKey, ordersOfDate]) => {
               const summary = groupSummary(ordersOfDate);
               const displayDate = dateKey === "unknown" ? "날짜 없음" : dateKey;
               const isDateOpen = expandedDates.has(dateKey);
+
               return (
                 <React.Fragment key={`date-group-${dateKey}`}>
-                  {/* 날짜 그룹 헤더 · 클릭 토글 · 세션 요약 */}
+
+                  {/* ── 날짜 그룹 헤더 ─────────────────────────────────────── */}
                   <button
                     type="button"
                     onClick={() => toggleDate(dateKey)}
-                    className="sticky top-[41px] z-[9] w-full bg-brand-tint/50 hover:bg-brand-tint/70 backdrop-blur-sm border-y border-brand-deep/25 px-4 py-2.5 flex items-center gap-3 text-[15px] font-bold text-brand-deep cursor-pointer transition"
+                    className="sticky top-0 z-[9] w-full bg-zinc-50 hover:bg-zinc-100/80 border-b border-zinc-200 px-4 py-2.5 flex items-center gap-3 cursor-pointer transition-colors"
                   >
-                    {isDateOpen
-                      ? <ChevronDown size={16} strokeWidth={2.4} />
-                      : <ChevronRight size={16} strokeWidth={2.4} />
-                    }
-                    <Calendar size={15} strokeWidth={2.4} />
-                    <span className="text-[16px]">#PO-{displayDate}</span>
-                    <StatusPill tone="brand" size="sm">{summary.count}건</StatusPill>
-                    <span className="text-[14px] text-zinc-600 font-semibold">
-                      {summary.totalItems}종 · {summary.totalQty.toLocaleString()}개
+                    {/* chevron */}
+                    <span className="text-zinc-400 shrink-0">
+                      {isDateOpen
+                        ? <ChevronDown size={15} strokeWidth={2.4} />
+                        : <ChevronRight size={15} strokeWidth={2.4} />}
                     </span>
-                    <span className="ml-auto text-[16px] font-bold text-emerald-700 tabular-nums">
+                    {/* 날짜 · 크고 굵게 */}
+                    <span className="text-[16px] font-bold text-zinc-700 tabular-nums tracking-tight">
+                      {displayDate}
+                    </span>
+                    {/* 구분 dot */}
+                    <span className="w-1 h-1 rounded-full bg-zinc-300 shrink-0" />
+                    {/* 건수 · 종수 · 수량 */}
+                    <span className="text-[14px] font-medium text-zinc-500 tabular-nums">
+                      {summary.count}건 · {summary.totalItems}종 · {summary.totalQty.toLocaleString()}개
+                    </span>
+                    {/* 금액 · 오른쪽 정렬 */}
+                    <span className="ml-auto text-[16px] font-bold text-zinc-700 tabular-nums">
                       {fmtWon(summary.totalAmount)}
                     </span>
                   </button>
-                  {isDateOpen && ordersOfDate.map((o) => {
-                    const key = String(o.order_number ?? o.sent_at);
-                    // 2026-09-24 · 사용자 지시 · 날짜 그룹 안 · 모든 PO · 상세내역 자동 노출 (한꺼번에)
-                    //   · isOpen 개별 토글 · 유지 · but default true (사용자 명시적 접기 가능)
-                    const isOpen = !expanded.has(`__collapsed:${key}`);
-                    return (
-                      <div key={key} className="hover:bg-zinc-50/40 transition">
-                  {/* 2026-09-17 · 사용자 지시 · 한 줄 헤더 · 발주번호(위)+공급사(아래) · 발주일 26/9/11 · 희망 · 총금액 · PDF · 매입확인 */}
-                  <button
-                    type="button"
-                    onClick={() => toggle(key)}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 cursor-pointer text-left"
-                  >
-                    {isOpen ? (
-                      <ChevronDown size={16} className="text-indigo-400 shrink-0" />
-                    ) : (
-                      <ChevronRight size={16} className="text-zinc-300 shrink-0" />
-                    )}
-                    {/* 발주번호 (위) + 공급사 (아래) · 2줄 블록 · flex-1 · 폭 축소 (사용자 지시 #322) */}
-                    <div className="flex-1 min-w-[130px] min-w-0 flex flex-col leading-tight">
-                      <span className="text-[15px] font-bold text-sky-700 tabular-nums">
-                        #{o.order_number ?? "—"}
-                      </span>
-                      <span className="text-[16px] font-bold text-sky-800 whitespace-normal break-words">
-                        {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
-                      </span>
-                    </div>
-                    {/* 발주일 · 짧은 포맷 26/9/11 */}
-                    <span className="w-[74px] shrink-0 inline-flex items-center gap-1 text-[14px] font-semibold text-zinc-600 tabular-nums">
-                      <Calendar size={12} className="text-zinc-400" />
-                      {shortDate(o.order_date) || <span className="text-zinc-300">-</span>}
-                    </span>
-                    {/* 희망일 · 짧은 포맷 */}
-                    <span className="w-[74px] shrink-0 inline-flex items-center gap-1 text-[14px] font-semibold text-rose-600 tabular-nums">
-                      <CalendarCheck size={12} />
-                      {shortDate(o.desired_arrival) || <span className="text-zinc-300">-</span>}
-                    </span>
-                    {/* 종·수량 */}
-                    <span className="w-[86px] shrink-0 text-[14px] font-semibold text-zinc-600 tabular-nums">
-                      {o.items.length}종 · {o.total_qty}개
-                    </span>
-                    {/* 총금액 · 오른쪽 */}
-                    <span className="ml-auto w-[100px] shrink-0 text-right text-[16px] font-bold text-emerald-700 tabular-nums">
-                      {fmtWon(o.total_amount)}
-                    </span>
-                    {/* PDF 다운 */}
-                    <span className="w-[60px] shrink-0 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); void handleDownloadPdf(o); }}
-                        disabled={pdfSavingKey === String(o.order_number ?? o.sent_at)}
-                        className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-white border border-line text-[13px] font-bold text-ink-soft hover:border-brand-deep hover:text-brand-deep hover:bg-brand-tint/20 shadow-sm active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-                        title="발주서 PDF 다운로드"
-                      >
-                        {pdfSavingKey === String(o.order_number ?? o.sent_at)
-                          ? <Spinner size={12} tone="brand" />
-                          : <FileDown size={12} strokeWidth={2.4} />}
-                        PDF
-                      </button>
-                    </span>
-                    {/* 매입확인 · 2026-09-21 · #322 · 사용자 지시 · 한 줄 · 예쁘게 */}
-                    <span className="w-[104px] shrink-0 flex justify-end">
-                      {o.status === "matched" ? (
-                        <StatusPill tone="emerald" size="sm" dot>완료</StatusPill>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); void handleMatch(o); }}
-                          disabled={matchingKey === String(o.order_number)}
-                          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[13px] font-bold text-emerald-700 whitespace-nowrap hover:bg-emerald-100 hover:border-emerald-300 shadow-sm active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
-                          title="발주-매입 매칭 확인 · status=matched"
-                        >
-                          {matchingKey === String(o.order_number)
-                            ? <Spinner size={12} tone="brand" />
-                            : <CheckCircle2 size={12} strokeWidth={2.4} />}
-                          매입확인
-                        </button>
-                      )}
-                    </span>
-                  </button>
 
-                  {/* 2026-09-17 · 사용자 지시 · 상세내역 · 시각 구분 포인트 · 좌측 accent bar (sky) + bg tint + 아이콘 */}
-                  {isOpen && (
-                    <div className="border-l-4 border-sky-400 bg-gradient-to-r from-sky-50/60 to-transparent px-4 py-3 space-y-2 mx-2 mb-2 rounded-r-lg shadow-inner">
-                      {/* 수신처 정보 · 발주일·희망입고일 은 헤더로 이동했으므로 · 여기서는 담당자·연락처·메모만 */}
-                      <div className="flex items-center gap-3 flex-wrap text-[15px] text-zinc-500 bg-white/70 border border-sky-100 rounded-lg px-3 py-2">
-                        <span className="inline-flex items-center gap-1 text-sky-700 font-bold shrink-0">
-                          <ListTree size={13} />상세내역
-                        </span>
-                        {o.supplier_contact && (
-                          <span className="inline-flex items-center gap-1"><User size={13} />{o.supplier_contact}</span>
-                        )}
-                        {o.supplier_email && (
-                          <span className="inline-flex items-center gap-1"><Mail size={13} />{o.supplier_email}</span>
-                        )}
-                        {o.supplier_phone && (
-                          <span className="inline-flex items-center gap-1 tabular-nums"><Phone size={13} />{o.supplier_phone}</span>
-                        )}
-                        {o.memo && (
-                          <span className="italic text-zinc-600 border-l border-sky-200 pl-2">{o.memo}</span>
-                        )}
-                        {!o.supplier_contact && !o.supplier_email && !o.supplier_phone && !o.memo && (
-                          <span className="text-zinc-300">수신처·메모 정보 없음</span>
-                        )}
+                  {isDateOpen && (
+                    <>
+                      {/* ── PC (md+) · 테이블 형태 ─────────────────────────── */}
+                      <div className="hidden md:block">
+                        {/* 날짜 그룹 내 컬럼 헤더 (그룹마다 반복 필요 없으나 sticky 처리 위해) */}
+                        <table className="w-full text-[15px]">
+                          <colgroup>
+                            {/* toggle / accent bar */}
+                            <col className="w-8" />
+                            {/* 발주번호·공급사 */}
+                            <col className="min-w-[160px]" />
+                            {/* 발주→희망 */}
+                            <col className="w-[110px]" />
+                            {/* 종·개 */}
+                            <col className="w-[88px]" />
+                            {/* 총금액 */}
+                            <col className="w-[110px]" />
+                            {/* PDF */}
+                            <col className="w-[68px]" />
+                            {/* 매입확인 */}
+                            <col className="w-[110px]" />
+                          </colgroup>
+                          <tbody className="divide-y divide-zinc-100">
+                            {ordersOfDate.map((o) => {
+                              const key = String(o.order_number ?? o.sent_at);
+                              const isOpen = !collapsed.has(key);
+                              const isMatched = o.status === "matched";
+                              return (
+                                <React.Fragment key={key}>
+                                  {/* PO 행 */}
+                                  <tr
+                                    className={`hover:bg-zinc-50/60 transition-colors cursor-pointer group ${isMatched ? "bg-emerald-50/20" : ""}`}
+                                    onClick={() => togglePo(key)}
+                                  >
+                                    {/* 상태 accent bar + chevron */}
+                                    <td className="py-0 w-8">
+                                      <div className="flex items-stretch h-full">
+                                        {/* 세로 accent bar */}
+                                        <div className={`w-1 self-stretch ${isMatched ? "bg-emerald-400" : "bg-sky-400"}`} />
+                                        <div className="flex items-center justify-center w-7">
+                                          {isOpen
+                                            ? <ChevronDown size={14} className="text-zinc-400" strokeWidth={2.4} />
+                                            : <ChevronRight size={14} className="text-zinc-300 group-hover:text-zinc-400" strokeWidth={2.4} />}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    {/* 발주번호 (위) + 공급사 (아래) */}
+                                    <td className="py-2.5 pl-1 pr-3">
+                                      <div className="text-[12px] text-zinc-400 tabular-nums font-medium leading-none mb-0.5">
+                                        #{o.order_number ?? "—"}
+                                      </div>
+                                      <div className="text-[16px] font-bold text-zinc-800 whitespace-normal break-words leading-snug">
+                                        {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
+                                      </div>
+                                    </td>
+                                    {/* 발주일→희망일 한 칸으로 압축 */}
+                                    <td className="py-2.5 px-2 text-[14px] font-medium text-zinc-500 tabular-nums whitespace-nowrap">
+                                      {dateRange(o.order_date, o.desired_arrival)}
+                                    </td>
+                                    {/* 종·개 */}
+                                    <td className="py-2.5 px-2 text-[14px] font-medium text-zinc-600 tabular-nums text-right">
+                                      {o.items.length}종 · {o.total_qty}개
+                                    </td>
+                                    {/* 총금액 */}
+                                    <td className="py-2.5 px-2 text-right">
+                                      <span className="text-[16px] font-bold text-emerald-700 tabular-nums">
+                                        {fmtWon(o.total_amount)}
+                                      </span>
+                                    </td>
+                                    {/* PDF */}
+                                    <td className="py-2.5 px-2 text-center" onClick={(e) => e.stopPropagation()}>
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleDownloadPdf(o)}
+                                        disabled={pdfSavingKey === String(o.order_number ?? o.sent_at)}
+                                        className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-white border border-zinc-200 text-[13px] font-bold text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 shadow-sm active:scale-[0.98] disabled:opacity-40 transition cursor-pointer"
+                                        title="발주서 PDF 다운로드"
+                                      >
+                                        {pdfSavingKey === String(o.order_number ?? o.sent_at)
+                                          ? <Spinner size={12} tone="brand" />
+                                          : <FileDown size={12} strokeWidth={2.4} />}
+                                        PDF
+                                      </button>
+                                    </td>
+                                    {/* 매입확인 */}
+                                    <td className="py-2.5 pl-2 pr-3 text-right" onClick={(e) => e.stopPropagation()}>
+                                      {isMatched ? (
+                                        <StatusPill tone="emerald" size="sm" dot>완료</StatusPill>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={() => void handleMatch(o)}
+                                          disabled={matchingKey === String(o.order_number)}
+                                          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[13px] font-bold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 shadow-sm active:scale-[0.98] disabled:opacity-40 transition cursor-pointer"
+                                        >
+                                          {matchingKey === String(o.order_number)
+                                            ? <Spinner size={12} tone="brand" />
+                                            : <CheckCircle2 size={12} strokeWidth={2.4} />}
+                                          매입확인
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+
+                                  {/* 상세 행 */}
+                                  {isOpen && (
+                                    <tr>
+                                      {/* accent bar 연속 */}
+                                      <td className="py-0">
+                                        <div className={`w-1 h-full min-h-[1px] ${isMatched ? "bg-emerald-400/40" : "bg-sky-400/40"}`} />
+                                      </td>
+                                      <td colSpan={6} className="py-0 pl-1 pr-3">
+                                        <div className="bg-zinc-50/70 border-l-2 border-zinc-200 ml-0.5 mb-2 mt-0 rounded-r-lg overflow-hidden">
+                                          {/* 담당자 정보 · 인라인 압축 */}
+                                          {(o.supplier_contact || o.supplier_email || o.supplier_phone || o.memo) && (
+                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 border-b border-zinc-100 text-[13px] text-zinc-500">
+                                              {o.supplier_contact && (
+                                                <span className="inline-flex items-center gap-1">
+                                                  <User size={12} className="text-zinc-400" />{o.supplier_contact}
+                                                </span>
+                                              )}
+                                              {o.supplier_email && (
+                                                <span className="inline-flex items-center gap-1">
+                                                  <Mail size={12} className="text-zinc-400" />{o.supplier_email}
+                                                </span>
+                                              )}
+                                              {o.supplier_phone && (
+                                                <span className="inline-flex items-center gap-1 tabular-nums">
+                                                  <Phone size={12} className="text-zinc-400" />{o.supplier_phone}
+                                                </span>
+                                              )}
+                                              {o.memo && (
+                                                <span className="italic text-zinc-400 border-l border-zinc-200 pl-3">{o.memo}</span>
+                                              )}
+                                            </div>
+                                          )}
+                                          {/* 아이템 테이블 */}
+                                          <table className="w-full text-[15px] tabular-nums">
+                                            <thead className={tableHeadCls()}>
+                                              <tr>
+                                                <th className={tableThCls("center", "w-8")}>#</th>
+                                                <th className={tableThCls("left", "w-24")} title="상품 코드 (뒤 4자리)">코드</th>
+                                                <th className={tableThCls("left", "min-w-[200px]")}>상품명</th>
+                                                <th className={tableThCls("num", "w-14")}>수량</th>
+                                                <th className={tableThCls("num", "w-24")}>단가</th>
+                                                <th className={tableThCls("num", "w-28")}>금액</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-zinc-100">
+                                              {o.items.map((it, i) => (
+                                                <tr key={it.id} className="hover:bg-sky-50/20">
+                                                  <td className={tableTdCls("center", "text-zinc-400 text-[13px]")}>{i + 1}</td>
+                                                  <td
+                                                    className={tableTdCls("left", "text-zinc-400 text-[13px] tabular-nums font-medium")}
+                                                    title={it.product_code}
+                                                  >
+                                                    {shortCode(it.product_code)}
+                                                  </td>
+                                                  <td className={tableTdCls("left", "text-zinc-800 font-semibold whitespace-normal break-words")}>{it.product_name}</td>
+                                                  <td className={tableTdCls("num", "font-bold text-rose-600")}>{it.order_qty}</td>
+                                                  <td className={tableTdCls("num", "text-zinc-500 text-[14px]")}>{it.unit_price > 0 ? fmtWon(it.unit_price) : "—"}</td>
+                                                  <td className={tableTdCls("num", "font-bold text-emerald-700")}>{it.line_amount > 0 ? fmtWon(it.line_amount) : "—"}</td>
+                                                </tr>
+                                              ))}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
-                      {/* 아이템 테이블 · 2026-08-24 · v3 · 헬퍼 · 줄바꿈 우선 */}
-                      <table className="w-full text-[16px] tabular-nums">
-                        <thead className={tableHeadCls()}>
-                          <tr>
-                            <th className={tableThCls("center", "w-8")}>#</th>
-                            <th className={tableThCls("left", "w-28")}>코드</th>
-                            <th className={tableThCls("left", "min-w-[220px]")}>상품명</th>
-                            <th className={tableThCls("num", "w-16 bg-sky-50/60")}>수량</th>
-                            <th className={tableThCls("num", "w-24")}>단가</th>
-                            <th className={tableThCls("num", "w-28 bg-brand-tint/50")}>금액</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-100">
-                          {o.items.map((it, i) => (
-                            <tr key={it.id} className="hover:bg-sky-50/30">
-                              <td className={tableTdCls("center", "text-zinc-400")}>{i + 1}</td>
-                              <td className={tableTdCls("left", "font-mono text-zinc-500")}>{it.product_code}</td>
-                              <td className={tableTdCls("left", "text-zinc-800 font-semibold whitespace-normal break-words")}>{it.product_name}</td>
-                              <td className={tableTdCls("num", "font-bold text-rose-600 bg-sky-50/60")}>{it.order_qty}</td>
-                              <td className={tableTdCls("num", "text-zinc-600")}>{it.unit_price > 0 ? fmtWon(it.unit_price) : "-"}</td>
-                              <td className={tableTdCls("num", "font-bold text-emerald-700 bg-brand-tint/50")}>{it.line_amount > 0 ? fmtWon(it.line_amount) : "-"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+
+                      {/* ── 모바일 (md 이하) · 카드형 ─────────────────────── */}
+                      <div className="md:hidden px-3 py-2 space-y-2">
+                        {ordersOfDate.map((o) => {
+                          const key = String(o.order_number ?? o.sent_at);
+                          const isOpen = !collapsed.has(key);
+                          return (
+                            <OrderHistoryPoCard
+                              key={key}
+                              o={o as OrderHistoryPoCardOrder}
+                              isOpen={isOpen}
+                              onToggle={() => togglePo(key)}
+                              onPdf={() => void handleDownloadPdf(o)}
+                              onMatch={() => void handleMatch(o)}
+                              pdfLoading={pdfSavingKey === String(o.order_number ?? o.sent_at)}
+                              matchLoading={matchingKey === String(o.order_number)}
+                              fmtWon={fmtWon}
+                            />
+                          );
+                        })}
+                      </div>
+                    </>
                   )}
-                </div>
-              );
-              })}
-              </React.Fragment>
+
+                </React.Fragment>
               );
             })}
+
           </div>
         )}
       </Card>
     </div>
-    {/* 2026-09-08 · 사용자 지시 · 오프스크린 PDF 프리뷰 · 캡처 대상 (visually hidden) */}
+    {/* 오프스크린 PDF 프리뷰 */}
     {pdfTarget && (
       <div style={{ position: "fixed", left: "-99999px", top: 0, zIndex: -1 }} aria-hidden>
         <OrderPdfPreview ref={pdfRef} orderModal={pdfTarget} />
