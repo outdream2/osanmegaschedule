@@ -92,6 +92,26 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
               <div className="text-[17px] font-bold text-zinc-800 whitespace-normal break-words leading-snug">
                 {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
               </div>
+              {/* 2026-09-24 · 사용자 지시 · 담당자·이메일·전화 · 공급사 옆으로 이동 · 상세에서 제거 */}
+              {(o.supplier_contact || o.supplier_email || o.supplier_phone) && (
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[12px] text-zinc-500">
+                  {o.supplier_contact && (
+                    <span className="inline-flex items-center gap-0.5">
+                      <User size={11} className="text-zinc-400" />{o.supplier_contact}
+                    </span>
+                  )}
+                  {o.supplier_phone && (
+                    <span className="inline-flex items-center gap-0.5 tabular-nums">
+                      <Phone size={11} className="text-zinc-400" />{o.supplier_phone}
+                    </span>
+                  )}
+                  {o.supplier_email && (
+                    <span className="inline-flex items-center gap-0.5 truncate max-w-[220px]">
+                      <Mail size={11} className="text-zinc-400" />{o.supplier_email}
+                    </span>
+                  )}
+                </div>
+              )}
               {/* 날짜범위 · 종·수량 · 금액 */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[14px] text-zinc-500 tabular-nums mt-0.5">
                 <span className="text-zinc-400">{dateRange(o.order_date, o.desired_arrival)}</span>
@@ -136,27 +156,11 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
           {/* 상세 영역 */}
           {isOpen && (
             <div className="border-t border-zinc-100 bg-zinc-50/60 px-3.5 py-3 space-y-2.5">
-              {/* 담당자·연락처 인라인 압축 */}
-              {(o.supplier_contact || o.supplier_email || o.supplier_phone || o.memo) && (
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[13px] text-zinc-500">
-                  {o.supplier_contact && (
-                    <span className="inline-flex items-center gap-1">
-                      <User size={12} className="text-zinc-400" />{o.supplier_contact}
-                    </span>
-                  )}
-                  {o.supplier_email && (
-                    <span className="inline-flex items-center gap-1">
-                      <Mail size={12} className="text-zinc-400" />{o.supplier_email}
-                    </span>
-                  )}
-                  {o.supplier_phone && (
-                    <span className="inline-flex items-center gap-1 tabular-nums">
-                      <Phone size={12} className="text-zinc-400" />{o.supplier_phone}
-                    </span>
-                  )}
-                  {o.memo && (
-                    <span className="italic text-zinc-400 border-l border-zinc-200 pl-2">{o.memo}</span>
-                  )}
+              {/* 2026-09-24 · 사용자 지시 · 담당자·연락처 · 헤더로 이동 · 상세에서 제거
+                  · 메모만 · 있을 때 · 상단 유지 */}
+              {o.memo && (
+                <div className="text-[13px] text-zinc-500 italic">
+                  메모 · {o.memo}
                 </div>
               )}
               {/* 아이템 목록 */}

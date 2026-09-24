@@ -544,6 +544,26 @@ export const OrderHistoryTab: React.FC = () => {
                                       <div className="text-[16px] font-bold text-zinc-800 whitespace-normal break-words leading-snug">
                                         {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
                                       </div>
+                                      {/* 2026-09-24 · 사용자 지시 · 담당자·이메일·전화 · 공급사 옆으로 이동 (상세에서 제거) */}
+                                      {(o.supplier_contact || o.supplier_email || o.supplier_phone) && (
+                                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-1 text-[12px] text-zinc-500">
+                                          {o.supplier_contact && (
+                                            <span className="inline-flex items-center gap-0.5">
+                                              <User size={11} className="text-zinc-400" />{o.supplier_contact}
+                                            </span>
+                                          )}
+                                          {o.supplier_phone && (
+                                            <span className="inline-flex items-center gap-0.5 tabular-nums">
+                                              <Phone size={11} className="text-zinc-400" />{o.supplier_phone}
+                                            </span>
+                                          )}
+                                          {o.supplier_email && (
+                                            <span className="inline-flex items-center gap-0.5 truncate max-w-[220px]">
+                                              <Mail size={11} className="text-zinc-400" />{o.supplier_email}
+                                            </span>
+                                          )}
+                                        </div>
+                                      )}
                                     </td>
                                     {/* 발주일→희망일 한 칸으로 압축 */}
                                     <td className="py-2.5 px-2 text-[14px] font-medium text-zinc-500 tabular-nums whitespace-nowrap">
@@ -603,27 +623,11 @@ export const OrderHistoryTab: React.FC = () => {
                                       </td>
                                       <td colSpan={6} className="py-0 pl-1 pr-3">
                                         <div className="bg-zinc-50/70 border-l-2 border-zinc-200 ml-0.5 mb-2 mt-0 rounded-r-lg overflow-hidden">
-                                          {/* 담당자 정보 · 인라인 압축 */}
-                                          {(o.supplier_contact || o.supplier_email || o.supplier_phone || o.memo) && (
-                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 border-b border-zinc-100 text-[13px] text-zinc-500">
-                                              {o.supplier_contact && (
-                                                <span className="inline-flex items-center gap-1">
-                                                  <User size={12} className="text-zinc-400" />{o.supplier_contact}
-                                                </span>
-                                              )}
-                                              {o.supplier_email && (
-                                                <span className="inline-flex items-center gap-1">
-                                                  <Mail size={12} className="text-zinc-400" />{o.supplier_email}
-                                                </span>
-                                              )}
-                                              {o.supplier_phone && (
-                                                <span className="inline-flex items-center gap-1 tabular-nums">
-                                                  <Phone size={12} className="text-zinc-400" />{o.supplier_phone}
-                                                </span>
-                                              )}
-                                              {o.memo && (
-                                                <span className="italic text-zinc-400 border-l border-zinc-200 pl-3">{o.memo}</span>
-                                              )}
+                                          {/* 2026-09-24 · 사용자 지시 · 담당자·이메일·전화 · 공급사 옆으로 이동 · 상세에서 제거
+                                              · 메모만 · 있을 때 · 상세 상단 유지 */}
+                                          {o.memo && (
+                                            <div className="px-4 py-2 border-b border-zinc-100 text-[13px] text-zinc-500 italic">
+                                              메모 · {o.memo}
                                             </div>
                                           )}
                                           {/* 아이템 테이블 */}
