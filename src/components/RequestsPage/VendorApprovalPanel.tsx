@@ -6,7 +6,7 @@
 //   · 연차승인 UX 참고 · 카드형 리스트 · 승인/거절 액션
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Building2, Check, X, Clock, RefreshCw, MessageSquare, Mail, Phone, ShieldAlert, UserCircle2, ShoppingBag, FileText, MessageCircle, Hash } from "lucide-react";
+import { Building2, Check, X, Clock, RefreshCw, MessageSquare, Mail, Phone, ShieldAlert, User, ShoppingBag, MessageCircle, Hash, AlertTriangle } from "lucide-react";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -161,7 +161,7 @@ export const VendorApprovalPanel: React.FC = () => {
           {rows.map(v => (
             <Card key={v.id} padding="none" className="hover:border-brand-deep/40 hover:shadow-lg transition overflow-hidden">
               {/* 2026-09-03 · Notion + Attio 톤 · 헤더 gradient · 정보 아이콘 · 여백 넉넉 */}
-              {/* 헤더 · gradient bg · 큰 회사명 · 요청시각 */}
+              {/* 헤더 · gradient bg · 큰 회사명 + 사업자번호 · 요청시각 */}
               <div className="px-6 py-5 bg-gradient-to-br from-brand-tint/40 via-white to-white border-b border-line">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -169,6 +169,13 @@ export const VendorApprovalPanel: React.FC = () => {
                       <div className="text-[24px] font-bold text-ink tracking-tight">{displayVendorName(v.company_name) || v.company_name}</div>
                       {v.category && (
                         <span className="text-[15px] font-semibold text-violet-600 tracking-tight">· {v.category}</span>
+                      )}
+                      {/* 2026-09-24 · E-012 · 사업자번호 헤더 노출 */}
+                      {v.business_number && (
+                        <span className="flex items-center gap-1 text-[14px] font-semibold text-zinc-500 tabular-nums">
+                          <Hash size={13} />
+                          {v.business_number}
+                        </span>
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 text-[14px] text-ink-soft mt-2 tabular-nums">
@@ -179,16 +186,53 @@ export const VendorApprovalPanel: React.FC = () => {
                 </div>
               </div>
 
-              {/* 정보 · 아이콘 + 라벨(중간 폰트) + 값(큰 폰트) · Notion 스타일 */}
-              <div className="px-6 py-5 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-                <InfoField icon={<Mail size={17} />} label="이메일" value={v.email} />
-                <InfoField icon={<ShoppingBag size={17} />} label="주문방식" value={v.order_method} />
-                <InfoField icon={<UserCircle2 size={17} />} label="팀장" value={v.team_leader_name} />
-                <InfoField icon={<Phone size={17} />} label="팀장 연락처" value={v.team_leader_phone} mono />
-                <InfoField icon={<ShieldAlert size={17} className="text-rose-500" />} label="긴급 연락처" value={v.emergency_contact} mono />
-                <InfoField icon={<Hash size={17} />} label="사업자번호" value={v.business_number} mono />
-                <InfoField icon={<FileText size={17} />} label="특이사항" value={v.special_notes} />
-                <InfoField icon={<MessageCircle size={17} />} label="비고" value={v.note} />
+              {/* 정보 그룹핑 · 2026-09-24 · E-012 · Linear/Vercel 카드 그룹핑 스타일
+                  · 1행: 주문방식
+                  · 2행: 담당자 · 연락처 · 이메일 (3개 가로)
+                  · 3행: 팀장 · 팀장연락처 · 긴급연락처 (3개 가로)
+                  · 4행: 특이사항 · 비고 */}
+              <div className="px-6 pt-4 pb-2 flex flex-col gap-4">
+
+                {/* 1행 · 주문방식 */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-[12px] font-semibold text-ink-soft uppercase tracking-wide">주문방식</span>
+                  <div className="flex items-center gap-2">
+                    <ShoppingBag size={15} className="text-brand-deep shrink-0" />
+                    <span className={`text-[17px] font-bold ${v.order_method ? "text-ink" : "text-zinc-300 italic font-medium"}`}>
+                      {v.order_method ?? "미입력"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 구분선 */}
+                <div className="border-t border-line" />
+
+                {/* 2행 · 담당자 · 연락처 · 이메일 */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <InfoInlineField icon={<User size={15} />} label="담당자" value={v.contact_name} />
+                  <InfoInlineField icon={<Phone size={15} />} label="연락처" value={v.phone} mono />
+                  <InfoInlineField icon={<Mail size={15} />} label="이메일" value={v.email} />
+                </div>
+
+                {/* 구분선 */}
+                <div className="border-t border-line" />
+
+                {/* 3행 · 팀장 · 팀장연락처 · 긴급연락처 */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <InfoInlineField icon={<User size={15} className="text-zinc-400" />} label="팀장" value={v.team_leader_name} />
+                  <InfoInlineField icon={<Phone size={15} className="text-zinc-400" />} label="팀장 연락처" value={v.team_leader_phone} mono />
+                  <InfoInlineField icon={<ShieldAlert size={15} className="text-rose-500" />} label="긴급 연락처" value={v.emergency_contact} mono />
+                </div>
+
+                {/* 구분선 */}
+                <div className="border-t border-line" />
+
+                {/* 4행 · 특이사항 · 비고 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-1">
+                  <InfoInlineField icon={<AlertTriangle size={15} className="text-amber-500" />} label="특이사항" value={v.special_notes} accent />
+                  <InfoInlineField icon={<MessageCircle size={15} />} label="비고" value={v.note} />
+                </div>
+
               </div>
 
               {/* 액션 영역 wrapper */}
@@ -258,7 +302,7 @@ export const VendorApprovalPanel: React.FC = () => {
   );
 };
 
-// 2026-09-03 · Notion + Attio 톤 · 아이콘 + 라벨(15px) + 값(17px) · 여백 넉넉
+// 2026-09-03 · Notion + Attio 톤 · 아이콘 + 라벨(15px) + 값(17px) · 여백 넉넉 (기존 유지 · 내부 미사용 대비)
 const InfoField: React.FC<{ icon: React.ReactNode; label: string; value: string | null; mono?: boolean }> = ({ icon, label, value, mono }) => (
   <div className="flex items-start gap-3 min-w-0">
     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-tint/50 text-brand-deep shrink-0 mt-0.5">
@@ -266,9 +310,23 @@ const InfoField: React.FC<{ icon: React.ReactNode; label: string; value: string 
     </div>
     <div className="flex-1 min-w-0">
       <div className="text-[15px] font-semibold text-ink-soft mb-0.5">{label}</div>
-      <div className={`${mono ? "font-mono tabular-nums" : ""} text-[17px] font-bold text-ink break-words ${!value ? "text-zinc-300 font-medium italic" : ""}`}>
+      <div className={`${mono ? "tabular-nums" : ""} text-[17px] font-bold text-ink break-words ${!value ? "text-zinc-300 font-medium italic" : ""}`}>
         {value ?? "미입력"}
       </div>
+    </div>
+  </div>
+);
+
+// 2026-09-24 · E-012 · 인라인 그룹핑용 · 라벨(12px 회색 캡션) + 아이콘+값(가로) · Linear 톤
+// accent=true · 특이사항 · amber 강조
+const InfoInlineField: React.FC<{ icon: React.ReactNode; label: string; value: string | null; mono?: boolean; accent?: boolean }> = ({ icon, label, value, mono, accent }) => (
+  <div className="flex flex-col gap-1 min-w-0">
+    <span className="text-[12px] font-semibold text-ink-soft uppercase tracking-wide">{label}</span>
+    <div className={`flex items-center gap-2 ${accent && value ? "text-amber-700" : ""}`}>
+      <span className="shrink-0">{icon}</span>
+      <span className={`text-[16px] font-semibold break-words whitespace-normal leading-tight ${mono ? "tabular-nums" : ""} ${!value ? "text-zinc-300 italic font-medium text-[15px]" : ""}`}>
+        {value ?? "미입력"}
+      </span>
     </div>
   </div>
 );

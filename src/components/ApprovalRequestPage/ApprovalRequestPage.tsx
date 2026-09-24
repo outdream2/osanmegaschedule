@@ -9,7 +9,8 @@ import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { SK_SUBTAB_APPROVAL_REQUEST } from "../../lib/storageKeys";
 import { PencilLine } from "@phosphor-icons/react";
 // 2026-08-29 · #196 Phase 3 · 사이드바 · 서브탭 자동 파생
-import { getPageSubTabs } from "../layout/sideNavGroups";
+// 2026-09-24 · #354 · getGroupSubTabs 사용 · approvals 그룹 기준 (schedule 그룹 오매칭 방지)
+import { getGroupSubTabs } from "../layout/sideNavGroups";
 import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
@@ -39,10 +40,13 @@ type ArSubTab = "leave" | "lunch" | "document-writer";
 
 const STORAGE_KEY = SK_SUBTAB_APPROVAL_REQUEST;
 
-// 2026-08-29 · #196 Phase 3 · TABS · sideNavGroups.getPageSubTabs 자동 파생 (하드코드 제거)
-//   · SIDE_NAV_GROUPS approvals 그룹 · items · subTab (leave · lunch · document-writer) 자동 반영
+// 2026-08-29 · #196 Phase 3 · TABS · sideNavGroups.getGroupSubTabs 자동 파생 (하드코드 제거)
+//   · SIDE_NAV_GROUPS approvals 그룹 기준 · subTab (leave · lunch · document-writer) 자동 반영
 //   · 사이드바 편집 시 · 이 페이지 서브탭 자동 동기 · 단일 소스 원칙
-const TABS: TabDef<ArSubTab>[] = getPageSubTabs("approval-request").map(it => ({
+// 2026-09-24 · #354 · getGroupSubTabs("approvals") 사용 · schedule 그룹 오매칭 방지
+//   · 기존 getPageSubTabs("approval-request") → schedule 그룹 안 "연차신청" 만 반환 (버그)
+//   · 수정 후 → approvals 그룹 안 서류작성 탭 정확히 파생
+const TABS: TabDef<ArSubTab>[] = getGroupSubTabs("approvals", "approval-request").map(it => ({
   key: (it.subTab as ArSubTab),
   label: it.label,
   icon: it.icon as any,
@@ -55,7 +59,8 @@ function readInitialSubTab(): ArSubTab {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw === "leave" || raw === "lunch" || raw === "document-writer") return raw;
   } catch { /* SSR · quota */ }
-  return "leave";
+  // 2026-09-24 · #354 · 첫 탭 default 대원칙 · TABS[0] 기준 (approvals 그룹 첫 서브탭)
+  return (TABS[0]?.key as ArSubTab) ?? "document-writer";
 }
 
 const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({

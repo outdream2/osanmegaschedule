@@ -251,6 +251,22 @@ export function getPageSubTabs(pageKey: AppNavPage): SideNavItem[] {
 }
 
 /**
+ * 2026-09-24 · #354 · 그룹 ID + pageKey 기준 서브탭 파생 · 단일 소스
+ *   · getPageSubTabs 는 첫 번째 매칭 그룹만 반환 → 여러 그룹에 같은 pageKey가 있을 때 오류
+ *   · 이 함수는 groupId 명시 → 정확한 그룹 안에서만 pageKey 서브탭 수집
+ *   · 예: getGroupSubTabs("approvals", "approval-request") → 서류작성 탭만
+ *
+ * @param groupId · SideNavGroup.id ("approvals" · "schedule" 등)
+ * @param pageKey · 해당 그룹 안 아이템의 key
+ * @returns 해당 그룹 + 해당 pageKey 의 서브탭 SideNavItem 배열 · 없으면 빈 배열
+ */
+export function getGroupSubTabs(groupId: string, pageKey: AppNavPage): SideNavItem[] {
+  const group = SIDE_NAV_GROUPS.find(g => g.id === groupId);
+  if (!group) return [];
+  return group.items.filter(i => i.key === pageKey && i.subTab);
+}
+
+/**
  * 2026-08-29 · #196 Phase 1 · 전체 페이지 key 수집 · BottomNav isActive 판정용
  *   · SIDE_NAV_GROUPS 모든 items 의 key 를 · 중복 제거하여 반환
  *   · BottomNav 등 · "이 페이지가 우리 그룹 안 어떤 서브인가?" 판정 시 사용
