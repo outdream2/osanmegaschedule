@@ -156,30 +156,30 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
       <div className={`max-h-[50vh] lg:max-h-[75vh] overflow-auto relative rounded-xl border border-line bg-white ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
         <GradientAccent className="z-20" />
         <table className="w-full text-[16px] sm:text-[17px] min-w-[720px] border-collapse [&_tbody_td]:text-[16px] sm:[&_tbody_td]:text-[17px] [&_thead_th]:text-[15px] sm:[&_thead_th]:text-[16px]">
-          <thead className="sticky top-0 z-10">
-            <tr className="text-zinc-500 uppercase tracking-wider bg-zinc-100/70 border-b border-line">
+          <thead>
+            <tr className="text-zinc-500 uppercase tracking-wider">
               {isNeedCollapsed("info") ? (
-                <th className="w-4"></th>
+                <th className="sticky top-0 z-30 w-4 bg-zinc-100 border-b-2 border-line shadow-[0_1px_2px_rgba(0,0,0,0.04)]"></th>
               ) : (
                 <>
-                  <th onClick={() => handleNeedSort("supplier")} className="text-left px-3 py-2.5 cursor-pointer hover:bg-zinc-200/60 select-none font-bold" style={{ minWidth: 130 }}>공급사<span className="ml-1 text-zinc-400">{needArrow("supplier") || "⇅"}</span></th>
-                  <th onClick={() => handleNeedSort("name")} className="text-left px-3 py-2.5 cursor-pointer hover:bg-zinc-200/60 select-none font-bold" style={{ minWidth: 240 }}>상품명<span className="ml-1 text-zinc-400">{needArrow("name") || "⇅"}</span></th>
+                  <th onClick={() => handleNeedSort("supplier")} className="sticky top-0 z-30 bg-zinc-100 border-b-2 border-line shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-left px-3 py-2.5 cursor-pointer hover:bg-zinc-200 select-none font-bold" style={{ minWidth: 130 }}>공급사<span className="ml-1 text-zinc-400">{needArrow("supplier") || "⇅"}</span></th>
+                  <th onClick={() => handleNeedSort("name")} className="sticky top-0 z-30 bg-zinc-100 border-b-2 border-line shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-left px-3 py-2.5 cursor-pointer hover:bg-zinc-200 select-none font-bold" style={{ minWidth: 240 }}>상품명<span className="ml-1 text-zinc-400">{needArrow("name") || "⇅"}</span></th>
                 </>
               )}
               {isNeedCollapsed("stock") ? (
-                <th className="w-4"></th>
+                <th className="sticky top-0 z-30 w-4 bg-zinc-100 border-b-2 border-line shadow-[0_1px_2px_rgba(0,0,0,0.04)]"></th>
               ) : (
                 <>
-                  <th onClick={() => handleNeedSort("current")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">ERP<span className="ml-1 text-zinc-400">{needArrow("current") || "⇅"}</span></th>
-                  <th onClick={() => handleNeedSort("optimal")} className="text-right px-2 py-2.5 w-16 cursor-pointer hover:bg-zinc-200/60 select-none font-bold">적정<span className="ml-1 text-zinc-400">{needArrow("optimal") || "⇅"}</span></th>
-                  <th onClick={() => handleNeedSort("short")} className="text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200/60 select-none font-bold text-zinc-600">상태<span className="ml-1 text-zinc-400">{needArrow("short") || "⇅"}</span></th>
+                  <th onClick={() => handleNeedSort("current")} className="sticky top-0 z-30 bg-zinc-100 border-b-2 border-line shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200 select-none font-bold">ERP<span className="ml-1 text-zinc-400">{needArrow("current") || "⇅"}</span></th>
+                  <th onClick={() => handleNeedSort("optimal")} className="sticky top-0 z-30 bg-zinc-100 border-b-2 border-line shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-right px-2 py-2.5 w-16 cursor-pointer hover:bg-zinc-200 select-none font-bold">적정<span className="ml-1 text-zinc-400">{needArrow("optimal") || "⇅"}</span></th>
+                  <th onClick={() => handleNeedSort("short")} className="sticky top-0 z-30 bg-zinc-100 border-b-2 border-line shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-right px-2 py-2.5 w-14 cursor-pointer hover:bg-zinc-200 select-none font-bold text-zinc-600">상태<span className="ml-1 text-zinc-400">{needArrow("short") || "⇅"}</span></th>
                 </>
               )}
-              <th className="text-center px-1 py-2.5 cursor-default font-bold text-amber-700 bg-amber-50/50 border-l border-amber-100 whitespace-nowrap">수량</th>
+              <th className="sticky top-0 z-30 bg-amber-50 border-b-2 border-amber-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-center px-1 py-2.5 cursor-default font-bold text-amber-700 border-l border-l-amber-100 whitespace-nowrap">수량</th>
               {/* 2026-09-23 · #347 · 사용자 지시 · 수량 옆 · 단가·금액 */}
-              <th className="text-right px-2 py-2.5 cursor-default font-bold text-amber-700 bg-amber-50/30 whitespace-nowrap" style={{ minWidth: 80 }}>단가</th>
-              <th className="text-right px-2 py-2.5 cursor-default font-bold text-amber-800 bg-amber-50/40 whitespace-nowrap" style={{ minWidth: 90 }}>금액</th>
-              <th className="text-center px-2 py-2.5 cursor-default font-bold text-brand-deep bg-brand-tint/50 border-l border-brand/10" style={{ minWidth: 120 }}>발주</th>
+              <th className="sticky top-0 z-30 bg-amber-50 border-b-2 border-amber-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-right px-2 py-2.5 cursor-default font-bold text-amber-700 whitespace-nowrap" style={{ minWidth: 80 }}>단가</th>
+              <th className="sticky top-0 z-30 bg-amber-50 border-b-2 border-amber-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-right px-2 py-2.5 cursor-default font-bold text-amber-800 whitespace-nowrap" style={{ minWidth: 90 }}>금액</th>
+              <th className="sticky top-0 z-30 bg-sky-50 border-b-2 border-sky-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)] text-center px-2 py-2.5 cursor-default font-bold text-brand-deep border-l border-l-sky-100" style={{ minWidth: 120 }}>발주</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-50">
