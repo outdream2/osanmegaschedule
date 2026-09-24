@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-09-23 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-09-24 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 1088 |
+| 스캔 파일 | 1089 |
 | 위반 파일 | 97 |
-| 클린 파일 | 991 (91%) |
+| 클린 파일 | 992 (91%) |
 | 총 위반 개수 | 526 |
 
 ## 🚨 규칙별 위반 현황
@@ -51,7 +51,7 @@
 | 23 | `server/ocr/logging/fieldMatchLog.ts` | 229 | 7 | no-raw-console-server(2) · no-any-server(3) |
 | 24 | `src/components/LeavePage/LeavePage.tsx` | 1397 | 6 | large-file-warn(1) |
 | 25 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1051 | 6 | large-file-warn(1) |
-| 26 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1115 | 6 | large-file-warn(1) |
+| 26 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1119 | 6 | large-file-warn(1) |
 | 27 | `server/ocr/pipeline/stages/08-verify.ts` | 34 | 6 | no-raw-console-server(3) |
 | 28 | `server/routes/purchase/supplierPayments/balance.ts` | 498 | 6 | no-any-server(6) |
 | 29 | `server/routes/purchase/supplierPayments/purchaseDetail.ts` | 170 | 6 | no-any-server(6) |
@@ -88,7 +88,7 @@
 | `server/ocr/logging/fieldMatchLog.ts` | 229 | 7 |
 | `src/components/LeavePage/LeavePage.tsx` | 1397 | 6 |
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1051 | 6 |
-| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1115 | 6 |
+| `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1119 | 6 |
 | `server/ocr/pipeline/stages/08-verify.ts` | 34 | 6 |
 | `server/routes/purchase/supplierPayments/balance.ts` | 498 | 6 |
 | `server/routes/purchase/supplierPayments/purchaseDetail.ts` | 170 | 6 |
@@ -102,13 +102,13 @@
 | `server/utils/xlsx.ts` | 251 | 5 |
 | `server/ocr/pipeline/stages/10-fallback.ts` | 79 | 4 |
 | `server/routes/ocr/matchRouter.ts` | 161 | 4 |
-| `server/routes/settings/events.ts` | 269 | 4 |
+| `server/routes/settings/events.ts` | 278 | 4 |
 | `server/routes/settings/settings.ts` | 483 | 4 |
 | `server/routes/stock/lossTracking.ts` | 297 | 4 |
 | `server/routes/stock/products.ts` | 1349 | 4 |
 | `server/services/googleDriveService.ts` | 466 | 4 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 851 | 3 |
-| `src/components/OrderManagePage/OrderManagePage.tsx` | 844 | 3 |
+| `src/components/OrderManagePage/OrderManagePage.tsx` | 845 | 3 |
 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 979 | 3 |
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 801 | 3 |
 | `src/components/OrderManagePage/SalesRecommendationPanel.tsx` | 843 | 3 |
@@ -121,7 +121,7 @@
 | `server/productCache.ts` | 400 | 3 |
 | `server/routes/settings/holidays.ts` | 254 | 3 |
 | `server/services/scheduleService.ts` | 356 | 3 |
-| `src/components/NotificationBell.tsx` | 305 | 2 |
+| `src/components/NotificationBell.tsx` | 314 | 2 |
 | `src/components/OrderManagePage/EventProductAddModal.tsx` | 103 | 2 |
 | `server/ocr/engines/gemini.ts` | 146 | 2 |
 | `server/ocr/pipeline/benchmark.ts` | 177 | 2 |

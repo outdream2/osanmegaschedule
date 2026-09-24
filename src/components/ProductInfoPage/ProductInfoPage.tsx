@@ -52,6 +52,8 @@ import { useStorageLocations } from "../../hooks/useStorageLocations";
 import type { ShelfPositions } from "../../lib/shelfPositions";
 // 2026-09-18 · 사용자 지시 · 계층 2 클라 폴백 · shelf_positions 비어있어도 · location 있으면 슬롯 계산
 import { mergeShelfPositionsWithFallback, formatShelfPositions, formatShelfDetail } from "../../lib/shelfPositions";
+// 2026-09-24 · 사용자 지시 · 우측 상세 조회 UI · ProductCreateModal 배치와 동일한 뷰로 교체
+import { ProductInfoModalStyleView } from "../common/ProductInfoModalStyleView";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 interface ProductRow {
@@ -1051,13 +1053,13 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           }
           right={
             <div className="flex-1 min-h-0 overflow-y-auto bg-zinc-50/30">
-              <ProductDetailView
+              {/* 2026-09-24 · 사용자 지시 · ProductCreateModal 배치와 동일한 조회 UI */}
+              <ProductInfoModalStyleView
                 product={detail}
                 loading={detailLoading}
                 error={detailError}
                 canEdit={canManage}
-                onSaved={() => setReloadKey((k) => k + 1)}
-                onEditClick={(prod) => setEditProduct(prod)}
+                onEditClick={() => setEditProduct(detail)}
               />
             </div>
           }
