@@ -173,9 +173,33 @@ async function sendPushToTokens(
 }
 
 /**
+ * 2026-09-24 · 사용자 지시 · 앱 개발자 스펙 · 사용자 unread notifications 갯수 조회
+ *   · badge · NotificationBell 과 동일 metric · notifications 테이블 · read=false · limit 미제한
+ *   · badge 파라미터 미지정 시 · 자동 조회 · push 마다 최신 값 전송
+ */
+async function fetchUnreadCount(userId: number): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("employee_id", userId)
+      .eq("read", false);
+    if (error) {
+      logger.warn(`[EXPO-PUSH] unread count 조회 실패 · user=${userId} · ${error.message}`);
+      return 0;
+    }
+    return Number.isFinite(count) ? (count as number) : 0;
+  } catch (e: any) {
+    logger.warn(`[EXPO-PUSH] unread count 예외 · user=${userId} · ${e?.message ?? e}`);
+    return 0;
+  }
+}
+
+/**
  * 특정 user 에게 push 전송 (public)
  * · push_tokens (user_id, active=true) 조회 → sendPushToTokens
  * · 토큰 없으면 skip (fire-and-forget · throw 없음)
+ * · 2026-09-24 · 사용자 지시 · badge 미지정 시 · 서버가 unread count 자동 조회 · NotificationBell 과 완전 일치
  */
 export async function sendPush(params: SendPushParams): Promise<SendPushResult> {
   const { userId, title, body, badge, url, data } = params;
@@ -202,6 +226,12 @@ export async function sendPush(params: SendPushParams): Promise<SendPushResult> 
       return empty;
     }
 
+    // 2026-09-24 · 앱 개발자 스펙 · badge = user's current unread count · 미지정 시 자동 조회
+    //   · 사용자 보고 · "앱에서 갯수가 틀린거야" · notifications 테이블 unread count 로 통일
+    //   · 이전 · 각 callsite 별 badge 계산 or 미지정 · 앱 뱃지 · 로컬 계산 (limit=100) · 불일치
+    //   · 이후 · 서버 · notifications 실시간 count · 매 push 시 최신 값 · NotificationBell 과 완전 일치
+    const badgeCount = typeof badge === "number" ? badge : await fetchUnreadCount(userId);
+
     // 마지막 사용 시각 갱신 (fire-and-forget)
     supabase
       .from("push_tokens")
@@ -223,7 +253,8 @@ export async function sendPush(params: SendPushParams): Promise<SendPushResult> 
       sound: "default",
       priority: "high",
       data: { url: absoluteUrl, ...(data ?? {}) },
-      ...(typeof badge === "number" ? { badge } : {}),
+      // 2026-09-24 · 사용자 지시 · badge 항상 포함 · NotificationBell 과 완전 일치
+      badge: badgeCount,
     };
 
     const result = await sendPushToTokens(tokens, payload);

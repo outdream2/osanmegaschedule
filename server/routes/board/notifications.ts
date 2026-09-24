@@ -59,6 +59,23 @@ router.get("/api/notifications", asyncHandler(async (req, res) => {
   res.json(data);
 }));
 
+// 2026-09-24 · 사용자 지시 · 앱 뱃지 갯수 불일치 fix · unread count 단일 소스
+//   · 이전 · NotificationBell (limit=30) · initBadgeSync (limit=100) · limit 밖 unread 놓침
+//   · 이후 · 서버 count(exact) · 전체 unread · limit 무관 · 웹·앱 완전 동일
+router.get("/api/notifications/unread-count", asyncHandler(async (req, res) => {
+  const employeeId = parseInt(req.query.employeeId as string);
+  if (!employeeId) throw badRequest("employeeId required");
+  const { supabase } = await import("../../../src/supabase/client");
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("employee_id", employeeId)
+    .eq("read", false);
+  if (error) throw new HttpError(500, error.message);
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.json({ count: Number.isFinite(count) ? count : 0 });
+}));
+
 router.patch("/api/notifications/:id/read", authorize(1), validateBody(z.object({})), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (!id) throw badRequest("invalid id");

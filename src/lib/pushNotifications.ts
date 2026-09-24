@@ -186,19 +186,18 @@ export function initBadgeSync(employeeId?: number | null): () => void {
   async function refresh(): Promise<void> {
     if (cancelled) return;
     try {
-      // 2026-09-23 · 사용자 보고 · "웹 5개 · 앱 1개" · NotificationBell metric 과 통일
-      //   · 이전 · leave + resignation + pending-counts (승인·요청 관련만) · notifications 테이블 unread 누락
-      //   · fix · NotificationBell 과 동일 · GET /api/notifications?employeeId=X · unread count
-      //   · 앱 배지 = 웹 상단 NotificationBell 뱃지 · 완전 동일 metric
+      // 2026-09-24 · 사용자 보고 · "앱 갯수 틀림" · 서버 count endpoint 로 통일
+      //   · 이전 · GET /api/notifications?limit=100 · 클라 filter · limit=30 (Bell) vs 100 (badge) 불일치
+      //   · 이후 · GET /api/notifications/unread-count · 서버 count(exact) · limit 무관 · 완전 일치
       if (!employeeId) {
         setAppBadge(0);
         return;
       }
-      const { data: list } = await api.get<Array<{ id: number; read: boolean | null }>>(
-        `/api/notifications?employeeId=${employeeId}&limit=100`
+      const { data } = await api.get<{ count: number }>(
+        `/api/notifications/unread-count?employeeId=${employeeId}`
       );
       if (cancelled) return;
-      const unread = Array.isArray(list) ? list.filter(n => !n.read).length : 0;
+      const unread = Number(data?.count ?? 0);
       devLog(`[PUSH-BADGE] refresh · notifications unread=${unread}`);
       setAppBadge(unread);
     } catch (err: any) {

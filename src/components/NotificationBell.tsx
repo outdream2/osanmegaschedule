@@ -72,11 +72,16 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [justArrived, setJustArrived] = useState(false);
+  // 2026-09-24 · 사용자 보고 · 앱과 웹 뱃지 갯수 불일치 · 서버 count endpoint 로 통일
+  //   · 이전 · notifications.filter(!read).length · limit=30 밖 unread 놓침
+  //   · 이후 · 서버 unread-count · count(exact) · 전체 unread · 앱과 완전 일치
+  const [unreadCountServer, setUnreadCountServer] = useState<number | null>(null);
   const prevMaxIdRef = useRef<number>(0);
   const employeeId = authSession?.employeeId;
   const confirm = useConfirm();
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  // 뱃지 표시 · 서버 count 우선 · 미로딩 시 · 로컬 계산 폴백
+  const unreadCount = unreadCountServer != null ? unreadCountServer : notifications.filter((n) => !n.read).length;
 
   const playChime = useCallback(() => {
     try {
@@ -115,6 +120,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
       }
       prevMaxIdRef.current = Math.max(prevMaxIdRef.current, maxId);
       setNotifications(arr);
+      // 2026-09-24 · 서버 unread count · 병렬 fetch · 뱃지 통일
+      api.get<{ count: number }>(`/api/notifications/unread-count?employeeId=${employeeId}`)
+        .then(({ data }) => setUnreadCountServer(Number(data?.count ?? 0)))
+        .catch(() => { /* silent · fallback 로컬 계산 */ });
     } catch { /* silent · polling 실패 무시 */ }
     finally { setLoading(false); }
   }, [employeeId, playChime]);
