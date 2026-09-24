@@ -759,22 +759,41 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
     g.total_amount += qty * price;
   }
   // 2026-09-09 · products.optimal_stock 병합 · 발주 이력에도 최신값 표시 (재계산 변동 감수)
+  // 2026-09-24 · 사용자 지시 · JOIN 방식 · SSOT · products.purchase_price 실시간 조회 · unit_price NULL 폴백
+  //   · Snapshot 방식 · 정합성 위배 (products 정정 시 이력 divergence) · 사용자 대원칙 위배
+  //   · JOIN 방식 · 상품 마스터 = SSOT · 이력 조회 시 · 최신 단가 자동 반영
   const allCodes = new Set<string>();
   for (const g of grouped.values()) for (const it of g.items) if (it.product_code) allCodes.add(String(it.product_code));
   if (allCodes.size > 0) {
     try {
-      const { data: prods } = await supabase.from("products").select("product_code, optimal_stock").in("product_code", [...allCodes]);
+      const { data: prods } = await supabase.from("products").select("product_code, optimal_stock, purchase_price").in("product_code", [...allCodes]);
       const optMap = new Map<string, number | null>();
+      const priceMap = new Map<string, number | null>();
       for (const p of prods ?? []) {
+        const code = String((p as any).product_code ?? "").trim();
         const opt = (p as any).optimal_stock;
-        optMap.set(String((p as any).product_code ?? "").trim(), opt != null ? Number(opt) : null);
+        const price = (p as any).purchase_price;
+        optMap.set(code, opt != null ? Number(opt) : null);
+        priceMap.set(code, price != null ? Number(price) : null);
       }
       for (const g of grouped.values()) {
         for (const it of g.items) {
-          it.optimal_stock = optMap.get(String(it.product_code ?? "").trim()) ?? null;
+          const code = String(it.product_code ?? "").trim();
+          it.optimal_stock = optMap.get(code) ?? null;
+          // unit_price · order_requests 값 우선 · NULL/0 이면 · products.purchase_price 폴백
+          //   · 표준 발주 flow · unit_price 저장 안 함 → 항상 products 값 표시
+          //   · 이력 정확도 · products 정정 시 · 이력에도 최신값 반영 (정합성)
+          const savedPrice = Number(it.unit_price ?? 0);
+          if (!savedPrice || savedPrice <= 0) {
+            const currentPrice = priceMap.get(code) ?? 0;
+            it.unit_price = currentPrice;
+            it.line_amount = Number(it.order_qty ?? 0) * currentPrice;
+          }
         }
+        // 그룹 total_amount 재계산 (JOIN 폴백 반영)
+        g.total_amount = g.items.reduce((sum: number, it: { line_amount?: number }) => sum + Number(it.line_amount ?? 0), 0);
       }
-    } catch { /* silent · products 조회 실패 시 · optimal_stock null */ }
+    } catch { /* silent · products 조회 실패 시 · optimal_stock null · unit_price 원본 유지 */ }
   }
   const orders = [...grouped.values()].sort((a, b) => String(b.sent_at ?? "").localeCompare(String(a.sent_at ?? "")));
   // 2026-09-11 · #126 · 사용자 지시 · 발주이력 · 캐시 X · 즉시 DB
