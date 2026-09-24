@@ -46,7 +46,7 @@ import { TIMING } from "../../constants/timing";
 // 2026-08-09 · 거래처 담당자 로그인 시 · 본인 공급사 조회·수정 · 공통 VendorDetailModal 재사용
 import { VendorDetailModal, type Vendor as VendorFull } from "./VendorListEditor";
 // 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 (VendorStockPage) 이관
-//   · VendorStockModal 은 회귀 방지 위해 파일 유지 (다른 위치에서 재사용 여지)
+//   · 2026-09-24 · VendorStockModal 파일 삭제 (VendorStockPage 로 완전 대체 · 사용처 없음)
 //   · 랜딩 진입점만 · setShowVendorStock 대신 onNavigate("vendor-stock")
 import { useVendors } from "../../hooks/useVendors";
 import { MenuCard } from "./MenuCard";
