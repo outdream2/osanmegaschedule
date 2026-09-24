@@ -37,7 +37,8 @@ router.post("/api/auth/login", validateBody(LoginSchema), asyncHandler(async (re
   if (level === 0) throw unauthorized("접근 권한이 없습니다");
   const role = level >= 9 ? "superadmin" : level >= 2 ? "manager" : "employee";
   try {
-    issueToken(res, { sub: empSafe.id, name: empSafe.name, role, level, rememberMe }, Boolean(rememberMe));
+    // 2026-09-24 · 사용자 지시 · Option A (RTR) · req 전달 · 앱 감지 · refresh 90일 (mobile-app 헤더)
+    issueToken(res, { sub: empSafe.id, name: empSafe.name, role, level, rememberMe }, Boolean(rememberMe), req);
   } catch {
     throw new HttpError(500, "인증 시스템 설정 오류 · 관리자에게 문의 (JWT_SECRET 미설정)");
   }
@@ -85,7 +86,7 @@ router.post("/api/auth/vendor-login", validateBody(VendorLoginSchema), asyncHand
     throw unauthorized("핸드폰번호 또는 비밀번호가 올바르지 않습니다");
   }
   try {
-    issueToken(res, { sub: vendorSafe.id, name: vendorSafe.company_name, role: "vendor", level: 0 }, false);
+    issueToken(res, { sub: vendorSafe.id, name: vendorSafe.company_name, role: "vendor", level: 0 }, false, req);
   } catch {
     throw new HttpError(500, "인증 시스템 설정 오류 · 관리자에게 문의 (JWT_SECRET 미설정)");
   }
@@ -166,7 +167,7 @@ router.post("/api/auth/sso-consume", asyncHandler(async (req, res) => {
     throw unauthorized("SSO 토큰이 이미 사용되었습니다");
   }
   try {
-    issueToken(res, { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level }, false);
+    issueToken(res, { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level }, false, req);
   } catch {
     throw new HttpError(500, "인증 시스템 설정 오류");
   }

@@ -45,7 +45,16 @@ async function tryRefresh(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight;
   refreshInFlight = (async () => {
     try {
-      const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
+      // 2026-09-24 · Option A (RTR) · 앱 감지 헤더 · 서버 refresh 수명 결정
+      const headers: Record<string, string> = {};
+      if (typeof window !== "undefined") {
+        const w = window as any;
+        const ua = navigator?.userAgent ?? "";
+        if (w?.osanApp || w?.OsanApp || /osan-app|osanmega-app/i.test(ua)) {
+          headers["X-Client-Type"] = "mobile-app";
+        }
+      }
+      const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "include", headers });
       return res.ok;
     } catch {
       return false;
@@ -119,10 +128,29 @@ interface RequestOptions<T = unknown> extends AxiosRequestConfig {
   skipRefresh?: boolean;
 }
 
+// 2026-09-24 · 사용자 지시 · Option A (RTR) · 앱 감지 · 서버로 X-Client-Type 헤더 전달
+//   · 서버 · mobile-app 감지 시 · refresh 90일 · 회전 · 실질 무한 세션
+//   · 웹 · 기존 30일 refresh · 회전
+function isMobileWebViewClient(): boolean {
+  if (typeof window === "undefined") return false;
+  const w = window as any;
+  // iOS/Android WebView bridge 감지 (앱측 · window.osanApp 등 마커 주입 가정)
+  if (w?.osanApp || w?.OsanApp) return true;
+  // UA 마커 · 앱 개발자 · UA suffix 추가 시 감지
+  const ua = navigator?.userAgent ?? "";
+  if (/osan-app|osanmega-app/i.test(ua)) return true;
+  return false;
+}
+
 async function request<T = unknown>(config: RequestOptions<T>): Promise<{ data: T; status: number; headers: Record<string, string> }> {
   const cfg: AxiosRequestConfig & { __retried?: boolean } = {
     withCredentials: true,
     ...config,
+    headers: {
+      ...(config.headers ?? {}),
+      // 2026-09-24 · 앱 감지 시 · 서버 refresh 수명 확장 (90일 · rolling)
+      ...(isMobileWebViewClient() ? { "X-Client-Type": "mobile-app" } : {}),
+    },
   };
   try {
     const res: AxiosResponse<unknown> = await axios(cfg);

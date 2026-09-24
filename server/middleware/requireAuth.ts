@@ -69,13 +69,28 @@ export function consumeSsoJti(jti: string): boolean {
 }
 
 // 2026-08-16 · #112-S10 · Access + Refresh 분리
+// 2026-09-24 · 앱 세션 유지 · 사용자 지시 · Option A (RTR) · 최신 트렌드 표준
 //   Access · 15분 (짧게 · 탈취 시 노출 최소)
-//   Refresh · 30일 (길게 · 자동 갱신 · 사용자 편의)
-//   rememberMe · Refresh 30일 유지 (기본과 동일 · 명시적 · 향후 90일로 확장 가능)
+//   Refresh (web) · 30일 · 회전 (rolling)
+//   Refresh (mobile-app) · 90일 · 회전 (rolling · X-Client-Type: mobile-app 헤더 감지)
+//   회전 (RTR) · refresh 사용 시마다 · 새 refresh 발급 · 실질 무한 세션 · 미사용 90일 만료
 const ACCESS_MAX_AGE = 15 * 60;              // 15분 (seconds)
-const REFRESH_MAX_AGE = 30 * 24 * 60 * 60;   // 30일
+const REFRESH_MAX_AGE_WEB = 30 * 24 * 60 * 60;      // 30일 (웹)
+const REFRESH_MAX_AGE_MOBILE = 90 * 24 * 60 * 60;   // 90일 (앱)
+const REFRESH_MAX_AGE = REFRESH_MAX_AGE_WEB;        // default (기존 export 호환)
 const DEFAULT_MAX_AGE = ACCESS_MAX_AGE;      // 하위호환 export
 const REMEMBER_MAX_AGE = REFRESH_MAX_AGE;
+
+// 2026-09-24 · 사용자 지시 · 클라이언트 유형 감지 · X-Client-Type 헤더
+//   · web (default) · 30일 refresh
+//   · mobile-app · 90일 refresh · 앱 무한 세션 (회전 · 사용 시마다 갱신)
+function detectClientType(req: Request): "web" | "mobile-app" {
+  const h = String(req.headers["x-client-type"] ?? "").toLowerCase().trim();
+  if (h === "mobile-app" || h === "app" || h === "mobile") return "mobile-app";
+  const ua = String(req.headers["user-agent"] ?? "");
+  if (/osan-app|osanmega-app/i.test(ua)) return "mobile-app";
+  return "web";
+}
 
 if (!JWT_SECRET) {
   logger.warn("[requireAuth] WARNING: JWT_SECRET 없음 + SUPABASE_KEY 도 없음 · 인증 비활성. SUPABASE_KEY 설정 시 자동 파생 됩니다.");
@@ -104,12 +119,17 @@ export function issueToken(
   res: Response,
   payload: JwtPayload,
   _rememberMe = false,
+  req?: Request,
 ): string {
   if (!JWT_SECRET) throw new Error("JWT_SECRET not configured");
+  // 2026-09-24 · 사용자 지시 · Option A · 클라 유형별 refresh 수명 결정
+  const clientType = req ? detectClientType(req) : "web";
+  const refreshMaxAge = clientType === "mobile-app" ? REFRESH_MAX_AGE_MOBILE : REFRESH_MAX_AGE_WEB;
+  const refreshExpiresIn = clientType === "mobile-app" ? "90d" : "30d";
   const accessPayload: JwtPayload = { ...payload, typ: "access" };
   const refreshPayload: JwtPayload = { ...payload, typ: "refresh" };
   const accessToken = jwt.sign(accessPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: "15m" });
-  const refreshToken = jwt.sign(refreshPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: "30d" });
+  const refreshToken = jwt.sign(refreshPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: refreshExpiresIn });
   const secure = process.env.NODE_ENV === "production";
   res.cookie(COOKIE_NAME, accessToken, {
     httpOnly: true, secure, sameSite: "lax",
@@ -117,12 +137,17 @@ export function issueToken(
   });
   res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
     httpOnly: true, secure, sameSite: "lax",
-    maxAge: REFRESH_MAX_AGE * 1000, path: "/api/auth", // refresh 는 auth 경로만
+    maxAge: refreshMaxAge * 1000, path: "/api/auth", // refresh 는 auth 경로만
   });
   return accessToken;
 }
 
-/** 2026-08-16 · S10 · Refresh token 만 검증 → 새 access token 재발급 */
+/** 2026-08-16 · S10 · Refresh token 만 검증 → 새 access token 재발급
+ *  2026-09-24 · 사용자 지시 · Option A (RTR) · refresh 도 회전 · rolling window 진짜 구현
+ *   · 이전 · refresh 30일 · 로그인 후 30일 정확히 만료 (rolling X · comment 오류)
+ *   · 이후 · 매 refresh 마다 · 새 refresh 발급 · 사용 시점 기준 재계산 · 미사용 만료
+ *   · 모바일 앱 · 90일 · 매 사용 시 90일 재갱신 · 실질 무한 세션
+ */
 export function refreshAccessToken(req: Request, res: Response): JwtPayload | null {
   if (!JWT_SECRET) return null;
   const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined;
@@ -130,12 +155,24 @@ export function refreshAccessToken(req: Request, res: Response): JwtPayload | nu
   try {
     const decoded = jwt.verify(refreshToken, JWT_SECRET, { algorithms: ["HS256"] }) as unknown as JwtPayload;
     if (decoded.typ !== "refresh") return null;
-    // 새 access token 발급 (기존 refresh 유지 · rolling window)
+    // 2026-09-24 · 클라 유형별 refresh 수명 · rolling window 재계산
+    const clientType = detectClientType(req);
+    const refreshMaxAge = clientType === "mobile-app" ? REFRESH_MAX_AGE_MOBILE : REFRESH_MAX_AGE_WEB;
+    const refreshExpiresIn = clientType === "mobile-app" ? "90d" : "30d";
+    // 새 access token 발급
     const accessPayload: JwtPayload = { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level, typ: "access" };
     const accessToken = jwt.sign(accessPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: "15m" });
+    // 2026-09-24 · 회전 · 새 refresh token 발급 · 매 사용 시 rolling 갱신
+    const refreshPayload: JwtPayload = { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level, typ: "refresh" };
+    const newRefreshToken = jwt.sign(refreshPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: refreshExpiresIn });
+    const secure = process.env.NODE_ENV === "production";
     res.cookie(COOKIE_NAME, accessToken, {
-      httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax",
+      httpOnly: true, secure, sameSite: "lax",
       maxAge: ACCESS_MAX_AGE * 1000, path: "/",
+    });
+    res.cookie(REFRESH_COOKIE_NAME, newRefreshToken, {
+      httpOnly: true, secure, sameSite: "lax",
+      maxAge: refreshMaxAge * 1000, path: "/api/auth",
     });
     return accessPayload;
   } catch {
