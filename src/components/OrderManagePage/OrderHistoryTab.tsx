@@ -101,6 +101,10 @@ export const OrderHistoryTab: React.FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [days, setDays] = useState(90);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // 2026-09-24 · 사용자 지시 · 날짜별 그룹핑 · 날짜 헤더 클릭 시 · 그 날의 모든 발주 상세 한꺼번에 노출
+  //   · 최신 날짜 · default 자동 open (첫 로드 후)
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [datesInitialized, setDatesInitialized] = useState(false);
   // 2026-09-08 · 사용자 지시 · 각 행 PDF 다운 · 오프스크린 프리뷰 + html2canvas + jsPDF
   const pdfRef = useRef<HTMLDivElement | null>(null);
   const [pdfTarget, setPdfTarget] = useState<OrderModalState | null>(null);
@@ -277,6 +281,50 @@ export const OrderHistoryTab: React.FC = () => {
     "desc",
   );
 
+  // 2026-09-24 · 사용자 지시 · 최신 트렌드 · 발주이력 날짜별 그룹핑
+  //   · 이전 · flat list · PO 마다 개별 행
+  //   · 이후 · 날짜별 헤더 아래 · 그 날짜의 여러 PO (여러 공급사) · 한꺼번에 상세내역
+  //   · SaaS 표준 (Odoo · NetSuite · QuickBooks) 참조 · 세션·batch 시각화
+  const groupedByDate = React.useMemo(() => {
+    const map = new Map<string, OrderHistoryOrder[]>();
+    for (const o of sortedOrders) {
+      // 그룹 키 · order_date 우선 · 없으면 sent_at slice(0,10) · 둘 다 없으면 '(날짜 없음)'
+      const dateKey = String(o.order_date ?? o.sent_at?.slice(0, 10) ?? "unknown");
+      if (!map.has(dateKey)) map.set(dateKey, []);
+      map.get(dateKey)!.push(o);
+    }
+    // 날짜 desc 정렬 (최신 날짜 위)
+    const sortedEntries = Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
+    return sortedEntries;
+  }, [sortedOrders]);
+
+  // 첫 로드 · 최신 날짜 자동 open
+  React.useEffect(() => {
+    if (!datesInitialized && groupedByDate.length > 0) {
+      const latest = groupedByDate[0][0];
+      setExpandedDates(new Set([latest]));
+      setDatesInitialized(true);
+    }
+  }, [groupedByDate, datesInitialized]);
+
+  const toggleDate = (dateKey: string) => setExpandedDates(prev => {
+    const next = new Set(prev);
+    if (next.has(dateKey)) next.delete(dateKey);
+    else next.add(dateKey);
+    return next;
+  });
+
+  // 그룹별 요약 (건수 · 총 금액 · 총 종·수량)
+  function groupSummary(orders: OrderHistoryOrder[]): { count: number; totalAmount: number; totalItems: number; totalQty: number } {
+    let totalAmount = 0, totalItems = 0, totalQty = 0;
+    for (const o of orders) {
+      totalAmount += Number(o.total_amount ?? 0);
+      totalItems += o.items.length;
+      totalQty += Number(o.total_qty ?? 0);
+    }
+    return { count: orders.length, totalAmount, totalItems, totalQty };
+  }
+
   // 2026-09-17 · 짧은 날짜 포맷 (2026-09-18 · lib/dateFormat.ts 로 추출 · 재사용·테스트 지원)
 
   return (
@@ -379,11 +427,41 @@ export const OrderHistoryTab: React.FC = () => {
               <span className="w-[60px] text-right shrink-0" aria-hidden>PDF</span>
               <span className="w-[104px] text-right shrink-0" aria-hidden>매입확인</span>
             </div>
-            {sortedOrders.map((o) => {
-              const key = String(o.order_number ?? o.sent_at);
-              const isOpen = expanded.has(key);
+            {/* 2026-09-24 · 사용자 지시 · 최신 트렌드 · 발주이력 날짜별 그룹핑
+                · 날짜 헤더 클릭 → 그 날의 모든 공급사 발주 · 상세내역 한꺼번에 노출 */}
+            {groupedByDate.map(([dateKey, ordersOfDate]) => {
+              const summary = groupSummary(ordersOfDate);
+              const displayDate = dateKey === "unknown" ? "날짜 없음" : dateKey;
+              const isDateOpen = expandedDates.has(dateKey);
               return (
-                <div key={key} className="hover:bg-zinc-50/40 transition">
+                <React.Fragment key={`date-group-${dateKey}`}>
+                  {/* 날짜 그룹 헤더 · 클릭 토글 · 세션 요약 */}
+                  <button
+                    type="button"
+                    onClick={() => toggleDate(dateKey)}
+                    className="sticky top-[41px] z-[9] w-full bg-brand-tint/50 hover:bg-brand-tint/70 backdrop-blur-sm border-y border-brand-deep/25 px-4 py-2.5 flex items-center gap-3 text-[15px] font-bold text-brand-deep cursor-pointer transition"
+                  >
+                    {isDateOpen
+                      ? <ChevronDown size={16} strokeWidth={2.4} />
+                      : <ChevronRight size={16} strokeWidth={2.4} />
+                    }
+                    <Calendar size={15} strokeWidth={2.4} />
+                    <span className="text-[16px]">#PO-{displayDate}</span>
+                    <StatusPill tone="brand" size="sm">{summary.count}건</StatusPill>
+                    <span className="text-[14px] text-zinc-600 font-semibold">
+                      {summary.totalItems}종 · {summary.totalQty.toLocaleString()}개
+                    </span>
+                    <span className="ml-auto text-[16px] font-bold text-emerald-700 tabular-nums">
+                      {fmtWon(summary.totalAmount)}
+                    </span>
+                  </button>
+                  {isDateOpen && ordersOfDate.map((o) => {
+                    const key = String(o.order_number ?? o.sent_at);
+                    // 2026-09-24 · 사용자 지시 · 날짜 그룹 안 · 모든 PO · 상세내역 자동 노출 (한꺼번에)
+                    //   · isOpen 개별 토글 · 유지 · but default true (사용자 명시적 접기 가능)
+                    const isOpen = !expanded.has(`__collapsed:${key}`);
+                    return (
+                      <div key={key} className="hover:bg-zinc-50/40 transition">
                   {/* 2026-09-17 · 사용자 지시 · 한 줄 헤더 · 발주번호(위)+공급사(아래) · 발주일 26/9/11 · 희망 · 총금액 · PDF · 매입확인 */}
                   <button
                     type="button"
@@ -510,6 +588,9 @@ export const OrderHistoryTab: React.FC = () => {
                     </div>
                   )}
                 </div>
+              );
+              })}
+              </React.Fragment>
               );
             })}
           </div>
