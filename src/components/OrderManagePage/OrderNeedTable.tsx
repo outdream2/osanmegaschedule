@@ -299,10 +299,16 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                           value={orderQtyOverride?.get(code) ?? Math.max(1, opt - cur)}
                           onChange={(v) => {
                             if (!setOrderQtyOverride) return;
-                            const n = typeof v === "number" ? v : Math.max(1, opt - cur);
+                            // 2026-09-24 · E-011 · 사용자 지시 · 빈 값 or 0 이하 · Map 삭제 (default 로 폴백)
+                            //   · 이전 · 빈 값 시 · Math.max(1, opt-cur) 강제 저장 · 사용자 새 값 입력 불가
+                            //   · 이후 · 빈 값 · 삭제 · default (opt-cur) 재계산 · StepperInput onFocus 전체선택 UX 협력
                             setOrderQtyOverride(prev => {
                               const next = new Map(prev);
-                              next.set(code, n);
+                              if (v === "" || (typeof v === "number" && v <= 0)) {
+                                next.delete(code);
+                              } else if (typeof v === "number") {
+                                next.set(code, v);
+                              }
                               return next;
                             });
                           }}

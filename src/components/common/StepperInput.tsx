@@ -130,6 +130,10 @@ export const StepperInput: React.FC<StepperInputProps> = ({
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+        // 2026-09-24 · E-011 · 사용자 보고 · 수량 변경 · 일의 자리 지워지지 않음
+        //   · 원인 · min={1} 부모 clamp · backspace 로 clear → 즉시 default 로 복귀 · 사용자 · 새 값 타이핑 불가
+        //   · fix · onFocus 시 · 전체 선택 · 사용자 · 즉시 새 값 타이핑 가능 (표준 numeric input UX)
+        onFocus={(e) => e.target.select()}
         placeholder={placeholder}
         style={inputChWidth != null ? { width: `${inputChWidth}ch`, minWidth: "4ch" } : undefined}
         className={[
