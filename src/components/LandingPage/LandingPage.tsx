@@ -325,17 +325,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     // 2026-08-26 · 사용자 지시 · 랜딩페이지 · 전역 폰트 +2 스케일 제외 · data-scope 로 격리
     <div data-scope="landing" className="min-h-screen flex flex-col bg-zinc-50">
 
-      {/* 세션 만료 안내 배너 (30분 무활동 자동 로그아웃 · 8초 후 자동 닫힘) */}
+      {/* 세션 만료 안내 배너 · 2026-09-24 · 사용자 지시 · 크게 · 명확 */}
       {sessionExpiredNotice && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-amber-50 border border-amber-300 text-amber-900 rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 max-w-md animate-pulse">
-          <span className="text-lg">⏱️</span>
-          <div className="flex-1">
-            <p className="text-base font-bold">세션이 만료되었습니다</p>
-            <p className="text-sm text-amber-700 mt-0.5">30분간 활동이 없어 자동 로그아웃되었습니다. 다시 로그인해 주세요.</p>
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] bg-amber-50 border-2 border-amber-300 text-amber-900 rounded-2xl shadow-2xl px-6 py-5 flex items-center gap-4 max-w-2xl w-[calc(100%-2rem)]">
+          <span className="text-4xl shrink-0">⏱️</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[20px] font-extrabold tracking-tight">세션이 만료되었습니다</p>
+            <p className="text-[16px] text-amber-800 mt-1 leading-relaxed">30분간 활동이 없어 자동 로그아웃되었습니다. 다시 로그인해 주세요.</p>
           </div>
           <button
             onClick={() => setSessionExpiredNotice(false)}
-            className="text-amber-500 hover:text-amber-800 text-xl leading-none"
+            className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-amber-500 hover:text-amber-900 hover:bg-amber-100 text-2xl font-bold leading-none transition cursor-pointer"
             aria-label="닫기"
           >×</button>
         </div>
