@@ -88,30 +88,27 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
               <div className="text-[13px] text-zinc-400 tabular-nums font-medium">
                 #{o.order_number ?? "—"}
               </div>
-              {/* 공급사명 · 크게 */}
-              <div className="text-[17px] font-bold text-zinc-800 whitespace-normal break-words leading-snug">
-                {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
+              {/* 2026-09-24 · 사용자 지시 · 공급사 옆에 · 담당자·전화·이메일 · 한 줄 인라인 */}
+              <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 leading-snug">
+                <span className="text-[17px] font-bold text-zinc-800 whitespace-normal break-words">
+                  {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
+                </span>
+                {o.supplier_contact && (
+                  <span className="inline-flex items-center gap-0.5 text-[13px] text-zinc-600">
+                    <User size={11} className="text-zinc-400" />{o.supplier_contact}
+                  </span>
+                )}
+                {o.supplier_phone && (
+                  <span className="inline-flex items-center gap-0.5 text-[13px] text-zinc-600 tabular-nums">
+                    <Phone size={11} className="text-zinc-400" />{o.supplier_phone}
+                  </span>
+                )}
+                {o.supplier_email && (
+                  <span className="inline-flex items-center gap-0.5 text-[13px] text-zinc-600 truncate max-w-[220px]">
+                    <Mail size={11} className="text-zinc-400" />{o.supplier_email}
+                  </span>
+                )}
               </div>
-              {/* 2026-09-24 · 사용자 지시 · 담당자·이메일·전화 · 공급사 옆으로 이동 · 상세에서 제거 */}
-              {(o.supplier_contact || o.supplier_email || o.supplier_phone) && (
-                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[12px] text-zinc-500">
-                  {o.supplier_contact && (
-                    <span className="inline-flex items-center gap-0.5">
-                      <User size={11} className="text-zinc-400" />{o.supplier_contact}
-                    </span>
-                  )}
-                  {o.supplier_phone && (
-                    <span className="inline-flex items-center gap-0.5 tabular-nums">
-                      <Phone size={11} className="text-zinc-400" />{o.supplier_phone}
-                    </span>
-                  )}
-                  {o.supplier_email && (
-                    <span className="inline-flex items-center gap-0.5 truncate max-w-[220px]">
-                      <Mail size={11} className="text-zinc-400" />{o.supplier_email}
-                    </span>
-                  )}
-                </div>
-              )}
               {/* 날짜범위 · 종·수량 · 금액 */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[14px] text-zinc-500 tabular-nums mt-0.5">
                 <span className="text-zinc-400">{dateRange(o.order_date, o.desired_arrival)}</span>
