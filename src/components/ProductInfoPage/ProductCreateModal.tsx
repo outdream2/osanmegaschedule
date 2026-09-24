@@ -103,6 +103,8 @@ interface Props {
     manufacturer: string | null;
     // 2026-09-18 · 사용자 지시 · 편집 모달 · 판매 상태 (판매중/판매중지/숨김) 편집 지원
     sale_status: string | null;
+    // 2026-09-24 · 메모 · products.memo 별도 컬럼
+    memo: string | null;
   }>;
 }
 
@@ -135,6 +137,8 @@ type Form = {
   manufacturer: string;
   // 2026-09-18 · 사용자 지시 · 편집 모달 · 판매 상태 (판매중/판매중지/숨김) 필드
   sale_status: string;
+  // 2026-09-24 · 메모 · products.memo 컬럼 (category 와 분리)
+  memo: string;
 };
 
 const EMPTY_SHELF: ShelfPositionsDraft = {
@@ -158,6 +162,8 @@ const EMPTY: Form = {
   manufacturer: "",
   // 2026-09-18 · 신규 등록 · 기본 판매중
   sale_status: "판매중",
+  // 2026-09-24 · 메모 · products.memo 별도 컬럼
+  memo: "",
 };
 
 // 문자열 → 숫자 (빈 문자열 → null)
@@ -262,6 +268,8 @@ export const ProductCreateModal: React.FC<Props> = ({
         manufacturer: initialProduct.manufacturer ?? "",
         // 2026-09-18 · 편집 모드 · 판매 상태 초기화 · 기본 판매중
         sale_status: initialProduct.sale_status ?? "판매중",
+        // 2026-09-24 · 메모 · products.memo 별도 컬럼
+        memo: initialProduct.memo ?? "",
       });
     } else {
       setForm({
@@ -351,6 +359,8 @@ export const ProductCreateModal: React.FC<Props> = ({
         // 2026-09-18 · 사용자 지시 · 편집 모달 · 판매 상태 편집 지원 · form 값 사용
         //   · 신규 등록 · EMPTY 기본 '판매중'
         sale_status: form.sale_status.trim() || "판매중",
+        // 2026-09-24 · 메모 · products.memo 별도 컬럼
+        memo: form.memo.trim() || null,
       };
       // 2026-09-18 · 상세구역 저장 · 5슬롯 전부 PATCH · null = 해당 위치 삭제
       const savedCode = form.product_code.trim();
@@ -637,16 +647,16 @@ export const ProductCreateModal: React.FC<Props> = ({
                     <input type="text" {...KO_INPUT_PROPS} value={form.manufacturer} onChange={(e) => set("manufacturer", e.target.value)} className={inputCls} placeholder="예: 한미약품" maxLength={100} />
                   </Field>
                 </div>
-                {/* 4. 메모 · full-width · 분류코드 통합 (자유 텍스트) */}
+                {/* 4. 메모 · full-width · products.memo 컬럼 (category 와 분리) */}
                 <div className="mt-4">
                   <Field icon={<Tags size={14} />} label="메모">
                     <input
                       type="text" {...KO_INPUT_PROPS}
-                      value={form.category}
-                      onChange={(e) => set("category", e.target.value)}
+                      value={form.memo}
+                      onChange={(e) => set("memo", e.target.value)}
                       className={inputCls}
-                      placeholder="분류·비고 등 자유 메모 (예: 감기약)"
-                      maxLength={200}
+                      placeholder="비고·메모 자유 입력 (예: 냉장 보관, 취급주의)"
+                      maxLength={500}
                     />
                   </Field>
                 </div>

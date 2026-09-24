@@ -10,12 +10,12 @@ import { Spinner } from "./Spinner";
 import { StatusPill } from "./StatusPill";
 import type { ProductDetail } from "../ProductInfoPage/ProductInfoPage";
 
-const readCls = "text-[16px] font-medium text-ink";
+const readCls = "text-[17px] font-medium text-ink";
 const emptyCls = "text-[15px] text-zinc-300";
 
 const Row: React.FC<{ icon: React.ReactNode; label: string; value: React.ReactNode }> = ({ icon, label, value }) => (
   <div className="flex flex-col gap-1 py-2.5 border-b border-zinc-100 last:border-b-0">
-    <div className="flex items-center gap-1.5 text-[12px] font-semibold text-zinc-500 uppercase tracking-wider">
+    <div className="flex items-center gap-1.5 text-[15px] font-semibold text-zinc-500 uppercase tracking-wider">
       <span className="text-brand-deep">{icon}</span>
       {label}
     </div>
@@ -105,7 +105,7 @@ export const ProductInfoModalStyleView: React.FC<Props> = ({ product, loading, e
         {shelfEntries.length > 0 && (
           <FullRow>
             <div className="flex flex-col gap-1 py-2.5 border-b border-zinc-100">
-              <div className="flex items-center gap-1.5 text-[12px] font-semibold text-zinc-500 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-[15px] font-semibold text-zinc-500 uppercase tracking-wider">
                 <span className="text-brand-deep"><MapPin size={13} strokeWidth={2.4} /></span>
                 상세 위치
               </div>
@@ -125,7 +125,7 @@ export const ProductInfoModalStyleView: React.FC<Props> = ({ product, loading, e
         <Row icon={<Award size={13} strokeWidth={2.4} />} label="브랜드" value={fmt(p.brand)} />
         <Row icon={<Factory size={13} strokeWidth={2.4} />} label="제조사" value={fmt(p.manufacturer)} />
         <FullRow>
-          <Row icon={<Tags size={13} strokeWidth={2.4} />} label="메모" value={fmt(p.category)} />
+          <Row icon={<Tags size={13} strokeWidth={2.4} />} label="메모" value={fmt(p.memo)} />
         </FullRow>
       </Section>
     </div>
