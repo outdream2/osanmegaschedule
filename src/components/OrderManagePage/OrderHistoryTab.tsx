@@ -541,24 +541,27 @@ export const OrderHistoryTab: React.FC = () => {
                                       <div className="text-[12px] text-zinc-400 tabular-nums font-medium leading-none mb-0.5">
                                         #{o.order_number ?? "—"}
                                       </div>
-                                      {/* 2026-09-24 · 사용자 지시 · 공급사 옆에 · 담당자·전화·이메일 · 한 줄 인라인 */}
+                                      {/* 2026-09-24 · 사용자 지시 · 공급사 옆에 · 담당자·전화·이메일 · 한 줄 인라인 · 라벨 텍스트 */}
                                       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 leading-snug">
-                                        <span className="text-[16px] font-bold text-zinc-800 whitespace-normal break-words">
-                                          {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
+                                        <span className="inline-flex items-baseline gap-1">
+                                          <span className="text-[11px] text-zinc-400 font-semibold">공급사</span>
+                                          <span className="text-[16px] font-bold text-zinc-800 whitespace-normal break-words">
+                                            {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
+                                          </span>
                                         </span>
                                         {o.supplier_contact && (
-                                          <span className="inline-flex items-center gap-0.5 text-[13px] text-zinc-600">
-                                            <User size={11} className="text-zinc-400" />{o.supplier_contact}
+                                          <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600">
+                                            <span className="text-[11px] text-zinc-400 font-semibold">담당자</span>{o.supplier_contact}
                                           </span>
                                         )}
                                         {o.supplier_phone && (
-                                          <span className="inline-flex items-center gap-0.5 text-[13px] text-zinc-600 tabular-nums">
-                                            <Phone size={11} className="text-zinc-400" />{o.supplier_phone}
+                                          <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600 tabular-nums">
+                                            <span className="text-[11px] text-zinc-400 font-semibold">연락처</span>{o.supplier_phone}
                                           </span>
                                         )}
                                         {o.supplier_email && (
-                                          <span className="inline-flex items-center gap-0.5 text-[13px] text-zinc-600 truncate max-w-[220px]">
-                                            <Mail size={11} className="text-zinc-400" />{o.supplier_email}
+                                          <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600 truncate max-w-[240px]">
+                                            <span className="text-[11px] text-zinc-400 font-semibold">이메일</span>{o.supplier_email}
                                           </span>
                                         )}
                                       </div>
@@ -628,27 +631,24 @@ export const OrderHistoryTab: React.FC = () => {
                                               메모 · {o.memo}
                                             </div>
                                           )}
-                                          {/* 아이템 테이블 */}
+                                          {/* 아이템 테이블 · 2026-09-24 · 사용자 지시 · 헤더 최신 트렌드 (Linear/Notion) · 작고 세련되게 */}
                                           <table className="w-full text-[15px] tabular-nums">
-                                            <thead className={tableHeadCls()}>
-                                              <tr>
-                                                <th className={tableThCls("center", "w-8")}>#</th>
-                                                <th className={tableThCls("left", "w-24")} title="상품 코드 (뒤 4자리)">코드</th>
-                                                <th className={tableThCls("left", "min-w-[200px]")}>상품명</th>
-                                                <th className={tableThCls("num", "w-14")}>수량</th>
-                                                <th className={tableThCls("num", "w-24")}>단가</th>
-                                                <th className={tableThCls("num", "w-28")}>금액</th>
+                                            <thead>
+                                              <tr className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider border-b border-zinc-200">
+                                                <th className="text-center px-2 py-1.5 w-8">#</th>
+                                                <th className="text-left px-2 py-1.5 min-w-[120px]">코드</th>
+                                                <th className="text-left px-2 py-1.5 min-w-[200px]">상품명</th>
+                                                <th className="text-right px-2 py-1.5 w-14">수량</th>
+                                                <th className="text-right px-2 py-1.5 w-24">단가</th>
+                                                <th className="text-right px-2 py-1.5 w-28">금액</th>
                                               </tr>
                                             </thead>
                                             <tbody className="divide-y divide-zinc-100">
                                               {o.items.map((it, i) => (
                                                 <tr key={it.id} className="hover:bg-sky-50/20">
                                                   <td className={tableTdCls("center", "text-zinc-400 text-[13px]")}>{i + 1}</td>
-                                                  <td
-                                                    className={tableTdCls("left", "text-zinc-400 text-[13px] tabular-nums font-medium")}
-                                                    title={it.product_code}
-                                                  >
-                                                    {shortCode(it.product_code)}
+                                                  <td className={tableTdCls("left", "text-zinc-500 text-[13px] tabular-nums font-medium whitespace-nowrap")}>
+                                                    {it.product_code}
                                                   </td>
                                                   <td className={tableTdCls("left", "text-zinc-800 font-semibold whitespace-normal break-words")}>{it.product_name}</td>
                                                   <td className={tableTdCls("num", "font-bold text-rose-600")}>{it.order_qty}</td>

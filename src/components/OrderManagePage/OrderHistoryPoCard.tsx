@@ -88,24 +88,27 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
               <div className="text-[13px] text-zinc-400 tabular-nums font-medium">
                 #{o.order_number ?? "—"}
               </div>
-              {/* 2026-09-24 · 사용자 지시 · 공급사 옆에 · 담당자·전화·이메일 · 한 줄 인라인 */}
+              {/* 2026-09-24 · 사용자 지시 · 공급사 옆 · 담당자·연락처·이메일 인라인 · 라벨 텍스트 */}
               <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5 leading-snug">
-                <span className="text-[17px] font-bold text-zinc-800 whitespace-normal break-words">
-                  {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
+                <span className="inline-flex items-baseline gap-1">
+                  <span className="text-[11px] text-zinc-400 font-semibold">공급사</span>
+                  <span className="text-[17px] font-bold text-zinc-800 whitespace-normal break-words">
+                    {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
+                  </span>
                 </span>
                 {o.supplier_contact && (
-                  <span className="inline-flex items-center gap-0.5 text-[13px] text-zinc-600">
-                    <User size={11} className="text-zinc-400" />{o.supplier_contact}
+                  <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600">
+                    <span className="text-[11px] text-zinc-400 font-semibold">담당자</span>{o.supplier_contact}
                   </span>
                 )}
                 {o.supplier_phone && (
-                  <span className="inline-flex items-center gap-0.5 text-[13px] text-zinc-600 tabular-nums">
-                    <Phone size={11} className="text-zinc-400" />{o.supplier_phone}
+                  <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600 tabular-nums">
+                    <span className="text-[11px] text-zinc-400 font-semibold">연락처</span>{o.supplier_phone}
                   </span>
                 )}
                 {o.supplier_email && (
-                  <span className="inline-flex items-center gap-0.5 text-[13px] text-zinc-600 truncate max-w-[220px]">
-                    <Mail size={11} className="text-zinc-400" />{o.supplier_email}
+                  <span className="inline-flex items-center gap-1 text-[13px] text-zinc-600 truncate max-w-[240px]">
+                    <span className="text-[11px] text-zinc-400 font-semibold">이메일</span>{o.supplier_email}
                   </span>
                 )}
               </div>
@@ -168,11 +171,8 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
                     className="flex items-baseline gap-2 py-1.5 border-b border-zinc-100 last:border-0"
                   >
                     <span className="text-[12px] text-zinc-400 tabular-nums w-4 shrink-0 text-center">{i + 1}</span>
-                    <span
-                      className="text-[12px] text-zinc-400 tabular-nums shrink-0"
-                      title={it.product_code}
-                    >
-                      {shortCode(it.product_code)}
+                    <span className="text-[12px] text-zinc-500 tabular-nums shrink-0 whitespace-nowrap">
+                      {it.product_code}
                     </span>
                     <span className="flex-1 text-[14px] font-medium text-zinc-700 whitespace-normal break-words leading-snug">
                       {it.product_name}
