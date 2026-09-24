@@ -54,6 +54,8 @@ export type AppNavPage =
   | "system-settings"
   // 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 전환 (VendorStockPage)
   | "vendor-stock"
+  // 2026-09-24 · #352 · 거래처 로그인 · 자기 발주이력 확인 페이지 (VendorOrderHistoryPage)
+  | "vendor-order-history"
   // 2026-09-04 · 스케줄 설정 (기본연차일 등)
   | "schedule-settings"
   // 2026-09-07 · 발주 설정 (SMTP·이메일)

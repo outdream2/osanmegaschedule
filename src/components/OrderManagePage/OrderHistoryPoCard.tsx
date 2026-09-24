@@ -56,10 +56,16 @@ export interface OrderHistoryPoCardProps {
   isOpen: boolean;
   onToggle: () => void;
   onPdf: () => void;
-  onMatch: () => void;
+  onMatch?: () => void;
   pdfLoading: boolean;
-  matchLoading: boolean;
+  matchLoading?: boolean;
   fmtWon: (n: number) => string;
+  /**
+   * 2026-09-24 · #352 · 거래처(vendor) 로그인 · 매입확인 액션 숨김
+   *   · vendor 는 조회 전용 · 매입확인은 약국(admin) 만 수행
+   *   · 매입완료 배지는 유지 (상태 표시 · 이력 시각화)
+   */
+  hideMatchAction?: boolean;
 }
 
 /**
@@ -68,7 +74,7 @@ export interface OrderHistoryPoCardProps {
  *   · 펼치면 담당자 정보 + 아이템 목록
  */
 export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
-  o, isOpen, onToggle, onPdf, onMatch, pdfLoading, matchLoading, fmtWon,
+  o, isOpen, onToggle, onPdf, onMatch, pdfLoading, matchLoading, fmtWon, hideMatchAction,
 }) => {
   const isMatched = o.status === "matched";
   return (
@@ -127,14 +133,17 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
             </div>
           </button>
 
-          {/* 액션 버튼 행 · 2026-09-24 · 사용자 지시 · 줄바꿈 X · 말줄임표 X · 세련 */}
+          {/* 액션 버튼 행 · 2026-09-24 · 사용자 지시 · 줄바꿈 X · 말줄임표 X · 세련
+              · #352 · hideMatchAction · vendor 조회 전용 시 · 매입확인 버튼 렌더 X · 매입완료 배지는 유지 */}
           <div className="px-3.5 pb-3 flex items-center gap-2">
             {isMatched ? (
               <StatusPill tone="emerald" size="sm" dot>매입완료</StatusPill>
+            ) : hideMatchAction ? (
+              <StatusPill tone="sky" size="sm" dot>발주완료</StatusPill>
             ) : (
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); onMatch(); }}
+                onClick={(e) => { e.stopPropagation(); onMatch?.(); }}
                 disabled={matchLoading}
                 className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg bg-gradient-to-b from-emerald-50 to-emerald-100 border border-emerald-200 text-[13px] font-bold text-emerald-700 whitespace-nowrap shadow-sm hover:from-emerald-100 hover:to-emerald-150 hover:border-emerald-300 hover:shadow active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
               >

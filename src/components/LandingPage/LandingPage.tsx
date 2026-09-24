@@ -37,6 +37,8 @@ import {
   Chat,
   ChatCircle,
   FirstAid,
+  // 2026-09-24 · #352 · 거래처 발주이력 확인 · Truck 아이콘
+  Truck,
 } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
@@ -702,6 +704,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         if (isVendor && vendorSelf) { onNavigate("vendor-stock", authSession!); return; }
                         if (isSuperAdminLevel9) {
                           try { localStorage.setItem(SK_SUBTAB_DISPLAY, "vendor-manage"); } catch { /* silent */ }
+                          onNavigate("display", authSession!);
+                        }
+                      }}
+                    />
+                  );
+                })()}
+                {/* 2026-09-24 · #352 · 사용자 지시 · 거래처 로그인 · 자기 발주이력 확인 (신규)
+                    · vendor 조회 전용 · 자기 회사 발주만 · 매입확인 없음 · PDF 다운
+                    · 승인 상태 gate · vendor-stock 과 동일 (승인 후만 활성) */}
+                {(isVendor || isSuperAdminLevel9) && (() => {
+                  const vendorApproved = isVendor && vendorSelf && (vendorSelf as any).approval_status === "approved";
+                  const approvalStatus = isVendor ? ((vendorSelf as any)?.approval_status ?? "pending") : "approved";
+                  const disabled = isVendor && !vendorApproved;
+                  const label =
+                    approvalStatus === "approved" ? "자기 회사에 온 발주내역 조회"
+                    : approvalStatus === "pending"  ? "🔒 관리자 승인 대기 중 · 승인 후 사용 가능"
+                    : approvalStatus === "rejected" ? "🚫 승인 거절 · 관리자 문의"
+                    : "🔒 공급사 정보 등록 후 · 승인 요청 필요";
+                  return (
+                    <MenuCard
+                      color={disabled ? "zinc" : "coral"}
+                      icon={Truck}
+                      title="발주이력 확인"
+                      description={label}
+                      disabled={disabled}
+                      onClick={() => {
+                        if (isVendor && vendorSelf) { onNavigate("vendor-order-history", authSession!); return; }
+                        if (isSuperAdminLevel9) {
+                          // admin/manager 는 매장 > 발주 페이지로 (관리자용 이력)
+                          try { localStorage.setItem(SK_SUBTAB_DISPLAY, "purchase-order"); } catch { /* silent */ }
                           onNavigate("display", authSession!);
                         }
                       }}

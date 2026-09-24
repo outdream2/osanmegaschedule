@@ -132,6 +132,9 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "reservation", label: "방문예약",       icon: CalendarDots, color: "emerald" },
       { key: "display",     label: "공급사 정보",     icon: Buildings,    color: "emerald", subTab: "vendor-manage" },
       { key: "vendor-stock", label: "공급사 재고확인", icon: Package,      color: "emerald" },
+      // 2026-09-24 · #352 · 사용자 지시 · 거래처 로그인 · 자기 발주이력 확인 (신규)
+      //   · vendor 조회 전용 · 서버 필터 · 자기 회사 발주만 · 매입확인 없음 · PDF 다운 가능
+      { key: "vendor-order-history", label: "발주이력 확인", icon: Truck, color: "emerald" },
     ],
   },
   {
@@ -315,7 +318,8 @@ export function canAccessItem(
   //   · 이후 · whitelist 방식 · reservation/display(공급사정보)/landing(공급사재고) 허용
   //   · display 는 subTab === "vendor-manage" 인 경우만 vendor 허용 (다른 display 서브탭은 관리자 전용)
   // 2026-09-04 · #23 · vendor-stock 전용 페이지 추가 (모달 → 페이지 이관)
-  const VENDOR_ALLOWED_KEYS: readonly string[] = ["landing", "reservation", "display", "vendor-stock"];
+  // 2026-09-24 · #352 · vendor-order-history 추가 · 거래처 자기 발주이력 확인
+  const VENDOR_ALLOWED_KEYS: readonly string[] = ["landing", "reservation", "display", "vendor-stock", "vendor-order-history"];
   if (isVendor) {
     if (!VENDOR_ALLOWED_KEYS.includes(String(item.key))) return false;
     // display 는 vendor-manage 서브탭만 vendor 허용

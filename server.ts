@@ -43,6 +43,8 @@ import leaveRouter       from "./server/routes/daily/leave";
 import lunchRouter       from "./server/routes/daily/lunch";
 import reservationsRouter from "./server/routes/daily/reservations";
 import vendorsRouter     from "./server/routes/purchase/vendors";
+// 2026-09-24 · #352 · 거래처 로그인 · 자기 발주이력 확인 (조회 전용 · session.role=vendor 게이트)
+import vendorOrderHistoryRouter from "./server/routes/vendor/orderHistory";
 import ocrRouter         from "./server/routes/ocr/ocr";
 // 2026-08-05 · 재고세기(YOLO) 기능 완전 제거 · stockCount·stockCounter·stockCounterConfig 파일 삭제됨
 import stockManageRouter from "./server/routes/stock/stockManage";
@@ -299,6 +301,8 @@ async function startServer() {
   app.use(lunchRouter);
   app.use(reservationsRouter);
   app.use(vendorsRouter);
+  // 2026-09-24 · #352 · 거래처 발주이력 · authorize(0) + role=vendor 내부 게이트
+  app.use(vendorOrderHistoryRouter);
   app.use(boardRouter);
   app.use(vatRouter);
   // 2026-08-31 · #16 · referenceValuesRouter 이중 등록 제거 · public 구역 (line 169) 에서 이미 처리

@@ -11,6 +11,8 @@ import SchedulePage from "./components/SchedulePage";
 import { LandingPage } from "./components/LandingPage";
 // 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 전환
 import { VendorStockPage } from "./components/LandingPage/VendorStockPage";
+// 2026-09-24 · #352 · 거래처 로그인 · 자기 발주이력 확인 페이지 (신규)
+import { VendorOrderHistoryPage } from "./components/LandingPage/VendorOrderHistoryPage";
 import { ReservationPage } from "./components/ReservationPage";
 import { DisplayPage } from "./components/DisplayPage";
 import { ScanPage } from "./components/ScanPage/ScanPage";
@@ -357,6 +359,10 @@ export default function App() {
     // 2026-09-04 · #23 · vendor 로그인 시 employeeName → vendorName
     "vendor-stock": () => (
       <VendorStockPage {...commonProps} vendorName={authSession?.employeeName ?? ""} />
+    ),
+    // 2026-09-24 · #352 · 거래처 자기 발주이력 조회 (vendor 세션만 · 서버 필터 · 다른 vendor 노출 X)
+    "vendor-order-history": () => (
+      <VendorOrderHistoryPage {...commonProps} />
     ),
     "zone-labels": () => (
       <React.Suspense fallback={<PageFallback />}>

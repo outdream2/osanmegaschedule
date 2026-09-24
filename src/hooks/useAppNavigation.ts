@@ -16,7 +16,9 @@ export type Page =
   | "zone-labels" | "business-manage" | "hr-forms" | "pharmacist"
   | "approval-request" | "branding" | "company-info" | "season-settings"
   | "system-settings" | "vendor-stock" | "schedule-settings"
-  | "order-settings" | "settings-hub";
+  | "order-settings" | "settings-hub"
+  // 2026-09-24 · #352 · 거래처 발주이력 확인 페이지
+  | "vendor-order-history";
 
 interface UseAppNavigationOpts {
   authSession: AuthSession | null;
