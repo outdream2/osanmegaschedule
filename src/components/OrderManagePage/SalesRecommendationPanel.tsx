@@ -333,16 +333,29 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
               </div>
             )}
           </div>
-          {/* 임박 이벤트 리스트 · 상단 (#55) */}
+          {/* 임박 이벤트 리스트 · 상단 (#55)
+              · 2026-09-24 · E-014 · 사용자 지시 · 중복 공휴일 dedupe
+              · 대체공휴일(광복절)·(개천절) 등 · 원본 명절 이름 포함된 것 · 원본 있으면 hide */}
           {eventsToday.length > 0 && (() => {
-            const expandableCount = eventsToday.filter(ev => (ev.products?.length ?? ev.product_count ?? 0) > 0).length;
+            const eventNames = new Set(eventsToday.map(e => (e.name ?? "").replace(/\s+/g, "")));
+            const dedupedEvents = eventsToday.filter(e => {
+              const nm = String(e.name ?? "");
+              // 대체공휴일 · 괄호 안 원본 이벤트가 이미 리스트에 있으면 skip
+              const m = nm.match(/^대체공휴일\s*\(\s*([^)]+)\s*\)/);
+              if (m) {
+                const original = m[1].trim().replace(/\s+/g, "");
+                if (eventNames.has(original)) return false;
+              }
+              return true;
+            });
+            const expandableCount = dedupedEvents.filter(ev => (ev.products?.length ?? ev.product_count ?? 0) > 0).length;
             const allExpanded = expandableCount > 0 && expandedEvents.size >= expandableCount;
             return (
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-1.5 pb-1.5 border-b border-line">
                 <Sparkles size={14} className="text-brand-deep" />
                 <span className="text-[16px] font-bold text-ink">진행중·임박 이벤트</span>
-                <span className="text-[14px] tabular-nums text-zinc-400 font-medium">{eventsToday.length}건</span>
+                <span className="text-[14px] tabular-nums text-zinc-400 font-medium">{dedupedEvents.length}건</span>
                 {expandableCount > 0 && (
                   <button
                     type="button"
@@ -361,11 +374,11 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                 <br />
                 등록된 상품이 없는 이벤트는 <span className="font-semibold text-brand-deep">통계설정 → 계절별 추천 상품</span> 에서 상품을 등록하세요.
               </div>
-              {eventsToday.map(ev => {
+              {dedupedEvents.map(ev => {
                 const tone = TYPE_TONE[ev.type] ?? TYPE_TONE.custom;
                 const d = dayDiff(ev.start_date);
-                const isSoon = d != null && d > 0 && d <= 30;
-                const isNow = d != null && d <= 0;
+                // 2026-09-24 · E-014 · isSoon·isNow 배지 제거 · d 만 사용 안 함 (leave declarations 사용 X)
+                void d;
                 const evProducts = ev.products ?? [];
                 const productCount = evProducts.length || ev.product_count || 0;
                 const isExpanded = expandedEvents.has(ev.id);
@@ -389,8 +402,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                           {ev.end_date && ev.end_date !== ev.start_date && ` ~ ${ev.end_date}`}
                         </span>
                       )}
-                      {isNow && <StatusPill tone="rose" size="sm" dot pulse>진행중</StatusPill>}
-                      {isSoon && <StatusPill tone="amber" size="sm">D-{d}</StatusPill>}
+                      {/* 2026-09-24 · E-014 · 사용자 지시 · 진행중·D-N 배지 제거 (필요없음) */}
                       {productCount > 0 && (
                         <span className="ml-auto inline-flex items-center gap-1 text-[14px] font-semibold tabular-nums">
                           상품 {productCount}개

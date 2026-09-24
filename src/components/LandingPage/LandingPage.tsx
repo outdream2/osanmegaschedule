@@ -139,7 +139,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [showVendorSelf, setShowVendorSelf] = useState(false);
   // 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 (VendorStockPage) 이관
   //   · showVendorStock 상태 제거 · 버튼 클릭 시 onNavigate("vendor-stock") 호출
-  const { vendors: _rawVendorsSelf, refresh: refreshVendorsSelf } = useVendors();
+  // 2026-09-24 · E-013 · 사용자 보고 · 초기 vendor 로그인 시 · vendorSelf null · 버튼 비활성
+  //   · useVendors · loading state 활용 · 로딩 중엔 별도 label · 승인 판정 지연 방지
+  const { vendors: _rawVendorsSelf, refresh: refreshVendorsSelf, loading: vendorsLoading } = useVendors();
   const vendorSelf = useMemo<VendorFull | null>(() => {
     if (!authSession || authSession.role !== "vendor") return null;
     const list = _rawVendorsSelf as unknown as VendorFull[];
@@ -682,13 +684,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       }
                     }} />
                 )}
-                {/* 2026-08-26 · #192 · 거래처 승인 gate · approval_status="approved" 만 활성 */}
+                {/* 2026-08-26 · #192 · 거래처 승인 gate · approval_status="approved" 만 활성
+                    2026-09-24 · E-013 · 로딩 중 · label "정보 확인 중..." · disabled 로직 개선 */}
                 {(isVendor || isSuperAdminLevel9) && (() => {
                   const vendorApproved = isVendor && vendorSelf && (vendorSelf as any).approval_status === "approved";
+                  const isLoadingVendor = isVendor && vendorsLoading && !vendorSelf;
                   const approvalStatus = isVendor ? ((vendorSelf as any)?.approval_status ?? "pending") : "approved";
                   const disabled = isVendor && !vendorApproved;
-                  const label =
-                    approvalStatus === "approved" ? "상품별 재고 현황 조회"
+                  const label = isLoadingVendor
+                    ? "🔄 정보 확인 중..."
+                    : approvalStatus === "approved" ? "상품별 재고 현황 조회"
                     : approvalStatus === "pending"  ? "🔒 관리자 승인 대기 중 · 승인 후 사용 가능"
                     : approvalStatus === "rejected" ? "🚫 승인 거절 · 관리자 문의"
                     : "🔒 공급사 정보 등록 후 · 승인 요청 필요";

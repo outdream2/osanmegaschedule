@@ -1,7 +1,7 @@
 {
-  "created": "2026-09-23",
+  "created": "2026-09-24",
   "version": 1,
-  "totalViolations": 526,
+  "totalViolations": 527,
   "files": {
     "server/ocr/pipeline/stages/03-vendor-match.ts": {
       "lines": 684,
@@ -84,7 +84,7 @@
       "totalWeight": 25
     },
     "server/routes/display/requests.ts": {
-      "lines": 1554,
+      "lines": 1588,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -302,7 +302,7 @@
       "totalWeight": 6
     },
     "src/components/ProductInfoPage/ProductInfoPage.tsx": {
-      "lines": 1115,
+      "lines": 1119,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -446,7 +446,7 @@
       "totalWeight": 4
     },
     "server/routes/settings/events.ts": {
-      "lines": 269,
+      "lines": 278,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -495,6 +495,16 @@
       ],
       "totalWeight": 4
     },
+    "src/components/LandingPage/LandingPage.tsx": {
+      "lines": 802,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
     "src/components/LandingPage/VendorListEditor.tsx": {
       "lines": 851,
       "violations": [
@@ -506,7 +516,7 @@
       "totalWeight": 3
     },
     "src/components/OrderManagePage/OrderManagePage.tsx": {
-      "lines": 844,
+      "lines": 845,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -536,7 +546,7 @@
       "totalWeight": 3
     },
     "src/components/OrderManagePage/SalesRecommendationPanel.tsx": {
-      "lines": 843,
+      "lines": 873,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -636,7 +646,7 @@
       "totalWeight": 3
     },
     "src/components/NotificationBell.tsx": {
-      "lines": 305,
+      "lines": 314,
       "violations": [
         {
           "ruleId": "prefer-modal-primitive",

@@ -9,15 +9,15 @@
 | 지표 | 값 |
 |---|---:|
 | 스캔 파일 | 1093 |
-| 위반 파일 | 97 |
-| 클린 파일 | 996 (91%) |
-| 총 위반 개수 | 526 |
+| 위반 파일 | 98 |
+| 클린 파일 | 995 (91%) |
+| 총 위반 개수 | 527 |
 
 ## 🚨 규칙별 위반 현황
 
 | 규칙 | 총 위반 | 파일 수 | severity | 수정 방향 |
 |---|---:|---:|---|---|
-| `large-file-warn` | 13 | 13 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
+| `large-file-warn` | 14 | 14 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 | `no-raw-console-server` | 274 | 28 | medium | logger.info / logger.warn / logger.error (server/lib/logger.ts) |
 | `no-any-server` | 237 | 67 | medium | 구체 타입 · unknown + type guard · zod 스키마 추론 |
 | `prefer-modal-primitive` | 2 | 2 | medium | Modal 프리미티브 (src/components/common/Modal.tsx) |
@@ -57,7 +57,7 @@
 | 29 | `server/routes/purchase/supplierPayments/purchaseDetail.ts` | 170 | 6 | no-any-server(6) |
 | 30 | `server/routes/purchase/vat.ts` | 553 | 6 | no-any-server(6) |
 
-## 📝 모든 위반 파일 (97개)
+## 📝 모든 위반 파일 (98개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -107,11 +107,12 @@
 | `server/routes/stock/lossTracking.ts` | 297 | 4 |
 | `server/routes/stock/products.ts` | 1349 | 4 |
 | `server/services/googleDriveService.ts` | 466 | 4 |
+| `src/components/LandingPage/LandingPage.tsx` | 802 | 3 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 851 | 3 |
 | `src/components/OrderManagePage/OrderManagePage.tsx` | 845 | 3 |
 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 979 | 3 |
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 801 | 3 |
-| `src/components/OrderManagePage/SalesRecommendationPanel.tsx` | 861 | 3 |
+| `src/components/OrderManagePage/SalesRecommendationPanel.tsx` | 873 | 3 |
 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 937 | 3 |
 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 |
 | `src/components/SalesTrendPage/DashboardTab.tsx` | 811 | 3 |
