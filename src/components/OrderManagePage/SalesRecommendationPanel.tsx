@@ -396,16 +396,17 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                         </span>
                       )}
                     </button>
-                    {/* 2026-09-23 · #348-2 · #349 · 사용자 지시 · 이벤트 옆 · 상품추가 버튼 · 모달 · 다중 선택 · 발주필요 추가 */}
-                    {productCount > 0 && onRequestProduct && (
+                    {/* 2026-09-23 · #348-2 · #349 · 사용자 지시 · 이벤트 옆 · 상품추가 버튼 · 모달 · 다중 선택 · 발주필요 추가
+                        2026-09-24 · 사용자 지시 · productCount=0 (등록 상품 없음) 이벤트에도 · 버튼 표시 · 모달에서 상품 등록 유도 */}
+                    {onRequestProduct && (
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); openProductAddModal(ev); }}
                         className="self-start inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
-                        title="이 이벤트 상품 · 다중 선택 · 발주필요 추가"
+                        title={productCount > 0 ? "이 이벤트 상품 · 다중 선택 · 발주필요 추가" : "이 이벤트에 등록된 상품 없음 · 통계설정에서 등록"}
                       >
                         <Plus size={12} strokeWidth={2.5} />
-                        상품추가
+                        상품추가 {productCount === 0 && <span className="text-[10px] opacity-75">(등록없음)</span>}
                       </button>
                     )}
                     {/* 2026-09-14 · #85 · 이벤트 상품 리스트 · 확장 시 표시 · [발주 추가] 액션 */}
