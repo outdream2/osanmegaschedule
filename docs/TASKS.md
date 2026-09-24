@@ -152,6 +152,7 @@
 <!-- #349 ✅ · #348-2 로 통합 완료 · EventProductAddModal 이 선택한 이벤트의 등록 상품 · 다중 선택 · 발주필요 추가 · 2026-09-23 -->
 | **#350** | **발주관리 탭 순서 변경 · 발주필요 → 발주이력 → 품절임박(맨 끝)** (사용자 지시 · 2026-09-23) | 🟡 P2 | 현재 발주관리 상단 탭 · 발주필요 · 품절임박 · 발주이력 순 · **변경 · 발주필요 → 발주이력 → 품절임박(마지막)** · 자주 쓰는 탭 앞으로 |
 | **#351** | **품절임박 로직 검증 · 어떤 기준으로 조회되는지 확인** (사용자 지시 · 2026-09-23) | 🟡 P2 | 품절임박 탭 · 현재 조회 로직 재검토 · 조건 (current_stock 몇 이하 · optimal_stock 대비 % · sale_status 등) · 명확히 리포트 · 필요 시 개선 · 서버 endpoint · 프론트 로직 모두 확인 |
+| **#352** | **거래처(vendor) 로그인 · 자기 발주이력 확인 기능** (사용자 지시 · 2026-09-24) | 🟡 P2 | 거래처 로그인 (role=vendor · POST /api/auth/vendor-login) 상태 · 자기 회사에 온 발주만 필터링 조회 · GET /api/vendor/order-history endpoint 신규 · WHERE supplier = vendor.company_name AND status IN ('ordered','matched') · 다른 vendor 정보 노출 X · 신규 페이지 VendorOrderHistoryPage.tsx · 기존 OrderHistoryTab UI 재사용 or 신규 · Vendor Portal 표준 (Odoo/SAP/Amazon Business) · PDF 다운로드 · 매입 확인 액션 검토 |
 <!-- #330 ✅ · 2026-09-21 완료 · `2cea0957` · 시스템설정 신규 탭 "추천 규칙" · KV app_settings.event_category_rules + SSOT fallback + 60초 서버 캐시 + 원본 복원 · authorize(9) POST/DELETE · Zod EventCategoryRulesPayloadSchema -->
 <!-- #311 ✅ · UpcomingLeaveBanner + useUpcomingLeaves + /api/upcoming-leaves · SchedulePage L561 통합 · 14일 이내 · 관리자 lv≥2 · 이미 완료 -->
 <!-- #312 ✅ · POST /api/approve-leave (server/routes/daily/leave.ts L118-146) · scheduleService.batchUpdateSchedules 자동 호출 · try/catch + 로그 · 실패 시 500 · 알림 발송 · 이미 완료 -->
