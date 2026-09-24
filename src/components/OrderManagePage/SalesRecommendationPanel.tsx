@@ -396,22 +396,31 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                         </span>
                       )}
                     </button>
-                    {/* 2026-09-23 · #348-2 · #349 · 사용자 지시 · 이벤트 옆 · 상품추가 버튼 · 모달 · 다중 선택 · 발주필요 추가
-                        2026-09-24 · 사용자 지시 · productCount=0 (등록 상품 없음) 이벤트에도 · 버튼 표시 · 모달에서 상품 등록 유도 */}
-                    {onRequestProduct && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); openProductAddModal(ev); }}
-                        className="self-start inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
-                        title={productCount > 0 ? "이 이벤트 상품 · 다중 선택 · 발주필요 추가" : "이 이벤트에 등록된 상품 없음 · 통계설정에서 등록"}
-                      >
-                        <Plus size={12} strokeWidth={2.5} />
-                        상품추가 {productCount === 0 && <span className="text-[10px] opacity-75">(등록없음)</span>}
-                      </button>
-                    )}
-                    {/* 2026-09-14 · #85 · 이벤트 상품 리스트 · 확장 시 표시 · [발주 추가] 액션 */}
-                    {isExpanded && evProducts.length > 0 && (
-                      <div className="flex flex-col gap-1 pl-2 border-l-2 border-brand-tint/60 ml-2">
+                    {/* 2026-09-24 · 사용자 지시 · 이벤트와 상품추가 · 아코디언 안에 통합
+                        · 이전 · 버튼 헤더 옆 (self-start · 항상 노출) + 상품 리스트 (별도 아코디언 섹션)
+                        · 이후 · 하나의 아코디언 · 이벤트 클릭 시 · 버튼 + 상품 리스트 · 함께 열림 */}
+                    {isExpanded && (
+                      <div className="flex flex-col gap-1.5 pl-2 border-l-2 border-brand-tint/60 ml-2">
+                        {/* 상품추가 버튼 · 아코디언 최상단 */}
+                        {onRequestProduct && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openProductAddModal(ev); }}
+                            className="self-start inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
+                            title={productCount > 0 ? "이 이벤트 상품 · 다중 선택 · 발주필요 추가" : "이 이벤트에 등록된 상품 없음 · 통계설정에서 등록"}
+                          >
+                            <Plus size={12} strokeWidth={2.5} />
+                            상품추가 {productCount === 0 && <span className="text-[10px] opacity-75">(등록없음)</span>}
+                          </button>
+                        )}
+                        {productCount === 0 && (
+                          <div className="text-[12px] text-zinc-400 italic px-1">
+                            등록된 상품 없음 · [상품추가] 로 통계설정에서 등록·발주필요에 추가
+                          </div>
+                        )}
+                        {/* 등록된 상품 리스트 · 있을 때만 · 하단에 이어짐 */}
+                        {evProducts.length > 0 && (
+                          <div className="flex flex-col gap-1">
                         {evProducts.map(p => {
                           const cur = Number(p.current_stock ?? 0) || 0;
                           const opt = Number(p.optimal_stock ?? 0) || 0;
@@ -454,6 +463,8 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                             </div>
                           );
                         })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
