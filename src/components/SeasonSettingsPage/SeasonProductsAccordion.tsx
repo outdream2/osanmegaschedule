@@ -4,8 +4,9 @@
 //   · 확장 시 · 해당 계절 recurring event 를 EventProductPanel 로 재사용
 //   · 매핑 상품 개수 배지 · 실시간
 //   · 발주필요 판넬 (GET /api/events/today) 은 자동 반영 (기존 인프라 재사용)
+// 2026-09-24 · #353 · [상품추가] 버튼 + ProductSearchMultiAddModal 통합
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Package, RefreshCw, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronRight, Package, RefreshCw, AlertTriangle, Plus } from "lucide-react";
 import { api } from "../../lib/apiClient";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { Spinner } from "../common/Spinner";
@@ -17,6 +18,7 @@ import {
 } from "../../hooks/useSeasonRanges";
 import { seasonKeyToEventType, SEASON_KEYS } from "../../lib/seasonEventMap";
 import { EventProductPanel, type EventLite } from "./EventProductPanel";
+import { ProductSearchMultiAddModal } from "./ProductSearchMultiAddModal";
 
 const SEASON_TONE: Record<SeasonKey, { headerBg: string; text: string; ring: string; accent: string }> = {
   spring: { headerBg: "bg-pink-50",   text: "text-pink-700",   ring: "ring-pink-200",   accent: "bg-pink-500" },
@@ -53,6 +55,8 @@ export const SeasonProductsAccordion: React.FC<Props> = ({ refreshTick = 0 }) =>
     winter: readExpanded("winter"),
   }));
   const [productCounts, setProductCounts] = useState<Record<number, number>>({});
+  // #353 · [상품추가] 모달 상태
+  const [addModal, setAddModal] = useState<{ season: SeasonKey; eventId: number; eventName: string } | null>(null);
   const { toast, showError } = useToast();
 
   const load = useCallback(async () => {
@@ -137,6 +141,35 @@ export const SeasonProductsAccordion: React.FC<Props> = ({ refreshTick = 0 }) =>
     setProductCounts(prev => ({ ...prev, [eventId]: count }));
   }, []);
 
+  // #353 · [상품추가] 버튼 클릭 핸들러
+  const handleOpenAddModal = useCallback((
+    e: React.MouseEvent,
+    season: SeasonKey,
+    ev: EventLite,
+  ) => {
+    // 아코디언 toggle 이벤트 전파 차단
+    e.stopPropagation();
+    setAddModal({ season, eventId: ev.id, eventName: ev.name });
+  }, []);
+
+  // 추가 완료 후 · 해당 계절 카운트 갱신 + 아코디언 자동 확장
+  const handleAdded = useCallback(async (season: SeasonKey, eventId: number, codes: string[]) => {
+    setProductCounts(prev => ({
+      ...prev,
+      [eventId]: (prev[eventId] ?? 0) + codes.length,
+    }));
+    // 해당 계절 accordion 자동 확장
+    setExpanded(prev => {
+      if (prev[season]) return prev;
+      const next = { ...prev, [season]: true };
+      writeExpanded(season, true);
+      return next;
+    });
+    setAddModal(null);
+    // 정확한 카운트를 위해 해당 이벤트 재조회
+    void loadCounts([eventId]);
+  }, [loadCounts]);
+
   const totalMapped = useMemo(() => {
     return SEASON_KEYS.reduce((sum, s) => {
       const ev = seasonEventMap[s];
@@ -200,27 +233,42 @@ export const SeasonProductsAccordion: React.FC<Props> = ({ refreshTick = 0 }) =>
                   key={season}
                   className={`rounded-xl border border-zinc-200 bg-white overflow-hidden ${isOpen ? `ring-1 ${tone.ring}` : ""}`}
                 >
-                  {/* 헤더 · 클릭 · 접기·펼치기 */}
-                  <button
-                    type="button"
-                    onClick={() => void toggleSeason(season)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 ${tone.headerBg} hover:brightness-95 transition cursor-pointer text-left`}
-                    aria-expanded={isOpen}
-                  >
-                    {isOpen ? (
-                      <ChevronDown size={18} className={tone.text} />
-                    ) : (
-                      <ChevronRight size={18} className={tone.text} />
+                  {/* 헤더 · 클릭 · 접기·펼치기 + [상품추가] 버튼 */}
+                  <div className={`flex items-center gap-0 ${tone.headerBg}`}>
+                    {/* 아코디언 토글 영역 · flex-1 */}
+                    <button
+                      type="button"
+                      onClick={() => void toggleSeason(season)}
+                      className="flex-1 flex items-center gap-3 px-4 py-3 hover:brightness-95 transition cursor-pointer text-left min-w-0"
+                      aria-expanded={isOpen}
+                    >
+                      {isOpen ? (
+                        <ChevronDown size={18} className={`shrink-0 ${tone.text}`} />
+                      ) : (
+                        <ChevronRight size={18} className={`shrink-0 ${tone.text}`} />
+                      )}
+                      <span className="text-[22px] shrink-0" aria-hidden>{SEASON_EMOJI[season]}</span>
+                      <span className={`text-[17px] font-extrabold ${tone.text}`}>
+                        {SEASON_LABEL[season]}
+                      </span>
+                      <span className={`ml-auto inline-flex items-center gap-1 text-[13px] font-bold ${tone.text} bg-white/70 border border-current/20 rounded-md px-2 py-0.5 tabular-nums shrink-0`}>
+                        <Package size={11} />
+                        {cnt}개 추천
+                      </span>
+                    </button>
+                    {/* [상품추가] 버튼 · 우측 분리 */}
+                    {ev && (
+                      <button
+                        type="button"
+                        onClick={e => handleOpenAddModal(e, season, ev)}
+                        className={`shrink-0 inline-flex items-center gap-1.5 h-8 px-3 mr-3 text-[12px] font-bold bg-white/80 hover:bg-white border border-current/20 ${tone.text} rounded-lg transition cursor-pointer`}
+                        title={`${SEASON_LABEL[season]} · 상품 추가`}
+                      >
+                        <Plus size={12} strokeWidth={2.5} />
+                        상품추가
+                      </button>
                     )}
-                    <span className="text-[22px]" aria-hidden>{SEASON_EMOJI[season]}</span>
-                    <span className={`text-[17px] font-extrabold ${tone.text}`}>
-                      {SEASON_LABEL[season]}
-                    </span>
-                    <span className={`ml-auto inline-flex items-center gap-1 text-[13px] font-bold ${tone.text} bg-white/70 border border-current/20 rounded-md px-2 py-0.5 tabular-nums`}>
-                      <Package size={11} />
-                      {cnt}개 추천
-                    </span>
-                  </button>
+                  </div>
 
                   {/* 콘텐츠 · 확장 시 · EventProductPanel */}
                   {isOpen && (
@@ -263,6 +311,20 @@ export const SeasonProductsAccordion: React.FC<Props> = ({ refreshTick = 0 }) =>
         )}
       </div>
       {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
+
+      {/* #353 · 다중 선택 상품 추가 모달 */}
+      {addModal && (
+        <ProductSearchMultiAddModal
+          open
+          onClose={() => setAddModal(null)}
+          eventId={addModal.eventId}
+          eventName={addModal.eventName}
+          onAdded={codes => void handleAdded(addModal.season, addModal.eventId, codes)}
+          // 이 컴포넌트는 productCounts(개수)만 보유 · 실제 코드 목록은 EventProductPanel 이 가짐
+          // 서버 POST 에서 중복 자동 스킵 · 빈 Set 전달 시에도 서버 중복 방지 동작
+          alreadyMappedCodes={new Set<string>()}
+        />
+      )}
     </section>
   );
 };

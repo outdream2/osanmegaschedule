@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 1089 |
+| 스캔 파일 | 1090 |
 | 위반 파일 | 97 |
-| 클린 파일 | 992 (91%) |
+| 클린 파일 | 993 (91%) |
 | 총 위반 개수 | 526 |
 
 ## 🚨 규칙별 위반 현황
@@ -32,7 +32,7 @@
 | 4 | `server/ocr/engines/ppuPaddle.ts` | 729 | 71 | no-raw-console-server(33) · no-any-server(5) |
 | 5 | `server/routes/ocr/parseRouter.ts` | 186 | 33 | no-raw-console-server(13) · no-any-server(7) |
 | 6 | `server/ocr/pipeline/stages/05-normalize.ts` | 248 | 25 | no-raw-console-server(12) · no-any-server(1) |
-| 7 | `server/routes/display/requests.ts` | 1554 | 20 | no-any-server(20) |
+| 7 | `server/routes/display/requests.ts` | 1588 | 20 | no-any-server(20) |
 | 8 | `server/ocr/pipeline/stages/09-totals.ts` | 147 | 18 | no-raw-console-server(9) |
 | 9 | `server/ocr/tables/slanetTable.ts` | 278 | 16 | no-raw-console-server(5) · no-any-server(6) |
 | 10 | `server/ocr/tables/tableLayout.ts` | 171 | 16 | no-raw-console-server(7) · no-any-server(2) |
@@ -69,7 +69,7 @@
 | `server/ocr/engines/ppuPaddle.ts` | 729 | 71 |
 | `server/routes/ocr/parseRouter.ts` | 186 | 33 |
 | `server/ocr/pipeline/stages/05-normalize.ts` | 248 | 25 |
-| `server/routes/display/requests.ts` | 1554 | 20 |
+| `server/routes/display/requests.ts` | 1588 | 20 |
 | `server/ocr/pipeline/stages/09-totals.ts` | 147 | 18 |
 | `server/ocr/tables/slanetTable.ts` | 278 | 16 |
 | `server/ocr/tables/tableLayout.ts` | 171 | 16 |
@@ -111,7 +111,7 @@
 | `src/components/OrderManagePage/OrderManagePage.tsx` | 845 | 3 |
 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 979 | 3 |
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 801 | 3 |
-| `src/components/OrderManagePage/SalesRecommendationPanel.tsx` | 843 | 3 |
+| `src/components/OrderManagePage/SalesRecommendationPanel.tsx` | 861 | 3 |
 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 937 | 3 |
 | `src/components/SalesTrendPage/DashboardCharts.tsx` | 948 | 3 |
 | `src/components/SalesTrendPage/DashboardTab.tsx` | 811 | 3 |
