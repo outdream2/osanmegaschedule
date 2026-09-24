@@ -65,8 +65,7 @@ import { DisplayProductPanel } from "./DisplayProductPanel";
 import { VendorManageSplit } from "./VendorManageSplit";
 import { useDisplayData } from "./useDisplayData";
 // 2026-08-25 · 사용자 지시 · 매장구역 안 배치구역 불일치 탭
-// 2026-09-24 · #333 · 사용자 지시 · MismatchPage 완전 제거 · import 삭제
-// import { MismatchPage } from "./MismatchPage";
+// 2026-09-24 · #333 · 사용자 지시 · MismatchPage 완전 제거 · 파일 삭제 (`6dbd4334` 후속)
 // 2026-08-26 · 사용자 지시 · 실재고 테이블 페이지 · 창고2 옆 신규 탭
 import { RealStockTablePage } from "./RealStockTablePage";
 // 2026-08-26 · 사용자 지시 · 매장구역도 편집 · 신규 탭 · KV DB 저장
