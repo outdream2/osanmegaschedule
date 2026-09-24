@@ -32,9 +32,11 @@ router.get("/api/events", asyncHandler(async (req, res) => {
 // ═══════════════════════════════════════════════════════════
 // GET /api/events/today · 오늘 활성/임박 이벤트 + 매핑 상품 통합
 //   · 계절 (recurring=true · type in spring/summer/fall/winter) · 오늘 계절 자동 판정
-//   · 이벤트 · start_date ≤ today+30 · end_date ≥ today
+//   · 이벤트 · start_date ≤ today+days_future · end_date ≥ today-days_past
+//   · 2026-09-23 · #348-3 · 사용자 지시 · days_past · days_future 파라미터 · default 각 90 (±3개월)
+//     · 발주필요 우측 · ±3개월 이벤트 리스트업 · 이벤트별 [상품추가] 버튼 지원
 // ═══════════════════════════════════════════════════════════
-router.get("/api/events/today", asyncHandler(async (_req, res) => {
+router.get("/api/events/today", asyncHandler(async (req, res) => {
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const month = now.getMonth() + 1;
@@ -43,12 +45,19 @@ router.get("/api/events/today", asyncHandler(async (_req, res) => {
     month >= 6 && month <= 8 ? "summer" :
     month >= 9 && month <= 11 ? "fall" : "winter";
 
-  // 활성 이벤트 · 계절 (recurring) or 임박 (30일 이내)
-  const in30 = new Date(now.getTime() + 30 * 86400000).toISOString().slice(0, 10);
+  // 2026-09-23 · #348-3 · ±3개월 (default 90일) · 필요 시 클라 override
+  const daysFutureRaw = Number(req.query.days_future ?? req.query.days ?? 90);
+  const daysPastRaw = Number(req.query.days_past ?? 90);
+  const daysFuture = Math.max(0, Math.min(365, Number.isFinite(daysFutureRaw) ? daysFutureRaw : 90));
+  const daysPast = Math.max(0, Math.min(365, Number.isFinite(daysPastRaw) ? daysPastRaw : 90));
+
+  // 활성 이벤트 · 계절 (recurring) or 범위 (start_date ≤ today+future · end_date ≥ today-past)
+  const futureCutoff = new Date(now.getTime() + daysFuture * 86400000).toISOString().slice(0, 10);
+  const pastCutoff = new Date(now.getTime() - daysPast * 86400000).toISOString().slice(0, 10);
   const { data: events, error: eErr } = await supabase
     .from("events")
     .select("*")
-    .or(`and(recurring.eq.true,type.eq.${currentSeason}),and(start_date.lte.${in30},end_date.gte.${today})`)
+    .or(`and(recurring.eq.true,type.eq.${currentSeason}),and(start_date.lte.${futureCutoff},end_date.gte.${pastCutoff})`)
     .order("start_date", { ascending: true, nullsFirst: false });
   if (eErr) throw new HttpError(500, eErr.message, "DB_ERROR");
 
