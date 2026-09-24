@@ -509,8 +509,8 @@ export const OrderHistoryTab: React.FC = () => {
                             <col className="w-[110px]" />
                             {/* PDF */}
                             <col className="w-[68px]" />
-                            {/* 매입확인 */}
-                            <col className="w-[110px]" />
+                            {/* 매입확인 · 줄바꿈·말줄임표 방지 · 폭 확보 */}
+                            <col className="w-[120px]" />
                           </colgroup>
                           <tbody className="divide-y divide-zinc-100">
                             {ordersOfDate.map((o) => {
@@ -595,8 +595,8 @@ export const OrderHistoryTab: React.FC = () => {
                                         PDF
                                       </button>
                                     </td>
-                                    {/* 매입확인 */}
-                                    <td className="py-2.5 pl-2 pr-3 text-right" onClick={(e) => e.stopPropagation()}>
+                                    {/* 매입확인 · 2026-09-24 · 사용자 지시 · 줄바꿈 X · 말줄임표 X · 세련 · 최소 폭 확보 */}
+                                    <td className="py-2.5 pl-2 pr-3 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                                       {isMatched ? (
                                         <StatusPill tone="emerald" size="sm" dot>완료</StatusPill>
                                       ) : (
@@ -604,11 +604,11 @@ export const OrderHistoryTab: React.FC = () => {
                                           type="button"
                                           onClick={() => void handleMatch(o)}
                                           disabled={matchingKey === String(o.order_number)}
-                                          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[13px] font-bold text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 shadow-sm active:scale-[0.98] disabled:opacity-40 transition cursor-pointer"
+                                          className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg bg-gradient-to-b from-emerald-50 to-emerald-100 border border-emerald-200 text-[13px] font-bold text-emerald-700 whitespace-nowrap shadow-sm hover:from-emerald-100 hover:to-emerald-150 hover:border-emerald-300 hover:shadow active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
                                         >
                                           {matchingKey === String(o.order_number)
                                             ? <Spinner size={12} tone="brand" />
-                                            : <CheckCircle2 size={12} strokeWidth={2.4} />}
+                                            : <CheckCircle2 size={13} strokeWidth={2.4} />}
                                           매입확인
                                         </button>
                                       )}

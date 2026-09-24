@@ -127,7 +127,7 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
             </div>
           </button>
 
-          {/* 액션 버튼 행 */}
+          {/* 액션 버튼 행 · 2026-09-24 · 사용자 지시 · 줄바꿈 X · 말줄임표 X · 세련 */}
           <div className="px-3.5 pb-3 flex items-center gap-2">
             {isMatched ? (
               <StatusPill tone="emerald" size="sm" dot>매입완료</StatusPill>
@@ -136,9 +136,9 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onMatch(); }}
                 disabled={matchLoading}
-                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[13px] font-bold text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-40 cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg bg-gradient-to-b from-emerald-50 to-emerald-100 border border-emerald-200 text-[13px] font-bold text-emerald-700 whitespace-nowrap shadow-sm hover:from-emerald-100 hover:to-emerald-150 hover:border-emerald-300 hover:shadow active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
               >
-                {matchLoading ? <Spinner size={12} tone="brand" /> : <CheckCircle2 size={12} strokeWidth={2.4} />}
+                {matchLoading ? <Spinner size={12} tone="brand" /> : <CheckCircle2 size={13} strokeWidth={2.4} />}
                 매입확인
               </button>
             )}
@@ -146,9 +146,9 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
               type="button"
               onClick={(e) => { e.stopPropagation(); onPdf(); }}
               disabled={pdfLoading}
-              className="inline-flex items-center gap-1 h-7 px-2.5 rounded-lg bg-white border border-zinc-200 text-[13px] font-bold text-zinc-500 hover:border-zinc-400 hover:text-zinc-700 transition disabled:opacity-40 cursor-pointer ml-auto"
+              className="inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg bg-white border border-zinc-200 text-[13px] font-bold text-zinc-500 whitespace-nowrap shadow-sm hover:border-zinc-400 hover:text-zinc-700 hover:shadow active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer ml-auto"
             >
-              {pdfLoading ? <Spinner size={12} tone="brand" /> : <FileDown size={12} strokeWidth={2.4} />}
+              {pdfLoading ? <Spinner size={12} tone="brand" /> : <FileDown size={13} strokeWidth={2.4} />}
               PDF
             </button>
           </div>
