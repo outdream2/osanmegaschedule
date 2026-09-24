@@ -31,7 +31,6 @@ interface VendorProduct {
   spec?: string | null;
   current_stock?: number | null;
   optimal_stock?: number | null;
-  min_stock?: number | null;
   // 2026-08-29 · #154 · 판매중 필터 (products-search 응답 이미 포함)
   sale_status?: string | null;
 }
@@ -42,14 +41,13 @@ interface Props {
   vendorName: string;
 }
 
-// 정렬 컬럼 · #94 A1
-type SortKey = "code" | "name" | "current_stock" | "optimal_stock" | "min_stock";
+// 2026-09-24 · 사용자 지시 · min_stock 유령 필드 제거
+type SortKey = "code" | "name" | "current_stock" | "optimal_stock";
 const COMPARATORS: Record<SortKey, Comparator<VendorProduct>> = {
   code: (a, b) => (a.code ?? "").localeCompare(b.code ?? ""),
   name: (a, b) => (a.name ?? "").localeCompare(b.name ?? "", "ko"),
   current_stock: (a, b) => Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0),
   optimal_stock: (a, b) => Number(a.optimal_stock ?? 0) - Number(b.optimal_stock ?? 0),
-  min_stock: (a, b) => Number(a.min_stock ?? 0) - Number(b.min_stock ?? 0),
 };
 
 export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName }) => {
@@ -84,7 +82,6 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
               spec: it.spec ?? null,
               current_stock: it.current_stock ?? null,
               optimal_stock: it.optimal_stock ?? null,
-              min_stock: it.min_stock ?? null,
               sale_status: it.sale_status ?? null,
             }))
           : [];
@@ -216,7 +213,6 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
                 <th className={`${hdrCls} text-left`} onClick={() => toggleSort("name")}>상품명{sortIcon("name")}</th>
                 <th className={`${hdrCls} text-right w-20`} onClick={() => toggleSort("current_stock")}>ERP 재고{sortIcon("current_stock")}</th>
                 <th className={`${hdrCls} text-right w-16`} onClick={() => toggleSort("optimal_stock")}>적정{sortIcon("optimal_stock")}</th>
-                <th className={`${hdrCls} text-right w-16`} onClick={() => toggleSort("min_stock")}>최소{sortIcon("min_stock")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
@@ -230,9 +226,6 @@ export const VendorStockModal: React.FC<Props> = ({ open, onClose, vendorName })
                   </td>
                   <td className="text-right px-3 py-1.5 text-zinc-500 tabular-nums">
                     {p.optimal_stock ?? "-"}
-                  </td>
-                  <td className="text-right px-3 py-1.5 text-zinc-400 tabular-nums">
-                    {p.min_stock ?? "-"}
                   </td>
                 </tr>
               ))}

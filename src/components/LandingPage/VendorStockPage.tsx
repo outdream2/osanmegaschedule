@@ -27,13 +27,14 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import type { AuthSession } from "../../types";
 
 // ─── 타입 ──────────────────────────────────────────────────────────────
+// 2026-09-24 · 사용자 지시 · min_stock 유령 필드 제거 (DB 미존재)
+//   · 재고상태 · 없음(0) · 정상(current > 0) 만 · '부족' 판정 제거 (min_stock 없이 판정 불가)
 interface VendorProduct {
   code: string;
   name: string;
   spec?: string | null;
   current_stock?: number | null;
   optimal_stock?: number | null;
-  min_stock?: number | null;
   sale_status?: string | null;
   // 판매량 · products-search 응답에 last_snapshot_qty 있으면 사용
   last_snapshot_qty?: number | null;
@@ -50,14 +51,12 @@ interface VendorStockPageProps {
 }
 
 // ─── 정렬 컬럼 ────────────────────────────────────────────────────────
-type SortKey = "code" | "name" | "current_stock" | "optimal_stock" | "min_stock" | "status" | "sale_qty";
+type SortKey = "code" | "name" | "current_stock" | "optimal_stock" | "status" | "sale_qty";
 
-// 재고상태 우선순위 (없음=0, 부족=1, 정상=2)
+// 재고상태 우선순위 (없음=0, 정상=2) · min_stock 없이 · '부족' 판정 skip
 function stockStateOrder(p: VendorProduct): number {
   const cur = Number(p.current_stock ?? 0);
-  const minS = Number(p.min_stock ?? 0);
   if (cur <= 0) return 0;
-  if (minS > 0 && cur < minS) return 1;
   return 2;
 }
 
@@ -66,18 +65,15 @@ const COMPARATORS: Record<SortKey, Comparator<VendorProduct>> = {
   name: (a, b) => (a.name ?? "").localeCompare(b.name ?? "", "ko"),
   current_stock: (a, b) => Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0),
   optimal_stock: (a, b) => Number(a.optimal_stock ?? 0) - Number(b.optimal_stock ?? 0),
-  min_stock: (a, b) => Number(a.min_stock ?? 0) - Number(b.min_stock ?? 0),
   status: (a, b) => stockStateOrder(a) - stockStateOrder(b),
   sale_qty: (a, b) => Number(a.last_snapshot_qty ?? 0) - Number(b.last_snapshot_qty ?? 0),
 };
 
 // ─── 재고상태 판정 ────────────────────────────────────────────────────
-type StockLevel = "normal" | "low" | "none";
+type StockLevel = "normal" | "none";
 function getStockLevel(p: VendorProduct): StockLevel {
   const cur = Number(p.current_stock ?? 0);
-  const minS = Number(p.min_stock ?? 0);
   if (cur <= 0) return "none";
-  if (minS > 0 && cur < minS) return "low";
   return "normal";
 }
 
@@ -95,7 +91,6 @@ function toProductInfo(p: VendorProduct): ProductInfo {
     location: p.display_location ?? null,
     current_stock: p.current_stock ?? null,
     optimal_stock: p.optimal_stock ?? null,
-    min_stock: p.min_stock ?? null,
     supplier: p.supplier ?? null,
   };
 }
@@ -181,7 +176,6 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
           spec: it.spec ?? null,
           current_stock: it.current_stock ?? null,
           optimal_stock: it.optimal_stock ?? null,
-          min_stock: it.min_stock ?? null,
           sale_status: it.sale_status ?? null,
           last_snapshot_qty: it.last_snapshot_qty ?? null,
           supplier: it.supplier ?? vendorName,
@@ -300,8 +294,8 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
           <div className={`md:hidden flex flex-col divide-y divide-zinc-100 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {sorted.map((p, idx) => {
               const level = getStockLevel(p);
-              const pillTone = level === "normal" ? "emerald" : level === "low" ? "amber" : "rose";
-              const pillLabel = level === "normal" ? "정상" : level === "low" ? "부족" : "없음";
+              const pillTone = level === "normal" ? "emerald" : "rose";
+              const pillLabel = level === "normal" ? "정상" : "없음";
               const isSelected = selectedProduct?.code === p.code;
               const cur = Number(p.current_stock ?? 0);
               return (
@@ -327,7 +321,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
                   </div>
                   {/* Row 3: 재고 수치 + 상태 */}
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className={`text-[14px] font-semibold tabular-nums ${level === "none" ? "text-rose-600" : level === "low" ? "text-amber-600" : "text-zinc-700"}`}>
+                    <span className={`text-[14px] font-semibold tabular-nums ${level === "none" ? "text-rose-600" : "text-zinc-700"}`}>
                       현재고 {cur > 0 ? cur.toLocaleString() : "0"}
                     </span>
                     {p.last_snapshot_qty != null && (
@@ -398,8 +392,8 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
             <tbody className="divide-y divide-zinc-100">
               {sorted.map((p, idx) => {
                 const level = getStockLevel(p);
-                const pillTone = level === "normal" ? "emerald" : level === "low" ? "amber" : "rose";
-                const pillLabel = level === "normal" ? "정상" : level === "low" ? "부족" : "없음";
+                const pillTone = level === "normal" ? "emerald" : "rose";
+                const pillLabel = level === "normal" ? "정상" : "없음";
                 const isSelected = selectedProduct?.code === p.code;
                 const cur = Number(p.current_stock ?? 0);
                 const saleQty = p.last_snapshot_qty;
@@ -436,7 +430,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
                       </div>
                     </td>
                     <td className={`text-right px-3 py-2 text-[17px] tabular-nums font-semibold ${
-                      level === "none" ? "text-rose-600" : level === "low" ? "text-amber-600" : "text-zinc-700"
+                      level === "none" ? "text-rose-600" : "text-zinc-700"
                     }`}>
                       {cur > 0 ? cur.toLocaleString() : <span className="text-rose-400 font-bold">0</span>}
                     </td>

@@ -215,9 +215,9 @@ export const OrderNeedFilters: React.FC<OrderNeedFiltersProps> = ({
               <div className="flex flex-col gap-1.5">
                 <span className="text-[15px] font-bold text-zinc-600 uppercase tracking-wider">재고 부족 기준</span>
                 <div className="flex flex-col gap-1">
+                  {/* 2026-09-24 · 사용자 지시 · min_stock 유령 필드 제거 · '현재고 < 최소재고' 옵션 삭제 */}
                   {([
                     { k: "optimal"   as OrderNeedShortageBasis, label: "현재고 < 추천적정재고", sub: "기본 · 권장" },
-                    { k: "min"       as OrderNeedShortageBasis, label: "현재고 < 최소재고",     sub: "min_stock 컬럼 기준" },
                     { k: "realStock" as OrderNeedShortageBasis, label: "실재고 < 추천적정재고", sub: "실재고 없는 상품 제외" },
                   ]).map(opt => (
                     <label

@@ -1,4 +1,5 @@
 // 2026-08-16 · 서버·클라 공유 · 상품 응답 DTO
+// 2026-09-24 · 사용자 지시 · min_stock 유령 필드 제거 (DB 미존재 · c318382d 서버 SELECT 이미 제외)
 export interface Product {
   product_code: string;
   product_name: string;
@@ -6,7 +7,6 @@ export interface Product {
   supplier: string | null;
   current_stock: number | null;
   optimal_stock: number | null;
-  min_stock: number | null;
   sale_price: number | null;
   purchase_price: number | null;
   location?: string | null;
@@ -26,7 +26,6 @@ export interface ProductSearchResult {
   spec: string | null;
   current_stock: number | null;
   optimal_stock: number | null;
-  min_stock: number | null;
 }
 export interface ProductsSearchResponse {
   items: ProductSearchResult[];
