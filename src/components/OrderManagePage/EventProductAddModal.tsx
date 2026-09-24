@@ -46,8 +46,8 @@ export const EventProductAddModal: React.FC<Props> = ({
         <div className="px-4 py-3 border-b border-line flex items-center gap-2">
           <Sparkles size={16} className="text-brand-deep shrink-0" />
           <div className="min-w-0 flex-1">
-            <div className="text-[15px] font-bold text-ink truncate">{event.name} · 상품 추가</div>
-            <div className="text-[12px] text-zinc-500 mt-0.5">발주필요 리스트에 추가할 상품 선택</div>
+            <div className="text-[17px] font-bold text-ink truncate">{event.name} · 상품 추가</div>
+            <div className="text-[14px] text-zinc-500 mt-0.5">발주필요 리스트에 추가할 상품 선택</div>
           </div>
           <button type="button" onClick={onClose} className="p-1 rounded-md hover:bg-zinc-100 cursor-pointer">
             <X size={16} />
@@ -55,7 +55,7 @@ export const EventProductAddModal: React.FC<Props> = ({
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto p-3 flex flex-col gap-1.5">
           {eligible.length === 0 && (
-            <div className="text-center text-[14px] text-zinc-400 py-8">등록된 상품 없음 · 판매중 상품 없음</div>
+            <div className="text-center text-[16px] text-zinc-400 py-8">등록된 상품 없음 · 판매중 상품 없음</div>
           )}
           {eligible.map(p => {
             const already = requestedCodes?.has(p.product_code) ?? false;
@@ -71,8 +71,8 @@ export const EventProductAddModal: React.FC<Props> = ({
                   className="w-4 h-4 accent-brand-deep cursor-pointer disabled:cursor-not-allowed"
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[14px] font-bold text-ink truncate">{p.product_name || p.product_code}</div>
-                  <div className="text-[12px] text-ink-soft tabular-nums mt-0.5">
+                  <div className="text-[16px] font-bold text-ink truncate">{p.product_name || p.product_code}</div>
+                  <div className="text-[14px] text-ink-soft tabular-nums mt-0.5">
                     재고 {Number(p.current_stock ?? 0)} / 적정 {Number(p.optimal_stock ?? 0)}
                     {p.supplier && <span className="ml-2 truncate">· {p.supplier}</span>}
                   </div>
@@ -83,13 +83,13 @@ export const EventProductAddModal: React.FC<Props> = ({
           })}
         </div>
         <div className="px-4 py-3 border-t border-line flex items-center gap-2">
-          <div className="text-[13px] text-zinc-500 font-semibold">{selected.size}건 선택</div>
+          <div className="text-[15px] text-zinc-500 font-semibold">{selected.size}건 선택</div>
           <button type="button" onClick={onClose} disabled={submitting}
-            className="ml-auto h-9 px-3 rounded-md text-[14px] font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 cursor-pointer disabled:opacity-40">
+            className="ml-auto h-9 px-3 rounded-md text-[16px] font-bold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 cursor-pointer disabled:opacity-40">
             취소
           </button>
           <button type="button" onClick={onConfirm} disabled={submitting || selected.size === 0}
-            className="h-9 px-4 rounded-md text-[14px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
+            className="h-9 px-4 rounded-md text-[16px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
             <Check size={13} strokeWidth={2.5} />
             {submitting ? "추가 중..." : `${selected.size}건 발주필요 추가`}
           </button>

@@ -284,17 +284,17 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
           <div className="flex flex-col gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-br from-brand-tint/30 via-white to-emerald-50/30 border border-brand-tint/50">
             <div className="flex items-center gap-2">
               <Calendar size={14} className="text-brand-deep shrink-0" strokeWidth={2.2} />
-              <span className="text-[14px] font-bold text-ink tracking-tight">
+              <span className="text-[16px] font-bold text-ink tracking-tight">
                 오늘은 <span className="tabular-nums">{formatKoreanDate(new Date())}</span>입니다
               </span>
             </div>
-            <div className="text-[13px] text-ink-soft leading-relaxed">
+            <div className="text-[15px] text-ink-soft leading-relaxed">
               {(() => {
                 const chips: React.ReactNode[] = [];
                 if (currentSeason) {
                   const t = TYPE_TONE[currentSeason] ?? TYPE_TONE.custom;
                   chips.push(
-                    <span key="season" className={`inline-flex items-center text-[12px] font-bold px-1.5 py-0.5 rounded-md ${t.cls}`}>
+                    <span key="season" className={`inline-flex items-center text-[14px] font-bold px-1.5 py-0.5 rounded-md ${t.cls}`}>
                       {t.label} 시즌
                     </span>
                   );
@@ -304,7 +304,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                   const d = dayDiff(ev.start_date);
                   const suffix = d != null && d > 0 ? ` D-${d}` : "";
                   chips.push(
-                    <span key={`ev-${ev.id}`} className={`inline-flex items-center text-[12px] font-bold px-1.5 py-0.5 rounded-md ${t.cls}`}>
+                    <span key={`ev-${ev.id}`} className={`inline-flex items-center text-[14px] font-bold px-1.5 py-0.5 rounded-md ${t.cls}`}>
                       {ev.name}{suffix}
                     </span>
                   );
@@ -327,7 +327,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
               })()}
             </div>
             {eventsToday.length > 0 && (
-              <div className="flex items-center gap-1.5 text-[12px] text-brand-deep font-semibold">
+              <div className="flex items-center gap-1.5 text-[14px] text-brand-deep font-semibold">
                 <ChevronDown size={12} strokeWidth={2.5} className="animate-pulse" />
                 아래 이벤트를 클릭하면 추천 상품이 표시됩니다
               </div>
@@ -341,13 +341,13 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-1.5 pb-1.5 border-b border-line">
                 <Sparkles size={14} className="text-brand-deep" />
-                <span className="text-[14px] font-bold text-ink">진행중·임박 이벤트</span>
-                <span className="text-[12px] tabular-nums text-zinc-400 font-medium">{eventsToday.length}건</span>
+                <span className="text-[16px] font-bold text-ink">진행중·임박 이벤트</span>
+                <span className="text-[14px] tabular-nums text-zinc-400 font-medium">{eventsToday.length}건</span>
                 {expandableCount > 0 && (
                   <button
                     type="button"
                     onClick={allExpanded ? collapseAllEvents : expandAllEvents}
-                    className="ml-auto inline-flex items-center gap-1 rounded-md border border-line hover:border-brand-deep hover:bg-brand-tint/20 px-2 py-0.5 text-[11.5px] font-bold text-ink-soft hover:text-brand-deep transition"
+                    className="ml-auto inline-flex items-center gap-1 rounded-md border border-line hover:border-brand-deep hover:bg-brand-tint/20 px-2 py-0.5 text-[13.5px] font-bold text-ink-soft hover:text-brand-deep transition"
                     title={allExpanded ? "전체 접기" : "전체 펼치기"}
                   >
                     {allExpanded ? <Minimize2 size={11} strokeWidth={2.5} /> : <Maximize2 size={11} strokeWidth={2.5} />}
@@ -356,7 +356,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                 )}
               </div>
               {/* 2026-09-24 · 사용자 지시 · 안내 코멘트 · 통계설정 상품 등록 유도 */}
-              <div className="text-[12.5px] text-zinc-500 leading-relaxed bg-zinc-50 border border-line rounded-md px-3 py-2">
+              <div className="text-[14.5px] text-zinc-500 leading-relaxed bg-zinc-50 border border-line rounded-md px-3 py-2">
                 <span className="font-semibold text-zinc-700">💡 이벤트별 추천 상품</span> · 이벤트 클릭 → 등록된 상품 표시 · <span className="font-semibold text-brand-deep">[상품추가]</span> 로 발주필요에 즉시 추가.
                 <br />
                 등록된 상품이 없는 이벤트는 <span className="font-semibold text-brand-deep">통계설정 → 계절별 추천 상품</span> 에서 상품을 등록하세요.
@@ -378,12 +378,12 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                       disabled={!canExpand}
                       className={`flex items-center gap-2 flex-wrap px-2.5 py-1.5 rounded-lg border ${tone.cls} ${canExpand ? "cursor-pointer hover:brightness-95 transition" : "cursor-default"}`}
                     >
-                      <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md bg-white/60 border border-current/20 shrink-0">
+                      <span className="text-[13px] font-bold px-1.5 py-0.5 rounded-md bg-white/60 border border-current/20 shrink-0">
                         {tone.label}
                       </span>
-                      <span className="text-[14px] font-bold shrink-0">{ev.name}</span>
+                      <span className="text-[16px] font-bold shrink-0">{ev.name}</span>
                       {ev.start_date && (
-                        <span className="inline-flex items-center gap-1 text-[12px] shrink-0">
+                        <span className="inline-flex items-center gap-1 text-[14px] shrink-0">
                           <Calendar size={11} />
                           {ev.start_date}
                           {ev.end_date && ev.end_date !== ev.start_date && ` ~ ${ev.end_date}`}
@@ -392,7 +392,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                       {isNow && <StatusPill tone="rose" size="sm" dot pulse>진행중</StatusPill>}
                       {isSoon && <StatusPill tone="amber" size="sm">D-{d}</StatusPill>}
                       {productCount > 0 && (
-                        <span className="ml-auto inline-flex items-center gap-1 text-[12px] font-semibold tabular-nums">
+                        <span className="ml-auto inline-flex items-center gap-1 text-[14px] font-semibold tabular-nums">
                           상품 {productCount}개
                           {canExpand && (
                             isExpanded
@@ -412,15 +412,15 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); openProductAddModal(ev); }}
-                            className="self-start inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
+                            className="self-start inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold shadow-sm transition cursor-pointer"
                             title={productCount > 0 ? "이 이벤트 상품 · 다중 선택 · 발주필요 추가" : "이 이벤트에 등록된 상품 없음 · 통계설정에서 등록"}
                           >
                             <Plus size={12} strokeWidth={2.5} />
-                            상품추가 {productCount === 0 && <span className="text-[10px] opacity-75">(등록없음)</span>}
+                            상품추가 {productCount === 0 && <span className="text-[12px] opacity-75">(등록없음)</span>}
                           </button>
                         )}
                         {productCount === 0 && (
-                          <div className="text-[12px] text-zinc-400 italic px-1">
+                          <div className="text-[14px] text-zinc-400 italic px-1">
                             등록된 상품 없음 · [상품추가] 로 통계설정에서 등록·발주필요에 추가
                           </div>
                         )}
@@ -437,10 +437,10 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                             <div key={p.product_code} className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white border border-line hover:border-brand-tint hover:shadow-[0_1px_4px_rgba(10,46,74,0.05)] transition-all">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-[13px] font-bold text-ink truncate">{p.product_name || p.product_code}</span>
+                                  <span className="text-[15px] font-bold text-ink truncate">{p.product_name || p.product_code}</span>
                                   {isInactive && <StatusPill tone="zinc" size="xs">{p.sale_status}</StatusPill>}
                                 </div>
-                                <div className="flex items-center gap-2 text-[11px] text-ink-soft tabular-nums mt-0.5">
+                                <div className="flex items-center gap-2 text-[13px] text-ink-soft tabular-nums mt-0.5">
                                   <span>재고 <span className="font-semibold text-ink">{cur}</span></span>
                                   <span>/ 적정 <span className="font-semibold text-ink">{opt}</span></span>
                                   {shortage > 0 && (
@@ -453,7 +453,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                                 <button
                                   type="button"
                                   onClick={() => onRequestProduct(p.product_code, p.product_name)}
-                                  className="inline-flex items-center gap-1 rounded-md bg-brand-deep hover:bg-brand-deep/90 px-2 py-1 text-[11px] font-bold text-white transition shrink-0"
+                                  className="inline-flex items-center gap-1 rounded-md bg-brand-deep hover:bg-brand-deep/90 px-2 py-1 text-[13px] font-bold text-white transition shrink-0"
                                   title="발주 필요 리스트에 추가"
                                 >
                                   <Check size={11} strokeWidth={2.5} />
@@ -480,7 +480,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={openPicker}
-                className="inline-flex items-center justify-center gap-1 rounded-lg border border-dashed border-brand-tint/60 hover:border-brand-deep hover:bg-brand-tint/10 px-2.5 py-1.5 text-[12px] font-bold text-brand-deep transition self-start"
+                className="inline-flex items-center justify-center gap-1 rounded-lg border border-dashed border-brand-tint/60 hover:border-brand-deep hover:bg-brand-tint/10 px-2.5 py-1.5 text-[14px] font-bold text-brand-deep transition self-start"
                 title="다른 이벤트 선택해서 추가"
               >
                 <Plus size={12} strokeWidth={2.5} />
@@ -494,7 +494,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
             <button
               type="button"
               onClick={openPicker}
-              className="inline-flex items-center justify-center gap-1 rounded-lg border border-dashed border-brand-tint/60 hover:border-brand-deep hover:bg-brand-tint/10 px-2.5 py-1.5 text-[12px] font-bold text-brand-deep transition self-start"
+              className="inline-flex items-center justify-center gap-1 rounded-lg border border-dashed border-brand-tint/60 hover:border-brand-deep hover:bg-brand-tint/10 px-2.5 py-1.5 text-[14px] font-bold text-brand-deep transition self-start"
               title="이벤트 리스트에서 선택"
             >
               <Plus size={12} strokeWidth={2.5} />
@@ -505,7 +505,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
           {showEventPicker && (
             <div className="flex flex-col gap-2 p-3 rounded-lg border border-brand-tint/60 bg-brand-tint/10">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[13px] font-bold text-ink inline-flex items-center gap-1">
+                <span className="text-[15px] font-bold text-ink inline-flex items-center gap-1">
                   <Calendar size={12} className="text-brand-deep" />
                   이벤트 선택
                 </span>
@@ -519,27 +519,27 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                 </button>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <label className="text-[11px] font-semibold text-ink-soft">날짜 필터</label>
+                <label className="text-[13px] font-semibold text-ink-soft">날짜 필터</label>
                 <input
                   type="date"
                   value={pickerDate}
                   onChange={(e) => setPickerDate(e.target.value)}
-                  className="text-[12px] rounded-md border border-line bg-white px-2 py-1 focus:outline-none focus:border-brand-deep"
+                  className="text-[14px] rounded-md border border-line bg-white px-2 py-1 focus:outline-none focus:border-brand-deep"
                 />
                 {pickerDate && (
                   <button
                     type="button"
                     onClick={() => setPickerDate("")}
-                    className="text-[11px] font-semibold text-zinc-500 hover:text-zinc-700"
+                    className="text-[13px] font-semibold text-zinc-500 hover:text-zinc-700"
                   >
                     지우기
                   </button>
                 )}
-                <span className="ml-auto text-[11px] tabular-nums text-zinc-500">{filteredPickerEvents.length}건</span>
+                <span className="ml-auto text-[13px] tabular-nums text-zinc-500">{filteredPickerEvents.length}건</span>
               </div>
               <div className="flex flex-col gap-1 max-h-[280px] overflow-y-auto pr-1">
                 {filteredPickerEvents.length === 0 ? (
-                  <div className="text-[12px] text-ink-soft text-center py-4">
+                  <div className="text-[14px] text-ink-soft text-center py-4">
                     {pickerDate ? "해당 날짜 이벤트 없음" : "등록된 이벤트 없음"}
                   </div>
                 ) : (
@@ -554,13 +554,13 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                           isAdded ? "opacity-60" : ""
                         }`}
                       >
-                        <span className={`text-[10px] font-bold px-1 py-0.5 rounded ${tone.cls} shrink-0`}>
+                        <span className={`text-[12px] font-bold px-1 py-0.5 rounded ${tone.cls} shrink-0`}>
                           {tone.label}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[12.5px] font-bold text-ink truncate">{ev.name}</div>
+                          <div className="text-[14.5px] font-bold text-ink truncate">{ev.name}</div>
                           {(ev.start_date || ev.end_date) && (
-                            <div className="text-[10.5px] tabular-nums text-ink-soft">
+                            <div className="text-[12.5px] tabular-nums text-ink-soft">
                               {ev.start_date ?? "?"} {ev.end_date && ev.end_date !== ev.start_date && `~ ${ev.end_date}`}
                             </div>
                           )}
@@ -572,7 +572,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                             <button
                               type="button"
                               onClick={() => removePickedEvent(ev.id)}
-                              className="inline-flex items-center gap-1 rounded-md border border-zinc-300 hover:bg-zinc-50 px-1.5 py-0.5 text-[10.5px] font-semibold text-zinc-600 transition"
+                              className="inline-flex items-center gap-1 rounded-md border border-zinc-300 hover:bg-zinc-50 px-1.5 py-0.5 text-[12.5px] font-semibold text-zinc-600 transition"
                               title="제거"
                             >
                               <X size={10} strokeWidth={2.5} />
@@ -583,7 +583,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                           <button
                             type="button"
                             onClick={() => void addPickedEvent(ev)}
-                            className="inline-flex items-center gap-1 rounded-md bg-brand-deep hover:bg-brand-deep/90 px-1.5 py-0.5 text-[10.5px] font-bold text-white transition"
+                            className="inline-flex items-center gap-1 rounded-md bg-brand-deep hover:bg-brand-deep/90 px-1.5 py-0.5 text-[12.5px] font-bold text-white transition"
                             title="추가"
                           >
                             <Plus size={10} strokeWidth={2.5} />
@@ -612,8 +612,8 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-1.5 pb-1.5 border-b border-line">
                   <AlertTriangle size={14} className="text-amber-600" />
-                  <span className="text-[14px] font-bold text-ink">유통기한 임박</span>
-                  <span className="text-[12px] tabular-nums text-zinc-400 font-medium">{filtered.length}건 · D-60 이내</span>
+                  <span className="text-[16px] font-bold text-ink">유통기한 임박</span>
+                  <span className="text-[14px] tabular-nums text-zinc-400 font-medium">{filtered.length}건 · D-60 이내</span>
                 </div>
                 <div className="flex flex-col gap-1.5 max-h-[280px] overflow-y-auto pr-1">
                   {filtered.map(p => {
@@ -630,9 +630,9 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                         </StatusPill>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[13px] font-bold text-ink truncate">{p.product_name || p.product_code}</span>
+                            <span className="text-[15px] font-bold text-ink truncate">{p.product_name || p.product_code}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-[11px] text-ink-soft tabular-nums mt-0.5">
+                          <div className="flex items-center gap-2 text-[13px] text-ink-soft tabular-nums mt-0.5">
                             <span>{p.expiry_date ? String(p.expiry_date).slice(0, 10) : "-"}</span>
                             <span>· 재고 <span className="font-semibold text-ink">{cur}</span></span>
                             {p.supplier && <span className="truncate max-w-[100px]">· {displayVendorName(p.supplier) || p.supplier}</span>}
@@ -642,7 +642,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                           <button
                             type="button"
                             onClick={() => onRequestProduct(p.product_code, p.product_name)}
-                            className="inline-flex items-center gap-1 rounded-md bg-brand-deep hover:bg-brand-deep/90 px-2 py-1 text-[11px] font-bold text-white transition shrink-0"
+                            className="inline-flex items-center gap-1 rounded-md bg-brand-deep hover:bg-brand-deep/90 px-2 py-1 text-[13px] font-bold text-white transition shrink-0"
                             title="발주 필요 리스트에 추가"
                           >
                             <Check size={11} strokeWidth={2.5} />
@@ -664,8 +664,8 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-1.5 pb-1.5 border-b border-line">
                 <TrendingUp size={14} className="text-brand-deep" />
-                <span className="text-[14px] font-bold text-ink">우선 발주 추천</span>
-                <span className="text-[12px] tabular-nums text-zinc-400 font-medium">Top {recommendations.length}</span>
+                <span className="text-[16px] font-bold text-ink">우선 발주 추천</span>
+                <span className="text-[14px] tabular-nums text-zinc-400 font-medium">Top {recommendations.length}</span>
               </div>
               <div className="flex flex-col gap-1.5">
                 {recommendations.map((r, idx) => {
@@ -673,12 +673,12 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                   const alreadyRequested = requestedCodes?.has(r.product_code) ?? false;
                   return (
                     <div key={r.product_code} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white border border-line hover:border-brand-tint hover:shadow-[0_1px_4px_rgba(10,46,74,0.05)] transition-all">
-                      <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold tabular-nums ${rankTone}`}>
+                      <span className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[13px] font-bold tabular-nums ${rankTone}`}>
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-bold text-ink truncate">{r.product_name || r.product_code}</div>
-                        <div className="flex items-center gap-2 text-[11px] text-ink-soft tabular-nums mt-0.5">
+                        <div className="text-[15px] font-bold text-ink truncate">{r.product_name || r.product_code}</div>
+                        <div className="flex items-center gap-2 text-[13px] text-ink-soft tabular-nums mt-0.5">
                           <span>재고 <span className="font-semibold text-ink">{r.current}</span></span>
                           <span>/ 적정 <span className="font-semibold text-ink">{r.optimal}</span></span>
                           {Number.isFinite(r.daysLeft) && r.daysLeft <= 30 && (
@@ -687,14 +687,14 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                           <span className="text-brand-deep font-semibold ml-auto">{r.reason}</span>
                         </div>
                       </div>
-                      <span className="shrink-0 text-[11px] font-bold text-brand-deep tabular-nums bg-brand-tint/50 px-1.5 py-0.5 rounded-md" title="스코어">
+                      <span className="shrink-0 text-[13px] font-bold text-brand-deep tabular-nums bg-brand-tint/50 px-1.5 py-0.5 rounded-md" title="스코어">
                         {Math.round(r.score)}
                       </span>
                       {onRequestProduct && !alreadyRequested && (
                         <button
                           type="button"
                           onClick={() => onRequestProduct(r.product_code, r.product_name)}
-                          className="inline-flex items-center gap-1 rounded-md bg-brand-deep hover:bg-brand-deep/90 px-2 py-1 text-[11px] font-bold text-white transition shrink-0"
+                          className="inline-flex items-center gap-1 rounded-md bg-brand-deep hover:bg-brand-deep/90 px-2 py-1 text-[13px] font-bold text-white transition shrink-0"
                           title="발주 필요 리스트에 추가"
                         >
                           <Check size={11} strokeWidth={2.5} />
@@ -708,7 +708,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                   );
                 })}
               </div>
-              <div className="text-[10.5px] text-ink-soft/80 leading-relaxed">
+              <div className="text-[12.5px] text-ink-soft/80 leading-relaxed">
                 스코어 = 재고부족율 + 소진임박 + 판매속도 + 이벤트 부스트
               </div>
             </div>
@@ -719,8 +719,8 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
             && expiryImminent.length === 0 && (
             <div className="flex-1 flex flex-col items-center justify-center gap-2 text-center min-h-[240px]">
               <TrendingUp size={40} className="text-zinc-300" strokeWidth={1.5} />
-              <div className="text-[16px] font-bold text-ink">판매 추천 정보</div>
-              <div className="text-[14px] text-ink-soft">상품을 선택하면<br/>추천 발주량이 표시됩니다</div>
+              <div className="text-[18px] font-bold text-ink">판매 추천 정보</div>
+              <div className="text-[16px] text-ink-soft">상품을 선택하면<br/>추천 발주량이 표시됩니다</div>
             </div>
           )}
         </Card>
@@ -770,14 +770,14 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
         {/* 헤더 · 상품명 + [상세정보] · [닫기] */}
         <div className="flex items-start justify-between gap-3 pb-3 border-b border-line">
           <div className="min-w-0">
-            <div className="text-[17px] font-bold text-ink tracking-tight truncate">{name}</div>
-            <div className="text-[13px] font-mono text-ink-soft mt-0.5">#{code}</div>
+            <div className="text-[19px] font-bold text-ink tracking-tight truncate">{name}</div>
+            <div className="text-[15px] font-mono text-ink-soft mt-0.5">#{code}</div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={onOpenDetail}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white hover:bg-zinc-50 px-3 py-1.5 text-[13px] font-bold text-ink transition"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-300 bg-white hover:bg-zinc-50 px-3 py-1.5 text-[15px] font-bold text-ink transition"
               title="상품 상세 정보"
             >
               <Package size={14} strokeWidth={2.2} />
@@ -797,22 +797,22 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
         {/* 판매 요약 */}
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-lg border border-line bg-white px-3 py-2.5">
-            <div className="text-[12px] font-bold text-ink-soft">최근 30일 판매</div>
-            <div className="text-[20px] font-bold tabular-nums text-ink mt-0.5">{s30 != null ? s30.toLocaleString() : "-"}<span className="text-[13px] font-medium text-ink-soft ml-1">개</span></div>
-            <div className="text-[12px] text-ink-soft mt-0.5">일평균 {daily > 0 ? daily.toFixed(1) : "-"}개</div>
+            <div className="text-[14px] font-bold text-ink-soft">최근 30일 판매</div>
+            <div className="text-[22px] font-bold tabular-nums text-ink mt-0.5">{s30 != null ? s30.toLocaleString() : "-"}<span className="text-[15px] font-medium text-ink-soft ml-1">개</span></div>
+            <div className="text-[14px] text-ink-soft mt-0.5">일평균 {daily > 0 ? daily.toFixed(1) : "-"}개</div>
           </div>
           <div className="rounded-lg border border-line bg-white px-3 py-2.5">
-            <div className="text-[12px] font-bold text-ink-soft">예상 소진</div>
-            <div className="text-[20px] font-bold tabular-nums text-ink mt-0.5">
-              {Number.isFinite(daysLeft) ? Math.round(daysLeft).toLocaleString() : "-"}<span className="text-[13px] font-medium text-ink-soft ml-1">일 후</span>
+            <div className="text-[14px] font-bold text-ink-soft">예상 소진</div>
+            <div className="text-[22px] font-bold tabular-nums text-ink mt-0.5">
+              {Number.isFinite(daysLeft) ? Math.round(daysLeft).toLocaleString() : "-"}<span className="text-[15px] font-medium text-ink-soft ml-1">일 후</span>
             </div>
-            <div className="text-[12px] text-ink-soft mt-0.5">현재고 {cur.toLocaleString()} / 적정 {opt.toLocaleString()}</div>
+            <div className="text-[14px] text-ink-soft mt-0.5">현재고 {cur.toLocaleString()} / 적정 {opt.toLocaleString()}</div>
           </div>
         </div>
 
         {/* 시나리오 · 3개 */}
         <div className="flex flex-col gap-2 mt-1">
-          <div className="flex items-center gap-1.5 text-[13px] font-bold text-ink-soft">
+          <div className="flex items-center gap-1.5 text-[15px] font-bold text-ink-soft">
             <TrendingUp size={14} strokeWidth={2.2} />
             추천 발주량
           </div>
@@ -823,16 +823,16 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[14px] font-bold text-ink">{s.label}</span>
+                  <span className="text-[16px] font-bold text-ink">{s.label}</span>
                   <StatusPill tone={s.tone === "amber" ? "amber" : s.tone === "emerald" ? "emerald" : "zinc"} size="xs">{s.note}</StatusPill>
                 </div>
-                <div className="text-[12px] text-ink-soft mt-0.5">발주량 {s.qty.toLocaleString()}개</div>
+                <div className="text-[14px] text-ink-soft mt-0.5">발주량 {s.qty.toLocaleString()}개</div>
               </div>
               <button
                 type="button"
                 onClick={() => onApplyQty(code, s.qty)}
                 disabled={s.qty <= 0}
-                className={`inline-flex items-center gap-1.5 rounded-lg ${toneBtn[s.tone]} disabled:bg-zinc-300 disabled:cursor-not-allowed px-3 py-1.5 text-[13px] font-bold text-white transition`}
+                className={`inline-flex items-center gap-1.5 rounded-lg ${toneBtn[s.tone]} disabled:bg-zinc-300 disabled:cursor-not-allowed px-3 py-1.5 text-[15px] font-bold text-white transition`}
                 title={s.qty > 0 ? `수량 ${s.qty}로 적용` : "발주 필요 없음"}
               >
                 <Check size={14} strokeWidth={2.5} />
@@ -843,11 +843,11 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
         </div>
 
         {loading && (
-          <div className="text-[12px] text-ink-soft italic">불러오는 중…</div>
+          <div className="text-[14px] text-ink-soft italic">불러오는 중…</div>
         )}
 
         {s30 == null && s90 == null && (
-          <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 flex items-start gap-2 text-[13px] text-amber-900">
+          <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 flex items-start gap-2 text-[15px] text-amber-900">
             <Info size={14} strokeWidth={2.2} className="shrink-0 mt-0.5" />
             <div>최근 판매 데이터가 없어 · 적정재고 기준으로 계산합니다.</div>
           </div>
