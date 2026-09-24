@@ -665,6 +665,21 @@ router.post("/api/order-requests", authorize(1), validateBody(CreateOrderRequest
   if (supplierVal) basePayload.supplier = supplierVal;
   // 2026-09-10 · 사용자 지시 · 발주필요에서 지정한 수량 · 발주요청에 그대로 저장
   if (b.order_qty != null) basePayload.order_qty = Number(b.order_qty);
+  // 2026-09-24 · 사용자 지시 · 발주 시점 · unit_price 스냅샷 (회계·감사 표준)
+  //   · products.purchase_price 조회 · order_requests.unit_price 저장
+  //   · 발주 시점 단가 고정 · 이후 products 정정되어도 · 이력에 그 시점 값 유지
+  //   · 대원칙 · Snapshot (발주·매입) + Live JOIN (조회 폴백) 조합
+  try {
+    const { data: prod } = await supabase
+      .from("products")
+      .select("purchase_price")
+      .eq("product_code", code)
+      .maybeSingle();
+    const snapshotPrice = (prod as any)?.purchase_price;
+    if (snapshotPrice != null) {
+      basePayload.unit_price = Number(snapshotPrice);
+    }
+  } catch { /* silent · products 조회 실패 시 · unit_price 미저장 · GET 조회 시 JOIN 폴백 */ }
   const { data: existing } = await supabase.from("order_requests").select("id, status").eq("product_code", code).maybeSingle();
   if (existing) {
     const { error } = await supabase.from("order_requests").update(basePayload).eq("id", existing.id);
