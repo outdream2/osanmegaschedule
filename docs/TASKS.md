@@ -184,7 +184,7 @@
 <!-- E-002 ✅ · 근본 원인 · Google OAuth refresh_token 만료 (invalid_grant) · 코드 아닌 환경 문제 · googleDriveService · probeDriveAuth + /api/drive-status?probe=1 + rose 배너 · 관리자 조치 필요 (OAuth Playground 재발급 · 프로덕션 게시) · 2026-09-21 완료 (`965876c5`) -->
 | **E-002-fix** | **Google OAuth refresh_token 재발급 · 관리자 조치** (사용자 지시 대기 · 2026-09-21) | 🔴 P1 | 코드 아닌 환경 조치 · ① OAuth Playground · Drive API v3 · scope `drive.file` · authorize · exchange · refresh_token 복사 · ② `src/keys/google-oauth.json` · refresh_token 갱신 · ③ 서버 재시작 · ④ **근본 대책** · Google Cloud Console · OAuth 앱 Production 게시 (7일 만료 제거) |
 <!-- E-009 ✅ · shouldMarkOrdered = true · 최신 사용자 의도 (Option A · 발송 액션 = 이력 저장) 우선 · #75 정책 상위 override · requestIds.length > 0 guard 유지 · 2026-09-23 완료 -->
-| **E-010** | **발주서 내용과 발주이력 안 맞는 문제** (사용자 보고 · 2026-09-23) | 🔴 P1 | 발주서 (OrderModal · 발송 직전 UI) 와 실제 저장된 발주이력 (order_history · order_requests status=ordered) 의 필드 값 (수량·단가·공급사·메모 등) 불일치 · 재현 필요 · 서버 UPDATE 로직 (bulk-send L1106) · 클라 → 서버 payload · order_requests 저장 필드 · 전수 대조 · fix |
+<!-- E-010 ✅ · 서버 fix 완료 (E-009 shouldMarkOrdered=true · e4702d84) + INSERT 시 unit_price 스냅샷 (3d54bf79) + JOIN 폴백 (3c424fee) · 데이터 복구 수동 SQL 완료 · 서버 재시작 후 재테스트 · 사용자 완료 처리 · 2026-09-24 -->
 <!-- E-011 ✅ · StepperInput onFocus 전체선택 + OrderNeedTable 빈 값 시 Map 삭제 (default 폴백) · 2026-09-24 완료 -->
 | **E-012** | **거래처 승인 페이지 · 담당자·연락처 등 중요 정보 표시 개선** (사용자 보고 · 2026-09-24) | 🟡 P2 | 거래처 승인 요청 상세 · 현재 · 이메일·주문방식·팀장·팀장연락처·긴급연락처·사업자번호·특이사항·비고 · 각 항목 · 세로 리스트 · 정보 파악 어려움 · **UI 개선** · 헤더 · 공급사 옆 사업자번호 · 주문방식 아래 · **담당자·연락처·이메일** 한 줄 · 다음줄 · **팀장·팀장연락처·긴급연락처** · 다음줄 · **특이사항·비고** · 최신 트렌드 (Linear/Vercel 카드 그룹핑) |
 <!-- E-013 ✅ · vendorsLoading state 활용 · 로딩 중엔 "정보 확인 중..." · 승인 판정 지연 방지 · 2026-09-24 완료 -->
