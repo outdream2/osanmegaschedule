@@ -65,8 +65,8 @@ import { DisplayProductPanel } from "./DisplayProductPanel";
 import { VendorManageSplit } from "./VendorManageSplit";
 import { useDisplayData } from "./useDisplayData";
 // 2026-08-25 · 사용자 지시 · 매장구역 안 배치구역 불일치 탭
-// 2026-08-26 · 사용자 지시 · 미지정 인너탭 통합 · MismatchPage wrapper 사용
-import { MismatchPage } from "./MismatchPage";
+// 2026-09-24 · #333 · 사용자 지시 · MismatchPage 완전 제거 · import 삭제
+// import { MismatchPage } from "./MismatchPage";
 // 2026-08-26 · 사용자 지시 · 실재고 테이블 페이지 · 창고2 옆 신규 탭
 import { RealStockTablePage } from "./RealStockTablePage";
 // 2026-08-26 · 사용자 지시 · 매장구역도 편집 · 신규 탭 · KV DB 저장
@@ -174,11 +174,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // 2026-08-30 · 사용자 지시 · 접기/펼치기 제거 · 그냥 보이게 (mapCollapsed prop 유지 안 함)
   // 2026-08-25 · 사용자 지시 · 매장구역 subtab 안 · 매장구역도 vs 배치구역 불일치 탭
   // 2026-09-20 · #325 · 창고1·창고2 → 매장구역도 안 서브탭으로 nesting
-  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "mismatch" | "stockTable" | "zoneEdit">(() => {
-    try {
-      const raw = sessionStorage.getItem("dpStoreInnerTab");
-      if (raw === "mismatch") { sessionStorage.removeItem("dpStoreInnerTab"); return "mismatch"; }
-    } catch { /* SSR */ }
+  // 2026-09-24 · #333 · 사용자 지시 · 'mismatch' key 제거
+  const [storeInnerTab, setStoreInnerTab] = useState<"map" | "stockTable" | "zoneEdit">(() => {
+    // 2026-09-24 · #333 · mismatch 세션 stash · 흡수 후 map 으로 fallback
+    try { sessionStorage.removeItem("dpStoreInnerTab"); } catch { /* SSR */ }
     return "map";
   });
   // 2026-09-20 · #325 · 매장구역도 탭 내부 서브탭 (매장·창고1·창고2)
@@ -663,11 +662,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           <div className="bg-white rounded-xl border border-line overflow-hidden">
             {/* 2026-09-03 · #64 · 진열요청목록 서브탭 삭제 · 상품 스캔 시 진열요청 (RequestsPage 통합) */}
             {/* 2026-09-20 · #325 · 창고1·창고2 → 매장구역도 내부 서브탭으로 nesting */}
+            {/* 2026-09-24 · #333 · 사용자 지시 · 구역불일치 페이지 완전 제거 · '배치구역 불일치' 탭 삭제 */}
             <SplitRightTabs
               tabs={[
                 { key: "map",        label: "매장구역도" },
                 { key: "stockTable", label: "실재고 테이블" },
-                { key: "mismatch",   label: "배치구역 불일치" },
                 { key: "zoneEdit",   label: "매장구역도 편집" },
               ]}
               active={storeInnerTab}
@@ -676,9 +675,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               size="lg"
             />
           </div>
-          {storeInnerTab === "mismatch" ? (
-            <MismatchPage />
-          ) : storeInnerTab === "stockTable" ? (
+          {storeInnerTab === "stockTable" ? (
             <RealStockTablePage />
           ) : storeInnerTab === "zoneEdit" ? (
             <div className="flex flex-col gap-3">
