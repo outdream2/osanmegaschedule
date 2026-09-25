@@ -64,7 +64,7 @@
 
 | # | 태스크 | 우선순위 | 비고 |
 |---|-----|-----|-----|
-| _비어있음_ | | | |
+| **E-1** | **서류작성 페이지 · Breadcrumb 및 탭메뉴 미표시** (사용자 보고 · 2026-09-25) | 🔴 P1 | 이전 세션 (`b6f5f36d`) · `getGroupSubTabs("approvals", "approval-request")` fix · but 사용자 · 여전히 breadcrumb·탭메뉴 안 나옴 · Breadcrumb "홈 > 스케쥴 > 서류작성" 및 하위 탭 (근로계약서·사직서 등) · 완전 미표시 · 재조사 필요 · ContractWriterPage · embedded=true · AppNavHeader 렌더 여부 · localStorage subTab 상태 · 확인 |
 
 ---
 
