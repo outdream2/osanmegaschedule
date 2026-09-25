@@ -154,14 +154,18 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
       }
     }
     // 2) stock_history · sale_qty × purchase_price · 공급사 (supplier_name or products.supplier fallback) 합
+    //    2026-09-25 · E-2 · 사용자 지시 · 기간 필터 적용 · 매입액·판매원가·재고자산 정합
+    //    매입액 (purchase_details) · 결제 (supplier_payments) · 판매원가 (stock_history) · 모두 같은 기간
     {
       const PAGE = 1000;
       let from = 0;
       while (true) {
-        const { data } = await supabase
+        let q = supabase
           .from("stock_history")
-          .select("supplier_name, product_code, sale_qty")
+          .select("supplier_name, product_code, sale_qty, snapshot_date")
           .range(from, from + PAGE - 1);
+        if (hasFilter) q = q.gte("snapshot_date", start).lte("snapshot_date", end);
+        const { data } = await q;
         if (!data || data.length === 0) break;
         for (const r of data) {
           const code = String((r as any).product_code ?? "").trim();

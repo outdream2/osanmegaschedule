@@ -123,9 +123,14 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         // 2026-09-10 · #72 · 확정 공식 · 재고자산 = 매입액 − 판매원가 · 잔고 = 매입액 − 결제액
         //   · /api/supplier-balances-map · values[supplier] = { purchase, payment, cogs, stock_asset, balance }
         //   · 판매액 (salesTotal) 은 여전히 supplier-purchases 사용 · 두 API 병렬
+        // 2026-09-25 · E-2 · 사용자 지시 · balances-map 도 · 같은 aggregateMonths 기간 · 매입액=재고자산+판매원가 정합
+        const now = new Date();
+        const endDate = now.toISOString().slice(0, 10);
+        const startDateObj = new Date(now.getFullYear(), now.getMonth() - aggregateMonths, now.getDate());
+        const startDate = `${startDateObj.getFullYear()}-${String(startDateObj.getMonth() + 1).padStart(2, "0")}-${String(startDateObj.getDate()).padStart(2, "0")}`;
         const [purchRes, balRes] = await Promise.all([
           api.get<any>(`/api/stock-manage/supplier-purchases?months=${aggregateMonths}&limit=50000`),
-          api.get<{ values: Record<string, { purchase: number; payment: number; cogs: number; stock_asset: number; balance: number }> }>(`/api/supplier-balances-map`),
+          api.get<{ values: Record<string, { purchase: number; payment: number; cogs: number; stock_asset: number; balance: number }> }>(`/api/supplier-balances-map?start=${startDate}&end=${endDate}`),
         ]);
         const rows: any[] = Array.isArray(purchRes.data?.rows) ? purchRes.data.rows : [];
         const balMap = balRes.data?.values ?? {};
