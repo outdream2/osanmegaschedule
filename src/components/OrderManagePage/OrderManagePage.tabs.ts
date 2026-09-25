@@ -50,8 +50,9 @@ export const PAYMENT_DEFAULT_TABS: SubTabDef<PaymentKey>[] = [
   { key: "payment-input", label: "결제입력",        icon: Wallet,      color: "amber"  },
   { key: "vendor",        label: "공급사별결제내역", icon: Building2,   color: "teal"   },
   // 2026-09-02 · #69 · 카드 결제 관리 · 2탭 신규 (사용자 지시)
-  { key: "card-register", label: "결제카드등록",    icon: CreditCard,  color: "sky"    },
+  // 2026-09-25 · UI-1 · 사용자 지시 · 카드별결제내역 · 결제카드등록 왼쪽으로 (탭 순서 스왑)
   { key: "card-history",  label: "카드별결제내역",  icon: LineChart,   color: "violet" },
+  { key: "card-register", label: "결제카드등록",    icon: CreditCard,  color: "sky"    },
   // 2026-08-25 · 사용자 지시 · 차용입력 (공급사↔약국 상품 차용 기록)
   { key: "borrowing",     label: "차용입력",        icon: HandCoins,   color: "indigo" },
   { key: "vat-prepare",   label: "부가세 준비",      icon: Calculator,  color: "rose"   },
