@@ -208,7 +208,10 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
     {toast && (
       <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
     )}
-    <div className="flex flex-col gap-3 min-h-0 flex-1">
+    {/* 2026-09-25 · 스크롤 수정 · overflow-y-auto + min-h-0 · flex-col 높이 체인 확보
+        · VendorPaymentPanel 우측 컨테이너(overflow-y-auto)가 이 div를 overflow할 수 있도록
+        · flex-1 · min-h-0 · overflow-y-auto 세트 필수 */}
+    <div className="flex flex-col gap-3 min-h-0 flex-1 overflow-y-auto">
       {vendorModalElement}
 
       {/* 2026-09-10 · #71 · 사용자 지시 · 기간 필터 · 상단 툴바 (VendorPaymentPanel) 로 통합
@@ -291,8 +294,9 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
         totalStockAssetValue={totalStockAsset}
       />
 
-      {/* 2026-08-25 · SplitRightTabs 프리미티브 이관 · v9 브랜드 시그니처 · 폰트 +2 */}
-      <div className={`${CARD_BASE} overflow-hidden`}>
+      {/* 2026-08-25 · SplitRightTabs 프리미티브 이관 · v9 브랜드 시그니처 · 폰트 +2
+          · 2026-09-25 · shrink-0 추가 · flex-col 내 탭 헤더가 줄어들지 않도록 · 스크롤 수정 */}
+      <div className={`${CARD_BASE} overflow-hidden shrink-0`}>
         <SplitRightTabs
           tabs={[
             { key: "balance",  label: "결제내역", icon: ReceiptText as any, count: ledger?.rows.filter(r => r.type === "payment").length ?? undefined },
@@ -306,8 +310,8 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
         />
       </div>
 
-      {/* 탭 컨텐츠 */}
-      <div className="flex-1 min-h-0 flex flex-col">
+      {/* 탭 컨텐츠 · 2026-09-25 · overflow-hidden 추가 · 내부 테이블 무한 확장 방지 */}
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         {activeTab === "balance" && (
           <div className={`relative ${CARD_BASE} flex-1 min-h-0 flex flex-col overflow-hidden`}>
             {/* v9 · gradient topAccent (brand-deep → sky-500) */}

@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-09-24 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-09-25 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 1093 |
+| 스캔 파일 | 1089 |
 | 위반 파일 | 98 |
-| 클린 파일 | 995 (91%) |
+| 클린 파일 | 991 (91%) |
 | 총 위반 개수 | 527 |
 
 ## 🚨 규칙별 위반 현황
@@ -53,7 +53,7 @@
 | 25 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1051 | 6 | large-file-warn(1) |
 | 26 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1119 | 6 | large-file-warn(1) |
 | 27 | `server/ocr/pipeline/stages/08-verify.ts` | 34 | 6 | no-raw-console-server(3) |
-| 28 | `server/routes/purchase/supplierPayments/balance.ts` | 498 | 6 | no-any-server(6) |
+| 28 | `server/routes/purchase/supplierPayments/balance.ts` | 502 | 6 | no-any-server(6) |
 | 29 | `server/routes/purchase/supplierPayments/purchaseDetail.ts` | 170 | 6 | no-any-server(6) |
 | 30 | `server/routes/purchase/vat.ts` | 553 | 6 | no-any-server(6) |
 
@@ -90,7 +90,7 @@
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1051 | 6 |
 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1119 | 6 |
 | `server/ocr/pipeline/stages/08-verify.ts` | 34 | 6 |
-| `server/routes/purchase/supplierPayments/balance.ts` | 498 | 6 |
+| `server/routes/purchase/supplierPayments/balance.ts` | 502 | 6 |
 | `server/routes/purchase/supplierPayments/purchaseDetail.ts` | 170 | 6 |
 | `server/routes/purchase/vat.ts` | 553 | 6 |
 | `server/routes/stock/stockManage/topSales.ts` | 764 | 6 |
@@ -108,7 +108,7 @@
 | `server/routes/stock/products.ts` | 1349 | 4 |
 | `server/services/googleDriveService.ts` | 466 | 4 |
 | `src/components/LandingPage/LandingPage.tsx` | 802 | 3 |
-| `src/components/LandingPage/VendorListEditor.tsx` | 851 | 3 |
+| `src/components/LandingPage/VendorListEditor.tsx` | 852 | 3 |
 | `src/components/OrderManagePage/OrderManagePage.tsx` | 845 | 3 |
 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 979 | 3 |
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 801 | 3 |

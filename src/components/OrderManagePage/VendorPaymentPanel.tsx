@@ -87,7 +87,10 @@ export const VendorPaymentPanel: React.FC<VendorPaymentPanelProps> = ({
           title="드래그하여 폭 조절">
           <span className="text-[15px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
-        <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 overflow-y-auto lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-zinc-50 p-3 lg:static lg:z-auto lg:bg-transparent lg:p-0 lg:overflow-visible" : ""}`}>
+        {/* 2026-09-25 · 스크롤 수정 · lg:overflow-visible → lg:overflow-y-auto
+            · lg:overflow-visible 이 overflow-y-auto 를 덮어써서 데스크탑 스크롤 소멸
+            · 모바일 fixed fullscreen → overflow-y-auto 이미 적용됨 · lg 에서도 명시 */}
+        <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 overflow-y-auto ${vendorSelected ? "fixed inset-0 z-50 bg-zinc-50 p-3 lg:static lg:z-auto lg:bg-transparent lg:p-0 lg:overflow-y-auto" : ""}`}>
           {vendorSelected && (
             <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-line shadow-md -mx-3 px-3 py-2 mb-1 flex items-center gap-2">
               <button type="button" onClick={() => onSelectVendor(null)}
