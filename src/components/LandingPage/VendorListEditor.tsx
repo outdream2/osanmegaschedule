@@ -135,27 +135,23 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         const rows: any[] = Array.isArray(purchRes.data?.rows) ? purchRes.data.rows : [];
         const balMap = balRes.data?.values ?? {};
         const m = new Map<string, { stockValue: number; salesTotal: number; balance?: number; purchaseTotal?: number }>();
-        // 판매액 · supplier-purchases 기반 aggregation
-        for (const r of rows) {
-          const nm = String(r.supplier ?? "").trim();
-          if (!nm) continue;
-          const key = normalizeSupplierKey(nm);
-          if (!key) continue;
-          const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0, balance: 0, purchaseTotal: 0 };
-          cur.salesTotal += Number(r.saleAmount ?? 0) || 0;
-          m.set(key, cur);
-        }
-        // 재고자산·잔고·매입액 · 확정 공식 (재고자산 = 매입액 − 판매원가 · 잔고 = 매입액 − 결제액)
+        // 2026-09-25 · E-2 후속 · 사용자 지시 · 대원칙 · 매입액 = 재고자산 + 판매액(원가)
+        //   · 이전 · salesTotal · supplier-purchases 의 saleAmount (supply_amount 비율) · cogs 와 다른 계산 · 등식 안 맞음
+        //   · 이후 · salesTotal · balances-map 의 cogs (판매원가 · sale_qty × products.purchase_price)
+        //   · 등식 성립 · 매입액 = 재고자산 + 판매원가 (동일 소스 · 동일 기간)
+        // 재고자산·잔고·매입액·판매원가 · 확정 공식 (모두 balances-map SSOT)
         for (const [supplier, v] of Object.entries(balMap)) {
           const key = normalizeSupplierKey(supplier);
           if (!key) continue;
           const cur = m.get(key) ?? { stockValue: 0, salesTotal: 0, balance: 0, purchaseTotal: 0 };
           cur.stockValue = Number(v.stock_asset) || 0;
           cur.balance = Number(v.balance) || 0;
-          // 2026-09-11 · 사용자 지시 · 총매입액 컬럼 추가 · v.purchase (기간 누계 매입액)
           cur.purchaseTotal = Number(v.purchase) || 0;
+          cur.salesTotal = Number(v.cogs) || 0; // 판매원가 (사입가 기준 · 대원칙)
           m.set(key, cur);
         }
+        // (참고) supplier-purchases rows · 다른 endpoint 에서 최근매입일 등 · 활용 가능
+        void rows;
         if (!cancelled) setSupplierAggMap(m);
       } catch { /* 조회 실패 시 빈 map · 컬럼 "-" 표기 */ }
       finally { if (!cancelled) setSupplierAggLoading(false); }
