@@ -53,6 +53,10 @@ import salesAutoRecommendRouter from "./server/routes/stock/salesAutoRecommend";
 // 2026-08-06 · T-LOSS-HISTORY · 손실추적 (DiffTab) 날짜별 스냅샷·이력·집계
 import lossTrackingRouter from "./server/routes/stock/lossTracking";
 import purchaseRouter    from "./server/routes/purchase/purchase";
+// 2026-09-25 · #1 · 발주매입 대조 시스템 (사용자 지시)
+//   · GET /api/order-purchase-match · 발주-매입 자동 매칭 판정
+//   · POST /api/order-purchase-match/:order_id/confirm · 매입완료·이상표시·undo
+import orderPurchaseMatchRouter from "./server/routes/purchase/orderPurchaseMatch";
 import stockArrivalsRouter from "./server/routes/stock/stockArrivals";
 import productArrivalsRouter from "./server/routes/stock/productArrivals";
 import returnRequestsRouter from "./server/routes/purchase/returnRequests";
@@ -279,6 +283,8 @@ async function startServer() {
   app.use(ocrDeletedRowsRouter);    // Phase 2 예정
   app.use(purchaseRouter);
   app.use(purchaseHistoryRouter);
+  // 2026-09-25 · #1 · 발주매입 대조 시스템 · 로그인 필수 (authorize(1) 내부)
+  app.use(orderPurchaseMatchRouter);
   app.use(invoiceImagesRouter);
 
   // 재고·상품
