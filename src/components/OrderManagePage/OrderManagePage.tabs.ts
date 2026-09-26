@@ -7,10 +7,13 @@
 import {
   ShoppingCart, ClipboardList, AlertTriangle, Package, Building2, ArrowLeftRight, PackageCheck,
   ScanLine, PackagePlus, Info, Wallet, HandCoins, Calculator, TrendingUp, PieChart, Boxes,
-  BarChart3, CreditCard, LineChart, LayoutDashboard,
+  BarChart3, CreditCard, LineChart, LayoutDashboard, ClipboardCheck,
 } from "lucide-react";
 
-export type PurchaseOrderKey = "order" | "need" | "critical" | "history";
+// 2026-09-25 · #1 · 발주매입 대조 시스템 · 신규 2탭 (사용자 지시)
+//   · match     · 발주매입대조 · 자동 매칭 + 사용자 판정 (matched·exception·undo)
+//   · exception · 이상목록 · exception_type 별 그룹핑 + 매입완료로 변경
+export type PurchaseOrderKey = "order" | "need" | "history" | "match" | "exception" | "critical";
 // 2026-08-29 · #193 Phase B · scan · productarrival · productinfo · return 4개 · 매장>상품/반품 서브탭으로 완전 이관 (사용자 지시)
 export type PurchaseKey = "receipt" | "reconciliation" | "purchase-history";
 // 2026-09-02 · #69 · 사용자 지시 · 카드 결제 관리 · 2탭 신규
@@ -29,11 +32,15 @@ export interface SubTabDef<K extends string> {
 }
 
 // 2026-09-23 · #350 · 사용자 지시 재확인 · 탭 순서 · 발주요청 → 발주필요 → 발주이력 → 품절임박(끝)
+// 2026-09-25 · #1 · 사용자 지시 · 발주매입대조 · 이상목록 · 발주이력 뒤 · 품절임박 앞 삽입
+//   순서 · 발주요청 · 발주필요 · 발주이력 · **발주매입대조** · **이상목록** · 품절임박(끝)
 export const PURCHASE_ORDER_DEFAULT_TABS: SubTabDef<PurchaseOrderKey>[] = [
-  { key: "order",    label: "발주요청", icon: ShoppingCart,  color: "sky"    },
-  { key: "need",     label: "발주필요", icon: ClipboardList, color: "rose"   },
-  { key: "history",  label: "발주이력", icon: Package,       color: "indigo" },
-  { key: "critical", label: "품절임박", icon: AlertTriangle, color: "amber"  },
+  { key: "order",     label: "발주요청",    icon: ShoppingCart,   color: "sky"     },
+  { key: "need",      label: "발주필요",    icon: ClipboardList,  color: "rose"    },
+  { key: "history",   label: "발주이력",    icon: Package,        color: "indigo"  },
+  { key: "match",     label: "발주매입대조", icon: ClipboardCheck, color: "emerald" },
+  { key: "exception", label: "이상목록",    icon: AlertTriangle,  color: "amber"   },
+  { key: "critical",  label: "품절임박",    icon: AlertTriangle,  color: "amber"   },
 ];
 
 export const PURCHASE_DEFAULT_TABS: SubTabDef<PurchaseKey>[] = [

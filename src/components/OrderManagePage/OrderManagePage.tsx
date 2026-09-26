@@ -89,6 +89,10 @@ import { VendorPaymentPanel } from "./VendorPaymentPanel";
 import { OrderManageModals } from "./OrderManagePage.modals";
 // 2026-09-10 · #46 · 발주필요 우측 판매 추천 → [상세 정보] 클릭 · 상품 상세 모달
 import { ProductDetailModal } from "./ProductDetailModal";
+// 2026-09-25 · #1 · 발주매입 대조 시스템 · 신규 2탭 (사용자 지시)
+//   · lazy · 초기 번들 축소 · 사용자 클릭 시 로드
+const OrderPurchaseMatchTab = React.lazy(() => import("./OrderPurchaseMatchTab").then(m => ({ default: m.OrderPurchaseMatchTab })));
+const OrderPurchaseExceptionTab = React.lazy(() => import("./OrderPurchaseExceptionTab").then(m => ({ default: m.OrderPurchaseExceptionTab })));
 
 const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ocrTabAuthSession,
@@ -113,7 +117,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   // Level-2 서브탭 상태
   // 2026-09-23 · 대원칙 · 페이지 기본화면 = 첫 탭메뉴 · #350 재확인 · 발주요청 first
-  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history">("order");
+  // 2026-09-25 · #1 · 사용자 지시 · match·exception 신규 추가 (사용자 클릭 시 진입)
+  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history" | "match" | "exception">("order");
   // 2026-08-29 · #193 Phase B · scan/productarrival/productinfo/return · 매장>상품·반품 서브탭으로 완전 이관 · 매입 union 축소
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "purchase-history">(() => {
     const s = initialPurchaseSubTab as string | undefined;
@@ -584,7 +589,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   }, []);
 
   useEffect(() => {
-    const first0 = purchaseOrderSortable.tabs[0]?.key as "order" | "need" | undefined;
+    const first0 = purchaseOrderSortable.tabs[0]?.key as PurchaseOrderKey | undefined;
     const first1 = purchaseSortable.tabs[0]?.key as PurchaseKey | undefined;
     const first2 = paymentSortable.tabs[0]?.key as PaymentKey | undefined;
     const first3 = statSortable.tabs[0]?.key as StatKey | undefined;
@@ -643,6 +648,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               let badge: number | undefined;
               if (t.key === "need") badge = lowStockFiltered.length;
               else if (t.key === "order") badge = orderReqsFiltered.length;
+              // 2026-09-25 · #1 · match·exception 배지는 서브탭 자체가 자체 로드 · 여기서는 skip (별도 fetch 회귀 방지)
+              else if (t.key === "match" || t.key === "exception") badge = undefined;
               else if (t.key === "critical") {
                 // 2026-09-23 · #351 · 사용자 지시 · 품절임박 · CriticalTab 과 동일 로직 · 현재고 / 적정재고 ≤ 0.1
                 badge = products.filter(p => {
@@ -709,6 +716,21 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             />
           )}
           {purchaseOrderSubTab === "history" && <OrderHistoryTab />}
+          {/* 2026-09-25 · #1 · 발주매입 대조 시스템 (사용자 지시) */}
+          {purchaseOrderSubTab === "match" && (
+            <div className="flex-1 flex flex-col min-h-0">
+              <Suspense fallback={<SubTabFallback />}>
+                <OrderPurchaseMatchTab />
+              </Suspense>
+            </div>
+          )}
+          {purchaseOrderSubTab === "exception" && (
+            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+              <Suspense fallback={<SubTabFallback />}>
+                <OrderPurchaseExceptionTab />
+              </Suspense>
+            </div>
+          )}
         </div>
       )}
 
