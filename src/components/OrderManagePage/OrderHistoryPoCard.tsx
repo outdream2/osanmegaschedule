@@ -66,6 +66,13 @@ export interface OrderHistoryPoCardProps {
    *   · 매입완료 배지는 유지 (상태 표시 · 이력 시각화)
    */
   hideMatchAction?: boolean;
+  /**
+   * 2026-09-25 · 사용자 정정 · 발주매입대조 왼쪽 패널 · 카드 선택 콜백 · 없으면 기존 동작 유지 (BC)
+   *   · 있으면 카드 헤더 버튼 클릭 = 발주 선택 · chevron 은 확장/축소로 분리
+   */
+  onSelect?: () => void;
+  /** 선택된 상태 · outline emerald 강조 */
+  selected?: boolean;
 }
 
 /**
@@ -75,18 +82,24 @@ export interface OrderHistoryPoCardProps {
  */
 export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
   o, isOpen, onToggle, onPdf, onMatch, pdfLoading, matchLoading, fmtWon, hideMatchAction,
+  onSelect, selected,
 }) => {
   const isMatched = o.status === "matched";
+  // 2026-09-25 · 사용자 정정 · Props onSelect 있으면 헤더 = 발주 선택 · chevron = 확장/축소
+  const selectionMode = !!onSelect;
+  const outlineCls = selected
+    ? "ring-2 ring-emerald-400"
+    : "";
   return (
-    <div className={`rounded-xl border bg-white overflow-hidden ${isMatched ? "border-emerald-200" : "border-zinc-200"}`}>
+    <div className={`rounded-xl border bg-white overflow-hidden ${isMatched ? "border-emerald-200" : "border-zinc-200"} ${outlineCls}`}>
       <div className="flex gap-0">
         {/* 상태 accent bar */}
         <div className={`w-1 shrink-0 rounded-l-xl ${isMatched ? "bg-emerald-400" : "bg-sky-400"}`} />
         <div className="flex-1 min-w-0">
-          {/* 헤더 · 토글 */}
+          {/* 헤더 · Props 있으면 발주 선택 · 없으면 기존 확장/축소 (BC 유지) */}
           <button
             type="button"
-            onClick={onToggle}
+            onClick={selectionMode ? onSelect : onToggle}
             className="w-full text-left px-3.5 pt-3 pb-2.5 flex items-start gap-2"
           >
             <div className="flex-1 min-w-0 space-y-0.5">
@@ -125,8 +138,13 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
                 <span className="font-bold text-emerald-700">{fmtWon(o.total_amount)}</span>
               </div>
             </div>
-            {/* chevron */}
-            <div className="mt-1 shrink-0 text-zinc-400">
+            {/* chevron · selectionMode 시 · 클릭 = 확장/축소 (발주 선택과 분리 · stopPropagation) */}
+            <div
+              className="mt-1 shrink-0 text-zinc-400 hover:text-zinc-600 transition-colors"
+              onClick={selectionMode ? (e) => { e.stopPropagation(); onToggle(); } : undefined}
+              role={selectionMode ? "button" : undefined}
+              aria-label={selectionMode ? (isOpen ? "발주 상세 접기" : "발주 상세 펼치기") : undefined}
+            >
               {isOpen
                 ? <ChevronDown size={16} strokeWidth={2.4} />
                 : <ChevronRight size={16} strokeWidth={2.4} />}

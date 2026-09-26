@@ -94,8 +94,22 @@ function shortCode(code: string): string {
 }
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
+//
+// 2026-09-25 · 사용자 정정 · 발주매입대조 왼쪽 패널 · OrderHistoryTab 그대로 사용
+//   · Props 없이 렌더 시 · 완전 기존 동작 (BC 유지 · 매입이력 페이지 무영향)
+//   · Props 있을 때 · 카드 클릭 = 발주 선택 · chevron·PDF·매입확인 = stopPropagation
+//   · selectedOrderNumber === order_number 매칭 시 · 카드 강조 (ring emerald)
+//
+export interface OrderHistoryTabProps {
+  /** 발주 카드 클릭 시 호출 · order_number 반환 · Props 없으면 기존 동작 (확장/축소만) */
+  onSelectOrder?: (orderNumber: string) => void;
+  /** 현재 선택된 발주번호 · 카드 강조 하이라이트용 */
+  selectedOrderNumber?: string | null;
+}
 
-export const OrderHistoryTab: React.FC = () => {
+export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder, selectedOrderNumber } = {}) => {
+  // Props 있는 지 여부 · 카드 이벤트 분기 · 기존 동작 완전 보존 (BC)
+  const selectionMode = !!onSelectOrder;
   const { toast, showError, showSuccess } = useToast();
   const confirm = useConfirm();
   const [matchingKey, setMatchingKey] = useState<string | null>(null);
@@ -517,23 +531,51 @@ export const OrderHistoryTab: React.FC = () => {
                               const key = String(o.order_number ?? o.sent_at);
                               const isOpen = !collapsed.has(key);
                               const isMatched = o.status === "matched";
+                              // 2026-09-25 · 사용자 정정 · 발주매입대조 · 선택된 발주 하이라이트
+                              const isSelected = selectionMode
+                                && selectedOrderNumber != null
+                                && o.order_number != null
+                                && String(o.order_number) === String(selectedOrderNumber);
+                              // 카드 onClick · Props 있으면 발주 선택 · 없으면 확장/축소 (기존 동작 유지 · BC)
+                              const rowOnClick = () => {
+                                if (selectionMode && o.order_number) {
+                                  onSelectOrder?.(String(o.order_number));
+                                } else {
+                                  togglePo(key);
+                                }
+                              };
+                              // Selection mode 하이라이트 클래스 · ring emerald + bg emerald soft
+                              const selectionCls = isSelected
+                                ? "ring-2 ring-emerald-400 ring-inset bg-emerald-50/60"
+                                : (isMatched ? "bg-emerald-50/20" : "");
                               return (
                                 <React.Fragment key={key}>
                                   {/* PO 행 */}
                                   <tr
-                                    className={`hover:bg-zinc-50/60 transition-colors cursor-pointer group ${isMatched ? "bg-emerald-50/20" : ""}`}
-                                    onClick={() => togglePo(key)}
+                                    className={`hover:bg-zinc-50/60 transition-colors cursor-pointer group ${selectionCls}`}
+                                    onClick={rowOnClick}
                                   >
                                     {/* 상태 accent bar + chevron */}
                                     <td className="py-0 w-8">
                                       <div className="flex items-stretch h-full">
                                         {/* 세로 accent bar */}
                                         <div className={`w-1 self-stretch ${isMatched ? "bg-emerald-400" : "bg-sky-400"}`} />
-                                        <div className="flex items-center justify-center w-7">
+                                        <button
+                                          type="button"
+                                          className="flex items-center justify-center w-7 hover:bg-zinc-100 transition-colors cursor-pointer"
+                                          onClick={(e) => {
+                                            // 항상 row onClick 과 분리 (row 도 togglePo 를 하므로 이중 토글 방지)
+                                            // Selection mode 시 · row=발주선택 · chevron=확장/축소 로 분리
+                                            e.stopPropagation();
+                                            togglePo(key);
+                                          }}
+                                          title={isOpen ? "접기" : "펼치기"}
+                                          aria-label={isOpen ? "발주 상세 접기" : "발주 상세 펼치기"}
+                                        >
                                           {isOpen
                                             ? <ChevronDown size={14} className="text-zinc-400" strokeWidth={2.4} />
                                             : <ChevronRight size={14} className="text-zinc-300 group-hover:text-zinc-400" strokeWidth={2.4} />}
-                                        </div>
+                                        </button>
                                       </div>
                                     </td>
                                     {/* 발주번호 (위) + 공급사 (아래) */}
@@ -689,6 +731,11 @@ export const OrderHistoryTab: React.FC = () => {
                         {ordersOfDate.map((o) => {
                           const key = String(o.order_number ?? o.sent_at);
                           const isOpen = !collapsed.has(key);
+                          // 2026-09-25 · 사용자 정정 · 발주매입대조 · 카드 선택 상태
+                          const isSelectedMob = selectionMode
+                            && selectedOrderNumber != null
+                            && o.order_number != null
+                            && String(o.order_number) === String(selectedOrderNumber);
                           return (
                             <OrderHistoryPoCard
                               key={key}
@@ -700,6 +747,10 @@ export const OrderHistoryTab: React.FC = () => {
                               pdfLoading={pdfSavingKey === String(o.order_number ?? o.sent_at)}
                               matchLoading={matchingKey === String(o.order_number)}
                               fmtWon={fmtWon}
+                              onSelect={selectionMode && o.order_number
+                                ? () => onSelectOrder?.(String(o.order_number))
+                                : undefined}
+                              selected={isSelectedMob}
                             />
                           );
                         })}
