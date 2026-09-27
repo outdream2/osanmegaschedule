@@ -31,6 +31,7 @@ import { PeriodSelector } from "../common/PeriodSelector";
 import { Button } from "../common/Button";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { ApiError } from "../../lib/apiClient";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { shortDate } from "../../lib/dateFormat";
@@ -88,6 +89,18 @@ export const OrderPurchaseMatchTab: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [exOpen, setExOpen] = useState(false);
+
+  // 2026-09-27 · 사용자 지시 · 좌우 패널 · 드래그 리사이저블
+  //   · 데스크탑 (lg 이상) 만 · 폭 조절 · localStorage 저장
+  //   · 모바일·태블릿 · 기존 스택 (반응형 대원칙)
+  const { width: leftWidth, startResize, isDesktop } = useResizablePanel({
+    storageKey: "resize.order-purchase-match",
+    defaultRatio: 0.5,
+    minWidth: 380,
+    maxWidth: 9999,
+    detectDesktop: true,
+    desktopBreakpoint: 1024,
+  });
 
   // ─── 오른쪽 · 선택 발주 매입 매칭 로드 ─────────────────────────
   const loadDetail = useCallback(async () => {
@@ -237,18 +250,33 @@ export const OrderPurchaseMatchTab: React.FC = () => {
           </span>
         </Card>
 
-        {/* 좌·우 · 한눈에 비교 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
-          {/* ─── 왼쪽 · OrderHistoryTab 그대로 (Props 확장) ─── */}
-          <div className="min-h-0">
+        {/* 좌·우 · 한눈에 비교 · 데스크탑 (lg 이상) 리사이저블 · 모바일 스택 */}
+        <div className={`min-h-0 ${isDesktop ? "flex items-stretch gap-0" : "flex flex-col gap-4"}`}>
+          {/* ─── 왼쪽 · OrderHistoryTab (Props 확장 · BC 유지) · 데스크탑 폭 조절 ─── */}
+          <div
+            className={isDesktop ? "shrink-0 min-h-0" : "min-h-0"}
+            style={isDesktop ? { width: `${leftWidth}px` } : undefined}
+          >
             <OrderHistoryTab
               onSelectOrder={setSelectedOrderNumber}
               selectedOrderNumber={selectedOrderNumber}
             />
           </div>
 
+          {/* ─── 리사이저 gutter · 데스크탑만 · cursor-col-resize · hover 강조 ─── */}
+          {isDesktop && (
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="좌우 패널 폭 조절"
+              onMouseDown={startResize}
+              className="w-1.5 mx-1 shrink-0 rounded-full bg-line/60 hover:bg-emerald-400/70 active:bg-emerald-500 cursor-col-resize transition-colors"
+              title="드래그로 폭 조절"
+            />
+          )}
+
           {/* ─── 오른쪽 · 매입 매칭 상세 ─── */}
-          <div className="rounded-2xl border border-zinc-200/70 bg-white overflow-hidden flex flex-col min-h-[520px] max-h-[calc(100vh-180px)]">
+          <div className={`min-w-0 rounded-2xl border border-zinc-200/70 bg-white overflow-hidden flex flex-col min-h-[520px] max-h-[calc(100vh-180px)] ${isDesktop ? "flex-1" : ""}`}>
             {/* 상단 요약 */}
             <div className="shrink-0 px-4 py-3 border-b border-line bg-zinc-50/40">
               <div className="flex items-center gap-2 flex-wrap">
