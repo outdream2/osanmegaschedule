@@ -14,8 +14,9 @@ import logoImg from "../../images/logo2.png";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
 import { SidebarTrigger } from "../ui/sidebar";
 import { Breadcrumb } from "../common/Breadcrumb";
-import { buildBreadcrumb } from "./sideNavGroups";
-import { useActiveSubTab } from "../../hooks/useActiveSubTab";
+import { buildBreadcrumbFromNav } from "./sideNavGroups";
+// 2026-09-27 · 네비게이션 SSOT · useActiveSubTab 훅 · localStorage · CustomEvent → useActiveNav Context
+import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
 import { SIDE_NAV_GROUPS } from "./sideNavGroups";
 import { useIsMobile } from "../../hooks/use-mobile";
@@ -281,24 +282,25 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   const desktopOverflowTabs = desktopOrderedTabs.slice(desktopVisibleCount);
 
   // ── 브레드크럼 ─────────────────────────
-  const activeSubTab = useActiveSubTab(activePage);
+  // 2026-09-27 · 네비게이션 SSOT · useActiveNav Context · activeNav 기반 buildBreadcrumbFromNav 정공법
+  const { activeNav, setActiveByPage } = useActiveNav();
   const breadcrumbItems = useMemo(
-    () => buildBreadcrumb(activePage, activeSubTab).map(s => ({
+    () => buildBreadcrumbFromNav(activeNav).map(s => ({
       label: s.label,
       page: s.page,
       subTab: s.subTab,
     })),
-    [activePage, activeSubTab],
+    [activeNav],
   );
-  // 2026-09-22 · subTab 파라미터 전달 fix · 이전 · subTab 무시되어 잘못된 페이지 이동
+  // 2026-09-27 · Breadcrumb navigate · localStorage / CustomEvent 사이드 채널 제거
+  //   · setActiveByPage 로 · activeNav 즉시 갱신 · Header · Sidebar highlight 동시 반영
+  //   · 페이지 이동 후 · 해당 페이지 mount 시 · 다시 setActiveByPage 로 최종 정착
   const handleBreadcrumbNav = (page: AppNavPage, subTab?: string) => {
     if (page === "landing" && onBack) onBack();
-    else if (subTab) {
-      try { localStorage.setItem(`sidebar.subtab.${page}`, subTab); } catch { /* silent */ }
-      try { window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page, subTab } })); } catch { /* silent */ }
+    else {
+      setActiveByPage(page, subTab ?? null);
       onNavigate?.(page);
     }
-    else onNavigate?.(page);
   };
 
   // ── 슬림 헤더 (사이드바 데스크탑) ─────────────────────────
