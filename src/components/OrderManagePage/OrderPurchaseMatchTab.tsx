@@ -89,6 +89,10 @@ export const OrderPurchaseMatchTab: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [exOpen, setExOpen] = useState(false);
+  // 2026-09-27 · 사용자 지시 · 라인 단위 판정 · Exception Modal 대상 라인
+  //   · null 이면 발주 전체 (하단 sticky 일괄 액션 · 기존 로직)
+  //   · 지정 시 그 라인만 (테이블 각 라인 [이상] 버튼)
+  const [exTargetRow, setExTargetRow] = useState<OrderMatchRow | null>(null);
 
   // 2026-09-27 · 사용자 지시 · 좌우 패널 · 드래그 리사이저블
   //   · 데스크탑 (lg 이상) 만 · 폭 조절 · localStorage 저장
@@ -180,6 +184,110 @@ export const OrderPurchaseMatchTab: React.FC = () => {
     },
     [confirm, loadDetail, showError, showSuccess],
   );
+
+  // ─── 라인 단위 액션 (2026-09-27 · 사용자 지시) ─────────────────
+  //   · "상품마다 매입을 확인하든 이상을 확인하든 할 거아니야"
+  //   · 각 상품 라인 · 개별 판정 (order_requests.id 단위)
+  const runConfirmOne = useCallback(
+    async (row: OrderMatchRow) => {
+      const ok = await confirm({
+        title: "매입 확인",
+        message: `${row.product_name || row.product_code} · 매입확인?`,
+        confirmLabel: "매입확인",
+      });
+      if (!ok) return;
+      setBusy(true);
+      try {
+        await confirmOrderPurchaseMatch(row.id, {
+          action: "matched", exception_type: null, note: null,
+        });
+        showSuccess("매입확인 완료");
+        await loadDetail();
+      } catch (e) {
+        const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "처리 실패");
+        showError(msg);
+      } finally { setBusy(false); }
+    },
+    [confirm, loadDetail, showError, showSuccess],
+  );
+
+  const runUndoOne = useCallback(
+    async (row: OrderMatchRow) => {
+      const ok = await confirm({
+        title: "판정 취소",
+        message: `${row.product_name || row.product_code} · 판정 취소?`,
+        confirmLabel: "Undo",
+        danger: true,
+      });
+      if (!ok) return;
+      setBusy(true);
+      try {
+        await confirmOrderPurchaseMatch(row.id, {
+          action: "undo", exception_type: null, note: null,
+        });
+        showSuccess("판정 취소 완료");
+        await loadDetail();
+      } catch (e) {
+        const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "처리 실패");
+        showError(msg);
+      } finally { setBusy(false); }
+    },
+    [confirm, loadDetail, showError, showSuccess],
+  );
+
+  const openExceptionForRow = useCallback((row: OrderMatchRow) => {
+    setExTargetRow(row);
+    setExOpen(true);
+  }, []);
+
+  // 라인 단위 · [확인]/[이상] · 판정 완료 시 [상태 pill]+[Undo]
+  //   · 폭 좁으면 flex-wrap · 두 버튼 다음 줄 (사용자 지시 · "칸이 모자르니까 다음줄에 나와도 돼")
+  const renderLineAction = useCallback((row: OrderMatchRow): React.ReactNode => {
+    const status = row.match_status;
+    const isDecided = status === "matched" || status === "exception";
+    if (isDecided) {
+      return (
+        <div className="flex flex-wrap items-center gap-1.5 justify-center">
+          <StatusPill tone={status === "matched" ? "emerald" : "amber"} size="xs" dot>
+            {status === "matched" ? "확인" : "이상"}
+          </StatusPill>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<RotateCcw size={12} strokeWidth={2.2} />}
+            onClick={() => runUndoOne(row)}
+            disabled={busy}
+          >
+            Undo
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 justify-center">
+        <Button
+          variant="primary"
+          size="sm"
+          icon={<CheckCircle2 size={13} strokeWidth={2.4} />}
+          onClick={() => runConfirmOne(row)}
+          disabled={busy}
+          className="!bg-emerald-600 hover:!bg-emerald-700 !border-emerald-600"
+        >
+          확인
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          icon={<AlertTriangle size={13} strokeWidth={2.4} />}
+          onClick={() => openExceptionForRow(row)}
+          disabled={busy}
+          className="!bg-amber-500 hover:!bg-amber-600 !border-amber-500"
+        >
+          이상
+        </Button>
+      </div>
+    );
+  }, [busy, runConfirmOne, runUndoOne, openExceptionForRow]);
 
   // ─── 오른쪽 상태 요약 ─────────────────────────
   const rows = detail?.rows ?? [];
@@ -360,6 +468,7 @@ export const OrderPurchaseMatchTab: React.FC = () => {
                       <th className="text-right px-3 py-2.5 font-medium whitespace-nowrap">금액</th>
                       <th className="text-left px-3 py-2.5 font-medium whitespace-nowrap">매입일</th>
                       <th className="text-center px-3 py-2.5 font-medium whitespace-nowrap">Diff</th>
+                      <th className="text-center px-3 py-2.5 font-medium whitespace-nowrap min-w-[160px]">판정</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -405,6 +514,9 @@ export const OrderPurchaseMatchTab: React.FC = () => {
                             </td>
                             <td className="px-3 py-2.5 text-center align-top">
                               <StatusPill tone="zinc" size="xs">매입 없음</StatusPill>
+                            </td>
+                            <td className="px-3 py-2.5 align-top">
+                              {renderLineAction(r)}
                             </td>
                           </tr>
                         );
@@ -459,6 +571,11 @@ export const OrderPurchaseMatchTab: React.FC = () => {
                             <td className="px-3 py-2.5 text-center align-top">
                               {renderDiff(Number(r.order_qty ?? 0), r.unit_price, Number(m.quantity ?? 0), Number(m.unit_price ?? 0))}
                             </td>
+                            {isFirst && (
+                              <td className="px-3 py-2.5 align-top" rowSpan={matches.length}>
+                                {renderLineAction(r)}
+                              </td>
+                            )}
                           </tr>
                         );
                       });
@@ -487,7 +604,7 @@ export const OrderPurchaseMatchTab: React.FC = () => {
                       variant="primary"
                       size="lg"
                       icon={<AlertTriangle size={17} strokeWidth={2.4} />}
-                      onClick={() => setExOpen(true)}
+                      onClick={() => { setExTargetRow(null); setExOpen(true); }}
                       disabled={busy}
                       className="!bg-amber-500 hover:!bg-amber-600 !border-amber-500 min-w-[140px] justify-center"
                     >
@@ -526,17 +643,25 @@ export const OrderPurchaseMatchTab: React.FC = () => {
         </div>
       </div>
 
-      {/* 이상 판정 · 메모 모달 · 재사용 */}
+      {/* 이상 판정 · 메모 모달 · 재사용
+          · exTargetRow 지정 시 · 그 라인만 저장 (라인 단위 판정 · 사용자 지시 · 2026-09-27)
+          · exTargetRow null 시 · 발주 전체 (하단 sticky 일괄 액션 · 첫 라인은 Modal 저장 · 나머지 loop) */}
       {selectedOrderNumber && rows.length > 0 && (
         <ExceptionNoteModal
           open={exOpen}
-          onClose={() => setExOpen(false)}
-          orderId={rows[0]?.id ?? null}
+          onClose={() => { setExOpen(false); setExTargetRow(null); }}
+          orderId={(exTargetRow?.id ?? rows[0]?.id) ?? null}
           orderNumber={detail?.order_number ?? selectedOrderNumber}
-          defaultExceptionType={effectiveExceptionType(rows[0])}
-          defaultNote={rows[0]?.exception_note ?? null}
+          defaultExceptionType={effectiveExceptionType(exTargetRow ?? rows[0])}
+          defaultNote={(exTargetRow ?? rows[0])?.exception_note ?? null}
           onSaved={async () => {
-            // 발주 내 나머지 라인도 동일 사유·메모로 exception 처리 (판정 단위 · 발주)
+            if (exTargetRow) {
+              // 라인 단위 · Modal 자체가 이미 exTargetRow.id 저장 완료
+              setExTargetRow(null);
+              await loadDetail();
+              return;
+            }
+            // 발주 전체 · 나머지 라인도 동일 사유·메모로 exception 처리 (기존 하단 일괄 액션 · BC 유지)
             const first = rows[0];
             const others = rows.slice(1);
             const exType = effectiveExceptionType(first) ?? "no_purchase";
