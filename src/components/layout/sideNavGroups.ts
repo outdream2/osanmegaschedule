@@ -419,6 +419,12 @@ export interface BreadcrumbSegment {
   page?: AppNavPage;
   subTab?: string;
 }
+/**
+ * @deprecated · 2026-09-27 · 네비게이션 SSOT · buildBreadcrumbFromNav(activeNav) 사용 권장
+ *   · 이 함수 · currentPage + activeSubTab 역추론 · 첫 마운트 시 activeSubTab null → fallback 오매칭 발생 가능
+ *   · buildBreadcrumbFromNav · activeNav.groupId lookup · 정확한 그룹 반환 · 오매칭 없음
+ *   · 현재 호출부 없음 (2026-09-27 이관 완료 시 삭제)
+ */
 export function buildBreadcrumb(currentPage: AppNavPage, activeSubTab?: string | null): BreadcrumbSegment[] {
   if (currentPage === "landing") {
     return [{ label: "홈" }];
@@ -458,6 +464,43 @@ export function buildBreadcrumb(currentPage: AppNavPage, activeSubTab?: string |
     subTab: matchedItem?.subTab ?? activeSubTab ?? undefined,
   });
   return seg;
+}
+
+/**
+ * 2026-09-27 · 네비게이션 SSOT · activeNav 기반 브레드크럼 lookup (정공법)
+ *   · currentPage + subTab 역추론 X · activeNav.groupId 직접 lookup
+ *   · 오매칭 없음 · 최초 마운트 시에도 안정
+ *   · legacy buildBreadcrumb · activeSubTab null 시 첫 매칭 그룹 fallback → 여러 그룹 등록 페이지 (approval-request) 오매칭
+ *   · 이 함수 · groupId 명시 · 정확한 그룹 · 정확한 아이템
+ */
+export interface ActiveNavForBreadcrumb {
+  groupId: string;
+  itemKey: AppNavPage;
+  subTab?: string | null;
+  nested?: string | null;
+}
+export function buildBreadcrumbFromNav(activeNav: ActiveNavForBreadcrumb | null): BreadcrumbSegment[] {
+  if (!activeNav || activeNav.itemKey === "landing") return [{ label: "홈" }];
+  const home: BreadcrumbSegment = { label: "홈", page: "landing" };
+  const group = SIDE_NAV_GROUPS.find(g => g.id === activeNav.groupId);
+  if (!group) return [home, { label: String(activeNav.itemKey) }];
+
+  const groupIsSingle = group.items.length === 1 && !group.items[0].subTab;
+  if (groupIsSingle) return [home, { label: group.label }];
+
+  const item =
+    group.items.find(i => i.key === activeNav.itemKey && i.subTab === (activeNav.subTab ?? undefined)) ??
+    group.items.find(i => i.key === activeNav.itemKey);
+
+  const groupPage = group.topTab?.key as AppNavPage | undefined;
+  const groupDefaultSubTab = group.items[0]?.subTab ?? undefined;
+  const pageLabel = item?.label ?? String(activeNav.itemKey);
+
+  return [
+    home,
+    { label: group.label, page: groupPage, subTab: groupDefaultSubTab },
+    { label: pageLabel, page: activeNav.itemKey, subTab: item?.subTab ?? activeNav.subTab ?? undefined },
+  ];
 }
 
 /** 컬러 → tailwind 클래스 (활성 톤 · 비활성 hover 톤 · phosphor 톤에 맞춤) */
