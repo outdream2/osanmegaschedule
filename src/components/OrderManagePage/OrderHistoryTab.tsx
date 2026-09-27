@@ -421,9 +421,9 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
         }
       />
 
-      {/* 필터 바 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <div className="relative inline-flex items-center">
+      {/* 필터 바 · 2026-09-27 · 사용자 지시 · 컨테이너 좁아지면 자동 wrap · 겹침 방지 */}
+      <div className="flex flex-wrap gap-2">
+        <div className="relative inline-flex items-center flex-1 min-w-[180px]">
           <Tags size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
           <select
             value={categoryFilter}
@@ -437,8 +437,12 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
             ))}
           </select>
         </div>
-        <SearchBar value={supplierSearch} onChange={setSupplierSearch} placeholder="공급사 검색" />
-        <SearchBar value={productSearch} onChange={setProductSearch} placeholder="상품명 검색" />
+        <div className="flex-1 min-w-[200px]">
+          <SearchBar value={supplierSearch} onChange={setSupplierSearch} placeholder="공급사 검색" widthClass="w-full" />
+        </div>
+        <div className="flex-1 min-w-[200px]">
+          <SearchBar value={productSearch} onChange={setProductSearch} placeholder="상품명 검색" widthClass="w-full" />
+        </div>
       </div>
 
       {/* 마이그레이션 안내 */}

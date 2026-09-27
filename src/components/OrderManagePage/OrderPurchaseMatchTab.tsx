@@ -468,28 +468,28 @@ export const OrderPurchaseMatchTab: React.FC = () => {
               </div>
             )}
 
-            {/* 하단 액션 바 · sticky · 선택 발주 있을 때만 */}
+            {/* 하단 액션 바 · Diff 데이터 아래 · 두 버튼 나란히 (사용자 지시 · 2026-09-27) */}
             {selectedOrderNumber && detail && rows.length > 0 && (
-              <div className="shrink-0 border-t border-line bg-white px-4 py-3 flex items-center gap-2 flex-wrap">
+              <div className="shrink-0 border-t border-line bg-zinc-50/60 px-4 py-4 flex items-center gap-3 flex-wrap">
                 {anyPending ? (
                   <>
                     <Button
                       variant="primary"
-                      size="md"
-                      icon={<CheckCircle2 size={15} strokeWidth={2.4} />}
+                      size="lg"
+                      icon={<CheckCircle2 size={17} strokeWidth={2.4} />}
                       onClick={() => runConfirm(rows)}
                       disabled={busy}
-                      className="!bg-emerald-600 hover:!bg-emerald-700 !border-emerald-600"
+                      className="!bg-emerald-600 hover:!bg-emerald-700 !border-emerald-600 min-w-[140px] justify-center"
                     >
                       매입확인
                     </Button>
                     <Button
                       variant="primary"
-                      size="md"
-                      icon={<AlertTriangle size={15} strokeWidth={2.4} />}
+                      size="lg"
+                      icon={<AlertTriangle size={17} strokeWidth={2.4} />}
                       onClick={() => setExOpen(true)}
                       disabled={busy}
-                      className="!bg-amber-500 hover:!bg-amber-600 !border-amber-500"
+                      className="!bg-amber-500 hover:!bg-amber-600 !border-amber-500 min-w-[140px] justify-center"
                     >
                       매입이상
                     </Button>
