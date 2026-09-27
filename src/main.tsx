@@ -3,6 +3,8 @@ import {createRoot} from 'react-dom/client';
 import axios from 'axios';
 import App from './App.tsx';
 import { ConfirmProvider } from './hooks/useConfirm';
+// 2026-09-27 · 네비게이션 SSOT · ActiveNav Context (사용자 지시)
+import { ActiveNavProvider } from './contexts/ActiveNavContext';
 import { installErrorReporter } from './lib/errorReporter';
 // 2026-08-17 · 사용자 지시 · 토큰만료 이후 프로세스 강화 · refresh 실패 시 · 세션만료 이벤트 dispatch → App 강제 로그아웃 + 로그인 화면
 import { SESSION_EXPIRED_EVENT } from './lib/apiClient';
@@ -90,8 +92,10 @@ fetch('/api/settings?key=brand_identity', { credentials: 'include' })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ConfirmProvider>
-      <App />
-    </ConfirmProvider>
+    <ActiveNavProvider>
+      <ConfirmProvider>
+        <App />
+      </ConfirmProvider>
+    </ActiveNavProvider>
   </StrictMode>,
 );
