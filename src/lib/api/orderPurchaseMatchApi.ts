@@ -7,7 +7,7 @@
 //   · 발주 관련 · no-store · 서버가 처리 (Cache-Control 응답)
 
 import { api } from "../apiClient";
-import type { MatchConfirmInput } from "../../shared/schemas/orderPurchaseMatch";
+import type { MatchConfirmInput, ExceptionRequestsBulkSendInput } from "../../shared/schemas/orderPurchaseMatch";
 
 // ═══════════════════════════════════════════════════════════════
 // 타입
@@ -134,6 +134,44 @@ export async function getOrderPurchaseMatchByOrder(
     counts: data?.counts ?? { matched: 0, exceptions: 0, unmatched: 0 },
     window_days: data?.window_days ?? days,
   };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 2026-09-27 · 사용자 지시 · 발주이상 요청서 발송
+//   · POST /api/order-purchase-match/exception-requests/bulk-send
+// ═══════════════════════════════════════════════════════════════
+
+export interface ExceptionRequestBulkSendResult {
+  supplier: string;
+  order_ids: Array<string | number>;
+  target: { email: string | null; phone: string | null; contact: string | null };
+  outcomes: string[];
+  item_count: number;
+}
+
+export interface ExceptionRequestBulkSendResponse {
+  ok: boolean;
+  summary: string;
+  channels: { email?: boolean; sms?: boolean; kakao?: boolean };
+  results: ExceptionRequestBulkSendResult[];
+}
+
+/** POST /api/order-purchase-match/exception-requests/bulk-send · 이상 요청서 일괄 발송 */
+export async function sendExceptionRequestsBulk(
+  payload: ExceptionRequestsBulkSendInput,
+): Promise<ExceptionRequestBulkSendResponse> {
+  const { data } = await api.post<ExceptionRequestBulkSendResponse>(
+    "/api/order-purchase-match/exception-requests/bulk-send",
+    payload,
+  );
+  return (
+    data ?? {
+      ok: false,
+      summary: "",
+      channels: payload.channels,
+      results: [],
+    }
+  );
 }
 
 /** POST /api/order-purchase-match/:order_id/confirm · 매칭 확정 (matched·exception·undo) */

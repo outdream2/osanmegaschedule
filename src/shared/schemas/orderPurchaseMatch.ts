@@ -23,6 +23,32 @@ export const MatchConfirmSchema = z.object({
 });
 export type MatchConfirmInput = z.infer<typeof MatchConfirmSchema>;
 
+// ═══════════════════════════════════════════════════════════════
+// 2026-09-27 · 사용자 지시 · 발주이상 요청서 발송 (bulk-send)
+//   · POST /api/order-purchase-match/exception-requests/bulk-send
+//   · 이상 라인들 · 공급사별로 그룹핑 · 담당자에게 이메일·SMS·카톡 통지
+//   · exception_dispatches 테이블 생성 없이 outcomes 만 응답 (DB 마이그레이션 없이)
+// ═══════════════════════════════════════════════════════════════
+export const ExceptionRequestSupplierSchema = z.object({
+  supplier: z.string().min(1, "공급사명 필수"),
+  supplier_contact: z.string().nullable().optional(),
+  supplier_email:   z.string().nullable().optional(),
+  supplier_phone:   z.string().nullable().optional(),
+  order_ids: z.array(z.union([z.string(), z.number()])).min(1, "order_ids 최소 1개"),
+});
+export type ExceptionRequestSupplier = z.infer<typeof ExceptionRequestSupplierSchema>;
+
+export const ExceptionRequestsBulkSendSchema = z.object({
+  channels: z.object({
+    email: z.boolean().optional(),
+    sms:   z.boolean().optional(),
+    kakao: z.boolean().optional(),
+  }),
+  memo: z.string().max(1000).nullable().optional(),
+  bySupplier: z.array(ExceptionRequestSupplierSchema).min(1, "bySupplier 최소 1개 공급사"),
+});
+export type ExceptionRequestsBulkSendInput = z.infer<typeof ExceptionRequestsBulkSendSchema>;
+
 /** 응답 · 발주 라인 매칭 row */
 export const OrderMatchRowSchema = z.object({
   id: z.union([z.string(), z.number()]),

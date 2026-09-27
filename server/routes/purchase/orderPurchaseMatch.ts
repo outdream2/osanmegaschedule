@@ -31,9 +31,10 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest } from "../../middleware/errorHandler";
 import { authorize } from "../../middleware/requireAuth";
 import { validateBody } from "../../middleware/zodValidate";
-import { MatchConfirmSchema } from "../../../src/shared/schemas/orderPurchaseMatch";
+import { MatchConfirmSchema, ExceptionRequestsBulkSendSchema } from "../../../src/shared/schemas/orderPurchaseMatch";
 import logger from "../../lib/logger";
 import type { AuthedRequest } from "../../types/auth";
+import { handleExceptionBulkSend } from "./orderPurchaseMatch.exceptionBulkSend";
 
 const router = Router();
 
@@ -726,6 +727,29 @@ router.post(
 
     return res.json({ ok: true, id: data.id, ...patch });
   }),
+);
+
+// ═════════════════════════════════════════════════════════════════
+// POST /api/order-purchase-match/exception-requests/bulk-send
+//   2026-09-27 · 사용자 지시 · 발주이상 요청서 발송
+//     · handler 는 orderPurchaseMatch.exceptionBulkSend.ts 로 분리 (large-file 회피)
+//     · Zod 검증 · validateBody 우회 · safeParse (동일 schema 재사용)
+// ═════════════════════════════════════════════════════════════════
+router.post(
+  "/api/order-purchase-match/exception-requests/bulk-send",
+  authorize(1),
+  (req, _res, next) => {
+    const parsed = ExceptionRequestsBulkSendSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const msg = parsed.error.issues
+        .map((e) => `${e.path.join(".")}: ${e.message}`)
+        .join(" · ");
+      return next(new HttpError(400, `요청 검증 실패 · ${msg}`, "VALIDATION"));
+    }
+    req.body = parsed.data;
+    next();
+  },
+  asyncHandler(handleExceptionBulkSend),
 );
 
 export default router;

@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-09-26 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-09-27 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 1096 |
+| 스캔 파일 | 1100 |
 | 위반 파일 | 98 |
-| 클린 파일 | 998 (91%) |
+| 클린 파일 | 1002 (91%) |
 | 총 위반 개수 | 527 |
 
 ## 🚨 규칙별 위반 현황
@@ -107,9 +107,9 @@
 | `server/routes/stock/lossTracking.ts` | 297 | 4 |
 | `server/routes/stock/products.ts` | 1349 | 4 |
 | `server/services/googleDriveService.ts` | 466 | 4 |
-| `src/components/LandingPage/LandingPage.tsx` | 802 | 3 |
+| `src/components/LandingPage/LandingPage.tsx` | 805 | 3 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 852 | 3 |
-| `src/components/OrderManagePage/OrderManagePage.tsx` | 867 | 3 |
+| `src/components/OrderManagePage/OrderManagePage.tsx` | 871 | 3 |
 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 979 | 3 |
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 801 | 3 |
 | `src/components/OrderManagePage/SalesRecommendationPanel.tsx` | 873 | 3 |
