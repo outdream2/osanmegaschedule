@@ -4,9 +4,11 @@
 // 2026-08-03 (#183) · 공통 TabBar 로 리팩터 · duplicate 스타일 흡수
 // 2026-08-03 (#184) · 설정 탭 추가 · 카테고리별 업무내용 기본값 관리
 // 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 (useSortableTabs · tabOrder.documentWriter)
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context · nested 로 이관 (localStorage · CustomEvent 제거)
 import React, { Suspense, useState, useEffect } from "react";
-import { SK_SUBTAB_DOCUMENT_WRITER } from "../../lib/storageKeys";
 import { NotePencil, SignOut, Gear } from "@phosphor-icons/react";
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context
+import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { Spinner } from "../common/Spinner";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
@@ -47,33 +49,23 @@ const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
   const isAllowed = (k: DocTab): boolean => visibleTabs.some(t => t.key === k);
   const defaultTab: DocTab = visibleTabs[0]?.key ?? "contract";
 
-  const [tab, _setTab] = useState<DocTab>(() => {
-    // 2026-08-12 · 사이드바 V2 · localStorage(SK_SUBTAB_DOCUMENT_WRITER) 있으면 초기 탭
-    try {
-      const raw = localStorage.getItem(SK_SUBTAB_DOCUMENT_WRITER) as DocTab | null;
-      if ((raw === "contract" || raw === "resignation" || raw === "settings") && isAllowed(raw)) return raw;
-    } catch { /* silent */ }
+  // 2026-09-27 · 네비게이션 SSOT · useActiveNav · activeNav.nested 로 initial 결정
+  const { activeNav, setActiveByPage } = useActiveNav();
+  const initialDocTab: DocTab = (() => {
+    const raw = activeNav?.nested as DocTab | null | undefined;
+    if ((raw === "contract" || raw === "resignation" || raw === "settings") && isAllowed(raw)) return raw;
     return defaultTab;
-  });
-  // 2026-09-08 · 사용자 지시 · breadcrumb 오표시 fix · nested subTab dispatch
-  //   · 부모 (approval-request or business-manage) 가 리슨해서 breadcrumb 갱신
+  })();
+  const [tab, _setTab] = useState<DocTab>(initialDocTab);
+  // 2026-09-27 · 네비게이션 SSOT · setTab · activeNav.nested 즉시 갱신
+  //   · outer subTab = "document-writer" · nested = tab · 부모 페이지 그대로 유지
   const setTab = React.useCallback((next: DocTab) => {
     _setTab(next);
-    try { localStorage.setItem(SK_SUBTAB_DOCUMENT_WRITER, next); } catch { /* silent */ }
-    try {
-      // 승인요청 시 · nested tab dispatch
-      window.dispatchEvent(new CustomEvent("sidebar:subtab", {
-        detail: { page: "approval-request", subTab: "document-writer", nested: next },
-      }));
-      // 경영관리 시 · nested tab dispatch
-      window.dispatchEvent(new CustomEvent("sidebar:subtab", {
-        detail: { page: "business-manage", subTab: "document-writer", nested: next },
-      }));
-    } catch { /* silent */ }
-  }, []);
-  useEffect(() => {
-    try { localStorage.removeItem(SK_SUBTAB_DOCUMENT_WRITER); } catch { /* silent */ }
-  }, []);
+    const parentPage = activeNav?.itemKey ?? "business-manage";
+    const parentSubTab = activeNav?.subTab ?? "document-writer";
+    setActiveByPage(parentPage as any, parentSubTab, next);
+  }, [setActiveByPage, activeNav]);
+
   // allowedTabs 가 바뀌어 현재 탭이 제외되면 · 첫 번째 허용 탭으로 이동
   useEffect(() => {
     if (!isAllowed(tab)) setTab(defaultTab);
@@ -82,18 +74,15 @@ const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
 
   const isAdmin = (props.authSession?.level ?? 0) >= 8;
   const sortable = useSortableTabs<TabDef<DocTab>>("tabOrder.documentWriter", visibleTabs, isAdmin);
-  // 사이드바 V2 · 같은 페이지 내 서브탭 재클릭 대응 (nested)
+
+  // 2026-09-27 · activeNav.nested 변화 감지 · 사이드바 nested 재클릭 대응
   useEffect(() => {
-    const onSubTab = (e: Event) => {
-      const detail = (e as CustomEvent<{ page: string; subTab: string; nested: string | null }>).detail;
-      if (detail?.page !== "business-manage") return;
-      if (detail.subTab !== "document-writer") return;
-      const nested = detail.nested as DocTab | null;
-      if ((nested === "contract" || nested === "resignation" || nested === "settings") && isAllowed(nested)) setTab(nested);
-    };
-    window.addEventListener("sidebar:subtab", onSubTab);
-    return () => window.removeEventListener("sidebar:subtab", onSubTab);
-  }, []);
+    const raw = activeNav?.nested as DocTab | null | undefined;
+    if ((raw === "contract" || raw === "resignation" || raw === "settings") && isAllowed(raw) && raw !== tab) {
+      _setTab(raw);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeNav?.nested]);
 
   return (
     <div className="flex flex-col flex-1 min-h-0">

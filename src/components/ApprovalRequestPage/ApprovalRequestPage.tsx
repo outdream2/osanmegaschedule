@@ -3,14 +3,14 @@
 //   · 서브탭: 연차승인(leave) · 점심불참(lunch) · 서류작성(document-writer)
 //   · 각 서브탭 · 기존 페이지 컴포넌트 · embedded 렌더 (자체 헤더 skip)
 //   · 사이드바 V2 (PC) 활성 시 · TabBar 숨김 · 사이드바가 서브탭 담당
-//   · sidebar:subtab CustomEvent · page="approval-request" 수신 시 setSubTab
-//   · 초기 서브탭 · localStorage("sidebar.subtab.approval-request") · 없으면 "leave"
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context 로 이관 (localStorage · CustomEvent 제거)
 import React, { Suspense, useEffect, useMemo, useState } from "react";
-import { SK_SUBTAB_APPROVAL_REQUEST } from "../../lib/storageKeys";
 import { PencilLine } from "@phosphor-icons/react";
 // 2026-08-29 · #196 Phase 3 · 사이드바 · 서브탭 자동 파생
 // 2026-09-24 · #354 · getGroupSubTabs 사용 · approvals 그룹 기준 (schedule 그룹 오매칭 방지)
 import { getGroupSubTabs } from "../layout/sideNavGroups";
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context
+import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
@@ -38,8 +38,6 @@ interface ApprovalRequestPageProps {
 
 type ArSubTab = "leave" | "lunch" | "document-writer";
 
-const STORAGE_KEY = SK_SUBTAB_APPROVAL_REQUEST;
-
 // 2026-08-29 · #196 Phase 3 · TABS · sideNavGroups.getGroupSubTabs 자동 파생 (하드코드 제거)
 //   · SIDE_NAV_GROUPS approvals 그룹 기준 · subTab (leave · lunch · document-writer) 자동 반영
 //   · 사이드바 편집 시 · 이 페이지 서브탭 자동 동기 · 단일 소스 원칙
@@ -53,31 +51,27 @@ const TABS: TabDef<ArSubTab>[] = getGroupSubTabs("approvals", "approval-request"
   color: it.color,
 }));
 
-function readInitialSubTab(): ArSubTab {
-  // 2026-08-12 · StrictMode 이중 마운트 대비 · 읽기만 · 삭제는 mount 완료 후 useEffect 에서
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === "leave" || raw === "lunch" || raw === "document-writer") return raw;
-  } catch { /* SSR · quota */ }
-  // 2026-09-24 · #354 · 첫 탭 default 대원칙 · TABS[0] 기준 (approvals 그룹 첫 서브탭)
-  return (TABS[0]?.key as ArSubTab) ?? "document-writer";
-}
-
 const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
   onBack,
   authSession,
   onNavigate,
   onLogout,
 }) => {
-  const [subTab, _setSubTab] = useState<ArSubTab>(() => readInitialSubTab());
-  // 2026-09-08 · 사용자 지시 · breadcrumb "연차신청" 잘못 표시 fix
-  //   · 내부 subTab 변경 시 · localStorage + sidebar:subtab 이벤트 dispatch
-  //   · useActiveSubTab 훅이 이걸 리슨해서 breadcrumb 라벨 갱신
+  // 2026-09-27 · 네비게이션 SSOT · useActiveNav · activeNav 로 initial 결정 · 사이드 채널 제거
+  //   · 첫 탭 default 대원칙 · TABS[0] 기준 · localStorage 복원 X
+  const { activeNav, setActiveByPage } = useActiveNav();
+  const initialSubTab: ArSubTab = (() => {
+    const s = activeNav?.itemKey === "approval-request" ? activeNav.subTab : null;
+    if (s === "leave" || s === "lunch" || s === "document-writer") return s;
+    return (TABS[0]?.key as ArSubTab) ?? "document-writer";
+  })();
+  const [subTab, _setSubTab] = useState<ArSubTab>(initialSubTab);
+  // 2026-09-27 · 네비게이션 SSOT · setSubTab · activeNav 즉시 갱신
+  //   · Header · Sidebar highlight · Breadcrumb 모두 동시 반영
   const setSubTab = React.useCallback((next: ArSubTab) => {
     _setSubTab(next);
-    try { localStorage.setItem("sidebar.subtab.approval-request", next); } catch { /* silent */ }
-    try { window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page: "approval-request", subTab: next } })); } catch { /* silent */ }
-  }, []);
+    setActiveByPage("approval-request", next);
+  }, [setActiveByPage]);
   const isMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지
 
@@ -105,23 +99,24 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
 
   const visibleTabs = useMemo(() => TABS.filter(t => !arHiddenSubs.has(t.key)), [arHiddenSubs]);
 
-  // 초기 마운트 완료 후 · localStorage 값 정리 (StrictMode 재마운트 후에도 유지되도록 mount 이후 삭제)
+  // 2026-09-27 · 네비게이션 SSOT · activeNav.subTab 변화 감지 · 사이드바 재클릭 대응
+  //   · 이전 · CustomEvent("sidebar:subtab") 리스너 · window 리스너 사이드 채널
+  //   · 이후 · activeNav.subTab 변화 감지 · useEffect 하나로 통합
   useEffect(() => {
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* silent */ }
-  }, []);
+    if (activeNav?.itemKey !== "approval-request") return;
+    const next = activeNav.subTab as ArSubTab | null | undefined;
+    if ((next === "leave" || next === "lunch" || next === "document-writer") && next !== subTab) {
+      _setSubTab(next);
+    }
+  }, [activeNav, subTab]);
 
-  // 사이드바 V2 · 같은 페이지 내 서브탭 재클릭 대응 (CustomEvent)
+  // 2026-09-27 · 페이지 mount 시 · activeNav 이 다른 페이지 상태이거나 subTab 미설정 · 현재 subTab 로 세팅
+  //   · 딥링크 · 새로고침 · 페이지 진입 시 · Header · Sidebar highlight 정확히 반영
   useEffect(() => {
-    const onSubTab = (e: Event) => {
-      const detail = (e as CustomEvent<{ page: string; subTab: string; nested?: string | null }>).detail;
-      if (detail?.page !== "approval-request") return;
-      const next = detail.subTab as ArSubTab;
-      if (next === "leave" || next === "lunch" || next === "document-writer") {
-        setSubTab(next);
-      }
-    };
-    window.addEventListener("sidebar:subtab", onSubTab);
-    return () => window.removeEventListener("sidebar:subtab", onSubTab);
+    if (activeNav?.itemKey !== "approval-request" || activeNav.subTab !== subTab) {
+      setActiveByPage("approval-request", subTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 각 서브페이지에 공통 props (embedded=true 로 자체 헤더 skip 요청)

@@ -3,9 +3,11 @@
 //   상단: AppNavHeader (activePage="business-manage")
 //   서브탭: 직원관리 · 연차승인 · 점심불참 · 직원권한 (DisplayPage 서브탭 스타일 벤치마크)
 //   각 서브탭 · 기존 페이지 임베드 (embedded prop 전달 → 자체 AppNavHeader skip)
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context 로 이관 (localStorage · CustomEvent 제거)
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { SK_SUBTAB_BUSINESS_MANAGE } from "../../lib/storageKeys";
 import { UserGear, CalendarDots, ForkKnife, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context
+import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { useSidebarEnabled } from "../../hooks/useSidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
@@ -73,13 +75,23 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   initialEmployeeId,
   initialFromPage,
 }) => {
-  const [subTab, _setSubTab] = useState<BmSubTab>("staff-manage");
-  // 2026-09-08 · 사용자 지시 · breadcrumb 오표시 fix · setSubTab 시 dispatch
+  // 2026-09-27 · 네비게이션 SSOT · useActiveNav · activeNav 로 initial 결정
+  const { activeNav, setActiveByPage } = useActiveNav();
+  const initialBmSubTab: BmSubTab = (() => {
+    const raw = activeNav?.itemKey === "business-manage" ? activeNav.subTab : null;
+    // 하위 호환 · 이전 저장값 "leave" → "approval-center"
+    const mapped: string | null | undefined =
+      raw === "leave" ? "approval-center" : raw;
+    if (mapped === "staff-manage" || mapped === "approval-center" || mapped === "hr-forms" ||
+        mapped === "document-writer" || mapped === "lunch") return mapped;
+    return "staff-manage";
+  })();
+  const [subTab, _setSubTab] = useState<BmSubTab>(initialBmSubTab);
+  // 2026-09-27 · 네비게이션 SSOT · setSubTab · activeNav 즉시 갱신
   const setSubTab = React.useCallback((next: BmSubTab) => {
     _setSubTab(next);
-    try { localStorage.setItem("sidebar.subtab.business-manage", next); } catch { /* silent */ }
-    try { window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page: "business-manage", subTab: next } })); } catch { /* silent */ }
-  }, []);
+    setActiveByPage("business-manage", next);
+  }, [setActiveByPage]);
   const isBmMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled(); // 2026-08-16 · 로컬 상수 유지
 
@@ -113,35 +125,27 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   const isAdmin = (authSession?.level ?? 0) >= 8;
   const sortable = useSortableTabs<TabDef>("tabOrder.business", TABS, isAdmin);
 
-  // 2026-08-03 · 페이지 진입(마운트) 시 · 서브탭 · 재정렬된 순서의 첫 탭으로 리셋
-  //   · 사용자 요청 (모든 메뉴 진입 시 · 첫 서브탭 기본 표시)
-  //   · localStorage 순서 반영 후 첫 원소 · 마운트 1회
-  //   · 2026-08-11 · 사이드바 V2 · localStorage(SK_SUBTAB_BUSINESS_MANAGE) 있으면 우선
+  // 2026-09-27 · 네비게이션 SSOT · activeNav 변화 감지 · 사이드바 재클릭 대응
+  //   · CustomEvent 리스너 제거 · activeNav.subTab 변화 감지 하나로 통합
   useEffect(() => {
-    try {
-      const sb = localStorage.getItem(SK_SUBTAB_BUSINESS_MANAGE) as BmSubTab | null;
-      if (sb) {
-        localStorage.removeItem(SK_SUBTAB_BUSINESS_MANAGE);
-        setSubTab(sb);
-        return;
-      }
-    } catch { /* silent */ }
-    const firstKey = sortable.tabs[0]?.key as BmSubTab | undefined;
-    // 하위 호환 · 이전 저장값 "leave" → "approval-center" 로 자동 리다이렉트
-    const mapped: BmSubTab | undefined =
-      (firstKey as unknown as string) === "leave" ? "approval-center" : firstKey;
-    if (mapped) setSubTab(mapped);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  // 2026-08-11 · 사이드바 V2 · 같은 페이지에서 서브탭 클릭 시 CustomEvent 리스닝
+    if (activeNav?.itemKey !== "business-manage") return;
+    const raw = activeNav.subTab;
+    const mapped: BmSubTab | null =
+      raw === "leave" ? "approval-center"
+      : (raw === "staff-manage" || raw === "approval-center" || raw === "hr-forms"
+         || raw === "document-writer" || raw === "lunch") ? raw
+      : null;
+    if (mapped && mapped !== subTab) {
+      _setSubTab(mapped);
+    }
+  }, [activeNav, subTab]);
+
+  // 2026-09-27 · 페이지 mount 시 · activeNav 정착 (딥링크 / 새로고침 대비)
   useEffect(() => {
-    const onSubTab = (e: Event) => {
-      const detail = (e as CustomEvent<{ page: string; subTab: string }>).detail;
-      if (detail?.page !== "business-manage") return;
-      setSubTab(detail.subTab as BmSubTab);
-    };
-    window.addEventListener("sidebar:subtab", onSubTab);
-    return () => window.removeEventListener("sidebar:subtab", onSubTab);
+    if (activeNav?.itemKey !== "business-manage" || activeNav.subTab !== subTab) {
+      setActiveByPage("business-manage", subTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── 승인대기 pending 카운트 (연차 + 사직서 합계) · 서브탭 라벨 옆 배지 ──

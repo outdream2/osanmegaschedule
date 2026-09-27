@@ -6,8 +6,9 @@ import { listInventoryChecks } from "../../lib/inventoryChecksApi";
 import { listOrderRequests, createOrderRequest } from "../../lib/orderRequestsApi";
 import { getLeavePendingCount } from "../../lib/leaveApi";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
-import { SK_SUBTAB_REQUESTS } from "../../lib/storageKeys";
 import { dispatchApprovalChange, useApprovalRefreshListener } from "../../lib/approvalEvents";
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context
+import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { TIMING } from "../../constants/timing";
 import { ShoppingCart, Square, CheckSquare, ClipboardList, Package, Coffee, CalendarDays, Handshake, FileText } from "lucide-react";
 // 2026-09-10 · #50 · 사용자 지시 · 탭 메뉴 · 매입이력 스타일 통일 · TabBar 프리미티브
@@ -54,28 +55,31 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const confirm = useConfirm();
   // 2026-08-21 · Framework Phase 3 · alert → useToast
   const { toast, showError } = useToast();
-  const [tab, setTab] = useState<Tab>(() => {
-    // 2026-08-11 · 사이드바 V2 · localStorage(SK_SUBTAB_REQUESTS) 있으면 초기값 사용
-    // 2026-08-12 · StrictMode 이중 마운트 대비 · 읽기만 · 삭제는 useEffect 로
-    try {
-      const sb = localStorage.getItem(SK_SUBTAB_REQUESTS) as Tab | null;
-      if (sb) return sb;
-    } catch { /* silent */ }
+  // 2026-09-27 · 네비게이션 SSOT · useActiveNav · activeNav 로 initial 결정
+  const { activeNav, setActiveByPage } = useActiveNav();
+  const initialTab: Tab = (() => {
+    const raw = activeNav?.itemKey === "requests" ? activeNav.subTab : null;
+    if (raw) return raw as Tab;
     return "display";
-  });
-  // mount 완료 후 · localStorage 정리
+  })();
+  const [tab, _setTab] = useState<Tab>(initialTab);
+  // 2026-09-27 · setTab · activeNav 즉시 갱신
+  const setTab = React.useCallback((next: Tab) => {
+    _setTab(next);
+    setActiveByPage("requests", next);
+  }, [setActiveByPage]);
+  // 2026-09-27 · activeNav 변화 감지 · 사이드바 재클릭 대응
   useEffect(() => {
-    try { localStorage.removeItem(SK_SUBTAB_REQUESTS); } catch { /* silent */ }
-  }, []);
-  // 사이드바에서 같은 페이지 서브탭 클릭 시 CustomEvent 리스닝
+    if (activeNav?.itemKey !== "requests") return;
+    const next = activeNav.subTab as Tab | null | undefined;
+    if (next && next !== tab) _setTab(next);
+  }, [activeNav, tab]);
+  // 2026-09-27 · 페이지 mount 시 · activeNav 정착
   useEffect(() => {
-    const onSubTab = (e: Event) => {
-      const detail = (e as CustomEvent<{ page: string; subTab: string }>).detail;
-      if (detail?.page !== "requests") return;
-      setTab(detail.subTab as Tab);
-    };
-    window.addEventListener("sidebar:subtab", onSubTab);
-    return () => window.removeEventListener("sidebar:subtab", onSubTab);
+    if (activeNav?.itemKey !== "requests" || activeNav.subTab !== tab) {
+      setActiveByPage("requests", tab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const isManager = (authSession?.level ?? 0) >= 2;
   // 진열요청

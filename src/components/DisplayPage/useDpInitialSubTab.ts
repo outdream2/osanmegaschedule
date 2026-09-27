@@ -1,18 +1,20 @@
 // src/components/DisplayPage/useDpInitialSubTab.ts
 // 2026-08-25 · Framework Phase 4 · large-file 분리 · DisplayPage.tsx 서브탭 초기화 로직 이관
-//   · dpHiddenSubs 감지 시 · 우선순위대로 next 로 자동 이동
-//   · sessionStorage.dpInitialSubTab · localStorage.sidebar.subtab.display 진입 처리
-//   · window "sidebar:subtab" CustomEvent 리스너
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context 이관 (사용자 지시)
+//   · CustomEvent("sidebar:subtab") 리스너 제거 · self-dispatch loop 로직 소멸
+//   · localStorage("sidebar.subtab.display") 진입 처리 제거 · activeNav 감지로 대체
+//   · sessionStorage.dpInitialSubTab · 유지 (별개 채널 · 특수 진입 route)
 
 import { useEffect } from "react";
 import { DP_SUBTAB_DEFAULTS } from "./DisplayPage.helpers";
 import type { DpSubTabKey } from "./DisplayPage.types";
-import { SK_SUBTAB_DISPLAY } from "../../lib/storageKeys";
+import type { ActiveNav } from "../../contexts/ActiveNavContext";
 
 export function useDpInitialSubTab(
   dpSubTab: DpSubTabKey,
   setDpSubTab: (v: DpSubTabKey) => void,
   dpHiddenSubs: Set<DpSubTabKey>,
+  activeNav?: ActiveNav | null,
 ) {
   // 숨김된 서브탭 · 우선순위대로 next 로 이동
   useEffect(() => {
@@ -23,7 +25,7 @@ export function useDpInitialSubTab(
     }
   }, [dpSubTab, dpHiddenSubs, setDpSubTab]);
 
-  // sessionStorage/localStorage 서브탭 진입 처리 · 1회
+  // sessionStorage · 특수 진입 route (기능 유지)
   useEffect(() => {
     try {
       const req = sessionStorage.getItem("dpInitialSubTab") as DpSubTabKey | null;
@@ -31,31 +33,17 @@ export function useDpInitialSubTab(
         sessionStorage.removeItem("dpInitialSubTab");
         if (DP_SUBTAB_DEFAULTS.some(t => t.key === req)) { setDpSubTab(req); return; }
       }
-      const sbReq = localStorage.getItem(SK_SUBTAB_DISPLAY) as DpSubTabKey | null;
-      if (sbReq) {
-        localStorage.removeItem(SK_SUBTAB_DISPLAY);
-        if (DP_SUBTAB_DEFAULTS.some(t => t.key === sbReq)) setDpSubTab(sbReq);
-      }
     } catch { /* silent */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 사이드바 V2 CustomEvent 서브탭 이동
-  // 2026-09-10 · #46-2 · 무한 루프 근본 fix
-  //   · self-dispatch (setDpSubTab 내부 dispatchEvent) 감지 · 무시
-  //   · sub === dpSubTab · 이중 안전장치
+  // 2026-09-27 · 네비게이션 SSOT · activeNav.subTab 변화 감지 · 사이드바 재클릭 대응
   useEffect(() => {
-    const onSubTab = (e: Event) => {
-      const detail = (e as CustomEvent<{ page: string; subTab: string; source?: string }>).detail;
-      if (detail?.page !== "display") return;
-      // self-dispatch · setDpSubTab 안에서 발화한 이벤트 · 무시
-      if (detail?.source === "self") return;
-      if ((setDpSubTab as any).__dispatchInternalRef?.current) return;
-      const sub = detail.subTab as DpSubTabKey;
-      if (sub === dpSubTab) return;
-      if (DP_SUBTAB_DEFAULTS.some(t => t.key === sub)) setDpSubTab(sub);
-    };
-    window.addEventListener("sidebar:subtab", onSubTab);
-    return () => window.removeEventListener("sidebar:subtab", onSubTab);
-  }, [setDpSubTab, dpSubTab]);
+    if (!activeNav) return;
+    if (activeNav.itemKey !== "display") return;
+    const sub = activeNav.subTab as DpSubTabKey | null | undefined;
+    if (!sub) return;
+    if (sub === dpSubTab) return;
+    if (DP_SUBTAB_DEFAULTS.some(t => t.key === sub)) setDpSubTab(sub);
+  }, [activeNav, dpSubTab, setDpSubTab]);
 }

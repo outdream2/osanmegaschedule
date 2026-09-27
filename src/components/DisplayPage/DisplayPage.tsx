@@ -2,9 +2,12 @@
 // 2026-08-22 · Framework Phase 4 · 대형 파일 분리 완료
 //   · ZoneDetailModal · StaffInfoModal · ZoneProductsModal · ProductInfoModal
 //   · DisplayStoreMap · useDisplayData · DisplaySearchBar
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context · 사이드 채널 제거 · self-dispatch 로직 소멸
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
 import { SK_DP_PRODUCT_INNER_TAB, SK_DP_RETURN_INNER_TAB } from "../../lib/storageKeys";
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context
+import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { type ZoneStatus, type DowMap, type DisplayZone } from "../../utils/zoneUtils";
 import { type ProductInfo } from "../../lib/productsCache";
@@ -122,23 +125,16 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   }, [dpPerms]);
   const isDpMobile = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled();
-  const [dpSubTab, _setDpSubTab] = useState<DpSubTabKey>(dpCanSeeStockManage ? "purchase-order" : "store");
-  // 2026-09-08 · 사용자 지시 · breadcrumb 오표시 fix · setDpSubTab 시 dispatch
-  // 2026-09-10 · #46-2 · 무한 루프 근본 fix
-  //   · 이전 · setDpSubTab → dispatchEvent → onSubTab (useDpInitialSubTab) → setDpSubTab → dispatch · RangeError
-  //   · fix · dispatchInternalRef 로 · self-dispatch 감지 · onSubTab 무시
-  const dispatchInternalRef = React.useRef(false);
+  // 2026-09-27 · 네비게이션 SSOT · useActiveNav (self-dispatch loop #46-2 소멸)
+  const { activeNav, setActiveByPage } = useActiveNav();
+  const [dpSubTab, _setDpSubTab] = useState<DpSubTabKey>(() => {
+    const raw = activeNav?.itemKey === "display" ? (activeNav.subTab as DpSubTabKey | null | undefined) : null;
+    return raw ?? (dpCanSeeStockManage ? "purchase-order" : "store");
+  });
   const setDpSubTab = React.useCallback((next: DpSubTabKey) => {
     _setDpSubTab(next);
-    try { localStorage.setItem("sidebar.subtab.display", next); } catch { /* silent */ }
-    try {
-      dispatchInternalRef.current = true;
-      window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page: "display", subTab: next, source: "self" } }));
-    } catch { /* silent */ }
-    finally { dispatchInternalRef.current = false; }
-  }, []);
-  // ref 를 useDpInitialSubTab 로 전달 (self-dispatch 이벤트 무시용)
-  (setDpSubTab as any).__dispatchInternalRef = dispatchInternalRef;
+    setActiveByPage("display", next);
+  }, [setActiveByPage]);
   // 2026-08-29 · #193 · 상품 서브탭 안 · 3개 이너 탭 (실재고입력·상품입고·상품정보)
   // 2026-09-01 · 사용자 지시 · 순서 재조정 · 실재고입력 · 상품입고 · 상품정보
   const [productInnerTab, setProductInnerTab] = useState<"scan" | "arrival" | "info">(() => {
@@ -167,8 +163,15 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     try { localStorage.setItem(SK_DP_RETURN_INNER_TAB, returnInnerTabDp); } catch { /* noop */ }
   }, [returnInnerTabDp]);
 
-  // 2026-08-25 · Framework Phase 4 · 서브탭 초기화 · useDpInitialSubTab 이관
-  useDpInitialSubTab(dpSubTab, setDpSubTab, dpHiddenSubs);
+  // 2026-08-25 · Framework Phase 4 · 서브탭 초기화 · 2026-09-27 activeNav 전달
+  useDpInitialSubTab(dpSubTab, setDpSubTab, dpHiddenSubs, activeNav);
+  // 2026-09-27 · mount 시 · activeNav 정착 (딥링크 · 새로고침)
+  useEffect(() => {
+    if (activeNav?.itemKey !== "display" || activeNav.subTab !== dpSubTab) {
+      setActiveByPage("display", dpSubTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 2026-08-30 · 사용자 지시 · 접기/펼치기 제거 · 그냥 보이게 (mapCollapsed prop 유지 안 함)
   // 2026-08-25 · 사용자 지시 · 매장구역 subtab 안 · 매장구역도 vs 배치구역 불일치 탭
