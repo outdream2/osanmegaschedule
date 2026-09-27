@@ -30,10 +30,11 @@ import {
   isItemActive,
   DARK_COLOR_TONES,
   NAV_ACCENT,
-  subTabStorageKey,
   type SideNavGroup,
   type SideNavItem,
 } from "./sideNavGroups";
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context (사이드 채널 제거)
+import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { useSidebarWidth } from "../../hooks/useSidebar";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
@@ -64,9 +65,7 @@ function writeGroupOpen(groupId: string, open: boolean): void {
   localStorage.setItem(`sidebar.groups.${groupId}`, String(open));
 }
 
-// 2026-08-31 · useActiveSubTab · 공용 위치 이관 (src/hooks/useActiveSubTab.ts)
-//   · AppNavHeader Breadcrumb 등 다른 소비자와 공유
-import { useActiveSubTab } from "../../hooks/useActiveSubTab";
+// 2026-09-27 · 네비게이션 SSOT · useActiveSubTab 훅 제거 · useActiveNav Context 로 통합
 
 // 2026-09-04 · fix (Bug #3) · vendor 사이드바 · 공급사 정보 클릭 시 · 랜딩 이동 + 모달 open 신호
 //   · vendor 는 DisplayPage 접근 불가 · LandingPage 의 VendorDetailModal 을 대신 open
@@ -98,6 +97,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   approvalBadge,
 }) => {
   const [open, setOpen] = useState<boolean>(() => readGroupOpen(group.id));
+  // 2026-09-27 · 네비게이션 SSOT · setActiveByPage · 그룹 클릭 시 activeNav 즉시 갱신
+  const { setActiveByPage } = useActiveNav();
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
@@ -115,8 +116,10 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   // 2026-08-17 · 사이드바 deep teal 배경 · DARK_COLOR_TONES 사용 (목업 톤)
   const groupTone = DARK_COLOR_TONES[group.color];
 
-  // 서브탭 클릭 시 · localStorage 저장 + custom event dispatch → 각 페이지가 리스닝하여 setSubTab
-  //   · subTab 형식 "sub:nested" (예: "document-writer:contract") 는 3레벨 지원
+  // 2026-09-27 · 네비게이션 SSOT · setActiveByPage 로 activeNav 통합
+  //   · 이전 · localStorage + CustomEvent 사이드 채널 · 각 페이지 리슨 · 오매칭 리스크
+  //   · 이후 · setActiveByPage(page, subTab, nested) · Context 단일 · Header · Sidebar highlight 동시 반영
+  //   · subTab 형식 "outer:inner" (예: "document-writer:contract") · nested 로 분해
   const handleNavItem = (item: SideNavItem) => {
     // 2026-09-04 · Bug #3 · vendor 특수 라우팅
     //   · vendor 는 DisplayPage 접근 불가 · "공급사 정보" (display+vendor-manage) 는 랜딩에서 모달 open
@@ -128,11 +131,10 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
     }
     if (item.subTab) {
       const [outer, inner] = item.subTab.split(":");
-      try {
-        localStorage.setItem(subTabStorageKey(item.key), outer);
-        if (inner) localStorage.setItem(`sidebar.subtab.${outer}`, inner);
-      } catch { /* quota */ }
-      window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page: item.key, subTab: outer, nested: inner ?? null } }));
+      // 그룹 id 명시 · lookup 이 아닌 사이드바 그룹 그대로 저장 (approval-request 오매칭 방지)
+      setActiveByPage(item.key, outer, inner ?? null);
+    } else {
+      setActiveByPage(item.key);
     }
     onNavigate(item.key);
   };
@@ -433,8 +435,9 @@ export const SideNav: React.FC<SideNavProps> = ({
     };
   }, [loadApprovalBadge]);
 
-  // 2026-08-31 · 서브탭 활성 표시 fix · 현재 페이지 활성 서브탭 tracking
-  const activeSubTab = useActiveSubTab(activePage);
+  // 2026-09-27 · 네비게이션 SSOT · useActiveNav Context 기반 · 현재 페이지 활성 서브탭 tracking
+  const { activeNav } = useActiveNav();
+  const activeSubTab = activeNav?.itemKey === activePage ? (activeNav.subTab ?? null) : null;
   // 2026-08-12 · hideOnMobile 그룹은 반응형(모바일)에서 숨김 (거래처 그룹 등 · PC 관리자 전용)
   // 2026-08-16 · 페이지 숨김 반영 · 서버 perms 참조
   const { perms } = usePagePermissions();

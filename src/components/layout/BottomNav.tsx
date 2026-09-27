@@ -18,11 +18,12 @@ import {
   DERIVED_TOP_TABS,
   filterGroupsForSession,
   collectAllPageKeys,
-  subTabStorageKey,
   COLOR_TONES,
   type SideNavColor,
   type SideNavItem,
 } from "./sideNavGroups";
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context (사이드 채널 제거)
+import { useActiveNav } from "../../contexts/ActiveNavContext";
 
 interface Props {
   activePage: AppNavPage;
@@ -37,6 +38,8 @@ const BOTTOM_TAB_KEYS = ["landing", "schedule", "requests", "board"] as const;
 
 export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate, onLogout }) => {
   const [sheetOpen, setSheetOpen] = useState(false);
+  // 2026-09-27 · 네비게이션 SSOT · 시트 아이템 클릭 시 · activeNav 즉시 갱신
+  const { setActiveByPage } = useActiveNav();
   const { isVisible, loaded: visLoaded } = usePageVisibility();
   const { perms } = usePagePermissions();
   const { status: employmentStatus } = useEmploymentStatus(authSession);
@@ -96,8 +99,12 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
 
   const handleSheetItemClick = (it: SideNavItem) => {
     setSheetOpen(false);
+    // 2026-09-27 · 네비게이션 SSOT · setActiveByPage · localStorage 사이드 채널 제거
     if (it.subTab) {
-      try { localStorage.setItem(subTabStorageKey(it.key), it.subTab); } catch { /* noop */ }
+      const [outer, inner] = it.subTab.split(":");
+      setActiveByPage(it.key, outer, inner ?? null);
+    } else {
+      setActiveByPage(it.key);
     }
     onNavigate(it.key);
   };

@@ -55,10 +55,8 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  if (it.subTab && it.page) {
-                    try { localStorage.setItem(`sidebar.subtab.${it.page}`, it.subTab); } catch { /* silent */ }
-                    try { window.dispatchEvent(new CustomEvent("sidebar:subtab", { detail: { page: it.page, subTab: it.subTab } })); } catch { /* silent */ }
-                  }
+                  // 2026-09-27 · 네비게이션 SSOT · localStorage / CustomEvent 사이드 채널 제거
+                  //   · onNavigate 호출자 (AppNavHeader) 가 setActiveByPage 로 activeNav 갱신
                   onNavigate!(it.page!, it.subTab);
                 }}
                 className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md transition cursor-pointer ${
