@@ -3,7 +3,9 @@
 // 발주관리 페이지 — 발주/매입/결제/통계 4탭
 import React, { Suspense, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
-import { SK_SUBTAB_DISPLAY, SK_DP_PRODUCT_INNER_TAB } from "../../lib/storageKeys";
+import { SK_DP_PRODUCT_INNER_TAB } from "../../lib/storageKeys";
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context
+import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { useToast } from "../../hooks/useToast";
 import { useVendors } from "../../hooks/useVendors";
 import { Spinner } from "../common/Spinner";
@@ -107,6 +109,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const { vendorCategories: dbVendorCategories } = useReferenceValues();
   const confirm = useConfirm();
   const { toast, showError, showSuccess } = useToast();
+  // 2026-09-27 · 네비게이션 SSOT · setActiveByPage · display 이동 시 subTab 지정
+  const { setActiveByPage } = useActiveNav();
 
   // Level-1 탭
   const [topTab, setTopTab] = useState<"purchase-order" | "purchase" | "payment" | "statistics">(initialTopTab ?? "purchase-order");
@@ -140,7 +144,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       const pending = sessionStorage.getItem("megatown_scan_pending_product_code");
       if (pending) {
         // DisplayPage 로 이동 · 상품 서브탭 · info 이너 탭 활성화
-        try { localStorage.setItem(SK_SUBTAB_DISPLAY, "product"); } catch { /* noop */ }
+        setActiveByPage("display", "product");
         try { localStorage.setItem(SK_DP_PRODUCT_INNER_TAB, "info"); } catch { /* noop */ }
         ocrTabOnNavigate?.("display");
       }

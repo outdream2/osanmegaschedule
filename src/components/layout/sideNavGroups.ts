@@ -230,11 +230,6 @@ export const DERIVED_TOP_TABS: DerivedTopTab[] = SIDE_NAV_GROUPS
     icon: g.icon ?? g.items[0]?.icon ?? House,
   }));
 
-/** 서브탭 클릭 시 · 각 페이지 컴포넌트가 마운트 시 읽을 localStorage key */
-export function subTabStorageKey(pageKey: AppNavPage): string {
-  return `sidebar.subtab.${pageKey}`;
-}
-
 /**
  * 2026-08-29 · #196 Phase 1 · 페이지별 서브탭 자동 파생 · 단일 소스 원칙
  *   · pageKey 에 매핑되는 그룹 안 · items 중 · key===pageKey && subTab 있는 것 반환
@@ -419,53 +414,6 @@ export interface BreadcrumbSegment {
   page?: AppNavPage;
   subTab?: string;
 }
-/**
- * @deprecated · 2026-09-27 · 네비게이션 SSOT · buildBreadcrumbFromNav(activeNav) 사용 권장
- *   · 이 함수 · currentPage + activeSubTab 역추론 · 첫 마운트 시 activeSubTab null → fallback 오매칭 발생 가능
- *   · buildBreadcrumbFromNav · activeNav.groupId lookup · 정확한 그룹 반환 · 오매칭 없음
- *   · 현재 호출부 없음 (2026-09-27 이관 완료 시 삭제)
- */
-export function buildBreadcrumb(currentPage: AppNavPage, activeSubTab?: string | null): BreadcrumbSegment[] {
-  if (currentPage === "landing") {
-    return [{ label: "홈" }];
-  }
-  const home: BreadcrumbSegment = { label: "홈", page: "landing" };
-  let matchedGroup = SIDE_NAV_GROUPS.find(g =>
-    g.items.some(i => i.key === currentPage && i.subTab && activeSubTab && i.subTab === activeSubTab)
-  );
-  let matchedItem: SideNavItem | undefined = matchedGroup?.items.find(
-    i => i.key === currentPage && i.subTab === activeSubTab
-  );
-  if (!matchedGroup) {
-    matchedGroup = SIDE_NAV_GROUPS.find(g => g.items.some(i => i.key === currentPage));
-    matchedItem = matchedGroup?.items.find(i => i.key === currentPage);
-  }
-  if (!matchedGroup) return [home, { label: String(currentPage) }];
-  const groupIsSingle = matchedGroup.items.length === 1 && !matchedGroup.items[0].subTab;
-  if (groupIsSingle) {
-    return [home, { label: matchedGroup.label }];
-  }
-  const seg: BreadcrumbSegment[] = [home];
-  // 2026-09-23 · 사용자 지시 · "홈 > 매장 > 판매 모두 링크" · 모든 segment 클릭 가능
-  //   · 그룹 · topTab.key + 그룹 첫 하위 subTab (default 이동 대상)
-  //   · 페이지 · currentPage + activeSubTab (자기 자신 재이동 · state reset · 안전)
-  const groupPage = matchedGroup.topTab?.key as AppNavPage | undefined;
-  // 그룹 클릭 시 이동 대상 subTab · 첫 하위 item 의 subTab (없으면 undefined)
-  const groupDefaultSubTab = matchedGroup.items[0]?.subTab ?? undefined;
-  seg.push({
-    label: matchedGroup.label,
-    page: groupPage,
-    subTab: groupDefaultSubTab,
-  });
-  const pageLabel = matchedItem?.label ?? String(currentPage);
-  seg.push({
-    label: pageLabel,
-    page: currentPage,
-    subTab: matchedItem?.subTab ?? activeSubTab ?? undefined,
-  });
-  return seg;
-}
-
 /**
  * 2026-09-27 · 네비게이션 SSOT · activeNav 기반 브레드크럼 lookup (정공법)
  *   · currentPage + subTab 역추론 X · activeNav.groupId 직접 lookup

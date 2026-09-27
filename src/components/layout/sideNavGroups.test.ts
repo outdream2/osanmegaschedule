@@ -1,9 +1,9 @@
-// 2026-08-20 · sideNavGroups · pure helpers · deriveUserLevel·canAccessItem·subTabStorageKey·isItemActive
+// 2026-08-20 · sideNavGroups · pure helpers · deriveUserLevel·canAccessItem·isItemActive
+// 2026-09-27 · subTabStorageKey 제거 (네비게이션 SSOT · useActiveNav Context 통합)
 import { describe, it, expect } from "vitest";
 import {
   SIDE_NAV_GROUPS,
   DERIVED_TOP_TABS,
-  subTabStorageKey,
   deriveUserLevel,
   canAccessItem,
   filterGroupsForSession,
@@ -44,13 +44,6 @@ describe("DERIVED_TOP_TABS · SIDE_NAV_GROUPS 로부터 자동 파생", () => {
       expect(t.label).toBeTruthy();
       expect(t.icon).toBeDefined();
     });
-  });
-});
-
-describe("subTabStorageKey", () => {
-  it("sidebar.subtab.{pageKey}", () => {
-    expect(subTabStorageKey("display" as any)).toBe("sidebar.subtab.display");
-    expect(subTabStorageKey("business-manage" as any)).toBe("sidebar.subtab.business-manage");
   });
 });
 

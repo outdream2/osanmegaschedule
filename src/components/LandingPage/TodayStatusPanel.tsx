@@ -4,8 +4,8 @@ import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
-// 2026-09-03 · 사용자 지시 · 거래처 승인 클릭 시 · 요청목록 vendor 탭 자동 선택
-import { SK_SUBTAB_REQUESTS } from "../../lib/storageKeys";
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context · subTab 지정 이동
+import { useActiveNav } from "../../contexts/ActiveNavContext";
 // 2026-08-25 · 사용자 지시 · 페이지 숨김 시 오늘의 현황에서도 관련 건수 숨김
 import { usePageVisibility } from "../../hooks/usePageVisibility";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
@@ -45,6 +45,8 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
 }) => {
   // 2026-08-23 · #171 잔여 · 승인대기 = 연차 + 사직서 (관리자 승인 대상)
   const approvalPendingTotal = leavePendingCount + requestsCounts.resignation;
+  // 2026-09-27 · 네비게이션 SSOT · setActiveByPage 로 subTab 지정 이동
+  const { setActiveByPage } = useActiveNav();
   // 2026-08-25 · 사용자 지시 · 페이지 숨김 시 · 오늘의 현황 · 관련 건수 미노출
   //   · 점심 신청 (승인요청 그룹 · approval-request) · 현재 뷰포트 (PC / 모바일) 숨김이면 lunch 통계 비표시
   //   · SideNav 는 현재 뷰포트 기준 filter · 여기도 동일하게 현재 뷰포트만 체크
@@ -200,12 +202,12 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
           </button>
         )}
         {/* 2026-09-02 · 사용자 지시 · 거래처 승인 요청 · 관리자만 · 요청목록>거래처승인 탭 */}
-        {/* 2026-09-03 · fix · 사용자 리포트 · 진열요청 탭으로 잘못 이동 · SK_SUBTAB_REQUESTS='vendor' 명시 후 이동 */}
+        {/* 2026-09-27 · 네비게이션 SSOT · setActiveByPage("requests", "vendor") 로 subTab 지정 후 이동 */}
         {isAdmin && requestsMenuVisible && (
           <button
             type="button"
             onClick={() => {
-              try { localStorage.setItem(SK_SUBTAB_REQUESTS, "vendor"); } catch { /* silent */ }
+              setActiveByPage("requests", "vendor");
               onNavigate("requests", authSession);
             }}
             className="inline-flex items-center gap-1.5 hover:text-blue-800 hover:underline underline-offset-2 cursor-pointer transition-colors"

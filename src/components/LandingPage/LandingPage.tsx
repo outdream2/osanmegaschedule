@@ -2,7 +2,8 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 // 2026-08-16 · apiClient 마이그레이션
 import { api, ApiError } from "../../lib/apiClient";
-import { SK_SUBTAB_APPROVAL_REQUEST, SK_SUBTAB_DISPLAY } from "../../lib/storageKeys";
+// 2026-09-27 · 네비게이션 SSOT · useActiveNav Context · setActiveByPage 로 subTab 전달
+import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import { UploadDataModal } from "./UploadDataModal";
 import { LoginModals } from "./LoginModals";
@@ -74,6 +75,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const confirm = useConfirm();
   // 2026-08-21 · Framework Phase 3 · alert → useToast
   const { toast, showError } = useToast();
+  // 2026-09-27 · 네비게이션 SSOT · subTab 지정 이동 시 · setActiveByPage 사용 (localStorage 사이드 채널 제거)
+  const { setActiveByPage } = useActiveNav();
   // 2026-08-12 · 프레임워크 · brand·contact 반영 · 값 없으면 하드코딩 fallback 유지
   const { brand: lpBrand } = useBrandIdentity();
   const { contact: lpContact } = useContactInfo();
@@ -527,7 +530,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <MenuCard color="sky" icon={CalendarDots} title="연차 신청" description="휴가·연차 신청 및 내역 조회"
                   orderClass="order-5" pageKey="approval-request"
                   onClick={() => {
-                    try { localStorage.setItem(SK_SUBTAB_APPROVAL_REQUEST, "leave"); } catch { /* silent */ }
+                    setActiveByPage("approval-request", "leave");
                     onNavigate("approval-request", authSession!);
                   }} />
 
@@ -679,7 +682,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     onClick={() => {
                       if (isVendor && vendorSelf) { setShowVendorSelf(true); return; }
                       if (isSuperAdminLevel9) {
-                        try { localStorage.setItem(SK_SUBTAB_DISPLAY, "vendor-manage"); } catch { /* silent */ }
+                        setActiveByPage("display", "vendor-manage");
                         onNavigate("display", authSession!);
                       }
                     }} />
@@ -708,7 +711,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         // 2026-09-04 · #23 · 모달 → 전용 페이지 (VendorStockPage) 이관
                         if (isVendor && vendorSelf) { onNavigate("vendor-stock", authSession!); return; }
                         if (isSuperAdminLevel9) {
-                          try { localStorage.setItem(SK_SUBTAB_DISPLAY, "vendor-manage"); } catch { /* silent */ }
+                          setActiveByPage("display", "vendor-manage");
                           onNavigate("display", authSession!);
                         }
                       }}
@@ -738,7 +741,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         if (isVendor && vendorSelf) { onNavigate("vendor-order-history", authSession!); return; }
                         if (isSuperAdminLevel9) {
                           // admin/manager 는 매장 > 발주 페이지로 (관리자용 이력)
-                          try { localStorage.setItem(SK_SUBTAB_DISPLAY, "purchase-order"); } catch { /* silent */ }
+                          setActiveByPage("display", "purchase-order");
                           onNavigate("display", authSession!);
                         }
                       }}

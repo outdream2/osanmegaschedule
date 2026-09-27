@@ -21,12 +21,9 @@ export const SK_SIDEBAR_COLLAPSED = "sidebar.collapsed";
 /** 사이드바 너비 · useSidebar.ts */
 export const SK_SIDEBAR_WIDTH = "sidebar.width";
 
-/** 사이드바 서브탭 유도 · 페이지 이동 시 특정 탭 열기 */
-export const SK_SUBTAB_DISPLAY          = "sidebar.subtab.display";
-export const SK_SUBTAB_REQUESTS         = "sidebar.subtab.requests";
-export const SK_SUBTAB_APPROVAL_REQUEST = "sidebar.subtab.approval-request";
-export const SK_SUBTAB_DOCUMENT_WRITER  = "sidebar.subtab.document-writer";
-export const SK_SUBTAB_BUSINESS_MANAGE  = "sidebar.subtab.business-manage";
+// 2026-09-27 · 네비게이션 SSOT · SK_SUBTAB_* 상수 5종 제거
+//   · useActiveNav Context (src/contexts/ActiveNavContext.tsx) 로 대체
+//   · setActiveByPage(page, subTab, nested) · localStorage 사이드 채널 소멸
 
 // ── 직원 · 스케줄 ─────────────────────────────────────────────────────────────
 /** 직원 순서 드래그 저장 · SchedulePage.tsx / useScheduleData.ts */

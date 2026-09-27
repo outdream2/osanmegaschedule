@@ -279,7 +279,7 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
   const startXRef = useRef<number>(0);
   const startWRef = useRef<number>(0);
   // E-001 fix (2026-09-20) · 드래그 중 click 이벤트가 SideNav 등 하위 요소로 버블되어
-  //   sidebar:subtab CustomEvent 를 트리거하는 버그 방지
+  //   활성 서브탭 오설정 버그 방지 (구 sidebar:subtab CustomEvent · 2026-09-27 activeNav 로 대체)
   //   · isDraggingRef · mousedown~mouseup 구간 마킹 → capture phase click 차단
   const isDraggingRef = useRef(false);
 

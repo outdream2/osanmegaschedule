@@ -7,10 +7,17 @@
 //     · approval-request(승인) 는 BOTTOM_TAB_KEYS["requests"] 에 매핑 안 됨
 //   · 더보기 sheet: approvals 그룹(연차신청·점심불참·요청목록) + display 그룹 + business 그룹 + settings 그룹
 //   · 권한관리 → "메뉴 설정" (permissions key · label 변경)
+import React from "react";
 import { describe, it, expect, vi } from "vitest";
-import { render, fireEvent, waitFor } from "@testing-library/react";
+import { render as rtlRender, fireEvent, waitFor } from "@testing-library/react";
 import { BottomNav } from "./BottomNav";
 import type { AuthSession } from "../../types";
+// 2026-09-27 · 네비게이션 SSOT · BottomNav · useActiveNav Context 사용 · Provider 필수
+import { ActiveNavProvider } from "../../contexts/ActiveNavContext";
+
+// 모든 render · ActiveNavProvider 로 wrap
+const render: typeof rtlRender = ((ui: React.ReactElement, options?: any) =>
+  rtlRender(<ActiveNavProvider>{ui}</ActiveNavProvider>, options)) as any;
 
 const employeeSession: AuthSession = { employeeId: 1, name: "직원", role: "employee", level: 1 } as any;
 const managerSession: AuthSession = { employeeId: 2, name: "매니저", role: "manager", level: 2 } as any;
