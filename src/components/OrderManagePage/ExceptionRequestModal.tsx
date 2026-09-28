@@ -1,14 +1,19 @@
 // src/components/OrderManagePage/ExceptionRequestModal.tsx
-// 2026-09-27 · 사용자 지시 · 발주이상 요청서 모달
-//   · 참고 · OrderModal.tsx (발주요청 · 유사 구조)
-//   · 공급사별 · 담당자 · 이상 라인 리스트 · 채널 checkbox · 메모 · 발송 버튼
+// 2026-09-28 · 사용자 지시 · 발주이상 요청서 모달 · 최신 트렌드 재디자인
+//   · Linear · Vercel · Notion · Attio 2026 톤 · 뉴트럴 base + 사유별 accent
+//   · Hero KPI 3-metric · 상단 한눈에 파악
+//   · 공급사 CollapseCard · 담당자·건수·contact tone
+//   · 이상 라인 · left accent bar + Diff-first + 2-col compare
+//   · 채널 Chip segmented · toggle 명확
+//   · Sticky action · [발송 · N건] · 발송 대상 카운트 명시
 //
 // 대원칙:
-//   · Modal · Button · Spinner · Card · StatusPill · InlineLabel · SegmentedControl
+//   · Modal · Button · Spinner · KpiCard · CollapseCard · StatusPill · InlineLabel
 //   · KO_INPUT_PROPS (한글 IME)
 //   · 이모지 X · 파스텔 X · Linear/Vercel/Notion 2026 톤
 //   · 폰트 +2 (text-[15px] 이상)
 //   · 말줄임표 X · whitespace-normal break-keep
+//   · 프레임워크 · 서버 endpoint 시그니처·outcomes 무변경
 
 import React from "react";
 import { AlertTriangle, Mail, MessageSquare, Send } from "lucide-react";
@@ -17,6 +22,8 @@ import { Button } from "../common/Button";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { InlineLabel } from "../common/InlineLabel";
+import { KpiCard } from "../common/KpiCard";
+import { CollapseCard } from "../common/CollapseCard";
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 import { shortDate } from "../../lib/dateFormat";
 import type {
@@ -44,6 +51,16 @@ const fmtWon = (n: number | null | undefined): string =>
   n == null ? "—" : `${Math.round(Number(n)).toLocaleString()}원`;
 const fmtQty = (n: number | null | undefined): string =>
   n == null ? "—" : `${Number(n).toLocaleString()}`;
+const fmtWonSigned = (n: number): string => {
+  if (!Number.isFinite(n) || n === 0) return "0원";
+  const sign = n > 0 ? "+" : "";
+  return sign + Math.round(n).toLocaleString() + "원";
+};
+const fmtQtySigned = (n: number): string => {
+  if (!Number.isFinite(n) || n === 0) return "0";
+  const sign = n > 0 ? "+" : "";
+  return sign + n.toLocaleString();
+};
 
 const EXCEPTION_LABEL: Record<string, string> = {
   qty_short: "수량 부족",
@@ -52,88 +69,120 @@ const EXCEPTION_LABEL: Record<string, string> = {
   no_purchase: "매입 없음",
 };
 
+// 사유별 semantic tone · Tailwind class
+interface LineTone {
+  bar: string;
+  pill: "rose" | "amber" | "amber" | "zinc";
+  diffText: string;
+}
+const LINE_TONE: Record<string, LineTone> = {
+  qty_short: { bar: "bg-rose-500", pill: "rose", diffText: "text-rose-700" },
+  qty_over: { bar: "bg-amber-500", pill: "amber", diffText: "text-amber-700" },
+  price_diff: { bar: "bg-amber-600", pill: "amber", diffText: "text-amber-800" },
+  no_purchase: { bar: "bg-zinc-500", pill: "zinc", diffText: "text-zinc-700" },
+};
+const DEFAULT_LINE_TONE: LineTone = {
+  bar: "bg-zinc-400",
+  pill: "zinc",
+  diffText: "text-zinc-700",
+};
+
 // ═══════════════════════════════════════════════════════════════
-// 이상 라인 카드
+// 이상 라인 · left accent bar + Diff-first + 2-col compare
 // ═══════════════════════════════════════════════════════════════
 const ExceptionLineRow: React.FC<{ item: ExceptionRequestModalItem }> = ({ item }) => {
-  const exLabel = EXCEPTION_LABEL[String(item.exception_type ?? "")] ?? "이상";
+  const exType = String(item.exception_type ?? "");
+  const exLabel = EXCEPTION_LABEL[exType] ?? "이상";
+  const tone = LINE_TONE[exType] ?? DEFAULT_LINE_TONE;
   const orderAmount = (item.unit_price ?? 0) * (item.order_qty ?? 0);
   const purchaseAmount = (item.purchase_avg_price ?? 0) * (item.purchase_qty ?? 0);
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50/40 px-3 py-2.5 flex flex-col gap-1.5">
-      <div className="flex items-start justify-between gap-2 flex-wrap">
-        <div className="min-w-0 flex-1">
-          <div className="text-[12px] text-ink-mute font-mono tabular-nums">
-            {item.product_code}
+    <div className="relative rounded-lg border border-line bg-white overflow-hidden">
+      {/* left accent bar */}
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${tone.bar}`} aria-hidden />
+      <div className="pl-3.5 pr-3 py-2.5 flex flex-col gap-1.5">
+        {/* Row 1 · code + chip */}
+        <div className="flex items-start justify-between gap-2 flex-wrap">
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] text-ink-mute font-mono tabular-nums leading-tight">
+              {item.product_code || "—"}
+            </div>
+            <div className="text-[15px] font-semibold text-ink whitespace-normal break-keep leading-snug mt-0.5">
+              {item.product_name || "—"}
+            </div>
           </div>
-          <div className="text-[15px] font-semibold text-ink whitespace-normal break-keep">
-            {item.product_name || "—"}
+          <StatusPill tone={tone.pill as "rose" | "amber" | "zinc"} size="xs">
+            {exLabel}
+          </StatusPill>
+        </div>
+        {/* Row 2 · Diff · 강조 · 없으면 생략 */}
+        {item.diff_desc && (
+          <div className={`text-[14px] font-semibold ${tone.diffText} leading-snug`}>
+            {item.diff_desc}
+          </div>
+        )}
+        {/* Row 3 · 2-col compact compare */}
+        <div className="grid grid-cols-2 gap-0 border-t border-zinc-100 pt-2 mt-0.5">
+          <div className="pr-3 border-r border-zinc-100">
+            <div className="text-[10px] font-bold text-ink-mute uppercase tracking-wider leading-none">
+              발주
+            </div>
+            <div className="text-[13px] font-semibold text-ink mt-1 tabular-nums whitespace-normal break-keep leading-tight">
+              {fmtQty(item.order_qty)}개 · {fmtWon(item.unit_price)}
+            </div>
+            <div className="text-[12px] text-ink-soft tabular-nums leading-tight mt-0.5">
+              {fmtWon(orderAmount)}
+            </div>
+          </div>
+          <div className="pl-3">
+            <div className="text-[10px] font-bold text-ink-mute uppercase tracking-wider leading-none">
+              매입
+            </div>
+            <div className="text-[13px] font-semibold text-ink mt-1 tabular-nums whitespace-normal break-keep leading-tight">
+              {item.purchase_qty > 0
+                ? `${fmtQty(item.purchase_qty)}개 · ${fmtWon(item.purchase_avg_price)}`
+                : "매입 이력 없음"}
+            </div>
+            <div className="text-[12px] text-ink-soft tabular-nums leading-tight mt-0.5 whitespace-normal break-keep">
+              {item.purchase_qty > 0 ? fmtWon(purchaseAmount) : "—"}
+              {item.purchase_date && ` · ${shortDate(item.purchase_date)}`}
+            </div>
           </div>
         </div>
-        <StatusPill tone="amber" size="xs">
-          {exLabel}
-        </StatusPill>
+        {item.exception_note && (
+          <div className="text-[13px] text-ink-soft whitespace-normal break-keep bg-zinc-50 border border-zinc-100 rounded-md px-2.5 py-1.5 mt-0.5">
+            <span className="font-semibold text-ink">메모</span> · {item.exception_note}
+          </div>
+        )}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[13px] tabular-nums">
-        <div className="rounded-md border border-line bg-white px-2 py-1.5">
-          <div className="text-[11px] text-ink-soft">발주</div>
-          <div className="text-ink font-semibold">
-            {fmtQty(item.order_qty)}개 × {fmtWon(item.unit_price)}
-          </div>
-          <div className="text-[12px] text-ink-soft">{fmtWon(orderAmount)}</div>
-        </div>
-        <div className="rounded-md border border-amber-200 bg-amber-50/50 px-2 py-1.5">
-          <div className="text-[11px] text-ink-soft">매입</div>
-          <div className="text-ink font-semibold">
-            {item.purchase_qty > 0
-              ? `${fmtQty(item.purchase_qty)}개 × ${fmtWon(item.purchase_avg_price)}`
-              : "매입 없음"}
-          </div>
-          <div className="text-[12px] text-ink-soft">
-            {item.purchase_qty > 0 ? fmtWon(purchaseAmount) : "—"}
-            {item.purchase_date && ` · ${shortDate(item.purchase_date)}`}
-          </div>
-        </div>
-      </div>
-      {item.diff_desc && (
-        <div className="text-[13px] font-semibold text-amber-700">{item.diff_desc}</div>
-      )}
-      {item.exception_note && (
-        <div className="text-[13px] text-ink-soft whitespace-normal break-keep">
-          <span className="font-semibold text-ink">메모</span> · {item.exception_note}
-        </div>
-      )}
     </div>
   );
 };
 
 // ═══════════════════════════════════════════════════════════════
-// 채널 체크박스
+// 채널 Chip · Segmented toggle
 // ═══════════════════════════════════════════════════════════════
-const ChannelCheckbox: React.FC<{
+const ChannelChip: React.FC<{
   label: string;
   icon: React.ReactNode;
   checked: boolean;
   disabled?: boolean;
   onToggle: () => void;
 }> = ({ label, icon, checked, disabled, onToggle }) => (
-  <label
-    className={`inline-flex items-center gap-2 h-10 px-3 rounded-lg border cursor-pointer select-none transition-colors ${
+  <button
+    type="button"
+    onClick={onToggle}
+    disabled={disabled}
+    aria-pressed={checked}
+    className={`inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[14px] font-semibold cursor-pointer select-none transition-colors ${
       checked
-        ? "bg-brand-deep border-brand-deep text-white"
-        : "bg-white border-line text-ink hover:bg-zinc-50"
+        ? "bg-brand-deep border-brand-deep text-white shadow-sm"
+        : "bg-white border-line text-ink-soft hover:bg-zinc-50 hover:text-ink"
     } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
   >
-    <input
-      type="checkbox"
-      checked={checked}
-      disabled={disabled}
-      onChange={onToggle}
-      className="sr-only"
-    />
     {icon}
-    <span className="text-[15px] font-semibold">{label}</span>
-  </label>
+    {label}
+  </button>
 );
 
 // ═══════════════════════════════════════════════════════════════
@@ -149,10 +198,33 @@ export const ExceptionRequestModal: React.FC<ExceptionRequestModalProps> = ({
 }) => {
   if (!state) return null;
 
+  // ─── KPI 계산 ────────────────────────────────────────────
   const totalItems = state.suppliers.reduce((s, g) => s + g.items.length, 0);
   const totalSuppliers = state.suppliers.length;
+  const orderAmountSum = state.suppliers.reduce(
+    (s, g) => s + g.items.reduce((a, it) => a + (it.unit_price ?? 0) * (it.order_qty ?? 0), 0),
+    0,
+  );
+  const purchaseAmountSum = state.suppliers.reduce(
+    (s, g) =>
+      s +
+      g.items.reduce((a, it) => a + (it.purchase_avg_price ?? 0) * (it.purchase_qty ?? 0), 0),
+    0,
+  );
+  const amountDiff = purchaseAmountSum - orderAmountSum;
+  const qtyDiffSum = state.suppliers.reduce(
+    (s, g) => s + g.items.reduce((a, it) => a + ((it.purchase_qty ?? 0) - (it.order_qty ?? 0)), 0),
+    0,
+  );
+
   const noChannel = !state.channels.email && !state.channels.sms && !state.channels.kakao;
   const canSubmit = totalItems > 0 && !sendingBulk;
+
+  // 금액 차이 KPI tone
+  const amountDiffTone: "rose" | "amber" | "emerald" =
+    amountDiff === 0 ? "emerald" : amountDiff > 0 ? "amber" : "rose";
+  const qtyDiffTone: "rose" | "amber" | "emerald" =
+    qtyDiffSum === 0 ? "emerald" : qtyDiffSum > 0 ? "amber" : "rose";
 
   return (
     <Modal
@@ -184,47 +256,75 @@ export const ExceptionRequestModal: React.FC<ExceptionRequestModalProps> = ({
           >
             {sendingBulk && <Spinner size={12} tone="white" />}
             <Send size={15} strokeWidth={2.4} />
-            발송
+            <span>발송</span>
+            <span className="tabular-nums opacity-90">· {totalItems}건</span>
           </button>
         </>
       }
     >
       <div className="flex flex-col gap-4">
-        {/* 채널 선택 */}
-        <div className="flex flex-col gap-2">
+        {/* ═══ KPI Hero · 한눈에 파악 ═══ */}
+        <div className="grid grid-cols-3 gap-2">
+          <KpiCard
+            tone="amber"
+            label="이상 건수"
+            value={totalItems}
+            unit="건"
+            hint={`${totalSuppliers}개 공급사`}
+            isActive={totalItems > 0}
+          />
+          <KpiCard
+            tone={amountDiffTone === "emerald" ? "emerald" : amountDiffTone}
+            label="매입 - 발주 금액"
+            value={fmtWonSigned(amountDiff)}
+            hint={amountDiff === 0 ? "차이 없음" : amountDiff > 0 ? "매입 초과" : "매입 부족"}
+            isActive={amountDiff !== 0}
+          />
+          <KpiCard
+            tone={qtyDiffTone === "emerald" ? "emerald" : qtyDiffTone}
+            label="수량 차이 합계"
+            value={fmtQtySigned(qtyDiffSum)}
+            unit="개"
+            hint={qtyDiffSum === 0 ? "차이 없음" : qtyDiffSum > 0 ? "매입 초과" : "매입 부족"}
+            isActive={qtyDiffSum !== 0}
+          />
+        </div>
+
+        {/* ═══ 채널 선택 · Chip segmented ═══ */}
+        <div className="flex flex-col gap-1.5">
           <InlineLabel size="sm">발송 채널</InlineLabel>
-          <div className="flex flex-wrap gap-2">
-            <ChannelCheckbox
+          <div className="flex flex-wrap gap-1.5">
+            <ChannelChip
               label="이메일"
-              icon={<Mail size={15} strokeWidth={2.2} />}
+              icon={<Mail size={14} strokeWidth={2.2} />}
               checked={state.channels.email}
               disabled={sendingBulk}
               onToggle={() => onToggleChannel("email")}
             />
-            <ChannelCheckbox
+            <ChannelChip
               label="문자"
-              icon={<MessageSquare size={15} strokeWidth={2.2} />}
+              icon={<MessageSquare size={14} strokeWidth={2.2} />}
               checked={state.channels.sms}
               disabled={sendingBulk}
               onToggle={() => onToggleChannel("sms")}
             />
-            <ChannelCheckbox
+            <ChannelChip
               label="카카오톡"
-              icon={<MessageSquare size={15} strokeWidth={2.2} />}
+              icon={<MessageSquare size={14} strokeWidth={2.2} />}
               checked={state.channels.kakao}
               disabled={sendingBulk}
               onToggle={() => onToggleChannel("kakao")}
             />
           </div>
           {noChannel && (
-            <div className="text-[13px] text-amber-700 whitespace-normal break-keep">
+            <div className="text-[13px] text-amber-700 whitespace-normal break-keep leading-snug">
               발송 채널이 선택되지 않았습니다. 발송 시 결과만 기록됩니다.
             </div>
           )}
         </div>
 
-        {/* 메모 */}
-        <div className="flex flex-col gap-2">
+        {/* ═══ 요청 메모 ═══ */}
+        <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <InlineLabel size="sm">요청 메모 (선택)</InlineLabel>
             <span className="text-[12px] text-ink-mute tabular-nums">
@@ -235,15 +335,18 @@ export const ExceptionRequestModal: React.FC<ExceptionRequestModalProps> = ({
             {...KO_INPUT_PROPS}
             value={state.memo}
             onChange={(e) => onMemoChange(e.target.value)}
-            rows={3}
+            rows={2}
             placeholder="추가 요청 · 조치 사항 등 (선택)"
             disabled={sendingBulk}
             className="w-full rounded-lg border border-line bg-zinc-50/60 px-3 py-2 text-[15px] text-ink placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep focus:bg-white transition-colors resize-y disabled:opacity-60"
           />
         </div>
 
-        {/* 공급사별 이상 라인 리스트 */}
-        <div className="flex flex-col gap-3">
+        {/* ═══ 공급사별 CollapseCard ═══ */}
+        <div className="flex flex-col gap-2">
+          <InlineLabel size="sm">
+            공급사별 이상 라인 · {totalSuppliers}개
+          </InlineLabel>
           {state.suppliers.map((s, si) => {
             const contactBits: string[] = [];
             if (s.supplier_contact) contactBits.push(String(s.supplier_contact));
@@ -251,33 +354,37 @@ export const ExceptionRequestModal: React.FC<ExceptionRequestModalProps> = ({
             if (s.supplier_email) contactBits.push(String(s.supplier_email));
             const contactMissing = contactBits.length === 0;
             return (
-              <div
+              <CollapseCard
                 key={`ex-modal-sup-${si}`}
-                className="rounded-lg border border-line bg-white overflow-hidden"
-              >
-                <div className="px-3 py-2.5 border-b border-line bg-zinc-50/60 flex items-center justify-between gap-2 flex-wrap">
-                  <div className="min-w-0 flex flex-col leading-snug">
-                    <span className="text-[16px] font-semibold text-ink">
+                defaultOpen
+                depth="sm"
+                contentPadding="none"
+                title={
+                  <div className="flex flex-col leading-snug min-w-0">
+                    <span className="text-[16px] font-semibold text-ink whitespace-normal break-keep">
                       {s.supplierDisplay}
                     </span>
                     <span
-                      className={`text-[13px] font-semibold ${
+                      className={`text-[12.5px] font-semibold whitespace-normal break-keep ${
                         contactMissing ? "text-rose-700" : "text-ink-soft"
                       }`}
                     >
                       {contactBits.length > 0 ? contactBits.join(" · ") : "담당자·연락처 미등록"}
                     </span>
                   </div>
-                  <StatusPill tone="amber" size="xs" dot>
+                }
+                right={
+                  <StatusPill tone={contactMissing ? "rose" : "amber"} size="xs" dot>
                     {s.items.length}건
                   </StatusPill>
-                </div>
-                <div className="p-3 flex flex-col gap-2">
+                }
+              >
+                <div className="p-3 pt-2 flex flex-col gap-2">
                   {s.items.map((it, ii) => (
                     <ExceptionLineRow key={`ex-modal-line-${si}-${ii}`} item={it} />
                   ))}
                 </div>
-              </div>
+              </CollapseCard>
             );
           })}
         </div>
