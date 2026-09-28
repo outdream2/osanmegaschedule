@@ -1,28 +1,25 @@
 // src/components/OrderManagePage/ExceptionRequestModal.tsx
-// 2026-09-28 · 사용자 지시 · 발주이상 요청서 모달 · 최신 트렌드 재디자인
-//   · Linear · Vercel · Notion · Attio 2026 톤 · 뉴트럴 base + 사유별 accent
-//   · Hero KPI 3-metric · 상단 한눈에 파악
-//   · 공급사 CollapseCard · 담당자·건수·contact tone
-//   · 이상 라인 · left accent bar + Diff-first + 2-col compare
-//   · 채널 Chip segmented · toggle 명확
-//   · Sticky action · [발송 · N건] · 발송 대상 카운트 명시
+// 2026-09-28 · 사용자 지시 · 발주이상 요청서 모달 · KPI Hero 삭제 · 라인 강조 재디자인
+//   · "위의 대시보드 필요없고 가장 한눈에 잘 보이게 구성"
+//   · 상단 KpiCard 3장 (건수·금액·수량) 제거 · 채널·메모·공급사 직행
+//   · 이상 라인 · 이메일과 동일 시각 언어 (좌 accent bar · 큰 배지 · 큰 상품명 · 큰 Diff)
+//   · Diff · "발주 X → 매입 Y (Δ · 라벨)" · 한 줄 큰 강조
 //
 // 대원칙:
-//   · Modal · Button · Spinner · KpiCard · CollapseCard · StatusPill · InlineLabel
+//   · Modal · Button · Spinner · CollapseCard · StatusPill · InlineLabel
 //   · KO_INPUT_PROPS (한글 IME)
 //   · 이모지 X · 파스텔 X · Linear/Vercel/Notion 2026 톤
-//   · 폰트 +2 (text-[15px] 이상)
+//   · 폰트 +2 (상품명 20px · Diff 18~20px · 라인 최소 14px)
 //   · 말줄임표 X · whitespace-normal break-keep
 //   · 프레임워크 · 서버 endpoint 시그니처·outcomes 무변경
 
 import React from "react";
-import { AlertTriangle, Mail, MessageSquare, Send } from "lucide-react";
+import { AlertTriangle, ArrowRight, Mail, MessageSquare, Send } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { Button } from "../common/Button";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { InlineLabel } from "../common/InlineLabel";
-import { KpiCard } from "../common/KpiCard";
 import { CollapseCard } from "../common/CollapseCard";
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 import { shortDate } from "../../lib/dateFormat";
@@ -51,16 +48,6 @@ const fmtWon = (n: number | null | undefined): string =>
   n == null ? "—" : `${Math.round(Number(n)).toLocaleString()}원`;
 const fmtQty = (n: number | null | undefined): string =>
   n == null ? "—" : `${Number(n).toLocaleString()}`;
-const fmtWonSigned = (n: number): string => {
-  if (!Number.isFinite(n) || n === 0) return "0원";
-  const sign = n > 0 ? "+" : "";
-  return sign + Math.round(n).toLocaleString() + "원";
-};
-const fmtQtySigned = (n: number): string => {
-  if (!Number.isFinite(n) || n === 0) return "0";
-  const sign = n > 0 ? "+" : "";
-  return sign + n.toLocaleString();
-};
 
 const EXCEPTION_LABEL: Record<string, string> = {
   qty_short: "수량 부족",
@@ -72,85 +59,184 @@ const EXCEPTION_LABEL: Record<string, string> = {
 // 사유별 semantic tone · Tailwind class
 interface LineTone {
   bar: string;
-  pill: "rose" | "amber" | "amber" | "zinc";
+  pill: "rose" | "amber" | "zinc";
   diffText: string;
+  diffBg: string;
+  diffBorder: string;
+  arrow: string;
 }
 const LINE_TONE: Record<string, LineTone> = {
-  qty_short: { bar: "bg-rose-500", pill: "rose", diffText: "text-rose-700" },
-  qty_over: { bar: "bg-amber-500", pill: "amber", diffText: "text-amber-700" },
-  price_diff: { bar: "bg-amber-600", pill: "amber", diffText: "text-amber-800" },
-  no_purchase: { bar: "bg-zinc-500", pill: "zinc", diffText: "text-zinc-700" },
+  qty_short: {
+    bar: "bg-rose-500",
+    pill: "rose",
+    diffText: "text-rose-700",
+    diffBg: "bg-rose-50",
+    diffBorder: "border-rose-200",
+    arrow: "text-rose-500",
+  },
+  qty_over: {
+    bar: "bg-amber-500",
+    pill: "amber",
+    diffText: "text-amber-700",
+    diffBg: "bg-amber-50",
+    diffBorder: "border-amber-200",
+    arrow: "text-amber-500",
+  },
+  price_diff: {
+    bar: "bg-amber-600",
+    pill: "amber",
+    diffText: "text-amber-800",
+    diffBg: "bg-amber-50",
+    diffBorder: "border-amber-200",
+    arrow: "text-amber-600",
+  },
+  no_purchase: {
+    bar: "bg-zinc-500",
+    pill: "zinc",
+    diffText: "text-zinc-700",
+    diffBg: "bg-zinc-50",
+    diffBorder: "border-zinc-200",
+    arrow: "text-zinc-500",
+  },
 };
 const DEFAULT_LINE_TONE: LineTone = {
   bar: "bg-zinc-400",
   pill: "zinc",
   diffText: "text-zinc-700",
+  diffBg: "bg-zinc-50",
+  diffBorder: "border-zinc-200",
+  arrow: "text-zinc-500",
 };
 
 // ═══════════════════════════════════════════════════════════════
-// 이상 라인 · left accent bar + Diff-first + 2-col compare
+// Diff 라인 · "발주 X → 매입 Y (Δ · 라벨)" · exType 따라 축 분기
+// ═══════════════════════════════════════════════════════════════
+interface DiffParts {
+  leftValue: string;
+  rightValue: string;
+  deltaText: string;
+}
+function buildDiffParts(item: ExceptionRequestModalItem, exType: string): DiffParts {
+  const isPriceDiff = exType === "price_diff";
+  const isNoPurchase = exType === "no_purchase";
+  if (isPriceDiff) {
+    const op = item.unit_price ?? 0;
+    const pp = item.purchase_avg_price ?? 0;
+    let deltaText = "";
+    if (op > 0 && pp > 0) {
+      const pct = ((pp - op) / op) * 100;
+      const sign = pct > 0 ? "+" : "";
+      const dir = pct > 0 ? "높음" : "낮음";
+      deltaText = `${sign}${pct.toFixed(1)}% · ${dir}`;
+    }
+    return { leftValue: fmtWon(op), rightValue: fmtWon(pp), deltaText };
+  }
+  if (isNoPurchase) {
+    return {
+      leftValue: `${fmtQty(item.order_qty)}개`,
+      rightValue: "매입 이력 없음",
+      deltaText: "",
+    };
+  }
+  // qty_short / qty_over / default → 수량 축
+  const oq = item.order_qty ?? 0;
+  const pq = item.purchase_qty ?? 0;
+  const qtyDiff = pq - oq;
+  let deltaText = "";
+  if (qtyDiff !== 0) {
+    const sign = qtyDiff > 0 ? "+" : "";
+    const dir = qtyDiff > 0 ? "초과" : "부족";
+    deltaText = `${sign}${qtyDiff.toLocaleString()}개 · ${dir}`;
+  }
+  return {
+    leftValue: `${fmtQty(oq)}개`,
+    rightValue: `${fmtQty(pq)}개`,
+    deltaText,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 이상 라인 카드 · 좌 accent bar · 큰 배지 · 큰 상품명 · 큰 Diff
 // ═══════════════════════════════════════════════════════════════
 const ExceptionLineRow: React.FC<{ item: ExceptionRequestModalItem }> = ({ item }) => {
   const exType = String(item.exception_type ?? "");
   const exLabel = EXCEPTION_LABEL[exType] ?? "이상";
   const tone = LINE_TONE[exType] ?? DEFAULT_LINE_TONE;
+  const diff = buildDiffParts(item, exType);
   const orderAmount = (item.unit_price ?? 0) * (item.order_qty ?? 0);
   const purchaseAmount = (item.purchase_avg_price ?? 0) * (item.purchase_qty ?? 0);
+  const hasAmountLine =
+    orderAmount > 0 || purchaseAmount > 0 || Boolean(item.purchase_date);
+
   return (
-    <div className="relative rounded-lg border border-line bg-white overflow-hidden">
-      {/* left accent bar */}
-      <div className={`absolute left-0 top-0 bottom-0 w-1 ${tone.bar}`} aria-hidden />
-      <div className="pl-3.5 pr-3 py-2.5 flex flex-col gap-1.5">
-        {/* Row 1 · code + chip */}
-        <div className="flex items-start justify-between gap-2 flex-wrap">
-          <div className="min-w-0 flex-1">
-            <div className="text-[11px] text-ink-mute font-mono tabular-nums leading-tight">
-              {item.product_code || "—"}
-            </div>
-            <div className="text-[15px] font-semibold text-ink whitespace-normal break-keep leading-snug mt-0.5">
-              {item.product_name || "—"}
-            </div>
-          </div>
-          <StatusPill tone={tone.pill as "rose" | "amber" | "zinc"} size="xs">
+    <div className="relative rounded-xl border border-line bg-white overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
+      {/* left accent bar · 6px */}
+      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${tone.bar}`} aria-hidden />
+      <div className="pl-4 pr-4 py-4 flex flex-col gap-2">
+        {/* Row 1 · 사유 배지 (큰) */}
+        <div>
+          <StatusPill tone={tone.pill} size="sm">
             {exLabel}
           </StatusPill>
         </div>
-        {/* Row 2 · Diff · 강조 · 없으면 생략 */}
-        {item.diff_desc && (
-          <div className={`text-[14px] font-semibold ${tone.diffText} leading-snug`}>
-            {item.diff_desc}
+        {/* Row 2 · 상품 코드 · 작게 · secondary */}
+        <div className="text-[12px] text-ink-mute font-mono tabular-nums leading-tight">
+          {item.product_code || "—"}
+        </div>
+        {/* Row 3 · 상품명 · 크게 (20px) · 최우선 정보 */}
+        <div className="text-[20px] font-extrabold text-ink whitespace-normal break-keep leading-snug tracking-tight -mt-1">
+          {item.product_name || "—"}
+        </div>
+        {/* Row 4 · Diff · 발주 → 매입 · 큰 강조 · 한 줄 */}
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-[11px] font-bold text-ink-mute uppercase tracking-wider">
+            발주
+          </span>
+          <span className="text-[18px] font-bold text-ink tabular-nums whitespace-normal break-keep tracking-tight">
+            {diff.leftValue}
+          </span>
+          <ArrowRight
+            size={18}
+            strokeWidth={2.6}
+            className={`${tone.arrow} shrink-0`}
+            aria-hidden
+          />
+          <span className="text-[11px] font-bold text-ink-mute uppercase tracking-wider">
+            매입
+          </span>
+          <span
+            className={`text-[18px] font-bold ${tone.diffText} tabular-nums whitespace-normal break-keep tracking-tight`}
+          >
+            {diff.rightValue}
+          </span>
+        </div>
+        {/* Row 5 · Delta pill · 차이 강조 */}
+        {diff.deltaText && (
+          <div>
+            <span
+              className={`inline-block px-2.5 py-1 rounded-md border ${tone.diffBg} ${tone.diffBorder} ${tone.diffText} text-[14px] font-extrabold tabular-nums tracking-tight`}
+            >
+              {diff.deltaText}
+            </span>
           </div>
         )}
-        {/* Row 3 · 2-col compact compare */}
-        <div className="grid grid-cols-2 gap-0 border-t border-zinc-100 pt-2 mt-0.5">
-          <div className="pr-3 border-r border-zinc-100">
-            <div className="text-[10px] font-bold text-ink-mute uppercase tracking-wider leading-none">
-              발주
-            </div>
-            <div className="text-[13px] font-semibold text-ink mt-1 tabular-nums whitespace-normal break-keep leading-tight">
-              {fmtQty(item.order_qty)}개 · {fmtWon(item.unit_price)}
-            </div>
-            <div className="text-[12px] text-ink-soft tabular-nums leading-tight mt-0.5">
-              {fmtWon(orderAmount)}
-            </div>
+        {/* Row 6 · 금액 · secondary · 있을 때만 */}
+        {hasAmountLine && (
+          <div className="text-[13px] text-ink-soft tabular-nums whitespace-normal break-keep leading-snug mt-0.5">
+            {orderAmount > 0 && <>발주액 {fmtWon(orderAmount)}</>}
+            {orderAmount > 0 && purchaseAmount > 0 && <> · </>}
+            {purchaseAmount > 0 && <>매입액 {fmtWon(purchaseAmount)}</>}
+            {item.purchase_date && (
+              <>
+                {(orderAmount > 0 || purchaseAmount > 0) && " · "}
+                매입일 {shortDate(item.purchase_date)}
+              </>
+            )}
           </div>
-          <div className="pl-3">
-            <div className="text-[10px] font-bold text-ink-mute uppercase tracking-wider leading-none">
-              매입
-            </div>
-            <div className="text-[13px] font-semibold text-ink mt-1 tabular-nums whitespace-normal break-keep leading-tight">
-              {item.purchase_qty > 0
-                ? `${fmtQty(item.purchase_qty)}개 · ${fmtWon(item.purchase_avg_price)}`
-                : "매입 이력 없음"}
-            </div>
-            <div className="text-[12px] text-ink-soft tabular-nums leading-tight mt-0.5 whitespace-normal break-keep">
-              {item.purchase_qty > 0 ? fmtWon(purchaseAmount) : "—"}
-              {item.purchase_date && ` · ${shortDate(item.purchase_date)}`}
-            </div>
-          </div>
-        </div>
+        )}
+        {/* Row 7 · 메모 */}
         {item.exception_note && (
-          <div className="text-[13px] text-ink-soft whitespace-normal break-keep bg-zinc-50 border border-zinc-100 rounded-md px-2.5 py-1.5 mt-0.5">
+          <div className="text-[14px] text-ink-soft whitespace-normal break-keep bg-zinc-50 border border-zinc-100 rounded-lg px-3 py-2 leading-relaxed">
             <span className="font-semibold text-ink">메모</span> · {item.exception_note}
           </div>
         )}
@@ -198,33 +284,12 @@ export const ExceptionRequestModal: React.FC<ExceptionRequestModalProps> = ({
 }) => {
   if (!state) return null;
 
-  // ─── KPI 계산 ────────────────────────────────────────────
+  // ─── 카운트 (헤더·발송 버튼용) ─────────────────────────────
   const totalItems = state.suppliers.reduce((s, g) => s + g.items.length, 0);
   const totalSuppliers = state.suppliers.length;
-  const orderAmountSum = state.suppliers.reduce(
-    (s, g) => s + g.items.reduce((a, it) => a + (it.unit_price ?? 0) * (it.order_qty ?? 0), 0),
-    0,
-  );
-  const purchaseAmountSum = state.suppliers.reduce(
-    (s, g) =>
-      s +
-      g.items.reduce((a, it) => a + (it.purchase_avg_price ?? 0) * (it.purchase_qty ?? 0), 0),
-    0,
-  );
-  const amountDiff = purchaseAmountSum - orderAmountSum;
-  const qtyDiffSum = state.suppliers.reduce(
-    (s, g) => s + g.items.reduce((a, it) => a + ((it.purchase_qty ?? 0) - (it.order_qty ?? 0)), 0),
-    0,
-  );
 
   const noChannel = !state.channels.email && !state.channels.sms && !state.channels.kakao;
   const canSubmit = totalItems > 0 && !sendingBulk;
-
-  // 금액 차이 KPI tone
-  const amountDiffTone: "rose" | "amber" | "emerald" =
-    amountDiff === 0 ? "emerald" : amountDiff > 0 ? "amber" : "rose";
-  const qtyDiffTone: "rose" | "amber" | "emerald" =
-    qtyDiffSum === 0 ? "emerald" : qtyDiffSum > 0 ? "amber" : "rose";
 
   return (
     <Modal
@@ -263,33 +328,6 @@ export const ExceptionRequestModal: React.FC<ExceptionRequestModalProps> = ({
       }
     >
       <div className="flex flex-col gap-4">
-        {/* ═══ KPI Hero · 한눈에 파악 ═══ */}
-        <div className="grid grid-cols-3 gap-2">
-          <KpiCard
-            tone="amber"
-            label="이상 건수"
-            value={totalItems}
-            unit="건"
-            hint={`${totalSuppliers}개 공급사`}
-            isActive={totalItems > 0}
-          />
-          <KpiCard
-            tone={amountDiffTone === "emerald" ? "emerald" : amountDiffTone}
-            label="매입 - 발주 금액"
-            value={fmtWonSigned(amountDiff)}
-            hint={amountDiff === 0 ? "차이 없음" : amountDiff > 0 ? "매입 초과" : "매입 부족"}
-            isActive={amountDiff !== 0}
-          />
-          <KpiCard
-            tone={qtyDiffTone === "emerald" ? "emerald" : qtyDiffTone}
-            label="수량 차이 합계"
-            value={fmtQtySigned(qtyDiffSum)}
-            unit="개"
-            hint={qtyDiffSum === 0 ? "차이 없음" : qtyDiffSum > 0 ? "매입 초과" : "매입 부족"}
-            isActive={qtyDiffSum !== 0}
-          />
-        </div>
-
         {/* ═══ 채널 선택 · Chip segmented ═══ */}
         <div className="flex flex-col gap-1.5">
           <InlineLabel size="sm">발송 채널</InlineLabel>
@@ -342,7 +380,7 @@ export const ExceptionRequestModal: React.FC<ExceptionRequestModalProps> = ({
           />
         </div>
 
-        {/* ═══ 공급사별 CollapseCard ═══ */}
+        {/* ═══ 공급사별 CollapseCard · 이상 라인 강조 ═══ */}
         <div className="flex flex-col gap-2">
           <InlineLabel size="sm">
             공급사별 이상 라인 · {totalSuppliers}개
@@ -379,7 +417,7 @@ export const ExceptionRequestModal: React.FC<ExceptionRequestModalProps> = ({
                   </StatusPill>
                 }
               >
-                <div className="p-3 pt-2 flex flex-col gap-2">
+                <div className="p-3 pt-2 flex flex-col gap-3">
                   {s.items.map((it, ii) => (
                     <ExceptionLineRow key={`ex-modal-line-${si}-${ii}`} item={it} />
                   ))}
