@@ -8,7 +8,7 @@
 //   · initPushTokenListener()       · 'osan-push-token' 이벤트 리스너 설치
 //   · requestPushTokenFromApp()     · 앱에게 토큰 재발급 요청 (setBadge 채널)
 //   · setAppBadge(count)            · WebView native 배지 갱신
-//   · initBadgeSync()               · approval-count-updated 이벤트 → setAppBadge 자동 sync
+//   · initBadgeSync()               · approval-count-updated · notifications-changed · visibilitychange → setAppBadge 자동 sync (2026-09-29)
 //
 // 앱 ↔ 웹 인터페이스:
 //   앱 → 웹 (매 페이지 로드):
@@ -170,11 +170,12 @@ export function setAppBadge(count: number): void {
 // ─────────────────────────────────────────────────
 // 배지 auto-sync · initBadgeSync()
 // · approval-count-updated (승인대기) CustomEvent 감지 → 서버 조회 → setAppBadge
+// · notifications-changed (2026-09-29 · 신규) CustomEvent 감지 → 서버 조회 → setAppBadge
+// · visibilitychange (2026-09-29 · 신규) · 앱 백그라운드→포어그라운드 시 즉시 refresh
 // · 60초 폴링 fallback (기존 SideNav/BusinessManage 로직과 일치)
 // · 반환값 · cleanup 함수
 //
-// · 서버 조회 · GET /api/leave-requests/pending-count · 승인대기 갯수
-//   · 필요시 · 사직서 pending 도 통합 (기존 SideNav 참조) · 초기에는 leave 만 (사용자 지시 · scope 최소화)
+// · 서버 조회 · GET /api/notifications/unread-count · notifications 전체 unread count
 // ─────────────────────────────────────────────────
 export function initBadgeSync(employeeId?: number | null): () => void {
   if (typeof window === "undefined") return () => {};
@@ -182,9 +183,13 @@ export function initBadgeSync(employeeId?: number | null): () => void {
 
   let cancelled = false;
   let intervalId: number | null = null;
+  // 2026-09-29 · duplicate refresh 방지 · 동시 다중 이벤트 (visibilitychange + notifications-changed) 대응
+  let refreshing = false;
 
   async function refresh(): Promise<void> {
     if (cancelled) return;
+    if (refreshing) return; // 진행 중이면 skip · 최신 tick 다음에 재조회
+    refreshing = true;
     try {
       // 2026-09-24 · 사용자 보고 · "앱 갯수 틀림" · 서버 count endpoint 로 통일
       //   · 이전 · GET /api/notifications?limit=100 · 클라 filter · limit=30 (Bell) vs 100 (badge) 불일치
@@ -207,6 +212,8 @@ export function initBadgeSync(employeeId?: number | null): () => void {
         return;
       }
       devWarn(`[PUSH-BADGE] refresh failed · ${err?.message ?? err}`);
+    } finally {
+      refreshing = false;
     }
   }
 
@@ -214,7 +221,20 @@ export function initBadgeSync(employeeId?: number | null): () => void {
     void refresh();
   };
 
+  // 2026-09-29 · visibilitychange · 앱 백그라운드→포어그라운드 즉시 refresh
+  //   · WebView · 앱 홈스크린 이탈 후 재진입 · 60초 폴링 대기 X · 즉시 최신 count 반영
+  const visibilityHandler = () => {
+    if (typeof document !== "undefined" && document.visibilityState === "visible") {
+      void refresh();
+    }
+  };
+
   window.addEventListener("approval-count-updated", eventHandler);
+  // 2026-09-29 · notifications-changed · NotificationBell 로컬 갱신 시 · 서버 count double-check
+  window.addEventListener("notifications-changed", eventHandler);
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", visibilityHandler);
+  }
   // 60초 폴링 fallback
   intervalId = window.setInterval(() => {
     void refresh();
@@ -225,6 +245,10 @@ export function initBadgeSync(employeeId?: number | null): () => void {
   return () => {
     cancelled = true;
     window.removeEventListener("approval-count-updated", eventHandler);
+    window.removeEventListener("notifications-changed", eventHandler);
+    if (typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", visibilityHandler);
+    }
     if (intervalId !== null) {
       window.clearInterval(intervalId);
       intervalId = null;
