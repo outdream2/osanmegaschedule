@@ -14,6 +14,8 @@ import { Card } from "./common/Card";
 import { Spinner } from "./common/Spinner";
 // 2026-09-11 · #97 · deleteAll confirm 추가
 import { useConfirm } from "../hooks/useConfirm";
+// 2026-09-29 · 사용자 보고 · 앱·웹 뱃지 불일치 fix · 로컬 즉시 갱신 + 이벤트 dispatch
+import { setAppBadge } from "../lib/pushNotifications";
 
 interface Notification {
   id: number;
@@ -141,9 +143,23 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
   //   · 이전 방식: panelRef.contains(target) → portal 내부 클릭도 "외부"로 판단해 즉시 닫힘
   //   · 이후 방식: 배경 backdrop onClick 으로만 닫기 (정상 동작)
 
+  // 2026-09-29 · 사용자 보고 · 앱·웹 뱃지 불일치 fix
+  //   · 로컬 상태 갱신 후 · setAppBadge(newCount) + CustomEvent("notifications-changed") dispatch
+  //   · WebView 앱 · setAppBadge 로 홈 아이콘 즉시 갱신 (60초 폴링 대기 X)
+  //   · initBadgeSync · notifications-changed 리슨 · 서버 count 재조회 · double-check
+  const emitNotificationsChanged = useCallback((newUnread: number) => {
+    try { setAppBadge(newUnread); } catch { /* silent */ }
+    try { window.dispatchEvent(new CustomEvent("notifications-changed", { detail: { unread: newUnread } })); } catch { /* silent */ }
+  }, []);
+
   // 읽음 처리 → 목록에서 즉시 제거 (사용자 요청 2026-09-07)
   const markRead = async (id: number) => {
+    // 서버 count 우선 · 미로딩 시 로컬 계산 폴백 (unreadCount 파생과 동일 규칙)
+    const wasUnread = notifications.some((n) => n.id === id && !n.read);
+    const nextCount = Math.max(0, unreadCount - (wasUnread ? 1 : 0));
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    if (unreadCountServer != null) setUnreadCountServer(nextCount);
+    emitNotificationsChanged(nextCount);
     try { await api.patch(`/api/notifications/${id}/read`); } catch { /* silent */ }
   };
 
@@ -151,6 +167,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
   const markAllRead = async () => {
     if (!employeeId || notifications.length === 0) return;
     setNotifications([]);
+    setUnreadCountServer(0);
+    emitNotificationsChanged(0);
     try { await api.post("/api/notifications/read-all", { employeeId }); } catch { /* silent */ }
   };
 
@@ -164,6 +182,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
     });
     if (!ok) return;
     setNotifications([]);
+    setUnreadCountServer(0);
+    emitNotificationsChanged(0);
     try { await api.del(`/api/notifications?employeeId=${employeeId}`); } catch { /* silent */ }
   };
 
