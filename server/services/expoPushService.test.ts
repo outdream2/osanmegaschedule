@@ -281,7 +281,10 @@ describe("sendPush · badge / url / data 페이로드", () => {
     expect(body[0].data?.url).toBe("/home");
   });
 
-  it("badge 미지정 · Expo 요청에 badge 키 없음", async () => {
+  // 2026-09-24 · 사용자 지시 · badge 미지정 시 · fetchUnreadCount 자동 조회 · NotificationBell 과 완전 일치
+  //   · 이전 스펙 · badge 키 없음 (undefined)
+  //   · 이후 스펙 · badge = fetchUnreadCount(userId) · 항상 number · mock 미지원 시 0 fallback
+  it("badge 미지정 · fetchUnreadCount 자동 조회 · Expo 요청 badge=number", async () => {
     const { sendPush } = await getModule();
     mockSupabaseFrom.mockReturnValue({
       select: vi.fn().mockReturnThis(),
@@ -294,6 +297,78 @@ describe("sendPush · badge / url / data 페이로드", () => {
     mockFetch.mockResolvedValueOnce(makeExpoResponse([{ status: "ok" }]));
     await sendPush({ userId: 1, title: "t", body: "b" });
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body[0].badge).toBeUndefined();
+    // badge 는 항상 number · 자동 조회 fallback · fetchUnreadCount 예외 시 0
+    expect(typeof body[0].badge).toBe("number");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-09-29 · sendBadgeSync · silent push · 앱 홈스크린 badge 만 갱신
+describe("sendBadgeSync · silent push", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("userId 없으면 · empty 반환 · fetch 호출 X", async () => {
+    const { sendBadgeSync } = await getModule();
+    const result = await sendBadgeSync(0);
+    expect(result).toEqual({ sent: 0, failed: 0, skipped: 0, deactivated: 0 });
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("활성 토큰 없으면 · empty 반환 · fetch 호출 X", async () => {
+    mockSupabaseFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      then: (resolve: any) =>
+        Promise.resolve({ data: [], error: null }).then(resolve),
+    });
+    const { sendBadgeSync } = await getModule();
+    const result = await sendBadgeSync(1);
+    expect(result.sent).toBe(0);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("silent push payload · _contentAvailable=true · sound=null · title/body 없음 · badge=number", async () => {
+    mockSupabaseFrom.mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      then: (resolve: any) =>
+        Promise.resolve({ data: [{ token: "ExponentPushToken[silent_test__]" }], error: null }).then(resolve),
+    });
+    mockFetch.mockResolvedValueOnce(makeExpoResponse([{ status: "ok" }]));
+    const { sendBadgeSync } = await getModule();
+    await sendBadgeSync(1);
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body[0]._contentAvailable).toBe(true);
+    expect(body[0].sound).toBe(null);
+    expect(body[0].title).toBeUndefined();
+    expect(body[0].body).toBeUndefined();
+    expect(typeof body[0].badge).toBe("number");
+    expect(body[0].data?.type).toBe("badge-sync");
+  });
+
+  it("sendBadgeSync 예외 · throw 없음 · empty 반환", async () => {
+    mockSupabaseFrom.mockImplementation(() => {
+      throw new Error("supabase down");
+    });
+    const { sendBadgeSync } = await getModule();
+    await expect(sendBadgeSync(1)).resolves.toEqual({ sent: 0, failed: 0, skipped: 0, deactivated: 0 });
+  });
+});
+
+describe("sendBadgeSyncSafe · fire-and-forget wrapper", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("실패해도 throw 없음", async () => {
+    mockSupabaseFrom.mockImplementation(() => {
+      throw new Error("supabase down");
+    });
+    const { sendBadgeSyncSafe } = await getModule();
+    expect(() => sendBadgeSyncSafe(1)).not.toThrow();
   });
 });

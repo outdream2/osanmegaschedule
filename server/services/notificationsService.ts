@@ -9,6 +9,9 @@
 import webpush from "web-push";
 import { supabase } from "../../src/supabase/client";
 import logger from "../lib/logger";
+// 2026-09-29 · 사용자 보고 · 앱·웹 뱃지 갯수 불일치 fix
+//   · markRead·markAllRead·deleteAll 후 · sendBadgeSyncSafe · iOS silent push · 앱 badge 즉시 갱신
+import { sendBadgeSyncSafe } from "./expoPushService";
 
 export interface Notification {
   id: number;
@@ -103,11 +106,25 @@ export const notificationsService = {
   },
 
   async markRead(id: number): Promise<void> {
+    // 2026-09-29 · badge sync · employeeId 먼저 조회 (UPDATE 후 실제 필요 · fire-and-forget)
+    let employeeId: number | null = null;
+    try {
+      const { data } = await supabase
+        .from("notifications")
+        .select("employee_id")
+        .eq("id", id)
+        .single();
+      if (data && typeof data.employee_id === "number") employeeId = data.employee_id;
+    } catch { /* silent · badge sync 실패해도 markRead 는 계속 */ }
+
     const { error } = await supabase
       .from("notifications")
       .update({ read: true })
       .eq("id", id);
     if (error) throw new Error(error.message);
+
+    // 앱 badge 실시간 갱신 · silent push (fire-and-forget)
+    if (employeeId) sendBadgeSyncSafe(employeeId);
   },
 
   async markAllRead(employeeId: number): Promise<void> {
@@ -117,6 +134,9 @@ export const notificationsService = {
       .eq("employee_id", employeeId)
       .eq("read", false);
     if (error) throw new Error(error.message);
+
+    // 2026-09-29 · 앱 badge 실시간 갱신 · silent push (fire-and-forget)
+    if (employeeId) sendBadgeSyncSafe(employeeId);
   },
 
   async deleteAll(employeeId: number): Promise<void> {
@@ -125,6 +145,9 @@ export const notificationsService = {
       .delete()
       .eq("employee_id", employeeId);
     if (error) throw new Error(error.message);
+
+    // 2026-09-29 · 앱 badge 실시간 갱신 · silent push (fire-and-forget)
+    if (employeeId) sendBadgeSyncSafe(employeeId);
   },
 
   async create(params: {

@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-09-27 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-09-29 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -122,7 +122,7 @@
 | `server/productCache.ts` | 400 | 3 |
 | `server/routes/settings/holidays.ts` | 254 | 3 |
 | `server/services/scheduleService.ts` | 356 | 3 |
-| `src/components/NotificationBell.tsx` | 314 | 2 |
+| `src/components/NotificationBell.tsx` | 334 | 2 |
 | `src/components/OrderManagePage/EventProductAddModal.tsx` | 103 | 2 |
 | `server/ocr/engines/gemini.ts` | 146 | 2 |
 | `server/ocr/pipeline/benchmark.ts` | 177 | 2 |
@@ -139,7 +139,7 @@
 | `server/routes/purchase/supplierPayments/purchaseSummary.ts` | 238 | 2 |
 | `server/routes/staff/employeeContracts.ts` | 607 | 2 |
 | `server/routes/stock/stockManage/salesTrend.ts` | 304 | 2 |
-| `server/services/notificationsService.ts` | 250 | 2 |
+| `server/services/notificationsService.ts` | 273 | 2 |
 | `server/lib/optimalStock.ts` | 258 | 1 |
 | `server/lib/ownershipCheck.ts` | 41 | 1 |
 | `server/ocr/parsing/metadataKV.ts` | 407 | 1 |

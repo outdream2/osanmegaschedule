@@ -33,6 +33,10 @@ interface ExpoPushMessage {
   channelId?: string;
   priority?: "default" | "normal" | "high";
   ttl?: number;
+  // 2026-09-29 · silent push · iOS background notification · badge 만 갱신 · alert 표시 X
+  //   · Expo SDK · _contentAvailable → APNs `content-available: 1` (iOS) · GCM data-only (Android)
+  //   · https://docs.expo.dev/push-notifications/sending-notifications/#message-format
+  _contentAvailable?: boolean;
 }
 
 interface ExpoPushTicket {
@@ -272,5 +276,68 @@ export async function sendPush(params: SendPushParams): Promise<SendPushResult> 
 export function sendPushSafe(params: SendPushParams): void {
   sendPush(params).catch((err) => {
     logger.warn(`[EXPO-PUSH] sendPushSafe · ${err?.message ?? err}`);
+  });
+}
+
+/**
+ * 2026-09-29 · 사용자 보고 · "앱·웹 뱃지 갯수 불일치" 근본 fix
+ *
+ * Silent Push · iOS 앱 홈스크린 badge 만 실시간 갱신 (알림 표시·소리 X)
+ *   · alert 표시 X · sound null · title/body 빈값
+ *   · Expo · `_contentAvailable: true` → APNs `content-available: 1` (iOS silent) · GCM data-only (Android)
+ *   · badge · fetchUnreadCount 자동 조회 · notifications 실시간 count
+ *   · 사용 시점 · notification 읽음/전체읽음/전체삭제 후 · 앱 badge 즉시 stale 상태 해소
+ *
+ * 회귀 방지:
+ *   · 기존 sendPush 로직 무변경
+ *   · 실패 시 fire-and-forget · caller 흐름 방해 X (throw 없음)
+ *   · Android · data-only 전송 · notification tray 표시 X (title/body 빈값)
+ */
+export async function sendBadgeSync(userId: number): Promise<SendPushResult> {
+  const empty: SendPushResult = { sent: 0, failed: 0, skipped: 0, deactivated: 0 };
+  if (!userId) return empty;
+
+  try {
+    const { data: rows, error } = await supabase
+      .from("push_tokens")
+      .select("token")
+      .eq("user_id", userId)
+      .eq("active", true);
+    if (error) {
+      logger.warn(`[EXPO-PUSH] badgeSync · token fetch failed · user=${userId} · ${error.message}`);
+      return empty;
+    }
+    const tokens = (rows ?? []).map((r) => String(r.token)).filter((t) => t.length > 0);
+    if (tokens.length === 0) {
+      logger.debug(`[EXPO-PUSH] badgeSync · no active tokens · user=${userId} · skip`);
+      return empty;
+    }
+
+    const badgeCount = await fetchUnreadCount(userId);
+    const payload: Omit<ExpoPushMessage, "to"> = {
+      // silent push · 알림 표시 X
+      sound: null,
+      priority: "high",
+      badge: badgeCount,
+      _contentAvailable: true,
+      // title/body 미지정 · iOS silent · Android data-only
+      data: { type: "badge-sync", badge: badgeCount },
+    };
+
+    const result = await sendPushToTokens(tokens, payload);
+    logger.info(`[EXPO-PUSH] badgeSync · user=${userId} · badge=${badgeCount} · sent=${result.sent} · failed=${result.failed}`);
+    return { ...result, skipped: 0 };
+  } catch (err: any) {
+    logger.warn(`[EXPO-PUSH] badgeSync unexpected · user=${userId} · ${err?.message ?? err}`);
+    return empty;
+  }
+}
+
+/**
+ * fire-and-forget wrapper · 실패해도 caller 흐름 방해 X
+ */
+export function sendBadgeSyncSafe(userId: number): void {
+  sendBadgeSync(userId).catch((err) => {
+    logger.warn(`[EXPO-PUSH] sendBadgeSyncSafe · user=${userId} · ${err?.message ?? err}`);
   });
 }
