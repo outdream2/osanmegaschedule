@@ -37,6 +37,10 @@ interface ExpoPushMessage {
   //   · Expo SDK · _contentAvailable → APNs `content-available: 1` (iOS) · GCM data-only (Android)
   //   · https://docs.expo.dev/push-notifications/sending-notifications/#message-format
   _contentAvailable?: boolean;
+  // 2026-09-30 · iOS 15+ · interruption level · passive = 배너/소리 X · 알림센터에만 조용히
+  //   · Expo SDK · _interruptionLevel → APNs `interruption-level` (iOS 15+)
+  //   · badge 자동 반영 · regular alert 스펙 준수 · 앱 handler 불필요
+  _interruptionLevel?: "active" | "passive" | "time-sensitive" | "critical";
 }
 
 interface ExpoPushTicket {
@@ -314,13 +318,17 @@ export async function sendBadgeSync(userId: number): Promise<SendPushResult> {
     }
 
     const badgeCount = await fetchUnreadCount(userId);
+    // 2026-09-30 · Passive Alert (iOS 15+) · 배너·소리 X · 알림센터 조용히 · badge 자동 반영
+    //   · 이전 · silent push · iOS · 앱 handler 없으면 badge 반영 X (v1.0.1 앱 handler 미포함)
+    //   · 이후 · regular alert · title 공백 1글자 · interruption-level=passive · iOS 시스템 auto badge
+    //   · trade-off · 알림센터에 조용한 entry 쌓임 (배너·소리 없음 · 사용자 방해 최소)
     const payload: Omit<ExpoPushMessage, "to"> = {
-      // silent push · 알림 표시 X
+      title: " ",
+      body: "",
       sound: null,
       priority: "high",
       badge: badgeCount,
-      _contentAvailable: true,
-      // title/body 미지정 · iOS silent · Android data-only
+      _interruptionLevel: "passive",
       data: { type: "badge-sync", badge: badgeCount },
     };
 

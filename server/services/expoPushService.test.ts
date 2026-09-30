@@ -342,10 +342,11 @@ describe("sendBadgeSync · silent push", () => {
     const { sendBadgeSync } = await getModule();
     await sendBadgeSync(1);
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-    expect(body[0]._contentAvailable).toBe(true);
+    // 2026-09-30 · Passive Alert 로 변경 · iOS 15+ · 배너·소리 X · badge 자동 반영
+    expect(body[0]._interruptionLevel).toBe("passive");
     expect(body[0].sound).toBe(null);
-    expect(body[0].title).toBeUndefined();
-    expect(body[0].body).toBeUndefined();
+    expect(body[0].title).toBe(" ");
+    expect(body[0].body).toBe("");
     expect(typeof body[0].badge).toBe("number");
     expect(body[0].data?.type).toBe("badge-sync");
   });
