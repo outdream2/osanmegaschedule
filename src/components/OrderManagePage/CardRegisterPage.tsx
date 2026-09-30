@@ -16,7 +16,9 @@ import { StatusPill } from "../common/StatusPill";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { SplitPanel } from "../common/SplitPanel";
-import { CARD_ISSUERS, type CreditCard } from "../../shared/schemas/creditCards";
+import { CARD_ISSUERS, type CardIssuer, type CreditCard } from "../../shared/schemas/creditCards";
+// 2026-09-30 · #2 · 카드사별 청구기간 계산 (BC카드 공식 신용공여기간 표 기반)
+import { calcBillingPeriod, CARD_PAYMENT_GAP } from "../../lib/cardBillingCycle";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
@@ -284,13 +286,19 @@ export const CardRegisterPage: React.FC = () => {
               />
               <span className="text-[15px] text-zinc-500 whitespace-nowrap">일</span>
             </div>
-            {/* 2026-09-02 · 사용자 지시 · 청구기간 자동 표시 · 결제일 D → 전월 D+1 ~ 이번 D 매입분 */}
+            {/* 2026-09-30 · #2 · 카드사별 청구기간 · calcBillingPeriod 사용
+                근거 · BC카드 공식 신용공여기간 표 (KB·신한·우리·NH=13일, 하나·삼성=12일, 현대=11일) */}
             {(() => {
-              const d = draft.billing_day;
-              const prev = d === 1 ? 31 : d - 1;
+              const period = calcBillingPeriod(draft.issuer as CardIssuer, draft.billing_day);
+              const gap = CARD_PAYMENT_GAP[draft.issuer as CardIssuer] ?? 13;
               return (
-                <div className="mt-1.5 text-[15px] text-brand-deep bg-brand-tint/40 border border-brand/15 rounded-md px-2 py-1 tabular-nums">
-                  💡 청구기간 · 전월 <b>{prev + 1 > 31 ? 1 : prev + 1}일</b> ~ 이번달 <b>{d}일</b> 매입분 → <b>{d}일</b> 청구
+                <div className="mt-1.5 text-[14px] text-brand-deep bg-brand-tint/40 border border-brand/15 rounded-md px-2.5 py-1.5 tabular-nums leading-relaxed">
+                  <div className="font-semibold">
+                    청구기간 · <b>{period.label}</b> 매입분 → <b>{draft.billing_day}일</b> 청구
+                  </div>
+                  <div className="text-[12px] text-brand-deep/70 mt-0.5">
+                    {draft.issuer} · 신용공여 {gap}일 (BC카드 공식 기준)
+                  </div>
                 </div>
               );
             })()}
