@@ -60,15 +60,22 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
     isOpen,
     typeHoursMap,
     onSave: async (formValues) => {
-      await onUpdate({
-        employeeId,
-        date: dateStr,
-        type: formValues.type || "휴무",
-        workingHours: formValues.workingHours,
-        actualHours: formValues.actualHours,
-        memo: formValues.memo,
-      });
-      setIsOpen(false);
+      // 2026-10-01 · onUpdate rejection catch · popover 유지 · 재시도 가능
+      //   · 이전 · reject bubble → unhandled rejection (vitest · console noise)
+      //   · 이후 · 흡수 · popover 열림 유지 · 사용자 재시도 (상위 toast · onUpdate 책임)
+      try {
+        await onUpdate({
+          employeeId,
+          date: dateStr,
+          type: formValues.type || "휴무",
+          workingHours: formValues.workingHours,
+          actualHours: formValues.actualHours,
+          memo: formValues.memo,
+        });
+        setIsOpen(false);
+      } catch {
+        // popover 열림 유지 · 사용자 재시도 가능
+      }
     },
   });
 
