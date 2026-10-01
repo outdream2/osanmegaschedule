@@ -390,6 +390,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         logger.warn(`[top-sales/months] purchase_details 조인 실패:`, e?.message);
       }
       // 2026-07-28 · 회전율 = 최근매입일 ~ 그 전매입일 사이 판매량
+      // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · raw total_amount (xlsx 원본 · 78.6% 불일치) 제거
+      //   · 판매액 = sale_qty × sale_price (products SSOT · 대원칙 #3)
       const salesByCodeByDate = new Map<string, Map<string, { qty: number; amount: number }>>();
       for (const r of rawRows) {
         const code = String(r.product_code ?? "").trim();
@@ -397,7 +399,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         const snap = String(r.snapshot_date ?? "");
         if (!snap) continue;
         const q = Number(r.sale_qty ?? 0) || 0;
-        const a = Number(r.total_amount ?? 0) || 0;
+        const sp = Number(productMap.get(code)?.sale_price ?? 0) || 0;
+        const a = q * sp;
         if (q <= 0 && a <= 0) continue;
         const bySup = salesByCodeByDate.get(code) ?? new Map<string, { qty: number; amount: number }>();
         const prev = bySup.get(snap) ?? { qty: 0, amount: 0 };
@@ -713,9 +716,12 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
     }
 
     // 2026-07-29 · 매입이력 필드는 무조건 purchase_details 만 사용
+    // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · total_amount 는 sale_qty × sale_price (파생) · raw 사용 금지
     const rows = (data ?? []).filter(r => !hiddenSet.has(String(r.product_code ?? ""))).map(r => {
       const prod = productMap.get(String(r.product_code ?? ""));
       const purchaseInfo = purchaseInfoMap.get(String(r.product_code ?? ""));
+      const sqty = Number(r.sale_qty ?? 0) || 0;
+      const salePriceFromProd = Number(prod?.sale_price ?? 0) || 0;
       return {
         product_code:   String(r.product_code ?? ""),
         product_name:   String(r.product_name ?? r.product_code ?? ""),
@@ -723,12 +729,13 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         spec:           r.spec ?? null,
         opening_stock:  Number(r.opening_stock  ?? 0) || 0,
         purchase_qty:   Number(r.purchase_qty   ?? 0) || 0,
-        sale_qty:       Number(r.sale_qty       ?? 0) || 0,
+        sale_qty:       sqty,
         disposal_qty:   Number(r.disposal_qty   ?? 0) || 0,
         internal_qty:   Number(r.internal_qty   ?? 0) || 0,
         adjustment_qty: Number(r.adjustment_qty ?? 0) || 0,
         closing_stock:  Number(r.closing_stock  ?? 0) || 0,
-        total_amount:   Number(r.total_amount   ?? 0) || 0,
+        // 2026-10-01 · 사용자 대원칙 #3 · 판매액 = 수량 × 판매가 (xlsx raw total_amount 금지)
+        total_amount:   sqty * salePriceFromProd,
         optimal_stock:  prod?.optimal_stock  ?? 0,
         sale_price:     prod?.sale_price     ?? 0,
         purchase_price: prod?.purchase_price ?? 0,
