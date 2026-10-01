@@ -249,25 +249,78 @@
 
 ## 리포트 4 · fix 적용 결과
 
-(아래 섹션은 fix 적용 후 업데이트)
+### 커밋 1 (e8f4bd82) · topSales.ts raw total_amount 제거 (U2 · U3 완료)
 
-### 커밋 1 · topSales.ts raw total_amount 제거
+- `topSales.ts:400` · `salesByCodeByDate` · `const a = q * sp` (sale_price from productMap)
+- `topSales.ts:731` · single-snapshot rows · `total_amount: sqty * salePriceFromProd`
+- 서버 전체 · `Number(r.total_amount)` 사용 0건 확인 완료
 
-...
+### 커밋 2 (811e15bd) · 재고자산 공식 통일 (U1 완료)
 
-### 커밋 2 · supplierPurchases.ts saleAmount proration → 판매가 공식
+- supplierPurchases.ts · `cogsAmount`·`stockAssetAmount` 신규 필드 추가
+- 공식 · `cogsAmount = sum(sale_qty × purchase_price)` · `stockAssetAmount = max(0, purchaseAmount − cogsAmount)`
+- UI · SupplierListCard · SupplierTab.panels · SupplierTab.tsx 모두 `stockAssetAmount` 사용
+- fallback · 서버가 신규 필드 미지원 시 `totalStockAmount` 유지 (BC 보장)
+- 사용자 대원칙 #1 (재고자산 = 매입 − COGS) 완전 통일
 
-...
+### 커밋 3 (d2453bb6) · 감사 docs·스크립트 추가
 
-### 커밋 3 · SupplierTab 라벨 정합
+- `docs/DATA_INTEGRITY_AUDIT_2026-10-01.md` · 10영역 감사
+- `docs/DATA_INTEGRITY_UNIFICATION_2026-10-01.md` · 본 리포트
+- `scripts/audit-data-integrity-2026-10-01.mjs` · 재사용 가능
 
-...
+### 커밋 2 보류 사항 · supplierPurchases.ts saleAmount proration (U4)
+
+- `saleAmount` (`supply_amount × (saleQty/total)`) · UI 에 "판매액" 으로 표시됨
+- `totalStockAmount` (`sqty × salePrice`) · 올바른 판매액 공식 · 라벨 수정 전까지 공존
+- 두 값이 다르므로 · 섣불리 통일 시 UX 혼동 (두 컬럼 동일 값 표시)
+- **결정** · 레거시 saleAmount 유지 · 사용자 리뷰 후 재결정 (아래 D7 참조)
 
 ### 검증
 
 - `npx tsc --noEmit` · 0 error
-- `node scripts/audit-framework.cjs --check-new` · 신규 위반 0
-- `npx vitest run` · 회귀 0
+- `node scripts/audit-framework.cjs --check-new` · baseline 527 · 신규 위반 0
+- `npx vitest run` · 3760 passed · 8 skipped · 회귀 0
+
+---
+
+## 리포트 5 · 사용자 승인 대기 (파괴적 or 대량 변경)
+
+| ID | 영역 | 액션 | 영향 |
+|----|------|------|------|
+| D1 | `stock_history.total_amount` 컬럼 (78.6% 불일치) | DROP 또는 재계산 UPDATE | 서버는 이미 사용 안 함 (안전) · xlsx 임포트 재검토 필요 |
+| D2 | vendors "코리아헬스" 중복 1건 | 1건 삭제·병합 | SSOT 복원 |
+| D3 | `products.supplier` orphan 31건 (복원 가능 4건 + 노이즈 27건) | UPDATE or vendors insert | 공급사 통합 완성 |
+| D4 | `purchase_details`·`stock_history` orphan 54건 | 상품 복원 or 데이터 정리 | 참조 무결성 100% |
+| D5 | 백업 테이블 4개 (0 rows) `*_backup_20260925` | DROP | 스키마 정리 |
+| D6 | FK 제약 추가 (`purchase_details`·`stock_history` → `products`) | ALTER TABLE | D4 fix 후 가능 |
+| D7 | `supplierPurchases.saleAmount` proration (supply_amount × 비율) | 공식 변경 또는 컬럼 숨김 | UI "판매액" 컬럼이 두 공식 혼재 (saleAmount vs totalStockAmount) |
+
+---
+
+## 추가 조사 결과 · 공식 통일 상태 요약
+
+### 완전 통일 (OK)
+- 매입액 (purchase) · 결제액 (payment) · 실제잔고 (balance) · 현재고 · 적정재고 · 유통기한 · 발주상태 · 발주수량 · 공급사명 (UI)
+- 판매액 (sales total) · 2026-10-01 fix 후 서버 전 endpoint 통일 (raw total_amount 0건)
+- 판매원가 (COGS) · 전 endpoint 통일 (`sale_qty × purchase_price` + fallback)
+- 재고자산 (stock asset) · 2026-10-01 fix 후 SupplierTab 포함 전 페이지 통일
+
+### DB 레벨 잔존 이슈 (사용자 승인 필요)
+- 공급사 orphan 31건 · vendors 중복 1건 · FK orphan 54건 · 백업 테이블 4개 · stock_history.total_amount 컬럼
+
+---
+
+## 결론 (최종)
+
+**자율 fix 완료** · 3 커밋 (e8f4bd82 · 811e15bd · d2453bb6) · 공통기능 공식 완전 통일
+
+- 서버 레벨 · raw xlsx total_amount 사용 **0건** (대원칙 #3 완전 준수)
+- 재고자산 공식 · 전 페이지 통일 (대원칙 #1 완전 준수)
+- 코드 변경 · 데이터 변경 **0건** · 재무 데이터 영향 없음
+- 회귀 테스트 · 3760 passed · 0 fail
+
+**사용자 승인 대기** · D1~D7 · 데이터 레벨 변경 필요 · 백업·DROP·UPDATE 포함
 
 ---
 
