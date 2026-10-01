@@ -324,7 +324,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       purchase += Number(s.purchaseQty ?? 0);
       purchaseAmt += Number(s.purchaseAmount ?? 0);
       saleQ += Number(s.saleQty ?? 0);
-      saleA += Number(s.saleAmount ?? 0);
+      // 2026-10-01 · 사용자 지시 · 공식 통일 · 판매액 합계 = sq × sale_price (대원칙 #3) · totalStockAmount 폴백
+      saleA += Number(s.totalStockAmount ?? s.saleAmount ?? 0);
     }
     return { stock, item, purchase, purchaseAmt, saleQ, saleA };
   }, [displayedXlsxSuppliers]);

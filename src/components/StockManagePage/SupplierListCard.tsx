@@ -373,7 +373,8 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                       isGroupCollapsed("sale") ? <td className="bg-zinc-50/30 w-4"></td> : (
                         <>
                           <td className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink tabular-nums" title="판매수량">{fmt(sup.saleQty)}</td>
-                          <td className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink tabular-nums" title="판매액">{fmtWon(Number(sup.saleAmount ?? 0))}</td>
+                          {/* 2026-10-01 · 사용자 지시 · cross-endpoint 공식 통일 · 판매액 = sq × sale_price (대원칙 #3) · 레거시 saleAmount (supply_amount proration) → totalStockAmount (sqty × sale_price) 폴백 */}
+                          <td className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink tabular-nums" title="판매액 · sale_qty × sale_price (대원칙 #3)">{fmtWon(Number(sup.totalStockAmount ?? sup.saleAmount ?? 0))}</td>
                         </>
                       )
                     )}
@@ -442,7 +443,8 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                     {!hideSaleColumns && !isGroupCollapsed("sale") && (
                       <>
                         <span className="tabular-nums text-zinc-500">판매 {fmt(sup.saleQty)}</span>
-                        <span className="font-semibold tabular-nums text-zinc-600">{fmtWon(Number(sup.saleAmount ?? 0))}</span>
+                        {/* 2026-10-01 · 사용자 지시 · 공식 통일 · 판매액 = sq × sale_price (대원칙 #3) · totalStockAmount 폴백 */}
+                        <span className="font-semibold tabular-nums text-zinc-600">{fmtWon(Number(sup.totalStockAmount ?? sup.saleAmount ?? 0))}</span>
                       </>
                     )}
                   </div>

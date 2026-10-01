@@ -131,11 +131,14 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
         cur.purchaseQty    += purchQty;
         cur.purchaseAmount += supplyAmt;
         cur.saleQty        += saleQty;
-        const total = purchQty + saleQty;
-        if (total > 0) cur.saleAmount += supplyAmt * (saleQty / total);
         // 2026-09-14 · #73 · SSOT · 판매액 = sale_qty × sale_price (파생 · total_amount 원본 X)
         const salePrice = productCode ? (salePriceMap.get(productCode) ?? 0) : 0;
         cur.totalStockAmount += saleQty * salePrice;
+        // 2026-10-01 · 사용자 지시 · cross-endpoint 공식 통일 · 대원칙 #3 (판매액 = sq × sale_price)
+        //   · 이전 · supply_amount × (saleQty / (purchQty + saleQty)) · proration (supply_amount 기반 추정)
+        //   · 이후 · saleQty × salePrice (totalStockAmount 와 동일 · 공식 통일)
+        //   · cross-endpoint audit · UI 라벨 "판매액" 과 값 일치 보장
+        cur.saleAmount += saleQty * salePrice;
         // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · 판매원가 (COGS) · sale_qty × purchase_price
         //   · 재고자산 = purchase − cogs · 대원칙 #1 · /api/supplier-balances-map 와 동일 공식
         const purchasePrice = productCode ? (purchasePriceMap.get(productCode) ?? 0) : 0;
