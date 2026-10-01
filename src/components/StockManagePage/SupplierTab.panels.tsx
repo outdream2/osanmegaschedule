@@ -69,7 +69,7 @@ export const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({
             <div className="flex-1 min-w-0">
               <div className="text-[15px] font-bold text-zinc-800 break-keep whitespace-normal leading-tight">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</div>
               <div className="text-[14px] tabular-nums text-zinc-500 break-words whitespace-normal leading-tight">
-                {supplierSelectedObj.supplier_code ? `#${supplierSelectedObj.supplier_code}` : ""} · 재고자산 {fmtWon(supplierSelectedObj.totalStockAmount)}
+                {supplierSelectedObj.supplier_code ? `#${supplierSelectedObj.supplier_code}` : ""} · 재고자산 {fmtWon(Number(supplierSelectedObj.stockAssetAmount ?? supplierSelectedObj.totalStockAmount ?? 0))}
               </div>
             </div>
           </div>
@@ -115,7 +115,7 @@ export const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     <div className="text-[14px] font-semibold text-ink-soft tracking-tight">재고자산</div>
                   </div>
-                  <div className="text-[14px] font-extrabold text-emerald-700 tabular-nums leading-tight">{fmtWon(supplierSelectedObj.totalStockAmount)}</div>
+                  <div className="text-[14px] font-extrabold text-emerald-700 tabular-nums leading-tight" title="재고자산 = 매입액 − 판매원가 (대원칙 #1)">{fmtWon(Number(supplierSelectedObj.stockAssetAmount ?? supplierSelectedObj.totalStockAmount ?? 0))}</div>
                 </div>
                 <div className="bg-white rounded-2xl border border-line shadow-[0_1px_2px_rgba(10,46,74,0.03),0_2px_8px_rgba(10,46,74,0.04)] p-2.5">
                   <div className="flex items-center gap-1.5 mb-0.5">

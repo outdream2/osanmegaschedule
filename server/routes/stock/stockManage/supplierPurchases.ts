@@ -48,20 +48,24 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
     // 2026-09-14 · #73 · SSOT · products.sale_price 사전 fetch · totalStockAmount 파생 계산
     //   · 이전 · stock_history.total_amount 원본 누적 (xlsx 원본 · 정확도 저하)
     //   · fix · sale_qty × sale_price (판매액 = 수량 × 판매가 · 대원칙)
+    // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · purchase_price 도 fetch · cogs·stock_asset 계산
+    //   · stock_asset = purchase_amount − cogs (대원칙 #1 · /api/supplier-balances-map 와 동일 공식)
     const salePriceMap = new Map<string, number>();
+    const purchasePriceMap = new Map<string, number>();
     {
       const PP = 1000;
       let pf = 0;
       while (true) {
         const { data } = await supabase
           .from("products")
-          .select("product_code, sale_price")
+          .select("product_code, sale_price, purchase_price")
           .range(pf, pf + PP - 1);
         if (!data || data.length === 0) break;
         for (const p of data) {
           const code = String((p as any).product_code ?? "").trim();
           if (!code) continue;
           salePriceMap.set(code, Number((p as any).sale_price ?? 0) || 0);
+          purchasePriceMap.set(code, Number((p as any).purchase_price ?? 0) || 0);
         }
         if (data.length < PP) break;
         pf += PP;
@@ -80,6 +84,9 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
       saleQty: number;
       saleAmount: number;
       totalStockAmount: number;
+      // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · 재고자산 = 매입액 − 판매원가 (대원칙 #1)
+      cogsAmount: number;      // 판매원가 · sale_qty × purchase_price
+      stockAssetAmount: number; // 재고자산 · purchase − cogs (balances-map 과 동일)
     }>();
     const PAGE = 1000;
     let from = 0;
@@ -112,6 +119,7 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
           names: new Set<string>(),
           products: new Set<string>(),
           purchaseQty: 0, purchaseAmount: 0, saleQty: 0, saleAmount: 0, totalStockAmount: 0,
+          cogsAmount: 0, stockAssetAmount: 0,
         };
         if (supName) cur.names.add(supName);
         // 2026-07-28: distinct product code 만 카운트
@@ -128,6 +136,10 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
         // 2026-09-14 · #73 · SSOT · 판매액 = sale_qty × sale_price (파생 · total_amount 원본 X)
         const salePrice = productCode ? (salePriceMap.get(productCode) ?? 0) : 0;
         cur.totalStockAmount += saleQty * salePrice;
+        // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · 판매원가 (COGS) · sale_qty × purchase_price
+        //   · 재고자산 = purchase − cogs · 대원칙 #1 · /api/supplier-balances-map 와 동일 공식
+        const purchasePrice = productCode ? (purchasePriceMap.get(productCode) ?? 0) : 0;
+        cur.cogsAmount += saleQty * purchasePrice;
         map.set(key, cur);
       }
       if (data.length < PAGE) break;
@@ -184,6 +196,10 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
             saleQty: 0,
             saleAmount: 0,
             totalStockAmount: 0,
+            // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · stock_history 없이 purchase_details 만 있는 공급사
+            //   · 판매 데이터 없음 → cogs 0 · 재고자산 = 매입액 전액
+            cogsAmount: 0,
+            stockAssetAmount: pv.amount,
           });
         } else {
           if (pv.qty > existing.purchaseQty) existing.purchaseQty = pv.qty;
@@ -203,6 +219,11 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
       }
     }
 
+    // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · 재고자산 = purchaseAmount − cogsAmount
+    //   · 대원칙 #1 · UI "재고자산" 라벨에 실제 재고자산 값 노출 (이전 totalStockAmount 는 판매액이었음 · 라벨 vs 값 불일치)
+    for (const v of map.values()) {
+      v.stockAssetAmount = Math.max(0, v.purchaseAmount - v.cogsAmount);
+    }
     const rows = [...map.values()].map(v => ({
       supplier: v.supplier,
       supplier_code: v.supplier_code,
@@ -213,7 +234,10 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
       saleQty: v.saleQty,
       saleAmount: Math.round(v.saleAmount),
       itemCount: v.products.size,
-      totalStockAmount: v.totalStockAmount,
+      totalStockAmount: v.totalStockAmount, // 판매액 (sale_qty × sale_price) · 레거시 이름
+      // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · 신규 필드 · 실제 재고자산 (대원칙 #1)
+      cogsAmount: Math.round(v.cogsAmount),
+      stockAssetAmount: Math.round(v.stockAssetAmount),
     })).sort((a, b) => b.totalStockAmount - a.totalStockAmount);
     const top = rows.length > 0 ? rows[0] : null;
     res.json({ snapshot_date: targetDate, season: seasonParam || undefined, season_months: seasonMonths ?? undefined, top, rows: rows.slice(0, limit) });

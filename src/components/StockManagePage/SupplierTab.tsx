@@ -120,7 +120,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   }, [supplierCycleMap]);
 
   // 정렬·필터
-  const [supListSort, setSupListSort] = useState<{ key: SupListSortKey; dir: "asc" | "desc" }>({ key: "totalStockAmount", dir: "desc" });
+  // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · 재고자산 정렬 · 실제 재고자산 (purchase - cogs) 사용
+  const [supListSort, setSupListSort] = useState<{ key: SupListSortKey; dir: "asc" | "desc" }>({ key: "stockAssetAmount", dir: "desc" });
   const toggleSupListSort = (k: SupListSortKey) => {
     setSupListSort(prev => prev.key === k ? { key: k, dir: prev.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "supplier" ? "asc" : "desc" });
   };
@@ -283,6 +284,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         purchaseQty: 0, purchaseAmount: 0,
         saleQty: 0, saleAmount: 0,
         itemCount: 0, totalStockAmount: 0,
+        // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · 매입 이력 없는 vendor stub · 재고자산·판매원가 0
+        cogsAmount: 0, stockAssetAmount: 0,
       }))
       // 매입 이력 없는 vendor · 항상 이름 오름차순 · 사용자 예측 가능성
       // 2026-09-18 · 정제 후 정렬
@@ -314,7 +317,9 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   const supListTotals = useMemo(() => {
     let stock = 0, item = 0, purchase = 0, purchaseAmt = 0, saleQ = 0, saleA = 0;
     for (const s of displayedXlsxSuppliers) {
-      stock += Number(s.totalStockAmount ?? 0);
+      // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · 재고자산 합계 · stockAssetAmount (매입 − COGS) 사용
+      //   · fallback · 서버가 신규 필드 미지원 시 totalStockAmount 유지 (BC)
+      stock += Number(s.stockAssetAmount ?? s.totalStockAmount ?? 0);
       item  += Number(s.itemCount ?? 0);
       purchase += Number(s.purchaseQty ?? 0);
       purchaseAmt += Number(s.purchaseAmount ?? 0);

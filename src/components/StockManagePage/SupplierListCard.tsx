@@ -142,7 +142,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[16px] font-semibold text-zinc-400 uppercase tracking-wider mr-0.5">정렬</span>
             {([
-              { k: "totalStockAmount" as SupListSortKey, label: "재고자산", color: "amber", hideWhenNoSale: false, showOnlyWithCycle: false },
+              { k: "stockAssetAmount" as SupListSortKey, label: "재고자산", color: "amber", hideWhenNoSale: false, showOnlyWithCycle: false },
               { k: "saleQty" as SupListSortKey, label: "판매량", color: "emerald", hideWhenNoSale: true, showOnlyWithCycle: false },
               { k: "saleAmount" as SupListSortKey, label: "판매액", color: "emerald", hideWhenNoSale: true, showOnlyWithCycle: false },
               { k: "purchaseQty" as SupListSortKey, label: "매입", color: "amber", hideWhenNoSale: false, showOnlyWithCycle: false },
@@ -207,8 +207,8 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
               </th>
               {isGroupCollapsed("stock") ? <th className="bg-zinc-50/40" style={{ width: 16 }}><button type="button" title="재고 컬럼 펼치기" onClick={() => onGroupToggle("stock")} className="w-full h-full cursor-pointer text-zinc-300 hover:text-zinc-500"><ChevronRight size={10} /></button></th> : (
                 <>
-                  <th className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition text-zinc-600" style={{ width: getWidth("stock_amt"), minWidth: getWidth("stock_amt") }} onClick={() => onSortToggle("totalStockAmount")} title="재고자산 정렬">
-                    재고자산 {supListSort.key === "totalStockAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-zinc-300">⇅</span>}
+                  <th className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition text-zinc-600" style={{ width: getWidth("stock_amt"), minWidth: getWidth("stock_amt") }} onClick={() => onSortToggle("stockAssetAmount")} title="재고자산 정렬 (매입액 − 판매원가)">
+                    재고자산 {supListSort.key === "stockAssetAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-zinc-300">⇅</span>}
                     <span {...resizerProps("stock_amt")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th className="relative text-right px-3 py-2 cursor-pointer select-none hover:bg-zinc-50 transition text-zinc-600" style={{ width: getWidth("item_cnt"), minWidth: getWidth("item_cnt") }} onClick={() => onSortToggle("itemCount")} title="상품수 정렬">
@@ -346,7 +346,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                     </td>
                     {isGroupCollapsed("stock") ? <td className="bg-zinc-50/30 w-4"></td> : (
                       <>
-                        <td className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink tabular-nums" title="재고자산">{fmtWon(sup.totalStockAmount)}</td>
+                        <td className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink tabular-nums" title="재고자산 (매입액 − 판매원가 · 대원칙 #1)">{fmtWon(Number(sup.stockAssetAmount ?? sup.totalStockAmount ?? 0))}</td>
                         <td className="text-right px-3 py-1.5 align-middle text-[16px] font-semibold text-ink-soft tabular-nums" title="취급 상품 종수">{sup.itemCount}</td>
                       </>
                     )}
@@ -424,7 +424,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                   <div className="flex items-center gap-3 flex-wrap text-[14px]">
                     {!isGroupCollapsed("stock") && (
                       <>
-                        <span className="font-bold tabular-nums text-zinc-700">{fmtWon(sup.totalStockAmount)}</span>
+                        <span className="font-bold tabular-nums text-zinc-700">{fmtWon(Number(sup.stockAssetAmount ?? sup.totalStockAmount ?? 0))}</span>
                         <span className="text-zinc-400 tabular-nums">{sup.itemCount}종</span>
                       </>
                     )}
