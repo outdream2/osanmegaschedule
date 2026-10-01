@@ -1,0 +1,353 @@
+{
+  "generated_at": "2026-10-01T05:03:32.414Z",
+  "areas": {
+    "optimal_stock_ssot": {
+      "products.optimal_stock": true,
+      "products.optimal_stock_backup": true,
+      "inventory_checks.optimal_stock": false,
+      "order_requests.optimal_stock": false
+    },
+    "supplier_dup": {
+      "counts": {
+        "products.supplier": 165,
+        "purchase_details.supplier_name": 89,
+        "stock_history.supplier_name": 94,
+        "supplier_payments.supplier_name": 2,
+        "vendors.company_name": 156
+      },
+      "orphans": {
+        "products.supplier not in vendors": [
+          "CMG",
+          "HMP",
+          "ㅇㅇㅇㄱ",
+          "고려은단",
+          "다원엠디",
+          "대웅",
+          "대원",
+          "동국",
+          "디딤푸드",
+          "마더스",
+          "메가타운",
+          "메가헬스케어",
+          "바로팜 비알피랩스",
+          "바로팜 켄뷰",
+          "바로팜직접주문",
+          "보령컨슈머",
+          "복산나이스",
+          "에프앤디넷",
+          "엠아이에이뉴트라_",
+          "제일헬스",
+          "주식회사 소연",
+          "쥴릭파마",
+          "지오영",
+          "천호바이오",
+          "컨디션",
+          "켄뷰",
+          "코오롱제약",
+          "한가람약품",
+          "한신바이오팜",
+          "한신약품",
+          "한풍제약"
+        ],
+        "purchase_details.supplier_name not in vendors": [
+          "메가타운약국(평택)",
+          "메가헬스케어",
+          "미상"
+        ],
+        "stock_history.supplier_name not in vendors": [
+          "메가타운약국(평택)",
+          "메가헬스케어",
+          "테스"
+        ],
+        "supplier_payments.supplier_name not in vendors": []
+      }
+    },
+    "ref_integrity": {
+      "order_requests_orphan": {
+        "total": 7,
+        "orphan": 0,
+        "samples": []
+      },
+      "purchase_details_orphan": {
+        "total": 12939,
+        "orphan": 41,
+        "samples": [
+          {
+            "id": 19301,
+            "product_code": "00004097"
+          },
+          {
+            "id": 19996,
+            "product_code": "8809825182425"
+          },
+          {
+            "id": 20033,
+            "product_code": "00002945"
+          },
+          {
+            "id": 20040,
+            "product_code": "00004097"
+          },
+          {
+            "id": 20283,
+            "product_code": "0629262003712"
+          },
+          {
+            "id": 20755,
+            "product_code": "8806006155674"
+          },
+          {
+            "id": 21009,
+            "product_code": "8806105405496"
+          },
+          {
+            "id": 21155,
+            "product_code": "8806416079621"
+          },
+          {
+            "id": 25919,
+            "product_code": "00000800"
+          },
+          {
+            "id": 26417,
+            "product_code": "8809232573557"
+          }
+        ]
+      },
+      "inventory_checks_orphan": {
+        "total": 3400,
+        "orphan": 0,
+        "samples": []
+      },
+      "stock_history_orphan": {
+        "total": 3632,
+        "orphan": 13,
+        "samples": [
+          "00000444",
+          "2880658502297",
+          "2880658503119",
+          "8800276318951",
+          "8806022202680",
+          "8806433062828",
+          "8806433062927",
+          "8806433063023",
+          "8806458000331",
+          "8809315489911"
+        ]
+      }
+    },
+    "formula_sample": [
+      {
+        "vendor": "(유)한풍제약",
+        "매입액": 37330005,
+        "결제액": 0,
+        "판매원가_COGS": 3942500,
+        "재고자산(매입-COGS)": 33387505,
+        "실제잔고(매입-결제)": 37330005
+      },
+      {
+        "vendor": "(주)광주지오팜",
+        "매입액": 0,
+        "결제액": 0,
+        "판매원가_COGS": 0,
+        "재고자산(매입-COGS)": 0,
+        "실제잔고(매입-결제)": 0
+      },
+      {
+        "vendor": "(주)녹십자",
+        "매입액": 300457182,
+        "결제액": 0,
+        "판매원가_COGS": 79630914,
+        "재고자산(매입-COGS)": 220826268,
+        "실제잔고(매입-결제)": 300457182
+      },
+      {
+        "vendor": "(주)대웅제약",
+        "매입액": 240629250,
+        "결제액": 0,
+        "판매원가_COGS": 847980,
+        "재고자산(매입-COGS)": 239781270,
+        "실제잔고(매입-결제)": 240629250
+      },
+      {
+        "vendor": "(주)디알에스",
+        "매입액": 0,
+        "결제액": 0,
+        "판매원가_COGS": 0,
+        "재고자산(매입-COGS)": 0,
+        "실제잔고(매입-결제)": 0
+      },
+      {
+        "vendor": "(주)마더스팜",
+        "매입액": 68685050,
+        "결제액": 0,
+        "판매원가_COGS": 14006400,
+        "재고자산(매입-COGS)": 54678650,
+        "실제잔고(매입-결제)": 68685050
+      },
+      {
+        "vendor": "(주)비타바이오",
+        "매입액": 0,
+        "결제액": 0,
+        "판매원가_COGS": 0,
+        "재고자산(매입-COGS)": 0,
+        "실제잔고(매입-결제)": 0
+      },
+      {
+        "vendor": "(주)서울약업",
+        "매입액": 0,
+        "결제액": 0,
+        "판매원가_COGS": 0,
+        "재고자산(매입-COGS)": 0,
+        "실제잔고(매입-결제)": 0
+      },
+      {
+        "vendor": "(주)아이월드제약",
+        "매입액": 2961120,
+        "결제액": 0,
+        "판매원가_COGS": 0,
+        "재고자산(매입-COGS)": 2961120,
+        "실제잔고(매입-결제)": 2961120
+      },
+      {
+        "vendor": "(주)엠아이에이뉴트라",
+        "매입액": 0,
+        "결제액": 0,
+        "판매원가_COGS": 0,
+        "재고자산(매입-COGS)": 0,
+        "실제잔고(매입-결제)": 0
+      }
+    ],
+    "expiry_sources": {
+      "products.expiry_date exists": true,
+      "inventory_checks.expiry_date exists": true,
+      "inventory_checks.expiry_input_date exists": false,
+      "purchase_details.expiry_date exists": true
+    },
+    "string_dates": {
+      "products_memo": 0,
+      "products_memo_samples": [],
+      "ic_note": 0,
+      "ic_note_samples": [],
+      "or_note": 0,
+      "or_note_samples": []
+    },
+    "optimal_stock_snapshot": {
+      "note": "order_requests.optimal_stock 컬럼 없음 (OK · SSOT 유지)"
+    },
+    "derived_total_amount": {
+      "sampled": 5000,
+      "matchExpected": 1,
+      "differ": 3932,
+      "samples": [
+        {
+          "code": "8806011615453",
+          "sale_qty": 978,
+          "total": 3831630,
+          "expected": 5574600,
+          "delta": -1742970
+        },
+        {
+          "code": "8806723002329",
+          "sale_qty": 783,
+          "total": 16799200,
+          "expected": 1879200,
+          "delta": 14920000
+        },
+        {
+          "code": "8806574001328",
+          "sale_qty": 553,
+          "total": 59400,
+          "expected": 221200,
+          "delta": -161800
+        },
+        {
+          "code": "8806265001323",
+          "sale_qty": 553,
+          "total": 2601225,
+          "expected": 1382500,
+          "delta": 1218725
+        },
+        {
+          "code": "0108806427035128",
+          "sale_qty": 502,
+          "total": 1986820,
+          "expected": 1255000,
+          "delta": 731820
+        },
+        {
+          "code": "8806433062910",
+          "sale_qty": 415,
+          "total": 610400,
+          "expected": 747000,
+          "delta": -136600
+        },
+        {
+          "code": "8806433025212",
+          "sale_qty": 392,
+          "total": 513343,
+          "expected": 313600,
+          "delta": 199743
+        },
+        {
+          "code": "0108806486021711",
+          "sale_qty": 374,
+          "total": 112810,
+          "expected": 224400,
+          "delta": -111590
+        },
+        {
+          "code": "8806432035915",
+          "sale_qty": 320,
+          "total": 44550,
+          "expected": 256000,
+          "delta": -211450
+        },
+        {
+          "code": "8806718073624",
+          "sale_qty": 311,
+          "total": 577711,
+          "expected": 777500,
+          "delta": -199789
+        }
+      ]
+    }
+  },
+  "tables": {
+    "products": 7078,
+    "vendors": 156,
+    "stock_history": 53641,
+    "purchase_details": 12939,
+    "supplier_payments": 3,
+    "order_requests": 7,
+    "inventory_checks": 3400,
+    "ocr_confirmed_items": 31,
+    "display_requests": 2,
+    "stock_arrivals": 3,
+    "credit_cards": 2,
+    "notifications": 204,
+    "push_tokens": 1,
+    "employees": 19,
+    "borrowings": 0,
+    "return_requests": 0
+  },
+  "backup_tables": [
+    {
+      "table": "products_backup_20260925",
+      "rows": 0
+    },
+    {
+      "table": "purchase_details_backup_20260925",
+      "rows": 0
+    },
+    {
+      "table": "stock_history_backup_20260925",
+      "rows": 0
+    },
+    {
+      "table": "supplier_payments_backup_20260925",
+      "rows": 0
+    }
+  ],
+  "summary": {}
+}
