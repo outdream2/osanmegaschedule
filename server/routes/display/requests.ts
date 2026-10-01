@@ -710,7 +710,19 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "90")) || 90));
   const since = new Date(Date.now() - days * 86400000).toISOString();
-  const supplier = String(req.query.supplier ?? "").trim();
+  let supplier = String(req.query.supplier ?? "").trim();
+
+  // 2026-10-01 · 사용자 지시 · role 분기 · vendor 세션 · 자기 공급사만 · admin · 전체
+  //   · 이전 · session 체크 없음 · vendor 세션도 전체 노출 (보안 이슈)
+  //   · 이후 · session.role==="vendor" 자동 필터 · admin/manager · supplier 쿼리만 반영
+  const session = getSession(req);
+  if (session?.role === "vendor") {
+    const vendorName = String(session.name ?? "").trim();
+    if (!vendorName) {
+      return res.json({ orders: [], count: 0, notice: "vendor 세션에 공급사명 없음" });
+    }
+    supplier = vendorName; // 강제 필터 · 쿼리 파라미터 무시
+  }
 
   // 2026-09-09 · optimal_stock 스냅샷 제거 · products.optimal_stock 단일 소스
   // 2026-09-13 · #117 · status='ordered' + 'matched' 둘 다 이력에 표시 (매입확인 후에도 이력 보임)
