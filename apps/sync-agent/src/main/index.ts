@@ -4,7 +4,7 @@
 //   · 파일별 스케줄 · node-cron
 //   · 로그인 세션 · keytar (Windows Credential Manager)
 
-import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, shell } from "electron";
+import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, shell, screen } from "electron";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import { join } from "path";
 import AutoLaunch from "auto-launch";
@@ -63,13 +63,41 @@ async function ensureAutoLaunch() {
   }
 }
 
+// 2026-10-03 · Tray/Window 재표시 신뢰성 강화 · off-screen · minimized · hidden 모두 복구
+function ensureOnScreen(win: BrowserWindow) {
+  try {
+    const bounds = win.getBounds();
+    const display = screen.getDisplayMatching(bounds);
+    const wa = display?.workArea;
+    if (!wa) { win.center(); return; }
+    const outOfScreen =
+      bounds.x + bounds.width  < wa.x + 40 ||
+      bounds.x > wa.x + wa.width  - 40 ||
+      bounds.y + bounds.height < wa.y + 40 ||
+      bounds.y > wa.y + wa.height - 40;
+    if (outOfScreen) {
+      console.log("[main] 창 좌표 off-screen 감지 · center 복구:", bounds, "workArea:", wa);
+      win.center();
+    }
+  } catch (err) {
+    console.warn("[main] ensureOnScreen 실패 · center 로 fallback:", (err as Error)?.message);
+    try { win.center(); } catch {}
+  }
+}
+
 // ── 메인 창 (트레이 클릭 시 열림) ─────────────────
 function createMainWindow() {
-  if (mainWindow) {
-    mainWindow.show();
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    ensureOnScreen(mainWindow);
+    if (!mainWindow.isVisible()) mainWindow.show();
     mainWindow.focus();
+    mainWindow.moveTop();
+    console.log("[main] 기존 창 재표시 · visible:", mainWindow.isVisible(), "minimized:", mainWindow.isMinimized(), "bounds:", mainWindow.getBounds());
     return;
   }
+  // destroyed 상태였거나 null 이면 · 새 창 생성
+  mainWindow = null;
 
   mainWindow = new BrowserWindow({
     width: 960,
@@ -297,10 +325,10 @@ app.whenReady().then(() => {
   // Phase 3 · 파일 감시 모드 · or · 스케줄 모드 · 상호배제
   applyImportMode();
 
-  // 개발 모드 · 창 자동 open · 배포 · 트레이만
-  if (is.dev) {
-    createMainWindow();
-  }
+  // 2026-10-03 · 사용자 요청 · 최초 실행 시 Main Window 자동 open (dev / packaged 모두)
+  //   · 기존 · 배포 모드 · 트레이만 · 사용자 UI 접근 불가 보고
+  //   · X 로 닫으면 트레이 상주 유지 (close event · hide) · 종료는 트레이 메뉴 명시만
+  createMainWindow();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
