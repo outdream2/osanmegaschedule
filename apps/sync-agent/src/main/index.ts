@@ -4,7 +4,7 @@
 //   · 파일별 스케줄 · node-cron
 //   · 로그인 세션 · keytar (Windows Credential Manager)
 
-import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, shell, screen } from "electron";
+import { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, shell, screen, session } from "electron";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import { join } from "path";
 import AutoLaunch from "auto-launch";
@@ -26,6 +26,15 @@ let tray: Tray | null = null;
 let quitting = false;
 
 const AGENT_NAME = "메가타운 자동임포트";
+
+// 2026-10-03 · White Screen 원인 · DevTools Console · net::ERR_CACHE_READ_FAILURE
+//   · Chromium HTTP 디스크 캐시 (userData/Cache) 손상 · 리소스 읽기 실패 · 하얀 화면
+//   · dev 모드 · 디스크 캐시 전면 비활성화 (Vite HMR · 캐시 불필요)
+//   · 반드시 app.whenReady() 이전 · appendSwitch
+if (!app.isPackaged) {
+  app.commandLine.appendSwitch("disable-http-cache");
+  console.log("[main] dev · --disable-http-cache 적용 (ERR_CACHE_READ_FAILURE 방지)");
+}
 
 // 2026-09-18 · 사용자 보고 · 트레이 아이콘 2개 · 원인 · 이중 실행 (auto-launch + installer)
 //   · 두 번째 인스턴스 방지 · 첫 번째 인스턴스 · focus/window open
@@ -334,8 +343,16 @@ ipcMain.handle("app-info", () => ({
 }));
 
 // ── 앱 시작 ────────────────────────────────────────
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   electronApp.setAppUserModelId("com.megatown.sync-agent");
+
+  // 2026-10-03 · White Screen fix · 손상된 HTTP 캐시 · 1 회 clear (ERR_CACHE_READ_FAILURE 복구)
+  try {
+    await session.defaultSession.clearCache();
+    console.log("[main] HTTP 캐시 clearCache 완료");
+  } catch (err) {
+    console.warn("[main] clearCache 실패:", (err as Error)?.message);
+  }
 
   app.on("browser-window-created", (_, window) => {
     optimizer.watchWindowShortcuts(window);
