@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import type { RendererConfig, FileKind } from "../types";
+import { ErpQueryPanel } from "./ErpQueryPanel";
 
 const FILE_META: Record<FileKind, { label: string; color: string; icon: string }> = {
   products: { label: "상품정보", color: "sky",     icon: "📦" },
@@ -127,6 +128,9 @@ export const Dashboard: React.FC = () => {
           );
         })}
       </div>
+
+      {/* 2026-10-03 · Iregen ERP Live Query 검증 패널 · Supabase 미반영 */}
+      <ErpQueryPanel />
     </div>
   );
 };

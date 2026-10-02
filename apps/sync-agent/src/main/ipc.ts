@@ -10,6 +10,7 @@ import { login, logout } from "./auth";
 import { runNow, runNowAll } from "./scheduler";
 import { findLatestFile } from "./importer";
 import { listQueue, clearQueue, removeItem } from "./queue";
+import { queryInventoryStatus } from "./iregenSoap";
 
 export function registerIpcHandlers() {
   // ── Config ────────────────────────────────────
@@ -136,6 +137,12 @@ export function registerIpcHandlers() {
       failed: countXlsx(join(folder, "_failed")),
       failedLogs: countLogs(join(folder, "_failed")),
     };
+  });
+
+  // 2026-10-03 · Iregen ERP Live Query · 검증용 · Supabase WRITE 금지
+  //   · UI 버튼 클릭 시만 호출 · 메모리 응답 전용
+  ipcMain.handle("erp:inventoryStatus", async () => {
+    return queryInventoryStatus();
   });
 
   // ── 폴더 열기 (탐색기) ──

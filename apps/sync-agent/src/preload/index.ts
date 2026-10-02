@@ -76,6 +76,19 @@ const api = {
   openFolder: (kind: FileKind, subdir?: "processed" | "failed") =>
     ipcRenderer.invoke("folder:open", kind, subdir) as Promise<{ ok: boolean; error?: string }>,
 
+  // ── Iregen ERP Live Query (검증용 · READ-ONLY · Supabase 미반영) ──
+  erpInventoryQuery: () =>
+    ipcRenderer.invoke("erp:inventoryStatus") as Promise<
+      | {
+          ok: true;
+          rowCount: number;
+          columns: string[];
+          rows: Record<string, unknown>[];
+          meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
+        }
+      | { ok: false; stage: "config" | "soap" | "xml" | "decoder" | "fs"; error: string }
+    >,
+
   // ── 이벤트 리스너 · main → renderer ────────────
   onNavigate: (callback: (page: string) => void): (() => void) => {
     const listener = (_: unknown, page: string) => callback(page);

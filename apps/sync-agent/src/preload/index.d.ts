@@ -57,6 +57,16 @@ interface SyncAgentApi {
     | { ok: false; error: string }
   >;
   openFolder(kind: FileKind, subdir?: "processed" | "failed"): Promise<{ ok: boolean; error?: string }>;
+  erpInventoryQuery(): Promise<
+    | {
+        ok: true;
+        rowCount: number;
+        columns: string[];
+        rows: Record<string, unknown>[];
+        meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
+      }
+    | { ok: false; stage: "config" | "soap" | "xml" | "decoder" | "fs"; error: string }
+  >;
   onNavigate(callback: (page: string) => void): () => void;
   onUpdateStatus(callback: (status: { type: string; version?: string }) => void): () => void;
 }
