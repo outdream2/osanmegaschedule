@@ -49,7 +49,17 @@ export interface AppConfig {
   /** 파일 감시 모드 · true = chokidar · 새 파일 시 10분 후 자동 임포트 · 스케줄 비활성
    *   · false = cron 스케줄 (schedules 필드 사용) */
   useFileWatcher: boolean;
+  /** 2026-10-03 · Iregen ERP 연동 설정 · CorpDB_nm 은 safeStorage 로 암호화 저장 */
+  iregen?: {
+    enabled: boolean;
+    endpoint: string;
+    soapAction: string;
+    encryptedCorpDbNm?: string;
+  };
 }
+
+export const DEFAULT_IREGEN_ENDPOINT = "http://soap.iregen.co.kr/App_Service/Irm/SvcInventoryBiz.asmx";
+export const DEFAULT_IREGEN_SOAP_ACTION = "http://tempuri.org/Inventory_Status";
 
 const DEFAULT_CONFIG: AppConfig = {
   server: { baseUrl: "https://osanmega.onrender.com" },
@@ -60,6 +70,11 @@ const DEFAULT_CONFIG: AppConfig = {
   autoStart: true,
   showNotifications: true,
   useFileWatcher: true, // 기본 · 파일 감시 모드 (사용자 요청)
+  iregen: {
+    enabled: false,
+    endpoint: DEFAULT_IREGEN_ENDPOINT,
+    soapAction: DEFAULT_IREGEN_SOAP_ACTION,
+  },
 };
 
 let cachedConfig: AppConfig | null = null;
@@ -110,6 +125,8 @@ export function patchConfig(patch: Partial<AppConfig>): AppConfig {
     folders: { ...current.folders, ...(patch.folders ?? {}) },
     schedules: { ...current.schedules, ...(patch.schedules ?? {}) },
     lastRun: { ...current.lastRun, ...(patch.lastRun ?? {}) },
+    // iregen 은 helper 가 항상 전체 객체 전달 · 단순 교체
+    iregen: patch.iregen ?? current.iregen,
   };
   saveConfig(next);
   return next;
@@ -150,4 +167,44 @@ export function isLoggedIn(): boolean {
 /** 로그아웃 · 토큰 삭제 */
 export function clearAuth(): void {
   patchConfig({ auth: { email: undefined, encryptedToken: undefined } });
+}
+
+// ── Iregen · CorpDB_nm (safeStorage · DPAPI) ──
+// 2026-10-03 · 평문 저장 금지 · renderer 로 재전달 X
+export function hasIregenCorpDbNm(): boolean {
+  const cfg = loadConfig();
+  return !!cfg.iregen?.encryptedCorpDbNm;
+}
+
+export function getIregenCorpDbNm(): string | null {
+  const cfg = loadConfig();
+  if (!cfg.iregen?.encryptedCorpDbNm) return null;
+  return decryptToken(cfg.iregen.encryptedCorpDbNm);
+}
+
+export function setIregenCorpDbNm(value: string): boolean {
+  const enc = encryptToken(value);
+  if (!enc) return false;
+  const cfg = loadConfig();
+  patchConfig({
+    iregen: {
+      enabled: cfg.iregen?.enabled ?? false,
+      endpoint: cfg.iregen?.endpoint ?? DEFAULT_IREGEN_ENDPOINT,
+      soapAction: cfg.iregen?.soapAction ?? DEFAULT_IREGEN_SOAP_ACTION,
+      encryptedCorpDbNm: enc,
+    },
+  });
+  return true;
+}
+
+export function clearIregenCorpDbNm(): void {
+  const cfg = loadConfig();
+  patchConfig({
+    iregen: {
+      enabled: cfg.iregen?.enabled ?? false,
+      endpoint: cfg.iregen?.endpoint ?? DEFAULT_IREGEN_ENDPOINT,
+      soapAction: cfg.iregen?.soapAction ?? DEFAULT_IREGEN_SOAP_ACTION,
+      encryptedCorpDbNm: undefined,
+    },
+  });
 }

@@ -65,8 +65,21 @@ interface SyncAgentApi {
         rows: Record<string, unknown>[];
         meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
       }
-    | { ok: false; stage: "config" | "soap" | "xml" | "decoder" | "fs"; error: string }
+    | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
   >;
+  iregenGetSettings(): Promise<{
+    enabled: boolean;
+    endpoint: string;
+    soapAction: string;
+    corpDbNmSet: boolean;
+  }>;
+  iregenSaveSettings(patch: {
+    enabled?: boolean;
+    endpoint?: string;
+    soapAction?: string;
+    corpDbNm?: string;
+  }): Promise<{ ok: true; corpDbNmSet: boolean } | { ok: false; error: string }>;
+  iregenClearCorpDbNm(): Promise<{ ok: boolean }>;
   onNavigate(callback: (page: string) => void): () => void;
   onUpdateStatus(callback: (status: { type: string; version?: string }) => void): () => void;
 }

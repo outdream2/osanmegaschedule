@@ -86,8 +86,26 @@ const api = {
           rows: Record<string, unknown>[];
           meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
         }
-      | { ok: false; stage: "config" | "soap" | "xml" | "decoder" | "fs"; error: string }
+      | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
     >,
+  // ── Iregen 연동 설정 (CorpDB_nm · safeStorage · renderer 로 재전달 X) ──
+  iregenGetSettings: () =>
+    ipcRenderer.invoke("iregen:getSettings") as Promise<{
+      enabled: boolean;
+      endpoint: string;
+      soapAction: string;
+      corpDbNmSet: boolean;
+    }>,
+  iregenSaveSettings: (patch: {
+    enabled?: boolean;
+    endpoint?: string;
+    soapAction?: string;
+    corpDbNm?: string;
+  }) =>
+    ipcRenderer.invoke("iregen:saveSettings", patch) as Promise<
+      { ok: true; corpDbNmSet: boolean } | { ok: false; error: string }
+    >,
+  iregenClearCorpDbNm: () => ipcRenderer.invoke("iregen:clearCorpDbNm") as Promise<{ ok: boolean }>,
 
   // ── 이벤트 리스너 · main → renderer ────────────
   onNavigate: (callback: (page: string) => void): (() => void) => {

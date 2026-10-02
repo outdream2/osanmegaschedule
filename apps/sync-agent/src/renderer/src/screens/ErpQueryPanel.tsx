@@ -30,7 +30,9 @@ const DISPLAY_COLS: Array<{ erp: string; label: string; align?: "right" }> = [
 
 const MAX_VISIBLE = 500;
 
-function statusChip(label: string, state: "idle" | "running" | "ok" | "fail", detail?: string) {
+type ChipState = "idle" | "running" | "ok" | "fail" | "notRun";
+
+function statusChip(label: string, state: ChipState, detail?: string) {
   const cls =
     state === "ok"
       ? "bg-emerald-50 border-emerald-200 text-emerald-700"
@@ -38,9 +40,19 @@ function statusChip(label: string, state: "idle" | "running" | "ok" | "fail", de
         ? "bg-rose-50 border-rose-200 text-rose-700"
         : state === "running"
           ? "bg-amber-50 border-amber-200 text-amber-700"
-          : "bg-zinc-50 border-zinc-200 text-zinc-500";
+          : state === "notRun"
+            ? "bg-zinc-50 border-zinc-200 text-zinc-400"
+            : "bg-zinc-50 border-zinc-200 text-zinc-500";
   const text =
-    state === "ok" ? "성공" : state === "fail" ? "실패" : state === "running" ? "진행 중" : "대기";
+    state === "ok"
+      ? "성공"
+      : state === "fail"
+        ? "실패"
+        : state === "running"
+          ? "진행 중"
+          : state === "notRun"
+            ? "미실행"
+            : "대기";
   return (
     <div className={`border rounded-lg px-3 py-2 text-[13px] ${cls}`}>
       <div className="font-semibold">{label}</div>
@@ -109,25 +121,41 @@ export const ErpQueryPanel: React.FC = () => {
   const visible = filtered.slice(0, MAX_VISIBLE);
   const trimmed = filtered.length > MAX_VISIBLE;
 
-  const soapState: "idle" | "running" | "ok" | "fail" =
-    state === "running"
-      ? "running"
-      : result?.ok
-        ? "ok"
-        : result && !result.ok && (result.stage === "soap" || result.stage === "xml")
-          ? "fail"
-          : result && !result.ok
-            ? "ok"
-            : "idle";
-  const decoderState: "idle" | "running" | "ok" | "fail" =
-    state === "running"
-      ? "running"
-      : result?.ok
-        ? "ok"
-        : result && !result.ok && (result.stage === "decoder" || result.stage === "fs")
-          ? "fail"
-          : "idle";
-  const connState: "idle" | "running" | "ok" | "fail" = result?.ok ? "ok" : result && !result.ok ? "fail" : state === "running" ? "running" : "idle";
+  // 2026-10-03 · 사용자 지시 · 각 단계는 실제 성공했을 때만 성공 표시
+  //   초기 · 모두 대기
+  //   running · 모두 진행 중
+  //   config/network 실패 · 연결=실패 · SOAP=미실행 · Decoder=미실행
+  //   http 실패 · 연결=성공 · SOAP=실패 · Decoder=미실행
+  //   decoder/fs 실패 · 연결=성공 · SOAP=성공 · Decoder=실패
+  //   전체 성공 · 모두 성공
+  let connState: ChipState = "idle";
+  let soapState: ChipState = "idle";
+  let decoderState: ChipState = "idle";
+
+  if (state === "running") {
+    connState = "running";
+    soapState = "running";
+    decoderState = "running";
+  } else if (result?.ok) {
+    connState = "ok";
+    soapState = "ok";
+    decoderState = "ok";
+  } else if (result && !result.ok) {
+    const st = result.stage;
+    if (st === "config" || st === "network") {
+      connState = "fail";
+      soapState = "notRun";
+      decoderState = "notRun";
+    } else if (st === "http") {
+      connState = "ok";
+      soapState = "fail";
+      decoderState = "notRun";
+    } else if (st === "decoder" || st === "fs") {
+      connState = "ok";
+      soapState = "ok";
+      decoderState = "fail";
+    }
+  }
 
   return (
     <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm">
@@ -167,8 +195,15 @@ export const ErpQueryPanel: React.FC = () => {
 
       {result && !result.ok && (
         <div className="mb-4 border border-rose-200 bg-rose-50 rounded-lg p-3">
-          <div className="text-[13px] font-bold text-rose-700">⚠ 조회 실패 · stage: {result.stage}</div>
-          <pre className="text-[12px] text-rose-900 mt-1 whitespace-pre-wrap break-all">{result.error}</pre>
+          {/* config · 친화 메시지만 · 파일 경로/JSON 예제 노출 X */}
+          {result.stage === "config" ? (
+            <div className="text-[13px] text-rose-900 whitespace-pre-wrap">{result.error}</div>
+          ) : (
+            <>
+              <div className="text-[13px] font-bold text-rose-700">⚠ 조회 실패 · stage: {result.stage}</div>
+              <pre className="text-[12px] text-rose-900 mt-1 whitespace-pre-wrap break-all">{result.error}</pre>
+            </>
+          )}
         </div>
       )}
 

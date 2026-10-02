@@ -5,7 +5,11 @@
 import { ipcMain, dialog, BrowserWindow, shell } from "electron";
 import { readdirSync, statSync, existsSync } from "fs";
 import { join } from "path";
-import { loadConfig, patchConfig, isLoggedIn, type FileKind, type AppConfig } from "./config";
+import {
+  loadConfig, patchConfig, isLoggedIn, type FileKind, type AppConfig,
+  hasIregenCorpDbNm, setIregenCorpDbNm, clearIregenCorpDbNm,
+  DEFAULT_IREGEN_ENDPOINT, DEFAULT_IREGEN_SOAP_ACTION,
+} from "./config";
 import { login, logout } from "./auth";
 import { runNow, runNowAll } from "./scheduler";
 import { findLatestFile } from "./importer";
@@ -143,6 +147,44 @@ export function registerIpcHandlers() {
   //   · UI 버튼 클릭 시만 호출 · 메모리 응답 전용
   ipcMain.handle("erp:inventoryStatus", async () => {
     return queryInventoryStatus();
+  });
+
+  // 2026-10-03 · Iregen 연동 설정 · CorpDB_nm 은 safeStorage 저장 · renderer 로 재전달 X
+  ipcMain.handle("iregen:getSettings", () => {
+    const cfg = loadConfig();
+    return {
+      enabled: cfg.iregen?.enabled ?? false,
+      endpoint: cfg.iregen?.endpoint || DEFAULT_IREGEN_ENDPOINT,
+      soapAction: cfg.iregen?.soapAction || DEFAULT_IREGEN_SOAP_ACTION,
+      corpDbNmSet: hasIregenCorpDbNm(),
+    };
+  });
+
+  ipcMain.handle("iregen:saveSettings", (_e, patch: {
+    enabled?: boolean;
+    endpoint?: string;
+    soapAction?: string;
+    corpDbNm?: string;
+  }) => {
+    const cfg = loadConfig();
+    const nextIregen = {
+      enabled: patch.enabled ?? cfg.iregen?.enabled ?? false,
+      endpoint: (patch.endpoint ?? cfg.iregen?.endpoint ?? DEFAULT_IREGEN_ENDPOINT).trim() || DEFAULT_IREGEN_ENDPOINT,
+      soapAction: (patch.soapAction ?? cfg.iregen?.soapAction ?? DEFAULT_IREGEN_SOAP_ACTION).trim() || DEFAULT_IREGEN_SOAP_ACTION,
+      encryptedCorpDbNm: cfg.iregen?.encryptedCorpDbNm,
+    };
+    patchConfig({ iregen: nextIregen });
+    // CorpDB_nm · 입력 값 있을 때만 교체 (빈 문자열 · 유지 · 사용자가 매번 재입력 강제 X)
+    if (typeof patch.corpDbNm === "string" && patch.corpDbNm.trim()) {
+      const ok = setIregenCorpDbNm(patch.corpDbNm.trim());
+      if (!ok) return { ok: false, error: "암호화 저장 실패 (safeStorage)" };
+    }
+    return { ok: true, corpDbNmSet: hasIregenCorpDbNm() };
+  });
+
+  ipcMain.handle("iregen:clearCorpDbNm", () => {
+    clearIregenCorpDbNm();
+    return { ok: true };
   });
 
   // ── 폴더 열기 (탐색기) ──

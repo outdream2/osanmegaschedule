@@ -1,20 +1,22 @@
 // apps/sync-agent/src/main/iregenSoap.ts
 // 2026-10-03 · Iregen ERP SOAP Live Query · Inventory_Status
 //   · 검증용 · Supabase WRITE 금지 · 메모리 전용 응답
-//   · SOAP 호출 → Base64 → C# decoder (bin/Debug/net48/iregen-decoder.exe) → DataSet JSON
-//   · CorpDB_nm 등 민감 값 · renderer/log 노출 금지 (local-only · never serialize)
+//   · SOAP 호출 → Base64 → C# decoder → DataSet JSON
+//   · CorpDB_nm · safeStorage 로 저장된 값만 복호화 (renderer/log 노출 X)
+//   · stage 세분화 · config | network | http | decoder | fs
 
-import { app } from "electron";
 import { spawn } from "child_process";
 import { join, resolve } from "path";
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "fs";
 import { tmpdir } from "os";
+import {
+  loadConfig,
+  getIregenCorpDbNm,
+  DEFAULT_IREGEN_ENDPOINT,
+  DEFAULT_IREGEN_SOAP_ACTION,
+} from "./config";
 
-export interface IregenSecret {
-  corpDbNm: string;
-  endpoint?: string;
-  soapAction?: string;
-}
+export type ErpInventoryStage = "config" | "network" | "http" | "decoder" | "fs";
 
 export type ErpInventoryOk = {
   ok: true;
@@ -31,17 +33,21 @@ export type ErpInventoryOk = {
 
 export type ErpInventoryFail = {
   ok: false;
-  stage: "config" | "soap" | "xml" | "decoder" | "fs";
+  stage: ErpInventoryStage;
   error: string;
 };
 
 export type ErpInventoryResult = ErpInventoryOk | ErpInventoryFail;
 
-const DEFAULT_ENDPOINT = "http://soap.iregen.co.kr/App_Service/Irm/SvcInventoryBiz.asmx";
-const DEFAULT_SOAP_ACTION = "http://tempuri.org/Inventory_Status";
+const CONFIG_FRIENDLY_ERROR =
+  "Iregen ERP 연결정보가 설정되지 않았습니다.\n설정 > Iregen ERP 연동에서 연결정보를 등록해주세요.";
+const DISABLED_FRIENDLY_ERROR =
+  "Iregen ERP 연동이 꺼져 있습니다.\n설정 > Iregen ERP 연동 · 「ERP 연동 사용」 을 켜주세요.";
 
-function secretPath(): string {
-  return join(app.getPath("userData"), "iregen-secret.json");
+interface ResolvedSecret {
+  corpDbNm: string;
+  endpoint: string;
+  soapAction: string;
 }
 
 function decoderPath(): string {
@@ -49,42 +55,20 @@ function decoderPath(): string {
   return resolve(__dirname, "../../../../tools/iregen-bridge/bin/Debug/net48/iregen-decoder.exe");
 }
 
-function loadSecret(): IregenSecret | { error: string } {
-  const envValue = process.env["IREGEN_CORP_DB_NM"];
-  if (envValue && envValue.trim()) {
-    return {
-      corpDbNm: envValue.trim(),
-      endpoint: process.env["IREGEN_ENDPOINT"] || DEFAULT_ENDPOINT,
-      soapAction: process.env["IREGEN_SOAP_ACTION"] || DEFAULT_SOAP_ACTION,
-    };
+function loadSecret(): ResolvedSecret | { error: string } {
+  const cfg = loadConfig();
+  if (!cfg.iregen?.enabled) {
+    return { error: DISABLED_FRIENDLY_ERROR };
   }
-  const sp = secretPath();
-  if (!existsSync(sp)) {
-    return {
-      error:
-        "Iregen 비밀 설정 파일 없음 · 생성 필요:\n" +
-        sp +
-        '\n{"corpDbNm":"<실제 ERP DB 값>","endpoint":"' +
-        DEFAULT_ENDPOINT +
-        '","soapAction":"' +
-        DEFAULT_SOAP_ACTION +
-        '"}\n또는 환경변수 IREGEN_CORP_DB_NM 설정',
-    };
+  const corpDbNm = getIregenCorpDbNm();
+  if (!corpDbNm || !corpDbNm.trim()) {
+    return { error: CONFIG_FRIENDLY_ERROR };
   }
-  try {
-    const raw = readFileSync(sp, "utf8");
-    const parsed = JSON.parse(raw) as Partial<IregenSecret>;
-    if (!parsed.corpDbNm || typeof parsed.corpDbNm !== "string") {
-      return { error: "iregen-secret.json · corpDbNm 필드 누락" };
-    }
-    return {
-      corpDbNm: parsed.corpDbNm,
-      endpoint: parsed.endpoint || DEFAULT_ENDPOINT,
-      soapAction: parsed.soapAction || DEFAULT_SOAP_ACTION,
-    };
-  } catch (err) {
-    return { error: "iregen-secret.json 파싱 실패 · " + (err as Error).message };
-  }
+  return {
+    corpDbNm: corpDbNm.trim(),
+    endpoint: cfg.iregen?.endpoint || DEFAULT_IREGEN_ENDPOINT,
+    soapAction: cfg.iregen?.soapAction || DEFAULT_IREGEN_SOAP_ACTION,
+  };
 }
 
 function escapeXml(s: string): string {
@@ -109,9 +93,14 @@ function buildEnvelope(corpDbNm: string): string {
   );
 }
 
-async function callSoap(endpoint: string, soapAction: string, body: string): Promise<{ ok: true; xml: string } | { ok: false; error: string }> {
+async function callSoap(
+  endpoint: string,
+  soapAction: string,
+  body: string,
+): Promise<{ ok: true; xml: string } | { ok: false; stage: "network" | "http"; error: string }> {
+  let res: Response;
   try {
-    const res = await fetch(endpoint, {
+    res = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "text/xml; charset=utf-8",
@@ -119,17 +108,20 @@ async function callSoap(endpoint: string, soapAction: string, body: string): Pro
       },
       body,
     });
-    const xml = await res.text();
-    if (!res.ok) {
-      return { ok: false, error: `HTTP ${res.status} ${res.statusText} · ${xml.slice(0, 200)}` };
-    }
-    return { ok: true, xml };
   } catch (err) {
-    return { ok: false, error: (err as Error).message };
+    return { ok: false, stage: "network", error: (err as Error).message };
   }
+  const xml = await res.text().catch(() => "");
+  if (!res.ok) {
+    return { ok: false, stage: "http", error: `HTTP ${res.status} ${res.statusText}` };
+  }
+  return { ok: true, xml };
 }
 
-function runDecoder(responseXmlPath: string, cwd: string): Promise<{ ok: true; stderrTail: string } | { ok: false; error: string }> {
+function runDecoder(
+  responseXmlPath: string,
+  cwd: string,
+): Promise<{ ok: true; stderrTail: string } | { ok: false; error: string }> {
   return new Promise((resolveP) => {
     const exe = decoderPath();
     if (!existsSync(exe)) {
@@ -138,9 +130,7 @@ function runDecoder(responseXmlPath: string, cwd: string): Promise<{ ok: true; s
     }
     const stderrChunks: string[] = [];
     const child = spawn(exe, ["-f", responseXmlPath], { cwd, windowsHide: true });
-    child.stdout.on("data", () => {
-      // stdout 은 schema 요약 JSON · 전체 데이터는 output/*-full.json 에서 읽음
-    });
+    child.stdout.on("data", () => {});
     child.stderr.on("data", (buf) => {
       stderrChunks.push(buf.toString("utf8"));
     });
@@ -162,21 +152,22 @@ function runDecoder(responseXmlPath: string, cwd: string): Promise<{ ok: true; s
 export async function queryInventoryStatus(): Promise<ErpInventoryResult> {
   const t0 = Date.now();
 
-  // 1. 비밀 설정 로드 (CorpDB_nm 등 · 메모리에만 보관 · 로그 X)
+  // 1. 설정 로드 (CorpDB_nm · 메모리에만 보관 · 로그 X)
   const sec = loadSecret();
   if ("error" in sec) {
+    console.warn("[iregen] stage=config · 연결정보 미설정");
     return { ok: false, stage: "config", error: sec.error };
   }
 
-  // 2. SOAP 호출 · body 는 escapeXml 로 secret 처리하지만 전체 body 로그 금지
+  // 2. SOAP 호출 · body 전체 로그 금지
   const envelope = buildEnvelope(sec.corpDbNm);
   const soapT0 = Date.now();
-  console.log("[iregen] SOAP POST 시작 · endpoint:", sec.endpoint, "· body bytes:", envelope.length);
-  const soapRes = await callSoap(sec.endpoint!, sec.soapAction!, envelope);
+  console.log("[iregen] SOAP POST · endpoint:", sec.endpoint, "· body bytes:", envelope.length);
+  const soapRes = await callSoap(sec.endpoint, sec.soapAction, envelope);
   const soapMs = Date.now() - soapT0;
   if (!soapRes.ok) {
-    console.error("[iregen] SOAP 실패 ·", soapMs, "ms ·", soapRes.error);
-    return { ok: false, stage: "soap", error: soapRes.error };
+    console.error("[iregen] stage=" + soapRes.stage + " ·", soapMs, "ms ·", soapRes.error);
+    return { ok: false, stage: soapRes.stage, error: soapRes.error };
   }
   console.log("[iregen] SOAP OK ·", soapMs, "ms · response bytes:", soapRes.xml.length);
 
@@ -184,7 +175,6 @@ export async function queryInventoryStatus(): Promise<ErpInventoryResult> {
   const cwd = join(tmpdir(), "iregen-live-" + Date.now());
   try {
     mkdirSync(cwd, { recursive: true });
-    // decoder 가 prefix 를 'inventory-response' → 'inventory' 로 치환하므로 파일명 통일
     const xmlPath = join(cwd, "inventory-response.xml");
     writeFileSync(xmlPath, soapRes.xml, "utf8");
 
@@ -193,7 +183,7 @@ export async function queryInventoryStatus(): Promise<ErpInventoryResult> {
     const dec = await runDecoder(xmlPath, cwd);
     const decoderMs = Date.now() - decT0;
     if (!dec.ok) {
-      console.error("[iregen] decoder 실패 ·", decoderMs, "ms ·", dec.error);
+      console.error("[iregen] stage=decoder ·", decoderMs, "ms ·", dec.error);
       return { ok: false, stage: "decoder", error: dec.error };
     }
     console.log("[iregen] decoder OK ·", decoderMs, "ms");

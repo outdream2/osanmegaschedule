@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from "react";
 import type { RendererConfig, FileKind } from "../types";
+import { IregenSettingsSection } from "./IregenSettingsSection";
 
 const FILE_LABELS: Record<FileKind, string> = {
   products: "상품정보",
@@ -134,6 +135,9 @@ export const Settings: React.FC = () => {
           로그인 계정 · {config.auth.email ?? "-"}
         </p>
       </section>
+
+      {/* 2026-10-03 · Iregen ERP 연동 설정 (CorpDB_nm · safeStorage · 평문 저장 X) */}
+      <IregenSettingsSection />
 
       {/* 파일별 · 폴더 + 스케줄 */}
       {(["products", "stock", "purchase"] as FileKind[]).map((kind) => (
