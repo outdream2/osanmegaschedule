@@ -119,11 +119,31 @@ function createMainWindow() {
   });
 
   console.log("[main] BrowserWindow 생성 · size:", mainWindow.getSize(), "position:", mainWindow.getPosition());
+  // 2026-10-03 · White Screen 진단 · dev 환경 변수 상태 로그
+  console.log("[main] is.dev:", is.dev, "· ELECTRON_RENDERER_URL:", process.env["ELECTRON_RENDERER_URL"] ?? "(unset)", "· isPackaged:", app.isPackaged);
+  // 2026-10-03 · White Screen 진단 · dev 모드에서 DevTools 자동 open · renderer console 가시화
+  if (is.dev) {
+    mainWindow.webContents.openDevTools({ mode: "detach" });
+  }
 
   mainWindow.on("ready-to-show", () => {
     console.log("[main] ready-to-show · focus/moveTop");
     mainWindow?.focus();
     mainWindow?.moveTop();
+  });
+
+  // 2026-10-03 · White Screen 진단 · 로딩 단계별 로그
+  mainWindow.webContents.on("did-start-loading", () => {
+    console.log("[main] did-start-loading · URL 요청 시작");
+  });
+  mainWindow.webContents.on("dom-ready", () => {
+    console.log("[main] dom-ready · DOM 파싱 완료 · URL:", mainWindow?.webContents.getURL());
+  });
+  mainWindow.webContents.on("preload-error", (_e, preloadPath, error) => {
+    console.error("[main] preload-error · preload 로드 실패:", preloadPath, error?.message ?? String(error));
+  });
+  mainWindow.webContents.on("unresponsive", () => {
+    console.warn("[main] webContents unresponsive · renderer 응답 없음");
   });
 
   mainWindow.on("close", (e) => {
@@ -144,12 +164,18 @@ function createMainWindow() {
   });
 
   // 2026-09-18 · 사용자 보고 · 배포 · 하얀 화면 · loadFile 경로 상세 로그
+  // 2026-10-03 · White Screen 진단 · dev/packaged 분기 명시 로그 + loadURL promise reject 캡쳐
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
-    console.log("[main] dev 모드 · loadURL:", process.env["ELECTRON_RENDERER_URL"]);
-    mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
+    const url = process.env["ELECTRON_RENDERER_URL"];
+    console.log("[main] >>> dev 분기 · loadURL:", url);
+    mainWindow.loadURL(url).then(() => {
+      console.log("[main] loadURL resolved · 현재 URL:", mainWindow?.webContents.getURL());
+    }).catch((err) => {
+      console.error("[main] loadURL rejected ·", err?.code, err?.message, "· URL:", url);
+    });
   } else {
     const htmlPath = join(__dirname, "../renderer/index.html");
-    console.log("[main] production 모드 · loadFile:", htmlPath, "__dirname:", __dirname);
+    console.log("[main] >>> production 분기 · loadFile:", htmlPath, "· __dirname:", __dirname, "· is.dev:", is.dev, "· ELECTRON_RENDERER_URL set:", !!process.env["ELECTRON_RENDERER_URL"]);
     mainWindow.loadFile(htmlPath).catch((err) => {
       console.error("[main] loadFile 실패:", err);
       // fallback · 데이터 URL · 최소 안내 페이지 (하얀 화면 방지)
