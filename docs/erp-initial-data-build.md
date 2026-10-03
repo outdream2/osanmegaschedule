@@ -3,6 +3,13 @@
 **작성일**: 2026-10-03 · **상태**: 설계 · **WRITE 미구현** · 사용자 지시 "결과를 보고하고 멈춰라"
 **업데이트**: 2026-10-03 저녁 · Location 정책 · RESET 분류 재검증 · READ ONLY 유지
 
+**👉 전체 Architecture 설계는** [`erp-initial-data-build-architecture.md`](./erp-initial-data-build-architecture.md) **참조.**
+- Flow / State Machine / Preview / Backup / Rollback 설계 완성
+- NowStock vs Inventory 공식 비교 결과 (복잡 공식 걷어낼 가능성)
+- purchase_details / stock_history 광범위 사용 확인 (옵션 A · KEEP + GO-LIVE 신규)
+- Required migrations (bm_code + row_num)
+- Retry 정책 격차 (1s/2s → 30s/60s/120s/abort)
+
 ---
 
 ## ⚠️ 2026-10-03 저녁 재검증 요약 (Product_List 조회 완료 후 최종)
