@@ -10,7 +10,11 @@
 | 상품 재고 현황 | `Inventory_Status` | SvcInventoryBiz.asmx | **4,007** | **42** | ✅ |
 | 매입 현황 | `Buy_Status` | SvcBuyBiz.asmx | 5 (2026-10-03) | ? | ✅ (ERP 화면과 상품코드/수량/금액 일치) |
 
-**자동동기화 정책**: Product_List `concurrency = 1` (사용자 지시 6 · ERP 부하 최소화)
+## 🚨 자동동기화 정책 (사용자 지시 재확인 · 2026-10-03)
+
+- **Product_List 자동동기화**: `concurrency = 1` **고정** (ERP 부하 최소화)
+- **수동 검증 UI** 의 5/3/1 radio 선택지는 **유지** (사용자 지시) · 사람이 성능 테스트할 때만 5 사용
+- 자동동기화 scheduler 가 구현될 때 코드에서 `queryProductList({ concurrency: 1 })` **강제**
 
 ---
 
@@ -26,19 +30,19 @@
 
 | ERP Field | Sample | Excel Column | Supabase | Table | Status | 비고 |
 |---|---|---|---|---|---|---|
-| `PCode` | "10001" | 상품코드 | `product_code` | products | **MATCHED** | PK |
-| `ProductName` | "삼양연고 100g" | 상품명 | `product_name` | products | **MATCHED** | |
+| `PCode` | "10001" | 상품코드 | `product_code` | products | **CONFIRMED** | PK |
+| `ProductName` | "삼양연고 100g" | 상품명 | `product_name` | products | **CONFIRMED** | |
 | `PPCode` | null | - | - | - | **EXTRA** | 바코드 가능성 (대부분 null) |
 | `Spec` | (추정) | 규격 | `spec` | products | **UNCERTAIN** | Product_List 에 있는지 확인 필요 |
-| `CostPrice` | 5243 | 매입단가 | `purchase_price` | products | **MATCHED** | |
+| `CostPrice` | 5243 | 매입단가 | `purchase_price` | products | **CONFIRMED** | |
 | `SalePrice` | (추정) | 판매단가 | `sale_price` | products | **UNCERTAIN** | Product_List 102 col 중 포함 가능성 매우 높음 ← **PHASE 2 전 확정 필수** |
-| `UnitCode` | "EA" | 단위 | `unit` | products | **MATCHED** | |
-| `CCorpName` | "라라컴퍼니" | 공급사 | `supplier` | products | **MATCHED** | |
-| `CtCode` | "1134" | 공급사코드 | `supplier_code` | products | **MATCHED** | |
-| `LocationName` | "벽>21>전체>전체" | 진열위치 | `display_location` + `location` | products | **MATCHED** | `>` 구분자 변환 |
-| `IsSaleStatusName` | "판매중" | 판매상태 | `sale_status` | products | **MATCHED** | |
+| `UnitCode` | "EA" | 단위 | `unit` | products | **CONFIRMED** | |
+| `CCorpName` | "라라컴퍼니" | 공급사 | `supplier` | products | **CONFIRMED** | |
+| `CtCode` | "1134" | 공급사코드 | `supplier_code` | products | **CONFIRMED** | |
+| `LocationName` | "벽>21>전체>전체" | 진열위치 | `display_location` + `location` | products | **CONFIRMED** | `>` 구분자 변환 |
+| `IsSaleStatusName` | "판매중" | 판매상태 | `sale_status` | products | **CONFIRMED** | |
 | `IsTax` + `TaxPercent` | "과세" + 10 | - | - | - | **EXTRA** | 과세 정보 (Supabase 미사용) |
-| `McateName` | "약국2" | 분류 | `category` | products | **MATCHED** | 어느 레벨 (L/M/S/D) 사용할지 결정 필요 |
+| `McateName` | "약국2" | 분류 | `category` | products | **CONFIRMED** | 어느 레벨 (L/M/S/D) 사용할지 결정 필요 |
 | `category_code` | - | 분류코드 | `category_code` | products | **MISSING** | ERP 는 code 아닌 이름만 제공 가능성 |
 | **(Product_List 전용 가능성)** | | | | | | |
 | `SearchKeywords` or `MakerName` | ? | 검색어 | `search_keywords` | products | **UNCERTAIN** | 102 col 중 확인 필요 |
@@ -124,19 +128,19 @@ UPSERT key: `(snapshot_date, product_code)`
 
 | Excel column | stock_history | Inventory_Status Field | Status |
 |---|---|---|---|
-| 코드 | `product_code` | **PCode** | **MATCHED** |
-| 상품명 | `product_name` | **ProductName** | **MATCHED** |
-| 공급사명 | `supplier_name` | **CCorpName** | **MATCHED** |
-| 공급사코드 | `supplier_code` | **CtCode** | **MATCHED** |
+| 코드 | `product_code` | **PCode** | **CONFIRMED** |
+| 상품명 | `product_name` | **ProductName** | **CONFIRMED** |
+| 공급사명 | `supplier_name` | **CCorpName** | **CONFIRMED** |
+| 공급사코드 | `supplier_code` | **CtCode** | **CONFIRMED** |
 | 규격 | `spec` | - | **MISSING** (Inventory_Status 에 없음) |
-| 세금구분 | `tax_type` | **IsTax** + **TaxPercent** 조합 | **MATCHED** (변환 필요) |
+| 세금구분 | `tax_type` | **IsTax** + **TaxPercent** 조합 | **CONFIRMED** (변환 필요) |
 | 상품유형 | `product_type` | - | **MISSING** |
-| 기초재고 | `opening_stock` | **PrvStock** | **MATCHED** |
-| 입고 | `purchase_qty` | **BuyStock** | **MATCHED** (반품 제외인지 확인 필요) |
-| 판매 | `sale_qty` | **SaleStock** | **MATCHED** |
-| 폐기 | `disposal_qty` | **ProductBadStock** | **MATCHED** (반불량 ProductReturnBadStock 상계 가능) |
-| 사내소비 | `internal_qty` | **ProductUseStock** | **MATCHED** (반사용 ProductReturnUseStock 상계 가능) |
-| 재고조정 | `adjustment_qty` | **PlusStock** - **MinusStock** 계산 | **MATCHED** (계산 공식) |
+| 기초재고 | `opening_stock` | **PrvStock** | **CONFIRMED** |
+| 입고 | `purchase_qty` | **BuyStock** | **CONFIRMED** (반품 제외인지 확인 필요) |
+| 판매 | `sale_qty` | **SaleStock** | **CONFIRMED** |
+| 폐기 | `disposal_qty` | **ProductBadStock** | **CONFIRMED** (반불량 ProductReturnBadStock 상계 가능) |
+| 사내소비 | `internal_qty` | **ProductUseStock** | **CONFIRMED** (반사용 ProductReturnUseStock 상계 가능) |
+| 재고조정 | `adjustment_qty` | **PlusStock** - **MinusStock** 계산 | **CONFIRMED** (계산 공식) |
 | 종료재고 | `closing_stock` | **계산**: PrvStock + BuyStock − BuyReturnStock − SaleStock + SaleReturnStock − ProductUseStock + ProductReturnUseStock − ProductBadStock + ProductReturnBadStock + PlusStock − MinusStock + SubdivisionPlus − SubdivisionMinus + Storage* | **CALCULATED** (공식 검증 필요) |
 | 과세 | `taxable_amount` | - | **MISSING** (금액 X · Inventory_Status 는 수량만) |
 | 공급가액 | `supply_amount` | - | **MISSING** |
@@ -187,26 +191,112 @@ UPSERT key: `(purchase_date, COALESCE(supplier_code,''), product_code, quantity,
 
 ---
 
+## ⏸ PHASE 1 수집 대기 (사용자 터미널 로그 공유 필요)
+
+### Product_List 102 col 전체 수집 방법
+저번 커밋 `495208f4` 에서 `decodeResponseToResult` 가 primary table **전체 column 이름** 을 터미널에 출력하도록 수정됨 ·
+```
+[iregen] Primary table 전체 102 columns:
+  [  0] PCode · System.String
+  [  1] ProductName · System.String
+  ...
+  [101] ... · ...
+```
+
+**액션**: `npm run dev` 재시작 → 사업장 상품관리 탭 조회 (concurrency=1 또는 아무거나) → 터미널 로그 공유 → 저희가 CONFIRMED/MISSING 전수 분류.
+
+### Buy_Status 전체 col 수집 방법
+동일 · 매입 현황 조회 1 회 → 터미널 로그 공유.
+
+### 핵심 확인 포인트 (사용자 지시)
+- Product_List 102 col 안에 아래 field 가 있는가?
+  - 상품코드 · 상품명 · **규격 (spec)** · 공급사 · 공급사코드 · 대/중/소분류 · 분류코드 · 단위 · **매입가 · 판매가 (sale_price)** · 과세구분 · 판매상태 · **제조사 (MakerName)** · 브랜드 · **원산지 (origin)**
+- Buy_Status col 안에 아래 field 가 있는가?
+  - 상품코드 · 상품명 · **매입일** · 공급사코드 · 공급사명 · 수량 · 매입단가 · 공급가액 · 부가세 · 면세금액 · 합계금액 · **문서번호**
+- Buy_Status 2026-10-03 응답의 **상품코드 5개** 가 `12035 · 12036 · 12031 · 10812 · 10805` 와 일치하는가? · 수량 10/건 · 총 50 · 금액 일치?
+
+---
+
 ## 최종 보고 (사용자 지시 양식)
 
-### PRODUCT MAPPING
-- **matched**: 11 (product_code · product_name · supplier · supplier_code · purchase_price · unit · sale_status · display_location · category(일부))
-- **missing**: 1-2 (category_code · expiry_date) · ERP 가 code 이름만 or 미제공
-- **uncertain**: 8+ (sale_price · spec · origin · wholesale_price1 · min_order · search_keywords · registered_at · last_purchase_date · last_sale_date) · **Product_List 102 col 전체 수집 후 재확정**
-- **protected**: 7 (optimal_stock · optimal_stock_backup · hidden · memo · shelf_positions · location_assigned_at · created_at)
+### PRODUCT_LIST
+- **Total Columns**: 102 (사용자 PHASE 1 검증)
+- **CONFIRMED**: 11 (product_code · product_name · supplier · supplier_code · purchase_price · unit · sale_status · display_location · category 일부 · Inventory_Status 와 공통되는 field 는 Product_List 에도 존재 가정)
+- **MISSING**: 1-2 (category_code · expiry_date · ERP code 미제공 가능성)
+- **UNCERTAIN**: **8+ · 수집 대기** (sale_price · spec · origin · wholesale_price1 · min_order · search_keywords · registered_at · last_purchase_date · last_sale_date) · 102 col 전체 수집 후 CONFIRMED/MISSING 재분류
+- **PROTECTED**: 7 (optimal_stock · optimal_stock_backup · hidden · memo · shelf_positions · location_assigned_at · stock_note)
 
-### INVENTORY MAPPING
-- **matched**: 10 (product_code · product_name · supplier_code · supplier_name · opening_stock · purchase_qty · sale_qty · disposal_qty · internal_qty · adjustment_qty)
-- **missing**: 7 (spec · product_type · taxable_amount · supply_amount · vat · duty_free_amount · total_amount) · Inventory_Status 는 수량만 · 금액은 별도 API 또는 Excel 유지
-- **uncertain**: 1 (tax_type · IsTax+TaxPercent 변환 필요)
-- **calculated**: 1 (closing_stock · 16 field 집계 공식)
-- **protected**: 0 (집계 테이블 · 자체 운영 데이터 없음)
+**핵심 확정 mapping**:
+```
+PCode              → 상품코드    → products.product_code (PK)
+ProductName        → 상품명      → products.product_name
+CCorpName          → 공급사      → products.supplier
+CtCode             → 공급사코드  → products.supplier_code
+CostPrice          → 매입단가    → products.purchase_price
+UnitCode           → 단위        → products.unit
+IsSaleStatusName   → 판매상태    → products.sale_status
+LocationName       → 진열위치    → products.display_location
+McateName (추정)   → 분류        → products.category
+```
 
-### BUY MAPPING
-- **matched**: 0 (confirmed) · **12 (추정)** · 사용자 ERP 화면 비교로 상품코드/수량/금액 일치 확인됨
-- **missing**: 0 (predicted) · 매입 Excel 의 모든 column 이 Buy_Status 로 커버 가능 예상
-- **uncertain**: **12** (모든 field 이름 미확정 · Buy_Status 전체 col 수집 필요)
-- **protected**: 5 (verified_by · verify_status · verify_note · verified_at · verified_expiring)
+### INVENTORY_STATUS (기존 확정 mapping 유지 · 사용자 지시)
+- **Total Columns**: 42 (완전 확정 · `inventory-full-full.json` 기반)
+- **CONFIRMED**: 10 (product_code · product_name · supplier_code · supplier_name · opening_stock · purchase_qty · sale_qty · disposal_qty · internal_qty · adjustment_qty)
+- **MISSING**: 7 (spec · product_type · 금액 집계 5종: taxable_amount · supply_amount · vat · duty_free_amount · total_amount) · Inventory_Status 는 수량만
+- **UNCERTAIN**: 1 (tax_type · IsTax+TaxPercent 변환 공식)
+- **CALCULATED**: 1 (closing_stock · 16 field 집계 공식)
+- **PROTECTED**: 0 (집계 테이블)
+
+**핵심 확정 mapping** (변경 없음):
+```
+PCode            → 코드         → stock_history.product_code
+ProductName      → 상품명       → stock_history.product_name
+CCorpName        → 공급사명     → stock_history.supplier_name
+CtCode           → 공급사코드   → stock_history.supplier_code
+PrvStock         → 기초재고     → stock_history.opening_stock
+BuyStock         → 입고         → stock_history.purchase_qty
+SaleStock        → 판매         → stock_history.sale_qty
+ProductBadStock  → 폐기         → stock_history.disposal_qty
+ProductUseStock  → 사내소비     → stock_history.internal_qty
+PlusStock - MinusStock → 재고조정 → stock_history.adjustment_qty
+```
+
+### BUY_STATUS
+- **Total Columns**: ? (수집 대기)
+- **CONFIRMED**: 0 (column 이름 미확정)
+- **MISSING**: 0 (예상 · 매입 Excel 모든 column 커버 가능)
+- **UNCERTAIN**: **12 · 수집 대기** · 사용자 ERP 화면 비교로 상품코드 (10805 · 10812 · 12031 · 12035 · 12036) + 수량 10/건 + 총 50 **값 일치 확인됨** · column 이름만 미확정
+- **PROTECTED**: 5 (verified_by · verify_status · verify_note · verified_at · verified_expiring)
+
+**핵심 확정 mapping (추정 · 수집 후 확정)**:
+```
+?PCode?           → 상품코드    → purchase_details.product_code
+?ProductName?     → 상품명      → purchase_details.product_name
+?DocDate/BuyDate? → 매입일      → purchase_details.purchase_date
+?CtCode?          → 공급사코드  → purchase_details.supplier_code
+?CCorpName?       → 공급사명    → purchase_details.supplier_name
+?BuyQty?          → 수량        → purchase_details.quantity
+?UnitCost?        → 매입단가    → purchase_details.unit_price
+?BuyPrice?        → 공급가액    → purchase_details.amount
+?BuyTax?          → 부가세      → purchase_details.vat
+?TaxExemption?    → 면세금액    → (현재 Supabase 미사용)
+?BuyTotal?        → 합계금액    → purchase_details.total
+?DocNo/DocIdx?    → 문서번호    → (현재 Supabase 미사용 · unique key 보강 가능)
+```
+
+---
+
+## 🚦 PHASE 2 READY: **NO**
+
+**사유**:
+1. **Product_List** · `sale_price` + `spec` 등 핵심 상품 field 가 102 col 안에 있는지 미확정 → 상품 Excel 완전 대체 가능 여부 미결정
+2. **Buy_Status** · column 이름 전체 미확정 → `purchase_details` UPSERT 매핑 작성 불가
+3. 사용자 터미널 로그 공유로 즉시 확정 가능 (수 분)
+
+### PHASE 2 진입 체크리스트
+- [ ] Product_List 102 col 전체 수집 → sale_price / spec / origin / search_keywords 발견 확정
+- [ ] Buy_Status 전체 col 수집 → 12 UNCERTAIN → CONFIRMED
+- [ ] 사용자가 PHASE 2 (Supabase WRITE) 진입 지시
 
 ---
 
