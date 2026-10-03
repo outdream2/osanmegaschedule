@@ -70,8 +70,11 @@ const DEFAULT_CONFIG: AppConfig = {
   autoStart: true,
   showNotifications: true,
   useFileWatcher: true, // 기본 · 파일 감시 모드 (사용자 요청)
+  // 2026-10-03 · 사용자 지시 · ERP 연동 체크 기본값 ON
+  //   · 초기 설치 또는 config.json 에 iregen 섹션 없는 상태에서 자동 활성
+  //   · CorpDB_nm 미설정 시 쿼리하면 config 단계에서 안전하게 차단됨
   iregen: {
-    enabled: false,
+    enabled: true,
     endpoint: DEFAULT_IREGEN_ENDPOINT,
     soapAction: DEFAULT_IREGEN_SOAP_ACTION,
   },
