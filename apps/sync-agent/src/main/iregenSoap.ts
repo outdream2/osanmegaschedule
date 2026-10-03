@@ -16,6 +16,82 @@ import {
   DEFAULT_IREGEN_SOAP_ACTION,
 } from "./config";
 
+// 2026-10-03 · 사용자 지시 · .env 지원 추가 · dotenv 패키지 없이 간단 파서 사용
+//   · 우선순위 · process.env > apps/sync-agent/.env > 프로젝트 root/.env > safeStorage
+//   · .env* 는 루트 .gitignore 로 ignore 됨 (리모트 유출 X)
+//   · 값 로그 금지 · 파일 발견 여부만 로그
+function parseEnvFile(path: string): Record<string, string> {
+  try {
+    if (!existsSync(path)) return {};
+    const raw = readFileSync(path, "utf8");
+    const out: Record<string, string> = {};
+    for (const rawLine of raw.split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith("#")) continue;
+      const eq = line.indexOf("=");
+      if (eq < 0) continue;
+      const key = line.slice(0, eq).trim();
+      let val = line.slice(eq + 1).trim();
+      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+        val = val.slice(1, -1);
+      }
+      if (key) out[key] = val;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+let _dotenvCache: Record<string, string> | null = null;
+let _dotenvSource: string | null = null;
+function loadDotenvOnce(): Record<string, string> {
+  if (_dotenvCache !== null) return _dotenvCache;
+  // __dirname (dev) = apps/sync-agent/out/main
+  const syncAgentEnv = resolve(__dirname, "../../.env");                 // apps/sync-agent/.env
+  const projectRootEnv = resolve(__dirname, "../../../../.env");         // project root .env
+  const syncAgentMap = parseEnvFile(syncAgentEnv);
+  if (Object.keys(syncAgentMap).length > 0) {
+    _dotenvCache = syncAgentMap;
+    _dotenvSource = syncAgentEnv;
+    console.log("[iregen] .env 소스 · apps/sync-agent/.env (" + Object.keys(syncAgentMap).length + " keys)");
+    return _dotenvCache;
+  }
+  const rootMap = parseEnvFile(projectRootEnv);
+  if (Object.keys(rootMap).length > 0) {
+    _dotenvCache = rootMap;
+    _dotenvSource = projectRootEnv;
+    console.log("[iregen] .env 소스 · 프로젝트 root .env (" + Object.keys(rootMap).length + " keys)");
+    return _dotenvCache;
+  }
+  _dotenvCache = {};
+  _dotenvSource = null;
+  console.log("[iregen] .env 없음 · safeStorage 로 fallback");
+  return _dotenvCache;
+}
+function envVal(key: string): string | undefined {
+  const p = process.env[key];
+  if (p && p.trim()) return p.trim();
+  const d = loadDotenvOnce()[key];
+  return d && d.trim() ? d.trim() : undefined;
+}
+// 2026-10-03 · 사용자 .env 에 넣은 실제 키 이름 fallback chain
+//   · 영문 convention (IREGEN_*) 과 사용자 커스텀 키 (CorpDB_nm 등) 모두 지원
+function envCorpDbNm(): string | undefined {
+  return envVal("IREGEN_CORP_DB_NM") ?? envVal("CorpDB_nm") ?? envVal("CORPDB_NM");
+}
+export function iregenSecretSource(): "env" | "safeStorage" | "none" {
+  if (envCorpDbNm()) return "env";
+  const cfg = loadConfig();
+  if (cfg.iregen?.encryptedCorpDbNm) return "safeStorage";
+  return "none";
+}
+export function iregenEnvSourceLabel(): string | null {
+  if (!envCorpDbNm()) return null;
+  if (process.env.IREGEN_CORP_DB_NM || process.env["CorpDB_nm"] || process.env.CORPDB_NM) return "process.env";
+  return _dotenvSource ?? ".env";
+}
+
 export type ErpInventoryStage = "config" | "network" | "http" | "decoder" | "fs";
 
 export type ErpInventoryOk = {
@@ -60,15 +136,17 @@ function loadSecret(): ResolvedSecret | { error: string } {
   if (!cfg.iregen?.enabled) {
     return { error: DISABLED_FRIENDLY_ERROR };
   }
-  const corpDbNm = getIregenCorpDbNm();
+  // 우선순위 · process.env > sync-agent/.env > root/.env > safeStorage (Settings UI)
+  //   · env 키 이름 · IREGEN_CORP_DB_NM / CorpDB_nm / CORPDB_NM 모두 지원
+  const envCorp = envCorpDbNm();
+  const corpDbNm = envCorp ?? getIregenCorpDbNm() ?? null;
   if (!corpDbNm || !corpDbNm.trim()) {
     return { error: CONFIG_FRIENDLY_ERROR };
   }
-  return {
-    corpDbNm: corpDbNm.trim(),
-    endpoint: cfg.iregen?.endpoint || DEFAULT_IREGEN_ENDPOINT,
-    soapAction: cfg.iregen?.soapAction || DEFAULT_IREGEN_SOAP_ACTION,
-  };
+  // Endpoint · SOAP Action 도 env 우선 (설정 UI 가 평문 저장 가능 영역) · fallback = config
+  const endpoint = envVal("IREGEN_ENDPOINT") ?? cfg.iregen?.endpoint ?? DEFAULT_IREGEN_ENDPOINT;
+  const soapAction = envVal("IREGEN_SOAP_ACTION") ?? cfg.iregen?.soapAction ?? DEFAULT_IREGEN_SOAP_ACTION;
+  return { corpDbNm: corpDbNm.trim(), endpoint, soapAction };
 }
 
 function escapeXml(s: string): string {

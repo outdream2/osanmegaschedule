@@ -95,6 +95,8 @@ const api = {
       endpoint: string;
       soapAction: string;
       corpDbNmSet: boolean;
+      source: "env" | "safeStorage" | "none";
+      envSourceLabel: string | null;
     }>,
   iregenSaveSettings: (patch: {
     enabled?: boolean;

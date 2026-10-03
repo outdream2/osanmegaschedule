@@ -14,7 +14,7 @@ import { login, logout } from "./auth";
 import { runNow, runNowAll } from "./scheduler";
 import { findLatestFile } from "./importer";
 import { listQueue, clearQueue, removeItem } from "./queue";
-import { queryInventoryStatus } from "./iregenSoap";
+import { queryInventoryStatus, iregenSecretSource, iregenEnvSourceLabel } from "./iregenSoap";
 
 export function registerIpcHandlers() {
   // ── Config ────────────────────────────────────
@@ -152,11 +152,14 @@ export function registerIpcHandlers() {
   // 2026-10-03 · Iregen 연동 설정 · CorpDB_nm 은 safeStorage 저장 · renderer 로 재전달 X
   ipcMain.handle("iregen:getSettings", () => {
     const cfg = loadConfig();
+    const source = iregenSecretSource(); // "env" | "safeStorage" | "none"
     return {
       enabled: cfg.iregen?.enabled ?? false,
       endpoint: cfg.iregen?.endpoint || DEFAULT_IREGEN_ENDPOINT,
       soapAction: cfg.iregen?.soapAction || DEFAULT_IREGEN_SOAP_ACTION,
-      corpDbNmSet: hasIregenCorpDbNm(),
+      corpDbNmSet: source !== "none" || hasIregenCorpDbNm(),
+      source, // UI 가 env 우선 상태를 표시
+      envSourceLabel: iregenEnvSourceLabel(), // 어느 env 파일/프로세스 var 인지 (경로)
     };
   });
 

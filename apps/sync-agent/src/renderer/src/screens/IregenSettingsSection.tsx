@@ -22,6 +22,8 @@ export const IregenSettingsSection: React.FC = () => {
   const [soapAction, setSoapAction] = useState(DEFAULT_SOAP_ACTION);
   const [corpDbNmInput, setCorpDbNmInput] = useState("");
   const [corpDbNmSet, setCorpDbNmSet] = useState(false);
+  const [source, setSource] = useState<"env" | "safeStorage" | "none">("none");
+  const [envSourceLabel, setEnvSourceLabel] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [test, setTest] = useState<TestState>({ kind: "idle" });
@@ -33,6 +35,8 @@ export const IregenSettingsSection: React.FC = () => {
     setEndpoint(s.endpoint || DEFAULT_ENDPOINT);
     setSoapAction(s.soapAction || DEFAULT_SOAP_ACTION);
     setCorpDbNmSet(s.corpDbNmSet);
+    setSource(s.source);
+    setEnvSourceLabel(s.envSourceLabel);
     setLoaded(true);
   };
   useEffect(() => { load(); }, []);
@@ -118,38 +122,55 @@ export const IregenSettingsSection: React.FC = () => {
         />
       </label>
 
-      {/* CorpDB_nm · password · safeStorage */}
+      {/* CorpDB_nm · password · env 우선 · safeStorage fallback */}
       <div className="mb-4">
         <label className="text-[14px] font-semibold text-zinc-700 mb-1 block">
-          CorpDB_nm <span className="text-[12px] text-zinc-400 font-normal">· 비밀 값 · Windows DPAPI 암호화 저장</span>
-        </label>
-        <div className="flex gap-2 items-center">
-          <input
-            type="password"
-            value={corpDbNmInput}
-            onChange={(e) => setCorpDbNmInput(e.target.value)}
-            placeholder={corpDbNmSet ? "저장됨 · 변경하려면 새 값 입력" : "미설정 · ERP 연결 값을 입력하세요"}
-            autoComplete="new-password"
-            className="flex-1 px-3 py-2 border border-zinc-300 rounded-lg text-[14px] focus:border-brand-deep outline-none"
-            disabled={saving}
-          />
-          {corpDbNmSet && (
-            <button
-              onClick={clearCorpDb}
-              disabled={saving}
-              className="px-3 py-2 border border-rose-200 text-rose-600 rounded-lg text-[13px] font-semibold hover:bg-rose-50 disabled:opacity-40"
-            >
-              삭제
-            </button>
-          )}
-        </div>
-        <div className="text-[12px] mt-1">
-          CorpDB 인증정보 ·{" "}
-          <span className={corpDbNmSet ? "text-emerald-700 font-semibold" : "text-rose-700 font-semibold"}>
-            {corpDbNmSet ? "저장됨" : "미설정"}
+          CorpDB_nm{" "}
+          <span className="text-[12px] text-zinc-400 font-normal">
+            · 비밀 값 · {source === "env" ? "환경변수에서 로드" : "Windows DPAPI 암호화 저장"}
           </span>
-          <span className="text-zinc-400"> · 평문 저장 X · 화면 표시 X</span>
-        </div>
+        </label>
+        {source === "env" ? (
+          <div className="p-3 border border-sky-200 bg-sky-50 rounded-lg text-[13px] text-sky-900">
+            <div className="font-semibold">✓ env 로 설정됨 · 입력 불필요</div>
+            <div className="text-[12px] mt-0.5 text-sky-700">
+              IREGEN_CORP_DB_NM{envSourceLabel ? " · 소스: " + envSourceLabel : ""}
+            </div>
+            <div className="text-[11px] mt-1 text-zinc-500">
+              env 를 끄려면 해당 .env 라인을 삭제하거나 환경변수를 unset 후 앱 재시작
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-2 items-center">
+              <input
+                type="password"
+                value={corpDbNmInput}
+                onChange={(e) => setCorpDbNmInput(e.target.value)}
+                placeholder={corpDbNmSet ? "저장됨 · 변경하려면 새 값 입력" : "미설정 · ERP 연결 값을 입력하세요"}
+                autoComplete="new-password"
+                className="flex-1 px-3 py-2 border border-zinc-300 rounded-lg text-[14px] focus:border-brand-deep outline-none"
+                disabled={saving}
+              />
+              {corpDbNmSet && (
+                <button
+                  onClick={clearCorpDb}
+                  disabled={saving}
+                  className="px-3 py-2 border border-rose-200 text-rose-600 rounded-lg text-[13px] font-semibold hover:bg-rose-50 disabled:opacity-40"
+                >
+                  삭제
+                </button>
+              )}
+            </div>
+            <div className="text-[12px] mt-1">
+              CorpDB 인증정보 ·{" "}
+              <span className={corpDbNmSet ? "text-emerald-700 font-semibold" : "text-rose-700 font-semibold"}>
+                {corpDbNmSet ? "저장됨" : "미설정"}
+              </span>
+              <span className="text-zinc-400"> · 평문 저장 X · 화면 표시 X</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Endpoint */}
