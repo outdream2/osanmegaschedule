@@ -321,7 +321,11 @@ async function callSoap(
   endpoint: string,
   soapAction: string,
   body: string,
+  timeoutMs: number = 60_000,
 ): Promise<{ ok: true; xml: string } | { ok: false; stage: "network" | "http"; error: string }> {
+  // 2026-10-03 · hang 방지 · AbortController timeout (기본 60s)
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
   try {
     res = await fetch(endpoint, {
@@ -331,9 +335,16 @@ async function callSoap(
         SOAPAction: `"${soapAction}"`,
       },
       body,
+      signal: controller.signal,
     });
   } catch (err) {
-    return { ok: false, stage: "network", error: (err as Error).message };
+    const e = err as Error;
+    if (e.name === "AbortError") {
+      return { ok: false, stage: "network", error: `SOAP 호출 타임아웃 · ${timeoutMs}ms 초과` };
+    }
+    return { ok: false, stage: "network", error: e.message };
+  } finally {
+    clearTimeout(timer);
   }
   const xml = await res.text().catch(() => "");
   if (!res.ok) {
@@ -659,7 +670,9 @@ function buildProductListEnvelope(ctx: ProductListContext): string {
 export async function queryProductList(opts?: { pageSize?: number; maxPages?: number }): Promise<ErpInventoryResult> {
   const t0 = Date.now();
   const pageSize = opts?.pageSize ?? 50;
-  const maxPages = opts?.maxPages ?? 400;
+  // 2026-10-03 · 사용자 지시 · 기본은 page 1 만 호출 (성공 확인 먼저)
+  //   · UI 에서 '전체 조회' 체크 시 maxPages=400 지정 가능
+  const maxPages = opts?.maxPages ?? 1;
 
   const cfg = loadConfig();
   if (!cfg.iregen?.enabled) {

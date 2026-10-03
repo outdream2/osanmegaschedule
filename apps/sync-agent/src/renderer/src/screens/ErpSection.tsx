@@ -56,6 +56,9 @@ export const ErpSection: React.FC = () => {
   const todayISO = new Date().toISOString().slice(0, 10);
   const [buyStart, setBuyStart] = useState(todayISO);
   const [buyEnd, setBuyEnd] = useState(todayISO);
+  // 2026-10-03 · 사용자 지시 · Product_List 는 기본 page 1 만 조회 (성공 확인 먼저)
+  //   · 체크하면 전체 상품 (약 81 pages · 1 분 소요)
+  const [productFull, setProductFull] = useState(false);
 
   return (
     <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
@@ -90,11 +93,25 @@ export const ErpSection: React.FC = () => {
         {tab === "products" && (
           <ErpQueryView
             name="products"
-            queryLabel="상품관리 조회"
-            queryFn={() => window.api.erpProductList({ pageSize: 50 })}
+            queryLabel={productFull ? "전체 상품 조회 (약 1분)" : "상품 조회 (1페이지 · 50건)"}
+            queryFn={() => window.api.erpProductList({ pageSize: 50, maxPages: productFull ? 400 : 1 })}
             displayCols={PRODUCT_COLS}
             searchFields={["PCode", "ProductName", "CCorpName"]}
             searchPlaceholder="상품코드 · 상품명 · 공급사 검색 (전체 대상)"
+            conditionsSlot={
+              <label className="flex items-center gap-2 text-[12px] text-zinc-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={productFull}
+                  onChange={(e) => setProductFull(e.target.checked)}
+                  className="w-4 h-4 accent-brand-deep cursor-pointer"
+                />
+                <span>
+                  전체 상품 (약 81 페이지 · 1 분 소요){" "}
+                  <span className="text-zinc-400">· 체크 안 하면 1 페이지만 조회</span>
+                </span>
+              </label>
+            }
           />
         )}
 

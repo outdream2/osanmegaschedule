@@ -39,10 +39,14 @@ if (!app.isPackaged) {
 // 2026-09-18 · 사용자 보고 · 트레이 아이콘 2개 · 원인 · 이중 실행 (auto-launch + installer)
 //   · 두 번째 인스턴스 방지 · 첫 번째 인스턴스 · focus/window open
 //   · Windows · 특히 · autoLaunch + installer 직후 launch 동시 · 2 아이콘
+// 2026-10-03 · 사용자 지시 · 중복 실행 강력 방지
+//   · appUserModelId 를 lock 요청 전에 설정 (Windows 가 같은 앱으로 식별 · lock 공간 통일)
+//   · app.quit() 는 비동기 → tray 생성 사이 race 가능 → app.exit(0) 즉시 종료로 변경
+app.setAppUserModelId("com.megatown.sync-agent");
 const singleInstanceLock = app.requestSingleInstanceLock();
 if (!singleInstanceLock) {
-  console.log("[main] 두 번째 인스턴스 감지 · 종료 (single instance lock)");
-  app.quit();
+  console.log("[main] 두 번째 인스턴스 감지 · 즉시 종료 (singleInstance)");
+  app.exit(0); // quit() 비동기 · exit() 즉시 (tray 생성 전 종료 보장)
 } else {
   app.on("second-instance", () => {
     console.log("[main] second-instance 이벤트 · 기존 창 focus");
