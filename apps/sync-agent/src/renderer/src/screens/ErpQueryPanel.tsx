@@ -4,7 +4,7 @@
 //   · Supabase 쓰기 금지 · 사용자가 ERP 화면과 직접 비교 목적
 //   · CorpDB_nm 등 민감 값 · 화면/로그 노출 없음
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 type Row = Record<string, unknown>;
 
@@ -28,7 +28,10 @@ const DISPLAY_COLS: Array<{ erp: string; label: string; align?: "right" }> = [
   { erp: "IsSaleStatusName", label: "판매상태" },
 ];
 
-const MAX_VISIBLE = 500;
+// 2026-10-03 · 사용자 지시 · MAX_VISIBLE 제한 제거 · pagination 적용
+//   · 전체 데이터 메모리 유지 · 검색은 전체 대상 · 표시만 pagination
+const PAGE_SIZE_OPTIONS = [50, 100, 200] as const;
+type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
 
 type ChipState = "idle" | "running" | "ok" | "fail" | "notRun";
 
@@ -86,6 +89,9 @@ export const ErpQueryPanel: React.FC = () => {
   const [result, setResult] = useState<QueryResult | null>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Row | null>(null);
+  // 2026-10-03 · pagination state · 사용자 지시 (50/100/200)
+  const [pageSize, setPageSize] = useState<PageSize>(50);
+  const [page, setPage] = useState(1);
 
   const run = async () => {
     if (!window.api?.erpInventoryQuery) {
@@ -138,8 +144,15 @@ export const ErpQueryPanel: React.FC = () => {
     });
   }, [result, query]);
 
-  const visible = filtered.slice(0, MAX_VISIBLE);
-  const trimmed = filtered.length > MAX_VISIBLE;
+  // 2026-10-03 · 사용자 지시 · 검색어/페이지크기 변경 → page=1 reset
+  //   · 새 조회 결과 들어와도 page=1 reset
+  useEffect(() => { setPage(1); }, [query, pageSize, result]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(Math.max(1, page), totalPages);
+  const startIdx = (currentPage - 1) * pageSize;
+  const endIdx = Math.min(startIdx + pageSize, filtered.length);
+  const visible = filtered.slice(startIdx, endIdx);
 
   // 2026-10-03 · 사용자 지시 · 각 단계는 실제 성공했을 때만 성공 표시
   //   초기 · 모두 대기
@@ -239,17 +252,38 @@ export const ErpQueryPanel: React.FC = () => {
 
       {result?.ok && (
         <>
-          <div className="flex items-center gap-2 mb-2">
+          {/* 2026-10-03 · 사용자 지시 · 전체/검색결과/현재 표시 범위 + 페이지 크기 선택 */}
+          <div className="flex flex-wrap items-center gap-2 mb-2">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="상품코드 · 상품명 · 공급사 검색"
-              className="flex-1 border border-zinc-300 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-brand-deep/30"
+              placeholder="상품코드 · 상품명 · 공급사 검색 (전체 대상)"
+              className="flex-1 min-w-[200px] border border-zinc-300 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-brand-deep/30"
             />
-            <div className="text-[12px] text-zinc-500 whitespace-nowrap">
-              {filtered.length.toLocaleString()} / {result.rowCount.toLocaleString()}
-              {trimmed && <span className="text-amber-600"> · 상위 {MAX_VISIBLE} 표시</span>}
-            </div>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value) as PageSize)}
+              className="border border-zinc-300 rounded-lg px-2 py-2 text-[12px] bg-white"
+              title="페이지당 표시 수"
+            >
+              {PAGE_SIZE_OPTIONS.map((n) => (
+                <option key={n} value={n}>{n}건/페이지</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 text-[12px] text-zinc-600">
+            <span>전체 <b className="text-zinc-900">{result.rowCount.toLocaleString()}</b>건</span>
+            <span className="text-zinc-300">·</span>
+            <span>검색결과 <b className="text-zinc-900">{filtered.length.toLocaleString()}</b>건</span>
+            <span className="text-zinc-300">·</span>
+            <span>
+              {filtered.length === 0
+                ? "0 표시"
+                : <>{(startIdx + 1).toLocaleString()}-{endIdx.toLocaleString()} 표시</>}
+            </span>
+            <span className="text-zinc-300">·</span>
+            <span>페이지 <b className="text-zinc-900">{currentPage}</b>/{totalPages}</span>
           </div>
 
           <div className="border border-zinc-200 rounded-lg overflow-hidden">
@@ -293,6 +327,11 @@ export const ErpQueryPanel: React.FC = () => {
               </table>
             </div>
           </div>
+
+          {/* 2026-10-03 · 사용자 지시 · 하단 pagination · < 이전 1 2 3 4 5 ... last 다음 > */}
+          {totalPages > 1 && (
+            <Pagination page={currentPage} totalPages={totalPages} onChange={setPage} />
+          )}
         </>
       )}
 
@@ -335,6 +374,76 @@ export const ErpQueryPanel: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// 2026-10-03 · 사용자 지시 pagination 컴포넌트
+//   · < 이전 1 2 3 4 5 ... last 다음 >
+//   · window 5 pages · 양 끝 생략부호 자동
+const Pagination: React.FC<{ page: number; totalPages: number; onChange: (p: number) => void }> = ({
+  page,
+  totalPages,
+  onChange,
+}) => {
+  const go = (p: number) => {
+    const clamped = Math.min(Math.max(1, p), totalPages);
+    if (clamped !== page) onChange(clamped);
+  };
+  // 현재 페이지 중심 5개 window + 첫/마지막 + 생략부호
+  const buildPages = (): Array<number | "ellipsis-l" | "ellipsis-r"> => {
+    const list: Array<number | "ellipsis-l" | "ellipsis-r"> = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) list.push(i);
+      return list;
+    }
+    const windowStart = Math.max(2, page - 2);
+    const windowEnd = Math.min(totalPages - 1, page + 2);
+    list.push(1);
+    if (windowStart > 2) list.push("ellipsis-l");
+    for (let i = windowStart; i <= windowEnd; i++) list.push(i);
+    if (windowEnd < totalPages - 1) list.push("ellipsis-r");
+    list.push(totalPages);
+    return list;
+  };
+  const items = buildPages();
+  const btnBase =
+    "min-w-[32px] h-8 px-2 border rounded text-[12px] font-semibold transition";
+  return (
+    <div className="flex items-center justify-center gap-1 mt-3 flex-wrap">
+      <button
+        onClick={() => go(page - 1)}
+        disabled={page <= 1}
+        className={`${btnBase} border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed`}
+      >
+        ‹ 이전
+      </button>
+      {items.map((it, idx) =>
+        it === "ellipsis-l" || it === "ellipsis-r" ? (
+          <span key={`e-${idx}`} className="px-1 text-zinc-400 text-[12px]">
+            ...
+          </span>
+        ) : (
+          <button
+            key={it}
+            onClick={() => go(it)}
+            className={`${btnBase} ${
+              it === page
+                ? "border-brand-deep bg-brand-deep text-white"
+                : "border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50"
+            }`}
+          >
+            {it}
+          </button>
+        ),
+      )}
+      <button
+        onClick={() => go(page + 1)}
+        disabled={page >= totalPages}
+        className={`${btnBase} border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed`}
+      >
+        다음 ›
+      </button>
     </div>
   );
 };
