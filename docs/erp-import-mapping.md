@@ -127,7 +127,13 @@ Supabase Only: 7,078  ← ERP 에 매칭되는 상품 없음
 | **C** | Supabase product_code 를 ERP PCode 로 교체 (대규모 migration) | - | ⚠ 매우 위험 · 기존 UI/주문/바코드 전부 깨짐 |
 | **D** | ERP 데이터를 별도 테이블로 저장 (snapshot) · 기존 products 와 분리 | 안전 | ERP → products 연결 안 됨 · 사용자 의도와 불일치 |
 
-**추천**: **옵션 A** · 매핑 테이블 신규 · 1 회 매핑 작업 후 지속 유지
+**사용자 지시 (2026-10-03 · 추천 보류)**: ~~옵션 A/B 결정~~ · **1순위는 Product_List 102 col 안 바코드 field 확인**. 바코드 발견 시 ·
+- 그대로 `products.product_code` ↔ ERP BarCode 직접 매칭 (추가 column X)
+- 수천 건 자동 매칭 가능 예상
+
+바코드 없을 때만 옵션 B (erp_pcode column 추가) 또는 C (매핑 테이블) 재검토.
+
+**다음 action**: `npm run dev` 재시작 → 사업장 상품관리 조회 (concurrency=1) → 터미널 로그 `[iregen] Primary table 전체 102 columns:` 공유.
 
 ---
 
