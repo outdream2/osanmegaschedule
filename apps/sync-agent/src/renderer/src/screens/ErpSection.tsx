@@ -116,7 +116,7 @@ export const ErpSection: React.FC = () => {
             searchPlaceholder="상품코드 · 상품명 · 공급사 검색 (전체 대상)"
             conditionsSlot={
               <div className="flex items-center gap-2 flex-wrap">
-                <label className="text-[12px] text-zinc-600 font-semibold">조회기간</label>
+                <label className="text-[12px] text-zinc-600 font-semibold">확정일 기준</label>
                 <input
                   type="date"
                   value={invStart}
