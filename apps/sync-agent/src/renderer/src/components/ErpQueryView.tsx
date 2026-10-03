@@ -7,6 +7,22 @@ import React, { useEffect, useMemo, useState } from "react";
 
 export type Row = Record<string, unknown>;
 
+export interface ProductListVerification {
+  firstPageRows: number;
+  lastPage: number;
+  lastPageRows: number;
+  pagesLoaded: number;
+  totalRows: number;
+  duplicateCodes: number;
+  emptyCodes: number;
+  erpExpectedRows: number;
+  countMatch: boolean;
+  verified: boolean;
+  firstPageTables: Array<{ index: number; name: string; rowCount: number; columnCount: number; firstColumns: string[] }>;
+  primaryTableName: string;
+  rootCauseNote?: string;
+}
+
 export type ErpQueryResult =
   | {
       ok: true;
@@ -14,6 +30,7 @@ export type ErpQueryResult =
       columns: string[];
       rows: Row[];
       meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
+      verification?: ProductListVerification;
     }
   | { ok: false; stage: string; error: string };
 
@@ -213,6 +230,54 @@ export const ErpQueryView: React.FC<Props> = ({
               <div className="text-[13px] font-bold text-rose-700">⚠ SOAP 요청 실패 · stage: {result.stage}</div>
               <div className="text-[13px] text-rose-900 mt-1">{result.error}</div>
             </>
+          )}
+        </div>
+      )}
+
+      {/* 2026-10-03 · Product_List verification 결과 패널 (사용자 지시) */}
+      {result?.ok && result.verification && (
+        <div className={`mb-4 border rounded-lg p-3 ${result.verification.verified ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
+          <div className={`font-bold text-[14px] mb-2 ${result.verification.verified ? "text-emerald-700" : "text-amber-700"}`}>
+            {result.verification.verified ? "✓ Product_List 검증 완료" : "⚠ Product_List 검증 미완료"}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-[12px]">
+            <div><span className="text-zinc-500">조회상품</span> · <b>{result.verification.totalRows.toLocaleString()}</b>건</div>
+            <div><span className="text-zinc-500">ERP 상품수</span> · <b>{result.verification.erpExpectedRows.toLocaleString()}</b>건</div>
+            <div><span className="text-zinc-500">조회페이지</span> · <b>{result.verification.pagesLoaded}</b></div>
+            <div><span className="text-zinc-500">마지막 페이지</span> · <b>{result.verification.lastPageRows}</b> rows</div>
+            <div><span className="text-zinc-500">첫 페이지</span> · <b>{result.verification.firstPageRows}</b> rows</div>
+            <div><span className="text-zinc-500">중복 코드</span> · <b className={result.verification.duplicateCodes ? "text-rose-700" : ""}>{result.verification.duplicateCodes}</b></div>
+            <div><span className="text-zinc-500">빈 상품코드</span> · <b className={result.verification.emptyCodes ? "text-rose-700" : ""}>{result.verification.emptyCodes}</b></div>
+            <div>
+              <span className="text-zinc-500">Count Match</span> ·{" "}
+              <b className={result.verification.countMatch ? "text-emerald-700" : "text-rose-700"}>
+                {result.verification.countMatch ? "YES" : "NO"}
+              </b>
+            </div>
+          </div>
+          <details className="mt-2 text-[12px]">
+            <summary className="cursor-pointer text-zinc-600">DataSet 테이블 구조 ({result.verification.firstPageTables.length}개)</summary>
+            <table className="mt-2 w-full text-[11px] border border-zinc-200">
+              <thead className="bg-zinc-100">
+                <tr><th className="px-2 py-1 text-left">#</th><th className="px-2 py-1 text-left">Name</th><th className="px-2 py-1 text-right">Rows</th><th className="px-2 py-1 text-right">Cols</th><th className="px-2 py-1 text-left">Primary Columns</th></tr>
+              </thead>
+              <tbody>
+                {result.verification.firstPageTables.map((t) => (
+                  <tr key={t.index} className={`border-t border-zinc-200 ${t.name === result.verification!.primaryTableName ? "bg-emerald-100" : ""}`}>
+                    <td className="px-2 py-1">{t.index}</td>
+                    <td className="px-2 py-1">{t.name}{t.name === result.verification!.primaryTableName ? " ★" : ""}</td>
+                    <td className="px-2 py-1 text-right">{t.rowCount.toLocaleString()}</td>
+                    <td className="px-2 py-1 text-right">{t.columnCount}</td>
+                    <td className="px-2 py-1 font-mono text-zinc-600">{t.firstColumns.join(", ")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+          {result.verification.rootCauseNote && (
+            <div className="mt-2 text-[12px] text-zinc-700 bg-white border border-zinc-200 rounded p-2">
+              <b>ROOT CAUSE NOTE:</b> {result.verification.rootCauseNote}
+            </div>
           )}
         </div>
       )}

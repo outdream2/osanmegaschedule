@@ -31,6 +31,22 @@ interface RunResult {
   message: string;
 }
 
+interface ProductListVerification {
+  firstPageRows: number;
+  lastPage: number;
+  lastPageRows: number;
+  pagesLoaded: number;
+  totalRows: number;
+  duplicateCodes: number;
+  emptyCodes: number;
+  erpExpectedRows: number;
+  countMatch: boolean;
+  verified: boolean;
+  firstPageTables: Array<{ index: number; name: string; rowCount: number; columnCount: number; firstColumns: string[] }>;
+  primaryTableName: string;
+  rootCauseNote?: string;
+}
+
 type ErpQueryResult =
   | {
       ok: true;
@@ -38,6 +54,7 @@ type ErpQueryResult =
       columns: string[];
       rows: Record<string, unknown>[];
       meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
+      verification?: ProductListVerification;
     }
   | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string };
 
@@ -71,6 +88,7 @@ interface SyncAgentApi {
   erpInventoryQueryRaw(): Promise<ErpQueryResult>;
   erpProductList(opts?: { pageSize?: number; maxPages?: number }): Promise<ErpQueryResult>;
   erpBuyStatus(opts?: { startDate?: string; endDate?: string }): Promise<ErpQueryResult>;
+  onErpProductProgress(callback: (p: { page: number; rowsAccum: number; done?: boolean }) => void): () => void;
   iregenGetSettings(): Promise<{
     enabled: boolean;
     endpoint: string;
