@@ -670,9 +670,10 @@ function buildProductListEnvelope(ctx: ProductListContext): string {
 export async function queryProductList(opts?: { pageSize?: number; maxPages?: number }): Promise<ErpInventoryResult> {
   const t0 = Date.now();
   const pageSize = opts?.pageSize ?? 50;
-  // 2026-10-03 · 사용자 지시 · 기본은 page 1 만 호출 (성공 확인 먼저)
-  //   · UI 에서 '전체 조회' 체크 시 maxPages=400 지정 가능
-  const maxPages = opts?.maxPages ?? 1;
+  // 2026-10-03 · 사용자 지시 · '상품재고현황처럼' · 전체 상품 자동 조회
+  //   · 총 4,000 개 · 50/page × 81 pages 예상
+  //   · MAX_PAGES=400 safety guard (= 20,000 상품)
+  const maxPages = opts?.maxPages ?? 400;
 
   const cfg = loadConfig();
   if (!cfg.iregen?.enabled) {
