@@ -82,6 +82,8 @@ const CompanyInfoSettingsPage = React.lazy(() => import("./components/CompanyInf
 const SeasonSettingsPage = React.lazy(() => import("./components/SeasonSettingsPage/SeasonSettingsPage"));
 // 2026-08-12 · 시스템 설정 (env 편집 · 서버 재시작 반영)
 const SystemSettingsPage = React.lazy(() => import("./components/SystemSettingsPage/SystemSettingsPage"));
+// 2026-10-03 저녁 · Phase 2 · ERP 초기 데이터 구축 Preview (관리자 lv9 · DRY-RUN 전용)
+const AdminInitialBuildPage = React.lazy(() => import("./components/AdminInitialBuildPage/AdminInitialBuildPage"));
 // 2026-09-04 · 스케줄 설정 (기본연차일 직군별)
 const ScheduleSettingsPage = React.lazy(() => import("./components/ScheduleSettingsPage/ScheduleSettingsPage"));
 // 2026-09-07 · 발주 설정 (SMTP·이메일)
@@ -383,6 +385,7 @@ export default function App() {
     "company-info": () => <Lazy Component={CompanyInfoSettingsPage} />,
     "season-settings": () => <Lazy Component={SeasonSettingsPage} />,
     "system-settings": () => <Lazy Component={SystemSettingsPage} />,
+    "admin-initial-build": () => <Lazy Component={AdminInitialBuildPage} />,
     "schedule-settings": () => <Lazy Component={ScheduleSettingsPage} />,
     "order-settings": () => <Lazy Component={OrderSettingsPage} />,
     "settings-hub": () => <Lazy Component={SettingsHubPage} />,

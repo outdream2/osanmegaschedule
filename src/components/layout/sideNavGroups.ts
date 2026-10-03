@@ -13,6 +13,8 @@ import {
   Palette, Gear,
   // 2026-08-25 · 반품 메뉴 신규 (사용자 지시)
   ArrowsLeftRight as ArrowLeftRight,
+  // 2026-10-03 저녁 · Phase 2 · ERP 초기 데이터 구축 아이콘
+  Database,
   type Icon,
 } from "@phosphor-icons/react";
 import type { AppNavPage } from "./AppNavHeader";
@@ -191,6 +193,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "system-settings", label: "시스템 설정", icon: Gear, color: "slate", minLevel: 9 },
       // 2026-09-07 · 발주 설정 (SMTP 이메일 · 향후 발주 규칙·템플릿)
       { key: "order-settings", label: "발주 설정", icon: Truck, color: "slate", minLevel: 9 },
+      // 2026-10-03 저녁 · Phase 2 · ERP 초기 데이터 구축 · DRY-RUN Preview (관리자 lv9 전용)
+      { key: "admin-initial-build", label: "ERP 초기 구축", icon: Database, color: "slate", minLevel: 9 },
     ],
   },
   {

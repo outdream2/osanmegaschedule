@@ -87,6 +87,8 @@ import resignationsRouter from "./server/routes/staff/resignations";
 import employeeContractsRouter from "./server/routes/staff/employeeContracts";
 import contractClausesRouter from "./server/routes/staff/contractClauses";
 import vatRouter from "./server/routes/purchase/vat";
+// 2026-10-03 저녁 · Phase 2 · ERP Initial Data Build DRY-RUN Preview (READ ONLY)
+import initialBuildPreviewRouter from "./server/routes/admin/initialBuildPreview";
 // 2026-08-06 · T-DualStorage-Connect · 5개 도메인 reference 값 조회
 import referenceValuesRouter from "./server/routes/reference/referenceValues";
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일 보관 · 라우터 등록만 해제
@@ -276,6 +278,10 @@ async function startServer() {
   app.use(resignationsRouter);
   app.use(employeeContractsRouter);
   app.use(contractClausesRouter);   // T-C · 근로계약서 각 호 CMS (서버 저장)
+  // 2026-10-03 저녁 · Phase 2 · ERP Initial Data Build DRY-RUN Preview (관리자 lv9)
+  //   · GET /api/admin/initial-build/preview · READ ONLY
+  //   · POST /api/admin/initial-build/execute · 명시 lock (423) · Phase 3 승인 전 금지
+  app.use(initialBuildPreviewRouter);
 
   // OCR·매입 (사업 데이터)
   app.use(ocrRouter);

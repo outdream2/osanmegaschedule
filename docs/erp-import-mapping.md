@@ -282,7 +282,7 @@ Supabase Only: 7,078  ← ERP 에 매칭되는 상품 없음
 [ 20] IsProductType      String   · 상품유형 여부
 [ 21] IsBottle           String   · 공병 여부
 [ 22] BottlePrice        Int16    · 공병 가격
-[ 23] NowStock           Int64    · ERP 전산 실시간 현재고 → products.current_stock · ERP_OWNED ★ 확정 2026-10-03
+[ 23] NowStock           Int64    · ERP 전산 현재고 → products.current_stock · ERP_OWNED · Source of Truth: ERP · ★ 확정 2026-10-03
 [ 24] CostPrice          Decimal  · 매입단가                                       → ERP_OWNED (97%+ 입력)
 [ 25] CtCode             String   · 공급사 코드                                    → ERP_OWNED
 [ 26] CorpNameView       String   · 공급사명                                       → ERP_OWNED
@@ -425,7 +425,7 @@ ELSE: UNSPEC (뷰티·냉장고 등) · 사용자 결정 대기
 | `memo` | ProductInfoPage 비고 | 사용자 수동 입력 · 82% 사용 |
 | `location` | shelf_positions 자동 배정 · productLocation.ts 1순위 | **ERP_DERIVED 후보** (display_location 과 100% 동기) · ERP sync 시 양쪽 동시 갱신 또는 location 신규 ERP sync 범위에서 명시 보호 결정 필요 |
 | `display_location` | 진열위치 조회 · display_request 매칭 · xlsx 임포트 시 location 쪽에도 동시 저장 | **ERP_DERIVED 후보** · 영향 분석 결과: ERP-derived 전환 시 1,571 상품에 신규 location 부여 · 514 상품 변경 · 40 상품 창고 class flip · 77 상품 none(유효코드 아님) · PATCH 흐름이 shelf_positions 자동 재배정 트리거 (`server/routes/stock/products.ts:1156`) · sync 경로 설계 시 이 로직 포함 필수 |
-| `current_stock` | 재고 조회 | ⚠ UNCERTAIN · ERP sync 대상 아닐 가능성 (inventory_checks 가 real stock 담당) |
+| `current_stock` | 재고 조회 | ✅ ERP_OWNED · Source of Truth: ERP · Product_List.NowStock SSOT · 2026-10-03 사용자 ERP 화면 샘플 검증 완료 · Inventory 42-col 공식은 current_stock 계산에 사용 X · inventory_checks.store*_stock 은 PROTECTED (실사재고 · 별개) |
 | `sale_price` | 주문가 · ProductListPage PATCH | 사용자 PATCH 가능 (82% 사용) · ERP 가 매번 덮으면 수동 수정 손실 |
 | `purchase_price` | 상품 상세 · ProductListPage PATCH | 사용자 PATCH 가능 (4% 사용 · 거의 미사용) · ERP CostPrice 로 덮어도 영향 미미 |
 | `sale_status` | 판매중/판매중지 필터 | PATCH 인라인 · 사용자 수동 |
@@ -575,7 +575,7 @@ Protected values affected:     0 (INSERT 만 하면 기존 7,078 영향 X)
    - purchase_details UPSERT 매핑 작성 불가
    - 매입 현황 조회 1 회 터미널 로그 공유 필요
 
-4. **current_stock · profit_rate · category_code · last_purchase_date · last_sale_date UNCERTAIN**
+4. **profit_rate · category_code UNCERTAIN** (current_stock·last_purchase_date·last_sale_date 는 Phase 2 에서 ERP_OWNED 확정)
    - 각각 ERP 제공 여부 미확정
    - calculated 인지 ERP_OWNED 인지 명확화 필요
 

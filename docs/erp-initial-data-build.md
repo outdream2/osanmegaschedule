@@ -181,7 +181,7 @@
 - `shelf_positions` (JSONB · inventory_checks)
 - ~~`location_assigned_at`~~ (**컬럼 실제 미존재 · 삭제**)
 - `stock_note` · `created_at`
-- `current_stock` (⚠ UNCERTAIN · 공식 검증 전 PROTECTED)
+- ~~`current_stock` UNCERTAIN~~ → ✅ **ERP_OWNED 확정 (2026-10-03)** · `Product_List.NowStock` SSOT · Source of Truth: ERP · 사용자 ERP 화면 샘플 검증 완료
 
 ### 사용자 지시 8 번 · 가격 재확인
 - `products.purchase_price` · non-null **289 (4%)** · 거의 미사용. 실제 매입가는 `purchase_details.unit_price` 사용. **ERP_OWNED 로 매번 overwrite OK**. 사용자 영향 미미. 하지만 사용자 PATCH 가능하면 PROTECTED 유지해도 됨 → **사용자 결정 대기**.
@@ -189,7 +189,7 @@
 - ERP Product_List 안에 실제 매입가/판매가 field 있는지 **102 col 수집 후 확정**.
 
 ### 사용자 지시 9 번 · current_stock 재확인
-- Inventory_Status 는 **기간 집계** (PrvStock + 이동) · 실시간 현재고 아님
+- Inventory_Status 는 **기간 집계** (PrvStock + 이동) · current_stock 계산 source 아님
 - Supabase `current_stock` non-null 3,086 (43%) · 활발 운영
 - **공식 검증 전 UNCERTAIN 유지** · ERP sync 대상 아님 (일단)
 - 실재고는 `inventory_checks.store*_stock` 사용자 입력이 SSOT

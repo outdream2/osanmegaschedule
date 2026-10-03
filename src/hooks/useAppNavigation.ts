@@ -18,7 +18,9 @@ export type Page =
   | "system-settings" | "vendor-stock" | "schedule-settings"
   | "order-settings" | "settings-hub"
   // 2026-09-24 · #352 · 거래처 발주이력 확인 페이지
-  | "vendor-order-history";
+  | "vendor-order-history"
+  // 2026-10-03 저녁 · Phase 2 · ERP 초기 데이터 구축 (관리자 lv9 · DRY-RUN 전용)
+  | "admin-initial-build";
 
 interface UseAppNavigationOpts {
   authSession: AuthSession | null;

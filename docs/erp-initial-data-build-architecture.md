@@ -404,7 +404,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_purchase_details_bm_row
 ```
 products.current_stock  ←  Product_List.NowStock
 Ownership:              ERP_OWNED
-Meaning:                ERP 전산 실시간 현재고
+Source of Truth:        ERP
+Meaning:                ERP 전산 현재고
                         Normal Sync 시 ERP 매번 overwrite 가능
 
 inventory_checks.store*_stock:

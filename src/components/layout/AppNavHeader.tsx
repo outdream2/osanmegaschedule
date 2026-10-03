@@ -62,7 +62,9 @@ export type AppNavPage =
   // 2026-09-07 · 발주 설정 (SMTP·이메일)
   | "order-settings"
   // 2026-09-07 · 설정 허브 · 모든 설정 통합 진입점
-  | "settings-hub";
+  | "settings-hub"
+  // 2026-10-03 저녁 · Phase 2 · ERP 초기 데이터 구축 (관리자 lv9 · DRY-RUN 전용)
+  | "admin-initial-build";
   // 2026-09-02 · #74 · warehouse-zones 제거 (규칙 고정 · 수동 편집 불필요)
   // 2026-08-23 · #181 · zone-settings 제거 · StoreZoneMap 인라인 편집만
 
