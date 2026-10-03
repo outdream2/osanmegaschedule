@@ -81,6 +81,19 @@ function envVal(key: string): string | undefined {
 function envCorpDbNm(): string | undefined {
   return envVal("IREGEN_CORP_DB_NM") ?? envVal("CorpDB_nm") ?? envVal("CORPDB_NM");
 }
+// Phase 2 · 사용자 .env 키 이름 매핑 (공백 포함 키 그대로 사용)
+function envCorpCode(): string | undefined {
+  return envVal("IREGEN_CORP_CODE") ?? envVal("Iregen  companycode") ?? envVal("Iregen companycode") ?? envVal("CorpCode");
+}
+function envUserId(): string | undefined {
+  return envVal("IREGEN_USER_ID") ?? envVal("Iregen id") ?? envVal("UserID");
+}
+function envUserName(): string | undefined {
+  return envVal("IREGEN_USER_NAME") ?? envVal("Iregen name") ?? envVal("UserName");
+}
+function envStCode(): string | undefined {
+  return envVal("IREGEN_ST_CODE") ?? envVal("Iregen stcode") ?? envVal("StCode");
+}
 export function iregenSecretSource(): "env" | "safeStorage" | "none" {
   if (envCorpDbNm()) return "env";
   const cfg = loadConfig();
@@ -121,33 +134,59 @@ const CONFIG_FRIENDLY_ERROR =
 const DISABLED_FRIENDLY_ERROR =
   "Iregen ERP 연동이 꺼져 있습니다.\n설정 > Iregen ERP 연동 · 「ERP 연동 사용」 을 켜주세요.";
 
-interface ResolvedSecret {
-  corpDbNm: string;
-  endpoint: string;
-  soapAction: string;
-}
-
 function decoderPath(): string {
   // dev · __dirname = apps/sync-agent/out/main → 프로젝트 root/tools/iregen-bridge/bin/Debug/net48/
   return resolve(__dirname, "../../../../tools/iregen-bridge/bin/Debug/net48/iregen-decoder.exe");
 }
 
-function loadSecret(): ResolvedSecret | { error: string } {
+// 2026-10-03 · Phase 2 · Fiddler 성공 Request 완전 복제
+//   · 118 element · <ent> wrapper · s: prefix · xmlns:i
+//   · 민감 값 (CorpDB_nm) 만 env 필수 · 나머지 식별자는 env override 가능 · default = Fiddler 값
+interface EnvelopeContext {
+  corpDbNm: string;
+  corpCode: string;
+  userId: string;
+  userName: string;
+  stCode: string;
+  searchType: string;
+  startDate: string;
+  endDate: string;
+}
+
+interface ResolvedConfig {
+  envelope: EnvelopeContext;
+  endpoint: string;
+  soapAction: string;
+}
+
+function buildEnvelopeContext(corpDbNm: string): EnvelopeContext {
+  // 사용자 지시 6 · 1차 테스트는 Fiddler 와 동일 조건 · 성공 확인 후 날짜 today 전환 (Phase 2.2)
+  return {
+    corpDbNm,
+    corpCode: envCorpCode() ?? "30009",
+    userId: envUserId() ?? "111",
+    userName: envUserName() ?? "강서은",
+    stCode: envStCode() ?? "000",
+    searchType: envVal("IREGEN_SEARCH_TYPE") ?? "TOTAL",
+    startDate: envVal("IREGEN_START_DATE") ?? "2026-10-01",
+    endDate: envVal("IREGEN_END_DATE") ?? "2026-10-01",
+  };
+}
+
+function loadConfigAndSecret(): ResolvedConfig | { error: string } {
   const cfg = loadConfig();
   if (!cfg.iregen?.enabled) {
     return { error: DISABLED_FRIENDLY_ERROR };
   }
-  // 우선순위 · process.env > sync-agent/.env > root/.env > safeStorage (Settings UI)
-  //   · env 키 이름 · IREGEN_CORP_DB_NM / CorpDB_nm / CORPDB_NM 모두 지원
-  const envCorp = envCorpDbNm();
-  const corpDbNm = envCorp ?? getIregenCorpDbNm() ?? null;
+  const corpDbNm = envCorpDbNm() ?? getIregenCorpDbNm() ?? null;
   if (!corpDbNm || !corpDbNm.trim()) {
     return { error: CONFIG_FRIENDLY_ERROR };
   }
-  // Endpoint · SOAP Action 도 env 우선 (설정 UI 가 평문 저장 가능 영역) · fallback = config
-  const endpoint = envVal("IREGEN_ENDPOINT") ?? cfg.iregen?.endpoint ?? DEFAULT_IREGEN_ENDPOINT;
-  const soapAction = envVal("IREGEN_SOAP_ACTION") ?? cfg.iregen?.soapAction ?? DEFAULT_IREGEN_SOAP_ACTION;
-  return { corpDbNm: corpDbNm.trim(), endpoint, soapAction };
+  return {
+    envelope: buildEnvelopeContext(corpDbNm.trim()),
+    endpoint: envVal("IREGEN_ENDPOINT") ?? cfg.iregen?.endpoint ?? DEFAULT_IREGEN_ENDPOINT,
+    soapAction: envVal("IREGEN_SOAP_ACTION") ?? cfg.iregen?.soapAction ?? DEFAULT_IREGEN_SOAP_ACTION,
+  };
 }
 
 function escapeXml(s: string): string {
@@ -156,19 +195,114 @@ function escapeXml(s: string): string {
   );
 }
 
-function buildEnvelope(corpDbNm: string): string {
+// 2026-10-03 · Phase 2 · Fiddler 캡쳐 포맷 완전 복제 · 118 element
+//   · <ent> wrapper 필수 · s: prefix · xmlns:i 추가
+//   · 민감 값: ctx 로 주입 · 나머지 scalar 는 Fiddler 값 그대로 하드코딩
+function buildEnvelope(ctx: EnvelopeContext): string {
   return (
-    `<?xml version="1.0" encoding="utf-8"?>` +
-    `<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">` +
-    `<soap:Body>` +
-    `<Inventory_Status xmlns="http://tempuri.org/">` +
-    `<CorpDB_nm>${escapeXml(corpDbNm)}</CorpDB_nm>` +
+    `<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">` +
+    `<s:Body>` +
+    `<Inventory_Status xmlns="http://tempuri.org/" xmlns:i="http://www.w3.org/2001/XMLSchema-instance">` +
+    `<ent>` +
     `<IsReturnJson>false</IsReturnJson>` +
     `<IsEnc>false</IsEnc>` +
     `<IsCompress>false</IsCompress>` +
+    `<CorpCode>${escapeXml(ctx.corpCode)}</CorpCode>` +
+    `<CardFee>0</CardFee>` +
+    `<Lcate>0</Lcate><Mcate>0</Mcate><Scate>0</Scate><Dcate>0</Dcate>` +
+    `<IsStatus>1</IsStatus>` +
+    `<IsStoreStatus>1</IsStoreStatus>` +
+    `<IsBuyStatus>1</IsBuyStatus>` +
+    `<IsSaleStatus>1</IsSaleStatus>` +
+    `<IsStock>1</IsStock>` +
+    `<GuaranteePrice>0</GuaranteePrice>` +
+    `<Subsidy>0</Subsidy>` +
+    `<BuyDiscount>0</BuyDiscount>` +
+    `<DevCommission>0</DevCommission>` +
+    `<SaleCommission>0</SaleCommission>` +
+    `<Deadline>0</Deadline>` +
+    `<PaymentDate>0</PaymentDate>` +
+    `<BankName>0</BankName>` +
+    `<EtcIntField1>0</EtcIntField1>` +
+    `<EtcIntField2>0</EtcIntField2>` +
+    `<EtcIntField3>0</EtcIntField3>` +
+    `<IsWeight>0</IsWeight>` +
+    `<CRUD>ALL</CRUD>` +
+    `<CorpDB_nm>${escapeXml(ctx.corpDbNm)}</CorpDB_nm>` +
+    `<PageIdx>0</PageIdx>` +
+    `<PageSize>0</PageSize>` +
+    `<SearchType>${escapeXml(ctx.searchType)}</SearchType>` +
+    `<StartDate>${escapeXml(ctx.startDate)}</StartDate>` +
+    `<EndDate>${escapeXml(ctx.endDate)}</EndDate>` +
+    `<Cate>0</Cate><pCate>0</pCate>` +
+    `<IsLevel>0</IsLevel>` +
+    `<Sort>0</Sort>` +
+    `<InStock>0</InStock><OutStock>0</OutStock>` +
+    `<Idx>0</Idx>` +
+    `<IsUseType>0</IsUseType>` +
+    `<PLcate>0</PLcate><PMcate>0</PMcate><PScate>0</PScate><PDcate>0</PDcate>` +
+    `<SaleTax>0</SaleTax>` +
+    `<IsAll>false</IsAll>` +
+    `<FileSize>0</FileSize>` +
+    `<BuseoCode>-1</BuseoCode>` +
+    `<CtContact>0</CtContact>` +
+    `<UseStock>0</UseStock><NowStock>0</NowStock>` +
+    `<EditStock>0</EditStock><PlusStock>0</PlusStock><MinusStock>0</MinusStock>` +
+    `<StCode>${escapeXml(ctx.stCode)}</StCode>` +
+    `<InBuseoCode>0</InBuseoCode><OutBuseoCode>0</OutBuseoCode>` +
+    `<UserID>${escapeXml(ctx.userId)}</UserID>` +
+    `<UserName>${escapeXml(ctx.userName)}</UserName>` +
+    `<TotalBuyPrice>0</TotalBuyPrice>` +
+    `<TotalPrice>0</TotalPrice>` +
+    `<TotalTax>0</TotalTax>` +
+    `<TotalExemption>0</TotalExemption>` +
+    `<TotalBuyTotal>0</TotalBuyTotal>` +
+    `<RLcate>0</RLcate><RMcate>0</RMcate>` +
+    `<FolderCode>0</FolderCode>` +
+    `<TotalStock>0</TotalStock>` +
+    `<ExTotalStock>0</ExTotalStock><ExStockCnt>0</ExStockCnt><ExEaStockCnt>0</ExEaStockCnt>` +
+    `<CostPrice>0</CostPrice>` +
+    `<CostTax>0</CostTax>` +
+    `<TaxExemption>0</TaxExemption>` +
+    `<CostTotal>0</CostTotal><SaleTotal>0</SaleTotal>` +
+    `<Margin>0</Margin><MarginRate>0</MarginRate>` +
+    `<DocPrint>0</DocPrint>` +
+    `<UnitStock>0</UnitStock><UnitCost>0</UnitCost><UnitSale>0</UnitSale>` +
+    `<StockCnt>0</StockCnt>` +
+    `<StorageGubun>A</StorageGubun>` +
+    `<MakerCode>0</MakerCode><BrandCode>0</BrandCode>` +
+    `<oLcate>0</oLcate><oMcate>0</oMcate><oScate>0</oScate>` +
+    `<EaCost>0</EaCost>` +
+    `<DocIdx>0</DocIdx>` +
+    `<NowStockCount>0</NowStockCount>` +
+    `<_UseStockCount>0</_UseStockCount>` +
+    `<RotationDays>0</RotationDays>` +
+    `<LocationCode>0</LocationCode>` +
+    `<table_UpLoad_BuyCustomer_Contact_RowCnt>0</table_UpLoad_BuyCustomer_Contact_RowCnt>` +
+    `<table_UpLoad_BuyCustomer_Address_RowCnt>0</table_UpLoad_BuyCustomer_Address_RowCnt>` +
+    `<table_UpLoad_BuyCustomer_Image_RowCnt>0</table_UpLoad_BuyCustomer_Image_RowCnt>` +
+    `<table_UpLoad_BuyCustomer_JoinStorage_RowCnt>0</table_UpLoad_BuyCustomer_JoinStorage_RowCnt>` +
+    `<table_UpLoad_SaleProduct_RowCnt>0</table_UpLoad_SaleProduct_RowCnt>` +
+    `<table_UpLoad_Move_Product_RowCnt>0</table_UpLoad_Move_Product_RowCnt>` +
+    `<table_UpLoad_Subdivision_In_RowCnt>0</table_UpLoad_Subdivision_In_RowCnt>` +
+    `<table_UpLoad_Subdivision_Out_RowCnt>0</table_UpLoad_Subdivision_Out_RowCnt>` +
+    `<table_UpLoad_StockAdjustment_Product_RowCnt>0</table_UpLoad_StockAdjustment_Product_RowCnt>` +
+    `<table_UpLoad_Stocktaking_Product_RowCnt>0</table_UpLoad_Stocktaking_Product_RowCnt>` +
+    `<table_UpLoad_Image_RowCnt>0</table_UpLoad_Image_RowCnt>` +
+    `<table_UpLoad_XDock_Product_RowCnt>0</table_UpLoad_XDock_Product_RowCnt>` +
+    `<ToUnitStock>0</ToUnitStock><ToStockCnt>0</ToStockCnt>` +
+    `<LmCode>0</LmCode>` +
+    `<WindowDays>0</WindowDays>` +
+    `<MinHistoryDays>0</MinHistoryDays>` +
+    `<NewProductDays>0</NewProductDays>` +
+    `<DefaultLeadTime>0</DefaultLeadTime>` +
+    `<DefaultOrderCycle>0</DefaultOrderCycle>` +
+    `<SoldOutDays>0</SoldOutDays>` +
+    `<PageIndex>0</PageIndex>` +
+    `</ent>` +
     `</Inventory_Status>` +
-    `</soap:Body>` +
-    `</soap:Envelope>`
+    `</s:Body>` +
+    `</s:Envelope>`
   );
 }
 
@@ -351,18 +485,18 @@ export async function queryInventoryStatusRaw(): Promise<ErpInventoryResult> {
 export async function queryInventoryStatus(): Promise<ErpInventoryResult> {
   const t0 = Date.now();
 
-  // 1. 설정 로드 (CorpDB_nm · 메모리에만 보관 · 로그 X)
-  const sec = loadSecret();
-  if ("error" in sec) {
+  // 1. 설정 + envelope 컨텍스트 로드 (민감 값 로그 X)
+  const resolved = loadConfigAndSecret();
+  if ("error" in resolved) {
     console.warn("[iregen] stage=config · 연결정보 미설정");
-    return { ok: false, stage: "config", error: sec.error };
+    return { ok: false, stage: "config", error: resolved.error };
   }
 
   // 2. SOAP 호출 · body 전체 로그 금지
-  const envelope = buildEnvelope(sec.corpDbNm);
+  const envelope = buildEnvelope(resolved.envelope);
   const soapT0 = Date.now();
-  console.log("[iregen] SOAP POST · endpoint:", sec.endpoint, "· body bytes:", envelope.length);
-  const soapRes = await callSoap(sec.endpoint, sec.soapAction, envelope);
+  console.log("[iregen] SOAP POST · endpoint:", resolved.endpoint, "· body bytes:", envelope.length);
+  const soapRes = await callSoap(resolved.endpoint, resolved.soapAction, envelope);
   const soapMs = Date.now() - soapT0;
   if (!soapRes.ok) {
     console.error("[iregen] stage=" + soapRes.stage + " ·", soapMs, "ms ·", soapRes.error);
