@@ -77,8 +77,8 @@ const api = {
     ipcRenderer.invoke("folder:open", kind, subdir) as Promise<{ ok: boolean; error?: string }>,
 
   // ── Iregen ERP Live Query (검증용 · READ-ONLY · Supabase 미반영) ──
-  erpInventoryQuery: () =>
-    ipcRenderer.invoke("erp:inventoryStatus") as Promise<
+  erpInventoryQuery: (opts?: { startDate?: string; endDate?: string }) =>
+    ipcRenderer.invoke("erp:inventoryStatus", opts) as Promise<
       | {
           ok: true;
           rowCount: number;

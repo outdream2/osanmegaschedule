@@ -159,8 +159,8 @@ interface ResolvedConfig {
   soapAction: string;
 }
 
-function buildEnvelopeContext(corpDbNm: string): EnvelopeContext {
-  // 사용자 지시 6 · 1차 테스트는 Fiddler 와 동일 조건 · 성공 확인 후 날짜 today 전환 (Phase 2.2)
+function buildEnvelopeContext(corpDbNm: string, opts?: { startDate?: string; endDate?: string }): EnvelopeContext {
+  // 사용자 지시 · UI 에서 기간 입력 받음 · opts 우선 → env → today
   return {
     corpDbNm,
     corpCode: envCorpCode() ?? "30009",
@@ -168,15 +168,12 @@ function buildEnvelopeContext(corpDbNm: string): EnvelopeContext {
     userName: envUserName() ?? "강서은",
     stCode: envStCode() ?? "000",
     searchType: envVal("IREGEN_SEARCH_TYPE") ?? "TOTAL",
-    // 2026-10-03 · Phase 2.2 · today 자동 전환 (사용자 지시 · 성공 확인 후)
-    //   · Fiddler 캡쳐 당시 '2026-10-03' (= today) · 매일 바꾸지 않도록 동적 생성
-    //   · env override 가능 (수동 테스트용)
-    startDate: envVal("IREGEN_START_DATE") ?? todayISO(),
-    endDate: envVal("IREGEN_END_DATE") ?? todayISO(),
+    startDate: opts?.startDate ?? envVal("IREGEN_START_DATE") ?? todayISO(),
+    endDate: opts?.endDate ?? envVal("IREGEN_END_DATE") ?? todayISO(),
   };
 }
 
-function loadConfigAndSecret(): ResolvedConfig | { error: string } {
+function loadConfigAndSecret(opts?: { startDate?: string; endDate?: string }): ResolvedConfig | { error: string } {
   const cfg = loadConfig();
   if (!cfg.iregen?.enabled) {
     return { error: DISABLED_FRIENDLY_ERROR };
@@ -186,7 +183,7 @@ function loadConfigAndSecret(): ResolvedConfig | { error: string } {
     return { error: CONFIG_FRIENDLY_ERROR };
   }
   return {
-    envelope: buildEnvelopeContext(corpDbNm.trim()),
+    envelope: buildEnvelopeContext(corpDbNm.trim(), opts),
     endpoint: envVal("IREGEN_ENDPOINT") ?? cfg.iregen?.endpoint ?? DEFAULT_IREGEN_ENDPOINT,
     soapAction: envVal("IREGEN_SOAP_ACTION") ?? cfg.iregen?.soapAction ?? DEFAULT_IREGEN_SOAP_ACTION,
   };
@@ -514,11 +511,11 @@ export async function queryInventoryStatusRaw(): Promise<ErpInventoryResult> {
   return decodeResponseToResult(soapRes.xml, t0, soapMs);
 }
 
-export async function queryInventoryStatus(): Promise<ErpInventoryResult> {
+export async function queryInventoryStatus(opts?: { startDate?: string; endDate?: string }): Promise<ErpInventoryResult> {
   const t0 = Date.now();
 
-  // 1. 설정 + envelope 컨텍스트 로드 (민감 값 로그 X)
-  const resolved = loadConfigAndSecret();
+  // 1. 설정 + envelope 컨텍스트 로드 (민감 값 로그 X · 사용자 기간 입력 반영)
+  const resolved = loadConfigAndSecret(opts);
   if ("error" in resolved) {
     console.warn("[iregen] stage=config · 연결정보 미설정");
     return { ok: false, stage: "config", error: resolved.error };

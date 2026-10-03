@@ -145,8 +145,8 @@ export function registerIpcHandlers() {
 
   // 2026-10-03 · Iregen ERP Live Query · 검증용 · Supabase WRITE 금지
   //   · UI 버튼 클릭 시만 호출 · 메모리 응답 전용
-  ipcMain.handle("erp:inventoryStatus", async () => {
-    return queryInventoryStatus();
+  ipcMain.handle("erp:inventoryStatus", async (_e, opts?: { startDate?: string; endDate?: string }) => {
+    return queryInventoryStatus(opts);
   });
 
   // 2026-10-03 · 사용자 지시 TEST A · diagnostic · Fiddler Request 그대로 전송

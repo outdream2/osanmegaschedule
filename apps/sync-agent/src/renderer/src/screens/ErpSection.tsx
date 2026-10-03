@@ -52,10 +52,13 @@ const BUY_COLS: ColumnSpec[] = [
 
 export const ErpSection: React.FC = () => {
   const [tab, setTab] = useState<TabKey>("inventory");
-  // 매입 조회 기간 state · UI 조정 가능 (사용자 지시 · 성공 후 기간 변경 가능)
+  // 2026-10-03 · 사용자 지시 · 3 탭 전부 기간 조회 가능
   const todayISO = new Date().toISOString().slice(0, 10);
   const [buyStart, setBuyStart] = useState(todayISO);
   const [buyEnd, setBuyEnd] = useState(todayISO);
+  const [invStart, setInvStart] = useState(todayISO);
+  const [invEnd, setInvEnd] = useState(todayISO);
+  // 상품관리는 ERP Fiddler 가 StartDate/EndDate 빈값 · 기간 필터 사용 X · UI 미노출
 
   return (
     <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
@@ -107,10 +110,28 @@ export const ErpSection: React.FC = () => {
           <ErpQueryView
             name="inventory"
             queryLabel="재고 현황 조회"
-            queryFn={() => window.api.erpInventoryQuery()}
+            queryFn={() => window.api.erpInventoryQuery({ startDate: invStart, endDate: invEnd })}
             displayCols={INVENTORY_COLS}
             searchFields={["PCode", "ProductName", "CCorpName"]}
             searchPlaceholder="상품코드 · 상품명 · 공급사 검색 (전체 대상)"
+            conditionsSlot={
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="text-[12px] text-zinc-600 font-semibold">조회기간</label>
+                <input
+                  type="date"
+                  value={invStart}
+                  onChange={(e) => setInvStart(e.target.value)}
+                  className="border border-zinc-300 rounded-lg px-2 py-1.5 text-[12px]"
+                />
+                <span className="text-zinc-400">~</span>
+                <input
+                  type="date"
+                  value={invEnd}
+                  onChange={(e) => setInvEnd(e.target.value)}
+                  className="border border-zinc-300 rounded-lg px-2 py-1.5 text-[12px]"
+                />
+              </div>
+            }
           />
         )}
 
@@ -151,7 +172,7 @@ export const ErpSection: React.FC = () => {
 declare global {
   interface Window {
     api: {
-      erpInventoryQuery: () => Promise<ErpQueryResult>;
+      erpInventoryQuery: (opts?: { startDate?: string; endDate?: string }) => Promise<ErpQueryResult>;
       erpInventoryQueryRaw: () => Promise<ErpQueryResult>;
       erpProductList: (opts?: { pageSize?: number; maxPages?: number }) => Promise<ErpQueryResult>;
       erpBuyStatus: (opts?: { startDate?: string; endDate?: string }) => Promise<ErpQueryResult>;

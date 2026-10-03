@@ -67,7 +67,7 @@ interface SyncAgentApi {
     | { ok: false; error: string }
   >;
   openFolder(kind: FileKind, subdir?: "processed" | "failed"): Promise<{ ok: boolean; error?: string }>;
-  erpInventoryQuery(): Promise<ErpQueryResult>;
+  erpInventoryQuery(opts?: { startDate?: string; endDate?: string }): Promise<ErpQueryResult>;
   erpInventoryQueryRaw(): Promise<ErpQueryResult>;
   erpProductList(opts?: { pageSize?: number; maxPages?: number }): Promise<ErpQueryResult>;
   erpBuyStatus(opts?: { startDate?: string; endDate?: string }): Promise<ErpQueryResult>;
