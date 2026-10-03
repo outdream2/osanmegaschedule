@@ -767,13 +767,20 @@ type PageOutcome =
   | { ok: false; pageIdx: number; stage: ErpInventoryStage; error: string; attempts: number };
 
 // 2026-10-03 · 단일 페이지 조회 + retry (사용자 지시 1s/2s/포기)
+// 2026-10-03 저녁 · 사용자 지시 Phase 2 · retry 정책 변경
+//   · 기존: 1s → 2s → 포기 (rapid retry · ERP 부하 우려)
+//   · 신규: 30s → 60s → 120s → abort (ERP 장애 시 완만한 backoff)
+//   · 초기 1회 시도 + retry 3회 (총 4회 attempt)
+//   · retry 중에는 다른 ERP API 호출 금지 (호출부에서 global lock 책임)
+const RETRY_DELAYS_MS: readonly number[] = [30_000, 60_000, 120_000];
+
 async function fetchProductPageWithRetry(
   pageIdx: number,
   pageSize: number,
   ctx: ProductListContext,
   endpoint: string,
   soapAction: string,
-  maxAttempts: number = 3,
+  maxAttempts: number = RETRY_DELAYS_MS.length + 1,
 ): Promise<PageOutcome> {
   let lastStage: ErpInventoryStage = "network";
   let lastError = "";
@@ -789,8 +796,8 @@ async function fetchProductPageWithRetry(
       if (!retriable || attempt === maxAttempts) {
         return { ok: false, pageIdx, stage: soapRes.stage, error: soapRes.error, attempts: attempt };
       }
-      const delay = attempt * 1000;
-      console.warn(`[iregen:product] page ${pageIdx} attempt ${attempt} 실패 (${soapRes.stage}) · ${delay}ms 후 재시도`);
+      const delay = RETRY_DELAYS_MS[attempt - 1] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
+      console.warn(`[iregen:product] page ${pageIdx} attempt ${attempt} 실패 (${soapRes.stage}) · ${delay / 1000}s 후 재시도`);
       await new Promise((r) => setTimeout(r, delay));
       continue;
     }
@@ -803,8 +810,8 @@ async function fetchProductPageWithRetry(
       if (attempt === maxAttempts) {
         return { ok: false, pageIdx, stage: decoded.stage, error: decoded.error, attempts: attempt };
       }
-      const delay = attempt * 1000;
-      console.warn(`[iregen:product] page ${pageIdx} attempt ${attempt} decode 실패 · ${delay}ms 후 재시도`);
+      const delay = RETRY_DELAYS_MS[attempt - 1] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
+      console.warn(`[iregen:product] page ${pageIdx} attempt ${attempt} decode 실패 · ${delay / 1000}s 후 재시도`);
       await new Promise((r) => setTimeout(r, delay));
       continue;
     }
