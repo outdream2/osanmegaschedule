@@ -223,6 +223,38 @@ describe("syncProducts · ERP null overwrite 금지", () => {
   });
 });
 
+describe("syncProducts · onlyProductCodes allowlist", () => {
+  const baseDb = [
+    { product_code: "0000000044820", product_name: "변경없음", supplier: "코", supplier_code: "100", unit: "EA", sale_status: "판매중", brand: "브", manufacturer: "제", current_stock: 5, display_location: "6A", location: "6A" },
+  ];
+
+  it("allowlist 활성 · 지정 Barcode 만 wouldInsert 집계 (나머지 skip)", async () => {
+    const mockSb = makeMockSupabase({ dbRows: baseDb });
+    const r = await syncProducts(mockSb, { onlyProductCodes: ["9999999999999"] });
+    expect(r.newInsert).toBe(1);
+    expect(r.matched).toBe(0); // 매칭 상품은 allowlist 밖 → skip
+    expect(r.wouldInsert).toBe(1);
+    expect(r.wouldUpdate).toBe(0);
+    // dbOnly 는 전체 ERP 기준으로 계산 유지
+  });
+
+  it("allowlist + WRITE · 1건만 INSERT · 다른 상품 payload 전혀 없음", async () => {
+    const mockSb = makeMockSupabase({ dbRows: baseDb });
+    const r = await syncProducts(mockSb, {
+      mode: "WRITE", allowWrite: true,
+      onlyProductCodes: ["9999999999999"],
+    });
+    expect(r.actualWriteExecuted).toBe(true);
+    const inserts = mockSb._writeOps.filter((o: any) => o.op === "insert");
+    const updates = mockSb._writeOps.filter((o: any) => o.op === "update");
+    expect(inserts).toHaveLength(1);
+    expect(updates).toHaveLength(0);
+    // insert payload 는 allowlist Barcode 1건만
+    const payload = inserts[0].payload;
+    expect(Array.isArray(payload) ? payload[0].product_code : payload.product_code).toBe("9999999999999");
+  });
+});
+
 describe("syncProducts · NowStock → current_stock 매핑", () => {
   it("ERP NowStock 변경 → payload.current_stock 포함", async () => {
     const mockSb = makeMockSupabase({

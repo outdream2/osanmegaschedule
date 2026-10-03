@@ -4,6 +4,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import type { RendererConfig, FileKind } from "../types";
 import { ErpSection } from "./ErpSection";
+import { ErpSyncSection } from "./ErpSyncSection";
 import { SectionBoundary } from "../components/SectionBoundary";
 
 const FILE_META: Record<FileKind, { label: string; color: string; icon: string }> = {
@@ -134,6 +135,11 @@ export const Dashboard: React.FC = () => {
           · SectionBoundary 로 격리 · 이 섹션 crash 가 Dashboard 전체를 죽이지 않음 */}
       <SectionBoundary name="Iregen ERP 조회">
         <ErpSection />
+      </SectionBoundary>
+
+      {/* 2026-10-03 저녁 · Phase 2 · ERP → Supabase 동기화 섹션 (DRY-RUN 전용) */}
+      <SectionBoundary name="ERP Sync">
+        <ErpSyncSection />
       </SectionBoundary>
     </div>
   );

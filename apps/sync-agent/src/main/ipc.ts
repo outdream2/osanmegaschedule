@@ -15,6 +15,13 @@ import { runNow, runNowAll } from "./scheduler";
 import { findLatestFile } from "./importer";
 import { listQueue, clearQueue, removeItem } from "./queue";
 import { queryInventoryStatus, queryInventoryStatusRaw, queryProductList, queryBuyStatus, iregenSecretSource, iregenEnvSourceLabel } from "./iregenSoap";
+import {
+  fetchErpSnapshot,
+  buildPreview,
+  applySync,
+  getSessionStatus,
+} from "./erpSyncOrchestrator";
+import { getSupabaseStatus } from "./supabaseClient";
 
 export function registerIpcHandlers() {
   // ── Config ────────────────────────────────────
@@ -206,6 +213,32 @@ export function registerIpcHandlers() {
   ipcMain.handle("iregen:clearCorpDbNm", () => {
     clearIregenCorpDbNm();
     return { ok: true };
+  });
+
+  // ── 2026-10-03 저녁 · Phase 2 · ERP → Supabase Sync Orchestrator ──
+  //   · DRY-RUN 전용 · 실제 전체 WRITE 는 Phase 3 승인 후 활성화
+  //   · fetch → preview → apply (3-step) · Renderer 가 각 단계 명시 호출
+  ipcMain.handle("erpSync:status", () => {
+    const supa = getSupabaseStatus();
+    const sess = getSessionStatus();
+    return { supabase: supa, session: sess };
+  });
+
+  ipcMain.handle("erpSync:fetch", async () => {
+    return fetchErpSnapshot();
+  });
+
+  ipcMain.handle("erpSync:preview", async () => {
+    try {
+      const preview = await buildPreview();
+      return { ok: true, preview };
+    } catch (err: any) {
+      return { ok: false, error: err?.message ?? String(err) };
+    }
+  });
+
+  ipcMain.handle("erpSync:apply", async (_e, opts?: { mode?: "DRY_RUN" | "WRITE"; allowWrite?: boolean }) => {
+    return applySync(opts ?? {});
   });
 
   // ── 폴더 열기 (탐색기) ──

@@ -148,7 +148,8 @@ export function decideLocationApply(
   erpResult: LocationTransformResult,
   currentDbValue: string | null | undefined,
 ): "apply" | "keep" | "review" {
-  const dbHas = currentDbValue != null && String(currentDbValue).trim() !== "";
+  // 참고: dbHas 는 과거 체크용 · 현재 로직은 ERP 결과만으로 결정
+  void currentDbValue;
 
   // ERP 가 자동 변환 성공한 경우 → apply (DB has 여부와 무관하게 ERP authoritative)
   if (erpResult.derived != null) return "apply";

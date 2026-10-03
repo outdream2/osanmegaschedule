@@ -68,7 +68,14 @@ export async function syncProducts(
   const source = options.source ?? "SNAPSHOT";
   const batchSize = Math.max(50, Math.min(500, options.batchSize ?? 300));
 
-  logger.info(`[productSyncRunner] 시작 · mode=${mode} · allowWrite=${allowWrite} · source=${source} · batchSize=${batchSize}`);
+  const allowSet: Set<string> | null = options.onlyProductCodes && options.onlyProductCodes.length > 0
+    ? new Set(options.onlyProductCodes.map((s) => String(s).trim()).filter(Boolean))
+    : null;
+
+  logger.info(
+    `[productSyncRunner] 시작 · mode=${mode} · allowWrite=${allowWrite} · source=${source} · batchSize=${batchSize}` +
+    (allowSet ? ` · onlyProductCodes=${allowSet.size}` : ""),
+  );
 
   // ── 1. ERP 소스 로드 ──────────────────────────────────────────────────────
   if (source !== "SNAPSHOT") {
@@ -90,10 +97,17 @@ export async function syncProducts(
   const sanitizedErrors: string[] = [];
   const seenBarcode = new Set<string>();
 
+  // ERP 전수 duplicate 체크용 (allowlist 와 무관하게 conflict 집계)
+  const fullErpSeen = new Set<string>();
+
   for (const er of erpRows) {
     const bc = String(er.BarCode ?? "").trim();
     if (!bc) { erpMissingBarcode++; continue; }
-    if (seenBarcode.has(bc)) { conflict++; continue; }
+    if (fullErpSeen.has(bc)) { conflict++; continue; }
+    fullErpSeen.add(bc);
+
+    // allowlist 활성 시 · 해당 Barcode 가 아니면 분류/payload 생성 자체 건너뜀
+    if (allowSet && !allowSet.has(bc)) continue;
     seenBarcode.add(bc);
 
     const dbRow = dbByCode.get(bc) ?? null;
@@ -117,7 +131,8 @@ export async function syncProducts(
       sanitizedErrors.push(`${bc}: ${sanitizeError((e as Error).message)}`);
     }
   }
-  const dbOnly = dbRows.filter((p) => !seenBarcode.has(String(p.product_code).trim())).length;
+  // dbOnly 는 전체 ERP 기준으로 집계 (allowlist 와 무관하게 "DB 에만 있고 ERP 에 없는 상품" 의미 유지)
+  const dbOnly = dbRows.filter((p) => !fullErpSeen.has(String(p.product_code).trim())).length;
 
   // ── 4. WRITE (allowWrite 통과 시만) ────────────────────────────────────────
   const canWrite = mode === "WRITE" && allowWrite;
@@ -129,6 +144,22 @@ export async function syncProducts(
   } else {
     // ⚠ 실제 WRITE 경로 · double gate 통과한 경우만 실행
     logger.warn(`[productSyncRunner] ★ WRITE 모드 실행 · DB mutation 발생 · updates=${updatePayloads.length} inserts=${insertPayloads.length}`);
+
+    // allowlist pre-assert · 명시된 Barcode 밖 payload 가 섞이면 즉시 중단
+    if (allowSet) {
+      for (const u of updatePayloads) {
+        if (!allowSet.has(u.code)) {
+          throw new Error(`[productSyncRunner] ★ SAFETY · UPDATE outside allowlist · ${u.code}`);
+        }
+      }
+      for (const p of insertPayloads) {
+        const code = String(p.product_code ?? "").trim();
+        if (!allowSet.has(code)) {
+          throw new Error(`[productSyncRunner] ★ SAFETY · INSERT outside allowlist · ${code}`);
+        }
+      }
+      logger.warn(`[productSyncRunner] allowlist pre-assert PASS · ${updatePayloads.length + insertPayloads.length}건 전부 allowlist 내`);
+    }
 
     // 명시 안전 체크: 전부 Barcode(product_code) 필수
     for (const u of updatePayloads) {

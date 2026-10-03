@@ -25,6 +25,13 @@ export interface SyncRunnerOptions {
   readonly snapshotPath?: string;
   /** reporter · 중간 batch 결과 즉시 로깅 (optional) */
   readonly onBatchComplete?: (batchIdx: number, totalBatches: number, partial: BatchResult) => void;
+  /**
+   * Barcode (= products.product_code) allowlist · 테스트/점진적 롤아웃 안전장치.
+   * 명시된 경우 · 해당 Barcode 만 분류·payload 생성·WRITE 대상.
+   * 그 외 ERP row 는 분류 자체 건너뜀 (matched/newInsert 집계에서 제외).
+   * WRITE 직전 pre-assert · allowlist 밖 payload 는 throw.
+   */
+  readonly onlyProductCodes?: readonly string[];
 }
 
 /** 한 batch 처리 결과 */

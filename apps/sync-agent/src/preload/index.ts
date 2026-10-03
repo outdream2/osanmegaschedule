@@ -145,6 +145,29 @@ const api = {
     >,
   iregenClearCorpDbNm: () => ipcRenderer.invoke("iregen:clearCorpDbNm") as Promise<{ ok: boolean }>,
 
+  // ── 2026-10-03 저녁 · Phase 2 · ERP → Supabase Sync Orchestrator ──
+  erpSyncStatus: () => ipcRenderer.invoke("erpSync:status") as Promise<{
+    supabase: { present: boolean; urlSuffix: string | null };
+    session: { snapshotRows: number | null; fetchedAt: string | null; previewReady: boolean; blockingErrors: boolean | null };
+  }>,
+  erpSyncFetch: () => ipcRenderer.invoke("erpSync:fetch") as Promise<
+    | { ok: true; rows: number; fetchedAt: string }
+    | { ok: false; stage: string; error: string }
+  >,
+  erpSyncPreview: () => ipcRenderer.invoke("erpSync:preview") as Promise<
+    | { ok: true; preview: unknown }
+    | { ok: false; error: string }
+  >,
+  erpSyncApply: (opts?: { mode?: "DRY_RUN" | "WRITE"; allowWrite?: boolean }) =>
+    ipcRenderer.invoke("erpSync:apply", opts) as Promise<{
+      ok: boolean;
+      dryRun: boolean;
+      inserted: number;
+      updated: number;
+      failed: number;
+      message?: string;
+    }>,
+
   // 2026-10-03 · Product_List pagination 진행률 (매 페이지/배치 완료 broadcast)
   onErpProductProgress: (
     callback: (p: { page: number; rowsAccum: number; done?: boolean; totalPages?: number; totalRowsExpected?: number }) => void,
