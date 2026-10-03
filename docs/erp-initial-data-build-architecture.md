@@ -169,6 +169,7 @@ export const ERP_OWNED_PRODUCT_FIELDS = Object.freeze({
   manufacturer:        { erp: "Maker",            nullOverwrite: false },
   last_purchase_date:  { erp: "LastBuyDate",      nullOverwrite: false },
   last_sale_date:      { erp: "LastSaleDate",     nullOverwrite: false },
+  current_stock:       { erp: "NowStock",         nullOverwrite: true  }, // ★ 확정 2026-10-03
   // category 는 LcateName/McateName/ScateName/DcateName 중 하나 (설계 섹션 5 참조)
 });
 
@@ -396,9 +397,29 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_purchase_details_bm_row
 
 ---
 
-## 7. Inventory Plan (★ 결정적 발견)
+## 7. Inventory Plan (★ 사용자 확정 2026-10-03 저녁)
 
-### 7-1. NowStock vs Inventory 공식 비교
+### 7-0. 사용자 확정 정책
+
+```
+products.current_stock  ←  Product_List.NowStock
+Ownership:              ERP_OWNED
+Meaning:                ERP 전산 실시간 현재고
+                        Normal Sync 시 ERP 매번 overwrite 가능
+
+inventory_checks.store*_stock:
+                        PROTECTED
+                        사용자 실사재고
+                        ERP current_stock 과 완전 별개 개념 · ERP sync 가 건드리지 않음
+
+Inventory_Status 42-field 공식:
+                        products.current_stock 계산에 사용하지 않음
+                        기간별 매입/판매/재고이력 분석 용도로만 사용 (stock_history 신규 쌓기)
+```
+
+**확정 근거**: 사용자 ERP 화면 샘플 검증 (5 상품) · 특히 PCode 10805 (당일 매입 +10 → NowStock = PrvStock + 10 = 23) 로 real-time 가설 결정적 증거 확보.
+
+### 7-1. NowStock vs Inventory 공식 비교 (참고 자료 · 과거 분석)
 
 ```
 Comparable (PCode intersection): 4,006
@@ -420,23 +441,18 @@ Different samples 공통 패턴:
 - Inventory snapshot 은 10/3 08:00 생성 · 조회 기간 설정 과거
 - NowStock 는 **조회 시점의 실시간 재고** (조회 기간 이후 매출 반영)
 
-### 7-3. 추천: 복잡한 공식 걷어내기
+### 7-3. 복잡한 공식 걷어내기 (사용자 확정)
 
 ```
-current_stock SSOT = Product_List.NowStock
+current_stock SSOT = Product_List.NowStock  ★ 확정
 ```
 
-**장점**:
-- 단일 field · 공식 계산 불필요
-- 조회 시점 실시간 재고
-- Inventory_Status 42-col 공식 걷어낼 수 있음
-- Normal Sync 로직 극도로 단순화
+Normal Sync 설계:
+- `products.current_stock = row.NowStock` 단일 field 매핑
+- Inventory_Status 공식 계산 로직 작성 금지
+- Inventory_Status 는 **stock_history 신규 쌓기** 용도로 분리 (Phase 3)
 
-**단점**:
-- 조회 시점 재고라 "일 마감 재고" 와 다를 수 있음
-- 사용자 ERP 화면 샘플 검증 필요
-
-### 7-4. USER CONFIRM: 5개 상품 샘플
+### 7-4. 검증 결과 (사용자 확인 완료)
 
 ERP 화면 "상품재고현황" 에서 다음 5 PCode 의 현재고를 확인:
 
@@ -449,7 +465,7 @@ PCode    ProductName                           NowStock(ERP SOAP)   PrvStock
 
 (최종 선정은 데이터셋에서 재고 0 · 일반 · 최근매입 · 최근판매 · 조정이 있는 상품 5개 분산 선정 예정)
 
-사용자 ERP 화면값 == Product_List.NowStock 이면 "공식 걷어내기" 확정.
+사용자 ERP 화면 검증 완료 (2026-10-03 저녁) · **"공식 걷어내기" 확정**.
 
 ### 7-5. inventory_checks 는 완전 분리
 

@@ -282,7 +282,7 @@ Supabase Only: 7,078  ← ERP 에 매칭되는 상품 없음
 [ 20] IsProductType      String   · 상품유형 여부
 [ 21] IsBottle           String   · 공병 여부
 [ 22] BottlePrice        Int16    · 공병 가격
-[ 23] NowStock           Int64    · ERP 현재고 (UNCERTAIN · 공식 검증 전)
+[ 23] NowStock           Int64    · ERP 전산 실시간 현재고 → products.current_stock · ERP_OWNED ★ 확정 2026-10-03
 [ 24] CostPrice          Decimal  · 매입단가                                       → ERP_OWNED (97%+ 입력)
 [ 25] CtCode             String   · 공급사 코드                                    → ERP_OWNED
 [ 26] CorpNameView       String   · 공급사명                                       → ERP_OWNED

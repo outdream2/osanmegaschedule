@@ -327,7 +327,7 @@ N매대 + 뒤/앞 → "6뒤"·"5앞" (isValidZoneCode 통과 못함 · neither-c
 - 189건 PriceA different 처리 정책 (USER DECISION)
 - `products.purchase_price` Ownership 확정 (ERP_OWNED vs PROTECTED)
 - `products.sale_price` Ownership 확정 (ERP_OWNED vs PROTECTED)
-- `current_stock` 공식 ERP 화면 검증 (USER가 5 상품 샘플 확인 필요)
+- ~~`current_stock` 공식 ERP 화면 검증~~ ✅ **해소 2026-10-03 저녁** · `products.current_stock ← Product_List.NowStock` · ERP_OWNED · Inventory 42-col 공식은 current_stock 계산에 사용 X · 기간 매입/판매/재고이력 분석 용도만 · `inventory_checks.store*_stock` PROTECTED · 완전 별개
 
 ## 📎 2026-10-03 저녁 분석 자료
 - `scripts/fetch-product-list-2026-10-03.mjs` · Product_List 1회 조회 (concurrency=1 · 4007 rows · 102 cols)
