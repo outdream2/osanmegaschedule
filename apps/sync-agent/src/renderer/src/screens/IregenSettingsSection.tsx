@@ -107,16 +107,33 @@ export const IregenSettingsSection: React.FC = () => {
         ERP 실시간 조회 · 설정 후 대시보드 「ERP 재고 조회」 에서 사용 · Supabase 미반영
       </p>
 
-      {/* ERP 연동 사용 토글 */}
+      {/* 2026-10-03 · 사용자 지시 · 체크 즉시 저장 (앱 재시작 불필요) */}
       <label className="flex items-center justify-between p-3 rounded-lg border border-zinc-200 bg-zinc-50 mb-4 cursor-pointer">
         <div>
           <div className="text-[14px] font-semibold text-zinc-800">ERP 연동 사용</div>
-          <div className="text-[12px] text-zinc-500">OFF 이면 조회 호출 자체를 차단합니다 (설정값은 유지)</div>
+          <div className="text-[12px] text-zinc-500">OFF 이면 조회 호출 자체를 차단합니다 (설정값은 유지) · 변경 즉시 반영</div>
         </div>
         <input
           type="checkbox"
           checked={enabled}
-          onChange={(e) => setEnabled(e.target.checked)}
+          onChange={async (e) => {
+            const next = e.target.checked;
+            setEnabled(next);
+            if (!window.api?.iregenSaveSettings) return;
+            setSaving(true);
+            try {
+              const r = await window.api.iregenSaveSettings({ enabled: next });
+              if (r.ok) {
+                setSavedMsg(next ? "✓ ERP 연동 ON" : "✓ ERP 연동 OFF");
+                setTimeout(() => setSavedMsg(null), 1800);
+              } else {
+                setSavedMsg("저장 실패 · " + r.error);
+                setEnabled(!next); // 롤백
+              }
+            } finally {
+              setSaving(false);
+            }
+          }}
           className="w-5 h-5 accent-brand-deep cursor-pointer"
           disabled={saving}
         />
