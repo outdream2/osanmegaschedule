@@ -28,16 +28,36 @@ export const IregenSettingsSection: React.FC = () => {
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [test, setTest] = useState<TestState>({ kind: "idle" });
 
+  // 2026-10-03 · 사용자 지시 7 · state 복원 crash 방지
+  //   · window.api 미주입 (preload 지연) · IPC reject · invalid shape 모두 방어
+  //   · 실패해도 render 자체는 성공 · '설정 로드 실패' 안내 UI 로 fallback
+  const [loadErr, setLoadErr] = useState<string | null>(null);
   const load = async () => {
-    if (!window.api?.iregenGetSettings) return;
-    const s = await window.api.iregenGetSettings();
-    setEnabled(s.enabled);
-    setEndpoint(s.endpoint || DEFAULT_ENDPOINT);
-    setSoapAction(s.soapAction || DEFAULT_SOAP_ACTION);
-    setCorpDbNmSet(s.corpDbNmSet);
-    setSource(s.source);
-    setEnvSourceLabel(s.envSourceLabel);
-    setLoaded(true);
+    try {
+      if (!window.api?.iregenGetSettings) {
+        setLoadErr("preload 미주입 · 앱 재시작 필요");
+        setLoaded(true);
+        return;
+      }
+      const s = await window.api.iregenGetSettings();
+      if (!s || typeof s !== "object") {
+        setLoadErr("설정 응답 형식 오류");
+        setLoaded(true);
+        return;
+      }
+      setEnabled(!!s.enabled);
+      setEndpoint(s.endpoint || DEFAULT_ENDPOINT);
+      setSoapAction(s.soapAction || DEFAULT_SOAP_ACTION);
+      setCorpDbNmSet(!!s.corpDbNmSet);
+      setSource(s.source ?? "none");
+      setEnvSourceLabel(s.envSourceLabel ?? null);
+      setLoadErr(null);
+      setLoaded(true);
+    } catch (err: any) {
+      console.error("[IregenSettings] 설정 로드 실패:", err);
+      setLoadErr(err?.message ?? String(err));
+      setLoaded(true);
+    }
   };
   useEffect(() => { load(); }, []);
 
@@ -96,6 +116,23 @@ export const IregenSettingsSection: React.FC = () => {
     return (
       <section className="bg-white rounded-xl border border-zinc-200 p-6">
         <div className="text-zinc-500 text-[14px]">Iregen 설정 로딩 중...</div>
+      </section>
+    );
+  }
+  if (loadErr) {
+    return (
+      <section className="bg-white rounded-xl border border-amber-200 p-6">
+        <h2 className="text-[17px] font-bold mb-2">🔗 Iregen ERP 연동</h2>
+        <div className="text-[13px] text-amber-900 bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="font-bold">⚠ 설정을 불러올 수 없습니다</div>
+          <div className="text-[12px] mt-1">{loadErr}</div>
+          <button
+            onClick={() => { setLoaded(false); setLoadErr(null); load(); }}
+            className="mt-2 px-3 py-1 bg-amber-600 text-white rounded text-[12px] font-semibold hover:bg-amber-700"
+          >
+            다시 시도
+          </button>
+        </div>
       </section>
     );
   }

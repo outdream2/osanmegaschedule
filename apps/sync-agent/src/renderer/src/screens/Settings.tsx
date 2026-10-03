@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import type { RendererConfig, FileKind } from "../types";
 import { IregenSettingsSection } from "./IregenSettingsSection";
+import { SectionBoundary } from "../components/SectionBoundary";
 
 const FILE_LABELS: Record<FileKind, string> = {
   products: "상품정보",
@@ -136,8 +137,11 @@ export const Settings: React.FC = () => {
         </p>
       </section>
 
-      {/* 2026-10-03 · Iregen ERP 연동 설정 (CorpDB_nm · safeStorage · 평문 저장 X) */}
-      <IregenSettingsSection />
+      {/* 2026-10-03 · Iregen ERP 연동 설정 (CorpDB_nm · safeStorage · 평문 저장 X)
+          · SectionBoundary 로 격리 · 이 섹션 crash 가 Settings 전체를 죽이지 않음 */}
+      <SectionBoundary name="Iregen ERP 연동">
+        <IregenSettingsSection />
+      </SectionBoundary>
 
       {/* 파일별 · 폴더 + 스케줄 */}
       {(["products", "stock", "purchase"] as FileKind[]).map((kind) => (

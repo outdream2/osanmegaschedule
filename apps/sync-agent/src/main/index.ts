@@ -174,14 +174,34 @@ function createMainWindow() {
 
   // 2026-09-18 · 사용자 보고 · 배포 · 하얀 화면 · loadFile 경로 상세 로그
   // 2026-10-03 · White Screen 진단 · dev/packaged 분기 명시 로그 + loadURL promise reject 캡쳐
+  // 2026-10-03 · WHITE SCREEN 영구 방어 · Vite dev server 늦게 뜨는 경우 자동 재시도 (max 15회 · 500ms)
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
     const url = process.env["ELECTRON_RENDERER_URL"];
     console.log("[main] >>> dev 분기 · loadURL:", url);
-    mainWindow.loadURL(url).then(() => {
-      console.log("[main] loadURL resolved · 현재 URL:", mainWindow?.webContents.getURL());
-    }).catch((err) => {
-      console.error("[main] loadURL rejected ·", err?.code, err?.message, "· URL:", url);
-    });
+    const tryLoad = async (attempt: number): Promise<void> => {
+      try {
+        await mainWindow!.loadURL(url);
+        console.log("[main] loadURL resolved · attempt", attempt, "· 현재 URL:", mainWindow?.webContents.getURL());
+      } catch (err: any) {
+        const code = err?.code || "";
+        const retriable = code === "ERR_CONNECTION_REFUSED" || code === "ERR_FAILED" || code === "ERR_EMPTY_RESPONSE";
+        console.warn("[main] loadURL attempt", attempt, "rejected ·", code, err?.message);
+        if (retriable && attempt < 15 && !mainWindow?.isDestroyed()) {
+          setTimeout(() => void tryLoad(attempt + 1), 500);
+        } else {
+          console.error("[main] loadURL · 재시도 포기 · attempt", attempt);
+          mainWindow?.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`
+            <html><body style="font-family:sans-serif;padding:40px;color:#475569;background:#F4F7FA">
+              <h2 style="color:#dc2626;margin:0 0 12px">⚠ 개발 서버 연결 실패</h2>
+              <p>Vite dev server (${url}) 가 응답하지 않습니다.</p>
+              <p style="margin:8px 0">코드 변경 없이 npm run dev 를 재시작하거나 · dev server 가 뜨길 기다렸다가 새로고침해 주세요.</p>
+              <button onclick="location.reload()" style="padding:8px 16px;background:#0A2E4A;color:#fff;border:0;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">새로고침</button>
+            </body></html>
+          `)}`);
+        }
+      }
+    };
+    void tryLoad(1);
   } else {
     const htmlPath = join(__dirname, "../renderer/index.html");
     console.log("[main] >>> production 분기 · loadFile:", htmlPath, "· __dirname:", __dirname, "· is.dev:", is.dev, "· ELECTRON_RENDERER_URL set:", !!process.env["ELECTRON_RENDERER_URL"]);
