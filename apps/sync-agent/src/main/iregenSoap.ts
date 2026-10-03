@@ -505,6 +505,11 @@ async function decodeResponseToResult(
     }
     const t = parsed.tables[primaryIndex];
     console.log(`[iregen] 주 데이터 테이블 선택: Table[${primaryIndex}] "${t.name}" · ${t.rowCount} rows (전체 ${parsed.tables.length}개 중)`);
+    // 2026-10-03 · PHASE 1 완료 · 매핑 분석용 · 전체 column 이름 리스트 (처음 1 회만)
+    if (t.rowCount > 0) {
+      console.log(`[iregen] Primary table 전체 ${t.columns.length} columns:`);
+      t.columns.forEach((c, i) => console.log(`  [${i.toString().padStart(3, " ")}] ${c.name} · ${c.type}`));
+    }
     const totalMs = Date.now() - t0;
     console.log("[iregen] 전체 완료 ·", totalMs, "ms · rows:", t.rowCount, "· columns:", t.columns.length);
     return {
