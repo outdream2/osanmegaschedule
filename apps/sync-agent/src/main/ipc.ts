@@ -157,7 +157,7 @@ export function registerIpcHandlers() {
 
   // 2026-10-03 · PHASE 1 · Product_List (사업장 상품관리)
   //   · PageIdx/PageSize 서버 pagination · 전체 상품 loop
-  ipcMain.handle("erp:productList", async (_e, opts?: { pageSize?: number; maxPages?: number }) => {
+  ipcMain.handle("erp:productList", async (_e, opts?: { pageSize?: number; maxPages?: number; concurrency?: number }) => {
     return queryProductList(opts);
   });
 

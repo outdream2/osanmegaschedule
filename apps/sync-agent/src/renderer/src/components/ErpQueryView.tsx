@@ -18,9 +18,15 @@ export interface ProductListVerification {
   erpExpectedRows: number;
   countMatch: boolean;
   verified: boolean;
-  firstPageTables: Array<{ index: number; name: string; rowCount: number; columnCount: number; firstColumns: string[] }>;
+  firstPageTables: Array<{ index: number; name: string; rowCount: number; columnCount: number; firstColumns: string[]; firstRow?: Record<string, unknown> }>;
   primaryTableName: string;
   rootCauseNote?: string;
+  concurrency: number;
+  failedPages: number[];
+  totalRetries: number;
+  elapsedMs: number;
+  metadataColumn1?: unknown;
+  totalPagesSource: "metadata" | "sequential-detection";
 }
 
 export type ErpQueryResult =
@@ -243,9 +249,13 @@ export const ErpQueryView: React.FC<Props> = ({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-[12px]">
             <div><span className="text-zinc-500">조회상품</span> · <b>{result.verification.totalRows.toLocaleString()}</b>건</div>
             <div><span className="text-zinc-500">ERP 상품수</span> · <b>{result.verification.erpExpectedRows.toLocaleString()}</b>건</div>
-            <div><span className="text-zinc-500">조회페이지</span> · <b>{result.verification.pagesLoaded}</b></div>
+            <div><span className="text-zinc-500">조회페이지</span> · <b>{result.verification.pagesLoaded}</b> / {result.verification.lastPage}</div>
             <div><span className="text-zinc-500">마지막 페이지</span> · <b>{result.verification.lastPageRows}</b> rows</div>
             <div><span className="text-zinc-500">첫 페이지</span> · <b>{result.verification.firstPageRows}</b> rows</div>
+            <div><span className="text-zinc-500">Concurrency</span> · <b>{result.verification.concurrency}</b></div>
+            <div><span className="text-zinc-500">Retries</span> · <b className={result.verification.totalRetries ? "text-amber-700" : ""}>{result.verification.totalRetries}</b></div>
+            <div><span className="text-zinc-500">Elapsed</span> · <b>{(result.verification.elapsedMs / 1000).toFixed(1)} sec</b></div>
+            <div><span className="text-zinc-500">실패 페이지</span> · <b className={result.verification.failedPages.length ? "text-rose-700" : ""}>{result.verification.failedPages.length}</b></div>
             <div><span className="text-zinc-500">중복 코드</span> · <b className={result.verification.duplicateCodes ? "text-rose-700" : ""}>{result.verification.duplicateCodes}</b></div>
             <div><span className="text-zinc-500">빈 상품코드</span> · <b className={result.verification.emptyCodes ? "text-rose-700" : ""}>{result.verification.emptyCodes}</b></div>
             <div>
@@ -254,6 +264,17 @@ export const ErpQueryView: React.FC<Props> = ({
                 {result.verification.countMatch ? "YES" : "NO"}
               </b>
             </div>
+          </div>
+          {result.verification.failedPages.length > 0 && (
+            <div className="mt-2 text-[12px] text-rose-800 bg-rose-50 border border-rose-200 rounded p-2">
+              <b>실패 페이지:</b> [{result.verification.failedPages.join(", ")}]
+            </div>
+          )}
+          <div className="mt-1 text-[11px] text-zinc-500">
+            totalPages Source · {result.verification.totalPagesSource}
+            {result.verification.metadataColumn1 != null && (
+              <> · metadata Column1 = <code className="bg-zinc-100 px-1 rounded">{String(result.verification.metadataColumn1)}</code></>
+            )}
           </div>
           <details className="mt-2 text-[12px]">
             <summary className="cursor-pointer text-zinc-600">DataSet 테이블 구조 ({result.verification.firstPageTables.length}개)</summary>

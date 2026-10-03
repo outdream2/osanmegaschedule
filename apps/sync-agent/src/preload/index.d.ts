@@ -42,9 +42,15 @@ interface ProductListVerification {
   erpExpectedRows: number;
   countMatch: boolean;
   verified: boolean;
-  firstPageTables: Array<{ index: number; name: string; rowCount: number; columnCount: number; firstColumns: string[] }>;
+  firstPageTables: Array<{ index: number; name: string; rowCount: number; columnCount: number; firstColumns: string[]; firstRow?: Record<string, unknown> }>;
   primaryTableName: string;
   rootCauseNote?: string;
+  concurrency: number;
+  failedPages: number[];
+  totalRetries: number;
+  elapsedMs: number;
+  metadataColumn1?: unknown;
+  totalPagesSource: "metadata" | "sequential-detection";
 }
 
 type ErpQueryResult =
@@ -86,9 +92,11 @@ interface SyncAgentApi {
   openFolder(kind: FileKind, subdir?: "processed" | "failed"): Promise<{ ok: boolean; error?: string }>;
   erpInventoryQuery(opts?: { startDate?: string; endDate?: string }): Promise<ErpQueryResult>;
   erpInventoryQueryRaw(): Promise<ErpQueryResult>;
-  erpProductList(opts?: { pageSize?: number; maxPages?: number }): Promise<ErpQueryResult>;
+  erpProductList(opts?: { pageSize?: number; maxPages?: number; concurrency?: number }): Promise<ErpQueryResult>;
   erpBuyStatus(opts?: { startDate?: string; endDate?: string }): Promise<ErpQueryResult>;
-  onErpProductProgress(callback: (p: { page: number; rowsAccum: number; done?: boolean }) => void): () => void;
+  onErpProductProgress(
+    callback: (p: { page: number; rowsAccum: number; done?: boolean; totalPages?: number; totalRowsExpected?: number }) => void,
+  ): () => void;
   iregenGetSettings(): Promise<{
     enabled: boolean;
     endpoint: string;

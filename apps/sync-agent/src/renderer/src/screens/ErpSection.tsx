@@ -3,7 +3,7 @@
 //   · [사업장 상품관리] [상품 재고 현황] [매입 현황]
 //   · 각 탭 독립 state · SectionBoundary 로 격리됨 (Dashboard 쪽에서)
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ErpQueryView, type ColumnSpec, type ErpQueryResult } from "../components/ErpQueryView";
 
 type TabKey = "products" | "inventory" | "buy";
@@ -60,6 +60,26 @@ export const ErpSection: React.FC = () => {
   const [invEnd, setInvEnd] = useState(todayISO);
   // 상품관리는 ERP Fiddler 가 StartDate/EndDate 빈값 · 기간 필터 사용 X · UI 미노출
 
+  // 2026-10-03 · Product_List pagination 진행률 수신 (사용자 혼란 방지)
+  //   · metadata totalPages 알면 % 표시 · 모르면 pages 만
+  const [productProgress, setProductProgress] = useState<{
+    page: number;
+    rowsAccum: number;
+    done?: boolean;
+    totalPages?: number;
+    totalRowsExpected?: number;
+  } | null>(null);
+  useEffect(() => {
+    if (!window.api.onErpProductProgress) return;
+    const unsub = window.api.onErpProductProgress((p) => {
+      setProductProgress(p);
+      if (p.done) setTimeout(() => setProductProgress(null), 2000);
+    });
+    return unsub;
+  }, []);
+  // 2026-10-03 · concurrency 설정 · default 5 · 1 선택 시 순차 조회 (fallback)
+  const [productConcurrency, setProductConcurrency] = useState<1 | 3 | 5>(5);
+
   return (
     <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
       <div className="px-5 py-3 border-b border-zinc-200">
@@ -93,14 +113,43 @@ export const ErpSection: React.FC = () => {
         {tab === "products" && (
           <ErpQueryView
             name="products"
-            queryLabel="상품 전체 조회"
-            queryFn={() => window.api.erpProductList({ pageSize: 50 })}
+            queryLabel={`상품 전체 조회 (동시 ${productConcurrency})`}
+            queryFn={() => window.api.erpProductList({ pageSize: 50, concurrency: productConcurrency })}
             displayCols={PRODUCT_COLS}
             searchFields={["PCode", "ProductName", "CCorpName"]}
             searchPlaceholder="상품코드 · 상품명 · 공급사 검색 (전체 대상)"
             conditionsSlot={
-              <div className="text-[12px] text-zinc-500">
-                총 ~4,000 상품 · 50건/페이지 × 81 pages · <b className="text-amber-600">약 1 분 소요</b> · 완료 후 pagination 으로 표시
+              <div className="flex flex-col gap-1 text-[12px] text-zinc-600">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <label className="font-semibold">동시 조회:</label>
+                  {([5, 3, 1] as const).map((n) => (
+                    <label key={n} className="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="productConcurrency"
+                        checked={productConcurrency === n}
+                        onChange={() => setProductConcurrency(n)}
+                        className="w-3.5 h-3.5 accent-brand-deep cursor-pointer"
+                      />
+                      <span className={productConcurrency === n ? "font-bold text-brand-deep" : ""}>
+                        {n}{n === 1 ? " (순차 fallback)" : ""}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {productProgress && !productProgress.done && (
+                  <ProductProgressBar progress={productProgress} />
+                )}
+                {productProgress?.done && (
+                  <div className="text-emerald-600 font-semibold">
+                    ✓ 완료 · 총 {productProgress.rowsAccum.toLocaleString()}건
+                  </div>
+                )}
+                {!productProgress && (
+                  <div className="text-zinc-500">
+                    ~4,000 상품 · 50건/페이지 · metadata 추출 성공 시 병렬 5 사용
+                  </div>
+                )}
               </div>
             }
           />
@@ -174,11 +223,44 @@ declare global {
     api: {
       erpInventoryQuery: (opts?: { startDate?: string; endDate?: string }) => Promise<ErpQueryResult>;
       erpInventoryQueryRaw: () => Promise<ErpQueryResult>;
-      erpProductList: (opts?: { pageSize?: number; maxPages?: number }) => Promise<ErpQueryResult>;
+      erpProductList: (opts?: { pageSize?: number; maxPages?: number; concurrency?: number }) => Promise<ErpQueryResult>;
       erpBuyStatus: (opts?: { startDate?: string; endDate?: string }) => Promise<ErpQueryResult>;
+      onErpProductProgress?: (cb: (p: { page: number; rowsAccum: number; done?: boolean }) => void) => () => void;
       [key: string]: any;
     };
   }
 }
+
+// 2026-10-03 · Product_List 진행률 바 (사용자 지시)
+const ProductProgressBar: React.FC<{ progress: { page: number; rowsAccum: number; totalPages?: number; totalRowsExpected?: number } }> = ({ progress }) => {
+  const pct =
+    progress.totalPages && progress.totalPages > 0
+      ? Math.min(100, Math.round((progress.page / progress.totalPages) * 100))
+      : progress.totalRowsExpected && progress.totalRowsExpected > 0
+        ? Math.min(100, Math.round((progress.rowsAccum / progress.totalRowsExpected) * 100))
+        : null;
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-between text-[12px] text-brand-deep font-semibold mb-1">
+        <span>
+          {progress.totalRowsExpected
+            ? `${progress.rowsAccum.toLocaleString()} / ${progress.totalRowsExpected.toLocaleString()}건`
+            : `${progress.rowsAccum.toLocaleString()}건 조회`}
+          {" · "}
+          {progress.totalPages
+            ? `${progress.page} / ${progress.totalPages} pages`
+            : `${progress.page} pages 완료`}
+        </span>
+        {pct !== null && <span>{pct}%</span>}
+      </div>
+      <div className="w-full bg-zinc-200 rounded h-2 overflow-hidden">
+        <div
+          className="bg-brand-deep h-full transition-all duration-300"
+          style={{ width: pct !== null ? `${pct}%` : "15%" }}
+        />
+      </div>
+    </div>
+  );
+};
 
 export default ErpSection;

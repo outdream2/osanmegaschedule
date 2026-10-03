@@ -101,7 +101,7 @@ const api = {
       | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
     >,
   // 2026-10-03 · PHASE 1 · Product_List (사업장 상품관리 · pagination)
-  erpProductList: (opts?: { pageSize?: number; maxPages?: number }) =>
+  erpProductList: (opts?: { pageSize?: number; maxPages?: number; concurrency?: number }) =>
     ipcRenderer.invoke("erp:productList", opts) as Promise<
       | {
           ok: true;
@@ -144,6 +144,15 @@ const api = {
       { ok: true; corpDbNmSet: boolean } | { ok: false; error: string }
     >,
   iregenClearCorpDbNm: () => ipcRenderer.invoke("iregen:clearCorpDbNm") as Promise<{ ok: boolean }>,
+
+  // 2026-10-03 · Product_List pagination 진행률 (매 페이지/배치 완료 broadcast)
+  onErpProductProgress: (
+    callback: (p: { page: number; rowsAccum: number; done?: boolean; totalPages?: number; totalRowsExpected?: number }) => void,
+  ): (() => void) => {
+    const listener = (_: unknown, p: any) => callback(p);
+    ipcRenderer.on("erp:product-progress", listener);
+    return () => { ipcRenderer.removeListener("erp:product-progress", listener); };
+  },
 
   // ── 이벤트 리스너 · main → renderer ────────────
   onNavigate: (callback: (page: string) => void): (() => void) => {

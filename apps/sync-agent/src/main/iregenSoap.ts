@@ -11,8 +11,14 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { BrowserWindow } from "electron";
 
-// 2026-10-03 · 사용자 혼란 방지 · Product_List pagination 진행률 UI 전송
-function broadcastProductProgress(payload: { page: number; rowsAccum: number; done?: boolean }) {
+// 2026-10-03 · Product_List pagination 진행률 UI 전송 (concurrency 지원)
+function broadcastProductProgress(payload: {
+  page: number;
+  rowsAccum: number;
+  done?: boolean;
+  totalPages?: number;
+  totalRowsExpected?: number;
+}) {
   for (const w of BrowserWindow.getAllWindows()) {
     try {
       w.webContents.send("erp:product-progress", payload);
@@ -126,6 +132,7 @@ export interface AllTableInfo {
   rowCount: number;
   columnCount: number;
   firstColumns: string[];
+  firstRow?: Record<string, unknown>; // 2026-10-03 · metadata 추출용 (rowCount <= 2 때만 담음)
 }
 
 export interface ProductListVerification {
@@ -142,6 +149,13 @@ export interface ProductListVerification {
   firstPageTables: AllTableInfo[]; // 첫 페이지 DataSet 전체 테이블 구조
   primaryTableName: string;
   rootCauseNote?: string; // 발견된 특이사항 (metadata table 등)
+  // 2026-10-03 · 성능/안정성 지표 (사용자 지시)
+  concurrency: number;
+  failedPages: number[];
+  totalRetries: number;
+  elapsedMs: number;
+  metadataColumn1?: number | string | null; // metadata table Column1 raw 값
+  totalPagesSource: "metadata" | "sequential-detection"; // totalPages 계산 근거
 }
 
 export type ErpInventoryOk = {
@@ -476,6 +490,8 @@ async function decodeResponseToResult(
       rowCount: tbl.rowCount,
       columnCount: tbl.columns.length,
       firstColumns: tbl.columns.slice(0, 8).map((c) => c.name),
+      // metadata table (작은 rowCount) 의 첫 row 값 담음 · total count 추출용
+      firstRow: tbl.rowCount > 0 && tbl.rowCount <= 2 ? tbl.rows[0] : undefined,
     }));
     console.log(`[iregen] DataSet "${parsed.datasetName}" · ${parsed.tables.length} tables:`);
     allTables.forEach((info) => {
@@ -723,127 +739,254 @@ function buildProductListEnvelope(ctx: ProductListContext): string {
 //   · 마지막 페이지: rows < pageSize 또는 rows=0
 //   · MAX_PAGES safety guard = 400 (= 20,000 상품)
 //   · 모든 페이지 rows 를 하나의 result 로 합침
-export async function queryProductList(opts?: { pageSize?: number; maxPages?: number }): Promise<ErpInventoryResult> {
+// 2026-10-03 · metadata table 에서 totalCount 추출 시도
+function tryExtractTotalFromMetadata(tables: AllTableInfo[], primaryIndex: number): { value: number | null; raw: unknown } {
+  const metaCandidates = ["Column1", "ProductCnt", "TotalCount", "TotalCnt", "TotalRows", "Total", "RowCount", "Count"];
+  for (let i = 0; i < tables.length; i++) {
+    if (i === primaryIndex) continue;
+    const row = tables[i].firstRow;
+    if (!row) continue;
+    for (const key of metaCandidates) {
+      if (!(key in row)) continue;
+      const v = row[key];
+      if (v == null) continue;
+      const n = typeof v === "number" ? v : Number(String(v).replace(/[^\d-]/g, ""));
+      if (!Number.isNaN(n) && n > 0 && n < 10_000_000) return { value: n, raw: v };
+    }
+  }
+  return { value: null, raw: null };
+}
+
+type PageOutcome =
+  | { ok: true; pageIdx: number; rowCount: number; columns: string[]; rows: Record<string, unknown>[]; allTables: AllTableInfo[]; primaryIndex: number; soapMs: number; decoderMs: number; attempts: number }
+  | { ok: false; pageIdx: number; stage: ErpInventoryStage; error: string; attempts: number };
+
+// 2026-10-03 · 단일 페이지 조회 + retry (사용자 지시 1s/2s/포기)
+async function fetchProductPageWithRetry(
+  pageIdx: number,
+  pageSize: number,
+  ctx: ProductListContext,
+  endpoint: string,
+  soapAction: string,
+  maxAttempts: number = 3,
+): Promise<PageOutcome> {
+  let lastStage: ErpInventoryStage = "network";
+  let lastError = "";
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const envelope = buildProductListEnvelope({ ...ctx, pageIdx, pageSize });
+    const soapT0 = Date.now();
+    const soapRes = await callSoap(endpoint, soapAction, envelope);
+    const soapMs = Date.now() - soapT0;
+    if (!soapRes.ok) {
+      const retriable = soapRes.stage === "network" || (soapRes.stage === "http" && /HTTP (429|500|502|503)/.test(soapRes.error));
+      lastStage = soapRes.stage;
+      lastError = soapRes.error;
+      if (!retriable || attempt === maxAttempts) {
+        return { ok: false, pageIdx, stage: soapRes.stage, error: soapRes.error, attempts: attempt };
+      }
+      const delay = attempt * 1000;
+      console.warn(`[iregen:product] page ${pageIdx} attempt ${attempt} 실패 (${soapRes.stage}) · ${delay}ms 후 재시도`);
+      await new Promise((r) => setTimeout(r, delay));
+      continue;
+    }
+    const decT0 = Date.now();
+    const decoded = await decodeResponseToResult(soapRes.xml, decT0, 0);
+    const decoderMs = Date.now() - decT0;
+    if (!decoded.ok) {
+      lastStage = decoded.stage;
+      lastError = decoded.error;
+      if (attempt === maxAttempts) {
+        return { ok: false, pageIdx, stage: decoded.stage, error: decoded.error, attempts: attempt };
+      }
+      const delay = attempt * 1000;
+      console.warn(`[iregen:product] page ${pageIdx} attempt ${attempt} decode 실패 · ${delay}ms 후 재시도`);
+      await new Promise((r) => setTimeout(r, delay));
+      continue;
+    }
+    return {
+      ok: true,
+      pageIdx,
+      rowCount: decoded.rowCount,
+      columns: decoded.columns,
+      rows: decoded.rows,
+      allTables: decoded.allTables,
+      primaryIndex: decoded.primaryIndex,
+      soapMs,
+      decoderMs,
+      attempts: attempt,
+    };
+  }
+  return { ok: false, pageIdx, stage: lastStage, error: lastError, attempts: maxAttempts };
+}
+
+export async function queryProductList(opts?: { pageSize?: number; concurrency?: number; maxPages?: number }): Promise<ErpInventoryResult> {
   const t0 = Date.now();
   const pageSize = opts?.pageSize ?? 50;
-  // 2026-10-03 · 사용자 지시 · '상품재고현황처럼' · 전체 상품 자동 조회
-  //   · 총 4,000 개 · 50/page × 81 pages 예상
-  //   · MAX_PAGES=400 safety guard (= 20,000 상품)
-  const maxPages = opts?.maxPages ?? 400;
+  const concurrency = Math.max(1, Math.min(10, opts?.concurrency ?? 5));
+  const hardMaxPages = opts?.maxPages ?? 400; // safety guard
 
   const cfg = loadConfig();
-  if (!cfg.iregen?.enabled) {
-    return { ok: false, stage: "config", error: DISABLED_FRIENDLY_ERROR };
-  }
+  if (!cfg.iregen?.enabled) return { ok: false, stage: "config", error: DISABLED_FRIENDLY_ERROR };
   const corpDbNm = envCorpDbNm() ?? getIregenCorpDbNm() ?? null;
-  if (!corpDbNm || !corpDbNm.trim()) {
-    return { ok: false, stage: "config", error: CONFIG_FRIENDLY_ERROR };
-  }
-  const corpCode = envCorpCode() ?? "30009";
-  const userId = envUserId() ?? "111";
-  const userName = envUserName() ?? "강서은";
-  const stCode = envStCode() ?? "000";
+  if (!corpDbNm || !corpDbNm.trim()) return { ok: false, stage: "config", error: CONFIG_FRIENDLY_ERROR };
 
+  const ctx: ProductListContext = {
+    corpCode: envCorpCode() ?? "30009",
+    userId: envUserId() ?? "111",
+    userName: envUserName() ?? "강서은",
+    stCode: envStCode() ?? "000",
+    corpDbNm: corpDbNm.trim(),
+    pageIdx: 1,
+    pageSize,
+  };
   const endpoint = envVal("IREGEN_PRODUCT_LIST_ENDPOINT") ?? PRODUCT_LIST_ENDPOINT;
   const soapAction = envVal("IREGEN_PRODUCT_LIST_SOAP_ACTION") ?? PRODUCT_LIST_SOAP_ACTION;
 
-  let allRows: Record<string, unknown>[] = [];
-  let columns: string[] = [];
-  let totalSoapMs = 0;
-  let totalDecoderMs = 0;
-  let totalRequests = 0;
-  let firstPageTables: AllTableInfo[] = [];
-  let primaryTableName = "";
-  let firstPageRows = 0;
-  let lastPageRows = 0;
-  let rootCauseNote: string | undefined;
+  // ── Step 1 · Page 1 단독 조회 + metadata 분석 ──
+  console.log(`[iregen:product] Step 1 · Page 1 단독 조회 · concurrency=${concurrency}`);
+  const page1 = await fetchProductPageWithRetry(1, pageSize, ctx, endpoint, soapAction);
+  if (!page1.ok) {
+    console.error(`[iregen:product] Page 1 실패 · stage=${page1.stage} · ${page1.error}`);
+    return { ok: false, stage: page1.stage, error: page1.error };
+  }
+  const firstPageRows = page1.rowCount;
+  const firstPageTables = page1.allTables;
+  const primaryTableName = page1.allTables[page1.primaryIndex]?.name ?? "";
+  const columns = page1.columns;
 
-  for (let page = 1; page <= maxPages; page++) {
-    const envelope = buildProductListEnvelope({
-      corpCode, userId, userName, stCode, corpDbNm: corpDbNm.trim(),
-      pageIdx: page, pageSize,
-    });
-    const soapT0 = Date.now();
-    console.log(`[iregen:product] SOAP page ${page} · bytes:`, envelope.length);
-    const soapRes = await callSoap(endpoint, soapAction, envelope);
-    const soapMs = Date.now() - soapT0;
-    totalSoapMs += soapMs;
-    totalRequests++;
-    if (!soapRes.ok) {
-      console.error(`[iregen:product] page ${page} · stage=${soapRes.stage} ·`, soapMs, "ms");
-      // 1페이지 실패 → 전체 실패 · 그 이후는 지금까지 수집된 데이터 반환하지 않고 실패
-      if (page === 1) {
-        return { ok: false, stage: soapRes.stage, error: soapRes.error };
+  // metadata Column1 로그 (사용자 지시)
+  for (const t of firstPageTables) {
+    if (t.index === page1.primaryIndex) continue;
+    const col1 = t.firstRow?.Column1 ?? Object.values(t.firstRow ?? {})[0] ?? "N/A";
+    console.log(`[Product_List Metadata]`);
+    console.log(`  Table: ${t.name}`);
+    console.log(`  Column: Column1`);
+    console.log(`  Value: ${JSON.stringify(col1)}`);
+  }
+
+  const metaExtract = tryExtractTotalFromMetadata(firstPageTables, page1.primaryIndex);
+  let totalPages: number;
+  let totalPagesSource: "metadata" | "sequential-detection";
+  if (metaExtract.value && metaExtract.value >= firstPageRows) {
+    totalPages = Math.ceil(metaExtract.value / pageSize);
+    totalPagesSource = "metadata";
+    console.log(`[iregen:product] metadata totalRows=${metaExtract.value} · totalPages=${totalPages} (parallel 가능)`);
+  } else {
+    totalPages = Math.min(hardMaxPages, 100); // metadata 없을 때 상한
+    totalPagesSource = "sequential-detection";
+    console.log(`[iregen:product] metadata totalCount 추출 실패 · 순차 fallback (상한 ${totalPages})`);
+  }
+
+  // ── Step 2 · Page 2 ~ totalPages 조회 ──
+  let allRowsOrdered = [page1];
+  let totalSoapMs = page1.soapMs;
+  let totalDecoderMs = page1.decoderMs;
+  let totalRetries = Math.max(0, page1.attempts - 1);
+  const failedPages: number[] = [];
+  let lastPageRows = firstPageRows;
+
+  const broadcastWithPercent = (completedPages: number, rowsAccum: number, done = false) => {
+    broadcastProductProgress({
+      page: completedPages,
+      rowsAccum,
+      done,
+      totalPages: totalPagesSource === "metadata" ? totalPages : undefined,
+      totalRowsExpected: metaExtract.value ?? undefined,
+    } as any);
+  };
+  broadcastWithPercent(1, firstPageRows);
+
+  if (totalPagesSource === "metadata" && concurrency > 1) {
+    // 병렬 batched 조회
+    for (let batchStart = 2; batchStart <= totalPages; batchStart += concurrency) {
+      const batchEnd = Math.min(batchStart + concurrency - 1, totalPages);
+      const promises: Promise<PageOutcome>[] = [];
+      for (let p = batchStart; p <= batchEnd; p++) {
+        promises.push(fetchProductPageWithRetry(p, pageSize, ctx, endpoint, soapAction));
       }
-      // 중간 실패 → 지금까지 모은 데이터로 종료 (경고 로그)
-      console.warn(`[iregen:product] page ${page} 실패 · 지금까지 ${allRows.length} rows 로 종료`);
-      break;
-    }
-    console.log(`[iregen:product] page ${page} SOAP OK ·`, soapMs, "ms · response bytes:", soapRes.xml.length);
-
-    const decT0 = Date.now();
-    const pageResult = await decodeResponseToResult(soapRes.xml, decT0, 0);
-    const decoderMs = Date.now() - decT0;
-    totalDecoderMs += decoderMs;
-    if (!pageResult.ok) {
-      if (page === 1) return pageResult;
-      console.warn(`[iregen:product] page ${page} decode 실패 · 지금까지 ${allRows.length} rows 로 종료`);
-      break;
-    }
-    if (page === 1) {
-      columns = pageResult.columns;
-      firstPageTables = pageResult.allTables;
-      primaryTableName = pageResult.allTables[pageResult.primaryIndex]?.name ?? "";
-      firstPageRows = pageResult.rowCount;
-      // 2026-10-03 · root cause 자동 감지
-      if (pageResult.allTables.length > 1) {
-        const otherTables = pageResult.allTables.filter((_, i) => i !== pageResult.primaryIndex);
-        const totalOtherRows = otherTables.reduce((s, t) => s + t.rowCount, 0);
-        if (totalOtherRows < pageResult.rowCount && otherTables.some((t) => t.rowCount <= 5)) {
-          rootCauseNote =
-            `DataSet 안에 ${pageResult.allTables.length}개 테이블 발견 · Primary=Table[${pageResult.primaryIndex}] "${primaryTableName}" (${pageResult.rowCount} rows) · 나머지는 metadata (각 ≤5 rows). ` +
-            `이전 구현이 Table[0] 하드코딩했다면 metadata 를 선택했을 가능성.`;
-          console.log("[iregen:product] ROOT CAUSE NOTE:", rootCauseNote);
+      const batchResults = await Promise.all(promises);
+      for (const r of batchResults) {
+        allRowsOrdered.push(r as any);
+        if (!r.ok) {
+          failedPages.push(r.pageIdx);
+          console.error(`[iregen:product] page ${r.pageIdx} FAILED · ${r.stage}: ${r.error}`);
+        } else {
+          totalSoapMs += r.soapMs;
+          totalDecoderMs += r.decoderMs;
+          totalRetries += Math.max(0, r.attempts - 1);
+          lastPageRows = r.rowCount;
         }
       }
+      const okCount = allRowsOrdered.filter((p) => p.ok).length;
+      const rowsSoFar = allRowsOrdered.reduce((s, p) => s + (p.ok ? p.rowCount : 0), 0);
+      console.log(`[iregen:product] batch ${batchStart}~${batchEnd} 완료 · ${okCount} pages · ${rowsSoFar.toLocaleString()} rows 누적`);
+      broadcastWithPercent(batchEnd, rowsSoFar);
     }
-    lastPageRows = pageResult.rowCount;
-    allRows = allRows.concat(pageResult.rows);
-    console.log(`[iregen:product] page ${page} · ${pageResult.rowCount} rows · 누적 ${allRows.length}`);
-    broadcastProductProgress({ page, rowsAccum: allRows.length });
-
-    // 마지막 페이지 판정 · rows < pageSize 또는 0
-    if (pageResult.rowCount < pageSize || pageResult.rowCount === 0) {
-      console.log(`[iregen:product] 마지막 페이지 ${page} 감지 (${pageResult.rowCount} < ${pageSize})`);
-      break;
+  } else {
+    // 순차 fallback (concurrency=1 또는 metadata 없음)
+    for (let p = 2; p <= totalPages; p++) {
+      const r = await fetchProductPageWithRetry(p, pageSize, ctx, endpoint, soapAction);
+      allRowsOrdered.push(r as any);
+      if (!r.ok) {
+        failedPages.push(p);
+        console.error(`[iregen:product] page ${p} FAILED · ${r.stage}: ${r.error}`);
+        // 순차 모드에서 네트워크 실패면 더 진행해도 fail 가능성 큼 · 하지만 끝까지 시도
+        continue;
+      }
+      totalSoapMs += r.soapMs;
+      totalDecoderMs += r.decoderMs;
+      totalRetries += Math.max(0, r.attempts - 1);
+      lastPageRows = r.rowCount;
+      const rowsSoFar = allRowsOrdered.reduce((s, pp) => s + (pp.ok ? pp.rowCount : 0), 0);
+      broadcastWithPercent(p, rowsSoFar);
+      // metadata 없는 경우 · 자동 마지막 페이지 감지
+      if (totalPagesSource !== "metadata" && (r.rowCount < pageSize || r.rowCount === 0)) {
+        console.log(`[iregen:product] 마지막 페이지 ${p} 감지 (${r.rowCount} < ${pageSize})`);
+        break;
+      }
     }
   }
-  broadcastProductProgress({ page: 0, rowsAccum: allRows.length, done: true });
 
+  // ── Step 3 · PageIdx 순서로 정렬 후 rows 합치기 ──
+  allRowsOrdered.sort((a, b) => a.pageIdx - b.pageIdx);
+  const allRows: Record<string, unknown>[] = [];
+  for (const p of allRowsOrdered) {
+    if (p.ok) allRows.push(...p.rows);
+  }
+  const pagesLoaded = allRowsOrdered.filter((p) => p.ok).length;
   const totalMs = Date.now() - t0;
+  broadcastWithPercent(pagesLoaded, allRows.length, true);
 
-  // 2026-10-03 · 자동 검증 (사용자 지시 PRODUCT_LIST VERIFICATION)
-  const codeField = "PCode"; // Product_List 는 PCode 가 상품코드 field
+  // ── Step 4 · 자동 검증 ──
+  const codeField = "PCode";
   const seenCodes = new Set<string>();
   let duplicateCodes = 0;
   let emptyCodes = 0;
   for (const row of allRows) {
-    const code = row[codeField];
-    const str = code === null || code === undefined ? "" : String(code).trim();
+    const str = row[codeField] == null ? "" : String(row[codeField]).trim();
     if (!str) emptyCodes++;
     else if (seenCodes.has(str)) duplicateCodes++;
     else seenCodes.add(str);
   }
 
-  const erpExpectedRows = Number(envVal("IREGEN_PRODUCT_EXPECTED_ROWS") ?? "4007");
+  const erpExpectedRows = metaExtract.value ?? Number(envVal("IREGEN_PRODUCT_EXPECTED_ROWS") ?? "4007");
   const countMatch = allRows.length === erpExpectedRows;
-  const verified = countMatch && duplicateCodes === 0 && emptyCodes === 0;
+  const verified = countMatch && duplicateCodes === 0 && emptyCodes === 0 && failedPages.length === 0;
+
+  // root cause note
+  let rootCauseNote: string | undefined;
+  if (firstPageTables.length > 1) {
+    const others = firstPageTables.filter((_, i) => i !== page1.primaryIndex);
+    if (others.some((t) => t.rowCount <= 5)) {
+      rootCauseNote = `DataSet 안에 ${firstPageTables.length}개 테이블 · Primary=Table[${page1.primaryIndex}] "${primaryTableName}" (${firstPageRows} rows) · 나머지는 metadata (각 ≤5 rows)`;
+    }
+  }
 
   const verification: ProductListVerification = {
     firstPageRows,
-    lastPage: totalRequests,
+    lastPage: totalPages,
     lastPageRows,
-    pagesLoaded: totalRequests,
+    pagesLoaded,
     totalRows: allRows.length,
     duplicateCodes,
     emptyCodes,
@@ -853,24 +996,32 @@ export async function queryProductList(opts?: { pageSize?: number; maxPages?: nu
     firstPageTables,
     primaryTableName,
     rootCauseNote,
+    concurrency,
+    failedPages,
+    totalRetries,
+    elapsedMs: totalMs,
+    metadataColumn1: metaExtract.raw as any,
+    totalPagesSource,
   };
 
   console.log("");
   console.log("===== PRODUCT_LIST VERIFICATION =====");
+  console.log(`Rows: ${allRows.length.toLocaleString()}`);
+  console.log(`Pages: ${pagesLoaded} / ${totalPages}`);
+  console.log(`Concurrency: ${concurrency}`);
   console.log(`First Page Rows: ${firstPageRows}`);
-  console.log(`Last Page: ${totalRequests}`);
   console.log(`Last Page Rows: ${lastPageRows}`);
-  console.log(`Pages Loaded: ${totalRequests}`);
-  console.log(`Total Rows: ${allRows.length.toLocaleString()}`);
+  console.log(`Failed Pages: ${failedPages.length}${failedPages.length ? ` [${failedPages.join(", ")}]` : ""}`);
+  console.log(`Retries: ${totalRetries}`);
+  console.log(`Elapsed: ${(totalMs / 1000).toFixed(1)} sec`);
   console.log(`Duplicate PCode: ${duplicateCodes}`);
   console.log(`Empty PCode: ${emptyCodes}`);
   console.log(`ERP Expected: ${erpExpectedRows.toLocaleString()}`);
   console.log(`Count Match: ${countMatch ? "YES" : "NO"}`);
   console.log(`Result: ${verified ? "VERIFIED" : "NOT VERIFIED"}`);
-  if (rootCauseNote) console.log(`Root Cause Note: ${rootCauseNote}`);
+  console.log(`totalPagesSource: ${totalPagesSource}`);
+  if (rootCauseNote) console.log(`Root Cause: ${rootCauseNote}`);
   console.log("=====================================");
-  console.log("");
-  console.log(`[iregen:product] 전체 완료 · pages=${totalRequests} · rows=${allRows.length} · ${totalMs}ms (SOAP ${totalSoapMs}ms · Decoder ${totalDecoderMs}ms)`);
 
   return {
     ok: true,
