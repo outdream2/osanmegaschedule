@@ -8,30 +8,39 @@
 
 ## 🔴 CRITICAL (즉시 해결 전엔 PHASE 2 진입 불가)
 
-### C-1 · product_code 체계 불일치 (ERP 5자리 ↔ Supabase 바코드)
+### C-1 · ERP Barcode field 미확인 (상품 identity 전략 blocker)
 
-**현재 구조** ·
-- ERP PCode: 전부 **5자리 숫자** (예 `10001` `15291`) · 4,070 상품
-- Supabase product_code: **대부분 13자리 바코드** (예 `8806999064908`) · 7,078 상품
-- `product_code` 완전 일치: **0 (ZERO)**
-- ERP `PPCode` 는 PCode 와 동일 · 바코드 아님
+**사용자 지시 61번 반영 · 2026-10-03 재해석**:
+~~"ERP PCode ↔ Supabase product_code 매칭 = 0 · CRITICAL"~~
+→ **잘못된 전제**. ERP PCode (5자리 내부번호) 와 Supabase product_code (13자리 Barcode) 는 **원래 다른 체계**. 매칭 0 은 당연한 결과.
+
+**올바른 비교**: ERP **Barcode field** (Product_List 102 col 중) ↔ Supabase `products.product_code`
+
+**현재 상태** ·
+- Inventory_Status 42 col 안에 **Barcode field 없음 확정** (PPCode 는 PCode 와 self-reference · 바코드 아님)
+- Product_List 102 col 중 Barcode field 존재 여부 **미확정** (snapshot 없음)
+- 저희 환경에서 ERP 재호출 불가 (사용자 지시 59번 · ERP 부하 최소화)
 
 **발생 가능 문제** ·
-- 매핑 없이 UPSERT → ERP 4,070 상품 전체가 신규 INSERT → Supabase 상품 11,148 로 폭증
-- 기존 7,078 상품의 UPDATE 가 영원히 작동 안 함
+- Product_List 안에 Barcode field 가 있으면 → `products.product_code` 와 직접 매칭 가능 · 수천 건 일치 예상 · 추가 column 불필요
+- 없으면 → ProductName 72% + 수동 매핑 필요 · migration 요구
 
-**관련 table/column** · `products.product_code` ·  Inventory_Status/Product_List `PCode`
+**관련 table/column** · `products.product_code` (= Barcode · 유지) ·  Product_List `?BarCode?` (수집 대기)
 
-**권장 대응** (사용자 결정 필요):
+**권장 대응** (사용자 지시 반영):
 
-| 옵션 | 설명 |
-|---|---|
-| **A** · 신규 매핑 테이블 | `erp_product_mapping (erp_pcode TEXT PK, product_code TEXT UNIQUE FK)` · ProductName 72% 매칭으로 초기화 + 사용자 승인 흐름 |
-| **B** · Supabase products 에 `erp_pcode` column 추가 | 가장 간단 · 하지만 매핑 데이터 수동/semi-auto 입력 필요 |
+| 옵션 | 설명 | 적용 조건 |
+|---|---|---|
+| **A** (추천) | `products.product_code` ↔ ERP Barcode 직접 매칭 · 추가 column 없음 | Product_List 안에 Barcode field 있을 때 |
+| **B** | `products.erp_pcode` nullable column 신규 추가 | A 가 가능해도 PCode 보관 필요 시 (선택) |
+| **C** | 별도 매핑 테이블 `erp_product_mapping (erp_pcode, barcode)` | 1 PCode : N Barcode 다중 체계일 때 |
+| **D** | 다중 Barcode table `product_barcodes` | 상품 1 : 바코드 N 구조 확인 시 |
+
+**사용자 지시 (2026-10-03)** · erp_pcode column 추가 **보류**. Product_List 102 col 수집 후 결정.
 | **C** · ProductName fuzzy 매칭 | 72% 자동 + 28% 수동 · 동명이상품 위험 |
 | **D** · ERP 데이터 별도 테이블 분리 (snapshot) | 기존 products 와 분리 · UI 통합 어려움 |
 
-**추천**: **옵션 B** (products.erp_pcode column 추가 · ProductName 72% 자동 초기화 + nullable + 수동 보완)
+**추천 (2026-10-03 수정)**: ~~옵션 B~~ 보류. **Product_List 102 col 안 Barcode field 수집이 1순위**. 바코드 발견 시 옵션 A (products.product_code 유지 · 추가 column X).
 
 ---
 
