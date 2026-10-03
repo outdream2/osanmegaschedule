@@ -43,36 +43,37 @@ function parseEnvFile(path: string): Record<string, string> {
   }
 }
 
-let _dotenvCache: Record<string, string> | null = null;
+// 2026-10-03 · 캐시 제거 · 매 호출 .env 재읽기 · 재시작 없이 반영
 let _dotenvSource: string | null = null;
-function loadDotenvOnce(): Record<string, string> {
-  if (_dotenvCache !== null) return _dotenvCache;
+function loadDotenvFresh(): Record<string, string> {
   // __dirname (dev) = apps/sync-agent/out/main
   const syncAgentEnv = resolve(__dirname, "../../.env");                 // apps/sync-agent/.env
   const projectRootEnv = resolve(__dirname, "../../../../.env");         // project root .env
   const syncAgentMap = parseEnvFile(syncAgentEnv);
   if (Object.keys(syncAgentMap).length > 0) {
-    _dotenvCache = syncAgentMap;
     _dotenvSource = syncAgentEnv;
     console.log("[iregen] .env 소스 · apps/sync-agent/.env (" + Object.keys(syncAgentMap).length + " keys)");
-    return _dotenvCache;
+    // 2026-10-03 · 디버그 · iregen 관련 키가 포함되었는지 (값 로그 X)
+    const iregenKeys = Object.keys(syncAgentMap).filter((k) => /iregen|corpdb/i.test(k));
+    if (iregenKeys.length > 0) console.log("[iregen] env 안 iregen 관련 키:", iregenKeys);
+    return syncAgentMap;
   }
   const rootMap = parseEnvFile(projectRootEnv);
   if (Object.keys(rootMap).length > 0) {
-    _dotenvCache = rootMap;
     _dotenvSource = projectRootEnv;
     console.log("[iregen] .env 소스 · 프로젝트 root .env (" + Object.keys(rootMap).length + " keys)");
-    return _dotenvCache;
+    const iregenKeys = Object.keys(rootMap).filter((k) => /iregen|corpdb/i.test(k));
+    if (iregenKeys.length > 0) console.log("[iregen] env 안 iregen 관련 키:", iregenKeys);
+    return rootMap;
   }
-  _dotenvCache = {};
   _dotenvSource = null;
   console.log("[iregen] .env 없음 · safeStorage 로 fallback");
-  return _dotenvCache;
+  return {};
 }
 function envVal(key: string): string | undefined {
   const p = process.env[key];
   if (p && p.trim()) return p.trim();
-  const d = loadDotenvOnce()[key];
+  const d = loadDotenvFresh()[key];
   return d && d.trim() ? d.trim() : undefined;
 }
 // 2026-10-03 · 사용자 .env 에 넣은 실제 키 이름 fallback chain
@@ -191,7 +192,10 @@ async function callSoap(
   }
   const xml = await res.text().catch(() => "");
   if (!res.ok) {
-    return { ok: false, stage: "http", error: `HTTP ${res.status} ${res.statusText}` };
+    // 2026-10-03 · HTTP 500 등 · SOAP Fault 본문 전체 노출 (원인 추출용)
+    //   · 응답에 SOAP Envelope + faultstring 가 들어있는 경우 많음
+    const bodyExcerpt = xml.length > 2000 ? xml.slice(0, 2000) + "\n...(trimmed)" : xml;
+    return { ok: false, stage: "http", error: `HTTP ${res.status} ${res.statusText}\n\n[response body]\n${bodyExcerpt || "(empty)"}` };
   }
   return { ok: true, xml };
 }
