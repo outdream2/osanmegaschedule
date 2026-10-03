@@ -24,14 +24,21 @@ const PRODUCT_COLS: ColumnSpec[] = [
   { erp: "UnitCode", label: "단위" },
   { erp: "IsSaleStatusName", label: "판매상태" },
 ];
+// 2026-10-03 · 사용자 지시 · 재고 Excel Import 기준 재구성
+//   · 재고 Excel column: 상품코드/상품명/공급사명/공급사코드/기초재고/입고/판매/폐기/사내소비/재고조정/종료재고
+//   · Inventory_Status ERP field 매핑 (상세보기 modal 로 field 이름 확정 가능)
+//   · PrvStock = 이전재고 · BuyStock = 매입 · SaleStock = 판매
+//   · 추측 금지 원칙 · row 클릭 상세 modal 에서 사용자가 42 col 전체 확인
 const INVENTORY_COLS: ColumnSpec[] = [
   { erp: "PCode", label: "상품코드" },
   { erp: "ProductName", label: "상품명" },
   { erp: "CCorpName", label: "공급사" },
-  { erp: "CostPrice", label: "매입가", align: "right" },
   { erp: "UnitCode", label: "단위" },
-  { erp: "LocationName", label: "진열위치" },
-  { erp: "IsSaleStatusName", label: "판매상태" },
+  { erp: "PrvStock", label: "이전재고", align: "right" },
+  { erp: "BuyStock", label: "매입", align: "right" },
+  { erp: "SaleStock", label: "판매", align: "right" },
+  { erp: "PlusStock", label: "조정+", align: "right" },
+  { erp: "MinusStock", label: "조정-", align: "right" },
 ];
 const BUY_COLS: ColumnSpec[] = [
   { erp: "PCode", label: "상품코드" },

@@ -418,7 +418,17 @@ async function decodeResponseToResult(
     if (!parsed.tables || parsed.tables.length === 0) {
       return { ok: false, stage: "decoder", error: "DataSet 테이블 0개" };
     }
-    const t = parsed.tables[0];
+    // 2026-10-03 · Product_List 는 metadata + data 테이블 분리 가능성
+    //   · tables[0] 하드코딩 X · rowCount 가장 많은 테이블을 primary 로 선택
+    //   · 모든 테이블 요약 로그 (디버깅)
+    console.log(`[iregen] DataSet "${parsed.datasetName}" · ${parsed.tables.length} tables:`);
+    parsed.tables.forEach((tbl, idx) => {
+      const colNames = tbl.columns.slice(0, 6).map((c) => c.name).join(", ");
+      console.log(`  [${idx}] name="${tbl.name}" · ${tbl.rowCount} rows · ${tbl.columns.length} cols · cols=${colNames}${tbl.columns.length > 6 ? "..." : ""}`);
+    });
+    const sorted = [...parsed.tables].sort((a, b) => b.rowCount - a.rowCount);
+    const t = sorted[0];
+    console.log(`[iregen] 주 데이터 테이블 선택: "${t.name}" · ${t.rowCount} rows (전체 ${parsed.tables.length}개 중)`);
     const totalMs = Date.now() - t0;
     console.log("[iregen] 전체 완료 ·", totalMs, "ms · rows:", t.rowCount, "· columns:", t.columns.length);
     return {
