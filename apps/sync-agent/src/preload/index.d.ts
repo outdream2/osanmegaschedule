@@ -31,6 +31,16 @@ interface RunResult {
   message: string;
 }
 
+type ErpQueryResult =
+  | {
+      ok: true;
+      rowCount: number;
+      columns: string[];
+      rows: Record<string, unknown>[];
+      meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
+    }
+  | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string };
+
 interface SyncAgentApi {
   getAppInfo(): Promise<{ version: string; name: string }>;
   getConfig(): Promise<RendererConfig>;
@@ -57,26 +67,10 @@ interface SyncAgentApi {
     | { ok: false; error: string }
   >;
   openFolder(kind: FileKind, subdir?: "processed" | "failed"): Promise<{ ok: boolean; error?: string }>;
-  erpInventoryQuery(): Promise<
-    | {
-        ok: true;
-        rowCount: number;
-        columns: string[];
-        rows: Record<string, unknown>[];
-        meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
-      }
-    | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
-  >;
-  erpInventoryQueryRaw(): Promise<
-    | {
-        ok: true;
-        rowCount: number;
-        columns: string[];
-        rows: Record<string, unknown>[];
-        meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
-      }
-    | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
-  >;
+  erpInventoryQuery(): Promise<ErpQueryResult>;
+  erpInventoryQueryRaw(): Promise<ErpQueryResult>;
+  erpProductList(opts?: { pageSize?: number; maxPages?: number }): Promise<ErpQueryResult>;
+  erpBuyStatus(opts?: { startDate?: string; endDate?: string }): Promise<ErpQueryResult>;
   iregenGetSettings(): Promise<{
     enabled: boolean;
     endpoint: string;

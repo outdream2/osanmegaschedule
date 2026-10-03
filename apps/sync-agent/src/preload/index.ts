@@ -100,6 +100,30 @@ const api = {
         }
       | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
     >,
+  // 2026-10-03 · PHASE 1 · Product_List (사업장 상품관리 · pagination)
+  erpProductList: (opts?: { pageSize?: number; maxPages?: number }) =>
+    ipcRenderer.invoke("erp:productList", opts) as Promise<
+      | {
+          ok: true;
+          rowCount: number;
+          columns: string[];
+          rows: Record<string, unknown>[];
+          meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
+        }
+      | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
+    >,
+  // 2026-10-03 · PHASE 1 · Buy_Status (매입 현황 · DevStartDate/DevEndDate)
+  erpBuyStatus: (opts?: { startDate?: string; endDate?: string }) =>
+    ipcRenderer.invoke("erp:buyStatus", opts) as Promise<
+      | {
+          ok: true;
+          rowCount: number;
+          columns: string[];
+          rows: Record<string, unknown>[];
+          meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
+        }
+      | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
+    >,
   // ── Iregen 연동 설정 (CorpDB_nm · safeStorage · renderer 로 재전달 X) ──
   iregenGetSettings: () =>
     ipcRenderer.invoke("iregen:getSettings") as Promise<{

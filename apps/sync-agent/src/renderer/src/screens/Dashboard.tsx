@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import type { RendererConfig, FileKind } from "../types";
-import { ErpQueryPanel } from "./ErpQueryPanel";
+import { ErpSection } from "./ErpSection";
 import { SectionBoundary } from "../components/SectionBoundary";
 
 const FILE_META: Record<FileKind, { label: string; color: string; icon: string }> = {
@@ -130,10 +130,10 @@ export const Dashboard: React.FC = () => {
         })}
       </div>
 
-      {/* 2026-10-03 · Iregen ERP Live Query 검증 패널 · Supabase 미반영
+      {/* 2026-10-03 · PHASE 1 · Iregen ERP 3 탭 조회 (사업장 상품관리 · 상품 재고 현황 · 매입 현황)
           · SectionBoundary 로 격리 · 이 섹션 crash 가 Dashboard 전체를 죽이지 않음 */}
       <SectionBoundary name="Iregen ERP 조회">
-        <ErpQueryPanel />
+        <ErpSection />
       </SectionBoundary>
     </div>
   );
