@@ -106,6 +106,26 @@ export const ErpQueryPanel: React.FC = () => {
     }
   };
 
+  // 2026-10-03 · 사용자 지시 TEST A · Fiddler Request Raw 전송
+  const runRaw = async () => {
+    if (!window.api?.erpInventoryQueryRaw) {
+      setResult({ ok: false, stage: "config", error: "preload 미연결 · erpInventoryQueryRaw 없음" });
+      setState("fail");
+      return;
+    }
+    setState("running");
+    setResult(null);
+    setSelected(null);
+    try {
+      const r = await window.api.erpInventoryQueryRaw();
+      setResult(r);
+      setState(r.ok ? "ok" : "fail");
+    } catch (err: any) {
+      setResult({ ok: false, stage: "config", error: err?.message ?? String(err) });
+      setState("fail");
+    }
+  };
+
   const filtered = useMemo(() => {
     if (!result?.ok) return [];
     const q = query.trim().toLowerCase();
@@ -164,13 +184,23 @@ export const ErpQueryPanel: React.FC = () => {
           <div className="text-[16px] font-bold text-zinc-900">🔗 Iregen ERP 직접 조회 (검증용)</div>
           <div className="text-[12px] text-zinc-500 mt-0.5">버튼 클릭 시 실제 SOAP 호출 · 메모리 전용 · Supabase 미반영</div>
         </div>
-        <button
-          onClick={run}
-          disabled={state === "running"}
-          className="px-5 py-2.5 bg-brand-deep text-white rounded-lg text-[13px] font-semibold hover:bg-[#0d3a5c] disabled:opacity-40 transition"
-        >
-          {state === "running" ? "조회 중..." : "ERP 재고 조회"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={run}
+            disabled={state === "running"}
+            className="px-5 py-2.5 bg-brand-deep text-white rounded-lg text-[13px] font-semibold hover:bg-[#0d3a5c] disabled:opacity-40 transition"
+          >
+            {state === "running" ? "조회 중..." : "ERP 재고 조회"}
+          </button>
+          <button
+            onClick={runRaw}
+            disabled={state === "running"}
+            title="samples/request.txt body 를 그대로 전송 · CorpDB_nm 만 env 치환"
+            className="px-4 py-2.5 border border-amber-300 text-amber-700 bg-amber-50 rounded-lg text-[12px] font-semibold hover:bg-amber-100 disabled:opacity-40 transition"
+          >
+            🔬 진단 TEST A · Fiddler Raw
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 mb-4">
@@ -195,13 +225,13 @@ export const ErpQueryPanel: React.FC = () => {
 
       {result && !result.ok && (
         <div className="mb-4 border border-rose-200 bg-rose-50 rounded-lg p-3">
-          {/* config · 친화 메시지만 · 파일 경로/JSON 예제 노출 X */}
+          {/* 2026-10-03 · 사용자 지시 · SOAP response body 전체 노출 X · 요약 메시지만 */}
           {result.stage === "config" ? (
             <div className="text-[13px] text-rose-900 whitespace-pre-wrap">{result.error}</div>
           ) : (
             <>
-              <div className="text-[13px] font-bold text-rose-700">⚠ 조회 실패 · stage: {result.stage}</div>
-              <pre className="text-[12px] text-rose-900 mt-1 whitespace-pre-wrap break-all">{result.error}</pre>
+              <div className="text-[13px] font-bold text-rose-700">⚠ SOAP 요청 실패 · stage: {result.stage}</div>
+              <div className="text-[13px] text-rose-900 mt-1">{result.error}</div>
             </>
           )}
         </div>

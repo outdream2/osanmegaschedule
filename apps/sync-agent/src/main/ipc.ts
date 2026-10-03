@@ -14,7 +14,7 @@ import { login, logout } from "./auth";
 import { runNow, runNowAll } from "./scheduler";
 import { findLatestFile } from "./importer";
 import { listQueue, clearQueue, removeItem } from "./queue";
-import { queryInventoryStatus, iregenSecretSource, iregenEnvSourceLabel } from "./iregenSoap";
+import { queryInventoryStatus, queryInventoryStatusRaw, iregenSecretSource, iregenEnvSourceLabel } from "./iregenSoap";
 
 export function registerIpcHandlers() {
   // ── Config ────────────────────────────────────
@@ -147,6 +147,12 @@ export function registerIpcHandlers() {
   //   · UI 버튼 클릭 시만 호출 · 메모리 응답 전용
   ipcMain.handle("erp:inventoryStatus", async () => {
     return queryInventoryStatus();
+  });
+
+  // 2026-10-03 · 사용자 지시 TEST A · diagnostic · Fiddler Request 그대로 전송
+  //   · samples/request.txt body 사용 · CorpDB_nm 만 env/safeStorage 로 치환
+  ipcMain.handle("erp:inventoryStatusRaw", async () => {
+    return queryInventoryStatusRaw();
   });
 
   // 2026-10-03 · Iregen 연동 설정 · CorpDB_nm 은 safeStorage 저장 · renderer 로 재전달 X

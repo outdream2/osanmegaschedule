@@ -88,6 +88,18 @@ const api = {
         }
       | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
     >,
+  // 2026-10-03 · 진단 TEST A · Fiddler Request Raw 전송 (CorpDB_nm 만 env 치환)
+  erpInventoryQueryRaw: () =>
+    ipcRenderer.invoke("erp:inventoryStatusRaw") as Promise<
+      | {
+          ok: true;
+          rowCount: number;
+          columns: string[];
+          rows: Record<string, unknown>[];
+          meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
+        }
+      | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
+    >,
   // ── Iregen 연동 설정 (CorpDB_nm · safeStorage · renderer 로 재전달 X) ──
   iregenGetSettings: () =>
     ipcRenderer.invoke("iregen:getSettings") as Promise<{

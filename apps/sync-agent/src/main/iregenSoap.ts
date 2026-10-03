@@ -192,10 +192,14 @@ async function callSoap(
   }
   const xml = await res.text().catch(() => "");
   if (!res.ok) {
-    // 2026-10-03 · HTTP 500 등 · SOAP Fault 본문 전체 노출 (원인 추출용)
-    //   · 응답에 SOAP Envelope + faultstring 가 들어있는 경우 많음
-    const bodyExcerpt = xml.length > 2000 ? xml.slice(0, 2000) + "\n...(trimmed)" : xml;
-    return { ok: false, stage: "http", error: `HTTP ${res.status} ${res.statusText}\n\n[response body]\n${bodyExcerpt || "(empty)"}` };
+    // 2026-10-03 · 사용자 지시 · UI 에 응답 body 전체 노출 X · faultstring 요약만
+    //   · 개발 로그에만 faultcode/faultstring 기록
+    const faultCode = xml.match(/<faultcode[^>]*>([^<]*)<\/faultcode>/)?.[1];
+    const faultString = xml.match(/<faultstring[^>]*>([^<]*)<\/faultstring>/)?.[1];
+    if (faultCode) console.error("[iregen] faultcode:", faultCode);
+    if (faultString) console.error("[iregen] faultstring:", faultString);
+    const userMsg = `HTTP ${res.status} · Iregen 서버 처리 오류` + (faultString ? ` (${faultString.slice(0, 80)})` : "");
+    return { ok: false, stage: "http", error: userMsg };
   }
   return { ok: true, xml };
 }
@@ -231,6 +235,119 @@ function runDecoder(
   });
 }
 
+// 2026-10-03 · 공통 decoder 처리 (SOAP 응답 XML → DataSet JSON · 메모리 전용)
+async function decodeResponseToResult(
+  soapXml: string,
+  t0: number,
+  soapMs: number,
+): Promise<ErpInventoryResult> {
+  const cwd = join(tmpdir(), "iregen-live-" + Date.now());
+  try {
+    mkdirSync(cwd, { recursive: true });
+    const xmlPath = join(cwd, "inventory-response.xml");
+    writeFileSync(xmlPath, soapXml, "utf8");
+
+    const decT0 = Date.now();
+    const dec = await runDecoder(xmlPath, cwd);
+    const decoderMs = Date.now() - decT0;
+    if (!dec.ok) {
+      console.error("[iregen] stage=decoder ·", decoderMs, "ms ·", dec.error);
+      return { ok: false, stage: "decoder", error: dec.error };
+    }
+    console.log("[iregen] decoder OK ·", decoderMs, "ms");
+
+    const outPath = join(cwd, "output", "inventory-full.json");
+    if (!existsSync(outPath)) {
+      return { ok: false, stage: "fs", error: "decoder output 파일 없음 · " + outPath };
+    }
+    let parsed: {
+      datasetName: string;
+      tableCount: number;
+      tables: Array<{ name: string; rowCount: number; columns: Array<{ name: string; type: string }>; rows: Record<string, unknown>[] }>;
+    };
+    try {
+      parsed = JSON.parse(readFileSync(outPath, "utf8"));
+    } catch (err) {
+      return { ok: false, stage: "fs", error: "output JSON 파싱 실패 · " + (err as Error).message };
+    }
+    if (!parsed.tables || parsed.tables.length === 0) {
+      return { ok: false, stage: "decoder", error: "DataSet 테이블 0개" };
+    }
+    const t = parsed.tables[0];
+    const totalMs = Date.now() - t0;
+    console.log("[iregen] 전체 완료 ·", totalMs, "ms · rows:", t.rowCount, "· columns:", t.columns.length);
+    return {
+      ok: true,
+      rowCount: t.rowCount,
+      columns: t.columns.map((c) => c.name),
+      rows: t.rows,
+      meta: { soapMs, decoderMs, totalMs, queriedAt: new Date().toISOString() },
+    };
+  } finally {
+    try {
+      rmSync(cwd, { recursive: true, force: true });
+    } catch {
+      /* 정리 실패 무시 */
+    }
+  }
+}
+
+// 2026-10-03 · 사용자 지시 TEST A · diagnostic 모드
+//   · 저장된 Fiddler Request (tools/iregen-bridge/samples/request.txt) 를 그대로 전송
+//   · CorpDB_nm 만 env/safeStorage 값으로 치환 (hard coding 금지 원칙)
+//   · 성공 시 · builder 를 Fiddler 포맷으로 재작성 가능 확인
+export async function queryInventoryStatusRaw(): Promise<ErpInventoryResult> {
+  const t0 = Date.now();
+  const cfg = loadConfig();
+  if (!cfg.iregen?.enabled) {
+    console.warn("[iregen:raw] stage=config · ERP 연동 OFF");
+    return { ok: false, stage: "config", error: DISABLED_FRIENDLY_ERROR };
+  }
+  const envCorp = envCorpDbNm();
+  const corpDbNm = envCorp ?? getIregenCorpDbNm() ?? null;
+  if (!corpDbNm || !corpDbNm.trim()) {
+    console.warn("[iregen:raw] stage=config · CorpDB_nm 미설정");
+    return { ok: false, stage: "config", error: CONFIG_FRIENDLY_ERROR };
+  }
+
+  // Fiddler Request 샘플 로드
+  const reqPath = resolve(__dirname, "../../../../tools/iregen-bridge/samples/request.txt");
+  if (!existsSync(reqPath)) {
+    return {
+      ok: false,
+      stage: "config",
+      error: "진단용 Fiddler Request 샘플 파일 없음\ntools/iregen-bridge/samples/request.txt",
+    };
+  }
+  let body: string;
+  try {
+    body = readFileSync(reqPath, "utf8").trim();
+  } catch (err) {
+    return { ok: false, stage: "fs", error: "request.txt 읽기 실패 · " + (err as Error).message };
+  }
+  // CorpDB_nm 만 env 값으로 치환 (파일 내 저장된 token 교체)
+  //   · \S* 로 CorpDB_nm 안 비 공백 문자 매칭 (†·base64 등 다 안전)
+  const before = body.length;
+  body = body.replace(/<CorpDB_nm>[^<]*<\/CorpDB_nm>/, `<CorpDB_nm>${escapeXml(corpDbNm)}</CorpDB_nm>`);
+  const replaced = body.length !== before || /<CorpDB_nm>/.test(body);
+  if (!replaced) {
+    return { ok: false, stage: "config", error: "request.txt 안 <CorpDB_nm> 치환 실패" };
+  }
+
+  const endpoint = envVal("IREGEN_ENDPOINT") ?? cfg.iregen?.endpoint ?? DEFAULT_IREGEN_ENDPOINT;
+  const soapAction = envVal("IREGEN_SOAP_ACTION") ?? cfg.iregen?.soapAction ?? DEFAULT_IREGEN_SOAP_ACTION;
+  console.log("[iregen:raw] POST · endpoint:", endpoint, "· body bytes:", body.length);
+  const soapT0 = Date.now();
+  const soapRes = await callSoap(endpoint, soapAction, body);
+  const soapMs = Date.now() - soapT0;
+  if (!soapRes.ok) {
+    console.error("[iregen:raw] stage=" + soapRes.stage + " ·", soapMs, "ms");
+    return { ok: false, stage: soapRes.stage, error: soapRes.error };
+  }
+  console.log("[iregen:raw] SOAP OK ·", soapMs, "ms · response bytes:", soapRes.xml.length);
+  return decodeResponseToResult(soapRes.xml, t0, soapMs);
+}
+
 export async function queryInventoryStatus(): Promise<ErpInventoryResult> {
   const t0 = Date.now();
 
@@ -252,58 +369,5 @@ export async function queryInventoryStatus(): Promise<ErpInventoryResult> {
     return { ok: false, stage: soapRes.stage, error: soapRes.error };
   }
   console.log("[iregen] SOAP OK ·", soapMs, "ms · response bytes:", soapRes.xml.length);
-
-  // 3. 작업 디렉토리 · 임시
-  const cwd = join(tmpdir(), "iregen-live-" + Date.now());
-  try {
-    mkdirSync(cwd, { recursive: true });
-    const xmlPath = join(cwd, "inventory-response.xml");
-    writeFileSync(xmlPath, soapRes.xml, "utf8");
-
-    // 4. decoder 실행
-    const decT0 = Date.now();
-    const dec = await runDecoder(xmlPath, cwd);
-    const decoderMs = Date.now() - decT0;
-    if (!dec.ok) {
-      console.error("[iregen] stage=decoder ·", decoderMs, "ms ·", dec.error);
-      return { ok: false, stage: "decoder", error: dec.error };
-    }
-    console.log("[iregen] decoder OK ·", decoderMs, "ms");
-
-    // 5. output/inventory-full.json 읽기
-    const outPath = join(cwd, "output", "inventory-full.json");
-    if (!existsSync(outPath)) {
-      return { ok: false, stage: "fs", error: "decoder output 파일 없음 · " + outPath };
-    }
-    let parsed: {
-      datasetName: string;
-      tableCount: number;
-      tables: Array<{ name: string; rowCount: number; columns: Array<{ name: string; type: string }>; rows: Record<string, unknown>[] }>;
-    };
-    try {
-      parsed = JSON.parse(readFileSync(outPath, "utf8"));
-    } catch (err) {
-      return { ok: false, stage: "fs", error: "output JSON 파싱 실패 · " + (err as Error).message };
-    }
-    if (!parsed.tables || parsed.tables.length === 0) {
-      return { ok: false, stage: "decoder", error: "DataSet 테이블 0개" };
-    }
-    const t = parsed.tables[0];
-    const totalMs = Date.now() - t0;
-    console.log("[iregen] 전체 완료 ·", totalMs, "ms · rows:", t.rowCount, "· columns:", t.columns.length);
-
-    return {
-      ok: true,
-      rowCount: t.rowCount,
-      columns: t.columns.map((c) => c.name),
-      rows: t.rows,
-      meta: { soapMs, decoderMs, totalMs, queriedAt: new Date().toISOString() },
-    };
-  } finally {
-    try {
-      rmSync(cwd, { recursive: true, force: true });
-    } catch {
-      /* 정리 실패 무시 */
-    }
-  }
+  return decodeResponseToResult(soapRes.xml, t0, soapMs);
 }

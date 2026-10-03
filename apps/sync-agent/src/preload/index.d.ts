@@ -67,6 +67,16 @@ interface SyncAgentApi {
       }
     | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
   >;
+  erpInventoryQueryRaw(): Promise<
+    | {
+        ok: true;
+        rowCount: number;
+        columns: string[];
+        rows: Record<string, unknown>[];
+        meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
+      }
+    | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
+  >;
   iregenGetSettings(): Promise<{
     enabled: boolean;
     endpoint: string;
