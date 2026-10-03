@@ -421,4 +421,73 @@ router.post(
   }),
 );
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-10-03 저녁 · Phase 2 · ERP Sync Runner endpoints
+// ─────────────────────────────────────────────────────────────────────────────
+import { syncProducts } from "../../services/erpSync/productSyncRunner";
+import { syncPurchases } from "../../services/erpSync/buySyncRunner";
+import type { SyncMode } from "../../services/erpSync/types";
+
+interface SyncRequestBody {
+  mode?: SyncMode;
+  allowWrite?: boolean;
+  source?: "SNAPSHOT" | "LIVE_ERP";
+  batchSize?: number;
+}
+
+/**
+ * 서버 측 추가 안전 게이트:
+ *   · 요청에 mode="WRITE" + allowWrite=true 가 모두 있어야 통과
+ *   · 환경변수 ERP_SYNC_WRITE_ENABLED=true 가 추가로 필요 (double gate · process level)
+ *   · Phase 2 에서는 ERP_SYNC_WRITE_ENABLED 환경변수를 설정하지 않음 → 모든 WRITE 요청 403
+ */
+function enforceWriteSafety(body: SyncRequestBody): { mode: SyncMode; allowWrite: boolean } {
+  const mode: SyncMode = body.mode === "WRITE" ? "WRITE" : "DRY_RUN";
+  const requestedWrite = body.allowWrite === true;
+  const envGate = String(process.env.ERP_SYNC_WRITE_ENABLED || "").toLowerCase() === "true";
+  const canWrite = mode === "WRITE" && requestedWrite && envGate;
+  if (mode === "WRITE" && !canWrite) {
+    throw new HttpError(
+      403,
+      "ERP Sync WRITE 거부 · Phase 2 는 DRY_RUN 전용. " +
+      "실제 WRITE 는 (1) body.allowWrite=true (2) process.env.ERP_SYNC_WRITE_ENABLED=true 두 조건 모두 필요.",
+    );
+  }
+  return { mode: canWrite ? "WRITE" : "DRY_RUN", allowWrite: canWrite };
+}
+
+/** Product Sync Runner · POST · 기본 DRY_RUN */
+router.post(
+  "/api/admin/erp-sync/products",
+  authorize(9),
+  asyncHandler(async (req, res) => {
+    const body = (req.body ?? {}) as SyncRequestBody;
+    const gate = enforceWriteSafety(body);
+    const result = await syncProducts(supabase, {
+      mode: gate.mode,
+      allowWrite: gate.allowWrite,
+      source: body.source === "LIVE_ERP" ? "LIVE_ERP" : "SNAPSHOT",
+      batchSize: body.batchSize,
+    });
+    res.json(result);
+  }),
+);
+
+/** Buy Sync Runner · POST · 기본 DRY_RUN · migration 미적용 시 자동 차단 */
+router.post(
+  "/api/admin/erp-sync/purchases",
+  authorize(9),
+  asyncHandler(async (req, res) => {
+    const body = (req.body ?? {}) as SyncRequestBody;
+    const gate = enforceWriteSafety(body);
+    const result = await syncPurchases(supabase, {
+      mode: gate.mode,
+      allowWrite: gate.allowWrite,
+      source: body.source === "LIVE_ERP" ? "LIVE_ERP" : "SNAPSHOT",
+      batchSize: body.batchSize,
+    });
+    res.json(result);
+  }),
+);
+
 export default router;
