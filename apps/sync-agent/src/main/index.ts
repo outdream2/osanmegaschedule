@@ -134,10 +134,8 @@ function createMainWindow() {
   console.log("[main] BrowserWindow 생성 · size:", mainWindow.getSize(), "position:", mainWindow.getPosition());
   // 2026-10-03 · White Screen 진단 · dev 환경 변수 상태 로그
   console.log("[main] is.dev:", is.dev, "· ELECTRON_RENDERER_URL:", process.env["ELECTRON_RENDERER_URL"] ?? "(unset)", "· isPackaged:", app.isPackaged);
-  // 2026-10-03 · White Screen 진단 · dev 모드에서 DevTools 자동 open · renderer console 가시화
-  if (is.dev) {
-    mainWindow.webContents.openDevTools({ mode: "detach" });
-  }
+  // 2026-10-03 · 사용자 지시 · DevTools 자동 open 제거
+  //   · 필요 시 수동 open: Ctrl+Shift+I 또는 메뉴 토글
 
   mainWindow.on("ready-to-show", () => {
     console.log("[main] ready-to-show · focus/moveTop");
