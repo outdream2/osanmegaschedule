@@ -1,6 +1,110 @@
 # ERP ↔ Excel Import ↔ Supabase · PHASE 1 최종 분석
 
-**작성일**: 2026-10-03 · **상태**: PHASE 1 분석 완료 · **PHASE 2 READY: NO** (사유: product_code 체계 불일치)
+**작성일**: 2026-10-03 · **상태**: PHASE 1 분석 완료 · **PHASE 2 READY: NO**
+**업데이트**: 2026-10-03 저녁 · Location 정책 정정 · identity 비교 재해석 · READ ONLY 유지
+
+---
+
+## ⚠️ 2026-10-03 저녁 · 사용자 지시 재해석 (중요)
+
+이전 보고의 다음 두 가지는 **잘못된 전제** 였으므로 폐기한다.
+
+| 폐기된 표현 | 사유 |
+|---|---|
+| `ERP PCode ↔ Supabase product_code 매칭 0 · CRITICAL blocker` | PCode (ERP 내부번호) 와 Supabase product_code (BARCODE) 는 **원래 다른 체계** · 매칭 0 은 당연 |
+| `LocationName → display_location · ERP_OWNED 확정` | LocationName 전체 문자열 그대로 저장 아님 · ERP 는 **대분류>중분류>소분류>세분류** 계층 · 업무규칙은 **대분류+중분류 → display_location** 변환 |
+
+**현재 올바른 identity 비교**:
+`ERP Product_List.BarCode (col[88]) ↔ Supabase products.product_code (= BARCODE)`
+
+**현재 올바른 Location 변환**:
+`ERP 대분류 + 중분류 (전각 Ａ/Ｂ → 반각 A/B 정규화) → products.display_location`
+
+**사용자 Location 플로우 확정 (2026-10-03 저녁 메시지)**:
+```
+[초기화 전]   = 현재 display_location → 분석/비교 전용 · 변경 금지
+[초기 데이터 구축]
+              = ERP 대분류+중분류 → 변환 → display_location (일회성 적용 · 사용자 승인 후)
+              = 벽+21 → "21"
+              = 6매대+A → "6A"
+              = 6매대+B → "6B"
+              = 웹서비스의 새 진열위치 기준
+[초기화 후]   = ERP → Location Sync → display_location → 웹서비스 (지속 Sync)
+```
+
+---
+
+## ✅ 2026-10-03 저녁 Product_List 1회 조회 완료 (concurrency=1)
+
+- Endpoint: `SvcProductBiz.asmx` · SOAPAction: `Product_List`
+- Snapshot: `data/snapshots/product-list-2026-10-03.json` (6.2MB+)
+- Rows: **4,007** (PCode unique · duplicate=0 · empty=0)
+- Pages: 81 (pageSize=50, last page 7 rows)
+- Elapsed: 232.6s (concurrency=1, 평균 soap+decode 300~5000ms per page · retry 0건)
+- Primary table: `Table1` · **102 columns 전수 확보**
+- Metadata table: `Table` · Column1="4007" (totalCount)
+- ERP 서버 영향: 1회 호출만 수행 · 재조회 없이 모든 분석 재사용 중
+
+### Buy_Status 1회 조회 완료 (2026-10-03)
+- Endpoint: `SvcBuyBiz.asmx` · SOAPAction: `Buy_Status`
+- Snapshot: `data/snapshots/buy-status-2026-10-03.json`
+- Rows: 5 (문서 BmCode=`12261003000009`, 라인 ROWNUM 1~5)
+- 사용자 ERP 화면 검증값 **완전 일치**:
+  - PCode 10805(비티엘라) 10/242,000 · 10812(훼마틴) 10/330,000 · 12031(츄어블비타민D) 10/143,000 · 12035(젤리잘크톤망고) 10/165,000 · 12036(젤리잘크톤블루) 10/165,000
+  - 합계: 50 qty · **1,045,000원** ✓
+- Primary columns: 51 · unique key 후보 확정
+
+---
+
+## 🎯 Product Identity · OPTION A 추천 확정 (근거 확보)
+
+### ERP BarCode field 분석
+
+| 항목 | 값 |
+|---|---|
+| Field | `Product_List.BarCode (col[88]) · System.String` |
+| Non-empty | **4,007 / 4,007 (100%)** |
+| Empty | 0 |
+| Unique | 4,007 |
+| Duplicate | 0 |
+| Non-numeric | 4 (`S0033279537634` 등 특수 코드) |
+| Length distribution | 8:47 · 11:1 · 12:95 · **13:3,214 (80%)** · 14:255 · 15:1 · 16:391 · 20:3 |
+| PCode : BarCode cardinality | **1:1 (완벽)** |
+
+### ERP BarCode ↔ Supabase products.product_code
+
+| 비교 | 값 |
+|---|---|
+| ERP BarCode non-empty | 4,007 |
+| Supabase products | 7,078 |
+| **Exact Barcode Match** | **3,732 (93.1%)** |
+| ERP Only (Supabase 없음) | 275 |
+| Supabase Only (ERP 없음) | 3,346 |
+| **BARCODE_CONFLICT** (같은 Barcode·다른 상품명) | **0** |
+| Name conflict samples | 0 |
+
+### 추천: OPTION A 확정
+```
+products.product_code  ↔  ERP Product_List.BarCode
+                         (추가 column 없음 · 매핑 테이블 없음 · 다중 Barcode 없음)
+```
+
+- 상품 identity 전략 blocker **해소**
+- ERP PCode 저장 **불필요** (BarCode 로 완전 식별)
+- erp_pcode column 추가 **불필요**
+- product_barcodes 다중 테이블 **불필요** (1 PCode : 1 BarCode 100%)
+
+### Product_List vs Inventory_Status row count 차이 해명
+
+| | Rows |
+|---|---|
+| Product_List (SvcProductBiz) | **4,007** |
+| Inventory_Status (SvcInventoryBiz) | 4,070 |
+| Both | 4,006 |
+| Product_List Only | 1 (PCode=15431 "제놀원 카타플라스마" · 조회시점 신규) |
+| Inventory_Status Only | 64 (전부 SaleStatus="판매중" · Inventory 가 상품외 재고도 포함) |
+
+→ Product_List 는 `IsSaleStatus=1` filter 로 좀 더 좁은 집합 · 사실상 동일 데이터 소스
 
 ---
 
@@ -25,7 +129,11 @@ ERP:      PCode=12220    "디판버그"  ← 5자리 ERP 내부번호
 
 **결론**: 사용자 추측 "바코드 연결" 은 Product_List 102 col 안에 **BarCode / JAN_Code** 같은 field 가 포함되어 있을 가능성 매우 높음 (아직 수집 X). 수집 전까진 **ProductName 72% 자동 매칭 + 28% 수동 매핑** 가능.
 
-**LocationName → display_location (사용자 지시 5 번)**: ERP_OWNED 확정 · shelf_positions · location_assigned_at 은 PROTECTED 유지
+**LocationName → display_location (2026-10-03 저녁 정정)**: `ERP_DERIVED` **후보** · 자동 overwrite 전 영향분석 필수. 실측 결과 ·
+- ERP ↔ Supabase ProductName 매칭 2,950 상품 중 · ERP-derived display_location 과 Supabase display_location **exactSame=36 (1.2%) · different=514 (17.4%)** · DB empty + ERP has = 1,574 (53.4%) · ERP empty + DB has = 56 (1.9%)
+- `products.location` · `products.display_location` 100% 동기 (3,175 상품 모두 `location === display_location`) · ERP sync 시 **양쪽 동시 갱신 필수** (아니면 UI 가 stale `location` 읽음 · `src/lib/productLocation.ts` location 우선)
+- `location_assigned_at` 컬럼 **실제 DB 에 없음** (문서 유령 참조 · 정정)
+- `inventory_checks.shelf_positions` 3,400 rows 모두 non-null · 창고 class flip (w1↔w2) 40 건 · neither-class 77 건 · fromNone 1,571 건 (shelf_positions 자동 재생성 범위)
 
 ---
 
@@ -148,18 +256,139 @@ Supabase Only: 7,078  ← ERP 에 매칭되는 상품 없음
 | Uncertain | **8+ · 수집 대기** |
 | Protected | 7 (products 자체 운영 column) |
 
+## 📋 Product_List 102 columns 전수 확정 (2026-10-03 저녁)
+
+```
+[  0] StCode             String   · 매장 코드 (000)
+[  1] PCode              String   · ERP 내부 상품번호 (ERP_IDENTITY)
+[  2] ProductName        String   · 상품명                                       → ERP_OWNED
+[  3] Specification      String   · 규격 (UNCERTAIN · DB spec 거의 미사용)
+[  4] GoodsName          String   · (UNCERTAIN)
+[  5] GoodsSubName       String   · (UNCERTAIN)
+[  6] ProductName_pop    String   · POP 상품명 (UNCERTAIN)
+[  7] ProductTypeName    String   · 상품유형명
+[  8] ProductGubunName   String   · 구분명
+[  9] OptionViewTypeName String   · 옵션 뷰 타입
+[ 10] IsWeight           String   · 중량 여부
+[ 11] WeightName         String   · 중량명
+[ 12] WeightCode         String   · 중량 코드
+[ 13] StockName          String   · 재고명
+[ 14] TaxName            String   · 과세구분명
+[ 15] IsStock            String   · 재고 사용 여부
+[ 16] TaxPercent         Int16    · 과세율
+[ 17] UnitCode           String   · 단위                                          → ERP_OWNED
+[ 18] UnitStock          Int32    · 단위 재고
+[ 19] WeightCostUnit     String   · 중량 비용 단위
+[ 20] IsProductType      String   · 상품유형 여부
+[ 21] IsBottle           String   · 공병 여부
+[ 22] BottlePrice        Int16    · 공병 가격
+[ 23] NowStock           Int64    · ERP 현재고 (UNCERTAIN · 공식 검증 전)
+[ 24] CostPrice          Decimal  · 매입단가                                       → ERP_OWNED (97%+ 입력)
+[ 25] CtCode             String   · 공급사 코드                                    → ERP_OWNED
+[ 26] CorpNameView       String   · 공급사명                                       → ERP_OWNED
+[ 27] PriceA             Decimal  · 판매가 A (= Supabase sale_price · 94.8% match) → ERP_OWNED
+[ 28] PriceB             Decimal  · (0 전수 · NOT_USED)
+[ 29] PriceC             Decimal  · (0 전수 · NOT_USED)
+[ 30] PriceD             Decimal  · (0 전수 · NOT_USED)
+[ 31] IsSalesStore       String   · 판매 가능 여부
+[ 32] EvCostUnit         Decimal  · (0 전수 · NOT_USED)
+[ 33] EvSaleUnit         Decimal  · (0 전수 · NOT_USED)
+[ 34] IsPriceLock        String   · 가격 잠금
+[ 35] Horizontal         Int32    · 가로 (UNCERTAIN)
+[ 36] Vertical           Int32    · 세로 (UNCERTAIN)
+[ 37] Height             Decimal  · 높이 (UNCERTAIN)
+[ 38] Volume             Int32    · 부피 (UNCERTAIN)
+[ 39] WeightPriceUnit    String   · 중량 가격 단위
+[ 40] LcateName          String   · 대분류                                         → ERP_OWNED (category 후보)
+[ 41] McateName          String   · 중분류                                         → ERP_OWNED (category 후보)
+[ 42] ScateName          String   · 소분류                                         → ERP_OWNED (category 후보)
+[ 43] DcateName          String   · 세분류                                         → ERP_OWNED (category 후보)
+[ 44] CateGubunOneName   String   · (NOT_USED)
+[ 45] CateGubunTwoName   String   · (NOT_USED)
+[ 46] Maker              String   · 제조사                                         → ERP_OWNED (manufacturer 후보)
+[ 47] Brand              String   · 브랜드                                         → ERP_OWNED (brand 후보)
+[ 48] Orgin              String   · 원산지 (UNCERTAIN · DB origin 매핑)
+[ 49] IsStandingPoint    String   · 유통점 여부
+[ 50] ProductFee         Decimal  · 상품 수수료
+[ 51] KeepingRuleName    String   · 보관 규칙명
+[ 52] BuseoCode          Int32    · 부서 코드
+[ 53] BuseoName          String   · 부서명
+[ 54] Damdang            String   · 담당자 ID
+[ 55] DamdangName        String   · 담당자명
+[ 56] DamdangSub         String   · 부담당자 ID
+[ 57] DamdangSubName     String   · 부담당자명
+[ 58] IsPoint            String   · 포인트 여부
+[ 59] IsAddPoint         String   · 추가 포인트
+[ 60] PointAdd           Int32    · 포인트 추가값
+[ 61] IsOrderType        String   · 주문 타입
+[ 62] LimitTime          String   · 제한 시간
+[ 63] IsDevDayType       String   · 발주일 타입
+[ 64] DevDDay            Int32    · 발주 D-Day
+[ 65-71] DevMon~DevSun   String   · 요일별 발주 (NOT_USED)
+[ 72] MakeDayName        String   · 제조일 라벨
+[ 73] ExpiryDayName      String   · 유통기한 라벨
+[ 74] IdentificationName String   · 식별 라벨
+[ 75] UniPassName        String   · UniPass 라벨
+[ 76-81] EtcTxtField1~6  String   · 사용자 정의 텍스트
+[ 82-84] EtcIntField1~3  Int32    · 사용자 정의 숫자
+[ 85] IsAutoCostUpdate   String   · 매입가 자동 갱신 여부
+[ 86] LastBuyDate        String   · 마지막 매입일                                  → ERP_OWNED (last_purchase_date)
+[ 87] LastSaleDate       String   · 마지막 판매일                                  → ERP_OWNED (last_sale_date)
+[ 88] BarCode            String   · ★★★ 바코드 (ERP_IDENTITY) · 100% non-empty · 1:1 PCode ★★★
+[ 89] BuyStatusName      String   · 매입 상태명
+[ 90] SaleStatusName     String   · 판매 상태명                                    → ERP_OWNED (sale_status)
+[ 91] LocationName       String   · 진열위치 (대분류>중분류>소분류>세분류)         → ERP_DERIVED (대분류+중분류 변환)
+[ 92] IsPopName          String   · POP 사용 여부
+[ 93] Memo               String   · ERP 메모 (주의 · DB memo 와 완전 분리 · DB memo = PROTECTED)
+[ 94] UserID             String   · 등록자 ID
+[ 95] UserName           String   · 등록자명
+[ 96] RegDate            String   · 등록일시
+[ 97] EditUserID         String   · 수정자 ID
+[ 98] EditUserName       String   · 수정자명
+[ 99] EditDate           String   · 수정일시
+[100] RegStorageName     String   · 등록 매장명
+[101] ROWNUM             Int64    · DB 조회 순번 (서버측 pagination · NOT_USED)
+```
+
 **Confirmed mapping** (Inventory_Status 와 공통 field 기반):
 ```
-PCode             → 상품코드    → (매핑 필요) products.product_code 아님
-ProductName       → 상품명      → products.product_name
-CCorpName         → 공급사      → products.supplier
-CtCode            → 공급사코드  → products.supplier_code
-CostPrice         → 매입단가    → products.purchase_price (현재 거의 미사용)
-UnitCode          → 단위        → products.unit
-IsSaleStatusName  → 판매상태    → products.sale_status
-LocationName      → 진열위치    → products.display_location (⚠ 사용자 수동 입력도)
-McateName (추정)  → 분류        → products.category
+PCode             → 상품코드    → ERP 내부 식별자 · Supabase product_code 아님 · 보관 여부 미정 (erp_pcode 추가 보류)
+ProductName       → 상품명      → products.product_name              · ERP_OWNED (NULL overwrite 금지)
+CCorpName         → 공급사      → products.supplier                   · ERP_OWNED (vendors 테이블 보호)
+CtCode            → 공급사코드  → products.supplier_code              · ERP_OWNED
+CostPrice         → 매입단가    → products.purchase_price (4% · 거의 미사용) · UNCERTAIN · 사용자 결정
+UnitCode          → 단위        → products.unit                       · ERP_OWNED
+IsSaleStatusName  → 판매상태    → products.sale_status                · ERP_OWNED (hidden 과 분리)
+LocationName      → (대분류+중분류 변환) → products.display_location + products.location · ERP_DERIVED (영향분석 통과 전 보류)
+McateName (추정)  → 분류        → products.category                   · ERP_OWNED
+BarCode (102 col) → 바코드      → products.product_code 와 직접 비교  · identity 결정 핵심 (수집 대기)
 ```
+
+### Location 변환 규칙 (사용자 확정 2026-10-03 저녁 · ERP 화면 "로케이션 상품 등록" 기준)
+
+```
+IF 대분류 == "벽":
+   display_location = 중분류 (전각 Ａ/Ｂ → 반각 A/B)
+   예: "벽>21>전체>전체" → "21"
+
+ELSE IF 대분류 ~ /^([0-9]+)매대$/:
+   display_location = 숫자 + 중분류 (전각 Ａ/Ｂ → 반각 A/B)
+   예: "6매대>Ａ>7열>전체" → "6A"
+       "1매대>B>2열>전체"  → "1B"
+
+ELSE: UNSPEC (뷰티·냉장고 등) · 사용자 결정 대기
+   예: "뷰티>1번>오른쪽>1열" → ?
+       "냉장고>전체>전체>전체" → ?
+       "6매대>뒤>...>..." → "6뒤" (isValidZoneCode 통과 못함 · neither)
+```
+
+**ERP 전체 상품 변환 통계 (Inventory_Status 4,070 기준)**:
+- Transformable (벽/N매대): **3,069 (75.4%)**
+- Empty LocationName: **824 (20.2%)**  ← ERP "로케이션 미지정 상품목록"
+- Unspec Major (뷰티 156 · 냉장고 21): **177 (4.4%)**
+- No middle: 0
+- Full-width Ａ/Ｂ: 923 / 891 · Half-width A/B: 87 / 112 → 정규화 필수
+- 1매대 는 전부 반각 A/B · 2~9매대 는 전부 전각 Ａ/Ｂ · 사람 수동 입력 흔적
 
 **Uncertain 8+** (102 col 수집 후 확정): `sale_price · spec · origin · wholesale_price1 · min_order · search_keywords · registered_at · last_purchase_date · last_sale_date`
 
@@ -194,8 +423,8 @@ McateName (추정)  → 분류        → products.category
 | `optimal_stock_backup` | 자동 (optimal_stock 과 함께) | ERP wipe 방어 복원용 |
 | `hidden` | ProductListPage 숨김 필터 · soft-delete | 사용자 수동 토글 · 100% 운영 |
 | `memo` | ProductInfoPage 비고 | 사용자 수동 입력 · 82% 사용 |
-| `location` | shelf_positions 자동 배정 기초 | 사용자 수동 · ERP LocationName 과 체계 차이 가능성 |
-| `display_location` | 진열위치 조회 · display_request 매칭 | 사용자 수동 (`"37"` 처럼 ERP `"벽>21>전체>전체"` 와 포맷 완전 다름) |
+| `location` | shelf_positions 자동 배정 · productLocation.ts 1순위 | **ERP_DERIVED 후보** (display_location 과 100% 동기) · ERP sync 시 양쪽 동시 갱신 또는 location 신규 ERP sync 범위에서 명시 보호 결정 필요 |
+| `display_location` | 진열위치 조회 · display_request 매칭 · xlsx 임포트 시 location 쪽에도 동시 저장 | **ERP_DERIVED 후보** · 영향 분석 결과: ERP-derived 전환 시 1,571 상품에 신규 location 부여 · 514 상품 변경 · 40 상품 창고 class flip · 77 상품 none(유효코드 아님) · PATCH 흐름이 shelf_positions 자동 재배정 트리거 (`server/routes/stock/products.ts:1156`) · sync 경로 설계 시 이 로직 포함 필수 |
 | `current_stock` | 재고 조회 | ⚠ UNCERTAIN · ERP sync 대상 아닐 가능성 (inventory_checks 가 real stock 담당) |
 | `sale_price` | 주문가 · ProductListPage PATCH | 사용자 PATCH 가능 (82% 사용) · ERP 가 매번 덮으면 수동 수정 손실 |
 | `purchase_price` | 상품 상세 · ProductListPage PATCH | 사용자 PATCH 가능 (4% 사용 · 거의 미사용) · ERP CostPrice 로 덮어도 영향 미미 |

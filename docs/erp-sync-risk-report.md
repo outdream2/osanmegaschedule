@@ -1,6 +1,23 @@
 # ERP Sync · 위험 요소 전수 조사 보고서
 
 **작성일**: 2026-10-03 · **상태**: PHASE 1 완료 분석 후 작성 · **PHASE 2 WRITE 전 반드시 참조**
+**업데이트**: 2026-10-03 저녁 · Product_List 1회 조회 완료 · Buy_Status 검증 완료 · identity blocker 해소 · retry 정책 격차 신규 발견
+
+---
+
+## 🎯 2026-10-03 저녁 상태 변경 요약
+
+| Risk | 이전 | 저녁 상태 |
+|---|---|---|
+| C-1 ERP Barcode field 미확인 | 🔴 CRITICAL | ✅ **해소** · `Product_List.BarCode (col[88]) · 100% non-empty · 1:1 PCode` |
+| H-1 Product_List 102 col 미수집 | 🟠 HIGH | ✅ **해소** · 전수 확보 · snapshot 저장 |
+| H-5 Buy_Status 중복 매입 INSERT 위험 | 🟠 HIGH | ✅ **해소** · unique key `(BmCode, ROWNUM)` 확정 |
+| H-4 display_location ERP_DERIVED 전환 영향 | 🟠 HIGH | 🔄 Barcode 기준 재분석 완료 · 뷰티/냉장고 규칙만 남음 |
+| H-3 sale_price overwrite 위험 | 🟠 HIGH | 🔄 PriceA = sale_price exact 94.8% 확인 · 189 different 는 사용자 결정 |
+
+**신규 발견**:
+- 🟡 **M-7 Retry 정책 격차** · 현재 코드 1s/2s/포기 · 사용자 지시 30s/60s/120s/abort · 반드시 변경 필요
+- 🟡 **M-8 ERP Memo vs DB memo 분리** · Product_List.Memo (col[93]) 와 Supabase products.memo 는 완전 다른 field (DB memo = PROTECTED 유지)
 
 **원칙**: 발견했다고 임의 수정 X · 보고만. 사용자 지시가 명확히 올 때까지 코드 변경 금지.
 
@@ -81,20 +98,64 @@
 - "products.purchase_price = ERP CostPrice 매번 덮기" vs "purchase_details.unit_price 가 SSOT" 중 선택
 - 사용자가 UI 에서 purchase_price PATCH 하는 흐름 있는지 확인
 
-### H-4 · display_location 포맷 완전 다름
-**현재 구조**:
-- ERP LocationName 예: `"벽>21>전체>전체"` (4 depth · `>` 구분자)
-- Supabase display_location 예: `"37"` 또는 `"6매대>Ｂ>7열>전체"` (혼재 · 혼용 중)
-- 사용자 지시 5 번: **LocationName → products.display_location · ERP_OWNED 확정**
+### H-4 · display_location · ERP 계층 → 변환 규칙 (2026-10-03 저녁 **정정 · 재분석**)
 
-**발생 가능 문제**: Supabase 안 상품 중 짧은 포맷 (`"37"` 등) 은 사용자 수동 입력 · ERP 가 매번 `"벽>21>전체>전체"` 로 덮으면 사용자 작업 손실 가능성.
+**정정 요약**: 이전 보고의 `LocationName → display_location · ERP_OWNED` 는 폐기. ERP 화면 (로케이션 상품 등록) 은 `대분류/중분류/소분류/세분류` 4-depth 계층이며, 사용자 업무규칙은 `대분류 + 중분류` 만을 `display_location` 으로 변환한다.
 
-**관련**: `products.display_location` · `products.location` · `inventory_checks.shelf_positions`
+**현재 구조 재확인**:
+- ERP LocationName 포맷: `"대분류>중분류>소분류>세분류"` (4-depth · `>` 구분자)
+- Supabase `products.display_location` 포맷: `"21"` · `"6A"` · `"8B"` · `"24"` · `"7B"` 등 1~4자리 zone code (`isValidZoneCode` 통과값)
+- Supabase `products.location` : `display_location` 과 100% 동기 (`loc_eq_display=3,175 · loc_ne_display=0`) · `src/lib/productLocation.ts` 가 `location` 우선 fallback `display_location`
+
+**변환 규칙 (사용자 2026-10-03 저녁 확정)**:
+```
+벽 + N  →  N           예: "벽>21>전체>전체" → "21"
+N매대 + Ａ/Ｂ (전각)  →  NA/NB (반각 정규화)    예: "6매대>Ａ>7열>전체" → "6A"
+N매대 + A/B (반각 · 1매대만)  →  NA/NB         예: "1매대>B>2열>전체" → "1B"
+뷰티·냉장고·기타 → 사용자 결정 대기 (UNSPEC)
+N매대 + 뒤/앞 → "6뒤"·"5앞" (isValidZoneCode 통과 못함 · neither-class)
+```
+
+**실측 통계** (Inventory_Status 4,070 상품 기준):
+- Transformable: 3,069 (75.4%)
+- Empty LocationName: 824 (20.2%) ← ERP "로케이션 미지정 상품"
+- Unspec Major (뷰티 156 · 냉장고 21): 177 (4.4%)
+- Parse 실패: 0
+
+**ERP ↔ Supabase display_location 비교 (ProductName 매칭 2,950 상품)**:
+- exactSame: **36 (1.2%)** ← ERP-derived 와 DB 가 이미 일치
+- different: **514 (17.4%)** ← ERP-derived 가 DB 와 다른 값
+- bothEmpty: 747 (25.3%)
+- DB empty + ERP has: **1,574 (53.4%)** ← ERP sync 로 공란 상품에 location 부여 가능
+- ERP empty + DB has: 56 (1.9%) ← 자동 null 처리 **금지** (사용자 수동 입력 보존)
+- ERP unspec + DB has: 23 (뷰티·냉장고) ← 사용자 결정 전 보존
+
+**발생 가능 문제**:
+1. 자동 overwrite 시 514 상품 location 변경 → shelf_positions 자동 재배정 트리거 필요
+2. 창고 class flip 영향 (실측): **w1↔w2 flip 40 상품** (`w1→w2`=10 · `w2→w1`=30), neither 전환 77 상품, fromNone 1,571 상품 → shelf_positions 구조(warehouse1/warehouse2 slot) 변동
+3. 전각/반각 혼재 (전각 Ａ 923건 · 반각 A 87건) · 정규화 안 하면 `6Ａ ≠ 6A` 로 저장 → `isValidZoneCode` fail → shelf_positions 미생성
+4. `products.location` ↔ `display_location` 동기 미유지 시 → `productLocation.ts` 가 stale `location` 반환 → UI 가 ERP 값을 못 보여줌
+5. PATCH 흐름이 `inventory_checks.shelf_positions` 를 자동 재배정하는데 (`server/routes/stock/products.ts:1156`) · sync 경로가 이 로직 bypass 하면 shelf_positions 가 stale 로 남음
+
+**관련 테이블/컬럼**:
+- `products.display_location` · `products.location` (양쪽 동시 갱신 필수)
+- `inventory_checks.shelf_positions` (3,400 rows 전수 non-null · buildInitialShelfPositions 재적용 필요)
+- `src/shared/warehouseZones.ts::WAREHOUSE_1_CODES` (`"24","25","26","27","7B","8A"`)
+- `location_assigned_at` **컬럼 실제 미존재** (문서 유령 참조 · 삭제됨)
+- `stock_history` 에는 location 관련 컬럼 없음 (영향 없음)
+- `purchase_details` 에도 없음 (영향 없음)
 
 **권장 대응**:
-- shelf_positions · location_assigned_at 은 **PROTECTED 유지** (사용자 지시)
-- display_location 은 ERP_OWNED 로 매번 overwrite (사용자 지시 5 번)
-- NULL overwrite 금지 (ERP 가 LocationName 비면 기존 유지)
+- `products.display_location` · `products.location` Ownership = **ERP_DERIVED 후보** · 사용자 지시 명확화 후 확정
+- 56 "ERP empty + DB has" · 자동 NULL overwrite **금지** (기본 KEEP EXISTING)
+- 23 "ERP unspec (뷰티·냉장고) + DB has" · 뷰티·냉장고 변환 규칙 결정 전 **KEEP EXISTING**
+- 전각 Ａ/Ｂ → 반각 A/B **정규화 필수**
+- Sync 경로는 반드시 ·
+  1. `display_location` + `location` 동시 UPDATE
+  2. `buildInitialShelfPositions` 호출 · `inventory_checks.shelf_positions` 병합 (사용자 상세위치 보존)
+  3. DRY-RUN · 변경 상품 개수 · 창고 flip 개수 · neither 변환 개수 사전 리포트
+- `location_assigned_at` 문서 참조는 삭제 (실제 컬럼 없음)
+- shelf_positions · PROTECTED 유지 (상세 슬롯값은 사용자 소유 · 자동 재배정은 "신규 슬롯 추가/빈 슬롯 유지" 로만)
 
 ### H-5 · Buy_Status 중복 매입 거래 INSERT 위험
 **현재 구조**: Buy_Status 를 1시간마다 조회하면 **같은 매입 거래가 반복 조회**. 지금 `purchase_details` UPSERT key 는 `(purchase_date, supplier_code, product_code, quantity, amount)` · ignoreDuplicates.
@@ -249,12 +310,34 @@
 
 ---
 
-## 📋 CRITICAL BLOCKER 요약
+## 📋 CRITICAL BLOCKER 요약 (2026-10-03 저녁 최종 재분류)
 
 | # | Risk | Status |
 |---|---|---|
-| C-1 | product_code 체계 불일치 | ⏸ 사용자 결정 대기 (매핑 전략 A/B/C/D) |
-| H-1 | Product_List 102 col 미수집 (바코드 field 포함) | ⏸ 사용자 터미널 로그 공유 대기 |
-| H-5 | Buy_Status 중복 매입 INSERT 위험 | ⏸ Buy_Status 전체 col 수집 후 unique key 재설계 |
+| C-1 | ERP Barcode identity | ✅ **해소** · Product_List.BarCode (col[88]) · 100% non-empty · 1:1 PCode · Supabase 매칭 93.1% |
+| H-1 | Product_List 102 col 수집 | ✅ **해소** · 전수 확보 · snapshot 저장 (`data/snapshots/product-list-2026-10-03.json`) |
+| H-4 | display_location ERP_DERIVED 전환 | 🔄 **부분 해소** · Barcode 기준 재분석 완료 · 뷰티(156)·냉장고(21)·앞뒤(16) 규칙 USER DECISION 대기 |
+| H-5 | Buy_Status unique key | ✅ **해소** · `(BmCode, ROWNUM)` 확정 · BmCode="12261003000009" 샘플 검증됨 |
+| M-7 | Retry 정책 격차 | 🟡 신규 · 현재 1s/2s/포기 → 사용자 지시 30s/60s/120s/abort (코드 변경 금지 상태) |
 
-**이 3 항목 해결 전 PHASE 2 WRITE 구현 불가**.
+**남은 blocker**:
+- 뷰티·냉장고·앞뒤 Location 변환 규칙 (USER DECISION)
+- 73건 "ERP empty + DB has" 처리 정책 (추천: KEEP · USER DECISION)
+- 44건 CostPrice different (사용자 조정값) 처리 정책 (USER DECISION)
+- 189건 PriceA different 처리 정책 (USER DECISION)
+- `products.purchase_price` Ownership 확정 (ERP_OWNED vs PROTECTED)
+- `products.sale_price` Ownership 확정 (ERP_OWNED vs PROTECTED)
+- `current_stock` 공식 ERP 화면 검증 (USER가 5 상품 샘플 확인 필요)
+
+## 📎 2026-10-03 저녁 분석 자료
+- `scripts/fetch-product-list-2026-10-03.mjs` · Product_List 1회 조회 (concurrency=1 · 4007 rows · 102 cols)
+- `scripts/analyze-barcode-2026-10-03.mjs` · BarCode field 전수 분석 · ERP↔Supabase 93.1% match
+- `scripts/location-barcode-based-2026-10-03.mjs` · Barcode 기준 Location 재분석
+- `scripts/analyze-prices-2026-10-03.mjs` · CostPrice/PriceA/B/C/D 전수 분석
+- `scripts/fetch-buy-status-2026-10-03.mjs` · Buy_Status 2026-10-03 (5 rows · 사용자 검증값 완전 일치)
+- `scripts/reclassify-products-2026-10-03.mjs` · Barcode 기준 상품 재분류
+- `scripts/location-diff-2026-10-03.mjs` · (이전 ProductName 기반 · 참고용)
+- `scripts/location-impact-2026-10-03.mjs` · (이전 ProductName 기반 · 참고용)
+- `scripts/location-vs-display-location-2026-10-03.mjs` · products.location vs display_location 동기 상태
+- `data/snapshots/product-list-2026-10-03.json` · Product_List 전체 결과
+- `data/snapshots/buy-status-2026-10-03.json` · Buy_Status 2026-10-03 결과

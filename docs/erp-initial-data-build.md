@@ -1,6 +1,31 @@
 # 초기 데이터 구축 (Initial Data Build) · 설계 문서
 
 **작성일**: 2026-10-03 · **상태**: 설계 · **WRITE 미구현** · 사용자 지시 "결과를 보고하고 멈춰라"
+**업데이트**: 2026-10-03 저녁 · Location 정책 · RESET 분류 재검증 · READ ONLY 유지
+
+---
+
+## ⚠️ 2026-10-03 저녁 재검증 요약 (Product_List 조회 완료 후 최종)
+
+| 항목 | 이전 | 저녁 상태 |
+|---|---|---|
+| ERP Barcode field | 미확인 | ✅ `Product_List.BarCode (col[88]) · 100% non-empty · 1:1 PCode` |
+| Supabase product_code 매핑 | blocker | ✅ **93.1% exact match (3,732/4,007)** · OPTION A 확정 |
+| `products.display_location` Ownership | ERP_OWNED | **ERP_DERIVED** · 사용자 플로우 확정 ([초기화 전 분석/비교] → [구축 시 변환 적용] → [이후 지속 Sync]) |
+| `products.location` Ownership | PROTECTED | **ERP_DERIVED** (display_location 과 양쪽 동시 갱신 필수) |
+| `location_assigned_at` | PROTECTED | **컬럼 실제 미존재 · 삭제** |
+| Buy_Status unique key | 미확인 | ✅ **`(BmCode, ROWNUM)`** · 샘플 검증 완료 |
+| `purchase_details` 12,939 | RESET_CONFIRMED | **RESET_CANDIDATE** (초기화 승인 + Buy_Status 전수 조회 범위 확정 전 금지) |
+| `stock_history` 53,641 | RESET_CONFIRMED | **RESET_CANDIDATE** (Inventory 현재고 공식 ERP 화면 검증 전 금지) |
+
+**사용자 Location 플로우 (2026-10-03 저녁 메시지 반영)**:
+```
+[초기화 전]  = 현재 Supabase display_location → 분석/비교용 · 변경 금지
+[구축 실행]  = ERP 대분류+중분류 → 변환 → products.display_location (일회성)
+             = 벽+21 → "21", 6매대+A → "6A", 6매대+B → "6B"
+             = 웹서비스의 새 진열위치 기준
+[구축 후]    = ERP → Location Sync → display_location → 웹서비스 (지속)
+```
 
 > 사용자 지시: "7,078개 중 ERP 상품과 연결되는 것, ERP에 없는 것, 오픈 전에 실제로 설정한 것, 순수 샘플을 먼저 분리해야 해. 반면 purchase_details와 stock_history가 전부 테스트/샘플이라고 확인된다면 이쪽은 초도 전환 때 실제 자료로 깨끗하게 재구축하는 쪽이 훨씬 자연스러워."
 
@@ -21,18 +46,23 @@
 
 ## 1. 분석 결과 · 현재 데이터 분류
 
-### 1-A · products 7,078 세부 분류 (매우 중요)
+### 1-A · products 7,078 세부 분류 (2026-10-03 저녁 · Barcode identity 기준 재계산 · ★★★)
 
-사용자 지시대로 4 가지 그룹으로 분리 ·
+**이전 ProductName 매칭 기반 분류는 폐기**. Barcode 93.1% 정확 매칭 기준 재분류.
 
-| 그룹 | 개수 | 조건 (ProductName 매칭 + 운영흔적) | 처리 방침 |
+| 그룹 | 개수 | 조건 (Barcode 매칭 + 운영흔적) | 처리 방침 |
 |---|---|---|---|
-| **[A] REAL_PRECONFIG** | **2,920** | ERP 매칭 ✓ · 운영흔적 ✓ | **최우선 보존** · ERP_OWNED whitelist 만 UPDATE · PROTECTED (optimal_stock · memo · display_location · hidden) 완전 보존 |
-| **[B] ERP_SYNC** | 30 | ERP 매칭 ✓ · 운영흔적 X | 사용자 승인 후 ERP_OWNED UPDATE |
-| **[C] CUSTOM** | **4,077** | ERP 매칭 X · 운영흔적 ✓ | **KEEP** · ERP 외 상품 (자체 바코드 · 과거 상품 등) · 자동 DELETE 금지 |
-| **[D] REVIEW** | 51 | ERP 매칭 X · 운영흔적 X | **REVIEW 필요** · 순수 샘플 후보지만 자동 DELETE 금지 · 사용자 수동 확인 |
+| **ERP_MATCHED_ACTIVE** | **3,704** | ERP Barcode ✓ · 운영흔적 ✓ | **최우선 보존** · ERP_OWNED whitelist 만 UPDATE · PROTECTED (optimal_stock · memo · hidden · shelf_positions) 완전 보존 |
+| **ERP_MATCHED_INACTIVE** | 28 | ERP Barcode ✓ · 운영흔적 X | ERP_OWNED UPDATE · ERP 값으로 initialize |
+| **ERP_NEW** | 275 | ERP 에만 있음 · DB 신규 | 사용자 승인 후 INSERT (최근 등록 상품 15431 등) |
+| **DB_ONLY_ACTIVE** | **3,293** | DB 에만 있음 · 운영흔적 ✓ | **KEEP** · 자체 등록 상품/과거 상품/테스트 상품 혼재 · 자동 DELETE 영구 금지 |
+| **DB_ONLY_INACTIVE** | 53 | DB 에만 있음 · 운영흔적 X | **REVIEW** · 2026-06-26 import 당시 "-" prefix 테스트 샘플 다수 · 자동 DELETE 금지 · 사용자 수동 확인 |
+| **BARCODE_CONFLICT** | **0** | 같은 Barcode·다른 상품명 | 발생 안 함 (완벽) |
+| **ERP_MISSING_BARCODE** | **0** | ERP 에서 BarCode empty | 발생 안 함 (ERP 100% 입력) |
 
-**운영흔적 판정**: `optimal_stock > 0` OR `memo 입력됨` OR `display_location 입력됨`
+**운영흔적 판정**: `optimal_stock > 0` OR `memo 입력됨` OR `display_location 입력됨` OR `hidden=true`
+
+**합계 검증**: 3,704 + 28 + 3,293 + 53 = 7,078 (Supabase 전체) ✓ / ERP 신규 275
 
 **결론**: 7,078 중 **일괄 삭제 가능한 상품 거의 없음**. "SAMPLE 전수 삭제" 는 금지. 상품 identity 확정 후 **그룹별 처리**.
 
@@ -131,16 +161,18 @@
 - `supplier` · `supplier_code`
 - `category` · `unit` · `brand` · `manufacturer`
 - `sale_status`
-- **`display_location`** (사용자 지시 7 번 확정 · LocationName → display_location)
 - 추가: 102 col 수집 후 `sale_price · spec · origin` 등 재분류
+
+### ERP_DERIVED (products · 2026-10-03 저녁 신설)
+- **`display_location`** (ERP 대분류+중분류 → 변환) · 영향분석 조건부 적용 (뷰티/냉장고 규칙 미정 · 56 "ERP empty + DB has" 처리 미정)
+- **`location`** (display_location 과 100% 동기 유지)
 
 ### PROTECTED (products)
 - `optimal_stock` · `optimal_stock_backup` (99.9% 활발 운영)
 - `memo` (82% 활발)
 - `hidden` (사용자 토글)
 - `shelf_positions` (JSONB · inventory_checks)
-- `location_assigned_at` (자동 할당 메타)
-- `location` (사용자 수동 입력 혼재)
+- ~~`location_assigned_at`~~ (**컬럼 실제 미존재 · 삭제**)
 - `stock_note` · `created_at`
 - `current_stock` (⚠ UNCERTAIN · 공식 검증 전 PROTECTED)
 
@@ -163,17 +195,21 @@
 |---|---|---|---|
 | **products** | 7,078 | **그룹별 처리** (A/B/C/D) · 일괄 DELETE 금지 | 사용자 지시 18 번 · 51 개만 순수 샘플 추정 |
 | **vendors** | 156 | **KEEP 전체** · ERP 공급사 매핑만 신규 생성 | 사용자 지시 19 번 · 연락처/승인 보존 |
-| **purchase_details** | 12,939 | **재구축** · verified_by 입력 8 건 archive 후 전수 삭제 → Buy_Status 초도매입 재구축 | verified 거의 미입력 · 사용자 지시 "전부 테스트" |
-| **stock_history** | 53,641 | **재구축** · archive 후 전수 삭제 → Inventory_Status 초도재고 기준 재구축 or 유지 결정 | 월별 Excel sample · 사용자 지시 "실제 자료로 깨끗하게 재구축" |
+| **purchase_details** | 12,939 | **RESET_CANDIDATE** (2026-10-03 저녁 재분류) · Buy_Status 안정 unique key 확정 전 재구축 금지 · verified_by 입력 8 건 archive | verified 거의 미입력 · unique key (DocNo+LineSeq) 미확정 상태에서 재구축 시 중복 INSERT 위험 |
+| **stock_history** | 53,641 | **RESET_CANDIDATE** (2026-10-03 저녁 재분류) · Inventory_Status 현재고 공식 ERP 화면 검증 전 재구축 금지 | 월별 Excel sample · closing_stock 공식 미검증 상태에서 재구축 시 재고 정합성 위험 |
 | **inventory_checks** | 3,400 | **KEEP 전체** · shelf_positions 보존 필수 | 사용자 지시 20 번 · 운영 flow 유지 |
 
 ### products 그룹별 세부
 ```
 [A] REAL_PRECONFIG · 2,920
     ├─ product_code (바코드) 보존
-    ├─ product_name · supplier · supplier_code · category · unit · display_location · sale_status
+    ├─ product_name · supplier · supplier_code · category · unit · sale_status
     │  → ERP_OWNED UPDATE (NULL overwrite 금지)
-    └─ optimal_stock · memo · hidden · shelf_positions · location
+    ├─ display_location · location (양쪽 동시 갱신)
+    │  → ERP_DERIVED UPDATE · 전각/반각 정규화 · 뷰티/냉장고 규칙 결정 후 적용
+    │    (영향: 36 same · 514 변경 · 1,574 신규 · 56 유지(KEEP) · 23 unspec KEEP · 40 창고 flip)
+    │    → shelf_positions 자동 재배정 트리거 (buildInitialShelfPositions 호출 필수)
+    └─ optimal_stock · memo · hidden · shelf_positions
        → 완전 보존
 
 [B] ERP_SYNC · 30

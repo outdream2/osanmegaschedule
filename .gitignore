@@ -49,3 +49,10 @@ keys/
 
 # 🔐 2026-08-12 · 테넌트 시스템 설정 파일 (env 오버라이드 · KEY 포함)
 server/tenant.config.json
+
+# 2026-10-03 · ERP SOAP snapshots (민감하지 않지만 대용량 · 재생성 가능)
+data/snapshots/debug/
+data/snapshots/*.json
+
+# 2026-10-03 · ERP C# decoder 중간 산출물 (프로젝트 root 에 생성됨)
+debug/
