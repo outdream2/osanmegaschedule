@@ -145,28 +145,32 @@ const api = {
     >,
   iregenClearCorpDbNm: () => ipcRenderer.invoke("iregen:clearCorpDbNm") as Promise<{ ok: boolean }>,
 
-  // ── 2026-10-03 저녁 · Phase 2 · ERP → Supabase Sync Orchestrator ──
-  erpSyncStatus: () => ipcRenderer.invoke("erpSync:status") as Promise<{
-    supabase: { present: boolean; urlSuffix: string | null };
-    session: { snapshotRows: number | null; fetchedAt: string | null; previewReady: boolean; blockingErrors: boolean | null };
-  }>,
-  erpSyncFetch: () => ipcRenderer.invoke("erpSync:fetch") as Promise<
-    | { ok: true; rows: number; fetchedAt: string }
-    | { ok: false; stage: string; error: string }
-  >,
-  erpSyncPreview: () => ipcRenderer.invoke("erpSync:preview") as Promise<
-    | { ok: true; preview: unknown }
-    | { ok: false; error: string }
-  >,
-  erpSyncApply: (opts?: { mode?: "DRY_RUN" | "WRITE"; allowWrite?: boolean }) =>
-    ipcRenderer.invoke("erpSync:apply", opts) as Promise<{
-      ok: boolean;
-      dryRun: boolean;
-      inserted: number;
-      updated: number;
-      failed: number;
-      message?: string;
+  // ── 2026-10-04 · Phase 2 · Multi-Dataset ERP Gateway ──
+  erpSyncGetAllDatasets: () => ipcRenderer.invoke("erpSync:getAllDatasets"),
+  erpSyncGetDatasetState: (dataset: string) =>
+    ipcRenderer.invoke("erpSync:getDatasetState", dataset),
+  erpSyncFetchDataset: (args: { dataset: string; startDate?: string; endDate?: string }) =>
+    ipcRenderer.invoke("erpSync:fetchDataset", args) as Promise<{ ok: true; enqueued: true; dataset: string }>,
+  erpSyncFetchSelected: (args: { datasets: string[]; startDate?: string; endDate?: string }) =>
+    ipcRenderer.invoke("erpSync:fetchSelected", args) as Promise<{ ok: true; enqueued: string[] }>,
+  erpSyncRevalidate: (dataset: string) =>
+    ipcRenderer.invoke("erpSync:revalidate", dataset) as Promise<{ ok: boolean; validation: unknown }>,
+  erpSyncGetRows: (args: { dataset: string; limit?: number }) =>
+    ipcRenderer.invoke("erpSync:getRows", args) as Promise<
+      | { ok: true; rows: unknown[]; total: number }
+      | { ok: false; error: string }
+    >,
+  erpSyncSyncSelected: (args: { datasets: string[]; allowWrite?: boolean }) =>
+    ipcRenderer.invoke("erpSync:syncSelected", args) as Promise<{
+      ok: boolean; dryRun: boolean; inserted: number; updated: number; failed: number; message?: string;
     }>,
+  onErpDatasetProgress: (
+    callback: (p: { dataset: string; phase: string; page?: number; totalPages?: number; rowsAccum?: number; totalRowsExpected?: number; startedAt?: string; message?: string }) => void,
+  ): (() => void) => {
+    const listener = (_: unknown, p: any) => callback(p);
+    ipcRenderer.on("erp:dataset-progress", listener);
+    return () => { ipcRenderer.removeListener("erp:dataset-progress", listener); };
+  },
 
   // 2026-10-03 · Product_List pagination 진행률 (매 페이지/배치 완료 broadcast)
   onErpProductProgress: (

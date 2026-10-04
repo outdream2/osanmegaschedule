@@ -1,277 +1,342 @@
 // apps/sync-agent/src/main/erpSyncOrchestrator.ts
-// 2026-10-03 저녁 · Phase 2 · ERP → Supabase 전체 파이프라인 (sync-agent main)
+// 2026-10-04 · Phase 2 · ERP → Supabase Gateway · Multi-dataset Orchestrator
 //
-// 역할:
-//   · Fetch (ERP SOAP · 기존 queryProductList 재사용) → in-memory snapshot
-//   · Decode / JSON (iregenSoap.ts 가 이미 수행)
-//   · Normalize + Validate (erpValidationEngine)
-//   · Mapping + Diff (erpProductMapper + Supabase READ)
-//   · Preview (summary + issues + change rows)
-//   · Apply (DRY_RUN 기본 · WRITE 는 double-gate)
+// 3개 Dataset 독립 관리:
+//   PRODUCT_LIST     · Product_List (SOAP · 81 pages · ~4분)
+//   INVENTORY_STATUS · Inventory_Status (SOAP · 단일 응답 · 42 field)
+//   BUY_STATUS       · Buy_Status (SOAP · DevStartDate/EndDate 기간)
 //
-// 반환은 IPC 를 통해 Renderer 로 전달 · 민감정보 노출 금지
+// 각 Dataset:
+//   · 독립 Fetch
+//   · 영속 Snapshot (userData/snapshots/{DATASET}.json)
+//   · 독립 Validation 결과
+//   · 독립 readiness state (READY / REVIEW / BLOCKED / NOT_CONFIGURED)
+//
+// ERP 호출:
+//   · 전역 Queue · concurrency = 1 · 순차 실행
+//   · 사용자 UI 에서 여러 선택해도 병렬 호출 금지
 
-import { queryProductList } from "./iregenSoap";
-import { getSupabaseClient, getSupabaseStatus } from "./supabaseClient";
+import { BrowserWindow } from "electron";
+import { queryProductList, queryInventoryStatus, queryBuyStatus } from "./iregenSoap";
+import { erpQueue } from "./erpQueue";
+import {
+  loadSnapshotMeta,
+  loadSnapshotFull,
+  saveSnapshot,
+  updateSnapshotValidation,
+} from "./snapshotStore";
+import {
+  DATASET_API_NAME,
+  type DatasetKey,
+  type DatasetState,
+  type DatasetProgress,
+  type FetchPhase,
+  type SyncReadiness,
+  type ValidationSummary,
+} from "./datasetTypes";
 import {
   validateErpSnapshot,
-  type ValidationReport,
   type ValidationErpRow,
-  type ValidationDbSnapshot,
 } from "../../../../src/shared/erp/erpValidationEngine";
-import {
-  buildErpProductPayload,
-  type ErpProductRow,
-  type DbProductRow,
-} from "../../../../src/shared/erp/erpProductMapper";
 
-export type OrchestratorPhase =
-  | "IDLE"
-  | "FETCHING"
-  | "DECODED"
-  | "VALIDATING"
-  | "PREVIEW_READY"
-  | "SYNCING"
-  | "COMPLETED"
-  | "FAILED"
-  | "ERROR_BLOCKED";
-
-export interface SyncSummary {
-  readonly erpProducts: number;
-  readonly dbProducts: number;
-  readonly matched: number;
-  readonly newInsert: number;
-  readonly dbOnly: number;
-  readonly conflict: number;
-  readonly wouldInsert: number;
-  readonly wouldUpdate: number;
-  readonly wouldDelete: 0;
-  readonly currentStockChanges: number;
-  readonly locationChanges: number;
-  readonly locationReview: number;
-}
-
-export interface ChangeRow {
-  readonly barcode: string;
-  readonly pcode: string;
-  readonly productName: string;
-  readonly action: "INSERT" | "UPDATE" | "SAME";
-  readonly changedFields: readonly string[];
-}
-
-export interface PreviewPayload {
-  readonly phase: OrchestratorPhase;
-  readonly fetchedAt: string;
-  readonly erpConfig: { present: boolean };
-  readonly supabaseConfig: { present: boolean; urlSuffix: string | null };
-  readonly summary: SyncSummary;
-  readonly validation: ValidationReport;
-  readonly changes: readonly ChangeRow[];
-  readonly dryRunOnly: true;
-  readonly blockingErrors: boolean;
-}
-
-/** session 상태 · Renderer 가 Preview → Apply 호출 사이에 재사용 */
-interface SessionState {
-  snapshot: ErpProductRow[] | null;
-  dbRows: DbProductRow[] | null;
-  preview: PreviewPayload | null;
-  fetchedAt: string | null;
-}
-
-const session: SessionState = {
-  snapshot: null,
-  dbRows: null,
-  preview: null,
-  fetchedAt: null,
-};
-
-/** Supabase products 전수 READ (payload build 용) */
-async function loadAllProductsFromDb(): Promise<DbProductRow[]> {
-  const supabase = getSupabaseClient();
-  if (!supabase) throw new Error("Supabase 미설정 · SUPABASE_URL/KEY 확인");
-  const PAGE = 1000;
-  const out: DbProductRow[] = [];
-  let from = 0;
-  while (true) {
-    const { data, error } = await supabase
-      .from("products")
-      .select(
-        "product_code, product_name, supplier, supplier_code, unit, sale_status, brand, manufacturer, " +
-        "last_purchase_date, last_sale_date, current_stock, display_location, location, " +
-        "optimal_stock, memo, hidden, stock_note, imported_at",
-      )
-      .range(from, from + PAGE - 1);
-    if (error) throw new Error(`products 조회 실패 · ${error.message}`);
-    if (!data || data.length === 0) break;
-    out.push(...(data as unknown as DbProductRow[]));
-    if (data.length < PAGE) break;
-    from += PAGE;
-  }
-  return out;
-}
-
-/** 1. Fetch (ERP SOAP · in-memory snapshot) · concurrency=1 유지 */
-export async function fetchErpSnapshot(): Promise<
-  | { ok: true; rows: number; fetchedAt: string }
-  | { ok: false; stage: string; error: string }
-> {
-  const t0 = Date.now();
-  console.log("[erpSyncOrchestrator] FETCH 시작 · concurrency=1");
-  const result = await queryProductList({ pageSize: 50, concurrency: 1 });
-  const ms = Date.now() - t0;
-  if (!result.ok) {
-    console.error(`[erpSyncOrchestrator] FETCH 실패 · ${ms}ms · ${result.stage}: ${result.error}`);
-    return { ok: false, stage: result.stage, error: result.error };
-  }
-  session.snapshot = result.rows as unknown as ErpProductRow[];
-  session.fetchedAt = new Date().toISOString();
-  session.preview = null;
-  console.log(`[erpSyncOrchestrator] FETCH 완료 · ${ms}ms · rows=${result.rowCount}`);
-  return { ok: true, rows: result.rowCount, fetchedAt: session.fetchedAt };
-}
-
-/** 2. Validate + Diff + Preview 생성 */
-export async function buildPreview(): Promise<PreviewPayload> {
-  if (!session.snapshot) throw new Error("ERP snapshot 없음 · 먼저 Fetch 수행");
-
-  // DB 로드
-  const dbRows = await loadAllProductsFromDb();
-  session.dbRows = dbRows;
-
-  // Validation (DB snapshot 포함 · stock spike 체크)
-  const dbStockMap = new Map<string, number | null>();
-  for (const r of dbRows) {
-    const bc = String(r.product_code).trim();
-    const stock = r.current_stock == null ? null : Number(r.current_stock);
-    dbStockMap.set(bc, Number.isFinite(stock as number) ? (stock as number) : null);
-  }
-  const dbSnapshotForValidation: ValidationDbSnapshot = { currentStockByBarcode: dbStockMap };
-  const validation = validateErpSnapshot(
-    session.snapshot as unknown as ValidationErpRow[],
-    dbSnapshotForValidation,
-    {},
-  );
-
-  // Diff / Preview summary
-  const dbByCode = new Map(dbRows.map((p) => [String(p.product_code).trim(), p]));
-  const seenErp = new Set<string>();
-  let matched = 0, newInsert = 0, conflict = 0;
-  let wouldUpdate = 0, wouldInsert = 0;
-  let currentStockChanges = 0, locationChanges = 0, locationReview = 0;
-  const changes: ChangeRow[] = [];
-
-  for (const er of session.snapshot) {
-    const bc = String(er.BarCode ?? "").trim();
-    if (!bc) continue;
-    if (seenErp.has(bc)) { conflict++; continue; }
-    seenErp.add(bc);
-    const dbRow = dbByCode.get(bc) ?? null;
+// ─────────────────────────────────────────────────────────────────────────────
+// Broadcast · dataset-progress
+// ─────────────────────────────────────────────────────────────────────────────
+function broadcastDatasetProgress(p: DatasetProgress): void {
+  for (const w of BrowserWindow.getAllWindows()) {
     try {
-      const result = buildErpProductPayload(er, dbRow);
-      if (result.locationDecision === "review") locationReview++;
-      if (result.payload.current_stock !== undefined) currentStockChanges++;
-      if (result.payload.display_location !== undefined) locationChanges++;
-      if (dbRow) {
-        matched++;
-        if (result.changedCount > 0) {
-          wouldUpdate++;
-          const changedFields = Object.keys(result.payload);
-          // 최대 500 행만 상세 보존 (Renderer DOM 폭주 방지)
-          if (changes.length < 500) {
-            changes.push({
-              barcode: bc,
-              pcode: String(er.PCode ?? ""),
-              productName: String(er.ProductName ?? ""),
-              action: "UPDATE",
-              changedFields,
-            });
-          }
-        }
-      } else {
-        newInsert++;
-        wouldInsert++;
-        if (changes.length < 500) {
-          changes.push({
-            barcode: bc,
-            pcode: String(er.PCode ?? ""),
-            productName: String(er.ProductName ?? ""),
-            action: "INSERT",
-            changedFields: Object.keys(result.payload),
-          });
-        }
-      }
+      w.webContents.send("erp:dataset-progress", p);
     } catch {
-      // mapper 실패 시 skip (validation 에서 이미 분류됨)
+      /* ignore */
     }
   }
-  const dbOnly = dbRows.filter((p) => !seenErp.has(String(p.product_code).trim())).length;
+}
 
-  const summary: SyncSummary = {
-    erpProducts: session.snapshot.length,
-    dbProducts: dbRows.length,
-    matched,
-    newInsert,
-    dbOnly,
-    conflict,
-    wouldInsert,
-    wouldUpdate,
-    wouldDelete: 0,
-    currentStockChanges,
-    locationChanges,
-    locationReview,
+// ─────────────────────────────────────────────────────────────────────────────
+// In-memory state (per dataset)
+// ─────────────────────────────────────────────────────────────────────────────
+interface InMemoryState {
+  phase: FetchPhase;
+  inflight: DatasetProgress | null;
+  lastError: string | null;
+}
+
+const memory: Record<DatasetKey, InMemoryState> = {
+  PRODUCT_LIST: { phase: "IDLE", inflight: null, lastError: null },
+  INVENTORY_STATUS: { phase: "IDLE", inflight: null, lastError: null },
+  BUY_STATUS: { phase: "IDLE", inflight: null, lastError: null },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Readiness 계산 (snapshot + validation + 정책)
+// ─────────────────────────────────────────────────────────────────────────────
+function computeReadiness(dataset: DatasetKey, validation: ValidationSummary | undefined, phase: FetchPhase): SyncReadiness {
+  if (phase === "FAILED") return "BLOCKED";
+  // Phase 2 정책:
+  //   PRODUCT_LIST     · validation 통과하면 READY · REVIEW 있으면 REVIEW
+  //   BUY_STATUS       · migration 미적용 상태 · BLOCKED (호출부가 체크)
+  //   INVENTORY_STATUS · destination 미확정 · NOT_CONFIGURED
+  if (dataset === "INVENTORY_STATUS") return "NOT_CONFIGURED";
+  if (dataset === "BUY_STATUS") return "BLOCKED"; // migration 적용 후 Phase 3 에서 해제
+  // PRODUCT_LIST
+  if (!validation) return "READY";
+  if (validation.blockingErrors) return "BLOCKED";
+  if (validation.review > 0) return "REVIEW";
+  return "READY";
+}
+
+function dependencyMessage(dataset: DatasetKey): string | null {
+  if (dataset === "BUY_STATUS") {
+    const prod = loadSnapshotMeta("PRODUCT_LIST");
+    if (!prod) return "매입내역 매핑에는 상품정보 데이터가 필요합니다. 상품정보 를 먼저 가져오세요.";
+    return null;
+  }
+  return null;
+}
+
+export function getDatasetState(dataset: DatasetKey): DatasetState {
+  const snapshot = loadSnapshotMeta(dataset);
+  const mem = memory[dataset];
+  const readiness = computeReadiness(dataset, snapshot?.validation, mem.phase);
+  return {
+    dataset,
+    phase: mem.phase,
+    readiness,
+    snapshot,
+    inflight: mem.inflight,
+    lastError: mem.lastError,
+    dependencyMessage: dependencyMessage(dataset),
   };
+}
 
-  const preview: PreviewPayload = {
-    phase: validation.blockingErrors ? "ERROR_BLOCKED" : "PREVIEW_READY",
-    fetchedAt: session.fetchedAt ?? new Date().toISOString(),
-    erpConfig: { present: true },
-    supabaseConfig: getSupabaseStatus(),
-    summary,
-    validation,
-    changes,
-    dryRunOnly: true,
+export function getAllDatasetStates(): Record<DatasetKey, DatasetState> {
+  return {
+    PRODUCT_LIST: getDatasetState("PRODUCT_LIST"),
+    INVENTORY_STATUS: getDatasetState("INVENTORY_STATUS"),
+    BUY_STATUS: getDatasetState("BUY_STATUS"),
+  };
+}
+
+export function getQueueStatus(): ReturnType<typeof erpQueue.status> {
+  return erpQueue.status();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fetch job · Dataset 별 ERP SOAP 호출 + 저장
+// ─────────────────────────────────────────────────────────────────────────────
+function updateInflight(dataset: DatasetKey, patch: Partial<DatasetProgress>, phase?: FetchPhase): void {
+  const mem = memory[dataset];
+  const current: DatasetProgress = mem.inflight ?? { dataset, phase: "QUEUED" };
+  const next: DatasetProgress = { ...current, ...patch, dataset, phase: patch.phase ?? current.phase };
+  mem.inflight = next;
+  if (phase) mem.phase = phase;
+  broadcastDatasetProgress(next);
+}
+
+function clearInflight(dataset: DatasetKey, finalPhase: FetchPhase): void {
+  memory[dataset].inflight = null;
+  memory[dataset].phase = finalPhase;
+}
+
+/**
+ * Dataset 1개 Fetch · Queue 에 enqueue · 호출자는 바로 return (비동기)
+ */
+export function enqueueFetch(dataset: DatasetKey, opts?: { startDate?: string; endDate?: string }): void {
+  // 이미 queue 에 들어있거나 실행중이면 중복 enqueue 금지
+  if (memory[dataset].inflight) return;
+  if (erpQueue.waitingFor(dataset)) return;
+
+  // 초기 Queued 상태 broadcast
+  const startedAt = new Date().toISOString();
+  memory[dataset].inflight = { dataset, phase: "QUEUED", startedAt };
+  memory[dataset].phase = "QUEUED";
+  memory[dataset].lastError = null;
+  broadcastDatasetProgress(memory[dataset].inflight!);
+
+  erpQueue.enqueue({
+    dataset,
+    label: DATASET_API_NAME[dataset],
+    run: async () => {
+      try {
+        if (dataset === "PRODUCT_LIST") await runProductListFetch(startedAt);
+        else if (dataset === "INVENTORY_STATUS") await runInventoryStatusFetch(startedAt, opts);
+        else if (dataset === "BUY_STATUS") await runBuyStatusFetch(startedAt, opts);
+      } catch (err) {
+        const msg = (err as Error).message ?? String(err);
+        memory[dataset].lastError = msg;
+        updateInflight(dataset, { phase: "FAILED", message: msg }, "FAILED");
+        setTimeout(() => { clearInflight(dataset, "FAILED"); broadcastFinalState(dataset); }, 500);
+      }
+    },
+  });
+}
+
+function broadcastFinalState(dataset: DatasetKey): void {
+  broadcastDatasetProgress({
+    dataset,
+    phase: memory[dataset].phase,
+    message: memory[dataset].lastError ?? undefined,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUCT_LIST Fetch
+// ─────────────────────────────────────────────────────────────────────────────
+async function runProductListFetch(startedAt: string): Promise<void> {
+  const dataset: DatasetKey = "PRODUCT_LIST";
+  updateInflight(dataset, { phase: "REQUESTING", message: "ERP 사업장 상품관리 조회 시작" }, "REQUESTING");
+
+  // Product_List 는 pagination · iregenSoap 가 broadcastProductProgress 를 쏘지만
+  // 그건 "erp:product-progress" channel · 우리의 dataset-progress 로 bridge
+  const unsubBridge = bridgeProductProgressToDataset(dataset);
+
+  const result = await queryProductList({ pageSize: 50, concurrency: 1 });
+  unsubBridge();
+
+  if (!result.ok) {
+    throw new Error(`${result.stage}: ${result.error}`);
+  }
+
+  updateInflight(dataset, { phase: "DECODING", message: "데이터 변환 중..." }, "DECODING");
+  updateInflight(dataset, { phase: "VALIDATING", message: "데이터 검증 중..." }, "VALIDATING");
+
+  // Validation (DB snapshot 없이 · 상품 수준 validation 만 실행)
+  const validation = validateErpSnapshot(result.rows as unknown as ValidationErpRow[], null, {});
+  const vSum: ValidationSummary = {
+    totalRows: validation.totalRows,
+    normal: validation.normal,
+    review: validation.review,
+    error: validation.error,
     blockingErrors: validation.blockingErrors,
   };
-  session.preview = preview;
-  return preview;
+
+  // 저장 (기존 snapshot atomic 교체)
+  saveSnapshot(dataset, result.rows, startedAt, vSum);
+
+  updateInflight(dataset, { phase: "READY", message: `완료 · ${result.rowCount.toLocaleString()}건` }, "READY");
+  setTimeout(() => { clearInflight(dataset, "READY"); broadcastFinalState(dataset); }, 2000);
 }
 
-/** 3. Apply · Supabase WRITE · 반드시 double gate */
-export async function applySync(opts: {
-  mode?: "DRY_RUN" | "WRITE";
-  allowWrite?: boolean;
-}): Promise<{ ok: boolean; dryRun: boolean; inserted: number; updated: number; failed: number; message?: string }> {
-  const mode = opts.mode ?? "DRY_RUN";
-  const allowWrite = opts.allowWrite === true;
-  if (!session.preview) throw new Error("Preview 없음 · 먼저 Preview 생성");
-  if (session.preview.blockingErrors) {
-    return { ok: false, dryRun: true, inserted: 0, updated: 0, failed: 0, message: "ERROR 가 존재하여 Sync 차단됨" };
-  }
-  if (mode === "WRITE" && !allowWrite) {
-    return { ok: false, dryRun: true, inserted: 0, updated: 0, failed: 0, message: "WRITE 요청 거부 · allowWrite=false" };
-  }
-  // 이번 단계에서는 전체 WRITE 를 활성화하지 않음 · Phase 3 명시 승인 후 productSyncRunner 를 호출하는 경로를 추가 예정
-  return {
-    ok: false,
-    dryRun: mode !== "WRITE" || !allowWrite,
-    inserted: 0,
-    updated: 0,
-    failed: 0,
-    message: "전체 WRITE 는 Phase 3 사용자 승인 후 활성화. 현재는 DRY-RUN 전용.",
-  };
+/** Product_List pagination 진행률 (iregenSoap · erp:product-progress) 를 dataset-progress 로 bridge */
+function bridgeProductProgressToDataset(dataset: DatasetKey): () => void {
+  // iregenSoap 는 BrowserWindow.webContents.send 로 broadcast · 우리는 "메인 process 끼리" 수신 X
+  // 대신 iregenSoap 는 매 batch 완료 시 send 를 호출하는데, 우리는 그 상태를 추적하기 위해
+  // ipcMain.on 으로 받을 수 있지만 send 는 renderer 로 가는 것.
+  // 대안: 바로 renderer 가 수신 가능하지만 "dataset-progress" 채널로 통일하려면
+  //       iregenSoap 쪽에 변경이 필요 · 이번에는 기존 "erp:product-progress" 도 renderer 가 수신하도록
+  //       그대로 두고, 추가로 "erp:dataset-progress" 를 뿌리는 timer 로 보완
+  // 간단화: 상위 REQUESTING/VALIDATING/READY 만 dataset-progress 로 broadcast
+  //         상세 pagination 진행률은 renderer 가 기존 onErpProductProgress 리스너로 받아 UI 매핑
+  void dataset;
+  return () => {};
 }
 
-export function getSessionStatus(): {
-  snapshotRows: number | null;
-  fetchedAt: string | null;
-  previewReady: boolean;
-  blockingErrors: boolean | null;
-} {
-  return {
-    snapshotRows: session.snapshot?.length ?? null,
-    fetchedAt: session.fetchedAt,
-    previewReady: !!session.preview,
-    blockingErrors: session.preview?.blockingErrors ?? null,
+// ─────────────────────────────────────────────────────────────────────────────
+// INVENTORY_STATUS Fetch
+// ─────────────────────────────────────────────────────────────────────────────
+async function runInventoryStatusFetch(startedAt: string, opts?: { startDate?: string; endDate?: string }): Promise<void> {
+  const dataset: DatasetKey = "INVENTORY_STATUS";
+  updateInflight(dataset, { phase: "REQUESTING", message: "ERP 재고 입출고 현황 조회 시작" }, "REQUESTING");
+  const result = await queryInventoryStatus(opts);
+  if (!result.ok) throw new Error(`${result.stage}: ${result.error}`);
+
+  updateInflight(dataset, { phase: "DECODING", message: "데이터 변환 중..." }, "DECODING");
+  updateInflight(dataset, { phase: "VALIDATING", message: "구조 검증 중..." }, "VALIDATING");
+
+  // Inventory_Status 는 필수 필드 (PCode · ProductName) 수준만 검증
+  //   current_stock destination 미확정 · PRODUCT identity 수준 중복 체크만
+  const rows = result.rows as Array<{ PCode?: unknown; ProductName?: unknown }>;
+  let missingPCode = 0;
+  const seenPCode = new Set<string>();
+  let dupPCode = 0;
+  for (const r of rows) {
+    const pc = String(r.PCode ?? "").trim();
+    if (!pc) missingPCode++;
+    else {
+      if (seenPCode.has(pc)) dupPCode++;
+      else seenPCode.add(pc);
+    }
+  }
+  const errorCount = missingPCode + dupPCode;
+  const vSum: ValidationSummary = {
+    totalRows: rows.length,
+    normal: rows.length - errorCount,
+    review: 0,
+    error: errorCount,
+    blockingErrors: errorCount > 0,
   };
+
+  saveSnapshot(dataset, result.rows, startedAt, vSum);
+  updateInflight(dataset, { phase: "READY", message: `완료 · ${result.rowCount.toLocaleString()}건` }, "READY");
+  setTimeout(() => { clearInflight(dataset, "READY"); broadcastFinalState(dataset); }, 2000);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUY_STATUS Fetch
+// ─────────────────────────────────────────────────────────────────────────────
+async function runBuyStatusFetch(startedAt: string, opts?: { startDate?: string; endDate?: string }): Promise<void> {
+  const dataset: DatasetKey = "BUY_STATUS";
+  updateInflight(dataset, { phase: "REQUESTING", message: "ERP 매입내역 조회 시작" }, "REQUESTING");
+  const result = await queryBuyStatus(opts);
+  if (!result.ok) throw new Error(`${result.stage}: ${result.error}`);
+
+  updateInflight(dataset, { phase: "DECODING", message: "데이터 변환 중..." }, "DECODING");
+  updateInflight(dataset, { phase: "VALIDATING", message: "매입 트랜잭션 검증 중..." }, "VALIDATING");
+
+  // Buy_Status 는 (BmCode, ROWNUM) · PCode · 수량 · 금액 검증
+  const rows = result.rows as Array<{ BmCode?: unknown; ROWNUM?: unknown; PCode?: unknown; StockCnt?: unknown; BuyTotal?: unknown }>;
+  let missingKey = 0, dupKey = 0, missingPCode = 0;
+  const seenKey = new Set<string>();
+  for (const r of rows) {
+    const bm = String(r.BmCode ?? "").trim();
+    const rn = Number(r.ROWNUM);
+    if (!bm || !Number.isFinite(rn) || rn < 1) missingKey++;
+    else {
+      const k = `${bm}|${rn}`;
+      if (seenKey.has(k)) dupKey++;
+      else seenKey.add(k);
+    }
+    if (!String(r.PCode ?? "").trim()) missingPCode++;
+  }
+  const errorCount = missingKey + dupKey + missingPCode;
+  const vSum: ValidationSummary = {
+    totalRows: rows.length,
+    normal: rows.length - errorCount,
+    review: 0,
+    error: errorCount,
+    blockingErrors: errorCount > 0,
+  };
+
+  saveSnapshot(dataset, result.rows, startedAt, vSum);
+  updateInflight(dataset, { phase: "READY", message: `완료 · ${result.rowCount.toLocaleString()}건` }, "READY");
+  setTimeout(() => { clearInflight(dataset, "READY"); broadcastFinalState(dataset); }, 2000);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Snapshot 재사용 · Preview / Anomaly / Rows (ERP 호출 없음)
+// ─────────────────────────────────────────────────────────────────────────────
+export function loadRows(dataset: DatasetKey): unknown[] | null {
+  const full = loadSnapshotFull(dataset);
+  return full?.rows ?? null;
+}
+
+/** Validation 재실행 (snapshot 재사용 · ERP 호출 없음) */
+export function revalidate(dataset: DatasetKey): ValidationSummary | null {
+  const full = loadSnapshotFull(dataset);
+  if (!full) return null;
+  // Dataset 별 간이 Validation (PRODUCT 는 full engine · 그 외는 identity)
+  if (dataset === "PRODUCT_LIST") {
+    const v = validateErpSnapshot(full.rows as unknown as ValidationErpRow[], null, {});
+    const vSum: ValidationSummary = {
+      totalRows: v.totalRows,
+      normal: v.normal,
+      review: v.review,
+      error: v.error,
+      blockingErrors: v.blockingErrors,
+    };
+    updateSnapshotValidation(dataset, vSum);
+    return vSum;
+  }
+  // Inventory · Buy 는 saveSnapshot 시 저장된 validation 반환
+  return full.meta.validation ?? null;
 }

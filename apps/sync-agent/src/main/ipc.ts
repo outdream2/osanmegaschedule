@@ -16,11 +16,14 @@ import { findLatestFile } from "./importer";
 import { listQueue, clearQueue, removeItem } from "./queue";
 import { queryInventoryStatus, queryInventoryStatusRaw, queryProductList, queryBuyStatus, iregenSecretSource, iregenEnvSourceLabel } from "./iregenSoap";
 import {
-  fetchErpSnapshot,
-  buildPreview,
-  applySync,
-  getSessionStatus,
+  enqueueFetch,
+  getDatasetState,
+  getAllDatasetStates,
+  getQueueStatus,
+  revalidate,
+  loadRows,
 } from "./erpSyncOrchestrator";
+import type { DatasetKey } from "./datasetTypes";
 import { getSupabaseStatus } from "./supabaseClient";
 
 export function registerIpcHandlers() {
@@ -215,30 +218,50 @@ export function registerIpcHandlers() {
     return { ok: true };
   });
 
-  // ── 2026-10-03 저녁 · Phase 2 · ERP → Supabase Sync Orchestrator ──
-  //   · DRY-RUN 전용 · 실제 전체 WRITE 는 Phase 3 승인 후 활성화
-  //   · fetch → preview → apply (3-step) · Renderer 가 각 단계 명시 호출
-  ipcMain.handle("erpSync:status", () => {
-    const supa = getSupabaseStatus();
-    const sess = getSessionStatus();
-    return { supabase: supa, session: sess };
+  // ── 2026-10-04 · Phase 2 · Multi-Dataset ERP → Supabase Gateway ──
+  //   · 3 Dataset 독립 Fetch · 영속 Snapshot · Queue concurrency=1
+  //   · DRY-RUN 전용 · 실제 WRITE 는 Phase 3 승인 후 활성화
+
+  ipcMain.handle("erpSync:getAllDatasets", () => {
+    return {
+      supabase: getSupabaseStatus(),
+      datasets: getAllDatasetStates(),
+      queue: getQueueStatus(),
+    };
   });
 
-  ipcMain.handle("erpSync:fetch", async () => {
-    return fetchErpSnapshot();
+  ipcMain.handle("erpSync:getDatasetState", (_e, dataset: DatasetKey) => {
+    return getDatasetState(dataset);
   });
 
-  ipcMain.handle("erpSync:preview", async () => {
-    try {
-      const preview = await buildPreview();
-      return { ok: true, preview };
-    } catch (err: any) {
-      return { ok: false, error: err?.message ?? String(err) };
+  ipcMain.handle("erpSync:fetchDataset", (_e, args: { dataset: DatasetKey; startDate?: string; endDate?: string }) => {
+    enqueueFetch(args.dataset, { startDate: args.startDate, endDate: args.endDate });
+    return { ok: true, enqueued: true, dataset: args.dataset };
+  });
+
+  ipcMain.handle("erpSync:fetchSelected", (_e, args: { datasets: DatasetKey[]; startDate?: string; endDate?: string }) => {
+    for (const d of args.datasets) {
+      enqueueFetch(d, { startDate: args.startDate, endDate: args.endDate });
     }
+    return { ok: true, enqueued: args.datasets };
   });
 
-  ipcMain.handle("erpSync:apply", async (_e, opts?: { mode?: "DRY_RUN" | "WRITE"; allowWrite?: boolean }) => {
-    return applySync(opts ?? {});
+  ipcMain.handle("erpSync:revalidate", (_e, dataset: DatasetKey) => {
+    const v = revalidate(dataset);
+    return { ok: !!v, validation: v };
+  });
+
+  ipcMain.handle("erpSync:getRows", (_e, args: { dataset: DatasetKey; limit?: number }) => {
+    const rows = loadRows(args.dataset);
+    if (!rows) return { ok: false, error: "snapshot 없음" };
+    const limit = args.limit ?? 500;
+    return { ok: true, rows: rows.slice(0, limit), total: rows.length };
+  });
+
+  // 전체 WRITE 는 아직 금지 · Phase 3 승인 후 활성화
+  ipcMain.handle("erpSync:syncSelected", async (_e, args: { datasets: DatasetKey[]; allowWrite?: boolean }) => {
+    void args;
+    return { ok: false, dryRun: true, inserted: 0, updated: 0, failed: 0, message: "전체 WRITE 는 Phase 3 사용자 승인 후 활성화" };
   });
 
   // ── 폴더 열기 (탐색기) ──
