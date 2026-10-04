@@ -25,7 +25,37 @@ import {
   buildProductDiff,
 } from "./erpSyncOrchestrator";
 import type { DatasetKey } from "./datasetTypes";
+import { CURRENT_MAPPING_VERSION } from "./datasetTypes";
 import { getSupabaseStatus } from "./supabaseClient";
+import { saveCandidate } from "./snapshotStore";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-10-04 · 최상위 대원칙 · "api값만 사용한다 · 데이터 임의 연결·생성 금지"
+//   · 로컬 join (PCode→BarCode map 등) 전부 금지 · 응답 enrichment 금지
+//   · 하단 "🔗 Iregen ERP 직접 조회" 는 순수 API 값만 표시 (사용자 확인 전용)
+//   · 로컬 저장 (persistQueryResult) 은 raw 응답 그대로 저장 · 변조 X
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 2026-10-04 · 하단 "🔗 Iregen ERP 직접 조회" 결과를 로컬 snapshot 에 저장.
+ *   · 사용자 지시 (2-레이어 아키텍처): 직접조회 데이터가 상단 "ERP → Supabase 동기화" workflow 에서 재사용
+ *   · 상단과 동일한 candidate.json.gz 에 저장 → 두 영역 single-source 공유
+ *   · rows 는 ERP 응답 그대로 저장 · 변조·enrich 금지 (최상위 대원칙)
+ *   · 실패 시 조회 결과 반환은 유지 (저장 실패가 조회 자체를 깨뜨리지 않도록 best-effort)
+ */
+function persistQueryResult(dataset: DatasetKey, result: { ok: boolean; rows?: Record<string, unknown>[]; rowCount?: number; meta?: { queriedAt?: string } }): void {
+  if (!result.ok || !Array.isArray(result.rows)) return;
+  try {
+    saveCandidate({
+      dataset,
+      rows: result.rows,
+      startedAt: result.meta?.queriedAt ?? new Date().toISOString(),
+      mappingVersion: CURRENT_MAPPING_VERSION,
+    });
+  } catch (err) {
+    console.warn(`[ipc:erp] ${dataset} snapshot 저장 실패 (조회 결과는 유지) ·`, (err as Error).message);
+  }
+}
 
 export function registerIpcHandlers() {
   // ── Config ────────────────────────────────────
@@ -154,34 +184,50 @@ export function registerIpcHandlers() {
     };
   });
 
-  // 2026-10-03 · Iregen ERP Live Query · 검증용 · Supabase WRITE 금지
-  //   · UI 버튼 클릭 시만 호출 · 메모리 응답 전용
+  // 2026-10-04 · 2-레이어 아키텍처 (사용자 선언):
+  //   하단 "🔗 Iregen ERP 직접 조회" = ERP → 로컬 저장
+  //   상단 "⚡ ERP → Supabase 동기화" = 로컬 → Supabase (ERP 재호출 X)
+  //   → 하단 조회 handler 는 반환 전에 saveCandidate() + BarCode enrich 수행
+  //   → 상단은 loadCandidateFull() 로 재사용
+
   ipcMain.handle("erp:inventoryStatus", async (_e, opts?: { startDate?: string; endDate?: string }) => {
-    return queryInventoryStatus(opts);
+    const result = await queryInventoryStatus(opts);
+    if (result.ok) persistQueryResult("INVENTORY_STATUS", result);
+    return result;
   });
 
   // 2026-10-03 · 사용자 지시 TEST A · diagnostic · Fiddler Request 그대로 전송
   //   · samples/request.txt body 사용 · CorpDB_nm 만 env/safeStorage 로 치환
+  //   · diagnostic 용이라 snapshot 저장 X (일회성)
   ipcMain.handle("erp:inventoryStatusRaw", async () => {
     return queryInventoryStatusRaw();
   });
 
   // 2026-10-03 · PHASE 1 · Product_List (사업장 상품관리)
   //   · PageIdx/PageSize 서버 pagination · 전체 상품 loop
+  //   · 2026-10-04 · snapshot 저장 (BarCode enrich 불필요 · 자기 자신)
   ipcMain.handle("erp:productList", async (_e, opts?: { pageSize?: number; maxPages?: number; concurrency?: number }) => {
-    return queryProductList(opts);
+    const result = await queryProductList(opts);
+    if (result.ok) persistQueryResult("PRODUCT_LIST", result);
+    return result;
   });
 
   // 2026-10-03 · PHASE 1 · Buy_Status (매입 현황)
   //   · DevStartDate/DevEndDate 기간 조회
+  //   · 2026-10-04 · 응답 그대로 snapshot 저장 (enrich 금지 · 최상위 대원칙)
   ipcMain.handle("erp:buyStatus", async (_e, opts?: { startDate?: string; endDate?: string }) => {
-    return queryBuyStatus(opts);
+    const result = await queryBuyStatus(opts);
+    if (result.ok) persistQueryResult("BUY_STATUS", result);
+    return result;
   });
 
   // 2026-10-04 · PHASE 1 · Sale_Status (판매 현황) · 하단 "🔗 Iregen ERP 직접 조회" 판매현황 탭
-  //   · StartDate/EndDate 기간 조회 · 메모리 응답 전용 · Supabase WRITE 금지
+  //   · StartDate/EndDate 기간 조회 · RowArea 에 BarCode 포함 요청 (envelope · 요청 파라미터만 수정 OK)
+  //   · ERP 응답 그대로 UI 표시 · enrich·join 금지 (최상위 대원칙)
   ipcMain.handle("erp:saleStatus", async (_e, opts?: { startDate?: string; endDate?: string }) => {
-    return querySaleStatus(opts);
+    const result = await querySaleStatus(opts);
+    if (result.ok) persistQueryResult("SALE_STATUS", result);
+    return result;
   });
 
   // 2026-10-03 · Iregen 연동 설정 · CorpDB_nm 은 safeStorage 저장 · renderer 로 재전달 X

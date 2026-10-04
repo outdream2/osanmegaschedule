@@ -25,34 +25,40 @@ const PRODUCT_COLS: ColumnSpec[] = [
   { erp: "UnitCode", label: "단위" },
   { erp: "IsSaleStatusName", label: "판매상태" },
 ];
-// 2026-10-03 · 사용자 지시 · 재고 Excel Import 기준 재구성
-//   · 재고 Excel column: 상품코드/상품명/공급사명/공급사코드/기초재고/입고/판매/폐기/사내소비/재고조정/종료재고
-//   · Inventory_Status ERP field 매핑 (상세보기 modal 로 field 이름 확정 가능)
-//   · PrvStock = 이전재고 · BuyStock = 매입 · SaleStock = 판매
-//   · 추측 금지 원칙 · row 클릭 상세 modal 에서 사용자가 42 col 전체 확인
+// 2026-10-04 · Inventory_Status 실측 응답 keys (4007-row snapshot 기준):
+//   PCode · ProductName · CCorpName(공급사) · UnitCode · LocationName · CostPrice
+//   PrvStock · BuyStock · SaleStock · PlusStock · MinusStock · ...
+//   최상위 대원칙 (api값만 사용) · BarCode 는 응답에 없으므로 UI column 에서 제외 (join 금지)
 const INVENTORY_COLS: ColumnSpec[] = [
   { erp: "PCode", label: "상품코드" },
   { erp: "ProductName", label: "상품명" },
   { erp: "CCorpName", label: "공급사" },
   { erp: "UnitCode", label: "단위" },
+  { erp: "LocationName", label: "위치" },
   { erp: "PrvStock", label: "이전재고", align: "right" },
   { erp: "BuyStock", label: "매입", align: "right" },
   { erp: "SaleStock", label: "판매", align: "right" },
   { erp: "PlusStock", label: "조정+", align: "right" },
   { erp: "MinusStock", label: "조정-", align: "right" },
 ];
+// 2026-10-04 · 매입현황 실측 응답 keys (5-row 2026-10-03 snapshot 기준):
+//   BmCode · BuyDate · PCode · ProductName · CorpNameView(공급사) · StockCnt(수량) · UnitCost · BuyTotal · ROWNUM · ...
+//   최상위 대원칙 (api값만 사용) · BarCode 는 응답에 없으므로 UI column 에서 제외 (join 금지)
 const BUY_COLS: ColumnSpec[] = [
+  { erp: "BuyDate", label: "매입일" },
+  { erp: "BmCode", label: "거래번호" },
+  { erp: "ROWNUM", label: "라인" },
   { erp: "PCode", label: "상품코드" },
   { erp: "ProductName", label: "상품명" },
-  { erp: "CCorpName", label: "공급사" },
-  { erp: "BuyDate", label: "매입일" },
-  { erp: "BuyQty", label: "수량", align: "right" },
+  { erp: "CorpNameView", label: "공급사" },
+  { erp: "StockCnt", label: "수량", align: "right" },
   { erp: "UnitCost", label: "단가", align: "right" },
   { erp: "BuyTotal", label: "합계", align: "right" },
 ];
-// 2026-10-04 · 판매현황 · 실측 응답 keys (292-row 2026-10-04 snapshot 기준)
+// 2026-10-04 · 판매현황 · 실측 응답 keys (292-row 2026-10-04 snapshot 기준):
 //   SaleDate · ProductName · BuyerCorpNameView · TotalStock(=수량) · UnitCost · UnitSale · SaleTotal · Margin
-//   사용자 지시: BarCode(ERP) = products.product_code · RowArea 로 추가 요청하여 응답에 포함
+//   envelope RowArea 에 BarCode 추가 요청 중 (요청 파라미터만 수정 · 데이터 조작 X)
+//   응답에 BarCode 포함되면 자동 표시 · 안 오면 빈 셀 (api 값만 사용 · join 금지)
 const SALE_COLS: ColumnSpec[] = [
   { erp: "SaleDate", label: "판매일" },
   { erp: "BarCode", label: "바코드" },
@@ -208,7 +214,7 @@ export const ErpSection: React.FC = () => {
             queryLabel="매입 조회"
             queryFn={() => window.api.erpBuyStatus({ startDate: buyStart, endDate: buyEnd })}
             displayCols={BUY_COLS}
-            searchFields={["PCode", "ProductName", "CCorpName"]}
+            searchFields={["PCode", "ProductName", "CorpNameView"]}
             searchPlaceholder="상품코드 · 상품명 · 공급사 검색 (전체 대상)"
             conditionsSlot={
               <div className="flex items-center gap-2 flex-wrap">
