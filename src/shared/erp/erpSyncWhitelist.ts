@@ -38,6 +38,11 @@ export const ERP_IDENTITY = Object.freeze({
 //    Normal Sync 시 ERP overwrite 가능 (nullOverwrite 규칙 준수)
 // ─────────────────────────────────────────────────────────────────────────────
 export const ERP_OWNED_PRODUCT_FIELDS: Readonly<Record<string, ErpFieldMapping>> = Object.freeze({
+  // 2026-10-04 · 사용자 결정 · Option B · ERP PCode 를 Supabase products.pcode 에 저장
+  //   · 이유: ERP Inventory/Buy/Sale 응답에 BarCode 없음 (실측 재확인) · PCode 만 공통 식별자
+  //   · 대원칙 "데이터 임의 연결 금지" 완벽 준수 · 로컬 join 완전 제거
+  //   · products.pcode 는 Migration future_phase2_products_pcode.sql 로 추가 (사용자 승인 후 실행)
+  pcode:              { erp: "PCode",           nullOverwrite: false, note: "ERP 상품분류코드 · Inventory/Buy/Sale 매칭 identity" },
   product_name:       { erp: "ProductName",     nullOverwrite: false },
   supplier:           { erp: "CorpNameView",    nullOverwrite: false },
   supplier_code:      { erp: "CtCode",          nullOverwrite: false },
