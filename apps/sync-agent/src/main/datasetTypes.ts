@@ -51,8 +51,22 @@ export interface SnapshotMeta {
   readonly fetchedAt: string;
   readonly completedAt: string;
   readonly rowCount: number;
+  /** sha256(dataset-level deterministic hash) · identity 정렬 후 stable serialize */
   readonly checksum: string;
   readonly validation?: ValidationSummary;
+  /** mapping 규칙 버전 · bump 시 기존 snapshot 재처리 유도 */
+  readonly mappingVersion?: number;
+}
+
+/** 2026-10-04 · candidate + last-synced 분리 메타 */
+export interface DatasetMetadata {
+  readonly datasetType: DatasetKey;
+  readonly candidate: SnapshotMeta | null;
+  readonly lastSynced: SnapshotMeta | null;
+  readonly lastSyncAttemptAt: string | null;
+  readonly lastSyncResult: "VERIFIED_SUCCESS" | "PARTIAL_FAILED" | "FAILED" | null;
+  readonly syncStatus: SyncReadiness;
+  readonly mappingVersion: number;
 }
 
 export interface DatasetProgress {
@@ -70,11 +84,20 @@ export interface DatasetState {
   readonly dataset: DatasetKey;
   readonly phase: FetchPhase;
   readonly readiness: SyncReadiness;
-  readonly snapshot: SnapshotMeta | null;      // 최근 정상 (READY) snapshot · null 이면 미보유
-  readonly inflight: DatasetProgress | null;   // 진행 중 작업 (없으면 null)
+  /** @deprecated · 호환성 유지 · 신규 코드는 candidate/lastSynced 사용 */
+  readonly snapshot: SnapshotMeta | null;
+  readonly candidate: SnapshotMeta | null;
+  readonly lastSynced: SnapshotMeta | null;
+  readonly lastSyncAttemptAt: string | null;
+  readonly lastSyncResult: "VERIFIED_SUCCESS" | "PARTIAL_FAILED" | "FAILED" | null;
+  readonly inflight: DatasetProgress | null;
   readonly lastError: string | null;
-  readonly dependencyMessage: string | null;   // 예: Buy 는 Product snapshot 필요
+  readonly dependencyMessage: string | null;
+  readonly mappingVersion: number;
 }
+
+/** 현재 Mapping 규칙 버전 · 변환 로직 변경 시 bump */
+export const CURRENT_MAPPING_VERSION = 1;
 
 /** Sync 가능 여부 간단 판정 (UI 보조) */
 export function canSyncDataset(state: DatasetState): boolean {

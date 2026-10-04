@@ -1,27 +1,53 @@
 // Dashboard.tsx
-// 2026-10-04 · Phase 2 · ERP 자동 동기화 중심으로 재구성
-//   · 이전 Excel xlsx 3-카드 (상품/재고/매입 "지금 실행") 제거 (사용자 지시 · 쓸거 아니면 제거)
-//   · 백엔드 (importer / scheduler / watcher / queue) 는 Settings 에서 폴더 설정 지원용으로 보존
-//   · 메인 UI = Iregen ERP 조회 (3탭 검증) + ERP → Supabase 동기화 (Phase 2 Gateway)
+// 2026-10-04 · ERP 자동 동기화 중심 · 탭 전환 (사용자 지시 · 다시 탭 복원)
 
-import React from "react";
+import React, { useState } from "react";
 import { ErpSection } from "./ErpSection";
 import { ErpSyncSection } from "./ErpSyncSection";
 import { SectionBoundary } from "../components/SectionBoundary";
 
-export const Dashboard: React.FC = () => {
-  return (
-    <div className="flex flex-col gap-6 max-w-6xl">
-      {/* 2026-10-04 · ERP → Supabase 동기화 (Phase 2 · DRY-RUN 전용) */}
-      <SectionBoundary name="ERP Sync">
-        <ErpSyncSection />
-      </SectionBoundary>
+type View = "sync" | "query" | "both";
 
-      {/* 2026-10-03 · Iregen ERP 직접 조회 (3탭 · 사업장 상품관리 · 재고 현황 · 매입 현황)
-          · SectionBoundary 로 격리 · 이 섹션 crash 가 Dashboard 전체를 죽이지 않음 */}
-      <SectionBoundary name="Iregen ERP 조회">
-        <ErpSection />
-      </SectionBoundary>
+export const Dashboard: React.FC = () => {
+  const [view, setView] = useState<View>("sync");
+  return (
+    <div className="flex flex-col gap-4 w-full max-w-[1800px] mx-auto">
+      <div className="flex items-center gap-1 bg-white border border-zinc-200 rounded-lg p-1 w-fit">
+        {([
+          { key: "sync", label: "⚡ ERP → Supabase 동기화" },
+          { key: "query", label: "🔎 Iregen ERP 직접 조회" },
+          { key: "both", label: "⬌ 모두 보기" },
+        ] as const).map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setView(t.key)}
+            className={`px-3 py-1.5 rounded text-[13px] font-semibold transition ${
+              view === t.key ? "bg-brand-deep text-white" : "text-zinc-600 hover:bg-zinc-100"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {view === "both" ? (
+        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
+          <SectionBoundary name="ERP Sync">
+            <ErpSyncSection />
+          </SectionBoundary>
+          <SectionBoundary name="Iregen ERP 조회">
+            <ErpSection />
+          </SectionBoundary>
+        </div>
+      ) : view === "sync" ? (
+        <SectionBoundary name="ERP Sync">
+          <ErpSyncSection />
+        </SectionBoundary>
+      ) : (
+        <SectionBoundary name="Iregen ERP 조회">
+          <ErpSection />
+        </SectionBoundary>
+      )}
     </div>
   );
 };

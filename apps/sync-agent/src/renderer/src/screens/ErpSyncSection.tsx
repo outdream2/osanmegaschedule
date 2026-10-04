@@ -188,8 +188,8 @@ export const ErpSyncSection: React.FC = () => {
         </div>
       )}
 
-      {/* 3개 Dataset Card */}
-      <div className="p-5 grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* 3개 Dataset Card · md 이상에선 가로 3열 (세로로 쌓여서 아래 섹션이 안 보이는 문제 방지) */}
+      <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
         {ORDER.map((d) => (
           <DatasetCard
             key={d}
@@ -243,6 +243,12 @@ const DatasetCard: React.FC<{
   const phase = state.inflight?.phase ?? state.phase;
   const isInflight = state.inflight != null && state.inflight.phase !== "READY" && state.inflight.phase !== "FAILED";
   const [showAnomaly, setShowAnomaly] = useState(false);
+  // 2026-10-04 · 사용자 지시 · "내용 보기" 토글 · 카드 아래 inline 표
+  const [showContent, setShowContent] = useState(false);
+  const [contentRows, setContentRows] = useState<Record<string, unknown>[] | null>(null);
+  const [contentTotal, setContentTotal] = useState<number>(0);
+  const [contentLoading, setContentLoading] = useState(false);
+  const [contentError, setContentError] = useState<string | null>(null);
 
   return (
     <div className={`rounded-xl border p-4 ${selected ? "border-brand-deep bg-sky-50/40" : "border-zinc-200 bg-white"}`}>
@@ -345,15 +351,21 @@ const DatasetCard: React.FC<{
         <button
           disabled={!state.snapshot}
           className="px-2 py-1.5 bg-zinc-100 text-zinc-700 rounded text-[11px] font-semibold hover:bg-zinc-200 disabled:opacity-40"
-          title="Snapshot rows 보기 (Phase 2 · 추가 UI 는 향후)"
+          title="Snapshot rows 보기 (아래 표)"
           onClick={async () => {
-            const r = await window.api.erpSyncGetRows({ dataset, limit: 50 });
-            if (r.ok) alert(`${DATASET_LABEL[dataset]} · 총 ${r.total.toLocaleString()}건 · 처음 ${r.rows.length}건 샘플 Console 확인`);
-            else alert(r.error);
-            console.log(`[${dataset}] rows sample`, r.ok ? r.rows : r);
+            if (showContent) { setShowContent(false); return; }
+            setContentLoading(true); setContentError(null);
+            try {
+              const r = await window.api.erpSyncGetRows({ dataset, limit: 100 });
+              if (r.ok) {
+                setContentRows(r.rows as Record<string, unknown>[]);
+                setContentTotal(r.total);
+                setShowContent(true);
+              } else { setContentError(r.error); setShowContent(true); }
+            } finally { setContentLoading(false); }
           }}
         >
-          내용 보기
+          {showContent ? "내용 접기" : contentLoading ? "로딩..." : "내용 보기"}
         </button>
         <button
           disabled={!state.snapshot?.validation || (state.snapshot.validation.review === 0 && state.snapshot.validation.error === 0)}
@@ -376,6 +388,88 @@ const DatasetCard: React.FC<{
           <div className="text-[10px] text-zinc-500 mt-1">상세 이상 데이터 리스트는 Phase 3 Preview 에서.</div>
         </div>
       )}
+
+      {/* 2026-10-04 · "내용 보기" inline 표 (아래) · ERP snapshot rows 샘플 */}
+      {showContent && (
+        <div className="mt-2 p-2 bg-white border border-zinc-200 rounded">
+          <div className="text-[11px] text-zinc-700 font-semibold mb-1">
+            {DATASET_LABEL[dataset]} · 총 {contentTotal.toLocaleString()}건 · 상위 {contentRows?.length ?? 0}건 표시
+          </div>
+          {contentError && (
+            <div className="text-[11px] text-rose-700">⚠ {contentError}</div>
+          )}
+          {contentRows && contentRows.length > 0 && (
+            <SnapshotTable dataset={dataset} rows={contentRows} />
+          )}
+          {contentRows && contentRows.length === 0 && (
+            <div className="text-[11px] text-zinc-500">데이터 없음</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 2026-10-04 · Dataset 별 핵심 column 만 표 형식으로 렌더링
+const SnapshotTable: React.FC<{ dataset: DatasetKey; rows: Record<string, unknown>[] }> = ({ dataset, rows }) => {
+  const COLS: Record<DatasetKey, Array<{ key: string; label: string; align?: "right" }>> = {
+    PRODUCT_LIST: [
+      { key: "PCode", label: "PCode" },
+      { key: "BarCode", label: "Barcode" },
+      { key: "ProductName", label: "상품명" },
+      { key: "NowStock", label: "현재고", align: "right" },
+      { key: "CorpNameView", label: "공급사" },
+      { key: "LocationName", label: "위치" },
+      { key: "SaleStatusName", label: "판매상태" },
+    ],
+    INVENTORY_STATUS: [
+      { key: "PCode", label: "PCode" },
+      { key: "ProductName", label: "상품명" },
+      { key: "CCorpName", label: "공급사" },
+      { key: "UnitCode", label: "단위" },
+      { key: "PrvStock", label: "이전", align: "right" },
+      { key: "BuyStock", label: "매입", align: "right" },
+      { key: "SaleStock", label: "판매", align: "right" },
+      { key: "PlusStock", label: "조정+", align: "right" },
+      { key: "MinusStock", label: "조정-", align: "right" },
+    ],
+    BUY_STATUS: [
+      { key: "BmCode", label: "BmCode" },
+      { key: "ROWNUM", label: "라인" },
+      { key: "BuyDate", label: "매입일" },
+      { key: "PCode", label: "PCode" },
+      { key: "ProductName", label: "상품명" },
+      { key: "CorpNameView", label: "공급사" },
+      { key: "StockCnt", label: "수량", align: "right" },
+      { key: "UnitCost", label: "단가", align: "right" },
+      { key: "BuyTotal", label: "총액", align: "right" },
+    ],
+  };
+  const cols = COLS[dataset];
+  return (
+    <div className="overflow-x-auto max-h-[320px] overflow-y-auto border border-zinc-200 rounded">
+      <table className="min-w-full text-[10.5px]">
+        <thead className="bg-zinc-50 sticky top-0">
+          <tr>
+            {cols.map((c) => (
+              <th key={c.key} className={`px-1.5 py-1 font-semibold ${c.align === "right" ? "text-right" : "text-left"}`}>
+                {c.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, idx) => (
+            <tr key={idx} className="border-t border-zinc-100 hover:bg-zinc-50">
+              {cols.map((c) => (
+                <td key={c.key} className={`px-1.5 py-1 ${c.align === "right" ? "text-right tabular-nums" : "text-left"} ${c.key === "ProductName" ? "max-w-[200px] truncate" : ""}`}>
+                  {String(r[c.key] ?? "")}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };

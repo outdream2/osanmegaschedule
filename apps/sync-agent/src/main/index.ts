@@ -252,6 +252,12 @@ function createMainWindow() {
 
 // ── 시스템 트레이 (하이브리드 · D안) · trayIcon.ts + notifications.ts 로 상태 관리 ──
 function createTray() {
+  // 2026-10-04 · 사용자 지시 · tray 중복 방지
+  //   · 기존 tray 가 있으면 반드시 destroy (dev-mode tsx watch 재시작 시 2개 생성 방지)
+  if (tray) {
+    try { tray.destroy(); } catch { /* ignore */ }
+    tray = null;
+  }
   // 1. 리소스 파일 시도 (배포 시 · resources/tray-idle.png 있을 때)
   const iconPath = join(__dirname, "../../resources/tray-idle.png");
   let trayImage = nativeImage.createFromPath(iconPath);
@@ -404,6 +410,11 @@ app.on("before-quit", () => {
   quitting = true;
   stopAllJobs();
   stopAllWatchers();
+  // 2026-10-04 · tray 명시 destroy · OS 가 늦게 지워 중복 아이콘 보이는 문제 방지
+  if (tray) {
+    try { tray.destroy(); } catch { /* ignore */ }
+    tray = null;
+  }
 });
 
 // Windows · 트레이 종료 후에도 · 앱 유지 (기본 window-all-closed 시 종료 방지)

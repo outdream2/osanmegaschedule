@@ -1,32 +1,36 @@
 // apps/sync-agent/src/main/erpSyncOrchestrator.ts
 // 2026-10-04 · Phase 2 · ERP → Supabase Gateway · Multi-dataset Orchestrator
 //
-// 3개 Dataset 독립 관리:
-//   PRODUCT_LIST     · Product_List (SOAP · 81 pages · ~4분)
-//   INVENTORY_STATUS · Inventory_Status (SOAP · 단일 응답 · 42 field)
-//   BUY_STATUS       · Buy_Status (SOAP · DevStartDate/EndDate 기간)
+// 흐름:
+//   Fetch (ERP SOAP · concurrency=1)
+//     → candidate.json.gz 저장 (atomic · 기존 보호)
+//     → Validation (NORMAL/REVIEW/ERROR)
+//     → Dataset Hash
 //
-// 각 Dataset:
-//   · 독립 Fetch
-//   · 영속 Snapshot (userData/snapshots/{DATASET}.json)
-//   · 독립 Validation 결과
-//   · 독립 readiness state (READY / REVIEW / BLOCKED / NOT_CONFIGURED)
+//   Preview (ERP 호출 없음)
+//     → Local Diff (candidate vs last-synced)
+//     → Supabase Final Diff (NEW/CHANGED only · vs 현재 DB)
 //
-// ERP 호출:
-//   · 전역 Queue · concurrency = 1 · 순차 실행
-//   · 사용자 UI 에서 여러 선택해도 병렬 호출 금지
+//   Apply (사용자 승인 후 · 아직 Phase 3 전까지 전체 WRITE 금지)
+//     → productSyncRunner (기존 재사용 · onlyProductCodes allowlist)
+//     → Read-back verification
+//     → 전부 verified → candidate → last-synced 승격
 
 import { BrowserWindow } from "electron";
 import { queryProductList, queryInventoryStatus, queryBuyStatus } from "./iregenSoap";
 import { erpQueue } from "./erpQueue";
 import {
-  loadSnapshotMeta,
-  loadSnapshotFull,
-  saveSnapshot,
-  updateSnapshotValidation,
+  saveCandidate,
+  loadCandidateFull,
+  loadLastSyncedFull,
+  getMetadata,
+  updateSyncStatus,
+  recordSyncAttempt,
+  promoteCandidateToLastSynced,
 } from "./snapshotStore";
 import {
   DATASET_API_NAME,
+  CURRENT_MAPPING_VERSION,
   type DatasetKey,
   type DatasetState,
   type DatasetProgress,
@@ -38,29 +42,34 @@ import {
   validateErpSnapshot,
   type ValidationErpRow,
 } from "../../../../src/shared/erp/erpValidationEngine";
+import {
+  datasetHashProducts,
+  datasetHashBuys,
+  type ProductFingerprintRow,
+  type BuyFingerprintRow,
+} from "../../../../src/shared/erp/datasetHash";
+import { diffProductsLocal, type LocalDiffSummary } from "../../../../src/shared/erp/erpLocalDiff";
+import { diffProductsVsSupabase, indexDbByCode, type SupabaseDiffSummary } from "../../../../src/shared/erp/erpSupabaseDiff";
+import type { DbProductRow, ErpProductRow } from "../../../../src/shared/erp/erpProductMapper";
+import { getSupabaseClient } from "./supabaseClient";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Broadcast · dataset-progress
+// Broadcast
 // ─────────────────────────────────────────────────────────────────────────────
 function broadcastDatasetProgress(p: DatasetProgress): void {
   for (const w of BrowserWindow.getAllWindows()) {
-    try {
-      w.webContents.send("erp:dataset-progress", p);
-    } catch {
-      /* ignore */
-    }
+    try { w.webContents.send("erp:dataset-progress", p); } catch { /* ignore */ }
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// In-memory state (per dataset)
+// In-memory inflight state (각 Dataset)
 // ─────────────────────────────────────────────────────────────────────────────
 interface InMemoryState {
   phase: FetchPhase;
   inflight: DatasetProgress | null;
   lastError: string | null;
 }
-
 const memory: Record<DatasetKey, InMemoryState> = {
   PRODUCT_LIST: { phase: "IDLE", inflight: null, lastError: null },
   INVENTORY_STATUS: { phase: "IDLE", inflight: null, lastError: null },
@@ -68,16 +77,12 @@ const memory: Record<DatasetKey, InMemoryState> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Readiness 계산 (snapshot + validation + 정책)
+// Readiness 계산
 // ─────────────────────────────────────────────────────────────────────────────
 function computeReadiness(dataset: DatasetKey, validation: ValidationSummary | undefined, phase: FetchPhase): SyncReadiness {
   if (phase === "FAILED") return "BLOCKED";
-  // Phase 2 정책:
-  //   PRODUCT_LIST     · validation 통과하면 READY · REVIEW 있으면 REVIEW
-  //   BUY_STATUS       · migration 미적용 상태 · BLOCKED (호출부가 체크)
-  //   INVENTORY_STATUS · destination 미확정 · NOT_CONFIGURED
   if (dataset === "INVENTORY_STATUS") return "NOT_CONFIGURED";
-  if (dataset === "BUY_STATUS") return "BLOCKED"; // migration 적용 후 Phase 3 에서 해제
+  if (dataset === "BUY_STATUS") return "BLOCKED";
   // PRODUCT_LIST
   if (!validation) return "READY";
   if (validation.blockingErrors) return "BLOCKED";
@@ -85,27 +90,32 @@ function computeReadiness(dataset: DatasetKey, validation: ValidationSummary | u
   return "READY";
 }
 
-function dependencyMessage(dataset: DatasetKey): string | null {
-  if (dataset === "BUY_STATUS") {
-    const prod = loadSnapshotMeta("PRODUCT_LIST");
-    if (!prod) return "매입내역 매핑에는 상품정보 데이터가 필요합니다. 상품정보 를 먼저 가져오세요.";
-    return null;
-  }
+function dependencyMessage(_dataset: DatasetKey): string | null {
+  // 2026-10-04 · 사용자 지적 · ERP fetch 자체는 각 Dataset 독립 · dependency 는 Mapping/Sync 단계에서만.
+  //   현재 Buy Sync 는 migration 미적용으로 BLOCKED · 별도 사용자 알림 불필요.
+  void _dataset;
   return null;
 }
 
 export function getDatasetState(dataset: DatasetKey): DatasetState {
-  const snapshot = loadSnapshotMeta(dataset);
+  const metadata = getMetadata(dataset);
   const mem = memory[dataset];
-  const readiness = computeReadiness(dataset, snapshot?.validation, mem.phase);
+  const candidate = metadata?.candidate ?? null;
+  const lastSynced = metadata?.lastSynced ?? null;
+  const readiness = computeReadiness(dataset, candidate?.validation, mem.phase);
   return {
     dataset,
     phase: mem.phase,
     readiness,
-    snapshot,
+    snapshot: candidate ?? lastSynced ?? null, // 호환성
+    candidate,
+    lastSynced,
+    lastSyncAttemptAt: metadata?.lastSyncAttemptAt ?? null,
+    lastSyncResult: metadata?.lastSyncResult ?? null,
     inflight: mem.inflight,
     lastError: mem.lastError,
     dependencyMessage: dependencyMessage(dataset),
+    mappingVersion: metadata?.mappingVersion ?? CURRENT_MAPPING_VERSION,
   };
 }
 
@@ -122,7 +132,7 @@ export function getQueueStatus(): ReturnType<typeof erpQueue.status> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Fetch job · Dataset 별 ERP SOAP 호출 + 저장
+// Fetch · in-flight 상태 관리
 // ─────────────────────────────────────────────────────────────────────────────
 function updateInflight(dataset: DatasetKey, patch: Partial<DatasetProgress>, phase?: FetchPhase): void {
   const mem = memory[dataset];
@@ -138,15 +148,18 @@ function clearInflight(dataset: DatasetKey, finalPhase: FetchPhase): void {
   memory[dataset].phase = finalPhase;
 }
 
-/**
- * Dataset 1개 Fetch · Queue 에 enqueue · 호출자는 바로 return (비동기)
- */
+function broadcastFinalState(dataset: DatasetKey): void {
+  broadcastDatasetProgress({
+    dataset,
+    phase: memory[dataset].phase,
+    message: memory[dataset].lastError ?? undefined,
+  });
+}
+
 export function enqueueFetch(dataset: DatasetKey, opts?: { startDate?: string; endDate?: string }): void {
-  // 이미 queue 에 들어있거나 실행중이면 중복 enqueue 금지
   if (memory[dataset].inflight) return;
   if (erpQueue.waitingFor(dataset)) return;
 
-  // 초기 Queued 상태 broadcast
   const startedAt = new Date().toISOString();
   memory[dataset].inflight = { dataset, phase: "QUEUED", startedAt };
   memory[dataset].phase = "QUEUED";
@@ -158,9 +171,9 @@ export function enqueueFetch(dataset: DatasetKey, opts?: { startDate?: string; e
     label: DATASET_API_NAME[dataset],
     run: async () => {
       try {
-        if (dataset === "PRODUCT_LIST") await runProductListFetch(startedAt);
-        else if (dataset === "INVENTORY_STATUS") await runInventoryStatusFetch(startedAt, opts);
-        else if (dataset === "BUY_STATUS") await runBuyStatusFetch(startedAt, opts);
+        if (dataset === "PRODUCT_LIST") await runProductFetch(startedAt);
+        else if (dataset === "INVENTORY_STATUS") await runInventoryFetch(startedAt, opts);
+        else if (dataset === "BUY_STATUS") await runBuyFetch(startedAt, opts);
       } catch (err) {
         const msg = (err as Error).message ?? String(err);
         memory[dataset].lastError = msg;
@@ -171,36 +184,20 @@ export function enqueueFetch(dataset: DatasetKey, opts?: { startDate?: string; e
   });
 }
 
-function broadcastFinalState(dataset: DatasetKey): void {
-  broadcastDatasetProgress({
-    dataset,
-    phase: memory[dataset].phase,
-    message: memory[dataset].lastError ?? undefined,
-  });
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // PRODUCT_LIST Fetch
 // ─────────────────────────────────────────────────────────────────────────────
-async function runProductListFetch(startedAt: string): Promise<void> {
+async function runProductFetch(startedAt: string): Promise<void> {
   const dataset: DatasetKey = "PRODUCT_LIST";
   updateInflight(dataset, { phase: "REQUESTING", message: "ERP 사업장 상품관리 조회 시작" }, "REQUESTING");
 
-  // Product_List 는 pagination · iregenSoap 가 broadcastProductProgress 를 쏘지만
-  // 그건 "erp:product-progress" channel · 우리의 dataset-progress 로 bridge
-  const unsubBridge = bridgeProductProgressToDataset(dataset);
-
   const result = await queryProductList({ pageSize: 50, concurrency: 1 });
-  unsubBridge();
-
-  if (!result.ok) {
-    throw new Error(`${result.stage}: ${result.error}`);
-  }
+  if (!result.ok) throw new Error(`${result.stage}: ${result.error}`);
 
   updateInflight(dataset, { phase: "DECODING", message: "데이터 변환 중..." }, "DECODING");
   updateInflight(dataset, { phase: "VALIDATING", message: "데이터 검증 중..." }, "VALIDATING");
 
-  // Validation (DB snapshot 없이 · 상품 수준 validation 만 실행)
+  // Validation (ERP 수준 · DB 비교 X)
   const validation = validateErpSnapshot(result.rows as unknown as ValidationErpRow[], null, {});
   const vSum: ValidationSummary = {
     totalRows: validation.totalRows,
@@ -210,31 +207,27 @@ async function runProductListFetch(startedAt: string): Promise<void> {
     blockingErrors: validation.blockingErrors,
   };
 
-  // 저장 (기존 snapshot atomic 교체)
-  saveSnapshot(dataset, result.rows, startedAt, vSum);
+  // Dataset hash
+  const hash = datasetHashProducts(result.rows as unknown as ProductFingerprintRow[]);
+
+  // Candidate 저장 (atomic · 기존 보호)
+  saveCandidate({
+    dataset,
+    rows: result.rows,
+    startedAt,
+    checksum: hash,
+    validation: vSum,
+    mappingVersion: CURRENT_MAPPING_VERSION,
+  });
 
   updateInflight(dataset, { phase: "READY", message: `완료 · ${result.rowCount.toLocaleString()}건` }, "READY");
   setTimeout(() => { clearInflight(dataset, "READY"); broadcastFinalState(dataset); }, 2000);
 }
 
-/** Product_List pagination 진행률 (iregenSoap · erp:product-progress) 를 dataset-progress 로 bridge */
-function bridgeProductProgressToDataset(dataset: DatasetKey): () => void {
-  // iregenSoap 는 BrowserWindow.webContents.send 로 broadcast · 우리는 "메인 process 끼리" 수신 X
-  // 대신 iregenSoap 는 매 batch 완료 시 send 를 호출하는데, 우리는 그 상태를 추적하기 위해
-  // ipcMain.on 으로 받을 수 있지만 send 는 renderer 로 가는 것.
-  // 대안: 바로 renderer 가 수신 가능하지만 "dataset-progress" 채널로 통일하려면
-  //       iregenSoap 쪽에 변경이 필요 · 이번에는 기존 "erp:product-progress" 도 renderer 가 수신하도록
-  //       그대로 두고, 추가로 "erp:dataset-progress" 를 뿌리는 timer 로 보완
-  // 간단화: 상위 REQUESTING/VALIDATING/READY 만 dataset-progress 로 broadcast
-  //         상세 pagination 진행률은 renderer 가 기존 onErpProductProgress 리스너로 받아 UI 매핑
-  void dataset;
-  return () => {};
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // INVENTORY_STATUS Fetch
 // ─────────────────────────────────────────────────────────────────────────────
-async function runInventoryStatusFetch(startedAt: string, opts?: { startDate?: string; endDate?: string }): Promise<void> {
+async function runInventoryFetch(startedAt: string, opts?: { startDate?: string; endDate?: string }): Promise<void> {
   const dataset: DatasetKey = "INVENTORY_STATUS";
   updateInflight(dataset, { phase: "REQUESTING", message: "ERP 재고 입출고 현황 조회 시작" }, "REQUESTING");
   const result = await queryInventoryStatus(opts);
@@ -243,19 +236,15 @@ async function runInventoryStatusFetch(startedAt: string, opts?: { startDate?: s
   updateInflight(dataset, { phase: "DECODING", message: "데이터 변환 중..." }, "DECODING");
   updateInflight(dataset, { phase: "VALIDATING", message: "구조 검증 중..." }, "VALIDATING");
 
-  // Inventory_Status 는 필수 필드 (PCode · ProductName) 수준만 검증
-  //   current_stock destination 미확정 · PRODUCT identity 수준 중복 체크만
   const rows = result.rows as Array<{ PCode?: unknown; ProductName?: unknown }>;
   let missingPCode = 0;
-  const seenPCode = new Set<string>();
+  const seen = new Set<string>();
   let dupPCode = 0;
   for (const r of rows) {
     const pc = String(r.PCode ?? "").trim();
     if (!pc) missingPCode++;
-    else {
-      if (seenPCode.has(pc)) dupPCode++;
-      else seenPCode.add(pc);
-    }
+    else if (seen.has(pc)) dupPCode++;
+    else seen.add(pc);
   }
   const errorCount = missingPCode + dupPCode;
   const vSum: ValidationSummary = {
@@ -266,7 +255,18 @@ async function runInventoryStatusFetch(startedAt: string, opts?: { startDate?: s
     blockingErrors: errorCount > 0,
   };
 
-  saveSnapshot(dataset, result.rows, startedAt, vSum);
+  // 간이 hash (identity 정렬 후 PCode 만)
+  const sortedIds = rows.map((r) => String(r.PCode ?? "").trim()).sort().join("|");
+  const hash = require("crypto").createHash("sha256").update(sortedIds).digest("hex");
+
+  saveCandidate({
+    dataset,
+    rows: result.rows,
+    startedAt,
+    checksum: hash,
+    validation: vSum,
+    mappingVersion: CURRENT_MAPPING_VERSION,
+  });
   updateInflight(dataset, { phase: "READY", message: `완료 · ${result.rowCount.toLocaleString()}건` }, "READY");
   setTimeout(() => { clearInflight(dataset, "READY"); broadcastFinalState(dataset); }, 2000);
 }
@@ -274,7 +274,7 @@ async function runInventoryStatusFetch(startedAt: string, opts?: { startDate?: s
 // ─────────────────────────────────────────────────────────────────────────────
 // BUY_STATUS Fetch
 // ─────────────────────────────────────────────────────────────────────────────
-async function runBuyStatusFetch(startedAt: string, opts?: { startDate?: string; endDate?: string }): Promise<void> {
+async function runBuyFetch(startedAt: string, opts?: { startDate?: string; endDate?: string }): Promise<void> {
   const dataset: DatasetKey = "BUY_STATUS";
   updateInflight(dataset, { phase: "REQUESTING", message: "ERP 매입내역 조회 시작" }, "REQUESTING");
   const result = await queryBuyStatus(opts);
@@ -283,8 +283,7 @@ async function runBuyStatusFetch(startedAt: string, opts?: { startDate?: string;
   updateInflight(dataset, { phase: "DECODING", message: "데이터 변환 중..." }, "DECODING");
   updateInflight(dataset, { phase: "VALIDATING", message: "매입 트랜잭션 검증 중..." }, "VALIDATING");
 
-  // Buy_Status 는 (BmCode, ROWNUM) · PCode · 수량 · 금액 검증
-  const rows = result.rows as Array<{ BmCode?: unknown; ROWNUM?: unknown; PCode?: unknown; StockCnt?: unknown; BuyTotal?: unknown }>;
+  const rows = result.rows as Array<{ BmCode?: unknown; ROWNUM?: unknown; PCode?: unknown }>;
   let missingKey = 0, dupKey = 0, missingPCode = 0;
   const seenKey = new Set<string>();
   for (const r of rows) {
@@ -307,24 +306,110 @@ async function runBuyStatusFetch(startedAt: string, opts?: { startDate?: string;
     blockingErrors: errorCount > 0,
   };
 
-  saveSnapshot(dataset, result.rows, startedAt, vSum);
+  const hash = datasetHashBuys(rows as unknown as BuyFingerprintRow[]);
+
+  saveCandidate({
+    dataset,
+    rows: result.rows,
+    startedAt,
+    checksum: hash,
+    validation: vSum,
+    mappingVersion: CURRENT_MAPPING_VERSION,
+  });
   updateInflight(dataset, { phase: "READY", message: `완료 · ${result.rowCount.toLocaleString()}건` }, "READY");
   setTimeout(() => { clearInflight(dataset, "READY"); broadcastFinalState(dataset); }, 2000);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Snapshot 재사용 · Preview / Anomaly / Rows (ERP 호출 없음)
+// Local Diff + Supabase Final Diff (candidate 재사용 · ERP 호출 없음)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function buildProductDiff(): Promise<{
+  localDiff: LocalDiffSummary;
+  supabaseDiff: SupabaseDiffSummary;
+  candidateHash: string | null;
+  lastSyncedHash: string | null;
+  firstRun: boolean;
+  mappingVersion: number;
+}> {
+  const dataset: DatasetKey = "PRODUCT_LIST";
+  const candidate = loadCandidateFull<ProductFingerprintRow>(dataset);
+  if (!candidate) throw new Error("Product_List candidate snapshot 없음 · 먼저 ERP 가져오기");
+
+  const lastSynced = loadLastSyncedFull<ProductFingerprintRow>(dataset);
+
+  // mappingVersion 변경 감지
+  const currentMV = CURRENT_MAPPING_VERSION;
+  const lastMV = lastSynced?.meta.mappingVersion ?? null;
+  const mvChanged = lastMV != null && lastMV !== currentMV;
+  const firstRun = !lastSynced || mvChanged;
+
+  // Local Diff
+  const localDiff = diffProductsLocal(
+    candidate.rows as ProductFingerprintRow[],
+    firstRun ? null : (lastSynced?.rows as ProductFingerprintRow[]),
+  );
+
+  // Supabase Final Diff
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error("Supabase client 미설정 · SUPABASE_URL/KEY 확인");
+
+  // DB 전수 READ (product_code + 비교 field)
+  const dbRows: DbProductRow[] = [];
+  const PAGE = 1000;
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("products")
+      .select(
+        "product_code, product_name, supplier, supplier_code, unit, sale_status, brand, manufacturer, " +
+        "last_purchase_date, last_sale_date, current_stock, display_location, location, " +
+        "optimal_stock, memo, hidden, stock_note, imported_at",
+      )
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(`products 조회 실패 · ${error.message}`);
+    if (!data || data.length === 0) break;
+    dbRows.push(...(data as unknown as DbProductRow[]));
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  const dbIndex = indexDbByCode(dbRows);
+
+  // Local Diff 결과 중 NEW/CHANGED 만 → candidate ERP row 추출
+  //   first-run (lastSynced 없음) 이면 Local Diff 가 전부 NEW 로 분류 · OK
+  const candidateByIdx = candidate.rows;
+  const candidatesToCompare: ErpProductRow[] = [];
+  for (const d of localDiff.rows) {
+    if (d.action === "NEW" || d.action === "CHANGED") {
+      if (d.candidateIndex != null) {
+        candidatesToCompare.push(candidateByIdx[d.candidateIndex] as unknown as ErpProductRow);
+      }
+    }
+  }
+
+  const supabaseDiff = diffProductsVsSupabase(candidatesToCompare, dbIndex);
+
+  return {
+    localDiff,
+    supabaseDiff,
+    candidateHash: candidate.meta.checksum,
+    lastSyncedHash: lastSynced?.meta.checksum ?? null,
+    firstRun,
+    mappingVersion: currentMV,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Snapshot rows sample (ERP 호출 없이)
 // ─────────────────────────────────────────────────────────────────────────────
 export function loadRows(dataset: DatasetKey): unknown[] | null {
-  const full = loadSnapshotFull(dataset);
+  const full = loadCandidateFull(dataset);
   return full?.rows ?? null;
 }
 
-/** Validation 재실행 (snapshot 재사용 · ERP 호출 없음) */
+/** Validation 재실행 (candidate 재사용) */
 export function revalidate(dataset: DatasetKey): ValidationSummary | null {
-  const full = loadSnapshotFull(dataset);
+  const full = loadCandidateFull(dataset);
   if (!full) return null;
-  // Dataset 별 간이 Validation (PRODUCT 는 full engine · 그 외는 identity)
   if (dataset === "PRODUCT_LIST") {
     const v = validateErpSnapshot(full.rows as unknown as ValidationErpRow[], null, {});
     const vSum: ValidationSummary = {
@@ -334,9 +419,40 @@ export function revalidate(dataset: DatasetKey): ValidationSummary | null {
       error: v.error,
       blockingErrors: v.blockingErrors,
     };
-    updateSnapshotValidation(dataset, vSum);
+    // snapshotStore 쪽 validation update (별도 helper 추가 가능 · 현재 간단 skip)
     return vSum;
   }
-  // Inventory · Buy 는 saveSnapshot 시 저장된 validation 반환
   return full.meta.validation ?? null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sync Apply · Phase 3 승인 전까지 전체 WRITE 금지
+// (실제 WRITE 로직은 server/services/erpSync/productSyncRunner 재사용 예정)
+// ─────────────────────────────────────────────────────────────────────────────
+export async function applyProductSync(_opts?: { allowWrite?: boolean }): Promise<{
+  ok: boolean;
+  dryRun: boolean;
+  inserted: number;
+  updated: number;
+  failed: number;
+  message?: string;
+}> {
+  void _opts;
+  return {
+    ok: false,
+    dryRun: true,
+    inserted: 0,
+    updated: 0,
+    failed: 0,
+    message: "전체 WRITE 는 Phase 3 사용자 승인 후 활성화 · 현재는 Preview 전용.",
+  };
+}
+
+/** 승인된 Promotion · Read-back 통과 후 호출용 (Phase 3) */
+export function promoteOnVerifiedSuccess(dataset: DatasetKey): void {
+  const meta = promoteCandidateToLastSynced(dataset);
+  if (meta) {
+    recordSyncAttempt(dataset, "VERIFIED_SUCCESS");
+    updateSyncStatus(dataset, "SYNCED");
+  }
 }

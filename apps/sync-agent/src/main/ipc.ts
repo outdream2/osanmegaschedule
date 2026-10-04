@@ -22,6 +22,7 @@ import {
   getQueueStatus,
   revalidate,
   loadRows,
+  buildProductDiff,
 } from "./erpSyncOrchestrator";
 import type { DatasetKey } from "./datasetTypes";
 import { getSupabaseStatus } from "./supabaseClient";
@@ -256,6 +257,43 @@ export function registerIpcHandlers() {
     if (!rows) return { ok: false, error: "snapshot 없음" };
     const limit = args.limit ?? 500;
     return { ok: true, rows: rows.slice(0, limit), total: rows.length };
+  });
+
+  // 2026-10-04 · Phase 2 · Local Diff + Supabase Final Diff · ERP 호출 없음
+  ipcMain.handle("erpSync:productDiff", async () => {
+    try {
+      const result = await buildProductDiff();
+      // UI 전송 payload 는 size 제한 · entries 상위 500 만
+      return {
+        ok: true,
+        candidateHash: result.candidateHash,
+        lastSyncedHash: result.lastSyncedHash,
+        firstRun: result.firstRun,
+        mappingVersion: result.mappingVersion,
+        local: {
+          total: result.localDiff.total,
+          same: result.localDiff.same,
+          new: result.localDiff.new_,
+          changed: result.localDiff.changed,
+          missing: result.localDiff.missing,
+        },
+        supabase: {
+          totalChecked: result.supabaseDiff.totalChecked,
+          wouldInsert: result.supabaseDiff.wouldInsert,
+          wouldUpdate: result.supabaseDiff.wouldUpdate,
+          wouldSkipSame: result.supabaseDiff.wouldSkipSame,
+          wouldDelete: result.supabaseDiff.wouldDelete,
+          entries: result.supabaseDiff.entries.slice(0, 500).map((e) => ({
+            barcode: e.barcode,
+            productName: e.productName,
+            action: e.action,
+            changedFields: e.changedFields,
+          })),
+        },
+      };
+    } catch (err: any) {
+      return { ok: false, error: err?.message ?? String(err) };
+    }
   });
 
   // 전체 WRITE 는 아직 금지 · Phase 3 승인 후 활성화
