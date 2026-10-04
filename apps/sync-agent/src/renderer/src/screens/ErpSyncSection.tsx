@@ -448,13 +448,16 @@ const SnapshotTable: React.FC<{ dataset: DatasetKey; rows: Record<string, unknow
       { key: "UnitCost", label: "단가", align: "right" },
       { key: "BuyTotal", label: "총액", align: "right" },
     ],
-    // 2026-10-04 · 판매내역 · 응답 schema 미확인 상태 · 공통 추정 field · 실제 조회 후 재확정
+    // 2026-10-04 · 판매내역 · 실측 응답 keys (292-row snapshot 기준)
+    //   SaleDate · ProductName · BuyerCorpNameView · TotalStock(=수량) · UnitCost · UnitSale · SaleTotal · Margin
+    //   사용자 지시 · BarCode 는 RowArea 로 추가 요청 (ERP BarCode = our product_code)
     SALE_STATUS: [
       { key: "SaleDate", label: "판매일" },
-      { key: "PCode", label: "PCode" },
+      { key: "BarCode", label: "바코드" },
       { key: "ProductName", label: "상품명" },
+      { key: "BuyerCorpNameView", label: "거래처" },
+      { key: "TotalStock", label: "수량", align: "right" },
       { key: "UnitSale", label: "단가", align: "right" },
-      { key: "StockCnt", label: "수량", align: "right" },
       { key: "SaleTotal", label: "총액", align: "right" },
       { key: "Margin", label: "마진", align: "right" },
     ],

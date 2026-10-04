@@ -50,15 +50,17 @@ const BUY_COLS: ColumnSpec[] = [
   { erp: "UnitCost", label: "단가", align: "right" },
   { erp: "BuyTotal", label: "합계", align: "right" },
 ];
-// 2026-10-04 · 판매현황 · 응답 schema 미확인 (sale-request 샘플 only) · 공통 추정 field
-//   · 실제 조회 후 상세 modal 에서 전체 응답 column 확인 가능
+// 2026-10-04 · 판매현황 · 실측 응답 keys (292-row 2026-10-04 snapshot 기준)
+//   SaleDate · ProductName · BuyerCorpNameView · TotalStock(=수량) · UnitCost · UnitSale · SaleTotal · Margin
+//   사용자 지시: BarCode(ERP) = products.product_code · RowArea 로 추가 요청하여 응답에 포함
 const SALE_COLS: ColumnSpec[] = [
   { erp: "SaleDate", label: "판매일" },
-  { erp: "PCode", label: "상품코드" },
+  { erp: "BarCode", label: "바코드" },
   { erp: "ProductName", label: "상품명" },
   { erp: "BuyerCorpNameView", label: "거래처" },
-  { erp: "StockCnt", label: "수량", align: "right" },
-  { erp: "UnitSale", label: "단가", align: "right" },
+  { erp: "TotalStock", label: "수량", align: "right" },
+  { erp: "UnitCost", label: "매입단가", align: "right" },
+  { erp: "UnitSale", label: "판매단가", align: "right" },
   { erp: "SaleTotal", label: "합계", align: "right" },
   { erp: "Margin", label: "마진", align: "right" },
 ];
@@ -236,8 +238,8 @@ export const ErpSection: React.FC = () => {
             queryLabel="판매 조회"
             queryFn={() => window.api.erpSaleStatus({ startDate: saleStart, endDate: saleEnd })}
             displayCols={SALE_COLS}
-            searchFields={["PCode", "ProductName", "BuyerCorpNameView"]}
-            searchPlaceholder="상품코드 · 상품명 · 거래처 검색 (전체 대상)"
+            searchFields={["BarCode", "ProductName", "BuyerCorpNameView"]}
+            searchPlaceholder="바코드 · 상품명 · 거래처 검색 (전체 대상)"
             conditionsSlot={
               <div className="flex items-center gap-2 flex-wrap">
                 <label className="text-[12px] text-zinc-600 font-semibold">조회기간</label>

@@ -1316,7 +1316,9 @@ function buildSaleStatusEnvelope(ctx: SaleStatusContext): string {
     `<_OptExFlag>0</_OptExFlag>` +
     `<DataArea>[ST]000</DataArea>` +
     `<DataColumns>SaleTotal,Margin,TotalStock</DataColumns>` +
-    `<RowArea>BuyerCorpNameView,ProductName,UnitCost,UnitSale,SaleDate</RowArea>` +
+    // 2026-10-04 · 사용자 지시 · 응답에 BarCode(ERP BarCode=우리 service product_code) 포함
+    //   · 기본 샘플(RowArea=5 field)에 BarCode 추가 · 수량(TotalStock)은 DataColumns 로 이미 포함됨
+    `<RowArea>BuyerCorpNameView,ProductName,UnitCost,UnitSale,SaleDate,BarCode</RowArea>` +
     `<CourseNum>0</CourseNum><MaxDiscount>0</MaxDiscount>` +
     `<TmsSeq>0</TmsSeq><TmsListSeq>0</TmsListSeq>` +
     `<LocationCode>0</LocationCode><PgCode>0</PgCode><StartPrice>0</StartPrice><EndPrice>0</EndPrice>` +
