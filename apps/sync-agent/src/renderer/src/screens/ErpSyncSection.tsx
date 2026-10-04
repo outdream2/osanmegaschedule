@@ -83,6 +83,17 @@ export const ErpSyncSection: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [supaStatus, setSupaStatus] = useState<{ present: boolean; urlSuffix: string | null } | null>(null);
   const [anomalyFilter, setAnomalyFilter] = useState<AnomalyFilter>("all");
+  // 2026-10-04 · ERP Fetch 진행률 (iregenSoap 가 broadcast · 멈춘 것처럼 보이지 않도록)
+  const [fetchProgress, setFetchProgress] = useState<{
+    page: number;
+    rowsAccum: number;
+    done?: boolean;
+    totalPages?: number;
+    totalRowsExpected?: number;
+  } | null>(null);
+  // 경과 시간 표시용
+  const [fetchStartMs, setFetchStartMs] = useState<number | null>(null);
+  const [, setTick] = useState(0);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -97,10 +108,32 @@ export const ErpSyncSection: React.FC = () => {
 
   useEffect(() => { loadStatus(); }, [loadStatus]);
 
+  // 2026-10-04 · 진행률 수신 (iregenSoap.broadcastProductProgress → preload onErpProductProgress)
+  useEffect(() => {
+    if (!window.api?.onErpProductProgress) return;
+    const unsub = window.api.onErpProductProgress((p) => {
+      setFetchProgress(p);
+      if (p.done) {
+        // 완료 후 잠시 유지했다가 자동 숨김 (사용자가 완료값 확인)
+        setTimeout(() => setFetchProgress(null), 3000);
+      }
+    });
+    return unsub;
+  }, []);
+
+  // 1초마다 tick · 경과 시간 live 업데이트
+  useEffect(() => {
+    if (phase !== "FETCHING") return;
+    const t = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [phase]);
+
   const doFetch = async () => {
     setError(null);
     setPhase("FETCHING");
     setPreview(null);
+    setFetchProgress(null);
+    setFetchStartMs(Date.now());
     try {
       const r = await window.api.erpSyncFetch();
       if (!r.ok) {
@@ -114,6 +147,8 @@ export const ErpSyncSection: React.FC = () => {
     } catch (e: any) {
       setPhase("FAILED");
       setError(e?.message ?? String(e));
+    } finally {
+      setFetchStartMs(null);
     }
   };
 
@@ -193,6 +228,15 @@ export const ErpSyncSection: React.FC = () => {
             <span className="text-rose-700 font-semibold whitespace-pre-wrap">⚠ {error}</span>
           )}
         </div>
+
+        {/* 2026-10-04 · Fetch 진행률 바 (iregenSoap broadcast · 멈춘 것처럼 보이지 않도록) */}
+        {(phase === "FETCHING" || fetchProgress) && (
+          <FetchProgressBar
+            progress={fetchProgress}
+            startMs={fetchStartMs}
+            fetching={phase === "FETCHING"}
+          />
+        )}
       </div>
 
       {/* 실행 버튼 */}
@@ -388,6 +432,60 @@ const StatBox: React.FC<{ label: string; value: number; tone: "sky" | "emerald" 
     <div className={`px-3 py-2 rounded border ${toneCls[tone]}`}>
       <div className="text-[10px] font-semibold uppercase tracking-wide opacity-80">{label}</div>
       <div className="text-[18px] font-bold mt-0.5">{value.toLocaleString()}</div>
+    </div>
+  );
+};
+
+// 2026-10-04 · Fetch 진행률 바 (iregenSoap · broadcastProductProgress)
+const FetchProgressBar: React.FC<{
+  progress: { page: number; rowsAccum: number; done?: boolean; totalPages?: number; totalRowsExpected?: number } | null;
+  startMs: number | null;
+  fetching: boolean;
+}> = ({ progress, startMs, fetching }) => {
+  const pct =
+    progress?.totalPages && progress.totalPages > 0
+      ? Math.min(100, Math.round((progress.page / progress.totalPages) * 100))
+      : progress?.totalRowsExpected && progress.totalRowsExpected > 0
+        ? Math.min(100, Math.round((progress.rowsAccum / progress.totalRowsExpected) * 100))
+        : null;
+  const elapsedSec = startMs != null ? Math.floor((Date.now() - startMs) / 1000) : 0;
+  const etaSec =
+    pct && pct > 0 && pct < 100 && elapsedSec > 0
+      ? Math.max(0, Math.round((elapsedSec * (100 - pct)) / pct))
+      : null;
+
+  return (
+    <div className="mt-2 bg-white border border-zinc-200 rounded p-2.5">
+      <div className="flex items-center justify-between text-[12px] font-semibold mb-1">
+        <span className="text-brand-deep">
+          {progress
+            ? `${progress.rowsAccum.toLocaleString()}${progress.totalRowsExpected ? ` / ${progress.totalRowsExpected.toLocaleString()}` : ""}건`
+            : fetching
+              ? "ERP SOAP 호출 준비 중..."
+              : ""}
+          {progress?.totalPages ? ` · ${progress.page}/${progress.totalPages} 페이지` : progress ? ` · ${progress.page} 페이지 완료` : ""}
+        </span>
+        <span className="text-zinc-500 tabular-nums">
+          {pct !== null && <span className="mr-2">{pct}%</span>}
+          경과 {elapsedSec}s{etaSec !== null ? ` · 남은시간 약 ${etaSec}s` : ""}
+        </span>
+      </div>
+      <div className="w-full bg-zinc-200 rounded h-2 overflow-hidden">
+        <div
+          className="bg-brand-deep h-full transition-all duration-300"
+          style={{ width: pct !== null ? `${pct}%` : fetching ? "10%" : "0%" }}
+        />
+      </div>
+      {!progress && fetching && (
+        <div className="text-[11px] text-zinc-500 mt-1">
+          · ERP SOAP (concurrency=1) · 약 4분 소요 · 81 페이지 × 50건
+        </div>
+      )}
+      {progress?.done && (
+        <div className="text-[11px] text-emerald-600 font-semibold mt-1">
+          ✓ 완료 · 총 {progress.rowsAccum.toLocaleString()}건
+        </div>
+      )}
     </div>
   );
 };
