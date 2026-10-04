@@ -94,6 +94,7 @@ interface SyncAgentApi {
   erpInventoryQueryRaw(): Promise<ErpQueryResult>;
   erpProductList(opts?: { pageSize?: number; maxPages?: number; concurrency?: number }): Promise<ErpQueryResult>;
   erpBuyStatus(opts?: { startDate?: string; endDate?: string }): Promise<ErpQueryResult>;
+  erpSaleStatus(opts?: { startDate?: string; endDate?: string }): Promise<ErpQueryResult>;
   onErpProductProgress(
     callback: (p: { page: number; rowsAccum: number; done?: boolean; totalPages?: number; totalRowsExpected?: number }) => void,
   ): () => void;

@@ -9,6 +9,8 @@ interface QueueJob {
   readonly dataset: DatasetKey;
   readonly label: string;
   readonly run: () => Promise<void>;
+  /** 2026-10-04 · job 완료 시 호출 · service 가 fetch 완료를 await 가능하게 함 */
+  readonly onComplete?: (ok: boolean, error?: Error) => void;
 }
 
 class ErpQueue {
@@ -45,14 +47,16 @@ class ErpQueue {
     if (!next) return;
     this.running = true;
     this.currentDataset = next.dataset;
+    let completeError: Error | undefined;
     try {
       await next.run();
     } catch (err) {
-      // 각 job 내부에서 처리하도록 설계 · 여기선 fallback 로그만
-      console.error(`[erpQueue] ${next.dataset} job 예외 ·`, (err as Error).message);
+      completeError = err as Error;
+      console.error(`[erpQueue] ${next.dataset} job 예외 ·`, completeError.message);
     } finally {
       this.running = false;
       this.currentDataset = null;
+      try { next.onComplete?.(completeError == null, completeError); } catch { /* ignore */ }
       // 다음 job 처리
       setImmediate(() => this.tick());
     }

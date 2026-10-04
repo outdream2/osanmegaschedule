@@ -25,6 +25,7 @@ const SLUG: Record<DatasetKey, string> = {
   PRODUCT_LIST: "product-list",
   INVENTORY_STATUS: "inventory-status",
   BUY_STATUS: "buy-status",
+  SALE_STATUS: "sale-status",
 };
 
 function rootDir(): string {

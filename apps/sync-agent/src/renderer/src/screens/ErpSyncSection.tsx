@@ -13,22 +13,25 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
-type DatasetKey = "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS";
+type DatasetKey = "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS" | "SALE_STATUS";
 
 const DATASET_LABEL: Record<DatasetKey, string> = {
   PRODUCT_LIST: "상품정보 · 현재고",
   INVENTORY_STATUS: "재고 입출고 현황",
   BUY_STATUS: "매입내역",
+  SALE_STATUS: "판매내역",
 };
 const DATASET_API: Record<DatasetKey, string> = {
   PRODUCT_LIST: "Product_List",
   INVENTORY_STATUS: "Inventory_Status",
   BUY_STATUS: "Buy_Status",
+  SALE_STATUS: "Sale_Status",
 };
 const DATASET_ICON: Record<DatasetKey, string> = {
   PRODUCT_LIST: "📦",
   INVENTORY_STATUS: "📊",
   BUY_STATUS: "💰",
+  SALE_STATUS: "🧾",
 };
 
 type FetchPhase =
@@ -73,7 +76,7 @@ interface DatasetState {
   dependencyMessage: string | null;
 }
 
-const ORDER: DatasetKey[] = ["PRODUCT_LIST", "INVENTORY_STATUS", "BUY_STATUS"];
+const ORDER: DatasetKey[] = ["PRODUCT_LIST", "INVENTORY_STATUS", "BUY_STATUS", "SALE_STATUS"];
 
 export const ErpSyncSection: React.FC = () => {
   const [states, setStates] = useState<Record<DatasetKey, DatasetState> | null>(null);
@@ -82,6 +85,7 @@ export const ErpSyncSection: React.FC = () => {
     PRODUCT_LIST: true,
     INVENTORY_STATUS: false,
     BUY_STATUS: false,
+    SALE_STATUS: false,
   });
   const [queueStatus, setQueueStatus] = useState<{ running: boolean; current: DatasetKey | null; pending: DatasetKey[]; concurrency: 1 } | null>(null);
   // Product_List pagination 진행률 (iregenSoap · erp:product-progress 수신)
@@ -161,7 +165,7 @@ export const ErpSyncSection: React.FC = () => {
           <div>
             <div className="text-[18px] font-bold text-zinc-900">⚡ ERP → Supabase 동기화</div>
             <div className="text-[12px] text-zinc-500 mt-0.5">
-              3개 데이터 세트 독립 관리 · 수집 → 변환 → 검증 → 비교 → 승인 → 반영
+              4개 데이터 세트 독립 관리 · 수집 → 변환 → 검증 → 비교 → 승인 → 반영
             </div>
           </div>
           <div className="flex items-center gap-2 text-[11px]">
@@ -188,8 +192,8 @@ export const ErpSyncSection: React.FC = () => {
         </div>
       )}
 
-      {/* 3개 Dataset Card · md 이상에선 가로 3열 (세로로 쌓여서 아래 섹션이 안 보이는 문제 방지) */}
-      <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+      {/* 4개 Dataset Card · md 2열 · xl 4열 (판매내역 포함 · 좁은 폭에선 2x2 반응형) */}
+      <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
         {ORDER.map((d) => (
           <DatasetCard
             key={d}
@@ -443,6 +447,16 @@ const SnapshotTable: React.FC<{ dataset: DatasetKey; rows: Record<string, unknow
       { key: "StockCnt", label: "수량", align: "right" },
       { key: "UnitCost", label: "단가", align: "right" },
       { key: "BuyTotal", label: "총액", align: "right" },
+    ],
+    // 2026-10-04 · 판매내역 · 응답 schema 미확인 상태 · 공통 추정 field · 실제 조회 후 재확정
+    SALE_STATUS: [
+      { key: "SaleDate", label: "판매일" },
+      { key: "PCode", label: "PCode" },
+      { key: "ProductName", label: "상품명" },
+      { key: "UnitSale", label: "단가", align: "right" },
+      { key: "StockCnt", label: "수량", align: "right" },
+      { key: "SaleTotal", label: "총액", align: "right" },
+      { key: "Margin", label: "마진", align: "right" },
     ],
   };
   const cols = COLS[dataset];

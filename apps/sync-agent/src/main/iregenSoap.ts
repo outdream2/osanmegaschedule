@@ -1184,3 +1184,188 @@ export async function queryBuyStatus(opts?: { startDate?: string; endDate?: stri
   console.log("[iregen:buy] SOAP OK ·", soapMs, "ms · response bytes:", soapRes.xml.length);
   return decodeResponseToResult(soapRes.xml, t0, soapMs);
 }
+
+// ============================================================================
+// 2026-10-04 · PHASE 1 · Sale_Status (판매 현황)
+// ============================================================================
+// Fiddler Request 기반 · tools/iregen-bridge/samples/sale-request.txt 완전 복제
+// Endpoint: SvcSaleBiz.asmx · SOAPAction: Sale_Status
+// 특징: StartDate/EndDate · PageIdx=0/PageSize=0 (전체 조회) · CRUD=DETAIL · IsStatus=9
+// 민감 값/날짜만 동적 치환
+
+const SALE_STATUS_ENDPOINT = "http://soap.iregen.co.kr/App_Service/Irm/SvcSaleBiz.asmx";
+const SALE_STATUS_SOAP_ACTION = "http://tempuri.org/Sale_Status";
+
+interface SaleStatusContext {
+  corpCode: string;
+  userId: string;
+  corpDbNm: string;
+  startDate: string;
+  endDate: string;
+}
+
+function buildSaleStatusEnvelope(ctx: SaleStatusContext): string {
+  // sale-request.txt 완전 복제 · CorpDB_nm/CorpCode/UserID/StartDate/EndDate 만 동적
+  return (
+    `<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">` +
+    `<s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">` +
+    `<Sale_Status xmlns="http://tempuri.org/">` +
+    `<ent>` +
+    `<IsReturnJson>false</IsReturnJson><IsEnc>false</IsEnc><IsCompress>false</IsCompress>` +
+    `<IsStorageGubunOut>false</IsStorageGubunOut><IsPosServerConn>false</IsPosServerConn>` +
+    `<IsOptionView>2</IsOptionView>` +
+    `<CorpCode>${escapeXml(ctx.corpCode)}</CorpCode>` +
+    `<CtCode/><BuyerCtCode/><MinSaleTotal>0</MinSaleTotal>` +
+    `<DevIdx>0</DevIdx><IsKeepingRule>0</IsKeepingRule>` +
+    `<Lcate>0</Lcate><Mcate>0</Mcate><Scate>0</Scate><Dcate>0</Dcate>` +
+    `<StCode>-1</StCode><IsStatus>9</IsStatus>` +
+    `<DayCnt>0</DayCnt><AppNo/><MonthlyPlan>0</MonthlyPlan>` +
+    `<UserLevel>0</UserLevel>` +
+    `<SavePointPercent>0</SavePointPercent><SaveCardPointPercent>0</SaveCardPointPercent>` +
+    `<SaveCashPointPercent>0</SaveCashPointPercent><SaveCreditPointPercent>0</SaveCreditPointPercent>` +
+    `<GuaranteePrice>0</GuaranteePrice><CreditPrice>0</CreditPrice><CreditTotal>0</CreditTotal>` +
+    `<CreditRotationDay>0</CreditRotationDay><Subsidy>0</Subsidy>` +
+    `<DevCommission>0</DevCommission><SaleCommission>0</SaleCommission>` +
+    `<EtcIntField1>0</EtcIntField1><EtcIntField2>0</EtcIntField2><EtcIntField3>0</EtcIntField3>` +
+    `<Payment>0</Payment>` +
+    `<UserID>${escapeXml(ctx.userId)}</UserID>` +
+    `<DevOrderNo>0</DevOrderNo><Latitude>0</Latitude><Longitude>0</Longitude>` +
+    `<CRUD>DETAIL</CRUD>` +
+    `<CorpDB_nm>${escapeXml(ctx.corpDbNm)}</CorpDB_nm>` +
+    `<PageIdx>0</PageIdx><PageSize>0</PageSize><SearchType>TOTAL</SearchType>` +
+    `<StartDate>${escapeXml(ctx.startDate)}</StartDate>` +
+    `<EndDate>${escapeXml(ctx.endDate)}</EndDate>` +
+    `<Idx>0</Idx><IdxCode>0</IdxCode><pIdx>0</pIdx>` +
+    `<UsedEmoney>0</UsedEmoney><Cate>0</Cate><pCate>0</pCate><IsLevel>0</IsLevel>` +
+    `<Sort>0</Sort><UsedPoint>0</UsedPoint><Seq>0</Seq>` +
+    `<TaxChargePrice>0</TaxChargePrice><TaxChargeTax>0</TaxChargeTax><TaxChargeTotal>0</TaxChargeTotal>` +
+    `<CustormerLevel>0</CustormerLevel>` +
+    `<PubCode>0</PubCode><RoomCode>0</RoomCode><SeCode>0</SeCode><SgeCode>0</SgeCode>` +
+    `<SceCode>0</SceCode><pSceCode>0</pSceCode><BuseoCode>-1</BuseoCode>` +
+    `<InCount>0</InCount>` +
+    `<DiscountPrice>0</DiscountPrice><OrginPrice>0</OrginPrice>` +
+    `<DiscountPrint>0</DiscountPrint><LimitSalePrice>0</LimitSalePrice>` +
+    `<CouponCnt>0</CouponCnt><CtContact>0</CtContact><TaxPercent>0</TaxPercent>` +
+    `<UnitStock>0</UnitStock><StockCnt>0</StockCnt><TotalStock>0</TotalStock><NowStock>0</NowStock>` +
+    `<CostEaUnit>0</CostEaUnit><UnitCost>0</UnitCost><CostTotal>0</CostTotal>` +
+    `<OrginEaUnit>0</OrginEaUnit><OrginUnit>0</OrginUnit><OrginTotal>0</OrginTotal>` +
+    `<EvCostUnit>0</EvCostUnit><EvSaleUnit>0</EvSaleUnit><EventTotal>0</EventTotal>` +
+    `<SaleEaUnit>0</SaleEaUnit><UnitSale>0</UnitSale>` +
+    `<SalePrice>0</SalePrice><SaleTax>0</SaleTax><TaxExemption>0</TaxExemption><SaleTotal>0</SaleTotal>` +
+    `<EventDiscount>0</EventDiscount><GroupDiscount>0</GroupDiscount>` +
+    `<CouponDiscount>0</CouponDiscount><EtcDiscount>0</EtcDiscount>` +
+    `<GroupTotal>0</GroupTotal><CouponTotal>0</CouponTotal><EtcTotal>0</EtcTotal>` +
+    `<DiscountTotal>0</DiscountTotal>` +
+    `<Margin>0</Margin><MarginTotal>0</MarginTotal><MarginPercent>0</MarginPercent>` +
+    `<ChargeCredit>0</ChargeCredit><ChargeEmoney>0</ChargeEmoney><ChargePoint>0</ChargePoint>` +
+    `<PointAdd>0</PointAdd><PointTotal>0</PointTotal>` +
+    `<DocIdx>0</DocIdx><DocStock>0</DocStock>` +
+    `<UserEmoney>0</UserEmoney><Emoney>0</Emoney><Commission>0</Commission>` +
+    `<UserPoint>0</UserPoint><Credit>0</Credit><Bongsalyo>0</Bongsalyo>` +
+    `<ChargePrice>0</ChargePrice><ChargeTax>0</ChargeTax><ChargeExemption>0</ChargeExemption><ChargeTotal>0</ChargeTotal>` +
+    `<CashJanAeg>0</CashJanAeg>` +
+    `<RentalPrice>0</RentalPrice><RentalTax>0</RentalTax><RentalExemption>0</RentalExemption><RentalTotal>0</RentalTotal>` +
+    `<GroupCode>0</GroupCode><CustomerCnt>0</CustomerCnt><LocationCnt>0</LocationCnt><TotalCnt>0</TotalCnt>` +
+    `<IsMorning>-1</IsMorning><DelayCallTime>0</DelayCallTime>` +
+    `<DevFloatX>0</DevFloatX><DevFloatY>0</DevFloatY><JobSort>0</JobSort><LcdCode>0</LcdCode>` +
+    `<TotalPrice>0</TotalPrice><TotalTax>0</TotalTax><TotalExemption>0</TotalExemption><TotalSaleTotal>0</TotalSaleTotal>` +
+    `<SavePoint>0</SavePoint><MinusPoint>0</MinusPoint><EditPoint>0</EditPoint><SumPoint>0</SumPoint>` +
+    `<CardTotal>0</CardTotal><CashTotal>0</CashTotal><PayOutPrice>0</PayOutPrice>` +
+    `<DevPriceRate>0</DevPriceRate><DevPrice>0</DevPrice>` +
+    `<PrCode>0</PrCode><DevCourse>-1</DevCourse>` +
+    `<RegStartDate/><RegEndDate/>` +
+    `<FileSize>0</FileSize><IsUseType>0</IsUseType>` +
+    `<PLcate>0</PLcate><PMcate>0</PMcate><PScate>0</PScate><PDcate>0</PDcate>` +
+    `<RLcate>-1</RLcate><RMcate>-1</RMcate>` +
+    `<FolderCode>0</FolderCode><SpgCode>0</SpgCode><LmCode>0</LmCode><SmallMoney>0</SmallMoney>` +
+    `<DocPrint>0</DocPrint><IntMonth>0</IntMonth><PrintCnt>0</PrintCnt>` +
+    `<Now10000>0</Now10000><Now5000>0</Now5000><Now1000>0</Now1000><Now500>0</Now500><Now100>0</Now100>` +
+    `<Out10000>0</Out10000><Out5000>0</Out5000><Out1000>0</Out1000><Out500>0</Out500><Out100>0</Out100>` +
+    `<InPrice>0</InPrice><PosStartPay>0</PosStartPay><PayingOut>0</PayingOut><RepayMoney>0</RepayMoney>` +
+    `<W100000>0</W100000><W50000>0</W50000><W10000>0</W10000><W5000>0</W5000><W1000>0</W1000>` +
+    `<W500>0</W500><W100>0</W100><W50>0</W50><W10>0</W10><W1>0</W1>` +
+    `<CashPrice>0</CashPrice><ClosingPayment>0</ClosingPayment><Balance>0</Balance><TotalPayment>0</TotalPayment>` +
+    `<Cash1000>0</Cash1000><Cash100>0</Cash100><Re1000>0</Re1000><Re100>0</Re100>` +
+    `<OsIdx>0</OsIdx><OsCost>0</OsCost><OsPrice>0</OsPrice>` +
+    `<ReqStockCnt>0</ReqStockCnt><InStockCnt>0</InStockCnt>` +
+    `<OsSalePrice>0</OsSalePrice><OsSaleTax>0</OsSaleTax><OsTaxExemption>0</OsTaxExemption><OsSaleTotal>0</OsSaleTotal>` +
+    `<distinctCnt>0</distinctCnt><pUnitCost>0</pUnitCost><OsCostTotal>0</OsCostTotal>` +
+    `<MarginRate>0</MarginRate>` +
+    `<MinStock>0</MinStock><SafeStock>0</SafeStock><MaxStock>0</MaxStock>` +
+    `<SaveEmoney>0</SaveEmoney><MinusEmoney>0</MinusEmoney><EditEmoney>0</EditEmoney><SumEmoney>0</SumEmoney>` +
+    `<UnitPrice>0</UnitPrice><IncentivePercent>0</IncentivePercent>` +
+    `<PageWidth>0</PageWidth><PageHeight>0</PageHeight>` +
+    `<table_UpLoad_SaleCustomer_Contact_RowCnt>0</table_UpLoad_SaleCustomer_Contact_RowCnt>` +
+    `<table_UpLoad_SaleCustomer_Address_RowCnt>0</table_UpLoad_SaleCustomer_Address_RowCnt>` +
+    `<table_UpLoad_SaleCustomer_Image_RowCnt>0</table_UpLoad_SaleCustomer_Image_RowCnt>` +
+    `<table_UpLoad_Product_RowCnt>0</table_UpLoad_Product_RowCnt>` +
+    `<table_UpLoad_StoreEvent_Product_RowCnt>0</table_UpLoad_StoreEvent_Product_RowCnt>` +
+    `<table_UpLoad_StoreGroupEvent_Product_RowCnt>0</table_UpLoad_StoreGroupEvent_Product_RowCnt>` +
+    `<table_UpLoad_StoreCouponEvent_Product_RowCnt>0</table_UpLoad_StoreCouponEvent_Product_RowCnt>` +
+    `<table_UpLoad_StoreCouponEvent_CouponNo_RowCnt>0</table_UpLoad_StoreCouponEvent_CouponNo_RowCnt>` +
+    `<table_UpLoad_SaleProduct_RowCnt>0</table_UpLoad_SaleProduct_RowCnt>` +
+    `<table_UpLoad_SaleCharge_RowCnt>0</table_UpLoad_SaleCharge_RowCnt>` +
+    `<table_UpLoad_SaleIdentification_RowCnt>0</table_UpLoad_SaleIdentification_RowCnt>` +
+    `<table_UpLoad_ASProduct_RowCnt>0</table_UpLoad_ASProduct_RowCnt>` +
+    `<table_UpLoad_SaleTax_RowCnt>0</table_UpLoad_SaleTax_RowCnt>` +
+    `<table_UpLoad_SaleTax_Product_RowCnt>0</table_UpLoad_SaleTax_Product_RowCnt>` +
+    `<table_UpLoad_Store_ProductPrice_Reservation_RowCnt>0</table_UpLoad_Store_ProductPrice_Reservation_RowCnt>` +
+    `<PriceA>0</PriceA><ToPriceA>0</ToPriceA><BottlePrice>0</BottlePrice>` +
+    `<table_UpLoad_Location_RowCnt>0</table_UpLoad_Location_RowCnt>` +
+    `<table_UpLoad_AccountingSlip_RowCnt>0</table_UpLoad_AccountingSlip_RowCnt>` +
+    `<_OptExFlag>0</_OptExFlag>` +
+    `<DataArea>[ST]000</DataArea>` +
+    `<DataColumns>SaleTotal,Margin,TotalStock</DataColumns>` +
+    `<RowArea>BuyerCorpNameView,ProductName,UnitCost,UnitSale,SaleDate</RowArea>` +
+    `<CourseNum>0</CourseNum><MaxDiscount>0</MaxDiscount>` +
+    `<TmsSeq>0</TmsSeq><TmsListSeq>0</TmsListSeq>` +
+    `<LocationCode>0</LocationCode><PgCode>0</PgCode><StartPrice>0</StartPrice><EndPrice>0</EndPrice>` +
+    `<table_UpLoad_Delivery_Image_RowCnt>0</table_UpLoad_Delivery_Image_RowCnt>` +
+    `<SaleTaxExemption>0</SaleTaxExemption><SaleCommissionTotal>0</SaleCommissionTotal>` +
+    `<CardFeeTotal>0</CardFeeTotal><PointFeeTotal>0</PointFeeTotal>` +
+    `<BuyPrice>0</BuyPrice><BuyTax>0</BuyTax><BuyTotal>0</BuyTotal>` +
+    `<CardFee>0</CardFee><IncentiveSum>0</IncentiveSum>` +
+    `<table_UpLoad_Sale_MonthClosing_RowCnt>0</table_UpLoad_Sale_MonthClosing_RowCnt>` +
+    `</ent>` +
+    `</Sale_Status>` +
+    `</s:Body>` +
+    `</s:Envelope>`
+  );
+}
+
+export async function querySaleStatus(opts?: { startDate?: string; endDate?: string }): Promise<ErpInventoryResult> {
+  const t0 = Date.now();
+  const cfg = loadConfig();
+  if (!cfg.iregen?.enabled) {
+    return { ok: false, stage: "config", error: DISABLED_FRIENDLY_ERROR };
+  }
+  const corpDbNm = envCorpDbNm() ?? getIregenCorpDbNm() ?? null;
+  if (!corpDbNm || !corpDbNm.trim()) {
+    return { ok: false, stage: "config", error: CONFIG_FRIENDLY_ERROR };
+  }
+
+  const startDate = opts?.startDate ?? envVal("IREGEN_SALE_START_DATE") ?? todayISO();
+  const endDate = opts?.endDate ?? envVal("IREGEN_SALE_END_DATE") ?? todayISO();
+
+  const ctx: SaleStatusContext = {
+    corpCode: envCorpCode() ?? "30009",
+    userId: envUserId() ?? "111",
+    corpDbNm: corpDbNm.trim(),
+    startDate,
+    endDate,
+  };
+  const endpoint = envVal("IREGEN_SALE_ENDPOINT") ?? SALE_STATUS_ENDPOINT;
+  const soapAction = envVal("IREGEN_SALE_SOAP_ACTION") ?? SALE_STATUS_SOAP_ACTION;
+
+  const envelope = buildSaleStatusEnvelope(ctx);
+  const soapT0 = Date.now();
+  console.log("[iregen:sale] SOAP POST · endpoint:", endpoint, "· body bytes:", envelope.length, "· 기간:", startDate, "~", endDate);
+  const soapRes = await callSoap(endpoint, soapAction, envelope);
+  const soapMs = Date.now() - soapT0;
+  if (!soapRes.ok) {
+    console.error("[iregen:sale] stage=" + soapRes.stage + " ·", soapMs, "ms");
+    return { ok: false, stage: soapRes.stage, error: soapRes.error };
+  }
+  console.log("[iregen:sale] SOAP OK ·", soapMs, "ms · response bytes:", soapRes.xml.length);
+  return decodeResponseToResult(soapRes.xml, t0, soapMs);
+}

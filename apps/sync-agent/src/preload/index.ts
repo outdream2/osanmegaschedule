@@ -124,6 +124,18 @@ const api = {
         }
       | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
     >,
+  // 2026-10-04 · PHASE 1 · Sale_Status (판매 현황 · StartDate/EndDate)
+  erpSaleStatus: (opts?: { startDate?: string; endDate?: string }) =>
+    ipcRenderer.invoke("erp:saleStatus", opts) as Promise<
+      | {
+          ok: true;
+          rowCount: number;
+          columns: string[];
+          rows: Record<string, unknown>[];
+          meta: { soapMs: number; decoderMs: number; totalMs: number; queriedAt: string };
+        }
+      | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
+    >,
   // ── Iregen 연동 설정 (CorpDB_nm · safeStorage · renderer 로 재전달 X) ──
   iregenGetSettings: () =>
     ipcRenderer.invoke("iregen:getSettings") as Promise<{

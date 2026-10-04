@@ -6,12 +6,13 @@
 import React, { useEffect, useState } from "react";
 import { ErpQueryView, type ColumnSpec, type ErpQueryResult } from "../components/ErpQueryView";
 
-type TabKey = "products" | "inventory" | "buy";
+type TabKey = "products" | "inventory" | "buy" | "sale";
 
 const TABS: Array<{ key: TabKey; label: string; icon: string; sub: string }> = [
   { key: "products",  label: "사업장 상품관리", icon: "📦", sub: "Product_List · SvcProductBiz · pagination" },
   { key: "inventory", label: "상품 재고 현황", icon: "📊", sub: "Inventory_Status · SvcInventoryBiz · 42 col" },
   { key: "buy",       label: "매입 현황",       icon: "💰", sub: "Buy_Status · SvcBuyBiz · DevStartDate/EndDate" },
+  { key: "sale",      label: "판매현황",        icon: "🧾", sub: "Sale_Status · SvcSaleBiz · StartDate/EndDate" },
 ];
 
 // 각 탭 표시 컬럼 · ERP response 가 돌아와야 최종 확정 가능 · 1차는 공통 field 추정
@@ -49,6 +50,18 @@ const BUY_COLS: ColumnSpec[] = [
   { erp: "UnitCost", label: "단가", align: "right" },
   { erp: "BuyTotal", label: "합계", align: "right" },
 ];
+// 2026-10-04 · 판매현황 · 응답 schema 미확인 (sale-request 샘플 only) · 공통 추정 field
+//   · 실제 조회 후 상세 modal 에서 전체 응답 column 확인 가능
+const SALE_COLS: ColumnSpec[] = [
+  { erp: "SaleDate", label: "판매일" },
+  { erp: "PCode", label: "상품코드" },
+  { erp: "ProductName", label: "상품명" },
+  { erp: "BuyerCorpNameView", label: "거래처" },
+  { erp: "StockCnt", label: "수량", align: "right" },
+  { erp: "UnitSale", label: "단가", align: "right" },
+  { erp: "SaleTotal", label: "합계", align: "right" },
+  { erp: "Margin", label: "마진", align: "right" },
+];
 
 export const ErpSection: React.FC = () => {
   const [tab, setTab] = useState<TabKey>("inventory");
@@ -58,6 +71,9 @@ export const ErpSection: React.FC = () => {
   const [buyEnd, setBuyEnd] = useState(todayISO);
   const [invStart, setInvStart] = useState(todayISO);
   const [invEnd, setInvEnd] = useState(todayISO);
+  // 2026-10-04 · 판매현황 조회기간
+  const [saleStart, setSaleStart] = useState(todayISO);
+  const [saleEnd, setSaleEnd] = useState(todayISO);
   // 상품관리는 ERP Fiddler 가 StartDate/EndDate 빈값 · 기간 필터 사용 X · UI 미노출
 
   // 2026-10-03 · Product_List pagination 진행률 수신 (사용자 혼란 방지)
@@ -212,6 +228,36 @@ export const ErpSection: React.FC = () => {
             }
           />
         )}
+
+        {/* 2026-10-04 · 판매현황 · SvcSaleBiz · StartDate/EndDate */}
+        {tab === "sale" && (
+          <ErpQueryView
+            name="sale"
+            queryLabel="판매 조회"
+            queryFn={() => window.api.erpSaleStatus({ startDate: saleStart, endDate: saleEnd })}
+            displayCols={SALE_COLS}
+            searchFields={["PCode", "ProductName", "BuyerCorpNameView"]}
+            searchPlaceholder="상품코드 · 상품명 · 거래처 검색 (전체 대상)"
+            conditionsSlot={
+              <div className="flex items-center gap-2 flex-wrap">
+                <label className="text-[12px] text-zinc-600 font-semibold">조회기간</label>
+                <input
+                  type="date"
+                  value={saleStart}
+                  onChange={(e) => setSaleStart(e.target.value)}
+                  className="border border-zinc-300 rounded-lg px-2 py-1.5 text-[12px]"
+                />
+                <span className="text-zinc-400">~</span>
+                <input
+                  type="date"
+                  value={saleEnd}
+                  onChange={(e) => setSaleEnd(e.target.value)}
+                  className="border border-zinc-300 rounded-lg px-2 py-1.5 text-[12px]"
+                />
+              </div>
+            }
+          />
+        )}
       </div>
     </div>
   );
@@ -225,6 +271,7 @@ declare global {
       erpInventoryQueryRaw: () => Promise<ErpQueryResult>;
       erpProductList: (opts?: { pageSize?: number; maxPages?: number; concurrency?: number }) => Promise<ErpQueryResult>;
       erpBuyStatus: (opts?: { startDate?: string; endDate?: string }) => Promise<ErpQueryResult>;
+      erpSaleStatus: (opts?: { startDate?: string; endDate?: string }) => Promise<ErpQueryResult>;
       onErpProductProgress?: (cb: (p: { page: number; rowsAccum: number; done?: boolean }) => void) => () => void;
       [key: string]: any;
     };

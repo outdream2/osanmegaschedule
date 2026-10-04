@@ -6,18 +6,20 @@
 //   INVENTORY_STATUS → "재고 입출고 현황"
 //   BUY_STATUS       → "매입내역"
 
-export type DatasetKey = "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS";
+export type DatasetKey = "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS" | "SALE_STATUS";
 
 export const DATASET_LABEL: Record<DatasetKey, string> = {
   PRODUCT_LIST: "상품정보 · 현재고",
   INVENTORY_STATUS: "재고 입출고 현황",
   BUY_STATUS: "매입내역",
+  SALE_STATUS: "판매내역",
 };
 
 export const DATASET_API_NAME: Record<DatasetKey, string> = {
   PRODUCT_LIST: "Product_List",
   INVENTORY_STATUS: "Inventory_Status",
   BUY_STATUS: "Buy_Status",
+  SALE_STATUS: "Sale_Status",
 };
 
 export type FetchPhase =

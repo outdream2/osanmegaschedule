@@ -113,10 +113,11 @@ function createMainWindow() {
   mainWindow = null;
 
   mainWindow = new BrowserWindow({
-    width: 960,
-    height: 720,
-    minWidth: 720,
-    minHeight: 540,
+    // 2026-10-04 · 사용자 지시 · 로딩화면 조금 더 크게
+    width: 1180,
+    height: 840,
+    minWidth: 820,
+    minHeight: 600,
     show: true, // 2026-09-15 · 즉시 표시 · ready-to-show 의존성 제거 (사용자 UI 안 보임 문제)
     center: true,
     autoHideMenuBar: true,
@@ -406,18 +407,37 @@ app.whenReady().then(async () => {
   });
 });
 
+// 2026-10-04 · 사용자 지시 · "프로그램 종료하면 트레이에서도 나오게"
+//   · Windows 는 tray.destroy() 후에도 shell 캐시 때문에 유령 아이콘이 남는 경우가 있어
+//     아래 순서로 명시적 cleanup 수행 (removeAllListeners → setContextMenu(null) → destroy)
+//   · before-quit + will-quit 2중 방어 (앱이 어떤 경로로 종료되어도 tray 사라지게)
+function destroyTrayCompletely(): void {
+  if (!tray) return;
+  try { tray.removeAllListeners(); } catch { /* ignore */ }
+  try { tray.setContextMenu(null); } catch { /* ignore */ }
+  try { tray.setToolTip(""); } catch { /* ignore */ }
+  try { tray.destroy(); } catch { /* ignore */ }
+  tray = null;
+}
+
 app.on("before-quit", () => {
   quitting = true;
   stopAllJobs();
   stopAllWatchers();
-  // 2026-10-04 · tray 명시 destroy · OS 가 늦게 지워 중복 아이콘 보이는 문제 방지
-  if (tray) {
-    try { tray.destroy(); } catch { /* ignore */ }
-    tray = null;
-  }
+  destroyTrayCompletely();
+});
+
+// will-quit · before-quit 를 거치지 않는 비정상 종료 경로 fallback
+app.on("will-quit", () => {
+  destroyTrayCompletely();
 });
 
 // Windows · 트레이 종료 후에도 · 앱 유지 (기본 window-all-closed 시 종료 방지)
+// 단 quitting=true (사용자 명시 종료) 라면 바로 app.exit(0) 로 완전 종료
 app.on("window-all-closed", () => {
-  // Do nothing · 트레이 상주
+  if (quitting) {
+    destroyTrayCompletely();
+    app.exit(0);
+  }
+  // 아니면 트레이 상주
 });

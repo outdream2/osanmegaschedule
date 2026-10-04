@@ -14,7 +14,7 @@ import { login, logout } from "./auth";
 import { runNow, runNowAll } from "./scheduler";
 import { findLatestFile } from "./importer";
 import { listQueue, clearQueue, removeItem } from "./queue";
-import { queryInventoryStatus, queryInventoryStatusRaw, queryProductList, queryBuyStatus, iregenSecretSource, iregenEnvSourceLabel } from "./iregenSoap";
+import { queryInventoryStatus, queryInventoryStatusRaw, queryProductList, queryBuyStatus, querySaleStatus, iregenSecretSource, iregenEnvSourceLabel } from "./iregenSoap";
 import {
   enqueueFetch,
   getDatasetState,
@@ -176,6 +176,12 @@ export function registerIpcHandlers() {
   //   · DevStartDate/DevEndDate 기간 조회
   ipcMain.handle("erp:buyStatus", async (_e, opts?: { startDate?: string; endDate?: string }) => {
     return queryBuyStatus(opts);
+  });
+
+  // 2026-10-04 · PHASE 1 · Sale_Status (판매 현황) · 하단 "🔗 Iregen ERP 직접 조회" 판매현황 탭
+  //   · StartDate/EndDate 기간 조회 · 메모리 응답 전용 · Supabase WRITE 금지
+  ipcMain.handle("erp:saleStatus", async (_e, opts?: { startDate?: string; endDate?: string }) => {
+    return querySaleStatus(opts);
   });
 
   // 2026-10-03 · Iregen 연동 설정 · CorpDB_nm 은 safeStorage 저장 · renderer 로 재전달 X

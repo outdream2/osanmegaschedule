@@ -17,7 +17,7 @@
 //     → 전부 verified → candidate → last-synced 승격
 
 import { BrowserWindow } from "electron";
-import { queryProductList, queryInventoryStatus, queryBuyStatus } from "./iregenSoap";
+import { queryProductList, queryInventoryStatus, queryBuyStatus, querySaleStatus } from "./iregenSoap";
 import { erpQueue } from "./erpQueue";
 import {
   saveCandidate,
@@ -74,6 +74,7 @@ const memory: Record<DatasetKey, InMemoryState> = {
   PRODUCT_LIST: { phase: "IDLE", inflight: null, lastError: null },
   INVENTORY_STATUS: { phase: "IDLE", inflight: null, lastError: null },
   BUY_STATUS: { phase: "IDLE", inflight: null, lastError: null },
+  SALE_STATUS: { phase: "IDLE", inflight: null, lastError: null },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,6 +84,9 @@ function computeReadiness(dataset: DatasetKey, validation: ValidationSummary | u
   if (phase === "FAILED") return "BLOCKED";
   if (dataset === "INVENTORY_STATUS") return "NOT_CONFIGURED";
   if (dataset === "BUY_STATUS") return "BLOCKED";
+  // 2026-10-04 · Sale_Status · DB sales 테이블 미정의 · WRITE 설계 전 → NOT_CONFIGURED
+  //   ERP 조회 + 검증 자체는 가능 · 상단 Sync 는 비활성 상태로 노출
+  if (dataset === "SALE_STATUS") return "NOT_CONFIGURED";
   // PRODUCT_LIST
   if (!validation) return "READY";
   if (validation.blockingErrors) return "BLOCKED";
@@ -124,6 +128,7 @@ export function getAllDatasetStates(): Record<DatasetKey, DatasetState> {
     PRODUCT_LIST: getDatasetState("PRODUCT_LIST"),
     INVENTORY_STATUS: getDatasetState("INVENTORY_STATUS"),
     BUY_STATUS: getDatasetState("BUY_STATUS"),
+    SALE_STATUS: getDatasetState("SALE_STATUS"),
   };
 }
 
@@ -174,13 +179,53 @@ export function enqueueFetch(dataset: DatasetKey, opts?: { startDate?: string; e
         if (dataset === "PRODUCT_LIST") await runProductFetch(startedAt);
         else if (dataset === "INVENTORY_STATUS") await runInventoryFetch(startedAt, opts);
         else if (dataset === "BUY_STATUS") await runBuyFetch(startedAt, opts);
+        else if (dataset === "SALE_STATUS") await runSaleFetch(startedAt, opts);
       } catch (err) {
         const msg = (err as Error).message ?? String(err);
         memory[dataset].lastError = msg;
         updateInflight(dataset, { phase: "FAILED", message: msg }, "FAILED");
         setTimeout(() => { clearInflight(dataset, "FAILED"); broadcastFinalState(dataset); }, 500);
+        throw err;
       }
     },
+  });
+}
+
+/**
+ * 2026-10-04 · ERP fetch 완료를 Promise 로 await.
+ * Scheduler / 상단 "동기화 확인" workflow 가 fetch → validate → diff 를 하나의 함수로 실행하기 위함.
+ */
+export function enqueueFetchAwait(dataset: DatasetKey, opts?: { startDate?: string; endDate?: string }): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (memory[dataset].inflight) return reject(new Error(`${dataset} 이미 진행 중`));
+    if (erpQueue.waitingFor(dataset)) return reject(new Error(`${dataset} 이미 대기열에 있음`));
+
+    const startedAt = new Date().toISOString();
+    memory[dataset].inflight = { dataset, phase: "QUEUED", startedAt };
+    memory[dataset].phase = "QUEUED";
+    memory[dataset].lastError = null;
+    broadcastDatasetProgress(memory[dataset].inflight!);
+
+    erpQueue.enqueue({
+      dataset,
+      label: DATASET_API_NAME[dataset],
+      run: async () => {
+        if (dataset === "PRODUCT_LIST") await runProductFetch(startedAt);
+        else if (dataset === "INVENTORY_STATUS") await runInventoryFetch(startedAt, opts);
+        else if (dataset === "BUY_STATUS") await runBuyFetch(startedAt, opts);
+        else if (dataset === "SALE_STATUS") await runSaleFetch(startedAt, opts);
+      },
+      onComplete: (ok, err) => {
+        if (ok) resolve();
+        else {
+          const msg = err?.message ?? "fetch failed";
+          memory[dataset].lastError = msg;
+          updateInflight(dataset, { phase: "FAILED", message: msg }, "FAILED");
+          setTimeout(() => { clearInflight(dataset, "FAILED"); broadcastFinalState(dataset); }, 500);
+          reject(err ?? new Error(msg));
+        }
+      },
+    });
   });
 }
 
@@ -307,6 +352,47 @@ async function runBuyFetch(startedAt: string, opts?: { startDate?: string; endDa
   };
 
   const hash = datasetHashBuys(rows as unknown as BuyFingerprintRow[]);
+
+  saveCandidate({
+    dataset,
+    rows: result.rows,
+    startedAt,
+    checksum: hash,
+    validation: vSum,
+    mappingVersion: CURRENT_MAPPING_VERSION,
+  });
+  updateInflight(dataset, { phase: "READY", message: `완료 · ${result.rowCount.toLocaleString()}건` }, "READY");
+  setTimeout(() => { clearInflight(dataset, "READY"); broadcastFinalState(dataset); }, 2000);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SALE_STATUS Fetch
+// ─────────────────────────────────────────────────────────────────────────────
+// 2026-10-04 · 판매내역 · ERP 조회 + Decode + 기본 검증 · Supabase WRITE 없음
+//   · DB sales 테이블 미정의 · readiness=NOT_CONFIGURED · 상단 Sync 비활성
+async function runSaleFetch(startedAt: string, opts?: { startDate?: string; endDate?: string }): Promise<void> {
+  const dataset: DatasetKey = "SALE_STATUS";
+  updateInflight(dataset, { phase: "REQUESTING", message: "ERP 판매내역 조회 시작" }, "REQUESTING");
+  const result = await querySaleStatus(opts);
+  if (!result.ok) throw new Error(`${result.stage}: ${result.error}`);
+
+  updateInflight(dataset, { phase: "DECODING", message: "데이터 변환 중..." }, "DECODING");
+  updateInflight(dataset, { phase: "VALIDATING", message: "판매 트랜잭션 구조 검증 중..." }, "VALIDATING");
+
+  // 간이 검증 (판매 identity 는 응답 schema 확인 후 확정) · 응답 자체 비정상 여부만 체크
+  const rows = result.rows as Array<Record<string, unknown>>;
+  const emptyRow = rows.length === 0;
+  const vSum: ValidationSummary = {
+    totalRows: rows.length,
+    normal: rows.length,
+    review: 0,
+    error: 0,
+    blockingErrors: false,
+  };
+  void emptyRow;
+
+  // 간이 hash (rows.length + 상위 10행 serialize)
+  const hash = require("crypto").createHash("sha256").update(JSON.stringify({ n: rows.length, sample: rows.slice(0, 10) })).digest("hex");
 
   saveCandidate({
     dataset,
