@@ -851,18 +851,21 @@ const MonthlyReportTab: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 md:gap-x-6 gap-y-4 md:gap-y-5">
             {(() => {
               const avg = sel.customerCnt > 0 ? sel.saleTotal / sel.customerCnt : 0;
-              const items: Array<{ label: string; value: string }> = [
-                { label: "매출총액", value: fmtWon(sel.saleTotal) },
-                { label: "객단가",   value: fmtWon(avg) },
-                { label: "매입총액", value: fmtWon(sel.buyTotal) },
-                { label: "매출이익", value: fmtWon(sel.margin) },
-                { label: "마진율",   value: `${sel.marginPercent.toFixed(1)}%` },
-                { label: "방문객수", value: sel.customerCnt.toLocaleString() + "명" },
+              // 2026-10-05 · 사용자 지시 · 각 metric 좌측 color accent bar · 캘린더 색 체계 통일
+              //   · 매출(rose) · 매입(brand-deep) · 객단가(emerald) · 매출이익(indigo) · 마진율(amber) · 방문객(sky)
+              const items: Array<{ label: string; value: string; accent: string; labelColor: string; valueColor: string }> = [
+                { label: "매출총액", value: fmtWon(sel.saleTotal), accent: "bg-rose-500",     labelColor: "text-rose-600",     valueColor: "text-rose-700" },
+                { label: "객단가",   value: fmtWon(avg),           accent: "bg-emerald-500",  labelColor: "text-emerald-600",  valueColor: "text-emerald-800" },
+                { label: "매입총액", value: fmtWon(sel.buyTotal),  accent: "bg-brand-deep",   labelColor: "text-brand-deep",   valueColor: "text-brand-deep" },
+                { label: "매출이익", value: fmtWon(sel.margin),    accent: "bg-indigo-500",   labelColor: "text-indigo-600",   valueColor: "text-indigo-800" },
+                { label: "마진율",   value: `${sel.marginPercent.toFixed(1)}%`, accent: "bg-amber-500", labelColor: "text-amber-600", valueColor: "text-amber-800" },
+                { label: "방문객수", value: sel.customerCnt.toLocaleString() + "명", accent: "bg-sky-500", labelColor: "text-sky-600", valueColor: "text-sky-800" },
               ];
               return items.map((it) => (
-                <div key={it.label} className="min-w-0">
-                  <div className="text-[12px] md:text-[13px] text-zinc-500 font-medium mb-1 leading-tight">{it.label}</div>
-                  <div className="text-[16px] md:text-[20px] font-bold text-zinc-900 tabular-nums leading-tight break-all">{it.value}</div>
+                <div key={it.label} className="relative pl-2.5 min-w-0">
+                  <span className={`absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full ${it.accent}`} aria-hidden />
+                  <div className={`text-[12px] md:text-[13px] font-semibold mb-1 leading-tight tracking-tight ${it.labelColor}`}>{it.label}</div>
+                  <div className={`text-[16px] md:text-[20px] font-bold tabular-nums leading-tight break-all ${it.valueColor}`}>{it.value}</div>
                 </div>
               ));
             })()}
