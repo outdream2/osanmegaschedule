@@ -29,7 +29,9 @@ import logger from "../../lib/logger";
 const router = Router();
 
 const PROJECT_ROOT = process.cwd();
-const SAMPLES_DIR = path.resolve(PROJECT_ROOT, "tools/iregen-bridge/samples");
+// 2026-10-05 fix · ENOENT 해결 · tools/iregen-bridge/samples 는 git untracked (Render clone 포함 X)
+//   · SOAP request template (hourly/monthly) 을 server/resources/erp 로 이동 · production tracked
+const SAMPLES_DIR = path.resolve(PROJECT_ROOT, "server/resources/erp");
 
 // 2026-10-05 · decoder 플랫폼 분기
 //   · Windows: 기존 .NET Framework 4.8 decoder (iregen-bridge) 유지
