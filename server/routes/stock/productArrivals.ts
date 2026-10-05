@@ -261,12 +261,13 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
     }
 
     // 2026-09-01 · 사용자 지시 · 진열위치 · products 테이블 반영 (매장구역 지정된 경우만)
-    //   · location 컬럼 · display_location 컬럼 · 함께 업데이트 (하위호환)
+    //   · display_location 컬럼 업데이트
     //   · error 시 · 검수 자체는 성공 · location 만 skip (silent · log · 실패 리스트)
+    // 2026-10-04 · schema fix · products.location column 없음 · display_location 만 WRITE
     if (itemLocation) {
       const { error: locErr } = await supabase
         .from("products")
-        .update({ location: itemLocation, display_location: itemLocation })
+        .update({ display_location: itemLocation })
         .eq("product_code", productCode);
       if (locErr) {
         logger.warn(`[arrival→location] product_code=${productCode} · location=${itemLocation} · ${locErr.message}`);

@@ -50,7 +50,7 @@ export const SupplierInlineExpansion: React.FC<SupplierInlineExpansionProps> = (
                       {r.product_name || <span className="text-zinc-300">-</span>}
                     </td>
                     <td className="px-3 py-1.5 text-right tabular-nums text-[16px] font-semibold text-ink-soft">
-                      {fmt(Number(r.sale_qty ?? r.purchase_total_qty ?? 0))}
+                      {fmt(Number(r.sale_stock ?? r.purchase_total_qty ?? 0))}
                     </td>
                     <td className="px-3 py-1.5 text-right tabular-nums text-[15px] text-zinc-500">
                       {r.purchase_price ? fmtWon(Number(r.purchase_price)) : "-"}

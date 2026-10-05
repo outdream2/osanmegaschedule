@@ -1,22 +1,24 @@
 // src/components/StockManagePage/FlowTab.types.ts
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · FlowTab 타입/유틸/캐시 이관
 
+// 2026-10-04 · stock_history column rename
+//   · opening_stock→prv_stock · purchase_qty→buy_stock · sale_qty→sale_stock · disposal_qty→product_bad_stock
 export interface StockFlowRow {
   product_code: string;
   product_name: string;
   supplier: string | null;
   spec: string | null;
-  opening_stock: number;
-  purchase_qty: number;
-  sale_qty: number;
-  disposal_qty: number;
+  prv_stock: number;
+  buy_stock: number;
+  sale_stock: number;
+  product_bad_stock: number;
   closing_stock: number;
   total_amount: number;
   optimal_stock: number;
   last_purchase_date?: string | null;
   sale_price?: number;
   purchase_price?: number;
-  sale_qty_month?: number;
+  sale_stock_month?: number;
 }
 
 export type SortKey =

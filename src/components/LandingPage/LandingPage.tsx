@@ -8,6 +8,8 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { UploadDataModal } from "./UploadDataModal";
 import { LoginModals } from "./LoginModals";
 import { TodayStatusPanel } from "./TodayStatusPanel";
+// 2026-10-05 · 사용자 지시 · 오늘의 현황에 현재매출금액 + 방문자수 추가 · 클릭시 매장>매출 이동
+import { TodayRevenueKpiPanel } from "./TodayRevenueKpiPanel";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useApprovalRefreshListener } from "../../lib/approvalEvents";
@@ -438,63 +440,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             />
           )}
 
-          {/* ── 관리자 도구 (관리자 로그인 시에만 표시) · 2026-08-17 · SectionLabel + 반응형 grid ── */}
+          {/* 2026-10-05 · 사용자 지시 · 관리자 도구 바로가기 자리에 "오늘 매출현황" (TodayRevenueKpiPanel) 교체 */}
+          {/*   · 현재매출금액 / 방문자수 (ERP Sales_Days_TimeReport 실시간 집계) · 클릭시 매장 > 매출 페이지 */}
           {isManagerOrAdmin && (
             <div className="w-full mb-7">
-              <SectionLabel tone="teal">관리자 도구 바로가기</SectionLabel>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
-
-                {/* 매장관리 · teal · 목업 톤 기본 사이즈 · 2026-08-27 · 메뉴 설정 gate */}
-                <MenuCard color="teal" icon={SquaresFour} title="매장관리" description="매장 · 발주 · 매입 · 결제 · 통계 · 입고알림"
-                  pageKey="display"
-                  onClick={() => onNavigate("display", authSession!)} />
-
-                {/* 경영관리 — violet · MenuCard · pending 배지 · 2026-08-27 · 메뉴 설정 gate */}
-                <MenuCard color="sky" icon={Briefcase} title="경영관리" description="직원관리 · 연차승인 · 점심불참 · 권한"
-                  pageKey="business-manage"
-                  onClick={() => onNavigate("business-manage", authSession!)}
-                  badge={leavePendingCount > 0 ? (
-                    <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[15px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
-                      {leavePendingCount}
-                    </div>
-                  ) : undefined} />
-
-                {/* 요청목록 조회 · 2026-08-17 · 최신 트렌드 · 단일 mono 배지 (4개 파스텔 dot → 총 건수) · 2026-08-27 · 메뉴 설정 gate */}
-                <MenuCard color="coral" icon={List} title="요청목록 조회" description="진열·발주요청 및 배치구역 불일치 확인"
-                  pageKey="requests"
-                  onClick={() => onNavigate("requests", authSession!)}
-                  badge={(() => {
-                    const total = requestsCounts.display + requestsCounts.order + requestsCounts.mismatch + requestsCounts.lunch;
-                    if (total === 0) return undefined;
-                    return (
-                      <div className="absolute top-2.5 right-2.5 min-w-[24px] h-6 px-2 rounded-full flex items-center justify-center text-white text-[15px] font-bold tabular-nums bg-brand-deep shadow-sm ring-2 ring-white z-10">
-                        {total}
-                      </div>
-                    );
-                  })()} />
-
-                {/* 데이터 업로드 (통합) — orange (level 9 전용) · 2026-08-27 · 메뉴 설정 gate */}
-                {isSuperAdminLevel9 && (
-                  <MenuCard color="amber" icon={Table} title="데이터 업로드" description="상품목록 · 재고리스트 xlsx 업로드"
-                    pageKey="upload"
-                    onClick={() => setUploadOpen(true)} />
-                )}
-
-                {/* 거래명세서 OCR 카드 · 매장관리 > 매입 > 사입·OCR 서브탭으로 이동 · 2026-08-03 랜딩 제거 */}
-
-                {/* 연차 승인 카드 · 경영관리 팝오버로 이동 · 2026-08-03 */}
-
-                {/* 설정 — zinc (level 9 전용) · 2026-08-27 · 메뉴 설정 gate */}
-                {isSuperAdminLevel9 && (
-                  <MenuCard color="zinc" icon={ShieldCheck} title="설정" description="권한 · 근무 유형 · 시급 등 앱 전체 설정"
-                    pageKey="permissions"
-                    onClick={() => onNavigate("permissions", authSession!)} />
-                )}
-
-                {/* 구역 라벨 관리 카드 · 설정(권한관리 > 환경설정) 내부로 이동 · 2026-08-03 랜딩 제거 */}
-                {/* 기타 도구 카드 · 2026-08-04 · 사용자 요청으로 완전 삭제 (OthersPage · InventorySalesPage · SynonymPage) */}
-
-              </div>
+              <SectionLabel tone="teal">오늘의 판매현황</SectionLabel>
+              <TodayRevenueKpiPanel onOpenRevenue={() => onNavigate("display", authSession!)} />
             </div>
           )}
 

@@ -38,43 +38,49 @@ export const ERP_IDENTITY = Object.freeze({
 //    Normal Sync 시 ERP overwrite 가능 (nullOverwrite 규칙 준수)
 // ─────────────────────────────────────────────────────────────────────────────
 export const ERP_OWNED_PRODUCT_FIELDS: Readonly<Record<string, ErpFieldMapping>> = Object.freeze({
-  // 2026-10-04 · 사용자 결정 · Option B · ERP PCode 를 Supabase products.pcode 에 저장
-  //   · 이유: ERP Inventory/Buy/Sale 응답에 BarCode 없음 (실측 재확인) · PCode 만 공통 식별자
-  //   · 대원칙 "데이터 임의 연결 금지" 완벽 준수 · 로컬 join 완전 제거
-  //   · products.pcode 는 Migration future_phase2_products_pcode.sql 로 추가 (사용자 승인 후 실행)
-  pcode:              { erp: "PCode",           nullOverwrite: false, note: "ERP 상품분류코드 · Inventory/Buy/Sale 매칭 identity" },
+  // 2026-10-04 · 사용자 최종 승인 · ERP Product Sync 정식 ERP-owned 목록
+  //   identity (lookup only · UPDATE 대상 아님 · identity WRITE 정책 참조)
+  pcode:              { erp: "PCode",           nullOverwrite: false, note: "ERP 상품분류코드 · PCode↔pcode primary identity · UPDATE 금지" },
+  // ERP 공식 상품 데이터 (ACTIVE)
   product_name:       { erp: "ProductName",     nullOverwrite: false },
   supplier:           { erp: "CorpNameView",    nullOverwrite: false },
   supplier_code:      { erp: "CtCode",          nullOverwrite: false },
   unit:               { erp: "UnitCode",        nullOverwrite: false },
   sale_status:        { erp: "SaleStatusName",  nullOverwrite: false, note: "hidden 과 완전 분리" },
-  brand:              { erp: "Brand",           nullOverwrite: false },
-  manufacturer:       { erp: "Maker",           nullOverwrite: false },
+  // 2026-10-05 · 사용자 확정 · spec = 상품 규격 전용 복구 · ERP Specification 매핑 추가
+  //   · 실측 non-null 1/4007 (0.02%) · 희소 but 들어오면 반영
+  //   · nullOverwrite=false · ERP null/empty 시 DB 기존 spec 보존 (대원칙)
+  //   · "진열위치" 혼용 금지 · 진열위치는 display_location 전용
+  spec:               { erp: "Specification",   nullOverwrite: false, note: "상품 규격 (ERP Specification raw)" },
   last_purchase_date: { erp: "LastBuyDate",     nullOverwrite: false, note: "KST 날짜 string" },
   last_sale_date:     { erp: "LastSaleDate",    nullOverwrite: false, note: "KST 날짜 string" },
-  // 2026-10-03 저녁 · 사용자 확정 · NowStock = ERP 전산 현재고 · Source of Truth: ERP
-  //   · 사용자 ERP 화면 5 샘플 검증 완료 (15208 / 12035 / 10001 / 10696 / 10805)
-  //   · Inventory_Status 42-col 공식은 current_stock 계산에 사용하지 않음
-  //   · inventory_checks.store*_stock 은 실사재고 (별개 · PROTECTED)
-  //   · null overwrite 허용: ERP 가 NowStock 을 명시적으로 0 또는 null 로 반환 가능
-  current_stock:      { erp: "NowStock",        nullOverwrite: true,  note: "ERP 전산 현재고 · ERP_OWNED · 2026-10-03 확정" },
-  // category 는 LcateName/McateName/ScateName/DcateName 중 결정 (CATEGORY_MAPPING_DECISION 참조)
-  //   현재 보류 · DRY-RUN Preview 에서 사용자 결정 수집 후 활성화
-  // category:        { erp: "McateName",       nullOverwrite: false },
-  // 가격 field 는 USER DECISION 미완료 · 현재 whitelist 비활성화
-  //   · purchase_price ← CostPrice · 44 different · USER DECISION 후 활성
-  //   · sale_price ← PriceA (94.8% exact) · 189 different · USER DECISION 후 활성
+  // 2026-10-03 저녁 · NowStock = ERP 전산 현재고 · SSOT
+  //   · null overwrite 허용 · ERP 가 0 또는 null 반환 가능
+  current_stock:      { erp: "NowStock",        nullOverwrite: true,  note: "ERP 전산 현재고 · nullOverwrite 허용" },
+  // 2026-10-04 · WAIT_DECISION 3개 활성화 승인 (CostPrice / PriceA / McateName)
+  purchase_price:     { erp: "CostPrice",       nullOverwrite: false, note: "ERP 매입가 (CostPrice)" },
+  sale_price:         { erp: "PriceA",          nullOverwrite: false, note: "ERP 판매가 (PriceA)" },
+  category:           { erp: "McateName",       nullOverwrite: false, note: "ERP 중분류 명" },
+  // 2026-10-04 · Location 정책 변경 · raw LocationName 저장 · 변환 없음
+  //   · transformErpLocation() 미사용 · raw 그대로
+  //   · nullOverwrite=false · ERP empty → KEEP
+  display_location:   { erp: "LocationName",    nullOverwrite: false, note: "ERP LocationName raw · 변환 없음 · SSOT" },
+  // 2026-10-04 · 신규 ERP 날짜 column (Migration future_phase2_products_erp_dates.sql)
+  erp_registered_at:  { erp: "RegDate",         nullOverwrite: false, note: "ERP RegDate (timestamptz) · 기존 registered_at (date) 와 분리" },
+  erp_modified_at:    { erp: "EditDate",        nullOverwrite: false, note: "ERP EditDate (timestamptz) · 기존 last_modified_at (date) 와 분리" },
+  // 2026-10-04 · brand/manufacturer 제외
+  //   · ERP Brand/Maker 는 전수 null (실측 4,007 전수 null) · ERP Sync 비교 가치 없음
+  //   · Supabase column 자체는 삭제 안 함 (추후 결정)
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. ERP_DERIVED_PRODUCT_FIELDS
-//    ERP 원본에서 변환 로직 거쳐 생성되는 field
-//    변환 함수는 각 모듈에서 구현 (erpLocationTransform.ts 등)
+//    2026-10-04 · Location 정책 변경 · display_location 은 ERP_OWNED raw 로 이동
+//      · transformErpLocation() 은 Product Sync 에서 미사용 (validation/admin preview 등 다른 용도만 유지)
+//      · products.location 은 live schema 에 없음 · 신규 생성 안 함 · 참조 전면 제거
+//    DERIVED field 없음 · 호환성 위해 빈 object 유지 (import 깨짐 방지)
 // ─────────────────────────────────────────────────────────────────────────────
-export const ERP_DERIVED_PRODUCT_FIELDS = Object.freeze({
-  display_location: { source: "LocationName", transform: "majorPlusMiddle" },
-  location:         { source: "LocationName", transform: "majorPlusMiddle", note: "display_location 과 동시 UPDATE 필수" },
-} as const);
+export const ERP_DERIVED_PRODUCT_FIELDS = Object.freeze({} as const);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. PROTECTED_PRODUCT_FIELDS
@@ -118,6 +124,68 @@ export const PROTECTED_PURCHASE_FIELDS: readonly string[] = Object.freeze([
   "verified_expiring",
   "expiry_date",      // 사용자 검수 시 입력 · ERP 가 overwrite 하지 않음
   "imported_at",
+]);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. ERP_OWNED_INVENTORY_FIELDS (Inventory_Status → stock_history)
+//    사용자 확정 2026-10-04:
+//      · ERP Inventory_Status 42 field 중 재고 입출고 raw 17개만 저장
+//      · 상품정보 (ProductName/카테고리/공급사/가격/과세) 는 products JOIN · stock_history 저장 X
+//      · identity (period_start · period_end · st_code · pcode) 는 metadata 로 외부 주입 또는 ERP row 추출
+//      · PROTECTED 는 UPDATE payload 완전 제외 (NULL overwrite 아님)
+// ─────────────────────────────────────────────────────────────────────────────
+export const ERP_OWNED_INVENTORY_FIELDS: Readonly<Record<string, ErpFieldMapping>> = Object.freeze({
+  prv_stock:                { erp: "PrvStock",                nullOverwrite: false, note: "기간 시작 재고 (이전고)" },
+  buy_stock:                { erp: "BuyStock",                nullOverwrite: false },
+  buy_return_stock:         { erp: "BuyReturnStock",          nullOverwrite: false },
+  storage_move_in:          { erp: "StorageMoveIn",           nullOverwrite: false },
+  storage_move_out:         { erp: "StorageMoveOut",          nullOverwrite: false },
+  storage_move_auto_in:     { erp: "StorageMoveAutoIn",       nullOverwrite: false },
+  storage_move_auto_out:    { erp: "StorageMoveAutoOut",      nullOverwrite: false },
+  sale_stock:               { erp: "SaleStock",               nullOverwrite: false },
+  sale_return_stock:        { erp: "SaleReturnStock",         nullOverwrite: false },
+  product_use_stock:        { erp: "ProductUseStock",         nullOverwrite: false },
+  product_return_use_stock: { erp: "ProductReturnUseStock",   nullOverwrite: false },
+  product_bad_stock:        { erp: "ProductBadStock",         nullOverwrite: false },
+  product_return_bad_stock: { erp: "ProductReturnBadStock",   nullOverwrite: false },
+  plus_stock:               { erp: "PlusStock",               nullOverwrite: false },
+  minus_stock:              { erp: "MinusStock",              nullOverwrite: false },
+  subdivision_plus:         { erp: "SubdivisionPlus",         nullOverwrite: false },
+  subdivision_minus:        { erp: "SubdivisionMinus",        nullOverwrite: false },
+});
+
+/**
+ * PROTECTED_INVENTORY_FIELDS
+ * UPDATE payload 에 포함 금지 · 완전 제외 (NULL overwrite 하지 않음)
+ * ERP sync 는 이 field 들을 비교·수정 하지 않음 · 기존 값 그대로 보존
+ */
+export const PROTECTED_INVENTORY_FIELDS: readonly string[] = Object.freeze([
+  // 2026-10-05 · 사용자 지시 · ERP row 에 pcode + product_code 둘 다 저장 (상품 JOIN 용도)
+  //   · product_code 는 identity 성격 (INSERT 때만 저장 · UPDATE 대상 X)
+  //   · ERP_OWNED_INVENTORY_FIELDS 에는 포함 안 함 (수량만) → UPDATE loop 가 자동 skip
+  //   · 아래 PROTECTED 에서는 제거 (INSERT payload 허용)
+  // 중복 상품정보 (products JOIN · Phase 2 평가)
+  "product_name",
+  "supplier_code",
+  "supplier_name",
+  "spec",
+  "tax_type",
+  "product_type",
+  // xlsx 전용 metadata
+  "period_type",        // early/mid/late · xlsx 과거 데이터 전용
+  // ERP 가 반환 안 하는 기존 수량 (xlsx 가 입력)
+  "closing_stock",
+  "internal_qty",
+  "adjustment_qty",
+  // ERP 가 반환 안 하는 금액 (xlsx 가 입력)
+  "taxable_amount",
+  "supply_amount",
+  "vat",
+  "duty_free_amount",
+  "total_amount",
+  // 관리
+  "id",
+  "created_at",
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────────

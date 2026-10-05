@@ -14,6 +14,7 @@ const { autoUpdater } = electronUpdaterPkg;
 // 2026-09-15 · Phase 2 · Config · Auth · Scheduler · IPC
 import { registerIpcHandlers } from "./ipc";
 import { rescheduleAll, runNowAll, stopAllJobs } from "./scheduler";
+import { startErpAutoScheduler, stopErpAutoScheduler } from "./erpAutoScheduler";
 // Phase 3 · 알림 · 트레이 상태
 import { registerTray, setTrayState } from "./notifications";
 import { generateTrayIcon } from "./trayIcon";
@@ -397,6 +398,10 @@ app.whenReady().then(async () => {
   // Phase 3 · 파일 감시 모드 · or · 스케줄 모드 · 상호배제
   applyImportMode();
 
+  // 2026-10-05 · ERP → Supabase 자동 동기화 Scheduler · 30분 · 순차 · mutex 보호
+  //   · 앱 시작 즉시 실행 X · cron 기반 (*/30 * * * *)
+  startErpAutoScheduler();
+
   // 2026-10-03 · 사용자 요청 · 최초 실행 시 Main Window 자동 open (dev / packaged 모두)
   //   · 기존 · 배포 모드 · 트레이만 · 사용자 UI 접근 불가 보고
   //   · X 로 닫으면 트레이 상주 유지 (close event · hide) · 종료는 트레이 메뉴 명시만
@@ -424,6 +429,7 @@ app.on("before-quit", () => {
   quitting = true;
   stopAllJobs();
   stopAllWatchers();
+  stopErpAutoScheduler();
   destroyTrayCompletely();
 });
 

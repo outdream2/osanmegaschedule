@@ -374,7 +374,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                         <>
                           <td className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink tabular-nums" title="판매수량">{fmt(sup.saleQty)}</td>
                           {/* 2026-10-01 · 사용자 지시 · cross-endpoint 공식 통일 · 판매액 = sq × sale_price (대원칙 #3) · 레거시 saleAmount (supply_amount proration) → totalStockAmount (sqty × sale_price) 폴백 */}
-                          <td className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink tabular-nums" title="판매액 · sale_qty × sale_price (대원칙 #3)">{fmtWon(Number(sup.totalStockAmount ?? sup.saleAmount ?? 0))}</td>
+                          <td className="text-right px-3 py-1.5 align-middle text-[17px] font-semibold text-ink tabular-nums" title="판매액 · sale_stock × sale_price (대원칙 #3)">{fmtWon(Number(sup.totalStockAmount ?? sup.saleAmount ?? 0))}</td>
                         </>
                       )
                     )}

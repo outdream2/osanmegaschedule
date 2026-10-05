@@ -19,6 +19,7 @@
 import { BrowserWindow } from "electron";
 import { queryProductList, queryInventoryStatus, queryBuyStatus, querySaleStatus } from "./iregenSoap";
 import { erpQueue } from "./erpQueue";
+import { appendFetchHistory } from "./fetchHistoryStore";
 import {
   saveCandidate,
   loadCandidateFull,
@@ -312,6 +313,26 @@ async function runInventoryFetch(startedAt: string, opts?: { startDate?: string;
     validation: vSum,
     mappingVersion: CURRENT_MAPPING_VERSION,
   });
+
+  // 2026-10-05 · Bug Fix A · AUTO scheduler fetch-history 기록
+  //   · fetchLatestFetchMeta() 가 가장 최근 queryFrom/queryTo 를 반환함
+  //   · AUTO 실행 후 candidate 가 AUTO period 로 교체됐으므로 fetch-history 에도 AUTO 기간을 기록해야
+  //     manual sync 가 올바른 period(AUTO rows 와 일치) 로 Supabase compare 수행
+  //   · 기록 실패는 조회 결과를 깨뜨리지 않도록 best-effort
+  try {
+    appendFetchHistory(dataset, {
+      fetchedAt: startedAt,
+      ok: true,
+      rowCount: result.rows.length,
+      queryFrom: opts?.startDate,
+      queryTo: opts?.endDate,
+      soapMs: result.meta?.soapMs,
+      totalMs: result.meta?.totalMs,
+    });
+  } catch (err) {
+    console.warn(`[erpSyncOrchestrator] INVENTORY_STATUS fetch-history 기록 실패 · ${(err as Error).message}`);
+  }
+
   updateInflight(dataset, { phase: "READY", message: `완료 · ${result.rowCount.toLocaleString()}건` }, "READY");
   setTimeout(() => { clearInflight(dataset, "READY"); broadcastFinalState(dataset); }, 2000);
 }

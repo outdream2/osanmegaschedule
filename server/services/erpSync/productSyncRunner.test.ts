@@ -70,13 +70,13 @@ describe("syncProducts · DRY_RUN (default)", () => {
       current_stock: 15, display_location: "21", location: "21",
       optimal_stock: 10, memo: "사용자 메모", hidden: false, stock_note: null, imported_at: "2026-01-01",
     },
-    // ERP_MATCHED · same
+    // ERP_MATCHED · same (2026-10-04 · Location raw 정책 반영 · pcode 포함)
     {
-      product_code: "0000000044820", product_name: "변경없음",
+      product_code: "0000000044820", pcode: "10002", product_name: "변경없음",
       supplier: "코", supplier_code: "100", unit: "EA",
       sale_status: "판매중", brand: "브", manufacturer: "제",
       last_purchase_date: null, last_sale_date: null,
-      current_stock: 5, display_location: "6A", location: "6A",
+      current_stock: 5, display_location: "6매대>Ａ>7열>전체",  // raw match
       optimal_stock: 0, memo: null, hidden: false, stock_note: null, imported_at: "2026-01-01",
     },
     // DB_ONLY (ERP 에 없음)
@@ -117,10 +117,12 @@ describe("syncProducts · DRY_RUN (default)", () => {
     expect(r.wouldInsert).toBe(1);
   });
 
-  it("review location 집계 (뷰티 신상품 포함)", async () => {
+  it("review location 집계 (2026-10-04 · raw 정책에서 reviewLocation 항상 0)", async () => {
+    // Location 정책 변경 · raw LocationName 저장 · transformErpLocation() 미사용
+    // 그러므로 locationDecision 는 "keep" 또는 "apply" 만 반환 · "review" 는 더 이상 발생 안 함
     const mockSb = makeMockSupabase({ dbRows: baseDb });
     const r = await syncProducts(mockSb);
-    expect(r.reviewLocation).toBeGreaterThanOrEqual(1); // 뷰티>2번>전체>전체
+    expect(r.reviewLocation).toBe(0);
   });
 
   it("protectedMutationCount 는 반드시 0", async () => {

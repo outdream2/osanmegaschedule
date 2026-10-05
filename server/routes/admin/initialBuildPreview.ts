@@ -64,7 +64,7 @@ async function loadAllProductsFromDb(): Promise<DbProductRow[]> {
       .from("products")
       .select(
         "product_code, product_name, supplier, supplier_code, unit, sale_status, brand, manufacturer, " +
-        "last_purchase_date, last_sale_date, current_stock, display_location, location, " +
+        "last_purchase_date, last_sale_date, current_stock, display_location, " +
         "optimal_stock, memo, hidden, stock_note, imported_at",
       )
       .range(from, from + PAGE - 1);
@@ -251,7 +251,7 @@ export async function runDryRun(): Promise<DryRunPreview> {
       location.keep++;
       // ERP empty + DB has 인지 확인
       const dbRow = dbByCode.get(r.productCode);
-      const dbLoc = (dbRow?.display_location || dbRow?.location || "").trim();
+      const dbLoc = (dbRow?.display_location || "").trim();
       if (dbLoc && (r.locationResult.reason === "empty" || r.locationResult.reason === "no_middle" || r.locationResult.reason === "empty_middle")) {
         location.erpMissingKeepDb++;
       }
@@ -262,7 +262,7 @@ export async function runDryRun(): Promise<DryRunPreview> {
     // Warehouse class flip
     if (r.locationDecision === "apply" && r.locationResult.derived) {
       const dbRow = dbByCode.get(r.productCode);
-      const dbLoc = dbRow?.display_location || dbRow?.location || null;
+      const dbLoc = dbRow?.display_location || null;
       const beforeC = wClass(dbLoc);
       const afterC = wClass(r.locationResult.derived);
       if ((beforeC === "w1" && afterC === "w2") || (beforeC === "w2" && afterC === "w1")) {

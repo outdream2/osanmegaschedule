@@ -119,10 +119,10 @@ const ProductTrendTab: React.FC<{
       rows,
       rangeDays,
       (start, end, period_type): PeriodRow => ({
-        period_start_date: start,
-        snapshot_date: end,
+        period_start: start,
+        period_end: end,
         period_type,
-        opening_stock: 0, purchase_qty: 0, sale_qty: 0, disposal_qty: 0, closing_stock: 0,
+        prv_stock: 0, buy_stock: 0, sale_stock: 0, product_bad_stock: 0, closing_stock: 0,
         supply_amount: 0, total_amount: 0,
       })
     );
@@ -131,12 +131,12 @@ const ProductTrendTab: React.FC<{
 
   const chartData = useMemo(() => ({
     labels: filteredRows.map(r => granularity === "month"
-      ? (() => { const m = /^(\d{4})-(\d{2})/.exec(r.period_start_date); return m ? `${Number(m[2])}월` : r.period_start_date; })()
-      : periodLabel(r.period_start_date, r.snapshot_date)
+      ? (() => { const m = /^(\d{4})-(\d{2})/.exec(r.period_start); return m ? `${Number(m[2])}월` : r.period_start; })()
+      : periodLabel(r.period_start, r.period_end)
     ),
     series: [
-      { label: "매입", color: "#10b981", kind: "bar" as const, values: filteredRows.map(r => Number(r.purchase_qty ?? 0)), format: "count" as const },
-      { label: "판매", color: "#dc2626", kind: "line" as const, values: filteredRows.map(r => Number(r.sale_qty ?? 0)), format: "count" as const },
+      { label: "매입", color: "#10b981", kind: "bar" as const, values: filteredRows.map(r => Number(r.buy_stock ?? 0)), format: "count" as const },
+      { label: "판매", color: "#dc2626", kind: "line" as const, values: filteredRows.map(r => Number(r.sale_stock ?? 0)), format: "count" as const },
       { label: "종료재고", color: "#6366f1", kind: "line" as const, values: filteredRows.map(r => Number(r.closing_stock ?? 0)), format: "count" as const },
     ],
   }), [filteredRows, granularity]);
@@ -241,7 +241,7 @@ const ProductTrendTab: React.FC<{
                 <div className="text-[15px] text-zinc-500">
                   최근 <span className="font-bold text-teal-600">{rangeDays}일</span>
                   {" · "}기간 <span className="font-bold text-zinc-800">{filteredRows.length}</span>개
-                  {" · "}데이터 있음 <span className="font-bold text-emerald-600">{filteredRows.filter(r => (r.purchase_qty ?? 0) > 0 || (r.sale_qty ?? 0) > 0 || (r.closing_stock ?? 0) > 0).length}</span>개
+                  {" · "}데이터 있음 <span className="font-bold text-emerald-600">{filteredRows.filter(r => (r.buy_stock ?? 0) > 0 || (r.sale_stock ?? 0) > 0 || (r.closing_stock ?? 0) > 0).length}</span>개
                 </div>
               </div>
             </div>
@@ -305,11 +305,11 @@ const ProductTrendTab: React.FC<{
                     {filteredRows.map((r, i) => (
                       <tr key={`r-${i}`} className="hover:bg-teal-50/30 transition">
                         <td className="px-2 py-1.5 align-top">
-                          <div className="text-[15px] font-bold text-zinc-800 tabular-nums leading-tight">{periodLabel(r.period_start_date, r.snapshot_date)}</div>
+                          <div className="text-[15px] font-bold text-zinc-800 tabular-nums leading-tight">{periodLabel(r.period_start, r.period_end)}</div>
                           <div className="text-[15px] text-zinc-400">{r.period_type === "early" ? "초순" : r.period_type === "mid" ? "중순" : r.period_type === "late" ? "하순" : "-"}</div>
                         </td>
-                        <td className="px-2 py-1.5 text-right tabular-nums text-[14px] font-bold text-emerald-700 bg-emerald-50/40 align-top">{fmt(r.purchase_qty ?? 0)}</td>
-                        <td className="px-2 py-1.5 text-right tabular-nums text-[14px] font-bold text-orange-700 bg-orange-50/40 align-top">{fmt(r.sale_qty ?? 0)}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums text-[14px] font-bold text-emerald-700 bg-emerald-50/40 align-top">{fmt(r.buy_stock ?? 0)}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums text-[14px] font-bold text-orange-700 bg-orange-50/40 align-top">{fmt(r.sale_stock ?? 0)}</td>
                         <td className="px-2 py-1.5 text-right tabular-nums text-[14px] font-bold text-indigo-700 bg-indigo-50/40 align-top">{fmt(r.closing_stock ?? 0)}</td>
                       </tr>
                     ))}
@@ -318,10 +318,10 @@ const ProductTrendTab: React.FC<{
                     <tr>
                       <td className="px-2 py-1.5 text-right font-bold text-zinc-500 uppercase">합계</td>
                       <td className="px-2 py-1.5 text-right tabular-nums font-bold text-emerald-700 bg-emerald-50/40">
-                        {fmt(filteredRows.reduce((n, r) => n + Number(r.purchase_qty ?? 0), 0))}
+                        {fmt(filteredRows.reduce((n, r) => n + Number(r.buy_stock ?? 0), 0))}
                       </td>
                       <td className="px-2 py-1.5 text-right tabular-nums font-bold text-orange-700 bg-orange-50/40">
-                        {fmt(filteredRows.reduce((n, r) => n + Number(r.sale_qty ?? 0), 0))}
+                        {fmt(filteredRows.reduce((n, r) => n + Number(r.sale_stock ?? 0), 0))}
                       </td>
                       <td className="px-2 py-1.5 text-right tabular-nums font-bold text-indigo-700 bg-indigo-50/40">
                         {fmt(Number(filteredRows[filteredRows.length - 1]?.closing_stock ?? 0))}

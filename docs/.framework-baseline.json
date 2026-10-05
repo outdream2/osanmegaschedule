@@ -1,7 +1,7 @@
 {
-  "created": "2026-09-24",
+  "created": "2026-10-05",
   "version": 1,
-  "totalViolations": 527,
+  "totalViolations": 529,
   "files": {
     "server/ocr/pipeline/stages/03-vendor-match.ts": {
       "lines": 684,
@@ -84,7 +84,7 @@
       "totalWeight": 25
     },
     "server/routes/display/requests.ts": {
-      "lines": 1588,
+      "lines": 1600,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -132,7 +132,7 @@
       "totalWeight": 16
     },
     "server/routes/purchase/purchase.ts": {
-      "lines": 723,
+      "lines": 757,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -142,7 +142,7 @@
       "totalWeight": 11
     },
     "server/routes/stock/salesAutoRecommend.ts": {
-      "lines": 378,
+      "lines": 379,
       "violations": [
         {
           "ruleId": "no-raw-console-server",
@@ -292,7 +292,7 @@
       "totalWeight": 6
     },
     "src/components/OrderManagePage/PurchaseHistoryTab.tsx": {
-      "lines": 1051,
+      "lines": 1095,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -302,7 +302,7 @@
       "totalWeight": 6
     },
     "src/components/ProductInfoPage/ProductInfoPage.tsx": {
-      "lines": 1119,
+      "lines": 1120,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -322,7 +322,7 @@
       "totalWeight": 6
     },
     "server/routes/purchase/supplierPayments/balance.ts": {
-      "lines": 498,
+      "lines": 525,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -332,7 +332,7 @@
       "totalWeight": 6
     },
     "server/routes/purchase/supplierPayments/purchaseDetail.ts": {
-      "lines": 170,
+      "lines": 189,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -342,7 +342,7 @@
       "totalWeight": 6
     },
     "server/routes/purchase/vat.ts": {
-      "lines": 553,
+      "lines": 594,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -352,7 +352,7 @@
       "totalWeight": 6
     },
     "server/routes/stock/stockManage/topSales.ts": {
-      "lines": 764,
+      "lines": 830,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -406,7 +406,7 @@
       "totalWeight": 5
     },
     "server/routes/stock/productArrivals.ts": {
-      "lines": 669,
+      "lines": 670,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -476,7 +476,7 @@
       "totalWeight": 4
     },
     "server/routes/stock/products.ts": {
-      "lines": 1349,
+      "lines": 1353,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -495,8 +495,8 @@
       ],
       "totalWeight": 4
     },
-    "src/components/LandingPage/LandingPage.tsx": {
-      "lines": 802,
+    "src/components/DisplayPage/RevenuePage.tsx": {
+      "lines": 807,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -506,7 +506,7 @@
       "totalWeight": 3
     },
     "src/components/LandingPage/VendorListEditor.tsx": {
-      "lines": 851,
+      "lines": 852,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -516,7 +516,7 @@
       "totalWeight": 3
     },
     "src/components/OrderManagePage/OrderManagePage.tsx": {
-      "lines": 845,
+      "lines": 889,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -526,7 +526,7 @@
       "totalWeight": 3
     },
     "src/components/OrderManagePage/PaymentInputPage.tsx": {
-      "lines": 979,
+      "lines": 988,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -616,7 +616,7 @@
       "totalWeight": 3
     },
     "server/productCache.ts": {
-      "lines": 400,
+      "lines": 406,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -627,6 +627,16 @@
     },
     "server/routes/settings/holidays.ts": {
       "lines": 254,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 3
+        }
+      ],
+      "totalWeight": 3
+    },
+    "server/routes/stock/stockManage/salesTrend.ts": {
+      "lines": 311,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -646,7 +656,7 @@
       "totalWeight": 3
     },
     "src/components/NotificationBell.tsx": {
-      "lines": 314,
+      "lines": 334,
       "violations": [
         {
           "ruleId": "prefer-modal-primitive",
@@ -661,6 +671,16 @@
         {
           "ruleId": "prefer-modal-primitive",
           "count": 1
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/lib/optimalStock.ts": {
+      "lines": 321,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
         }
       ],
       "totalWeight": 2
@@ -786,7 +806,7 @@
       "totalWeight": 2
     },
     "server/routes/purchase/supplierPayments/purchaseSummary.ts": {
-      "lines": 238,
+      "lines": 264,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -805,8 +825,8 @@
       ],
       "totalWeight": 2
     },
-    "server/routes/stock/stockManage/salesTrend.ts": {
-      "lines": 304,
+    "server/routes/stock/stockManage/stockRaw.ts": {
+      "lines": 46,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -816,7 +836,7 @@
       "totalWeight": 2
     },
     "server/services/notificationsService.ts": {
-      "lines": 250,
+      "lines": 273,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -824,16 +844,6 @@
         }
       ],
       "totalWeight": 2
-    },
-    "server/lib/optimalStock.ts": {
-      "lines": 258,
-      "violations": [
-        {
-          "ruleId": "no-any-server",
-          "count": 1
-        }
-      ],
-      "totalWeight": 1
     },
     "server/lib/ownershipCheck.ts": {
       "lines": 41,
@@ -985,28 +995,8 @@
       ],
       "totalWeight": 1
     },
-    "server/routes/stock/stockManage/stockRaw.ts": {
-      "lines": 41,
-      "violations": [
-        {
-          "ruleId": "no-any-server",
-          "count": 1
-        }
-      ],
-      "totalWeight": 1
-    },
     "server/routes/stock/stockManage/trending.ts": {
-      "lines": 259,
-      "violations": [
-        {
-          "ruleId": "no-any-server",
-          "count": 1
-        }
-      ],
-      "totalWeight": 1
-    },
-    "server/routes/stock/stockManage/uploadStock.ts": {
-      "lines": 314,
+      "lines": 261,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -1026,7 +1016,7 @@
       "totalWeight": 1
     },
     "server/utils/purchaseDetailsQuery.ts": {
-      "lines": 243,
+      "lines": 272,
       "violations": [
         {
           "ruleId": "no-any-server",

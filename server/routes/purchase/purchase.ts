@@ -508,6 +508,27 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
   // 계절 필터 · 지정 시 년도 무관 · from/to 무시 (season 우선)
   const seasonParam = String(req.query.season ?? "").trim().toLowerCase();
   const seasonMonths = await resolveSeasonMonths(seasonParam);
+  // 2026-10-05 · 사용자 지시 · months_list=YM1,YM2 비연속 월 멀티선택 지원
+  //   · purchase_date 가 선택된 YM 중 하나에 속하는 row 만 반환
+  //   · 중간 월 자동 포함 X · ERP 호출 없음 · Supabase purchase_details 만 조회
+  const monthsListParam = String(req.query.months_list ?? "").trim();
+  const monthsListArr: string[] = monthsListParam
+    ? monthsListParam.split(",").map((s) => s.trim()).filter((s) => /^\d{4}-\d{2}$/.test(s))
+    : [];
+  const useMonthsList = monthsListArr.length > 0;
+  const monthsListSet = new Set(monthsListArr);
+  // DB 조회 범위 축소 · min 월 1일 ~ max 월 말일 (양 끝) · 중간 월은 post-filter 로 제외
+  let monthsListFrom: string | null = null;
+  let monthsListTo: string | null = null;
+  if (useMonthsList) {
+    const sortedYm = [...monthsListArr].sort();
+    const minYm = sortedYm[0];
+    const maxYm = sortedYm[sortedYm.length - 1];
+    monthsListFrom = `${minYm}-01`;
+    const [yy, mm] = maxYm.split("-").map(Number);
+    const lastDay = new Date(yy, mm, 0).getDate();
+    monthsListTo = `${maxYm}-${String(lastDay).padStart(2, "0")}`;
+  }
 
   let q = supabase
     .from("purchase_details")
@@ -518,16 +539,18 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
   // 2026-09-07 · #116 · supplier 파라미터 서버 필터 추가 (기존: 읽고 버림 → 클라이언트만 필터)
   //   · case-insensitive 정확 매칭 · 클라이언트에서 vat/법인 접두어 정제 후 재필터 (하위 호환)
   if (supplier) q = (q as any).ilike("supplier_name", supplier);
-  if (!seasonMonths) {
+  if (!seasonMonths && !useMonthsList) {
     if (from && /^\d{4}-\d{2}-\d{2}$/.test(from)) q = q.gte("purchase_date", from);
     if (to && /^\d{4}-\d{2}-\d{2}$/.test(to)) q = q.lte("purchase_date", to);
+  } else if (useMonthsList && monthsListFrom && monthsListTo) {
+    q = q.gte("purchase_date", monthsListFrom).lte("purchase_date", monthsListTo);
   }
 
   // 2026-08-06 · Supabase 기본 max rows 1000 캡 우회
   //   · 사용자 요구 limit (예: 5000) 만족을 위해 · range(0, N-1) 로 명시적 페이지 loop
   //   · 사용자 제보: "기간별 임포트 다 했는데 데이터 없어" · 원인은 1000행 cap · from 필터 무관
   let rows: any[] = [];
-  if (usePagination && !seasonMonths) {
+  if (usePagination && !seasonMonths && !useMonthsList) {
     // 클라이언트 페이지네이션: range(start, end) · 단일 요청
     const start = (pageParam - 1) * perPage;
     const end = start + perPage - 1;
@@ -541,7 +564,8 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
     rows = data ?? [];
   } else {
     // 기존 limit 동작 · 필요 시 1000행씩 반복 loop 로 채움 (Supabase 캡 우회)
-    const effectiveLimit = seasonMonths ? Math.max(limit * 6, 5000) : limit;
+    //   · seasonMonths/useMonthsList 모드 · post-filter 전 넉넉히 fetch
+    const effectiveLimit = (seasonMonths || useMonthsList) ? Math.max(limit * 6, 5000) : limit;
     const PAGE = 1000;
     let offset = 0;
     while (offset < effectiveLimit) {
@@ -562,6 +586,14 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
   // 계절 월 필터 (년도 무관) — SQL EXTRACT 미지원이므로 후처리
   if (seasonMonths) {
     rows = rows.filter(r => purchaseDateInSeason(String(r.purchase_date ?? ""), seasonMonths)).slice(0, limit);
+  }
+  // 2026-10-05 · 사용자 지시 · months_list 비연속 월 선택 · 중간 월 자동 포함 금지
+  //   · purchase_date 의 YYYY-MM 매칭만 유지 · 선택 안 된 월 row 제거
+  if (useMonthsList) {
+    rows = rows.filter((r) => {
+      const ym = /^(\d{4}-\d{2})/.exec(String(r.purchase_date ?? ""))?.[1];
+      return ym ? monthsListSet.has(ym) : false;
+    }).slice(0, limit);
   }
 
   // 조회 시 products 조인: xlsx 에 없는 supplier/name/spec 보강 + min_order (2026-07-15)
@@ -666,13 +698,15 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
   res.json({
     rows,
     // 페이지네이션 메타 (2026-08-05) · per_page 사용 시만 포함
-    ...(usePagination && !seasonMonths ? {
+    //   · months_list 모드 (2026-10-05) · 전체 fetch · has_more=false
+    ...(usePagination && !seasonMonths && !useMonthsList ? {
       page: pageParam,
       per_page: perPage,
       has_more: rows.length === perPage,
     } : {}),
     season: seasonParam || undefined,
     season_months: seasonMonths ?? undefined,
+    months_list: useMonthsList ? monthsListArr : undefined,
   });
 }));
 

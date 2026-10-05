@@ -16,7 +16,8 @@ import { IconTile } from "../common/IconTile";
 import { StatusPill } from "../common/StatusPill";
 import { PeriodCoverageWidget } from "./PeriodCoverageWidget";
 import { ImportLogTab } from "./ImportLogTab";
-import { StockUploadTab } from "./StockUploadTab";
+// 2026-10-04 · stock_history column rename · 재고 XLSX import 폐기 · ERP 자동동기화로 대체
+//   · StockUploadTab 삭제됨 · 재고 탭은 안내 placeholder 로 비활성화 · 매입 탭/기능은 그대로 유지
 // 2026-08-27 · 사용자 지시 · 임포트 성공 시 · 클라 캐시 즉시 무효화 · 다른 페이지 자동 반영
 import { reloadProductsCache } from "../../lib/productsCache";
 
@@ -65,12 +66,12 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
   // ── 재고 업로드 ──────────────────────────────────────────────────────
   const [stockUploadFile, setStockUploadFile] = useState<File | null>(null);
   const [stockUploadLoading, setStockUploadLoading] = useState(false);
-  const [stockUploadResult, setStockUploadResult] = useState<{ ok: boolean; updated?: number; total?: number; history?: number; snapshot_date?: string; msg?: string } | null>(null);
+  const [stockUploadResult, setStockUploadResult] = useState<{ ok: boolean; updated?: number; total?: number; history?: number; period_end?: string; msg?: string } | null>(null);
   const [stockImportLog, setStockImportLog] = useState<{
     timestamp: string;
     count: number;
     total?: number;
-    snapshot_date?: string;
+    period_end?: string;
     start_date?: string | null;
     period_type?: "early" | "mid" | "late" | null;
     history?: number;
@@ -205,7 +206,7 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
     setStockUploadResult(null);
     try {
       const params = new URLSearchParams({ managerId: String(authSession.employeeId) });
-      params.set("snapshot_date", stockEndDate);
+      params.set("period_end", stockEndDate);
       params.set("start_date", stockStartDate);
       params.set("period_type", stockPeriodType);
       const buf = await stockUploadFile.arrayBuffer();
@@ -238,7 +239,7 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
         updated: res.data.updated ?? 0,
         total: res.data.total ?? 0,
         history: res.data.history ?? 0,
-        snapshot_date: res.data.snapshot_date,
+        period_end: res.data.period_end,
       });
       await fetchStockImportLog();
     } catch (err: unknown) {
@@ -419,23 +420,17 @@ export const UploadDataModal: React.FC<UploadDataModalProps> = ({ open, onClose,
           </>
         )}
 
-        {/* ── 재고리스트 탭 ── */}
+        {/* ── 재고리스트 탭 (2026-10-04 · XLSX 재고 import 폐기 · ERP 자동동기화 대체) ── */}
         {uploadTab === "stock" && (
-          <StockUploadTab
-            stockUploadFile={stockUploadFile}
-            setStockUploadFile={setStockUploadFile}
-            stockUploadLoading={stockUploadLoading}
-            stockUploadResult={stockUploadResult}
-            setStockUploadResult={setStockUploadResult}
-            stockImportLog={stockImportLog}
-            stockStartDate={stockStartDate}
-            setStockStartDate={setStockStartDate}
-            stockEndDate={stockEndDate}
-            setStockEndDate={setStockEndDate}
-            stockPeriodType={stockPeriodType}
-            handleStockUpload={handleStockUpload}
-            handleClearStockImportLog={handleClearStockImportLog}
-          />
+          <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+            <IconTile icon={<CheckCircle size={16} weight="fill" />} tone="emerald" size="lg" />
+            <p className="text-base font-bold text-emerald-700">재고 XLSX 임포트 폐기됨</p>
+            <p className="text-[15px] text-zinc-500 leading-relaxed max-w-md">
+              재고 XLSX import 는 <b>ERP 자동동기화</b>로 대체되었습니다.<br />
+              재고 데이터는 sync-agent 가 stock_history 테이블로 자동 입력합니다.
+            </p>
+            <p className="text-[14px] text-zinc-400">이전 임포트 이력은 <b>임포트 목록</b> 탭에서 확인 가능합니다.</p>
+          </div>
         )}
 
         {/* ── 공급사관리 탭 ── */}

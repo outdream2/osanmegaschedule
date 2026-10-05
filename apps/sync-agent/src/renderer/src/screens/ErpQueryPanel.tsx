@@ -194,8 +194,8 @@ export const ErpQueryPanel: React.FC = () => {
     <div className="bg-white border border-zinc-200 rounded-xl p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="text-[16px] font-bold text-zinc-900">🔗 Iregen ERP 직접 조회 (검증용)</div>
-          <div className="text-[12px] text-zinc-500 mt-0.5">버튼 클릭 시 실제 SOAP 호출 · 메모리 전용 · Supabase 미반영</div>
+          <div className="text-[16px] font-bold text-zinc-900">🔗 Iregen ERP 데이터 조회 및 로컬저장</div>
+          <div className="text-[12px] text-zinc-500 mt-0.5">ERP에서 최신 데이터를 조회하여 로컬에 저장합니다. 저장된 데이터는 Supabase 동기화에 사용됩니다.</div>
         </div>
         <div className="flex items-center gap-2">
           <button

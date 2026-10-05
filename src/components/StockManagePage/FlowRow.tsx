@@ -34,8 +34,8 @@ export const FlowRow: React.FC<FlowRowProps> = ({
   vendorCategoryMap, isFlowGroupCollapsed,
 }) => {
   const cur = Number((p as any).current_stock ?? 0);
-  const saleV = Number(p.sale_qty ?? 0);
-  const purchV = Number((p as any).purchase_total_qty ?? p.purchase_qty ?? 0);
+  const saleV = Number(p.sale_stock ?? 0);
+  const purchV = Number((p as any).purchase_total_qty ?? p.buy_stock ?? 0);
   const saleP = Number((p as any).sale_price ?? 0);
   const purP = Number((p as any).purchase_price ?? 0);
   const profitRate = saleP > 0 && purP > 0 ? Math.trunc(((saleP - purP) / saleP) * 100) : null;
@@ -108,7 +108,7 @@ export const FlowRow: React.FC<FlowRowProps> = ({
           );
         })()}
         <td className="text-right px-1.5 py-2.5 font-bold text-[16px] align-top tabular-nums text-sky-600 bg-sky-50/20">
-          {fmt(Number((p as any).sale_qty_month ?? 0))}
+          {fmt(Number((p as any).sale_stock_month ?? 0))}
         </td>
       </>}
       {isFlowGroupCollapsed("stock") && <td className="bg-zinc-50/20" />}

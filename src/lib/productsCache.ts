@@ -1,5 +1,7 @@
-// 2026-08-27 · 사용자 지시 · spec + display_location → location 컬럼 통합
-//   · location = 진열위치 · spec은 하위호환 (원본 규격 · 사용 안 함)
+// 2026-10-05 · 사용자 확정 대원칙 · 재고 데이터 3분법
+//   · spec = 상품 규격 전용 (ERP Specification · 희소 but 들어오면 반영)
+//   · location = 진열위치 (products.display_location · ERP LocationName)
+//   · 두 field 혼용 금지 (과거 spec을 진열위치로 쓰던 로직은 CategoryTab 등에서 제거)
 export interface ProductInfo { code: string; name: string; spec: string; location?: string | null; [key: string]: any; }
 
 const TTL_MS = 60_000; // 60초 TTL · 2026-08-31

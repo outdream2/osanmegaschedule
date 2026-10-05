@@ -124,8 +124,18 @@ export const PurchaseHistoryTab: React.FC = () => {
   const [detailLoading, setDetailLoading] = useState(false);
 
   // 기간 필터 (3탭 공통 · 2026-08-05 · 매입이력 전용 → 3탭 공통 이관)
+  // 2026-10-05 · 사용자 지시 · 월 멀티선택 (비연속 지원) · selectedMonths SSOT · Supabase purchase_details 직접 조회
+  //   · periodMonths 는 호환성 유지 (summary API days 변환용 · summary API 는 months_list 지원함)
   const [periodMonths, setPeriodMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
   const [periodSeason, setPeriodSeason] = useState<SeasonKey | null>(null);
+  const [selectedMonths, setSelectedMonths] = useState<string[]>(() => {
+    const now = new Date();
+    return [`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`];
+  });
+  const monthsListParamStr = useMemo(
+    () => [...selectedMonths].sort((a, b) => a.localeCompare(b)).join(","),
+    [selectedMonths],
+  );
 
   // ═══════════════════════════════════════════════════════════════════════
   //  상품별 뷰 (#191 · 신규)
@@ -172,14 +182,21 @@ export const PurchaseHistoryTab: React.FC = () => {
   const loadSummary = useCallback(async () => {
     setSummaryLoading(true);
     try {
-      // 2026-09-11 · #110 · 사용자 지시 · 기간 필터 반영 · days 동적 계산 (10일=periodMonths=0, N개월=N*30)
+      // 2026-10-05 · 사용자 지시 · 월 멀티선택 · Supabase 직접 조회 · months_list 전달
+      //   · season 선택 시 · days=365 폴백 (season-mode 유지)
+      //   · months_list 비면 periodMonths 폴백 (하위호환)
       const isDays10 = periodMonths === 0 && !periodSeason;
       const summaryDays = isDays10 ? 10 : (periodMonths || 3) * 30;
-      const summaryMonths = periodMonths > 0 ? periodMonths : 1;
+      const summaryUseMonthsList = !periodSeason && selectedMonths.length > 0;
+      const summaryUrl = summaryUseMonthsList
+        ? `/api/supplier-purchase-summary?months_list=${encodeURIComponent(monthsListParamStr)}`
+        : `/api/supplier-purchase-summary?days=${summaryDays}`;
+      const salesUrl = summaryUseMonthsList
+        ? `/api/stock-manage/top-sales?months_list=${encodeURIComponent(monthsListParamStr)}&limit=5000&sort=sale&dir=desc`
+        : `/api/stock-manage/top-sales?months=${periodMonths > 0 ? periodMonths : 1}&limit=5000&sort=sale&dir=desc`;
       const [summaryResult, salesResult] = await Promise.allSettled([
-        api.get<SummaryResponse & { suppliers: any[] }>(`/api/supplier-purchase-summary?days=${summaryDays}`),
-        // top-sales · periodMonths 반영 (이전 · 고정 months=1)
-        api.get<any>(`/api/stock-manage/top-sales?months=${summaryMonths}&limit=5000&sort=sale&dir=desc`),
+        api.get<SummaryResponse & { suppliers: any[] }>(summaryUrl),
+        api.get<any>(salesUrl),
       ]);
       if (summaryResult.status === "rejected") throw summaryResult.reason;
       const j: SummaryResponse & { suppliers: any[] } = summaryResult.value.data;
@@ -265,9 +282,9 @@ export const PurchaseHistoryTab: React.FC = () => {
       setSummaryMap(new Map());
       showError(`공급사 요약 로드 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally { setSummaryLoading(false); }
-    // 2026-09-11 · #110 · 사용자 지시 · 기간 필터 반영 · deps 에 periodMonths·periodSeason 추가
+    // 2026-10-05 · 사용자 지시 · 월 멀티선택 · deps 에 monthsListParamStr 추가
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [periodMonths, periodSeason]);
+  }, [periodMonths, periodSeason, monthsListParamStr]);
 
   // vendors-changed → loadSummary 재조회 (vendors 는 useVendors 내부에서 자동 갱신)
   useEffect(() => {
@@ -587,19 +604,32 @@ export const PurchaseHistoryTab: React.FC = () => {
     setAllDetailsLoading(true);
     setAllDetailsError(null);
     try {
-      const now = new Date();
-      const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-      const fromStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}-${String(from.getDate()).padStart(2, "0")}`;
+      // 2026-10-05 · 사용자 지시 · 1년 고정 fetch 제거 · selectedMonths 전달 · Supabase 직접 조회
+      //   · season 선택 시 · 폴백 (season 전체 범위 사용)
+      //   · selectedMonths 비면 · 현재월 default (fallback)
+      const useMonthsList = !periodSeason && selectedMonths.length > 0;
       const firstParams = new URLSearchParams({
-        from: fromStr,
-        per_page: String(PER_PAGE_ALL),
-        page: "1",
         no_cycle: "1",
       });
-      // 첫 페이지 + top-sales 병렬
+      if (useMonthsList) {
+        firstParams.set("months_list", monthsListParamStr);
+        // months_list 모드 · 서버가 전체 반환 · pagination X
+      } else {
+        // 폴백 · 기존 1년 fetch
+        const now = new Date();
+        const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+        const fromStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}-${String(from.getDate()).padStart(2, "0")}`;
+        firstParams.set("from", fromStr);
+        firstParams.set("per_page", String(PER_PAGE_ALL));
+        firstParams.set("page", "1");
+      }
+      // top-sales · 월 멀티선택 반영
+      const salesUrl = useMonthsList
+        ? `/api/stock-manage/top-sales?months_list=${encodeURIComponent(monthsListParamStr)}&limit=5000&sort=sale&dir=desc`
+        : "/api/stock-manage/top-sales?months=1&limit=5000&sort=sale&dir=desc";
       const [firstResult, salesResult] = await Promise.allSettled([
         api.get<any>(`/api/purchase-details?${firstParams}`),
-        api.get<any>("/api/stock-manage/top-sales?months=1&limit=5000&sort=sale&dir=desc"),
+        api.get<any>(salesUrl),
       ]);
       if (firstResult.status === "rejected") throw firstResult.reason;
       const j = firstResult.value.data;
@@ -661,14 +691,16 @@ export const PurchaseHistoryTab: React.FC = () => {
       setAllDetailsLoading(false); // 스피너 off · 나머지는 백그라운드
 
       // has_more=true 이면 나머지 페이지 누적 로드 (백그라운드)
-      if (j.has_more) {
+      // 2026-10-05 · months_list 모드 · 서버가 전체 반환 · pagination skip
+      const fromStrForPagination = useMonthsList ? null : firstParams.get("from");
+      if (j.has_more && !useMonthsList && fromStrForPagination) {
         let page = 2;
         const accumulated = [...firstRows];
         while (true) {
           // 경쟁 방지 · 이 루프가 최신 호출이 아니면 중단 (force 재호출 시)
           if (currentRunId !== loadAllDetailsRunIdRef.current) break;
           const moreParams = new URLSearchParams({
-            from: fromStr,
+            from: fromStrForPagination,
             per_page: String(PER_PAGE_ALL),
             page: String(page),
             no_cycle: "1",
@@ -699,12 +731,20 @@ export const PurchaseHistoryTab: React.FC = () => {
       setAllDetailsLoading(false);
       showError(`상품별 매입 로드 실패: ${msg}`);
     }
-  }, [allDetailsLoaded]);
+    // 2026-10-05 · 사용자 지시 · selectedMonths 변경 시 재조회
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allDetailsLoaded, monthsListParamStr, periodSeason]);
 
   // 뷰 모드가 by-product 로 전환될 때 lazy load
   useEffect(() => {
     if (viewMode === "by-product") loadAllDetails();
   }, [viewMode, loadAllDetails]);
+
+  // 2026-10-05 · 사용자 지시 · 월 선택 변경 시 · by-product 뷰 재조회
+  useEffect(() => {
+    if (viewMode === "by-product") loadAllDetails(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthsListParamStr, periodSeason]);
 
   // ─── summary lookup · vendors.company_name → summaryMap value ─────────────
   //   2026-08-03 fix (이슈 C) · 서버 supplier 와 vendor company_name 접미어 차이 대응
@@ -784,20 +824,22 @@ export const PurchaseHistoryTab: React.FC = () => {
     });
   }, [vendors, vendorSearch, vendorCategoryFilter, summaryLookup, leftSort, leftDir]);
 
-  // ─── by-product 기간 필터 적용 allDetails 슬라이스 (2026-08-05) ──────────
-  //   · allDetails 는 최근 1년치 전부 · 기간 필터로 클라이언트 슬라이스
-  //   · periodMonths/periodSeason 은 by-vendor 뷰와 공유 state
+  // 2026-10-05 · 사용자 지시 · client-side periodMonths slicing 제거
+  //   · 서버 /api/purchase-details?months_list=... 가 이미 선택 월 기준 필터 완료
+  //   · allDetails = 서버가 반환한 선택 월 범위 그대로 사용
+  //   · season 모드 폴백 · 기존 periodMonths 범위 slicing 유지 (season-mode 호환)
   const filteredAllDetails = useMemo<PurchaseDetailRow[]>(() => {
     if (allDetails.length === 0) return [];
+    const useMonthsList = !periodSeason && selectedMonths.length > 0;
+    if (useMonthsList) return allDetails;
+    // 폴백 (season-mode) · 기존 days 기반 slicing 유지
     const isDays10 = periodMonths === 0 && !periodSeason;
-    const days = periodSeason
-      ? 365
-      : isDays10 ? 10 : (periodMonths || 1) * 30;
+    const days = periodSeason ? 365 : (isDays10 ? 10 : (periodMonths || 1) * 30);
     const fromDate = new Date();
     fromDate.setDate(fromDate.getDate() - days);
     const fromStr = fromDate.toISOString().slice(0, 10);
     return allDetails.filter(r => r.date >= fromStr);
-  }, [allDetails, periodMonths, periodSeason]);
+  }, [allDetails, periodMonths, periodSeason, selectedMonths]);
 
   // 기간 필터 변경 시 · 선택 상품이 필터된 리스트에 없으면 해제 (2026-08-05)
   useEffect(() => {
@@ -981,6 +1023,8 @@ export const PurchaseHistoryTab: React.FC = () => {
         setPeriodMonths={setPeriodMonths}
         periodSeason={periodSeason}
         setPeriodSeason={setPeriodSeason}
+        selectedMonths={selectedMonths}
+        setSelectedMonths={setSelectedMonths}
         ledgerLoading={ledgerLoading}
         allDetailsLoading={allDetailsLoading}
         saleStatusFilter={saleStatusFilter}

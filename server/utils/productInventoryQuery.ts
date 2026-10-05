@@ -199,7 +199,7 @@ export async function queryProductsWithInventory(
   //   · 각 endpoint 소비 필드 · 모두 포함 · 응답 형식 매핑 용이
   let productQuery = supabase
     .from("products")
-    .select("product_code, product_name, supplier, category, category_code, spec, location, display_location, current_stock, optimal_stock, purchase_price, sale_price, profit_rate, expiry_date, brand, manufacturer, unit, search_keywords, sale_status, hidden");
+    .select("product_code, product_name, supplier, category, category_code, spec, display_location, current_stock, optimal_stock, purchase_price, sale_price, profit_rate, expiry_date, brand, manufacturer, unit, search_keywords, sale_status, hidden");
   if (!includeHidden) productQuery = productQuery.eq("hidden", false);
   if (saleActive) productQuery = productQuery.eq("sale_status", "판매중");
   if (codes && codes.length > 0) productQuery = productQuery.in("product_code", codes);

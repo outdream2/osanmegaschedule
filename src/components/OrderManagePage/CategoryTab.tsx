@@ -101,8 +101,9 @@ const ZoneCategoryContent: React.FC = () => {
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "categoryTab.saleFilter" });
 
   const grouped = useMemo(() => {
-    // 2026-08-10 · 사용자 정책 · 진열위치 구역 = spec (real_map 은 실제진열위치 · 별도)
-    // spec "8A/냉" 같은 "/" 분리 상품 · 첫 부분(primary)만 카운트
+    // 2026-10-05 · 사용자 확정 대원칙 · 진열위치 = products.display_location 전용 (spec fallback 제거)
+    //   · spec 은 상품 규격 복구 · 진열위치 의미로 혼용 금지
+    //   · display_location "8A/냉" 같은 "/" 분리 상품 · 첫 부분(primary)만 카운트
     const parsePrimaryZone = (raw: string): string => {
       if (!raw) return "미배치";
       const t = String(raw).trim();
@@ -116,12 +117,11 @@ const ZoneCategoryContent: React.FC = () => {
       const p = products[code] ?? {};
       // 2026-09-08 · 사용자 지시 · 판매중 필터
       if (!saleMatches((p as any).sale_status ?? (r as any).sale_status)) continue;
-      // 2026-08-31 · #69 fix · resolveProductLocation 사용 · location 우선 · real_map fallback
-      //   · 이전 · spec 만 · location/real_map 만 있는 상품은 "미배치" 로 빠짐 → 판매 데이터 안 보임
-      const zone = (resolveProductLocation(p) ?? String((p as any).spec ?? "").trim());
+      // 2026-10-05 · 사용자 확정 · 진열위치 = resolveProductLocation(display_location) 전용 · spec fallback 제거
+      const zone = resolveProductLocation(p) ?? "";
       const key = parsePrimaryZone(zone);
       const cur = map.get(key) ?? { zone: key, saleQty: 0, totalAmount: 0, items: [] };
-      const saleQty = Number(r.sale_qty ?? 0) || 0;
+      const saleQty = Number(r.sale_stock ?? 0) || 0;
       const amount = Number(r.total_amount ?? 0) || 0;
       if (saleQty > 0 || amount > 0) {
         cur.saleQty += saleQty;

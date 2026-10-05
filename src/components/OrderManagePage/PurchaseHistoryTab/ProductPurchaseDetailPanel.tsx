@@ -239,11 +239,11 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <KpiCard label="총 판매량"  value={fmt(Number(salesData.sale_qty ?? 0))} unit="개" tone="rose" />
+                <KpiCard label="총 판매량"  value={fmt(Number(salesData.sale_stock ?? 0))} unit="개" tone="rose" />
                 <KpiCard label="총 판매액"  value={fmtWon(Number(salesData.total_amount ?? salesData.sale_amount ?? 0))} tone="rose" />
                 <KpiCard label="매입 대비 판매율" value={
-                  salesData.purchase_qty > 0
-                    ? `${Math.round((Number(salesData.sale_qty ?? 0) / Number(salesData.purchase_qty ?? 1)) * 100)}%`
+                  salesData.buy_stock > 0
+                    ? `${Math.round((Number(salesData.sale_stock ?? 0) / Number(salesData.buy_stock ?? 1)) * 100)}%`
                     : "-"
                 } tone="emerald" />
                 <KpiCard label="현재고" value={fmt(Number(salesData.closing_stock ?? salesData.current_stock ?? 0))} unit="개" tone="brand" />
@@ -257,8 +257,8 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
                   if (sp <= 0 || pp <= 0) return "-";
                   return `${(((sp - pp) / sp) * 100).toFixed(1)}%`;
                 })()} />
-                <InfoRow label="시작재고"  value={fmt(Number(salesData.opening_stock ?? 0))} />
-                <InfoRow label="매입수량"  value={fmt(Number(salesData.purchase_qty ?? 0))} />
+                <InfoRow label="시작재고"  value={fmt(Number(salesData.prv_stock ?? 0))} />
+                <InfoRow label="매입수량"  value={fmt(Number(salesData.buy_stock ?? 0))} />
                 <InfoRow label="종료재고"  value={fmt(Number(salesData.closing_stock ?? 0))} />
               </div>
             </>

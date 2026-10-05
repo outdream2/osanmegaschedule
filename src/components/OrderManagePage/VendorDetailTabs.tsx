@@ -261,7 +261,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
           // 2026-09-10 · #66 · salesRows → ym → total_amount map
           const m = new Map<string, number>();
           for (const r of salesRows) {
-            const ym = String(r.snapshot_date ?? r.period_start_date ?? "").slice(0, 7);
+            const ym = String(r.period_end ?? r.period_start ?? "").slice(0, 7);
             if (!ym) continue;
             m.set(ym, (m.get(ym) ?? 0) + Number(r.total_amount ?? 0));
           }
@@ -272,7 +272,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
           // 2026-09-10 · 원가 · salesRows → ym → cogs_amount map
           const m = new Map<string, number>();
           for (const r of salesRows) {
-            const ym = String(r.snapshot_date ?? r.period_start_date ?? "").slice(0, 7);
+            const ym = String(r.period_end ?? r.period_start ?? "").slice(0, 7);
             if (!ym) continue;
             m.set(ym, (m.get(ym) ?? 0) + Number(r.cogs_amount ?? 0));
           }
@@ -283,7 +283,7 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
           // 2026-09-10 · #72 · 확정 공식 · 재고자산(월별) = 매입원가(월별) − 판매원가(월별)
           const m = new Map<string, number>();
           for (const r of salesRows) {
-            const ym = String(r.snapshot_date ?? r.period_start_date ?? "").slice(0, 7);
+            const ym = String(r.period_end ?? r.period_start ?? "").slice(0, 7);
             if (!ym) continue;
             const purchaseCost = Number(r.purchase_cost ?? 0) || 0;
             const cogs = Number(r.cogs_amount ?? 0) || 0;

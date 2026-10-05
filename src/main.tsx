@@ -7,7 +7,8 @@ import { ConfirmProvider } from './hooks/useConfirm';
 import { ActiveNavProvider } from './contexts/ActiveNavContext';
 import { installErrorReporter } from './lib/errorReporter';
 // 2026-08-17 · 사용자 지시 · 토큰만료 이후 프로세스 강화 · refresh 실패 시 · 세션만료 이벤트 dispatch → App 강제 로그아웃 + 로그인 화면
-import { SESSION_EXPIRED_EVENT } from './lib/apiClient';
+// 2026-10-05 · 지시 · refresh 로직 SSOT 통합 · apiClient 의 refreshAccessToken 재사용 (로컬 중복 제거)
+import { SESSION_EXPIRED_EVENT, refreshAccessToken } from './lib/apiClient';
 import './index.css';
 
 // 2026-08-16 · 프레임워크 · 클라이언트 에러 리포터 (window.error + unhandledrejection → /api/client-errors)
@@ -17,41 +18,27 @@ installErrorReporter();
 //   · same-origin 은 브라우저 기본으로 전송하나 · 명시로 안전 확보 (cross-origin 대비)
 axios.defaults.withCredentials = true;
 
-// 2026-08-16 · #112-S10 · Access token 만료 (401) → Refresh 자동 갱신 → 원 요청 재시도
-//   · Refresh 도 실패 (REFRESH_EXPIRED) → 재로그인 필요 · 앱이 401 로 자동 로그아웃 처리 (기존 로직)
-let refreshInFlight: Promise<boolean> | null = null;
-async function tryRefresh(): Promise<boolean> {
-  if (refreshInFlight) return refreshInFlight;
-  refreshInFlight = (async () => {
-    try {
-      const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
-      return res.ok;
-    } catch {
-      return false;
-    } finally {
-      setTimeout(() => { refreshInFlight = null; }, 0);
-    }
-  })();
-  return refreshInFlight;
-}
+// 2026-10-05 · 지시 · 401 자동 refresh + 재시도 interceptor
+//   · 공통 refreshAccessToken() 사용 (single-flight · X-Client-Type 자동 송신 · mobile 90일 트랙 유지)
+//   · 네트워크/서버 오류는 세션만료 발화 X (오탐 방지) · 인증 만료만 handleLogout
 axios.interceptors.response.use(
   (r) => r,
   async (error) => {
     const status = error?.response?.status;
     const config = error?.config;
     const url: string = config?.url ?? "";
-    // 2026-08-17 · 강화 · 토큰/쿠키 만료 시 무조건 로그아웃 + 로그인화면
-    //   1) /api/auth/login · /api/auth/vendor-login · POST 는 정상 검증 실패 → skip
-    //   2) 그 외 401 → refresh 1회 시도 → 실패 시 SESSION_EXPIRED_EVENT dispatch → App handleLogout
+    // login/vendor-login 자체 실패 → 정상 검증 실패 → skip (로그인 화면 유지)
     const isLoginAttempt = url.includes("/api/auth/login") || url.includes("/api/auth/vendor-login");
     if (status === 401 && config && !config.__retried && !isLoginAttempt) {
       config.__retried = true;
       // /api/auth/refresh 자체가 401 이면 refresh 재시도 X · 바로 만료
       if (!url.startsWith("/api/auth/")) {
-        const ok = await tryRefresh();
-        if (ok) return axios(config); // 새 access 로 원 요청 재시도
+        const result = await refreshAccessToken();
+        if (result.ok) return axios(config); // 새 access 로 원 요청 재시도
+        // 네트워크/서버 오류 → 세션 유지 (원 에러만 reject · 재로그인 유도 X)
+        if (result.reason !== "unauthorized") return Promise.reject(error);
       }
-      // refresh 실패 OR auth 엔드포인트 401 · 세션만료 이벤트 dispatch (App 리스너 → 로그아웃 + 로그인화면)
+      // refresh 인증 실패 OR auth 엔드포인트 401 · 세션만료 이벤트 dispatch (App → 로그아웃 + 로그인화면)
       try { window.dispatchEvent(new CustomEvent<null>(SESSION_EXPIRED_EVENT)); } catch { /* silent */ }
     }
     return Promise.reject(error);

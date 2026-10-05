@@ -279,20 +279,21 @@ router.get("/api/sales-auto-recommend", asyncHandler(async (req, res) => {
     const CHUNK = 500;
     for (let i = 0; i < productCodes.length; i += CHUNK) {
       const chunk = productCodes.slice(i, i + CHUNK);
+      // 2026-10-04 · schema rename · sale_qty→sale_stock · snapshot_date→period_end
       const { data: sh, error: sErr } = await supabase
         .from("stock_history")
-        .select("product_code, sale_qty, snapshot_date")
+        .select("product_code, sale_stock, period_end")
         .in("product_code", chunk)
-        .gte("snapshot_date", cutoff);
+        .gte("period_end", cutoff);
       if (sErr) {
         // 테이블 없거나 접근 실패 · 조용히 스킵 (판매 데이터 없이도 재고 기준 추천 가능)
         console.warn(`[sales-auto-recommend] stock_history 조회 실패 · ${sErr.message}`);
         break;
       }
       for (const r of sh ?? []) {
-        const code = String(r.product_code ?? "").trim();
+        const code = String((r as any).product_code ?? "").trim();
         if (!code) continue;
-        saleMap.set(code, (saleMap.get(code) ?? 0) + (Number(r.sale_qty ?? 0) || 0));
+        saleMap.set(code, (saleMap.get(code) ?? 0) + (Number((r as any).sale_stock ?? 0) || 0));
       }
     }
   }

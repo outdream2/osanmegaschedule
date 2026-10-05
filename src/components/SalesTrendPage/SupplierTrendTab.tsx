@@ -68,7 +68,7 @@ const SupplierTrendTab: React.FC<{
     const p = Number(r.purchase_price ?? 0);
     if (p > 0) return p;
     const amt = Number(r.purchase_last_amount ?? r.purchase_total_amount ?? 0);
-    const qty = Number(r.purchase_total_qty ?? r.purchase_qty ?? 0);
+    const qty = Number(r.purchase_total_qty ?? r.buy_stock ?? 0);
     return qty > 0 ? Math.round(amt / qty) : 0;
   };
   const deriveProfitRate = (r: any): number => {
@@ -81,8 +81,8 @@ const SupplierTrendTab: React.FC<{
     const mult = dir === "asc" ? 1 : -1;
     const getVal = (r: any): any => {
       if (key === "name") return String(r.product_name ?? "");
-      if (key === "sale") return Number(r.sale_qty ?? 0);
-      if (key === "sale_amount") return Number(r.sale_qty ?? 0) * Number(r.sale_price ?? 0);
+      if (key === "sale") return Number(r.sale_stock ?? 0);
+      if (key === "sale_amount") return Number(r.sale_stock ?? 0) * Number(r.sale_price ?? 0);
       if (key === "sale_price") return Number(r.sale_price ?? 0);
       if (key === "profit_rate") return deriveProfitRate(r);
       return derivePurchasePrice(r);
@@ -113,7 +113,7 @@ const SupplierTrendTab: React.FC<{
           supplier: cleanName(String(x.supplier ?? "")),
           supplier_code: x.supplier_code ?? null,
           code_conflict: !!x.code_conflict,
-          saleQty: Number(x.saleQty ?? x.sale_qty ?? 0) || 0,
+          saleQty: Number(x.saleQty ?? x.sale_stock ?? 0) || 0,
           saleAmount: Number(x.saleAmount ?? 0) || 0,
           itemCount: Number(x.itemCount ?? 0) || 0,
         })).filter((x: SupplierAggRow) => x.supplier);
@@ -317,7 +317,7 @@ const SupplierTrendTab: React.FC<{
                               <tbody className="divide-y divide-zinc-50">
                                 {/* 2026-09-11 · #106 · 사용자 지시 · 판매중/판매중지 필터 적용 (상품 sale_status) */}
                                 {sortSupRows(rows).filter((r: any) => saleMatches(r.sale_status)).slice(0, 200).map((r, ri) => {
-                                  const saleQty = Number(r.sale_qty ?? 0);
+                                  const saleQty = Number(r.sale_stock ?? 0);
                                   const salePrice = Number(r.sale_price ?? 0);
                                   const purchasePrice = derivePurchasePrice(r);
                                   const saleAmount = saleQty * salePrice;

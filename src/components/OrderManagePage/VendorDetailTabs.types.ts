@@ -71,12 +71,12 @@ export interface OrderHistoryGroup {
 }
 
 export interface SalesTrendRow {
-  period_start_date: string;
-  snapshot_date: string;
+  period_start: string;
+  period_end: string;
   period_type: string | null;
   product_count: number;
-  purchase_qty: number;
-  sale_qty: number;
+  buy_stock: number;
+  sale_stock: number;
   closing_stock: number;
   supply_amount: number;
   total_amount: number;
@@ -90,8 +90,8 @@ export interface SalesTrendRow {
 export interface SalesProductRow {
   product_code: string;
   product_name: string;
-  purchase_qty: number;
-  sale_qty: number;
+  buy_stock: number;
+  sale_stock: number;
   closing_stock: number;
   total_amount: number;
 }

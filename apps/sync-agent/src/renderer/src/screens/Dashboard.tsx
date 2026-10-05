@@ -1,5 +1,7 @@
 // Dashboard.tsx
-// 2026-10-04 · ERP 자동 동기화 중심 · 탭 전환 (사용자 지시 · 다시 탭 복원)
+// 2026-10-05 · 탭 복원 (사용자 지시)
+//   · default: both (ERP Sync + Query 세로 stacked)
+//   · 사용자 선택: sync only · query only · both
 
 import React, { useState } from "react";
 import { ErpSection } from "./ErpSection";
@@ -9,13 +11,13 @@ import { SectionBoundary } from "../components/SectionBoundary";
 type View = "sync" | "query" | "both";
 
 export const Dashboard: React.FC = () => {
-  const [view, setView] = useState<View>("sync");
+  const [view, setView] = useState<View>("both");
   return (
-    <div className="flex flex-col gap-4 w-full max-w-[1800px] mx-auto">
+    <div className="flex flex-col gap-2 w-full max-w-[1800px] mx-auto">
       <div className="flex items-center gap-1 bg-white border border-zinc-200 rounded-lg p-1 w-fit">
         {([
           { key: "sync", label: "⚡ ERP → Supabase 동기화" },
-          { key: "query", label: "🔎 Iregen ERP 직접 조회" },
+          { key: "query", label: "🔎 Iregen ERP 데이터 조회 및 로컬저장" },
           { key: "both", label: "⬌ 모두 보기" },
         ] as const).map((t) => (
           <button
@@ -29,9 +31,8 @@ export const Dashboard: React.FC = () => {
           </button>
         ))}
       </div>
-
       {view === "both" ? (
-        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-2">
           <SectionBoundary name="ERP Sync">
             <ErpSyncSection />
           </SectionBoundary>

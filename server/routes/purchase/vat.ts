@@ -86,23 +86,33 @@ router.get("/api/vat/summary", authorize(1), asyncHandler(async (req, res) => {
   const range = resolvePeriod(periodParam);
   if (!range) throw badRequest("period 형식 오류 · 예: 2026-1H · 2026-Q1");
 
-  const { data: rows, error } = await supabase
-    .from("purchase_details")
-    .select("supplier_name, amount, vat, total")
-    .gte("purchase_date", range.from)
-    .lte("purchase_date", range.to)
-    .limit(50000);
-
-  if (error) {
-    if (/relation .* does not exist/i.test(error.message)) {
-      return res.json({
-        range, next: getNextDeadline(new Date()),
-        totalAmount: 0, totalVat: 0, deductibleVat: 0, exemptVat: 0,
-        vendorCount: 0, rowCount: 0,
-        warning: "purchase_details 테이블 없음 (매입 데이터 임포트 필요)",
-      });
+  // 2026-10-05 · PostgREST 1000 cutoff fix · 큰 기간 조회 시 50000 limit 은 1 call 로 못 받음
+  //   · 녹십자 2026-09 매입 2,848건 등 · 기간 내 전체 row > 1000 이면 pagination 필수
+  //   · ERP 데이터 누락 방지
+  const rows: Array<{ supplier_name?: unknown; amount?: unknown; vat?: unknown; total?: unknown }> = [];
+  let pfrom = 0;
+  while (true) {
+    const { data: chunk, error } = await supabase
+      .from("purchase_details")
+      .select("supplier_name, amount, vat, total")
+      .gte("purchase_date", range.from)
+      .lte("purchase_date", range.to)
+      .range(pfrom, pfrom + 999);
+    if (error) {
+      if (/relation .* does not exist/i.test(error.message)) {
+        return res.json({
+          range, next: getNextDeadline(new Date()),
+          totalAmount: 0, totalVat: 0, deductibleVat: 0, exemptVat: 0,
+          vendorCount: 0, rowCount: 0,
+          warning: "purchase_details 테이블 없음 (매입 데이터 임포트 필요)",
+        });
+      }
+      throw new HttpError(500, error.message, "DB_ERROR");
     }
-    throw new HttpError(500, error.message, "DB_ERROR");
+    if (!chunk || chunk.length === 0) break;
+    rows.push(...(chunk as Array<Record<string, unknown>>));
+    if (chunk.length < 1000) break;
+    pfrom += 1000;
   }
 
   // 공급사별 · category + vat_included 조회 (면세·VAT 포함 여부 판단)
@@ -270,14 +280,44 @@ router.get("/api/vat/vendor-detail", authorize(1), asyncHandler(async (req, res)
     return null;
   })();
 
-  const { data: rows, error } = await supabase
+  // 2026-10-05 · supplier_name eq → supplier_code 기반 매칭 전환
+  //   · 1 code · 2+ name variant ((주)녹십자/녹십자 등) 전부 catch
+  //   · supplier_name 매칭 row 의 supplier_code DISTINCT 수집 후 .in() 조회
+  const codeSet = new Set<string>();
+  const { data: nameRows } = await supabase
     .from("purchase_details")
-    .select("id, purchase_date, product_code, product_name, spec, quantity, unit_price, amount, vat, total")
+    .select("supplier_code")
     .eq("supplier_name", supplier)
-    .gte("purchase_date", range.from)
-    .lte("purchase_date", range.to)
-    .order("purchase_date", { ascending: false })
-    .limit(2000);
+    .gte("purchase_date", range.from).lte("purchase_date", range.to)
+    .not("supplier_code", "is", null)
+    .limit(5000);
+  for (const r of nameRows ?? []) {
+    const c = String((r as { supplier_code?: unknown }).supplier_code ?? "").trim();
+    if (c) codeSet.add(c);
+  }
+  if (/^\d{1,5}$/.test(supplier)) codeSet.add(supplier);
+  // Step 2: code set 전수 + name fallback (code NULL 레거시용)
+  let rows: Array<Record<string, unknown>> = [];
+  let error: { message: string } | null = null;
+  if (codeSet.size > 0) {
+    const r1 = await supabase
+      .from("purchase_details")
+      .select("id, purchase_date, product_code, product_name, spec, quantity, unit_price, amount, vat, total")
+      .in("supplier_code", [...codeSet])
+      .gte("purchase_date", range.from).lte("purchase_date", range.to)
+      .order("purchase_date", { ascending: false }).limit(2000);
+    if (r1.error) error = r1.error;
+    else rows = r1.data ?? [];
+  } else {
+    const r2 = await supabase
+      .from("purchase_details")
+      .select("id, purchase_date, product_code, product_name, spec, quantity, unit_price, amount, vat, total")
+      .eq("supplier_name", supplier)
+      .gte("purchase_date", range.from).lte("purchase_date", range.to)
+      .order("purchase_date", { ascending: false }).limit(2000);
+    if (r2.error) error = r2.error;
+    else rows = r2.data ?? [];
+  }
 
   if (error) {
     if (/relation .* does not exist/i.test(error.message)) {
@@ -362,11 +402,12 @@ router.get("/api/vat/monthly-summary", authorize(1), asyncHandler(async (req, re
     let fromRow = 0;
     let salesTableMissing = false;
     while (true) {
+      // 2026-10-04 · schema rename · snapshot_date→period_end · sale_qty→sale_stock
       const { data: pg, error: pgErr } = await supabase
         .from("stock_history")
-        .select("snapshot_date, sale_qty, sale_price")
-        .gte("snapshot_date", fromParam)
-        .lte("snapshot_date", toParam)
+        .select("period_end, sale_stock, sale_price")
+        .gte("period_end", fromParam)
+        .lte("period_end", toParam)
         .range(fromRow, fromRow + PAGE - 1);
       if (pgErr) {
         if (/relation .* does not exist/i.test(pgErr.message)) {
@@ -377,11 +418,11 @@ router.get("/api/vat/monthly-summary", authorize(1), asyncHandler(async (req, re
       }
       if (!pg || pg.length === 0) break;
       for (const r of pg) {
-        const date = String((r as any).snapshot_date ?? "");
+        const date = String((r as any).period_end ?? "");
         const month = date.slice(0, 7);
         if (!/^\d{4}-\d{2}$/.test(month)) continue;
-        // 2026-09-14 · SSOT · 판매액 파생 계산 (sale_qty × sale_price)
-        const qty = Number((r as any).sale_qty ?? 0) || 0;
+        // 2026-09-14 · SSOT · 판매액 파생 계산 (sale_stock × sale_price)
+        const qty = Number((r as any).sale_stock ?? 0) || 0;
         const price = Number((r as any).sale_price ?? 0) || 0;
         const amt = qty * price;
         if (amt <= 0) continue;

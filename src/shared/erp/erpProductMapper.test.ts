@@ -1,4 +1,9 @@
-// 2026-10-03 저녁 · Phase 2 · Product mapper unit tests
+// 2026-10-04 · Product mapper unit tests · Location 정책 변경 반영
+//   · display_location ← LocationName raw (변환 없음)
+//   · brand/manufacturer whitelist 제외
+//   · purchase_price/sale_price/category 활성화
+//   · erp_registered_at/erp_modified_at 신규 column 매핑
+//   · products.location 참조 제거
 import { describe, it, expect } from "vitest";
 import { buildErpProductPayload } from "./erpProductMapper";
 
@@ -10,33 +15,43 @@ const baseErp = {
   CtCode: "1058",
   UnitCode: "EA",
   SaleStatusName: "판매중",
-  Brand: "브랜드",
+  Brand: "브랜드",         // ERP 응답 유지 · whitelist 에서 제외됨 (비교 안 함)
   Maker: "제조사",
   LastBuyDate: "2026-10-03",
   LastSaleDate: "2026-10-03",
   NowStock: 50,
   LocationName: "벽>21>전체>전체",
+  CostPrice: 1000,
+  PriceA: 2000,
+  McateName: "진통제",
+  RegDate: "2026-01-01T10:00:00",
+  EditDate: "2026-10-01T15:00:00",
 };
 
 const baseDb = {
   product_code: "8806265020416",
+  pcode: "12345",
   product_name: "테스트 상품",
   supplier: "테스트 공급사",
   supplier_code: "1058",
   unit: "EA",
   sale_status: "판매중",
-  brand: "브랜드",
-  manufacturer: "제조사",
+  brand: "브랜드",          // whitelist 외 · 비교 안 함
+  manufacturer: "제조사",   // whitelist 외
   last_purchase_date: "2026-10-03",
   last_sale_date: "2026-10-03",
   current_stock: 50,
-  display_location: "21",
-  location: "21",
-  optimal_stock: 10,       // PROTECTED
-  memo: "사용자 메모",       // PROTECTED
-  hidden: false,            // PROTECTED
-  stock_note: "note",       // PROTECTED
-  imported_at: "2026-01-01",// PROTECTED
+  display_location: "벽>21>전체>전체",  // raw match (LocationName 과 동일)
+  purchase_price: 1000,
+  sale_price: 2000,
+  category: "진통제",
+  erp_registered_at: "2026-01-01T10:00:00",
+  erp_modified_at: "2026-10-01T15:00:00",
+  optimal_stock: 10,         // PROTECTED
+  memo: "사용자 메모",         // PROTECTED
+  hidden: false,              // PROTECTED
+  stock_note: "note",         // PROTECTED
+  imported_at: "2026-01-01",  // PROTECTED
 };
 
 describe("buildErpProductPayload · identical row (no changes)", () => {
@@ -61,6 +76,26 @@ describe("buildErpProductPayload · UPDATE 변경 field", () => {
   it("current_stock null overwrite 허용 (nullOverwrite=true)", () => {
     const r = buildErpProductPayload({ ...baseErp, NowStock: null }, baseDb);
     expect(r.payload.current_stock).toBeNull();
+  });
+  it("purchase_price (CostPrice) 변경 → payload 에 포함", () => {
+    const r = buildErpProductPayload({ ...baseErp, CostPrice: 1500 }, baseDb);
+    expect(r.payload.purchase_price).toBe(1500);
+  });
+  it("sale_price (PriceA) 변경 → payload 에 포함", () => {
+    const r = buildErpProductPayload({ ...baseErp, PriceA: 2500 }, baseDb);
+    expect(r.payload.sale_price).toBe(2500);
+  });
+  it("category (McateName) 변경 → payload 에 포함", () => {
+    const r = buildErpProductPayload({ ...baseErp, McateName: "소화제" }, baseDb);
+    expect(r.payload.category).toBe("소화제");
+  });
+  it("erp_registered_at (RegDate) 변경 → payload 에 포함", () => {
+    const r = buildErpProductPayload({ ...baseErp, RegDate: "2026-02-01T10:00:00" }, baseDb);
+    expect(r.payload.erp_registered_at).toBe("2026-02-01T10:00:00");
+  });
+  it("erp_modified_at (EditDate) 변경 → payload 에 포함", () => {
+    const r = buildErpProductPayload({ ...baseErp, EditDate: "2026-11-01T15:00:00" }, baseDb);
+    expect(r.payload.erp_modified_at).toBe("2026-11-01T15:00:00");
   });
 });
 
@@ -90,6 +125,11 @@ describe("buildErpProductPayload · PROTECTED field 절대 포함 금지", () =>
     expect(r.payload.sale_status).toBe("판매중지");
     expect(r.payload).not.toHaveProperty("hidden");
   });
+  it("ERP Brand/Maker 변경되어도 ERP Sync whitelist 에서 제외 (2026-10-04) · payload 에 포함 X", () => {
+    const r = buildErpProductPayload({ ...baseErp, Brand: "새 브랜드", Maker: "새 제조사" }, baseDb);
+    expect(r.payload).not.toHaveProperty("brand");
+    expect(r.payload).not.toHaveProperty("manufacturer");
+  });
 });
 
 describe("buildErpProductPayload · INSERT (ERP_NEW)", () => {
@@ -97,41 +137,38 @@ describe("buildErpProductPayload · INSERT (ERP_NEW)", () => {
     const r = buildErpProductPayload(baseErp, null);
     expect(r.action).toBe("INSERT");
     expect(r.payload.product_code).toBe("8806265020416");
+    expect(r.payload.pcode).toBe("12345");
     expect(r.payload.product_name).toBe("테스트 상품");
     expect(r.payload.current_stock).toBe(50);
-    expect(r.payload.display_location).toBe("21");
-    expect(r.payload.location).toBe("21");
+    expect(r.payload.display_location).toBe("벽>21>전체>전체");  // raw
+    expect(r.payload.purchase_price).toBe(1000);
+    expect(r.payload.sale_price).toBe(2000);
+    expect(r.payload.category).toBe("진통제");
     expect(r.payload).not.toHaveProperty("memo");
     expect(r.payload).not.toHaveProperty("optimal_stock");
-  });
-  it("INSERT · ERP empty field 는 payload 에 포함 X", () => {
-    const r = buildErpProductPayload({ ...baseErp, Brand: "" }, null);
-    expect(r.payload).not.toHaveProperty("brand");
+    expect(r.payload).not.toHaveProperty("brand");       // whitelist 외
+    expect(r.payload).not.toHaveProperty("manufacturer");
+    expect(r.payload).not.toHaveProperty("location");    // products.location column 없음 · 참조 제거됨
   });
 });
 
-describe("buildErpProductPayload · Location 변환", () => {
-  it("벽+21 → display_location + location 양쪽 '21' 동시 UPDATE", () => {
+describe("buildErpProductPayload · Location raw 저장 (2026-10-04 정책 변경)", () => {
+  it("벽+22 → raw '벽>22>전체>전체' 저장 (변환 없음)", () => {
     const r = buildErpProductPayload({ ...baseErp, LocationName: "벽>22>전체>전체" }, baseDb);
-    expect(r.payload.display_location).toBe("22");
-    expect(r.payload.location).toBe("22");
+    expect(r.payload.display_location).toBe("벽>22>전체>전체");
+    expect(r.payload).not.toHaveProperty("location");
   });
-  it("6매대+Ａ → '6A' (전각 → 반각)", () => {
+  it("6매대+Ａ → raw 저장 (전각 변환 없음)", () => {
     const r = buildErpProductPayload({ ...baseErp, LocationName: "6매대>Ａ>7열>전체" }, baseDb);
-    expect(r.payload.display_location).toBe("6A");
-    expect(r.payload.location).toBe("6A");
+    expect(r.payload.display_location).toBe("6매대>Ａ>7열>전체");
   });
-  it("ERP Location empty + DB has → location 유지 (KEEP · payload 에 포함 X)", () => {
+  it("ERP LocationName empty + DB has → KEEP (payload 포함 X)", () => {
     const r = buildErpProductPayload({ ...baseErp, LocationName: "" }, baseDb);
     expect(r.payload).not.toHaveProperty("display_location");
-    expect(r.payload).not.toHaveProperty("location");
-    expect(r.locationDecision).toBe("keep");
   });
-  it("뷰티 → review · derived null · payload 포함 X · locationDecision=review", () => {
+  it("뷰티 → raw 그대로 저장 (REVIEW 분리 없음 · 2026-10-04 정책)", () => {
     const r = buildErpProductPayload({ ...baseErp, LocationName: "뷰티>2번>전체>전체" }, baseDb);
-    expect(r.payload).not.toHaveProperty("display_location");
-    expect(r.locationDecision).toBe("review");
-    expect(r.locationResult.reviewFlag).toBe("LOCATION_REVIEW_BEAUTY");
+    expect(r.payload.display_location).toBe("뷰티>2번>전체>전체");
   });
 });
 

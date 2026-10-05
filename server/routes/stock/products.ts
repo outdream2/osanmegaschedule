@@ -44,7 +44,7 @@ stockCheckPublicRouter.get("/api/stock-check", asyncHandler(async (req, res) => 
   const saleActive = setting?.value !== false;
   let query = supabase
     .from("products")
-    .select("product_name, spec, current_stock, sale_status, category, location, display_location, supplier")
+    .select("product_name, spec, current_stock, sale_status, category, display_location, supplier")
     .eq("hidden", false)
     .ilike("product_name", `%${raw}%`);
   if (saleActive) query = query.eq("sale_status", "판매중");
@@ -114,7 +114,7 @@ router.get("/api/products-map", asyncHandler(async (req, res) => {
         supplier: p.supplier ?? null,
         // 2026-08-27 · 사용자 지시 · 엑셀 진열위치 (display_location) 기준만
         //   · spec 은 원본 "규격" · fallback 사용 X · 오염 방지
-        location: p.location ?? p.display_location ?? null,
+        location: p.display_location ?? null,
         spec: p.spec ?? null,  // 하위호환 · 점진 제거 예정 · 진열위치 아님
         category: p.category ?? null,
         category_code: p.category_code ?? null,
@@ -196,13 +196,13 @@ router.get("/api/inventory-latest", asyncHandler(async (_req, res) => {
 
 // 2026-08-28 · 사용자 지시 · 스캔 미등록 등록 모달 · 분류(category) 기반 참조 상품 리스트
 // GET /api/products-by-category?category=xxx  or  ?code=xxx  · 최대 100건
-// 응답: product_code · product_name · category · category_code · supplier · brand · manufacturer · spec · unit · sale_price · purchase_price · location
+// 응답: product_code · product_name · category · category_code · supplier · brand · manufacturer · spec · unit · sale_price · purchase_price · display_location
 router.get("/api/products-by-category", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const category = String(req.query.category ?? "").trim();
   const code = String(req.query.code ?? "").trim();
   if (!category && !code) return res.json([]);
-  const cols = "product_code,product_name,category,category_code,supplier,brand,manufacturer,spec,unit,sale_price,purchase_price,location,display_location";
+  const cols = "product_code,product_name,category,category_code,supplier,brand,manufacturer,spec,unit,sale_price,purchase_price,display_location";
   // 2026-08-28 · 감사 P2-1 · sale_status 필터 통일 · 판매중만 (설정 반영)
   const { data: saleSetting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
   const saleActive = saleSetting?.value !== false;
@@ -251,7 +251,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
 
     // 2026-09-23 · E-N · min_stock 컬럼 미존재 · SELECT 실패 fix (사용자 보고 · 검색 500 → 복구)
     //   · #302 회귀 · optimal_stock 만 유지 (products.optimal_stock 실존) · min_stock 은 클라 ?? 0 폴백
-    const cols = "product_code,product_name,spec,supplier,category_code,category,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,current_stock,optimal_stock,sale_status,hidden";
+    const cols = "product_code,product_name,spec,supplier,category_code,category,purchase_price,sale_price,profit_rate,expiry_date,display_location,current_stock,optimal_stock,sale_status,hidden";
     // 2026-09-18 · 사용자 지시 fix · limit query param 존중 · supplier only 시 최대 1000
     const rawLimit = Number(req.query.limit ?? 40);
     const limitVal = Math.min(Math.max(Number.isFinite(rawLimit) ? rawLimit : 40, 1), 1000);
@@ -266,7 +266,7 @@ router.get("/api/products-search", asyncHandler(async (req, res) => {
 
     // 2차 fallback 1: hidden 컬럼 없으면 제외하고 재시도
     if (error && /"?hidden"?|does not exist|column/i.test(error.message) && /hidden/i.test(error.message)) {
-      const cols2 = "product_code,product_name,spec,supplier,purchase_price,sale_price,profit_rate,expiry_date,location,display_location,current_stock,optimal_stock,sale_status";
+      const cols2 = "product_code,product_name,spec,supplier,purchase_price,sale_price,profit_rate,expiry_date,display_location,current_stock,optimal_stock,sale_status";
       let q2 = supabase.from("products").select(cols2);
       if (!supplierOnly) q2 = q2.or(buildOr(true));
       if (supplier.length >= 2) q2 = q2.ilike("supplier", `%${supplier}%`);
@@ -772,7 +772,7 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
     const chunk = codes.slice(i, i + CHUNK);
     const { data, error } = await supabase
       .from("products")
-      .select("product_code, product_name, spec, supplier, location, display_location, current_stock, sale_status, hidden")
+      .select("product_code, product_name, spec, supplier, display_location, current_stock, sale_status, hidden")
       .in("product_code", chunk)
       .eq("hidden", false);
     if (error) {
@@ -789,7 +789,8 @@ router.get("/api/products/expiry-imminent", asyncHandler(async (_req, res) => {
       product_name: p.product_name,
       spec: p.spec,
       supplier: p.supplier,
-      location: p.location,
+      // 2026-10-04 · schema fix · products.location 없음 · display_location 로 통일
+      location: p.display_location,
       display_location: p.display_location,
       current_stock: p.current_stock,
       sale_status: p.sale_status,
@@ -807,7 +808,7 @@ router.get("/api/products/hidden", asyncHandler(async (_req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { data, error } = await supabase
     .from("products")
-    .select("product_code, product_name, spec, supplier, location, display_location, current_stock, sale_price")
+    .select("product_code, product_name, spec, supplier, display_location, current_stock, sale_price")
     .eq("hidden", true)
     .order("product_name", { ascending: true })
     .limit(500);
@@ -886,7 +887,8 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
 
   res.json({
     ...data,
-    location: data.location ?? data.display_location ?? null,
+    // 2026-10-04 · schema fix · products.location 없음 · display_location 로 통일
+    location: data.display_location ?? null,
     // 재고 DB에서 병합 · #58 통합 · 창고1/2 · 매장1/2/3
     warehouse_stock:  data.warehouse_stock ?? warehouseStock,
     warehouse1_stock: warehouseStock,
@@ -925,7 +927,7 @@ const ALLOWED_INLINE_EDIT = new Set([
   "product_name",
   "category",
   // 2026-08-28 · 사용자 지시 · 진열위치·판매상태 인라인 편집 (13컬럼 통일)
-  "location",
+  // 2026-10-04 · schema fix · products.location column 없음 · display_location 만 유지
   "display_location",
   "sale_status",
   "category_code",
@@ -1150,18 +1152,19 @@ router.patch("/api/products/:code", authorize(1), validateBody(UpdateProductSche
   }
 
   // 2026-09-15 · #61 B안 · 사용자 원칙 · 진열위치 변경 → 실재고 슬롯 자동 재배정
-  //   · location 변경 시 · inventory_checks.shelf_positions · buildInitialShelfPositions 재계산
+  //   · display_location 변경 시 · inventory_checks.shelf_positions · buildInitialShelfPositions 재계산
   //   · 기존 상세위치 (사용자 입력 3자리) · **보존** (merge · 새 슬롯 추가 · 사라진 슬롯 제거 X)
   //   · products·inventory_checks 자동 동기 · SSOT
-  if (Object.prototype.hasOwnProperty.call(updates, "location") || Object.prototype.hasOwnProperty.call(updates, "display_location")) {
+  // 2026-10-04 · schema fix · products.location column 없음 · display_location 만 사용
+  if (Object.prototype.hasOwnProperty.call(updates, "display_location")) {
     try {
-      // 최신 products.location · category_code 조회 (updates 이후)
+      // 최신 products.display_location · category_code 조회 (updates 이후)
       const { data: fresh } = await supabase
         .from("products")
-        .select("location, display_location, category_code")
+        .select("display_location, category_code")
         .eq("product_code", code)
         .maybeSingle();
-      const newLocation = fresh?.location ?? fresh?.display_location ?? null;
+      const newLocation = fresh?.display_location ?? null;
       const categoryCode = (fresh as any)?.category_code ?? null;
       const autoSlots = buildInitialShelfPositions(newLocation, categoryCode);
 
@@ -1207,7 +1210,7 @@ router.patch("/api/products/:code", authorize(1), validateBody(UpdateProductSche
         };
         const { error: insErr2 } = await supabase.from("inventory_checks").insert([insertRow]);
         if (insErr2) logger.warn(`[products PATCH] inventory_checks 신규 생성 실패 (경고): ${insErr2.message}`);
-        else logger.debug(`[products PATCH] inventory_checks 신규 생성 (location 변경 계기) · ${code}`);
+        else logger.debug(`[products PATCH] inventory_checks 신규 생성 (display_location 변경 계기) · ${code}`);
       }
     } catch (e: any) {
       logger.warn(`[products PATCH] inventory_checks 동기 예외 (경고): ${e?.message ?? e}`);
@@ -1299,8 +1302,9 @@ router.post("/api/products", authorize(5), validateBody(CreateProductSchema), as
       .eq("product_code", code)
       .maybeSingle();
     if (!existingIc) {
+      // 2026-10-04 · schema fix · products.location column 없음 · display_location 만 사용
       const shelfPositions = buildInitialShelfPositions(
-        input.location ?? input.display_location ?? null,
+        input.display_location ?? null,
         (input as any).category_code ?? null,
       );
       const insertRow: Record<string, unknown> = {

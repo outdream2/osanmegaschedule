@@ -9,16 +9,17 @@ const router = Router();
 
 router.get("/api/stock-manage/snapshot-summary", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-  const dateParam = String(req.query.snapshot_date ?? "").trim();
+  // 2026-10-04 · schema rename · snapshot_date → period_end · 프론트 호환 쿼리 유지
+  const dateParam = String(req.query.period_end ?? req.query.snapshot_date ?? "").trim();
   {
     let targetDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : "";
     if (!targetDate) {
       const { data: latest } = await supabase
         .from("stock_history")
-        .select("snapshot_date")
-        .order("snapshot_date", { ascending: false })
+        .select("period_end")
+        .order("period_end", { ascending: false })
         .limit(1);
-      targetDate = latest?.[0]?.snapshot_date ?? "";
+      targetDate = (latest?.[0] as any)?.period_end ?? "";
     }
     if (!targetDate) return res.json({ snapshot_date: null, totals: null });
 
@@ -32,34 +33,20 @@ router.get("/api/stock-manage/snapshot-summary", asyncHandler(async (req, res) =
       positiveStockCount: 0,
       zeroStockCount: 0,
     };
-    // 2026-09-10 · #73 · 사용자 지시 · 판매액 = sale_qty × sale_price (xlsx total_amount 사용 금지)
-    // products.sale_price map 사전 fetch · in memory
-    const salePriceMap = new Map<string, number>();
-    {
-      const PP = 1000;
-      let pFrom = 0;
-      while (true) {
-        const { data } = await supabase
-          .from("products")
-          .select("product_code, sale_price")
-          .range(pFrom, pFrom + PP - 1);
-        if (!data || data.length === 0) break;
-        for (const p of data) {
-          const c = String((p as any).product_code ?? "").trim();
-          if (c) salePriceMap.set(c, Number((p as any).sale_price ?? 0) || 0);
-        }
-        if (data.length < PP) break;
-        pFrom += PP;
-      }
-    }
-
+    // 2026-10-05 · SSOT 전환 (사용자 지시):
+    //   · 매출금액 (totalAmount) = sales.sale_total SUM (ERP 원본값 우선 · 재계산 금지)
+    //   · 기존: stock_history.sale_stock × products.sale_price (파생 · 2026-09-10 정의)
+    //   · sales 데이터 범위 외 period 는 totalAmount=0 (ERP Sale_Status 저장 범위 밖)
+    //   · 수량 집계 (totalSale/Purchase/Disposal) 는 stock_history 유지 (상품별 수량 흐름 SSOT)
     const PAGE = 1000;
     let from = 0;
+    let periodStart: string | null = null;
     while (true) {
+      // 2026-10-04 · schema rename · sale_qty→sale_stock · purchase_qty→buy_stock · disposal_qty→product_bad_stock · snapshot_date→period_end
       const { data, error } = await supabase
         .from("stock_history")
-        .select("product_code, sale_qty, purchase_qty, disposal_qty, closing_stock, total_amount")
-        .eq("snapshot_date", targetDate)
+        .select("period_start, product_code, sale_stock, buy_stock, product_bad_stock, closing_stock")
+        .eq("period_end", targetDate)
         .range(from, from + PAGE - 1);
       if (error) {
         if (/relation|does not exist/i.test(error.message)) break;
@@ -68,14 +55,10 @@ router.get("/api/stock-manage/snapshot-summary", asyncHandler(async (req, res) =
       if (!data || data.length === 0) break;
       for (const r of data) {
         totals.itemCount++;
-        const sqty = Number(r.sale_qty ?? 0) || 0;
-        const code = String((r as any).product_code ?? "").trim();
-        const sp = salePriceMap.get(code) ?? 0;
-        totals.totalSale     += sqty;
-        totals.totalPurchase += Number(r.purchase_qty ?? 0) || 0;
-        totals.totalDisposal += Number(r.disposal_qty ?? 0) || 0;
-        // 판매액 · sale_qty × sale_price
-        totals.totalAmount   += sqty * sp;
+        if (!periodStart && (r as any).period_start) periodStart = String((r as any).period_start);
+        totals.totalSale     += Number((r as any).sale_stock ?? 0) || 0;
+        totals.totalPurchase += Number((r as any).buy_stock ?? 0) || 0;
+        totals.totalDisposal += Number((r as any).product_bad_stock ?? 0) || 0;
         const closing = Number(r.closing_stock ?? 0);
         if (closing < 0) totals.negativeStockCount++;
         else if (closing > 0) totals.positiveStockCount++;
@@ -83,6 +66,22 @@ router.get("/api/stock-manage/snapshot-summary", asyncHandler(async (req, res) =
       }
       if (data.length < PAGE) break;
       from += PAGE;
+    }
+    // 매출금액 · sales.sale_total SUM (period 기간)
+    if (periodStart) {
+      let sFrom = 0;
+      while (true) {
+        const { data } = await supabase
+          .from("sales")
+          .select("sale_total")
+          .gte("sale_date", periodStart)
+          .lte("sale_date", targetDate)
+          .range(sFrom, sFrom + PAGE - 1);
+        if (!data || data.length === 0) break;
+        for (const s of data) totals.totalAmount += Number((s as { sale_total?: unknown }).sale_total ?? 0) || 0;
+        if (data.length < PAGE) break;
+        sFrom += PAGE;
+      }
     }
     res.json({ snapshot_date: targetDate, totals });
   }

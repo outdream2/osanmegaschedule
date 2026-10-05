@@ -1,4 +1,4 @@
-// GET /api/stock-manage/supplier-purchases?snapshot_date=YYYY-MM-DD&months=N&limit=20
+// GET /api/stock-manage/supplier-purchases?period_end=YYYY-MM-DD&months=N&limit=20
 // stock_history 기반 공급사별 매입/판매/재고 집계 (금액·수량·상품수)
 // 2026-07-16: months 파라미터 추가 · 기간 범위 (오늘-months 개월 ~ 오늘) 집계
 import { Router } from "express";
@@ -13,23 +13,31 @@ const router = Router();
 router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const limit = Math.max(1, Math.min(50000, parseInt(String(req.query.limit ?? "20"), 10) || 20));
-  const dateParam = String(req.query.snapshot_date ?? "").trim();
+  const dateParam = String(req.query.period_end ?? "").trim();
   const monthsParam = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));
-  // 계절 필터 · 지정 시 년도 무관 · months/snapshot_date 무시
+  // 계절 필터 · 지정 시 년도 무관 · months/period_end 무시
   const seasonParam = String(req.query.season ?? "").trim().toLowerCase();
   const seasonMonths = await resolveSeasonMonths(seasonParam);
+  // 2026-10-05 · 사용자 지시 · months_list=YM1,YM2 비연속 월 지원
+  const monthsListParam = String(req.query.months_list ?? "").trim();
+  const monthsListSet = new Set<string>(
+    monthsListParam
+      ? monthsListParam.split(",").map((s) => s.trim()).filter((s) => /^\d{4}-\d{2}$/.test(s))
+      : [],
+  );
+  const useMonthsList = monthsListSet.size > 0;
   {
     // months > 0: 기간 범위 · 없으면 단일 스냅샷
     let targetDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : "";
     let fromDateStr: string | null = null;
-    if (seasonMonths) {
+    if (seasonMonths || useMonthsList) {
       // 전체 stock_history 스캔 → 계절 월 필터 · targetDate 는 latest 로 표기
       const { data: latest } = await supabase
         .from("stock_history")
-        .select("snapshot_date")
-        .order("snapshot_date", { ascending: false })
+        .select("period_end")
+        .order("period_end", { ascending: false })
         .limit(1);
-      targetDate = latest?.[0]?.snapshot_date ?? new Date().toISOString().slice(0, 10);
+      targetDate = latest?.[0]?.period_end ?? new Date().toISOString().slice(0, 10);
     } else if (monthsParam > 0) {
       const today = new Date();
       const from = new Date(today.getFullYear(), today.getMonth() - monthsParam, today.getDate());
@@ -38,16 +46,16 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
     } else if (!targetDate) {
       const { data: latest } = await supabase
         .from("stock_history")
-        .select("snapshot_date")
-        .order("snapshot_date", { ascending: false })
+        .select("period_end")
+        .order("period_end", { ascending: false })
         .limit(1);
-      targetDate = latest?.[0]?.snapshot_date ?? "";
+      targetDate = latest?.[0]?.period_end ?? "";
     }
-    if (!targetDate) return res.json({ snapshot_date: null, top: null, rows: [] });
+    if (!targetDate) return res.json({ period_end: null, top: null, rows: [] });
 
     // 2026-09-14 · #73 · SSOT · products.sale_price 사전 fetch · totalStockAmount 파생 계산
     //   · 이전 · stock_history.total_amount 원본 누적 (xlsx 원본 · 정확도 저하)
-    //   · fix · sale_qty × sale_price (판매액 = 수량 × 판매가 · 대원칙)
+    //   · fix · sale_stock × sale_price (판매액 = 수량 × 판매가 · 대원칙)
     // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · purchase_price 도 fetch · cogs·stock_asset 계산
     //   · stock_asset = purchase_amount − cogs (대원칙 #1 · /api/supplier-balances-map 와 동일 공식)
     const salePriceMap = new Map<string, number>();
@@ -85,7 +93,7 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
       saleAmount: number;
       totalStockAmount: number;
       // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · 재고자산 = 매입액 − 판매원가 (대원칙 #1)
-      cogsAmount: number;      // 판매원가 · sale_qty × purchase_price
+      cogsAmount: number;      // 판매원가 · sale_stock × purchase_price
       stockAssetAmount: number; // 재고자산 · purchase − cogs (balances-map 과 동일)
     }>();
     const PAGE = 1000;
@@ -93,13 +101,13 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
     while (true) {
       let query = supabase
         .from("stock_history")
-        .select("product_code, supplier_code, supplier_name, purchase_qty, sale_qty, supply_amount, snapshot_date");
-      if (seasonMonths) {
-        // 전 데이터 스캔 · 후 필터 (Supabase 는 EXTRACT 미지원)
+        .select("product_code, supplier_code, supplier_name, buy_stock, sale_stock, supply_amount, period_end");
+      if (seasonMonths || useMonthsList) {
+        // 전 데이터 스캔 · 후 필터 (Supabase 는 EXTRACT 미지원 · YM 매칭도 서버 측 필터)
       } else if (fromDateStr) {
-        query = query.gte("snapshot_date", fromDateStr).lte("snapshot_date", targetDate);
+        query = query.gte("period_end", fromDateStr).lte("period_end", targetDate);
       } else {
-        query = query.eq("snapshot_date", targetDate);
+        query = query.eq("period_end", targetDate);
       }
       const { data, error } = await query.range(from, from + PAGE - 1);
       if (error) {
@@ -108,7 +116,11 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
       }
       if (!data || data.length === 0) break;
       for (const r of data) {
-        if (seasonMonths && !inSeasonMonths(String(r.snapshot_date ?? ""), seasonMonths)) continue;
+        if (seasonMonths && !inSeasonMonths(String(r.period_end ?? ""), seasonMonths)) continue;
+        if (useMonthsList) {
+          const ym = /^(\d{4}-\d{2})/.exec(String(r.period_end ?? ""))?.[1];
+          if (!ym || !monthsListSet.has(ym)) continue;
+        }
         const supName = String(r.supplier_name ?? "").trim();
         const supCode = String(r.supplier_code ?? "").trim();
         if (!supName && !supCode) continue;
@@ -125,13 +137,13 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
         // 2026-07-28: distinct product code 만 카운트
         const productCode = String(r.product_code ?? "").trim();
         if (productCode) cur.products.add(productCode);
-        const purchQty  = Number(r.purchase_qty ?? 0) || 0;
-        const saleQty   = Number(r.sale_qty ?? 0) || 0;
+        const purchQty  = Number(r.buy_stock ?? 0) || 0;
+        const saleQty   = Number(r.sale_stock ?? 0) || 0;
         const supplyAmt = Number(r.supply_amount ?? 0) || 0;
         cur.purchaseQty    += purchQty;
         cur.purchaseAmount += supplyAmt;
         cur.saleQty        += saleQty;
-        // 2026-09-14 · #73 · SSOT · 판매액 = sale_qty × sale_price (파생 · total_amount 원본 X)
+        // 2026-09-14 · #73 · SSOT · 판매액 = sale_stock × sale_price (파생 · total_amount 원본 X)
         const salePrice = productCode ? (salePriceMap.get(productCode) ?? 0) : 0;
         cur.totalStockAmount += saleQty * salePrice;
         // 2026-10-01 · 사용자 지시 · cross-endpoint 공식 통일 · 대원칙 #3 (판매액 = sq × sale_price)
@@ -139,7 +151,7 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
         //   · 이후 · saleQty × salePrice (totalStockAmount 와 동일 · 공식 통일)
         //   · cross-endpoint audit · UI 라벨 "판매액" 과 값 일치 보장
         cur.saleAmount += saleQty * salePrice;
-        // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · 판매원가 (COGS) · sale_qty × purchase_price
+        // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · 판매원가 (COGS) · sale_stock × purchase_price
         //   · 재고자산 = purchase − cogs · 대원칙 #1 · /api/supplier-balances-map 와 동일 공식
         const purchasePrice = productCode ? (purchasePriceMap.get(productCode) ?? 0) : 0;
         cur.cogsAmount += saleQty * purchasePrice;
@@ -237,13 +249,13 @@ router.get("/api/stock-manage/supplier-purchases", asyncHandler(async (req, res)
       saleQty: v.saleQty,
       saleAmount: Math.round(v.saleAmount),
       itemCount: v.products.size,
-      totalStockAmount: v.totalStockAmount, // 판매액 (sale_qty × sale_price) · 레거시 이름
+      totalStockAmount: v.totalStockAmount, // 판매액 (sale_stock × sale_price) · 레거시 이름
       // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · 신규 필드 · 실제 재고자산 (대원칙 #1)
       cogsAmount: Math.round(v.cogsAmount),
       stockAssetAmount: Math.round(v.stockAssetAmount),
     })).sort((a, b) => b.totalStockAmount - a.totalStockAmount);
     const top = rows.length > 0 ? rows[0] : null;
-    res.json({ snapshot_date: targetDate, season: seasonParam || undefined, season_months: seasonMonths ?? undefined, top, rows: rows.slice(0, limit) });
+    res.json({ period_end: targetDate, season: seasonParam || undefined, season_months: seasonMonths ?? undefined, top, rows: rows.slice(0, limit) });
   }
 }));
 

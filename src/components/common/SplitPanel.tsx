@@ -302,15 +302,26 @@ export const SplitPanel: React.FC<SplitPanelProps> = ({
     isDraggingRef.current = false; // 초기화 · move 감지 후 true 로 전환
     startXRef.current = e.clientX;
     startWRef.current = listWidth;
+    // 2026-10-05 · bug fix (사용자 지시 "오른쪽으로 drag 가다가 멈춤")
+    //   · 기존: window.innerWidth - 320 기준 clamp → 사이드바/padding/margin 때문에
+    //           container clientWidth 보다 큰 값으로 clamp → aside 가 container 밖으로
+    //           overflow 되면서 drag 가 중단 (hidden overflow / 하위 pointer loss)
+    //   · 신규: container clientWidth 기준 clamp (divider · gap · right-min 전부 반영)
+    const container = containerRef.current;
+    const containerW = container?.clientWidth ?? window.innerWidth;
+    const dividerEl = container?.querySelector<HTMLElement>(".split-divider");
+    const dividerW = dividerEl ? dividerEl.offsetWidth : 6;
+    const cStyles = container ? window.getComputedStyle(container) : null;
+    const gap = cStyles ? (parseFloat(cStyles.columnGap || cStyles.gap || "0") || 12) : 12;
+    const RIGHT_MIN = 320;
+    const dynMaxContainer = Math.max(minWidth, containerW - dividerW - gap * 2 - RIGHT_MIN);
+    const effMax = Math.min(maxWidth, dynMaxContainer);
 
     const onMove = (ev: MouseEvent) => {
       const delta = ev.clientX - startXRef.current;
       // 드래그 이동이 2px 이상이면 실제 드래그로 판정 (미세 클릭 오판 방지)
       if (Math.abs(delta) >= 2) isDraggingRef.current = true;
-      // 2026-09-02 · viewport 기반 동적 clamp · 우측 최소 320px 보장 · maxWidth 는 상한
-      const dynMax = Math.min(maxWidth, window.innerWidth - 320);
-      const eff = Math.max(minWidth, dynMax);
-      const next = Math.max(minWidth, Math.min(eff, startWRef.current + delta));
+      const next = Math.max(minWidth, Math.min(effMax, startWRef.current + delta));
       setListWidth(next);
     };
     const onUp = (ev: MouseEvent) => {

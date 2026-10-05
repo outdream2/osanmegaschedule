@@ -1,8 +1,9 @@
 // src/components/DisplayPage/DisplayPage.helpers.ts
 // 2026-08-22 · Framework Phase 4 · DisplayPage 대형 파일 분리 · constants + helpers 이관
+// 2026-10-05 · 사용자 지시 · product 서브탭 제거 · Boxes 아이콘 unused
 import {
   Bell, ClipboardList, Package, Store, BarChart2, Wallet, Building2,
-  RotateCcw, Boxes,
+  RotateCcw,
 } from "lucide-react";
 import { ZONE_DEFS } from "../../constants/displayZones";
 import {
@@ -16,8 +17,7 @@ import type { DpSubTabKey, DisplayRequest } from "./DisplayPage.types";
 // ─── DisplayPage 서브탭 (level 2) 정의 · 상수 · 컴포넌트 외부 배치 (참조 안정성 · 훅 재등록 방지)
 // 2026-08-25 · 사용자 지시 · "통계" → "판매" 라벨 변경 · 반품 메뉴 추가 (반품필요 이관 대상)
 export const DP_SUBTAB_DEFAULTS: CommonTabDef<DpSubTabKey>[] = [
-  // 2026-08-29 · 사용자 지시 · 상품 신규 서브탭 · 매입에서 이관 (실재고입력·상품입고·상품정보 3개 이너 탭)
-  { key: "product",        label: "상품",       icon: Boxes,         color: "red"    },
+  // 2026-10-05 · 사용자 지시 · 상품 서브탭 제거 · 3개 이너탭 매입 아래로 재이관
   { key: "purchase-order", label: "발주",       icon: ClipboardList, color: "sky"    },
   { key: "purchase",       label: "매입",       icon: Package,       color: "amber"  },
   { key: "payment",        label: "결제",       icon: Wallet,        color: "teal"   },

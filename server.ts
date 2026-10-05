@@ -59,6 +59,8 @@ import purchaseRouter    from "./server/routes/purchase/purchase";
 import orderPurchaseMatchRouter from "./server/routes/purchase/orderPurchaseMatch";
 import stockArrivalsRouter from "./server/routes/stock/stockArrivals";
 import productArrivalsRouter from "./server/routes/stock/productArrivals";
+// 2026-10-05 · #128 · 매장>매출 ERP route (Sales_Days_TimeReport + Statistics_Month_DashBoard)
+import salesStatsRouter from "./server/routes/erp/salesStatsRouter";
 import returnRequestsRouter from "./server/routes/purchase/returnRequests";
 import zoneLabelsRouter from "./server/routes/display/zoneLabels";
 // 2026-08-30 · 사용자 지시 · zone_defs KV → 정식 DB 테이블 이관
@@ -300,6 +302,8 @@ async function startServer() {
   app.use(lossTrackingRouter);       // T-LOSS-HISTORY · 손실추적 이력
   // 2026-08-18 · stockArrivalsRouter · public 섹션으로 이동 (line 155)
   app.use(productArrivalsRouter);
+  // 2026-10-05 · #128 · 매장>매출 ERP route (iregen-decoder spawn · Windows dev 전용)
+  app.use(salesStatsRouter);
   app.use(returnRequestsRouter);
   app.use(zoneLabelsRouter);
   app.use(zoneDefsRouter);

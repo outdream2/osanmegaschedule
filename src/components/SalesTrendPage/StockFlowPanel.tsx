@@ -24,15 +24,17 @@ import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { fmt } from "./SalesTrendPage.helpers";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
+// 2026-10-04 · stock_history column rename
+//   · opening_stock→prv_stock · purchase_qty→buy_stock · sale_qty→sale_stock · disposal_qty→product_bad_stock
 export interface StockFlowRow {
   product_code: string;
   product_name: string;
   supplier: string | null;
   spec: string | null;
-  opening_stock: number;
-  purchase_qty: number;
-  sale_qty: number;
-  disposal_qty: number;
+  prv_stock: number;
+  buy_stock: number;
+  sale_stock: number;
+  product_bad_stock: number;
   internal_qty?: number;
   adjustment_qty?: number;
   closing_stock: number;
@@ -47,9 +49,9 @@ export interface StockFlowRow {
 // 손실 = (시작재고 − 판매출고계) − 종료재고
 // 양수 = 예상 종료재고보다 실제가 부족 (실 손실)
 // 음수 = 예상보다 재고 많음 (매입/조정 있었을 수 있음)
-export const calcLoss = (r: { opening_stock?: number | null; sale_qty?: number | null; closing_stock?: number | null }) => {
-  const opening = Number(r.opening_stock ?? 0);
-  const sale = Number(r.sale_qty ?? 0);
+export const calcLoss = (r: { prv_stock?: number | null; sale_stock?: number | null; closing_stock?: number | null }) => {
+  const opening = Number(r.prv_stock ?? 0);
+  const sale = Number(r.sale_stock ?? 0);
   const close = Number(r.closing_stock ?? 0);
   return (opening - sale) - close;
 };
@@ -114,7 +116,7 @@ export const StockFlowPanel: React.FC<{
           const p = new URLSearchParams({ sort: serverSort, dir, limit: String(limit) });
           if (season) p.set("season", season);
           else if (m > 0) p.set("months", String(m));
-          else if (snapshot) p.set("snapshot_date", snapshot);
+          else if (snapshot) p.set("period_end", snapshot);
           return p;
         };
         // 2026-08-31 · #30 root cause · stock_history 최신 스냅샷 stale (예 · 34일 전) 시 · months=1 → 0 rows
@@ -136,9 +138,9 @@ export const StockFlowPanel: React.FC<{
           }
         }
         setRows(Array.isArray(j.rows) ? j.rows : []);
-        if (!season && months === 0 && !snapshot && j.snapshot_date) setSnapshot(j.snapshot_date);
+        if (!season && months === 0 && !snapshot && j.period_end) setSnapshot(j.period_end);
         if (effectiveMonths !== months) {
-          setAutoExpanded({ requested: months, effective: effectiveMonths, latestSnapshot: j.snapshot_date ?? null });
+          setAutoExpanded({ requested: months, effective: effectiveMonths, latestSnapshot: j.period_end ?? null });
         } else {
           setAutoExpanded(null);
         }
@@ -162,7 +164,7 @@ export const StockFlowPanel: React.FC<{
     let filtered = rows.filter(p => {
       // 2026-08-29 · 통일 로직 · matchesProductQuery (초성 · 부분 · 코드 · 바코드)
       if (q && !matchesProductQuery(p as any, query)) return false;
-      const qty = Number(p.sale_qty ?? 0);
+      const qty = Number(p.sale_stock ?? 0);
       if (min != null && Number.isFinite(min) && qty < min) return false;
       if (max != null && Number.isFinite(max) && qty > max) return false;
       return true;
@@ -173,7 +175,7 @@ export const StockFlowPanel: React.FC<{
     } else if (sort === "name") {
       filtered = [...filtered].sort((a, b) => sign * String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"));
     } else if (sort === "opening") {
-      filtered = [...filtered].sort((a, b) => sign * (Number(a.opening_stock ?? 0) - Number(b.opening_stock ?? 0)));
+      filtered = [...filtered].sort((a, b) => sign * (Number(a.prv_stock ?? 0) - Number(b.prv_stock ?? 0)));
     } else if (sort === "current") {
       filtered = [...filtered].sort((a, b) => sign * (Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0)));
     } else if (sort === "purchase_price") {
@@ -462,10 +464,10 @@ export const StockFlowPanel: React.FC<{
                         </div>
                       )}
                     </td>
-                    <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-orange-700 text-[14px] bg-orange-50/40 align-top">{fmt(p.sale_qty)}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-orange-700 text-[14px] bg-orange-50/40 align-top">{fmt(p.sale_stock)}</td>
                     <td
                       className={`text-right px-0.5 py-1.5 tabular-nums text-[14px] bg-rose-50/40 align-top ${loss > 0 ? "text-rose-600 font-bold" : loss < 0 ? "text-emerald-600 font-bold" : "text-zinc-400"}`}
-                      title={`손실 = (시작${fmt(Number(p.opening_stock))} − 판매${fmt(Number(p.sale_qty))}) − 종료${fmt(close)} = ${loss > 0 ? "-" + fmt(loss) : loss < 0 ? "+" + fmt(Math.abs(loss)) : "0"}${Number(p.purchase_qty) > 0 ? `\n입고: ${fmt(Number(p.purchase_qty))} (참고)` : ""}${Number(p.disposal_qty ?? 0) > 0 ? `\n폐기: ${fmt(Number(p.disposal_qty ?? 0))} (참고)` : ""}`}
+                      title={`손실 = (시작${fmt(Number(p.prv_stock))} − 판매${fmt(Number(p.sale_stock))}) − 종료${fmt(close)} = ${loss > 0 ? "-" + fmt(loss) : loss < 0 ? "+" + fmt(Math.abs(loss)) : "0"}${Number(p.buy_stock) > 0 ? `\n입고: ${fmt(Number(p.buy_stock))} (참고)` : ""}${Number(p.product_bad_stock ?? 0) > 0 ? `\n폐기: ${fmt(Number(p.product_bad_stock ?? 0))} (참고)` : ""}`}
                     >{loss === 0 ? "0" : loss > 0 ? `-${fmt(loss)}` : `+${fmt(Math.abs(loss))}`}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-[14px] text-indigo-700 font-bold bg-indigo-50/40 align-top" title={salePrice > 0 ? `${salePrice.toLocaleString()}원` : undefined}>{salePrice > 0 ? fmtWon(salePrice) : "-"}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-[14px] text-zinc-700 font-bold bg-zinc-50/40 align-top" title={purchasePrice > 0 ? `${purchasePrice.toLocaleString()}원` : undefined}>{purchasePrice > 0 ? fmtWon(purchasePrice) : "-"}</td>

@@ -104,6 +104,32 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
   const setSupplierMonths = setSupplierMonthsInternal;
   const setSupplierSeason = setSupplierSeasonInternal;
 
+  // 2026-10-05 · 사용자 지시 · 월 멀티선택 (비연속) · selectedMonths SSOT · 서버 months_list 파라미터
+  //   · supplierMonths (number) 는 호환성 유지 (periodMonthsProp 외부 전달 시 자동 변환)
+  //   · season 선택 시 selectedMonths 비움 · 월 선택 시 season 비움
+  const buildRecentMonths = React.useCallback((n: number): string[] => {
+    const now = new Date();
+    const list: string[] = [];
+    for (let i = 0; i < Math.max(1, n); i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      list.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    return list;
+  }, []);
+  const [selectedMonthsInternal, setSelectedMonthsInternal] = useState<string[]>(() => buildRecentMonths(1));
+  // 외부 periodMonthsProp 변경 시 · selectedMonths 자동 변환 (최근 N개월)
+  useEffect(() => {
+    if (periodMonthsProp != null && periodMonthsProp > 0) {
+      setSelectedMonthsInternal(buildRecentMonths(periodMonthsProp));
+    }
+  }, [periodMonthsProp, buildRecentMonths]);
+  const selectedMonths = selectedMonthsInternal;
+  const setSelectedMonths = setSelectedMonthsInternal;
+  const monthsListParamStr = React.useMemo(
+    () => [...selectedMonths].sort((a, b) => a.localeCompare(b)).join(","),
+    [selectedMonths],
+  );
+
   // 공급사 목록
   const [xlsxSuppliers, setXlsxSuppliers] = useState<SupplierAgg[]>([]);
   const { vendors, vendorCategoryMap, findVendorByName } = useVendors();
@@ -354,8 +380,9 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: String(API_LIMITS.LARGE) });
       if (sup.supplier_code) params.set("supplier_code", sup.supplier_code);
       else if (sup.supplier) params.set("supplier", sup.supplier);
-      // 2026-09-11 · 사용자 지시 · 우측 상세 · 기간·계절 필터 · top-sales 호출에 전달 (이전 · 미전달 → 항상 최신 스냅샷 · 판매량·판매금액 기간 미반영)
+      // 2026-10-05 · 사용자 지시 · 월 멀티선택 · months_list 우선 · season/months 하위호환 유지
       if (supplierSeason) params.set("season", supplierSeason);
+      else if (monthsListParamStr) params.set("months_list", monthsListParamStr);
       else if (supplierMonths > 0) params.set("months", String(supplierMonths));
       const { data } = await api.get<any>(`/api/stock-manage/top-sales?${params}`);
       const rows = data?.rows ?? [];
@@ -367,7 +394,7 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       supplierInflightRef.current.delete(key);
       setSupplierRowsLoading(prev => { const n = new Set(prev); n.delete(key); return n; });
     }
-  }, [embedded, onSupplierClick, supplierSeason, supplierMonths]);
+  }, [embedded, onSupplierClick, supplierSeason, supplierMonths, monthsListParamStr]);
 
   // 공급사 상세 모달 오픈 · 캐시 활용 (inline fetch 제거)
   const openSupplierDetailModal = useCallback((supplierName: string) => {
@@ -396,10 +423,10 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
       else if (key === "current") { va = Number(a.current_stock ?? 0); vb = Number(b.current_stock ?? 0); }
       else if (key === "cycle") { va = detailCycleDays(a); vb = detailCycleDays(b); }
       else if (key === "purchase_date") { va = String(a.last_purchase_date ?? ""); vb = String(b.last_purchase_date ?? ""); }
-      else if (key === "purchase_qty") { va = Number(a.purchase_total_qty ?? a.purchase_qty ?? 0); vb = Number(b.purchase_total_qty ?? b.purchase_qty ?? 0); }
+      else if (key === "purchase_qty") { va = Number(a.purchase_total_qty ?? a.buy_stock ?? 0); vb = Number(b.purchase_total_qty ?? b.buy_stock ?? 0); }
       else if (key === "min_order") { va = Number(a.min_order ?? 0); vb = Number(b.min_order ?? 0); }
       else if (key === "purchase_price") { va = Number(a.purchase_price ?? 0); vb = Number(b.purchase_price ?? 0); }
-      else if (key === "sale_qty") { va = Number(a.sale_qty ?? 0); vb = Number(b.sale_qty ?? 0); }
+      else if (key === "sale_qty") { va = Number(a.sale_stock ?? 0); vb = Number(b.sale_stock ?? 0); }
       else if (key === "sale_amount") { va = Number(a.total_amount ?? 0); vb = Number(b.total_amount ?? 0); }
       else { va = Number(a.current_stock ?? 0) * Number(a.purchase_price ?? 0); vb = Number(b.current_stock ?? 0) * Number(b.purchase_price ?? 0); }
       if (typeof va === "string") return va.localeCompare(String(vb), "ko") * mult;
@@ -412,12 +439,14 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
     setLoading(true);
     try {
       const params = new URLSearchParams({ limit: String(API_LIMITS.MAX) });
+      // 2026-10-05 · 사용자 지시 · 월 멀티선택 · months_list 우선 · season/months 하위호환
       if (supplierSeason) params.set("season", supplierSeason);
+      else if (monthsListParamStr) params.set("months_list", monthsListParamStr);
       else if (supplierMonths > 0) params.set("months", String(supplierMonths));
       const { data } = await api.get<any>(`/api/stock-manage/supplier-purchases?${params}`);
       setXlsxSuppliers(Array.isArray(data.rows) ? data.rows : []);
     } catch { /* ignore */ } finally { setLoading(false); }
-  }, [supplierSeason, supplierMonths]);
+  }, [supplierSeason, supplierMonths, monthsListParamStr]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -529,6 +558,8 @@ export const SupplierTab: React.FC<SupplierTabProps> = ({
         fetchData={fetchData}
         saleFilter={supSaleFilter}
         onSaleFilterChange={setSupSaleFilter}
+        selectedMonths={selectedMonths}
+        setSelectedMonths={setSelectedMonths}
       />
 
       {/* ── 하단 좌우 split ── 2026-09-11 · 사용자 지시 · 세로 스크롤 복구 · lg:h-[calc(100vh-260px)] · 다른 분할화면 프레임 통일 */}

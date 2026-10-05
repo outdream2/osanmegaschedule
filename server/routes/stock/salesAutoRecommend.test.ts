@@ -472,6 +472,8 @@ describe("items 정렬 로직", () => {
 // 11. stock_history saleMap 집계 로직 사본
 // ═══════════════════════════════════════════════════════════
 
+// 2026-10-04 · stock_history schema rename · sale_qty→sale_stock · snapshot_date→period_end
+//   · 서버는 Supabase AS alias (sale_qty:sale_stock) 로 legacy field 이름 유지 → 아래 테스트 그대로 유효
 describe("saleMap 집계 · stock_history 데이터 처리", () => {
   function buildSaleMap(rows: Array<{ product_code: any; sale_qty: any }>): Map<string, number> {
     const saleMap = new Map<string, number>();

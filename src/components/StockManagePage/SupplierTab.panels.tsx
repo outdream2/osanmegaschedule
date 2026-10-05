@@ -15,7 +15,8 @@ import { ProductPurchaseHistoryModal } from "./ProductPurchaseHistoryModal";
 import { Modal } from "../common/Modal";
 import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { InlineLabel } from "../common/InlineLabel";
-import { PeriodSelector } from "../common/PeriodSelector";
+// 2026-10-05 · 사용자 지시 · 월 토글 UI · 10일/1~6개월 PeriodSelector 교체
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
 import { SeasonButtons } from "../common/SeasonButtons";
 // 2026-09-11 · #106 재적용 · 사용자 지시 · 판매중/판매중지 필터
 import { SaleStatusFilter } from "../common/SaleStatusFilter";
@@ -188,7 +189,7 @@ export const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({
                   <tbody className="divide-y divide-sky-100">
                     {sortedDetail.slice(0, 200).map((r, ri) => {
                       const purchPrice = Number(r.purchase_price ?? 0);
-                      const saleQty = Number(r.sale_qty ?? 0);
+                      const saleQty = Number(r.sale_stock ?? 0);
                       const saleAmt = Number(r.total_amount ?? 0);
                       const curStock = Number(r.current_stock ?? 0);
                       const stockValue = curStock > 0 && purchPrice > 0 ? curStock * purchPrice : 0;
@@ -211,7 +212,7 @@ export const SupplierDetailPanel: React.FC<SupplierDetailPanelProps> = ({
                               <span className="text-zinc-500">{fmtPurchaseDate(r.last_purchase_date)}</span>
                             )}
                           </td>
-                          <td className="text-right px-1 py-1 text-[15px] tabular-nums text-zinc-700">{fmt(Number(r.purchase_total_qty ?? r.purchase_qty ?? 0))}</td>
+                          <td className="text-right px-1 py-1 text-[15px] tabular-nums text-zinc-700">{fmt(Number(r.purchase_total_qty ?? r.buy_stock ?? 0))}</td>
                           <td className="text-right px-1 py-1 text-[15px] tabular-nums text-amber-700 font-semibold">{purchPrice > 0 ? purchPrice.toLocaleString() : "-"}</td>
                           <td className="text-right px-1 py-1 text-[15px] tabular-nums text-rose-600 font-semibold">{saleQty > 0 ? fmt(saleQty) : "-"}</td>
                           <td className="text-right px-1 py-1 text-[15px] tabular-nums text-rose-700 font-semibold">{saleAmt > 0 ? fmtWon(saleAmt) : "-"}</td>
@@ -308,14 +309,19 @@ interface SupplierFilterBarProps {
   // 2026-09-11 · #106 재적용 · 판매중 필터 · optional (embedded 모드 배려)
   saleFilter?: SaleStatusFilterValue;
   onSaleFilterChange?: (v: SaleStatusFilterValue) => void;
+  // 2026-10-05 · 사용자 지시 · 월 멀티선택 SSOT · selectedMonths (비연속 지원)
+  selectedMonths: string[];
+  setSelectedMonths: (v: string[]) => void;
 }
 
 export const SupplierFilterBar: React.FC<SupplierFilterBarProps> = ({
   displayedCount, supplierMonths, supplierSeason, supListLimit, loading,
   setSupplierMonths, setSupplierSeason, setSupListLimit, fetchData,
   saleFilter, onSaleFilterChange,
+  selectedMonths, setSelectedMonths,
 }) => {
   void supListLimit; void setSupListLimit;
+  void supplierMonths; void setSupplierMonths;
   return (
     // 2026-08-23 · #185 · PageToolbar 프리미티브 통일 (CategoryTab·TrendingTab 톤 일치)
     <PageToolbar
@@ -329,24 +335,20 @@ export const SupplierFilterBar: React.FC<SupplierFilterBarProps> = ({
           {/* 2026-09-11 · 사용자 지시 · 기간 · 다음 줄 (basis-full · flex-wrap 안에서 강제 개행) */}
           <div className="flex items-center gap-2 basis-full order-2 sm:order-1 sm:basis-auto">
             <InlineLabel size="sm">기간</InlineLabel>
-            <PeriodSelector
-              options={[
-                { value: 0, label: "10일", title: "최근 10일" },
-                { value: 1, label: "1개월", title: "최근 1개월" },
-                { value: 2, label: "2개월", title: "최근 2개월" },
-                { value: 3, label: "3개월", title: "최근 3개월" },
-                { value: 4, label: "4개월", title: "최근 4개월" },
-                { value: 5, label: "5개월", title: "최근 5개월" },
-                { value: 6, label: "6개월", title: "최근 6개월" },
-              ]}
-              value={supplierMonths}
-              onChange={(v) => { setSupplierSeason(null); setSupplierMonths(v as 0|1|2|3|4|5|6); }}
-              size="sm"
+            {/* 2026-10-05 · 사용자 지시 · 월 멀티선택 (독립 toggle · 비연속 지원) · 10일 옵션 제거 */}
+            <MonthToggleSelector
+              selectedMonths={selectedMonths}
+              onChange={(v) => { setSupplierSeason(null); setSelectedMonths(v); }}
+              maxMonths={6}
+              minOne={true}
               ariaLabel="공급사 조회기간"
             />
+            {selectedMonths.length > 0 && (
+              <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+            )}
           </div>
           <div className="order-1 sm:order-2 flex items-center gap-2 flex-wrap">
-            <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
+            <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSelectedMonths([]); }} size="sm" hideLabel />
             {saleFilter != null && onSaleFilterChange && (
               <SaleStatusFilter value={saleFilter} onChange={onSaleFilterChange} size="sm" />
             )}

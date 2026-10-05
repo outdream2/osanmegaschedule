@@ -1,6 +1,6 @@
 # Framework Audit Report (자동 생성)
 
-> 생성 · 2026-09-29 · `scripts/audit-framework.cjs` · 매 세션 재실행
+> 생성 · 2026-10-04 · `scripts/audit-framework.cjs` · 매 세션 재실행
 >
 > **로드맵 · `docs/FRAMEWORK_ROADMAP.md` Phase 1 (인벤토리)**
 
@@ -8,9 +8,9 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 1100 |
+| 스캔 파일 | 1123 |
 | 위반 파일 | 98 |
-| 클린 파일 | 1002 (91%) |
+| 클린 파일 | 1025 (91%) |
 | 총 위반 개수 | 527 |
 
 ## 🚨 규칙별 위반 현황
@@ -32,7 +32,7 @@
 | 4 | `server/ocr/engines/ppuPaddle.ts` | 729 | 71 | no-raw-console-server(33) · no-any-server(5) |
 | 5 | `server/routes/ocr/parseRouter.ts` | 186 | 33 | no-raw-console-server(13) · no-any-server(7) |
 | 6 | `server/ocr/pipeline/stages/05-normalize.ts` | 248 | 25 | no-raw-console-server(12) · no-any-server(1) |
-| 7 | `server/routes/display/requests.ts` | 1588 | 20 | no-any-server(20) |
+| 7 | `server/routes/display/requests.ts` | 1600 | 20 | no-any-server(20) |
 | 8 | `server/ocr/pipeline/stages/09-totals.ts` | 147 | 18 | no-raw-console-server(9) |
 | 9 | `server/ocr/tables/slanetTable.ts` | 278 | 16 | no-raw-console-server(5) · no-any-server(6) |
 | 10 | `server/ocr/tables/tableLayout.ts` | 171 | 16 | no-raw-console-server(7) · no-any-server(2) |
@@ -69,7 +69,7 @@
 | `server/ocr/engines/ppuPaddle.ts` | 729 | 71 |
 | `server/routes/ocr/parseRouter.ts` | 186 | 33 |
 | `server/ocr/pipeline/stages/05-normalize.ts` | 248 | 25 |
-| `server/routes/display/requests.ts` | 1588 | 20 |
+| `server/routes/display/requests.ts` | 1600 | 20 |
 | `server/ocr/pipeline/stages/09-totals.ts` | 147 | 18 |
 | `server/ocr/tables/slanetTable.ts` | 278 | 16 |
 | `server/ocr/tables/tableLayout.ts` | 171 | 16 |
@@ -93,7 +93,7 @@
 | `server/routes/purchase/supplierPayments/balance.ts` | 502 | 6 |
 | `server/routes/purchase/supplierPayments/purchaseDetail.ts` | 170 | 6 |
 | `server/routes/purchase/vat.ts` | 553 | 6 |
-| `server/routes/stock/stockManage/topSales.ts` | 764 | 6 |
+| `server/routes/stock/stockManage/topSales.ts` | 771 | 6 |
 | `server/lib/auditLogger.ts` | 79 | 5 |
 | `server/routes/display/zoneDefs.ts` | 173 | 5 |
 | `server/routes/ocr/diagRouter.ts` | 54 | 5 |

@@ -42,12 +42,12 @@ export async function applyInitialShelfPositionsForCodes(
   if (uniqueCodes.length === 0) return { inserted: 0, updated: 0, skipped: 0, failed: 0, ms: 0 };
 
   // 1. products 조회 · location · category_code · sale_status
-  const products: Array<{ product_code: string; product_name: string | null; location: string | null; display_location: string | null; category_code: string | null; sale_status: string | null }> = [];
+  const products: Array<{ product_code: string; product_name: string | null; display_location: string | null; category_code: string | null; sale_status: string | null }> = [];
   for (let i = 0; i < uniqueCodes.length; i += chunkSize) {
     const chunk = uniqueCodes.slice(i, i + chunkSize);
     const { data, error } = await supabase
       .from("products")
-      .select("product_code, product_name, location, display_location, category_code, sale_status")
+      .select("product_code, product_name, display_location, category_code, sale_status")
       .in("product_code", chunk);
     if (error) {
       logger.warn(`[applyShelfPositions] products 조회 실패: ${error.message}`);
@@ -88,7 +88,7 @@ export async function applyInitialShelfPositionsForCodes(
     const code = String(p.product_code ?? "").trim();
     if (!code) { skipped++; continue; }
     if (onlyActive && p.sale_status && p.sale_status !== "판매중") { skipped++; continue; }
-    const loc = p.location ?? p.display_location ?? null;
+    const loc = p.display_location ?? null;
     if (!loc || !String(loc).trim()) { skipped++; continue; }
 
     const initial = buildInitialShelfPositions(loc, p.category_code);

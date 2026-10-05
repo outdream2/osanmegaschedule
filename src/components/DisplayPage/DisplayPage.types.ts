@@ -4,12 +4,13 @@ import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
 
 // ─── DisplayPage 서브탭 key ─────────────────────────────────────────────
+// 2026-10-05 · 사용자 지시 · "product" (상품) 서브탭 제거 · 3개 이너탭 (상품정보·상품입고·실재고확인) 매입 아래로 재이관
 export type DpSubTabKey =
-  | "product"         // 2026-08-29 · 사용자 지시 · 매입에서 이동 · 3개 이너 탭 (실재고입력·상품입고·상품정보)
   | "purchase-order"
   | "purchase"
   | "payment"
   | "statistics"
+  | "revenue"         // 2026-10-05 · 사용자 지시 · 매장 아래 매출 페이지 (ERP sales 기반 신규)
   | "return"          // 2026-08-25 · 사용자 지시 · 반품 (신규)
   | "stock-arrivals"
   | "store"

@@ -11,6 +11,20 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { existsSync, readFileSync } from "fs";
 import { resolve } from "path";
 
+// 2026-10-04 · Electron main 환경 전역 WebSocket stub
+//   · @supabase/supabase-js v2 createClient 가 Realtime 생성 시 전역 WebSocket 참조 요구
+//   · ERP sync 는 REST 전용 (SELECT/INSERT/UPDATE) · Realtime subscribe 없음
+//   · stub 은 subscribe 시도 시만 throw · 평시 쿼리는 영향 X
+//   · ws package 추가 아님 · 전역 polyfill 만 (사용자 지시 준수)
+if (typeof (globalThis as { WebSocket?: unknown }).WebSocket === "undefined") {
+  class WebSocketStub {
+    constructor() {
+      throw new Error("ERP sync REST only · Realtime subscribe 미사용");
+    }
+  }
+  (globalThis as { WebSocket?: unknown }).WebSocket = WebSocketStub;
+}
+
 let cachedClient: SupabaseClient | null = null;
 
 /** 간단 .env 파서 (dotenv 패키지 없이) · iregenSoap.ts 패턴 재사용 */

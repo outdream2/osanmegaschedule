@@ -183,17 +183,44 @@ export async function queryPurchaseDetails(opts: PdQueryOptions): Promise<PdRow[
     return { data: merged, relationMissing: false, vatColMissing };
   };
 
-  // 조회 실행: supplier 필터 있으면 name+code 병행 · 없으면 전체
+  // 2026-10-05 · 사용자 지시 · supplier_name 문자열 매칭 → supplier_code 기반 매칭 전환
+  //   · 1 supplier_code · 2+ name variant 21건 (녹십자/대웅제약/종근당 등) · name eq 로는 variant 못 찾음
+  //   · fuzzy matching 금지 · exact supplier_code IN 매칭만 사용
+  //   · DB 데이터 수정 금지 · ERP CorpNameView 원문 보존
+  //   · supplier_code NULL 레거시 row 는 name exact fallback
   const results: PdInternalRow[] = [];
   if (supplierFilter) {
-    const r1 = await fetchByFilter(q => q.eq("supplier_name", supplierFilter));
-    if (r1.relationMissing) return [];
-    results.push(...r1.data);
-    if (supplierCode) {
-      const r2 = await fetchByFilter(q => q.eq("supplier_code", supplierCode));
-      results.push(...r2.data);
+    // Step 1 · name 또는 vendors.note 로 1차 조회해서 supplier_code 집합 수집
+    const codeSet = new Set<string>();
+    const r0name = await fetchByFilter(q => q.eq("supplier_name", supplierFilter));
+    if (r0name.relationMissing) return [];
+    for (const row of r0name.data) {
+      const c = String(row.supplier_code ?? "").trim();
+      if (c) codeSet.add(c);
     }
-    // product_code fallback · supplier 필터 대응
+    // vendors.note (code → name) 역방향 추가
+    for (const [code, name] of vendorCodeMap.entries()) {
+      if (name === supplierFilter) codeSet.add(code);
+    }
+    // 호출자가 code 를 직접 넘긴 경우 (숫자 1~5자리) 포함
+    if (/^\d{1,5}$/.test(supplierFilter)) codeSet.add(supplierFilter);
+    if (supplierCode) codeSet.add(supplierCode);
+
+    // Step 2 · 수집한 code set 전체로 조회 (name variant 전부 포함)
+    if (codeSet.size > 0) {
+      const codes = [...codeSet];
+      const CHUNK = 100;
+      for (let i = 0; i < codes.length; i += CHUNK) {
+        const slice = codes.slice(i, i + CHUNK);
+        const r = await fetchByFilter(q => q.in("supplier_code", slice));
+        results.push(...r.data);
+      }
+    }
+
+    // Step 3 · supplier_code NULL 레거시 row 는 name exact fallback (code 없으면 매칭 불가)
+    results.push(...r0name.data.filter(r => !r.supplier_code));
+
+    // Step 4 · product_code fallback (products.supplier → 매입 row)
     const productCodesForSupplier: string[] = [];
     for (const [pc, sup] of productSupplierMap.entries()) {
       if (sup === supplierFilter) productCodesForSupplier.push(pc);
@@ -219,8 +246,10 @@ export async function queryPurchaseDetails(opts: PdQueryOptions): Promise<PdRow[
     if (Number.isFinite(id)) seen.add(id);
     const supplier = resolveSupplier(r, vendorCodeMap, productSupplierMap);
     if (!supplier) continue;
-    // supplier 필터 있으면 · 해결된 이름과 일치해야 함
-    if (supplierFilter && supplier !== supplierFilter) continue;
+    // 2026-10-05 · 공급사 code 기반 매칭 전환 (사용자 지시)
+    //   · 기존: `supplier !== supplierFilter` → "(주)녹십자" ≠ "녹십자" variant 깨짐
+    //   · 현재: Step 1~4 에서 code set 매칭된 row 만 담김 · name 비교 불필요
+    //   · ERP CorpNameView 원문 보존 · DB 수정 없음
     const date = r.purchase_date ? String(r.purchase_date).slice(0, 10) : "";
     if (!date) continue;
     rows.push({

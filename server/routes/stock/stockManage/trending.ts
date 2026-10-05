@@ -39,11 +39,12 @@ router.get("/api/stock-manage/trending", asyncHandler(async (req, res) => {
     const PAGE = 1000;
     let from = 0;
     while (true) {
+      // 2026-10-04 · schema rename · snapshot_date→period_end · sale_qty→sale_stock
       const { data, error } = await supabase
         .from("stock_history")
-        .select("product_code, product_name, supplier_name, snapshot_date, sale_qty")
-        .gte("snapshot_date", scanFromStr)
-        .lte("snapshot_date", todayStr)
+        .select("product_code, product_name, supplier_name, period_end, sale_stock")
+        .gte("period_end", scanFromStr)
+        .lte("period_end", todayStr)
         .range(from, from + PAGE - 1);
       if (error) {
         if (/relation|does not exist/i.test(error.message)) return res.json({ rows: [] });
@@ -51,11 +52,11 @@ router.get("/api/stock-manage/trending", asyncHandler(async (req, res) => {
       }
       if (!data || data.length === 0) break;
       for (const r of data) {
-        const code = String(r.product_code ?? "").trim();
+        const code = String((r as any).product_code ?? "").trim();
         if (!code) continue;
-        const q = Number(r.sale_qty ?? 0) || 0;
+        const q = Number((r as any).sale_stock ?? 0) || 0;
         if (q === 0) continue;
-        const snap = String(r.snapshot_date ?? "");
+        const snap = String((r as any).period_end ?? "");
         const cur = salesMap.get(code) ?? {
           recent: 0, prior: 0,
           name: String(r.product_name ?? code),
@@ -173,11 +174,12 @@ router.get("/api/stock-manage/trending-period", asyncHandler(async (req, res) =>
     const PAGE = 1000;
     let fromRow = 0;
     while (true) {
+      // 2026-10-04 · schema rename · snapshot_date→period_end · sale_qty→sale_stock
       const { data, error } = await supabase
         .from("stock_history")
-        .select("product_code, product_name, supplier_name, snapshot_date, sale_qty")
-        .gte("snapshot_date", priorFrom)
-        .lte("snapshot_date", to)
+        .select("product_code, product_name, supplier_name, period_end, sale_stock")
+        .gte("period_end", priorFrom)
+        .lte("period_end", to)
         .range(fromRow, fromRow + PAGE - 1);
       if (error) {
         if (/relation|does not exist/i.test(error.message)) return res.json({ rows: [] });
@@ -185,11 +187,11 @@ router.get("/api/stock-manage/trending-period", asyncHandler(async (req, res) =>
       }
       if (!data || data.length === 0) break;
       for (const r of data) {
-        const code = String(r.product_code ?? "").trim();
+        const code = String((r as any).product_code ?? "").trim();
         if (!code) continue;
-        const q = Number(r.sale_qty ?? 0) || 0;
+        const q = Number((r as any).sale_stock ?? 0) || 0;
         if (q === 0) continue;
-        const snap = String(r.snapshot_date ?? "");
+        const snap = String((r as any).period_end ?? "");
         const cur = salesMap.get(code) ?? {
           recent: 0, prior: 0,
           name: String(r.product_name ?? code),

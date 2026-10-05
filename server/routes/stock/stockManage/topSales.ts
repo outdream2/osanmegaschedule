@@ -26,20 +26,32 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
   const monthsParam = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));
   const seasonParam = String(req.query.season ?? "").trim().toLowerCase();
   const seasonMonths = await resolveSeasonMonths(seasonParam);
+  // 2026-10-05 · 사용자 지시 · months_list=YM1,YM2 비연속 월 멀티 선택 지원
+  //   · 각 YM 은 "YYYY-MM" · 선택된 월만 포함 · 중간 월 자동 포함 X
+  //   · season/months 보다 우선 (양립 X · 하나만 사용)
+  const monthsListParam = String(req.query.months_list ?? "").trim();
+  const monthsListSet = new Set<string>(
+    monthsListParam
+      ? monthsListParam.split(",").map((s) => s.trim()).filter((s) => /^\d{4}-\d{2}$/.test(s))
+      : [],
+  );
   // 2026-07-29 · Phase 2 · Lazy Loading
   const skipPurchase = String(req.query.skip_purchase ?? "").trim() === "1";
 
   {
-    // ── season 지정 시: 년도 무관 · 해당 월들의 전 데이터 aggregation ──
-    if (seasonMonths) {
+    // ── season 또는 months_list 지정 시: 월 필터 aggregation ──
+    //   · season: 년도 무관 · 월 번호 매칭 (1~12)
+    //   · months_list: 년도 포함 · YM 매칭 (비연속 멀티 월 지원 · 2026-10-05 사용자 지시)
+    if (seasonMonths || monthsListSet.size > 0) {
       const rawRows: any[] = [];
       const PAGE = 1000;
       let from = 0;
       while (true) {
+        // 2026-10-04 · schema rename · 신규 column 직접 사용 (프론트 StockFlowRow 타입과 일치)
         let q = supabase
           .from("stock_history")
-          .select("snapshot_date, product_code, product_name, supplier_name, supplier_code, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, closing_stock, total_amount")
-          .order("snapshot_date", { ascending: true });
+          .select("period_end, product_code, product_name, supplier_name, supplier_code, spec, prv_stock, buy_stock, sale_stock, product_bad_stock, closing_stock, total_amount")
+          .order("period_end", { ascending: true });
         if (supplierFilter)     q = q.eq("supplier_name", supplierFilter);
         if (supplierCodeFilter) q = q.eq("supplier_code", supplierCodeFilter);
         const { data, error } = await q.range(from, from + PAGE - 1);
@@ -48,7 +60,18 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           throw new HttpError(500, error.message, "DB_ERROR");
         }
         if (!data || data.length === 0) break;
-        for (const r of data) if (inSeasonMonths(String(r.snapshot_date ?? ""), seasonMonths)) rawRows.push(r);
+        for (const r of data) {
+          const periodEnd = String((r as any).period_end ?? "");
+          let match: boolean;
+          if (seasonMonths) {
+            match = inSeasonMonths(periodEnd, seasonMonths);
+          } else {
+            // months_list 모드 · period_end 의 YYYY-MM 매칭 (비연속 지원)
+            const ymMatch = /^(\d{4}-\d{2})/.exec(periodEnd)?.[1];
+            match = ymMatch ? monthsListSet.has(ymMatch) : false;
+          }
+          if (match) rawRows.push(r);
+        }
         if (data.length < PAGE) break;
         from += PAGE;
       }
@@ -64,7 +87,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           const chunk = codesRaw.slice(i, i + CHUNK);
           const { data: page } = await supabase
             .from("products")
-            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, min_order, hidden, location, display_location, sale_status")
+            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, min_order, hidden, display_location, sale_status")
             .in("product_code", chunk);
           for (const p of page ?? []) {
             const code = String(p.product_code ?? "").trim();
@@ -76,65 +99,67 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               purchase_price: Number(p.purchase_price ?? 0) || 0,
               current_stock:  Number(p.current_stock  ?? 0) || 0,
               min_order:      Number(p.min_order      ?? 0) || 0,
-              location:  (String(p.location ?? p.display_location ?? "").trim() || null),
+              // 2026-10-04 · schema fix · products.location column 없음 · display_location 만
+              location:  (String(p.display_location ?? "").trim() || null),
               sale_status: (String(p.sale_status ?? "").trim() || null),
             });
           }
         }
       } catch { /* silent */ }
 
+      // 2026-10-04 · schema rename · 신규 field 명 사용 (프론트 StockFlowRow 타입과 일치)
       const byCode = new Map<string, any>();
       let latestSnapshot = "";
       const snapshotSet = new Set<string>();
       for (const r of rawRows) {
-        const code = String(r.product_code ?? "").trim();
+        const code = String((r as any).product_code ?? "").trim();
         if (!code || hiddenSet.has(code)) continue;
-        const snap = String(r.snapshot_date ?? "");
+        const snap = String((r as any).period_end ?? "");
         snapshotSet.add(snap);
         if (snap > latestSnapshot) latestSnapshot = snap;
         if (!byCode.has(code)) {
           const prod = productMap.get(code);
           byCode.set(code, {
-            product_code:  code,
-            product_name:  String(r.product_name ?? code),
-            supplier:      r.supplier_name ?? null,
-            spec:          r.spec ?? null,
-            opening_stock: Number(r.opening_stock ?? 0) || 0,
-            purchase_qty:  0,
-            sale_qty:      0,
-            disposal_qty:  0,
-            closing_stock: Number(r.closing_stock ?? 0) || 0,
-            total_amount:  0,
-            first_snap:    snap,
-            last_snap:     snap,
-            optimal_stock: prod?.optimal_stock ?? 0,
-            sale_price:    prod?.sale_price ?? 0,
-            purchase_price:prod?.purchase_price ?? 0,
-            current_stock: prod?.current_stock ?? 0,
+            product_code:    code,
+            product_name:    String((r as any).product_name ?? code),
+            supplier:        (r as any).supplier_name ?? null,
+            spec:            (r as any).spec ?? null,
+            prv_stock:       Number((r as any).prv_stock ?? 0) || 0,
+            buy_stock:       0,
+            sale_stock:      0,
+            product_bad_stock: 0,
+            closing_stock:   Number((r as any).closing_stock ?? 0) || 0,
+            total_amount:    0,
+            first_snap:      snap,
+            last_snap:       snap,
+            optimal_stock:   prod?.optimal_stock ?? 0,
+            sale_price:      prod?.sale_price ?? 0,
+            purchase_price:  prod?.purchase_price ?? 0,
+            current_stock:   prod?.current_stock ?? 0,
             last_purchase_date:  null as string | null,
             first_purchase_date: null as string | null,
-            purchase_count: 0,
-            min_order:     prod?.min_order ?? 0,
-            location:      prod?.location ?? null,
+            purchase_count:  0,
+            min_order:       prod?.min_order ?? 0,
+            location:        prod?.location ?? null,
             // 2026-09-08 · CRITICAL-1 · 판매대시보드 판매중 필터 정상화
-            sale_status:   prod?.sale_status ?? null,
+            sale_status:     prod?.sale_status ?? null,
           });
         }
         const agg = byCode.get(code)!;
         const prodSp = productMap.get(code);
-        const sqty = Number(r.sale_qty ?? 0) || 0;
-        agg.purchase_qty += Number(r.purchase_qty ?? 0) || 0;
-        agg.sale_qty     += sqty;
-        agg.disposal_qty += Number(r.disposal_qty ?? 0) || 0;
-        // 2026-09-10 · 사용자 지시 · 판매액 = sale_qty × sale_price (xlsx total_amount 사용 금지)
+        const sqty = Number((r as any).sale_stock ?? 0) || 0;
+        agg.buy_stock         += Number((r as any).buy_stock ?? 0) || 0;
+        agg.sale_stock        += sqty;
+        agg.product_bad_stock += Number((r as any).product_bad_stock ?? 0) || 0;
+        // 2026-09-10 · 사용자 지시 · 판매액 = sale_stock × sale_price (xlsx total_amount 사용 금지)
         agg.total_amount += sqty * (Number(prodSp?.sale_price ?? 0) || 0);
         if (snap < agg.first_snap) {
           agg.first_snap = snap;
-          agg.opening_stock = Number(r.opening_stock ?? 0) || 0;
+          agg.prv_stock = Number((r as any).prv_stock ?? 0) || 0;
         }
         if (snap > agg.last_snap) {
           agg.last_snap = snap;
-          agg.closing_stock = Number(r.closing_stock ?? 0) || 0;
+          agg.closing_stock = Number((r as any).closing_stock ?? 0) || 0;
         }
         // 2026-07-29 · 매입일 stock_history fallback 완전 제거 · 아래 purchase_details 조인만 신뢰
       }
@@ -193,13 +218,14 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
 
       const aggRows = Array.from(byCode.values()).map(({ first_snap: _fs, last_snap: _ls, ...rest }) => rest);
       const sign = dir === "asc" ? 1 : -1;
+      // 2026-10-04 · schema rename · sort key → 신규 field 이름
       const sorted = aggRows.sort((a, b) => {
         switch (sort) {
-          case "purchase": return sign * (a.purchase_qty  - b.purchase_qty);
+          case "purchase": return sign * (a.buy_stock     - b.buy_stock);
           case "amount":   return sign * (a.sale_price    - b.sale_price);
           case "closing":  return sign * (a.closing_stock - b.closing_stock);
           case "sale":
-          default:         return sign * (a.sale_qty      - b.sale_qty);
+          default:         return sign * (a.sale_stock    - b.sale_stock);
         }
       });
       const datesArr = Array.from(snapshotSet).sort((a, b) => b.localeCompare(a));
@@ -232,11 +258,12 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       const PAGE = 1000;
       let from = 0;
       while (true) {
+        // 2026-10-04 · schema rename · 신규 column 직접 사용 (프론트 StockFlowRow 타입과 일치)
         let q = supabase
           .from("stock_history")
-          .select("snapshot_date, product_code, product_name, supplier_name, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, closing_stock, total_amount")
-          .gte("snapshot_date", cutoffStr)
-          .order("snapshot_date", { ascending: true });
+          .select("period_end, product_code, product_name, supplier_name, spec, prv_stock, buy_stock, sale_stock, product_bad_stock, closing_stock, total_amount")
+          .gte("period_end", cutoffStr)
+          .order("period_end", { ascending: true });
         if (supplierFilter)     q = q.eq("supplier_name", supplierFilter);
         if (supplierCodeFilter) q = q.eq("supplier_code", supplierCodeFilter);
         const { data, error } = await q.range(from, from + PAGE - 1);
@@ -260,7 +287,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         while (true) {
           const { data: page } = await supabase
             .from("products")
-            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, location, display_location, sale_status")
+            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, display_location, sale_status")
             .range(opFrom, opFrom + OP_PAGE - 1);
           if (!page || page.length === 0) break;
           for (const p of page) {
@@ -274,7 +301,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
               current_stock:  Number(p.current_stock  ?? 0) || 0,
               last_purchase_date: p.last_purchase_date ?? null,
               min_order:      Number(p.min_order      ?? 0) || 0,
-              location:  (String(p.location ?? p.display_location ?? "").trim() || null),
+              // 2026-10-04 · schema fix · products.location column 없음 · display_location 만
+              location:  (String(p.display_location ?? "").trim() || null),
               sale_status: (String(p.sale_status ?? "").trim() || null),
             });
           }
@@ -283,57 +311,58 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         }
       } catch { /* silent */ }
 
+      // 2026-10-04 · schema rename · 신규 field 명 사용 (프론트 StockFlowRow 타입과 일치)
       const byCode = new Map<string, any>();
       let latestSnapshot = "";
       const snapshotSet = new Set<string>();
       for (const r of rawRows) {
-        const code = String(r.product_code ?? "").trim();
+        const code = String((r as any).product_code ?? "").trim();
         if (!code || hiddenSet.has(code)) continue;
-        const snap = String(r.snapshot_date ?? "");
+        const snap = String((r as any).period_end ?? "");
         snapshotSet.add(snap);
         if (snap > latestSnapshot) latestSnapshot = snap;
         if (!byCode.has(code)) {
           byCode.set(code, {
-            product_code:  code,
-            product_name:  String(r.product_name ?? code),
-            supplier:      r.supplier_name ?? null,
-            spec:          r.spec ?? null,
-            opening_stock: Number(r.opening_stock ?? 0) || 0,
-            purchase_qty:  0,
-            sale_qty:      0,
-            disposal_qty:  0,
-            closing_stock: Number(r.closing_stock ?? 0) || 0,
-            total_amount:  0,
-            first_snap:    snap,
-            last_snap:     snap,
-            optimal_stock: productMap.get(code)?.optimal_stock ?? 0,
-            sale_price:    productMap.get(code)?.sale_price    ?? 0,
-            purchase_price:productMap.get(code)?.purchase_price ?? 0,
-            current_stock: productMap.get(code)?.current_stock ?? 0,
+            product_code:    code,
+            product_name:    String((r as any).product_name ?? code),
+            supplier:        (r as any).supplier_name ?? null,
+            spec:            (r as any).spec ?? null,
+            prv_stock:       Number((r as any).prv_stock ?? 0) || 0,
+            buy_stock:       0,
+            sale_stock:      0,
+            product_bad_stock: 0,
+            closing_stock:   Number((r as any).closing_stock ?? 0) || 0,
+            total_amount:    0,
+            first_snap:      snap,
+            last_snap:       snap,
+            optimal_stock:   productMap.get(code)?.optimal_stock ?? 0,
+            sale_price:      productMap.get(code)?.sale_price    ?? 0,
+            purchase_price:  productMap.get(code)?.purchase_price ?? 0,
+            current_stock:   productMap.get(code)?.current_stock ?? 0,
             last_purchase_date:  null as string | null,
-            min_order:     productMap.get(code)?.min_order ?? 0,
-            purchase_count: 0,
+            min_order:       productMap.get(code)?.min_order ?? 0,
+            purchase_count:  0,
             first_purchase_date: null as string | null,
-            location:  productMap.get(code)?.location ?? null,
+            location:        productMap.get(code)?.location ?? null,
             // 2026-09-08 · CRITICAL-1 · 판매대시보드 판매중 필터 정상화
-            sale_status: productMap.get(code)?.sale_status ?? null,
+            sale_status:     productMap.get(code)?.sale_status ?? null,
           });
         }
         const agg = byCode.get(code)!;
         const prodSp = productMap.get(code);
-        const sqty = Number(r.sale_qty ?? 0) || 0;
-        agg.purchase_qty += Number(r.purchase_qty ?? 0) || 0;
-        agg.sale_qty     += sqty;
-        agg.disposal_qty += Number(r.disposal_qty ?? 0) || 0;
-        // 2026-09-10 · 사용자 지시 · 판매액 = sale_qty × sale_price (xlsx total_amount 사용 금지)
+        const sqty = Number((r as any).sale_stock ?? 0) || 0;
+        agg.buy_stock         += Number((r as any).buy_stock ?? 0) || 0;
+        agg.sale_stock        += sqty;
+        agg.product_bad_stock += Number((r as any).product_bad_stock ?? 0) || 0;
+        // 2026-09-10 · 사용자 지시 · 판매액 = sale_stock × sale_price (xlsx total_amount 사용 금지)
         agg.total_amount += sqty * (Number(prodSp?.sale_price ?? 0) || 0);
         if (snap < agg.first_snap) {
           agg.first_snap = snap;
-          agg.opening_stock = Number(r.opening_stock ?? 0) || 0;
+          agg.prv_stock = Number((r as any).prv_stock ?? 0) || 0;
         }
         if (snap > agg.last_snap) {
           agg.last_snap = snap;
-          agg.closing_stock = Number(r.closing_stock ?? 0) || 0;
+          agg.closing_stock = Number((r as any).closing_stock ?? 0) || 0;
         }
       }
       // 2026-07-28 · purchase_details 조인
@@ -392,13 +421,14 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       // 2026-07-28 · 회전율 = 최근매입일 ~ 그 전매입일 사이 판매량
       // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · raw total_amount (xlsx 원본 · 78.6% 불일치) 제거
       //   · 판매액 = sale_qty × sale_price (products SSOT · 대원칙 #3)
+      // 2026-10-04 · schema rename · sale_qty→sale_stock · snapshot_date→period_end
       const salesByCodeByDate = new Map<string, Map<string, { qty: number; amount: number }>>();
       for (const r of rawRows) {
-        const code = String(r.product_code ?? "").trim();
+        const code = String((r as any).product_code ?? "").trim();
         if (!code) continue;
-        const snap = String(r.snapshot_date ?? "");
+        const snap = String((r as any).period_end ?? "");
         if (!snap) continue;
-        const q = Number(r.sale_qty ?? 0) || 0;
+        const q = Number((r as any).sale_stock ?? 0) || 0;
         const sp = Number(productMap.get(code)?.sale_price ?? 0) || 0;
         const a = q * sp;
         if (q <= 0 && a <= 0) continue;
@@ -466,13 +496,14 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       }
       const aggRows = Array.from(byCode.values()).map(({ first_snap, last_snap, ...rest }) => rest);
       const sign = dir === "asc" ? 1 : -1;
+      // 2026-10-04 · schema rename · sort key → 신규 field 이름
       const sorted = aggRows.sort((a, b) => {
         switch (sort) {
-          case "purchase": return sign * (a.purchase_qty  - b.purchase_qty);
+          case "purchase": return sign * (a.buy_stock     - b.buy_stock);
           case "amount":   return sign * (a.sale_price    - b.sale_price);
           case "closing":  return sign * (a.closing_stock - b.closing_stock);
           case "sale":
-          default:         return sign * (a.sale_qty      - b.sale_qty);
+          default:         return sign * (a.sale_stock    - b.sale_stock);
         }
       });
       // 2026-07-28 · 3개월 재고회전율
@@ -480,8 +511,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       if (monthsParam === 3) {
         for (const agg of aggRows) {
           compute3mMap.set(agg.product_code, {
-            sale_qty_3m: agg.sale_qty,
-            opening_3m:  agg.opening_stock,
+            sale_qty_3m: agg.sale_stock,
+            opening_3m:  agg.prv_stock,
             closing_3m:  agg.closing_stock,
           });
         }
@@ -494,10 +525,11 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           const PAGE3 = 1000;
           let from3 = 0;
           while (true) {
+            // 2026-10-04 · schema rename · 신규 column 직접 사용
             let q3 = supabase.from("stock_history")
-              .select("snapshot_date, product_code, opening_stock, sale_qty, closing_stock")
-              .gte("snapshot_date", cutoff3Str)
-              .order("snapshot_date", { ascending: true });
+              .select("period_end, product_code, prv_stock, sale_stock, closing_stock")
+              .gte("period_end", cutoff3Str)
+              .order("period_end", { ascending: true });
             if (supplierFilter)     q3 = q3.eq("supplier_name", supplierFilter);
             if (supplierCodeFilter) q3 = q3.eq("supplier_code", supplierCodeFilter);
             const { data, error } = await q3.range(from3, from3 + PAGE3 - 1);
@@ -508,16 +540,16 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           }
           const by3 = new Map<string, { first_snap: string; last_snap: string; opening: number; closing: number; sale_qty: number }>();
           for (const r of rows3) {
-            const code = String(r.product_code ?? "").trim();
+            const code = String((r as any).product_code ?? "").trim();
             if (!code) continue;
-            const snap = String(r.snapshot_date ?? "");
+            const snap = String((r as any).period_end ?? "");
             if (!by3.has(code)) {
-              by3.set(code, { first_snap: snap, last_snap: snap, opening: Number(r.opening_stock ?? 0) || 0, closing: Number(r.closing_stock ?? 0) || 0, sale_qty: 0 });
+              by3.set(code, { first_snap: snap, last_snap: snap, opening: Number((r as any).prv_stock ?? 0) || 0, closing: Number((r as any).closing_stock ?? 0) || 0, sale_qty: 0 });
             }
             const agg3 = by3.get(code)!;
-            agg3.sale_qty += Number(r.sale_qty ?? 0) || 0;
-            if (snap < agg3.first_snap) { agg3.first_snap = snap; agg3.opening = Number(r.opening_stock ?? 0) || 0; }
-            if (snap > agg3.last_snap)  { agg3.last_snap  = snap; agg3.closing = Number(r.closing_stock ?? 0) || 0; }
+            agg3.sale_qty += Number((r as any).sale_stock ?? 0) || 0;
+            if (snap < agg3.first_snap) { agg3.first_snap = snap; agg3.opening = Number((r as any).prv_stock ?? 0) || 0; }
+            if (snap > agg3.last_snap)  { agg3.last_snap  = snap; agg3.closing = Number((r as any).closing_stock ?? 0) || 0; }
           }
           for (const [code, v] of by3) {
             compute3mMap.set(code, { sale_qty_3m: v.sale_qty, opening_3m: v.opening, closing_3m: v.closing });
@@ -556,21 +588,22 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       const dd = today.getDate();
       const currentPeriod: "early" | "mid" | "late" =
         dd <= 10 ? "early" : dd <= 20 ? "mid" : "late";
+      // 2026-10-04 · schema rename · snapshot_date → period_end
       const { data: matchPeriod } = await supabase
         .from("stock_history")
-        .select("snapshot_date")
+        .select("period_end")
         .eq("period_type", currentPeriod)
-        .order("snapshot_date", { ascending: false })
+        .order("period_end", { ascending: false })
         .limit(1);
-      if (matchPeriod?.[0]?.snapshot_date) {
-        targetDate = matchPeriod[0].snapshot_date;
+      if ((matchPeriod?.[0] as any)?.period_end) {
+        targetDate = (matchPeriod![0] as any).period_end;
       } else {
         const { data: latest } = await supabase
           .from("stock_history")
-          .select("snapshot_date")
-          .order("snapshot_date", { ascending: false })
+          .select("period_end")
+          .order("period_end", { ascending: false })
           .limit(1);
-        targetDate = latest?.[0]?.snapshot_date ?? "";
+        targetDate = (latest?.[0] as any)?.period_end ?? "";
       }
     }
     if (!targetDate) return res.json({ snapshot_date: null, dates: [], rows: [] });
@@ -578,15 +611,16 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
     let dates: string[] = [];
     let dateToPeriodMap = new Map<string, string>();
     try {
+      // 2026-10-04 · schema rename · 신규 column 직접 사용
       const { data: dRows } = await supabase
         .from("stock_history")
-        .select("snapshot_date, period_type")
-        .order("snapshot_date", { ascending: false })
+        .select("period_end, period_type")
+        .order("period_end", { ascending: false })
         .limit(1000);
       const set = new Set<string>();
       for (const d of dRows ?? []) {
-        const dt = d.snapshot_date;
-        const pt = d.period_type;
+        const dt = (d as any).period_end;
+        const pt = (d as any).period_type;
         if (!dt) continue;
         if (!set.has(dt)) { set.add(dt); if (pt) dateToPeriodMap.set(dt, pt); }
       }
@@ -598,19 +632,21 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
     const targetPeriodType = dateToPeriodMap.get(targetDate) ?? null;
 
     const data: any[] = [];
+    // 2026-10-04 · schema rename · DB sort column → 신규 이름 매핑
     const dbSortColumn: Record<string, string> = {
-      sale: "sale_qty",
-      purchase: "purchase_qty",
+      sale: "sale_stock",
+      purchase: "buy_stock",
       closing: "closing_stock",
     };
     const dbCol = dbSortColumn[sort];
     if (dbCol && !supplierFilter && !supplierCodeFilter) {
       const fetchLimit = Math.max(limit * 3, 300);
       try {
+        // 2026-10-04 · schema rename · 신규 column 직접 사용 (프론트 StockFlowRow 타입과 일치)
         const page = await fetchAllWithRange<any>(() => supabase
           .from("stock_history")
-          .select("product_code, product_name, supplier_code, supplier_name, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, internal_qty, adjustment_qty, closing_stock, total_amount")
-          .eq("snapshot_date", targetDate)
+          .select("product_code, product_name, supplier_code, supplier_name, spec, prv_stock, buy_stock, sale_stock, product_bad_stock, internal_qty, adjustment_qty, closing_stock, total_amount")
+          .eq("period_end", targetDate)
           .order(dbCol, { ascending: dir === "asc" }), fetchLimit);
         data.push(...page);
       } catch (err: any) {
@@ -621,10 +657,11 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       const PAGE = 1000;
       let from = 0;
       while (true) {
+        // 2026-10-04 · schema rename · 신규 column 직접 사용
         let q = supabase
           .from("stock_history")
-          .select("product_code, product_name, supplier_code, supplier_name, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, internal_qty, adjustment_qty, closing_stock, total_amount")
-          .eq("snapshot_date", targetDate);
+          .select("product_code, product_name, supplier_code, supplier_name, spec, prv_stock, buy_stock, sale_stock, product_bad_stock, internal_qty, adjustment_qty, closing_stock, total_amount")
+          .eq("period_end", targetDate);
         if (supplierCodeFilter) q = q.eq("supplier_code", supplierCodeFilter);
         else if (supplierFilter) q = q.eq("supplier_name", supplierFilter);
         const { data: page, error } = await q.range(from, from + PAGE - 1);
@@ -650,7 +687,7 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         const chunk = codesInResult.slice(i, i + CHUNK);
         const { data: page } = await supabase
           .from("products")
-          .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, location, display_location, sale_status")
+          .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden, display_location, sale_status")
           .in("product_code", chunk);
         for (const p of page ?? []) {
           const code = String(p.product_code ?? "").trim();
@@ -663,7 +700,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             current_stock:  Number(p.current_stock  ?? 0) || 0,
             last_purchase_date: p.last_purchase_date ?? null,
             min_order:      Number(p.min_order      ?? 0) || 0,
-            location:  (String(p.location ?? p.display_location ?? "").trim() || null),
+            // 2026-10-04 · schema fix · products.location column 없음 · display_location 만
+            location:  (String(p.display_location ?? "").trim() || null),
             sale_status: (String(p.sale_status ?? "").trim() || null),
           });
         }
@@ -716,36 +754,37 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
     }
 
     // 2026-07-29 · 매입이력 필드는 무조건 purchase_details 만 사용
-    // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · total_amount 는 sale_qty × sale_price (파생) · raw 사용 금지
-    const rows = (data ?? []).filter(r => !hiddenSet.has(String(r.product_code ?? ""))).map(r => {
-      const prod = productMap.get(String(r.product_code ?? ""));
-      const purchaseInfo = purchaseInfoMap.get(String(r.product_code ?? ""));
-      const sqty = Number(r.sale_qty ?? 0) || 0;
+    // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · total_amount 는 sale_stock × sale_price (파생) · raw 사용 금지
+    // 2026-10-04 · schema rename · 신규 field 명 사용 (프론트 StockFlowRow 타입과 일치)
+    const rows = (data ?? []).filter(r => !hiddenSet.has(String((r as any).product_code ?? ""))).map(r => {
+      const prod = productMap.get(String((r as any).product_code ?? ""));
+      const purchaseInfo = purchaseInfoMap.get(String((r as any).product_code ?? ""));
+      const sqty = Number((r as any).sale_stock ?? 0) || 0;
       const salePriceFromProd = Number(prod?.sale_price ?? 0) || 0;
       return {
-        product_code:   String(r.product_code ?? ""),
-        product_name:   String(r.product_name ?? r.product_code ?? ""),
-        supplier:       r.supplier_name ?? null,
-        spec:           r.spec ?? null,
-        opening_stock:  Number(r.opening_stock  ?? 0) || 0,
-        purchase_qty:   Number(r.purchase_qty   ?? 0) || 0,
-        sale_qty:       sqty,
-        disposal_qty:   Number(r.disposal_qty   ?? 0) || 0,
-        internal_qty:   Number(r.internal_qty   ?? 0) || 0,
-        adjustment_qty: Number(r.adjustment_qty ?? 0) || 0,
-        closing_stock:  Number(r.closing_stock  ?? 0) || 0,
+        product_code:      String((r as any).product_code ?? ""),
+        product_name:      String((r as any).product_name ?? (r as any).product_code ?? ""),
+        supplier:          (r as any).supplier_name ?? null,
+        spec:              (r as any).spec ?? null,
+        prv_stock:         Number((r as any).prv_stock         ?? 0) || 0,
+        buy_stock:         Number((r as any).buy_stock         ?? 0) || 0,
+        sale_stock:        sqty,
+        product_bad_stock: Number((r as any).product_bad_stock ?? 0) || 0,
+        internal_qty:      Number((r as any).internal_qty      ?? 0) || 0,
+        adjustment_qty:    Number((r as any).adjustment_qty    ?? 0) || 0,
+        closing_stock:     Number((r as any).closing_stock     ?? 0) || 0,
         // 2026-10-01 · 사용자 대원칙 #3 · 판매액 = 수량 × 판매가 (xlsx raw total_amount 금지)
-        total_amount:   sqty * salePriceFromProd,
-        optimal_stock:  prod?.optimal_stock  ?? 0,
-        sale_price:     prod?.sale_price     ?? 0,
-        purchase_price: prod?.purchase_price ?? 0,
-        current_stock:  prod?.current_stock  ?? 0,
-        last_purchase_date:    purchaseInfo?.lastDate  ?? null,
-        purchase_last_amount:  purchaseInfo?.lastAmount  ?? 0,
-        purchase_total_qty:    purchaseInfo?.totalQty    ?? 0,
+        total_amount:      sqty * salePriceFromProd,
+        optimal_stock:     prod?.optimal_stock  ?? 0,
+        sale_price:        prod?.sale_price     ?? 0,
+        purchase_price:    prod?.purchase_price ?? 0,
+        current_stock:     prod?.current_stock  ?? 0,
+        last_purchase_date:    purchaseInfo?.lastDate   ?? null,
+        purchase_last_amount:  purchaseInfo?.lastAmount ?? 0,
+        purchase_total_qty:    purchaseInfo?.totalQty   ?? 0,
         purchase_total_amount: purchaseInfo?.totalAmount ?? 0,
-        purchase_count:        purchaseInfo?.count       ?? 0,
-        first_purchase_date:   purchaseInfo?.firstDate   ?? null,
+        purchase_count:        purchaseInfo?.count      ?? 0,
+        first_purchase_date:   purchaseInfo?.firstDate  ?? null,
         min_order: Number(prod?.min_order ?? 0) || 0,
         location: prod?.location ?? null,
         // 2026-09-08 · CRITICAL-1 · 판매대시보드 판매중 필터 정상화
@@ -753,13 +792,14 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       };
     });
     const sign = dir === "asc" ? 1 : -1;
+    // 2026-10-04 · schema rename · sort key → 신규 field 이름
     const sorted = rows.sort((a, b) => {
       switch (sort) {
-        case "purchase": return sign * (a.purchase_qty  - b.purchase_qty);
+        case "purchase": return sign * (a.buy_stock     - b.buy_stock);
         case "amount":   return sign * (a.sale_price    - b.sale_price);
         case "closing":  return sign * (a.closing_stock - b.closing_stock);
         case "sale":
-        default:         return sign * (a.sale_qty      - b.sale_qty);
+        default:         return sign * (a.sale_stock    - b.sale_stock);
       }
     });
     const payload = { snapshot_date: targetDate, period_type: targetPeriodType, dates, dates_with_period, rows: sorted.slice(0, limit) };

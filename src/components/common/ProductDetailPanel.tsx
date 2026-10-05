@@ -99,7 +99,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
   return (
     <Card variant="raw-sm" padding="sm" rounded="xl">
       {/* 2026-07-29 · 헤더 재정리 · 3영역으로 명확히 분리 */}
-      {/* 월평균 판매량 · stock_history.sale_qty 합계 / 월수 (사용자 요청) */}
+      {/* 월평균 판매량 · stock_history.sale_stock 합계 / 월수 (사용자 요청) */}
       {(() => { return null; })()}
       {/* 1행 · 제목 · 상품명 · 판매량 통계 · 화살표 */}
       {(() => {
@@ -107,16 +107,16 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
         //   서버는 항상 6개월 데이터 전송 (line 78 · months=6 hardcoded)
         //   → 데이터 실제 span 6개월 기준 avg 계산 · 사용자 조회기간(months)과 무관하게 일관된 값
         //   → 표시 라벨 · "월평균 판매 N개 (6개월 기준)" · 명확화
-        const totalSaleQty = rows.reduce((s, r) => s + (Number(r.sale_qty) || 0), 0);
+        const totalSaleQty = rows.reduce((s, r) => s + (Number(r.sale_stock) || 0), 0);
         const dataMonthSpan = season ? 12 : 6;  // fetched data span
         const avgMonthlySale = dataMonthSpan > 0 ? Math.round(totalSaleQty / dataMonthSpan) : 0;
-        // 최근 한달 (30일) 판매량 · rows 중 최근 30일 스냅샷 sale_qty 합계
+        // 최근 한달 (30일) 판매량 · rows 중 최근 30일 스냅샷 sale_stock 합계
         const now = new Date();
         const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
         const cutoffStr = cutoff.toISOString().slice(0, 10);
         const last30Sale = rows
-          .filter(r => (r.snapshot_date ?? r.period_start_date ?? "") >= cutoffStr)
-          .reduce((s, r) => s + (Number(r.sale_qty) || 0), 0);
+          .filter(r => (r.period_end ?? r.period_start ?? "") >= cutoffStr)
+          .reduce((s, r) => s + (Number(r.sale_stock) || 0), 0);
         return (
           <button
             type="button"
@@ -143,12 +143,12 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
             {!collapsed && (totalSaleQty > 0 || last30Sale > 0) && (
               <div className="flex items-center gap-3 flex-wrap pl-[24px] text-[14px] tabular-nums font-medium text-ink-soft">
                 {totalSaleQty > 0 && (
-                  <span title={`최근 ${dataMonthSpan}개월 sale_qty 합계 ${totalSaleQty.toLocaleString()} / ${dataMonthSpan}개월 = 월평균 ${avgMonthlySale}개`}>
+                  <span title={`최근 ${dataMonthSpan}개월 sale_stock 합계 ${totalSaleQty.toLocaleString()} / ${dataMonthSpan}개월 = 월평균 ${avgMonthlySale}개`}>
                     최근{dataMonthSpan}개월 월평균 <span className="font-bold text-rose-700 text-[15px]">{avgMonthlySale.toLocaleString()}</span>개
                   </span>
                 )}
                 {last30Sale > 0 && (
-                  <span title="최근 30일 판매량 (stock_history · snapshot_date >= 30일 전)">
+                  <span title="최근 30일 판매량 (stock_history · period_end >= 30일 전)">
                     최근 한달 판매 <span className="font-bold text-brand-deep text-[15px]">{last30Sale.toLocaleString()}</span>개
                   </span>
                 )}
@@ -207,10 +207,10 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           rows,
           season ? 400 : months * 30,
           (start, end, period_type): PeriodRow => ({
-            period_start_date: start,
-            snapshot_date: end,
+            period_start: start,
+            period_end: end,
             period_type,
-            opening_stock: 0, purchase_qty: 0, sale_qty: 0, disposal_qty: 0, closing_stock: 0,
+            prv_stock: 0, buy_stock: 0, sale_stock: 0, product_bad_stock: 0, closing_stock: 0,
           }),
         );
         // 2026-07-29 · x축 그룹 · month(월중) / 10day(초순·중순·하순)
@@ -220,7 +220,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
         const chartRows = season
           ? filled
           : (useMonthly ? aggregateToMonths(filled).slice(-months * 3) : filled.slice(-months * 3));
-        const hasDisposal = chartRows.some(r => (r.disposal_qty ?? 0) > 0);
+        const hasDisposal = chartRows.some(r => (r.product_bad_stock ?? 0) > 0);
         // 10day 라벨 · period_type "early|mid|late" → 초순/중순/하순
         const partLabel = (pt: string | null | undefined): string => {
           if (pt === "early" || pt === "초순") return "초순";
@@ -230,26 +230,26 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
         };
         const chartData = {
           labels: chartRows.map(r => {
-            if (season) return periodLabel(r.period_start_date, r.snapshot_date);
+            if (season) return periodLabel(r.period_start, r.period_end);
             if (useMonthly) {
-              const m = /^(\d{4})-(\d{2})/.exec(r.period_start_date);
-              return m ? `${Number(m[2])}월` : r.period_start_date;
+              const m = /^(\d{4})-(\d{2})/.exec(r.period_start);
+              return m ? `${Number(m[2])}월` : r.period_start;
             }
             // 10day 모드 · N월 초순/중순/하순
-            const m = /^(\d{4})-(\d{2})/.exec(r.period_start_date);
-            const monthLabel = m ? `${Number(m[2])}월` : r.period_start_date;
+            const m = /^(\d{4})-(\d{2})/.exec(r.period_start);
+            const monthLabel = m ? `${Number(m[2])}월` : r.period_start;
             const part = partLabel(r.period_type);
             return part ? `${monthLabel} ${part}` : monthLabel;
           }),
           series: [
-            { label: "매입",     color: "#10b981", kind: "bar"  as const, values: chartRows.map(r => Number(r.purchase_qty  ?? 0)), format: "count" as const },
+            { label: "매입",     color: "#10b981", kind: "bar"  as const, values: chartRows.map(r => Number(r.buy_stock  ?? 0)), format: "count" as const },
             // 2026-07-28 · 사용자 요청 · 판매 · 꺽은선 그래프 · 붉은색
-            { label: "판매",     color: "#dc2626", kind: "line" as const, values: chartRows.map(r => Number(r.sale_qty ?? 0)), format: "count" as const },
-            ...(hasDisposal ? [{ label: "폐기", color: "#f43f5e", kind: "bar" as const, values: chartRows.map(r => Number(r.disposal_qty ?? 0)), format: "count" as const }] : []),
+            { label: "판매",     color: "#dc2626", kind: "line" as const, values: chartRows.map(r => Number(r.sale_stock ?? 0)), format: "count" as const },
+            ...(hasDisposal ? [{ label: "폐기", color: "#f43f5e", kind: "bar" as const, values: chartRows.map(r => Number(r.product_bad_stock ?? 0)), format: "count" as const }] : []),
             // 2026-07-28 · 사용자 요청 · 시작재고 제거
             // 2026-07-29 · 종료재고 라인 제거 (사용자 요청)
             { label: "손실(참고)", color: "#f59e0b", kind: "line" as const,
-              values: chartRows.map(r => (Number(r.opening_stock ?? 0) - Number(r.sale_qty ?? 0)) - Number(r.closing_stock ?? 0)),
+              values: chartRows.map(r => (Number(r.prv_stock ?? 0) - Number(r.sale_stock ?? 0)) - Number(r.closing_stock ?? 0)),
               format: "count" as const },
           ],
         };

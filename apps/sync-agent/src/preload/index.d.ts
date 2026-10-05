@@ -95,6 +95,19 @@ interface SyncAgentApi {
   erpProductList(opts?: { pageSize?: number; maxPages?: number; concurrency?: number }): Promise<ErpQueryResult>;
   erpBuyStatus(opts?: { startDate?: string; endDate?: string }): Promise<ErpQueryResult>;
   erpSaleStatus(opts?: { startDate?: string; endDate?: string }): Promise<ErpQueryResult>;
+  productSyncRunCheck(): Promise<{ ok: boolean; result?: unknown; error?: string }>;
+  productSyncApplyWrite(opts: { allowWrite: boolean }): Promise<{ ok: boolean; result?: unknown; error?: string }>;
+  productSyncGetHistory(opts?: { limit?: number }): Promise<{ ok: boolean; history: Array<Record<string, unknown>> }>;
+  buySyncRunCheck(args: { erpRows: Record<string, unknown>[] }): Promise<{ ok: boolean; result?: unknown; error?: string }>;
+  buySyncApplyWrite(args: { erpRows: Record<string, unknown>[]; allowWrite: boolean }): Promise<{ ok: boolean; result?: unknown; error?: string }>;
+  stockHistorySyncRunCheck(args: { erpRows: Record<string, unknown>[]; metadata: { period_start: string; period_end: string } }): Promise<{ ok: boolean; result?: unknown; error?: string }>;
+  stockHistorySyncApplyWrite(args: { erpRows: Record<string, unknown>[]; metadata: { period_start: string; period_end: string }; allowWrite: boolean }): Promise<{ ok: boolean; result?: unknown; error?: string }>;
+  saleSyncRunCheck(args: { erpRows: Record<string, unknown>[] }): Promise<{ ok: boolean; result?: unknown; error?: string }>;
+  saleSyncApplyWrite(args: { erpRows: Record<string, unknown>[]; allowWrite: boolean }): Promise<{ ok: boolean; result?: unknown; error?: string }>;
+  syncHistoryGet(args: { dataset: "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS" | "SALE_STATUS"; limit?: number }): Promise<{ ok: boolean; history: Array<Record<string, unknown>> }>;
+  erpGetFetchHistory(args: { dataset: "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS" | "SALE_STATUS"; limit?: number }): Promise<{ ok: boolean; history: Array<Record<string, unknown>> }>;
+  erpGetHistoryIndex(args: { dataset: "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS" | "SALE_STATUS" }): Promise<{ ok: boolean; entries?: Array<Record<string, unknown>>; error?: string }>;
+  erpLoadHistorySnapshot(args: { dataset: "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS" | "SALE_STATUS"; snapshotId: string; limit?: number }): Promise<{ ok: boolean; meta?: Record<string, unknown>; rows?: Array<Record<string, unknown>>; total?: number; error?: string }>;
   onErpProductProgress(
     callback: (p: { page: number; rowsAccum: number; done?: boolean; totalPages?: number; totalRowsExpected?: number }) => void,
   ): () => void;

@@ -13,7 +13,7 @@ import topSalesRouter           from "./topSales";
 import lowStockRouter           from "./lowStock";
 import stockRawRouter           from "./stockRaw";
 import productHistoryRouter     from "./productHistory";
-import uploadStockRouter        from "./uploadStock";
+// 2026-10-04 · XLSX 재고 import 폐기 · uploadStock 제거
 import periodCoverageRouter     from "./periodCoverage";
 import purchaseInfoBatchRouter  from "./purchaseInfoBatch";
 import trendingRouter           from "./trending";
@@ -32,7 +32,7 @@ router.use(topSalesRouter);
 router.use(lowStockRouter);
 router.use(stockRawRouter);
 router.use(productHistoryRouter);
-router.use(uploadStockRouter);
+// 2026-10-04 · XLSX 재고 import 폐기 · uploadStockRouter 제거
 router.use(periodCoverageRouter);
 router.use(purchaseInfoBatchRouter);
 router.use(trendingRouter);

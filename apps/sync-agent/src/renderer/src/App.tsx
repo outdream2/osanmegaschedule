@@ -1,17 +1,28 @@
 // apps/sync-agent/src/renderer/src/App.tsx
 // 2026-09-15 · Phase 2 · 로그인 체크 → 3-탭 (대시보드 · 설정 · 로그)
 // 2026-09-21 · E-004 · window.api 부재 시 하얀 화면 방지 · guard + 사용자 안내
+// 2026-10-05 · 사용자 지시 · 2-레벨 탭 (상단 대시보드/설정/로그 + Dashboard 내부 sync/query/both)
+//   → 상단 1-레벨 통합 nav (⚡ 동기화 · 🔎 ERP 조회 · ⬌ 모두 보기 · ⚙ 설정 · 📋 로그)
 
 import React, { useEffect, useState, useCallback } from "react";
 import { Login } from "./screens/Login";
-import { Dashboard } from "./screens/Dashboard";
+import { ErpSyncSection } from "./screens/ErpSyncSection";
+import { ErpSection } from "./screens/ErpSection";
+import { SectionBoundary } from "./components/SectionBoundary";
 import { Settings } from "./screens/Settings";
 import { Logs } from "./screens/Logs";
 
-type Tab = "dashboard" | "settings" | "logs";
+type Tab = "sync" | "query" | "both" | "settings" | "logs";
+const TABS: Array<{ key: Tab; label: string; icon: string }> = [
+  { key: "sync",     label: "ERP → Supabase 동기화", icon: "⚡" },
+  { key: "query",    label: "Iregen ERP 조회",       icon: "🔎" },
+  { key: "both",     label: "모두 보기",             icon: "⬌" },
+  { key: "settings", label: "설정",                  icon: "⚙️" },
+  { key: "logs",     label: "로그",                  icon: "📋" },
+];
 
 export const App: React.FC = () => {
-  const [tab, setTab] = useState<Tab>("dashboard");
+  const [tab, setTab] = useState<Tab>("sync");
   const [appInfo, setAppInfo] = useState<{ version: string; name: string } | null>(null);
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null); // null = 로딩 중
   const [bootError, setBootError] = useState<string | null>(null);
@@ -43,7 +54,8 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (!window.api?.onNavigate) return;
     const unsub = window.api.onNavigate((page) => {
-      if (page === "settings" || page === "logs" || page === "dashboard") setTab(page);
+      if (page === "settings" || page === "logs") setTab(page);
+      else if (page === "dashboard") setTab("sync");
     });
     return unsub;
   }, []);
@@ -102,24 +114,44 @@ export const App: React.FC = () => {
         </button>
       </header>
 
-      <nav className="bg-white border-b border-zinc-200 px-6 flex gap-1">
-        {(["dashboard", "settings", "logs"] as const).map((t) => (
+      <nav className="bg-white border-b border-zinc-200 px-6 flex gap-1 overflow-x-auto">
+        {TABS.map((t) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-3 text-[15px] font-semibold border-b-2 transition ${
-              tab === t
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-4 py-3 text-[14px] font-semibold border-b-2 transition whitespace-nowrap flex items-center gap-1.5 ${
+              tab === t.key
                 ? "border-brand-deep text-brand-deep"
                 : "border-transparent text-zinc-500 hover:text-zinc-800"
             }`}
           >
-            {t === "dashboard" ? "대시보드" : t === "settings" ? "설정" : "로그"}
+            <span>{t.icon}</span>
+            <span>{t.label}</span>
           </button>
         ))}
       </nav>
 
       <main className="p-6 pb-20">
-        {tab === "dashboard" && <Dashboard />}
+        {tab === "sync" && (
+          <SectionBoundary name="ERP Sync">
+            <ErpSyncSection />
+          </SectionBoundary>
+        )}
+        {tab === "query" && (
+          <SectionBoundary name="Iregen ERP 조회">
+            <ErpSection />
+          </SectionBoundary>
+        )}
+        {tab === "both" && (
+          <div className="flex flex-col gap-2">
+            <SectionBoundary name="ERP Sync">
+              <ErpSyncSection />
+            </SectionBoundary>
+            <SectionBoundary name="Iregen ERP 조회">
+              <ErpSection />
+            </SectionBoundary>
+          </div>
+        )}
         {tab === "settings" && <Settings />}
         {tab === "logs" && <Logs />}
       </main>

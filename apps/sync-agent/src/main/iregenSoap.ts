@@ -1318,7 +1318,10 @@ function buildSaleStatusEnvelope(ctx: SaleStatusContext): string {
     `<DataColumns>SaleTotal,Margin,TotalStock</DataColumns>` +
     // 2026-10-04 · 사용자 지시 · 응답에 BarCode(ERP BarCode=우리 service product_code) 포함
     //   · 기본 샘플(RowArea=5 field)에 BarCode 추가 · 수량(TotalStock)은 DataColumns 로 이미 포함됨
-    `<RowArea>BuyerCorpNameView,ProductName,UnitCost,UnitSale,SaleDate,BarCode</RowArea>` +
+    // 2026-10-05 · Phase 1 · identity 후보 field 확장 (WSDL schema 확인된 field 만 · Idx 금지)
+    //   · PCode (products.pcode 1:1 연결) · BarCode (상품 식별 보조)
+    //   · Seq / GroupCode / ArrSeq (ERP native transaction identity 후보 · 응답 반환 여부 실측 대기)
+    `<RowArea>BuyerCorpNameView,ProductName,UnitCost,UnitSale,SaleDate,BarCode,PCode,Seq,GroupCode,ArrSeq</RowArea>` +
     `<CourseNum>0</CourseNum><MaxDiscount>0</MaxDiscount>` +
     `<TmsSeq>0</TmsSeq><TmsListSeq>0</TmsListSeq>` +
     `<LocationCode>0</LocationCode><PgCode>0</PgCode><StartPrice>0</StartPrice><EndPrice>0</EndPrice>` +

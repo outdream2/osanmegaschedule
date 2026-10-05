@@ -106,13 +106,14 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     topTab: { key: "display" },
     managerOnly: true,
     items: [
-      // 2026-08-29 · #193 · 사용자 지시 · 사이드바 3개 flat 롤백 · '상품' 서브탭 하나 · 매장 페이지 안 · 3개 이너 탭
-      //   · 매입에 있던 scan·productarrival·productinfo 3개 · '상품' 서브탭 아래로 그대로 이동
-      // 2026-09-10 · 사용자 지시 · 순서 · 상품 → 발주 → 매입 → 판매
-      { key: "display", label: "상품", icon: Package, color: "red", subTab: "product", managerOnly: true },
+      // 2026-10-05 · 사용자 지시 · "상품" 서브탭 제거 · 3개 이너탭 (상품정보·상품입고·실재고확인) 매입 아래로 재이관
+      //   · 사이드바 + 공통헤더 (DERIVED_TOP_TABS 자동 파생) 동시 반영
+      // 2026-09-10 · 사용자 지시 · 순서 · 발주 → 매입 → 판매
       { key: "display", label: "발주", icon: Truck, color: "red", subTab: "purchase-order", minLevel: 9 },
       { key: "display", label: "매입", icon: Package, color: "red", subTab: "purchase", minLevel: 9 },
       { key: "display", label: "판매", icon: ChartBar, color: "red", subTab: "statistics", minLevel: 9 },
+      // 2026-10-05 · 사용자 지시 · 매출 (ERP sales 기반 · sale_total/margin SSOT · 금액 중심)
+      { key: "display", label: "매출", icon: CurrencyKrw, color: "red", subTab: "revenue", minLevel: 9 },
       { key: "display", label: "결제", icon: CurrencyKrw, color: "red", subTab: "payment", minLevel: 9 },
       { key: "display", label: "반품", icon: ArrowLeftRight, color: "red", subTab: "return", minLevel: 9 },
       { key: "display", label: "매장진열", icon: Storefront, color: "red", subTab: "store", managerOnly: true },

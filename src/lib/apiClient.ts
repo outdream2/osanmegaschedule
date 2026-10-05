@@ -39,25 +39,45 @@ function fireSessionExpired(): void {
   try { window.dispatchEvent(new CustomEvent<null>(SESSION_EXPIRED_EVENT)); } catch { /* silent */ }
 }
 
-// ── Refresh 자동 갱신 (main.tsx 의 interceptor 와 동일 원리 · 여기서 통합) ─────
-let refreshInFlight: Promise<boolean> | null = null;
-async function tryRefresh(): Promise<boolean> {
+// ── Mobile 앱(WebView) 감지 · SSOT ─────────────────────────────────────────────
+// 2026-10-05 · 지시 · refresh/apiClient/interceptor 전역에서 **단일 함수** 로 판정
+//   · 서버가 X-Client-Type: mobile-app 또는 UA(osan-app|osanmega-app) 로 모바일 90일 트랙 결정
+//   · window.osanApp 는 네이티브 앱이 WebView 로드 시 주입하는 bridge marker (vite-env.d.ts 타입)
+export function isMobileApp(): boolean {
+  if (typeof window === "undefined") return false;
+  if (window.osanApp === true || window.OsanApp === true) return true;
+  const ua = typeof navigator !== "undefined" ? (navigator.userAgent ?? "") : "";
+  return /osan-app|osanmega-app/i.test(ua);
+}
+
+// ── Refresh 자동 갱신 · 공통 함수 · single-flight · main.tsx interceptor 와 공유 ─
+// 2026-10-05 · 지시 · 중복 refresh 통합 · 네트워크/서버/인증 실패 구분
+//   · 이전 · main.tsx 와 apiClient 가 각자 tryRefresh 보유 · single-flight 분리 · RTR 충돌 가능
+//   · 이후 · 이 모듈이 SSOT · 두 경로 모두 refreshAccessToken() 호출
+export type RefreshFailReason = "unauthorized" | "network" | "server";
+export interface RefreshResult {
+  ok: boolean;
+  /** ok=false 일 때만 설정 · "unauthorized" 만 세션만료 처리 · 나머지는 세션 유지 */
+  reason?: RefreshFailReason;
+}
+
+let refreshInFlight: Promise<RefreshResult> | null = null;
+
+export function refreshAccessToken(): Promise<RefreshResult> {
   if (refreshInFlight) return refreshInFlight;
-  refreshInFlight = (async () => {
+  refreshInFlight = (async (): Promise<RefreshResult> => {
     try {
-      // 2026-09-24 · Option A (RTR) · 앱 감지 헤더 · 서버 refresh 수명 결정
       const headers: Record<string, string> = {};
-      if (typeof window !== "undefined") {
-        const w = window as any;
-        const ua = navigator?.userAgent ?? "";
-        if (w?.osanApp || w?.OsanApp || /osan-app|osanmega-app/i.test(ua)) {
-          headers["X-Client-Type"] = "mobile-app";
-        }
-      }
+      if (isMobileApp()) headers["X-Client-Type"] = "mobile-app";
       const res = await fetch("/api/auth/refresh", { method: "POST", credentials: "include", headers });
-      return res.ok;
+      if (res.ok) return { ok: true };
+      // 401 · refresh 토큰 만료/무효 → 재로그인 필요
+      if (res.status === 401) return { ok: false, reason: "unauthorized" };
+      // 5xx · 서버 일시 오류 → 세션 유지 (네트워크 영역 처리)
+      return { ok: false, reason: "server" };
     } catch {
-      return false;
+      // fetch throw · 네트워크 단절 · DNS · abort → 세션 유지
+      return { ok: false, reason: "network" };
     } finally {
       setTimeout(() => { refreshInFlight = null; }, 0);
     }
@@ -128,20 +148,6 @@ interface RequestOptions<T = unknown> extends AxiosRequestConfig {
   skipRefresh?: boolean;
 }
 
-// 2026-09-24 · 사용자 지시 · Option A (RTR) · 앱 감지 · 서버로 X-Client-Type 헤더 전달
-//   · 서버 · mobile-app 감지 시 · refresh 90일 · 회전 · 실질 무한 세션
-//   · 웹 · 기존 30일 refresh · 회전
-function isMobileWebViewClient(): boolean {
-  if (typeof window === "undefined") return false;
-  const w = window as any;
-  // iOS/Android WebView bridge 감지 (앱측 · window.osanApp 등 마커 주입 가정)
-  if (w?.osanApp || w?.OsanApp) return true;
-  // UA 마커 · 앱 개발자 · UA suffix 추가 시 감지
-  const ua = navigator?.userAgent ?? "";
-  if (/osan-app|osanmega-app/i.test(ua)) return true;
-  return false;
-}
-
 async function request<T = unknown>(config: RequestOptions<T>): Promise<{ data: T; status: number; headers: Record<string, string> }> {
   const cfg: AxiosRequestConfig & { __retried?: boolean } = {
     withCredentials: true,
@@ -149,7 +155,7 @@ async function request<T = unknown>(config: RequestOptions<T>): Promise<{ data: 
     headers: {
       ...(config.headers ?? {}),
       // 2026-09-24 · 앱 감지 시 · 서버 refresh 수명 확장 (90일 · rolling)
-      ...(isMobileWebViewClient() ? { "X-Client-Type": "mobile-app" } : {}),
+      ...(isMobileApp() ? { "X-Client-Type": "mobile-app" } : {}),
     },
   };
   try {
@@ -172,9 +178,12 @@ async function request<T = unknown>(config: RequestOptions<T>): Promise<{ data: 
     // 401 자동 refresh + 재시도 (login/refresh 자체엔 skip)
     if (status === 401 && !cfg.__retried && !config.skipRefresh && !url.startsWith("/api/auth/")) {
       cfg.__retried = true;
-      const ok = await tryRefresh();
-      if (ok) return request<T>({ ...config, __retried: true } as RequestOptions<T> & { __retried: boolean });
-      fireSessionExpired();
+      const result = await refreshAccessToken();
+      if (result.ok) {
+        return request<T>({ ...config, __retried: true } as RequestOptions<T> & { __retried: boolean });
+      }
+      // 2026-10-05 · 네트워크/서버 오류는 세션만료 발화 X · 원 에러만 전파 (재로그인 유도 X)
+      if (result.reason === "unauthorized") fireSessionExpired();
     }
     // 2026-08-31 · 서버 다운 감지 · /api/health 및 /api/auth/ 는 skip (재귀 방지)
     if (!url.startsWith("/api/health") && !url.startsWith("/api/auth/")) {

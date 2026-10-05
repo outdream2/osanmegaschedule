@@ -120,6 +120,7 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
 
   // 2026-08-10 · 사용자 요청 · 각 요청에 product_name 추가 (products JOIN · 프론트 상품명 컬럼용)
   // 2026-09-09 · stale fix · products.display_location · location 도 함께 조회
+  // 2026-10-04 · schema fix · products.location column 없음 · display_location 만 사용
   // 2026-09-18 · fix · 사용자 재보고 · 진열요청 리스트 · 상품명 여전히 안 나옴
   //   원인 · products 매칭 실패 시 · product_name=null 만 반환 · note 파싱 fallback 안 됨
   //   fix · 3단계 fallback (1: products 매칭 · 2: leading zero 매칭 · 3: note '<name> 진열 요청' 파싱)
@@ -133,17 +134,16 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
       // 2026-09-20 · 진단 · products 조회 결과 로그 · RLS 의심
       const { data: prods, error: prodsErr } = await supabase
         .from("products")
-        .select("product_code, product_name, spec, display_location, location")
+        .select("product_code, product_name, spec, display_location")
         .in("product_code", productCodes);
       logger.debug(`[display-requests DIAG] products.in query · codes=[${productCodes.slice(0,3).join(",")}] · found=${prods?.length ?? 0} · err=${prodsErr?.message ?? "none"}`);
-      const infoMap = new Map<string, { name: string; spec: string | null; display_location: string | null; location: string | null; location_detail: string | null }>();
+      const infoMap = new Map<string, { name: string; spec: string | null; display_location: string | null; location_detail: string | null }>();
       for (const p of prods ?? []) {
         const c = String(p.product_code ?? "").trim();
         if (c) infoMap.set(c, {
           name: String(p.product_name ?? ""),
           spec: p.spec ?? null,
           display_location: (p as any).display_location ?? null,
-          location: (p as any).location ?? null,
           // 2026-09-20 · location_detail · products 에 없는 컬럼 · null 고정 (Supabase 에러 방지)
           location_detail: null,
         });
@@ -164,7 +164,7 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
         if (candidates.size > 0) {
           const { data: prods2 } = await supabase
             .from("products")
-            .select("product_code, product_name, spec, display_location, location")
+            .select("product_code, product_name, spec, display_location")
             .in("product_code", Array.from(candidates));
           for (const p of prods2 ?? []) {
             const dbCode = String(p.product_code ?? "").trim();
@@ -174,7 +174,6 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
               name: String(p.product_name ?? ""),
               spec: p.spec ?? null,
               display_location: (p as any).display_location ?? null,
-              location: (p as any).location ?? null,
               // 2026-09-20 · products.location_detail 없음 · null 고정
               location_detail: null,
             });
@@ -212,7 +211,7 @@ router.get("/api/display-requests", asyncHandler(async (req, res) => {
         if (c && !info) unmatchedFinal.push(c);
         r.product_name = info?.name?.trim() || null;
         r.product_spec = info?.spec ?? null;
-        r.product_display_location = info?.display_location ?? info?.location ?? null;
+        r.product_display_location = info?.display_location ?? null;
         // 상세위치 · inventory_checks.shelf_positions 에서 · 첫 non-null 값 선택
         //   · 향후 · zone_id 기준 정확 매칭 원할 시 · 별도 지시
         const shelves = c ? detailMap.get(c) : null;
@@ -259,16 +258,17 @@ router.post("/api/display-requests", authorize(1), validateBody(CreateDisplayReq
   const requesterId = authUser?.sub != null ? Number(authUser.sub) : null;
   const requesterName = authUser?.name ?? null;
 
-  // 상품 기반 요청: products 에서 location · category · name 자동 조회
+  // 상품 기반 요청: products 에서 display_location · category · name 자동 조회
+  // 2026-10-04 · schema fix · products.location column 없음 · display_location 만 사용
   try {
     const { data: prod } = await supabase
       .from("products")
-      .select("product_code, product_name, location, display_location, spec, category")
+      .select("product_code, product_name, display_location, spec, category")
       .eq("product_code", productCode)
       .maybeSingle();
     if (prod) {
       productName = prod.product_name ?? productCode;
-      if (!zoneId) zoneId = String((prod as any).location ?? (prod as any).display_location ?? "").trim();
+      if (!zoneId) zoneId = String((prod as any).display_location ?? "").trim();
       if (!zoneLabel && zoneId) zoneLabel = zoneId;
       if (!category) category = String(prod.category ?? "");
     }
@@ -1297,10 +1297,10 @@ router.get("/api/inventory-checks/shelf-conflict", asyncHandler(async (req, res)
     const codes = candidates.map(c => String((c as any).product_code));
     const { data: prods } = await supabase
       .from("products")
-      .select("product_code, product_name, display_location, location")
+      .select("product_code, product_name, display_location")
       .in("product_code", codes);
     const dup = (prods ?? []).find(p => {
-      const loc = (p as any).display_location ?? (p as any).location ?? null;
+      const loc = (p as any).display_location ?? null;
       return String(loc ?? "").trim() === display_location;
     });
     if (dup) {

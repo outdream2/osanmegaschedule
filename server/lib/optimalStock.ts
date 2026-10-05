@@ -44,60 +44,123 @@ const todayStr = (): string => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
 
-/** 시작 · 끝 날짜 계산 · fromDate 우선 · toDate 없으면 오늘 */
+/** 시작 · 끝 날짜 계산 · fromDate 우선 · toDate 없으면 오늘
+ *  2026-10-05 · off-by-one 수정 · 오늘 포함 정확히 N일 · since = today - (N - 1)
+ */
 export function computeDateRange(opts: Pick<RefillOptions, "days" | "fromDate" | "toDate">): { since: string; until: string } {
   const until = opts.toDate && isValidDate(opts.toDate) ? opts.toDate : todayStr();
   if (opts.fromDate && isValidDate(opts.fromDate)) return { since: opts.fromDate, until };
   const days = Math.max(1, Math.min(365, Number(opts.days ?? 30) || 30));
   const untilD = new Date(until + "T00:00:00");
-  const since = new Date(untilD.getFullYear(), untilD.getMonth(), untilD.getDate() - days);
+  const since = new Date(untilD.getFullYear(), untilD.getMonth(), untilD.getDate() - (days - 1));
   const y = since.getFullYear();
   const m = String(since.getMonth() + 1).padStart(2, "0");
   const d = String(since.getDate()).padStart(2, "0");
   return { since: `${y}-${m}-${d}`, until };
 }
 
-/** stock_history · [since, until] 범위 · 5-병렬 페이지 조회 · product_code 별 판매량 합산 */
+/** sales · [since, until] 범위 · product_name 집계 → products.product_name 완전일치로 product_code 매핑
+ *  2026-10-05 · 사용자 지시 · stock_history → sales 전환
+ *    · 판매량 SSOT = sales.total_stock (ERP Sale_Status 동기화 결과)
+ *    · 상품 relation = product_name 완전일치 (fuzzy 금지)
+ *    · unmatched 상품명은 로그 (검증용)
+ */
 export async function fetchSalesMap(sinceStr: string, untilStr?: string): Promise<{ map: Map<string, number>; totalRows: number }> {
-  const salesMap = new Map<string, number>();
   const PAGE = 1000;
-  const buildQuery = (offset: number) => {
+
+  // 1) sales · product_name 별 total_stock 합산
+  const salesByName = new Map<string, number>();
+  const buildSalesQuery = (offset: number) => {
     let q = supabase
-      .from("stock_history")
-      .select("product_code, sale_qty", offset === 0 ? { count: "exact" } : undefined)
-      .gte("snapshot_date", sinceStr);
-    if (untilStr) q = q.lte("snapshot_date", untilStr);
+      .from("sales")
+      .select("product_name, total_stock", offset === 0 ? { count: "exact" } : undefined)
+      .gte("sale_date", sinceStr);
+    if (untilStr) q = q.lte("sale_date", untilStr);
     return q.range(offset, offset + PAGE - 1);
   };
-  const first = await buildQuery(0);
-  if (first.error) {
-    if (/relation|does not exist/i.test(first.error.message)) {
-      throw new Error("stock_history 테이블 없음");
+  const salesFirst = await buildSalesQuery(0);
+  if (salesFirst.error) {
+    if (/relation|does not exist/i.test(salesFirst.error.message)) {
+      throw new Error("sales 테이블 없음");
     }
-    throw new Error(first.error.message);
+    throw new Error(salesFirst.error.message);
   }
-  const totalRows = first.count ?? 0;
-  const consume = (rows: any[]) => {
+  const totalRows = salesFirst.count ?? 0;
+  const consumeSales = (rows: any[]) => {
     for (const r of rows) {
-      const code = String(r.product_code ?? "").trim();
-      if (!code) continue;
-      const q = Number(r.sale_qty ?? 0) || 0;
-      if (q > 0) salesMap.set(code, (salesMap.get(code) ?? 0) + q);
+      const name = String(r.product_name ?? "").trim();
+      if (!name) continue;
+      const q = Number(r.total_stock ?? 0) || 0;
+      if (q > 0) salesByName.set(name, (salesByName.get(name) ?? 0) + q);
     }
   };
-  consume(first.data ?? []);
+  consumeSales(salesFirst.data ?? []);
   if (totalRows > PAGE) {
     const totalPages = Math.ceil(totalRows / PAGE);
     const PARALLEL = 5;
     for (let p = 1; p < totalPages; p += PARALLEL) {
       const batch = Array.from({ length: Math.min(PARALLEL, totalPages - p) }, (_, i) => p + i);
-      const results = await Promise.all(batch.map(pi => buildQuery(pi * PAGE)));
+      const results = await Promise.all(batch.map(pi => buildSalesQuery(pi * PAGE)));
       for (const r of results) {
         if (r.error) throw new Error(r.error.message);
-        consume(r.data ?? []);
+        consumeSales(r.data ?? []);
       }
     }
   }
+
+  // 2) products · product_name → product_code 매핑 테이블 구성
+  const nameToCode = new Map<string, string>();
+  const buildProductQuery = (offset: number) =>
+    supabase
+      .from("products")
+      .select("product_code, product_name", offset === 0 ? { count: "exact" } : undefined)
+      .range(offset, offset + PAGE - 1);
+  const prodFirst = await buildProductQuery(0);
+  if (prodFirst.error) throw new Error(prodFirst.error.message);
+  const prodTotal = prodFirst.count ?? 0;
+  const consumeProducts = (rows: any[]) => {
+    for (const r of rows) {
+      const name = String(r.product_name ?? "").trim();
+      const code = String(r.product_code ?? "").trim();
+      if (name && code && !nameToCode.has(name)) nameToCode.set(name, code);
+    }
+  };
+  consumeProducts(prodFirst.data ?? []);
+  if (prodTotal > PAGE) {
+    const totalPages = Math.ceil(prodTotal / PAGE);
+    const PARALLEL = 5;
+    for (let p = 1; p < totalPages; p += PARALLEL) {
+      const batch = Array.from({ length: Math.min(PARALLEL, totalPages - p) }, (_, i) => p + i);
+      const results = await Promise.all(batch.map(pi => buildProductQuery(pi * PAGE)));
+      for (const r of results) {
+        if (r.error) throw new Error(r.error.message);
+        consumeProducts(r.data ?? []);
+      }
+    }
+  }
+
+  // 3) salesByName → salesMap(product_code) 변환 · 완전일치만 반영
+  const salesMap = new Map<string, number>();
+  let unmatchedCount = 0;
+  const unmatchedSample: string[] = [];
+  for (const [name, qty] of salesByName) {
+    const code = nameToCode.get(name);
+    if (code) {
+      salesMap.set(code, (salesMap.get(code) ?? 0) + qty);
+    } else {
+      unmatchedCount++;
+      if (unmatchedSample.length < 10) unmatchedSample.push(name);
+    }
+  }
+  if (unmatchedCount > 0) {
+    logger.warn(
+      `[optimalStock] sales 상품명 unmatched · ${unmatchedCount} 건 · sample: ${unmatchedSample.join(" / ")}`,
+    );
+  }
+  logger.info(
+    `[optimalStock] sales 집계 · 기간=${sinceStr}~${untilStr ?? "오늘"} · sales rows=${totalRows} · matched products=${salesMap.size} · unmatched names=${unmatchedCount}`,
+  );
+
   return { map: salesMap, totalRows };
 }
 

@@ -149,35 +149,50 @@ export function issueToken(
  *   · 모바일 앱 · 90일 · 매 사용 시 90일 재갱신 · 실질 무한 세션
  */
 export function refreshAccessToken(req: Request, res: Response): JwtPayload | null {
-  if (!JWT_SECRET) return null;
-  const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined;
-  if (!refreshToken) return null;
-  try {
-    const decoded = jwt.verify(refreshToken, JWT_SECRET, { algorithms: ["HS256"] }) as unknown as JwtPayload;
-    if (decoded.typ !== "refresh") return null;
-    // 2026-09-24 · 클라 유형별 refresh 수명 · rolling window 재계산
-    const clientType = detectClientType(req);
-    const refreshMaxAge = clientType === "mobile-app" ? REFRESH_MAX_AGE_MOBILE : REFRESH_MAX_AGE_WEB;
-    const refreshExpiresIn = clientType === "mobile-app" ? "90d" : "30d";
-    // 새 access token 발급
-    const accessPayload: JwtPayload = { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level, typ: "access" };
-    const accessToken = jwt.sign(accessPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: "15m" });
-    // 2026-09-24 · 회전 · 새 refresh token 발급 · 매 사용 시 rolling 갱신
-    const refreshPayload: JwtPayload = { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level, typ: "refresh" };
-    const newRefreshToken = jwt.sign(refreshPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: refreshExpiresIn });
-    const secure = process.env.NODE_ENV === "production";
-    res.cookie(COOKIE_NAME, accessToken, {
-      httpOnly: true, secure, sameSite: "lax",
-      maxAge: ACCESS_MAX_AGE * 1000, path: "/",
-    });
-    res.cookie(REFRESH_COOKIE_NAME, newRefreshToken, {
-      httpOnly: true, secure, sameSite: "lax",
-      maxAge: refreshMaxAge * 1000, path: "/api/auth",
-    });
-    return accessPayload;
-  } catch {
+  // 2026-10-05 · 지시 · 디버깅 로그 추가 (민감값 X · clientType/hasCookie/reason 만)
+  const clientType = detectClientType(req);
+  if (!JWT_SECRET) {
+    logger.warn(`[AUTH REFRESH FAILED] reason=no-secret clientType=${clientType}`);
     return null;
   }
+  const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] as string | undefined;
+  if (!refreshToken) {
+    logger.warn(`[AUTH REFRESH FAILED] reason=missing-cookie clientType=${clientType}`);
+    return null;
+  }
+  let decoded: JwtPayload;
+  try {
+    decoded = jwt.verify(refreshToken, JWT_SECRET, { algorithms: ["HS256"] }) as unknown as JwtPayload;
+  } catch (err: unknown) {
+    const name = (err as { name?: string } | null)?.name ?? "unknown";
+    const reason = name === "TokenExpiredError" ? "expired" : name === "JsonWebTokenError" ? "invalid" : name;
+    logger.warn(`[AUTH REFRESH FAILED] reason=${reason} clientType=${clientType}`);
+    return null;
+  }
+  if (decoded.typ !== "refresh") {
+    logger.warn(`[AUTH REFRESH FAILED] reason=wrong-typ clientType=${clientType} typ=${decoded.typ}`);
+    return null;
+  }
+  // 2026-09-24 · 클라 유형별 refresh 수명 · rolling window 재계산
+  const refreshMaxAge = clientType === "mobile-app" ? REFRESH_MAX_AGE_MOBILE : REFRESH_MAX_AGE_WEB;
+  const refreshExpiresIn = clientType === "mobile-app" ? "90d" : "30d";
+  // 새 access token 발급
+  const accessPayload: JwtPayload = { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level, typ: "access" };
+  const accessToken = jwt.sign(accessPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: "15m" });
+  // 2026-09-24 · 회전 · 새 refresh token 발급 · 매 사용 시 rolling 갱신
+  const refreshPayload: JwtPayload = { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level, typ: "refresh" };
+  const newRefreshToken = jwt.sign(refreshPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: refreshExpiresIn });
+  const secure = process.env.NODE_ENV === "production";
+  res.cookie(COOKIE_NAME, accessToken, {
+    httpOnly: true, secure, sameSite: "lax",
+    maxAge: ACCESS_MAX_AGE * 1000, path: "/",
+  });
+  res.cookie(REFRESH_COOKIE_NAME, newRefreshToken, {
+    httpOnly: true, secure, sameSite: "lax",
+    maxAge: refreshMaxAge * 1000, path: "/api/auth",
+  });
+  logger.info(`[AUTH REFRESH] clientType=${clientType} rotation=success refreshMaxAge=${refreshExpiresIn} sub=${decoded.sub}`);
+  return accessPayload;
 }
 
 // ─────────────────────────────────────────────────

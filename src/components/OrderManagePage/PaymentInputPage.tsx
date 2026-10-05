@@ -1,21 +1,20 @@
 // src/components/OrderManagePage/PaymentInputPage.tsx
 // 2026-08-25 · #111 · 결제입력 페이지 재구성 (사용자 지시 · Option B · 신규 파일 · 회귀 X)
-//   · 상단 · 검색(공급사 autocomplete) + 필터(분류)
-//   · 미선택 시 · 하단 전체 · 안내 화면
-//   · 리스트 선택 즉시 · SplitPanel (2026-08-25 · [확인] 버튼 제거 · 즉시 조회 UX)
-//     · 좌 · VendorInfoHeader + 결제 요약 KPI + 결제 등록 안내
-//     · 우 · SplitRightTabs (발주내역 · 판매내역 월별)
-//         · 발주내역 · order-history 데이터 · 월별 bar chart + 최근 발주 리스트
-//         · 판매내역 · top-sales 데이터 · 월별 line + 상품별 최근 판매
-//   · 병렬 fetch (Promise.all) · order-history · top-sales · supplier-balance
+// 2026-10-05 · 사용자 지시 · 레이아웃 3분할 재구성 (상단/하단 → 좌/중/우)
+//   · 좌 · SplitListPanel · 공급사 리스트 · 미지급금(balance) desc 정렬 · 검색·분류 필터
+//   · 중 · VendorInfoHeader + KPI + PaymentEntryForm (기존 좌 영역)
+//   · 우 · SplitRightTabs (발주·매입·판매·결제 · 기존 우 영역)
+//   · 미선택 시 · 좌 리스트 + 우측 전체 안내 화면
+//   · 병렬 fetch (Promise.allSettled) · order-history · supplier-ledger · top-sales
+//   · bulk · /api/supplier-balances-map · 전체 공급사 미지급금 (리스트 정렬·badge)
 //   · recharts 사용 (기존 LossHistoryTab 패턴)
 
-import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import ReactDOM from "react-dom";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Wallet, Building2, ClipboardList, LineChart as LineChartIcon,
   Package, CircleCheck, TrendingUp, TrendingDown,
 } from "lucide-react";
+// 2026-10-05 · SupplierSearchInput 제거 (좌측 리스트로 통합) · ReactDOM / useRef / StatusPill unused · 삭제됨
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, Legend,
@@ -25,10 +24,10 @@ import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { Card } from "../common/Card";
-import { StatusPill } from "../common/StatusPill";
 import { EmptyState } from "../common/EmptyState";
 import { IconTile } from "../common/IconTile";
 import { SplitPanel } from "../common/SplitPanel";
+import { SplitListPanel } from "../common/SplitListPanel";
 import { SplitRightTabs } from "../common/SplitRightTabs";
 import { PeriodSelector, PERIOD_MONTHS_EXT_PRESET } from "../common/PeriodSelector";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
@@ -79,9 +78,9 @@ interface SalesItem {
   product_code: string;
   product_name: string;
   supplier?: string | null;
-  sale_qty?: number | null;
+  sale_stock?: number | null;
   total_amount?: number | null;
-  purchase_qty?: number | null;
+  buy_stock?: number | null;
   purchase_price?: number | null;
 }
 
@@ -138,7 +137,6 @@ export const PaymentInputPage: React.FC = () => {
   const [customTo, setCustomTo] = useState<string>("");
   // 2026-08-26 · P0 fix · 모바일 우측 상세 모달 열림/닫힘 별도 state (기존 rightTab != null 은 항상 true)
   const [mobileDetailOpen, setMobileDetailOpen] = useState<boolean>(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const [orderHistory, setOrderHistory] = useState<OrderHistoryItem[]>([]);
   const [purchaseDetails, setPurchaseDetails] = useState<PurchaseDetailItem[]>([]);
@@ -149,14 +147,80 @@ export const PaymentInputPage: React.FC = () => {
   const [dataLoading, setDataLoading] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
+  // 2026-10-05 · 사용자 지시 · 좌측 리스트 · 공급사 chunk × 30개씩 · progressive load
+  //   · GET /api/supplier-balances-map?lite=1&suppliers=A,B,C · lite 모드 (purchase/payment/balance 만 · 빠른 응답)
+  //   · 각 chunk 응답 즉시 머지 → 리스트 자동 재정렬 (desc)
+  //   · 전체 벤더 수가 많아도 UI 는 vendors 로드 즉시 보임 · balance 는 백그라운드로 채워짐
+  const [balancesMap, setBalancesMap] = useState<Record<string, number>>({});
+  const [balancesLoadedCount, setBalancesLoadedCount] = useState<number>(0);
+  const [balancesTotal, setBalancesTotal] = useState<number>(0);
+
+  useEffect(() => {
+    if (vendorsLoading) return;
+    if (!vendors || vendors.length === 0) {
+      setBalancesTotal(0);
+      setBalancesLoadedCount(0);
+      return;
+    }
+    let cancelled = false;
+    const uniqueNames = Array.from(new Set(
+      vendors.map(v => String(v.company_name ?? "").trim()).filter(n => n.length > 0),
+    ));
+    setBalancesTotal(uniqueNames.length);
+    setBalancesLoadedCount(0);
+    const CHUNK = 30;
+    (async () => {
+      for (let i = 0; i < uniqueNames.length; i += CHUNK) {
+        if (cancelled) return;
+        const chunk = uniqueNames.slice(i, i + CHUNK);
+        const qp = chunk.map(n => encodeURIComponent(n)).join(",");
+        try {
+          const { data } = await api.get<{ values?: Record<string, { balance?: number }> }>(
+            `/api/supplier-balances-map?lite=1&suppliers=${qp}`,
+          );
+          if (cancelled) return;
+          const patch: Record<string, number> = {};
+          for (const [name, v] of Object.entries(data?.values ?? {})) {
+            patch[String(name).trim()] = Number(v?.balance ?? 0) || 0;
+          }
+          // 응답에 없는 공급사 (레코드 없음) · 0 (완납) 세팅 · UI 반영
+          for (const n of chunk) {
+            if (!(n in patch)) patch[n] = 0;
+          }
+          setBalancesMap(prev => ({ ...prev, ...patch }));
+          setBalancesLoadedCount(c => c + chunk.length);
+        } catch {
+          setBalancesLoadedCount(c => c + chunk.length);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [vendors, vendorsLoading]);
+
+  const balancesMapLoading = balancesTotal > 0 && balancesLoadedCount < balancesTotal;
+
+  // 좌측 리스트 · 분류 + 검색 필터 → 미지급금 desc 정렬 (양수 큰 순 · 0 · 음수 순)
+  const sortedVendors = useMemo(() => {
     const q = query.trim();
-    return vendors.filter(v => {
+    const rows = vendors.filter(v => {
       if (q && !matchesSupplierQuery(v, q)) return false;
       if (category !== "전체" && String(v.category ?? "") !== category) return false;
       return true;
-    }).slice(0, 20);
-  }, [vendors, query, category]);
+    });
+    const withBalance = rows.map(v => ({
+      v,
+      bal: balancesMap[String(v.company_name ?? "").trim()] ?? 0,
+    }));
+    withBalance.sort((a, b) => b.bal - a.bal);
+    return withBalance;
+  }, [vendors, query, category, balancesMap]);
+
+  // 2026-10-05 · 사용자 지시 · UI 페이징 · 초기 60개 · 스크롤 하단 접근 시 60개씩 추가
+  const PAGE_SIZE = 60;
+  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
+  useEffect(() => { setVisibleCount(PAGE_SIZE); }, [query, category]);
+  const visibleVendors = useMemo(() => sortedVendors.slice(0, visibleCount), [sortedVendors, visibleCount]);
+  const hasMore = sortedVendors.length > visibleCount;
 
   const selected = useMemo(() => vendors.find(v => v.id === selectedId) ?? null, [vendors, selectedId]);
 
@@ -279,22 +343,20 @@ export const PaymentInputPage: React.FC = () => {
     }
   }, [selected?.company_name, loadSupplierData]);
 
+  // 2026-10-05 · 선택 공급사의 상세 balance 가 갱신되면 · 좌측 리스트 map 즉시 동기화 (결제 등록 후 반영)
+  useEffect(() => {
+    if (!balance?.supplier) return;
+    const name = String(balance.supplier).trim();
+    const next = Number(balance.balance ?? 0) || 0;
+    setBalancesMap(prev => (prev[name] === next ? prev : { ...prev, [name]: next }));
+  }, [balance?.supplier, balance?.balance]);
+
   // 2026-08-26 · P0 fix · vendor 선택 해제 시 · 모바일 상세 모달 자동 닫기
   useEffect(() => {
     if (!selected) setMobileDetailOpen(false);
   }, [selected]);
 
-  // 2026-08-25 · 사용자 지시 · [확인] 버튼 제거 · 리스트 선택 즉시 조회
-  // Enter 키 · 첫 매치 즉시 선택 (implicit confirm)
-  const selectFirstMatch = () => {
-    if (!query.trim()) return;
-    const exact = vendors.find(v => String(v.company_name ?? "").trim() === query.trim());
-    const first = exact ?? filtered[0];
-    if (!first) { showError("일치하는 공급사가 없습니다"); return; }
-    setSelectedId(first.id);
-    setQuery(String(first.company_name ?? ""));
-    setDropdownOpen(false);
-  };
+  // 2026-10-05 · 사용자 지시 · 좌측 리스트에서 공급사 클릭 즉시 조회 (dropdown 삭제)
 
   const chipOptions = useMemo(() => (
     (["전체", ...dbVendorCategories] as string[]).map(cat => ({
@@ -341,9 +403,9 @@ export const PaymentInputPage: React.FC = () => {
     const totalOrderAmount = orderHistory.reduce((s, o) => s + Number(o.total_amount ?? 0), 0);
     const totalOrderCount = orderHistory.length;
     const totalSaleAmount = sales.reduce((s, x) => s + Number(x.total_amount ?? 0), 0);
-    const totalSaleQty = sales.reduce((s, x) => s + Number(x.sale_qty ?? 0), 0);
+    const totalSaleQty = sales.reduce((s, x) => s + Number(x.sale_stock ?? 0), 0);
     const totalSaleCogs = sales.reduce((s, x) => {
-      const qty = Number(x.sale_qty ?? 0);
+      const qty = Number(x.sale_stock ?? 0);
       const pp = Number(x.purchase_price ?? 0);
       return s + (qty > 0 && pp > 0 ? qty * pp : 0);
     }, 0);
@@ -352,13 +414,13 @@ export const PaymentInputPage: React.FC = () => {
 
   // ─── UI ─────────────────────────────────────────────────────────────
   const introScreen = (
-    <div className="flex-1 min-h-0 flex items-center justify-center p-6">
+    <div className="h-full min-h-0 flex items-center justify-center p-6">
       <Card padding="lg" topAccent clip className="w-full max-w-3xl">
         <div className="flex items-center gap-2.5 mb-4">
           <IconTile icon={<Wallet size={16} />} tone="amber" size="md" />
           <div>
             <div className="text-[17px] font-bold text-ink tracking-tight">결제입력</div>
-            <div className="text-[15px] text-ink-soft">공급사를 검색하고 리스트에서 선택하면 즉시 조회됩니다</div>
+            <div className="text-[15px] text-ink-soft">좌측 공급사 리스트에서 선택하면 즉시 조회됩니다 (미지급금 큰 순)</div>
           </div>
         </div>
 
@@ -368,13 +430,13 @@ export const PaymentInputPage: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
                 <Building2 size={16} className="text-sky-600" />
               </div>
-              <div className="text-[17px] font-bold text-ink">좌측 · 결제 정보</div>
+              <div className="text-[17px] font-bold text-ink">중앙 · 결제 입력</div>
             </div>
             <ul className="text-[15px] text-ink-soft leading-relaxed pl-1 space-y-1">
               <li>· 공급사 정보 (담당자·연락처·카테고리)</li>
-              <li>· 잔고 요약 (미결제 금액)</li>
+              <li>· 잔고 요약 (미지급 · 선지급 · 완납)</li>
               <li>· 총 매입액 · 총 판매액 KPI</li>
-              <li>· 결제 등록 안내</li>
+              <li>· 결제 등록 폼</li>
             </ul>
           </div>
 
@@ -386,17 +448,17 @@ export const PaymentInputPage: React.FC = () => {
               <div className="text-[17px] font-bold text-ink">우측 · 발주·판매내역</div>
             </div>
             <ul className="text-[15px] text-ink-soft leading-relaxed pl-1 space-y-1">
-              <li>· 발주내역 · 최근 12개월 월별 매입 bar</li>
-              <li>· 판매내역 · 상품별 판매량·금액 line</li>
-              <li>· 최근 발주 리스트</li>
-              <li>· KPI · 총 매입·판매·잔고</li>
+              <li>· 발주내역 · 최근 월별 매입 bar</li>
+              <li>· 매입내역 · purchase_details 원본</li>
+              <li>· 판매내역 · 상품별 판매량·금액</li>
+              <li>· 결제내역 · 공급사별 결제 이력</li>
             </ul>
           </div>
         </div>
 
         <div className="mt-4 flex items-center gap-2 text-[14px] text-ink-soft/70">
           <CircleCheck size={13} className="text-emerald-500" />
-          <span>상단 검색창에 공급사명 입력 → 리스트 클릭 시 즉시 조회</span>
+          <span>좌측 리스트에서 공급사 클릭 → 중앙·우측 즉시 조회</span>
         </div>
       </Card>
     </div>
@@ -682,7 +744,7 @@ export const PaymentInputPage: React.FC = () => {
                     data={topSalesProducts.map(p => ({
                       name: (p.product_name ?? "").slice(0, 8),
                       판매금액: Number(p.total_amount ?? 0),
-                      판매수량: Number(p.sale_qty ?? 0),
+                      판매수량: Number(p.sale_stock ?? 0),
                     }))}
                     margin={{ top: 8, right: 10, bottom: 4, left: 0 }}
                   >
@@ -711,7 +773,7 @@ export const PaymentInputPage: React.FC = () => {
                   <li key={p.product_code} className="flex items-center gap-2 py-2 text-[17px]">
                     <span className="text-zinc-500 shrink-0 font-mono text-[15px] w-24 truncate">{p.product_code}</span>
                     <span className="text-ink font-bold truncate flex-1 min-w-0">{p.product_name}</span>
-                    <span className="text-[16px] text-zinc-400 tabular-nums shrink-0">{Number(p.sale_qty ?? 0).toLocaleString()}개</span>
+                    <span className="text-[16px] text-zinc-400 tabular-nums shrink-0">{Number(p.sale_stock ?? 0).toLocaleString()}개</span>
                     <span className="text-emerald-700 font-bold tabular-nums shrink-0">{fmtWon(Number(p.total_amount ?? 0))}</span>
                   </li>
                 ))}
@@ -788,191 +850,138 @@ export const PaymentInputPage: React.FC = () => {
     </div>
   ) : null;
 
+  // 2026-10-05 · 좌측 공급사 리스트 아이템 렌더링 · 미지급금 색상 (양수=sky · 음수=rose · 0=emerald)
+  const renderVendorRow = (v: VendorItem, bal: number): React.ReactNode => {
+    const isActive = v.id === selectedId;
+    const name = String(v.company_name ?? "");
+    const cat = String(v.category ?? "").trim();
+    const absBal = Math.abs(bal);
+    const balLabel = bal > 0 ? "미지급" : bal < 0 ? "선지급" : "완납";
+    const balTone =
+      bal > 0 ? "text-sky-700" :
+      bal < 0 ? "text-rose-700" :
+                "text-emerald-700";
+    const shown = displayVendorName(name) || name;
+    return (
+      <button
+        key={v.id}
+        type="button"
+        onClick={() => { setSelectedId(v.id); setMobileDetailOpen(true); }}
+        className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${
+          isActive
+            ? "bg-brand-tint/60 border-brand-deep/40 ring-1 ring-brand-deep/20"
+            : "bg-white border-line hover:border-brand-deep/30 hover:bg-brand-tint/20"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="text-[16px] font-bold text-ink leading-tight break-keep">{shown}</div>
+            {cat && <div className="mt-0.5 text-[13px] text-ink-soft">{cat}</div>}
+          </div>
+          <div className="text-right shrink-0">
+            <div className={`text-[15px] font-extrabold tabular-nums leading-none ${balTone}`}>
+              {absBal > 0 ? absBal.toLocaleString() : "-"}
+              {absBal > 0 && <span className="text-[11px] font-semibold text-ink-soft ml-0.5">원</span>}
+            </div>
+            <div className="mt-1 text-[11px] font-semibold text-ink-soft">{balLabel}</div>
+          </div>
+        </div>
+      </button>
+    );
+  };
+
+  // 좌측 리스트 패널 (SplitListPanel · 검색 + 분류 chips + 미지급금 desc 리스트)
+  const leftListPanel = (
+    <SplitListPanel
+      title={
+        <span className="inline-flex items-center gap-2">
+          <IconTile icon={<Wallet size={14} />} tone="amber" size="sm" />
+          <span>결제입력 · 공급사</span>
+        </span>
+      }
+      count={sortedVendors.length}
+      search={query}
+      onSearchChange={setQuery}
+      searchPlaceholder="공급사명·담당자 검색"
+      filters={
+        <CategoryChips
+          value={category}
+          onChange={(v) => setCategory(String(v))}
+          options={chipOptions}
+          size="sm"
+          ariaLabel="공급사 분류 필터"
+        />
+      }
+      loading={vendorsLoading}
+      empty={!vendorsLoading && sortedVendors.length === 0}
+      emptyText="조건에 맞는 공급사가 없습니다"
+      emptyIcon={Building2}
+      topAccent
+      bodyClassName="flex-1 min-h-0 overflow-y-auto p-2"
+      countDisplay={
+        balancesMapLoading
+          ? <span className="text-[12px] font-semibold text-ink-soft tabular-nums">{sortedVendors.length} · 잔고 {balancesLoadedCount}/{balancesTotal}</span>
+          : <span className="text-[12px] font-semibold text-ink-soft tabular-nums">{sortedVendors.length}</span>
+      }
+    >
+      <div className="flex flex-col gap-1.5">
+        {visibleVendors.map(({ v, bal }) => renderVendorRow(v, bal))}
+        {hasMore && (
+          <button
+            type="button"
+            onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+            className="mt-1 w-full h-9 rounded-lg bg-white border border-line text-[14px] font-bold text-ink-soft hover:border-brand-deep/40 hover:text-brand-deep transition cursor-pointer"
+          >
+            더 보기 · {sortedVendors.length - visibleCount}개 남음
+          </button>
+        )}
+      </div>
+    </SplitListPanel>
+  );
+
+  // 우측 영역 (중 결제입력 + 우 발주·판매내역) · 선택 시 SplitPanel · 미선택 시 introScreen
+  const rightArea = selected ? (
+    <SplitPanel
+      storageKey="paymentInput.midWidth"
+      defaultWidth={typeof window !== "undefined" ? Math.max(360, Math.min(560, Math.floor(window.innerWidth * 0.32))) : 440}
+      minWidth={300}
+      maxWidth={720}
+      dividerColor="amber"
+      left={leftPane}
+      right={rightPane}
+      wrapLeft={false}
+      wrapRight={false}
+      mobileRightAsModal
+      mobileModalTitle={selected.company_name ?? "발주·판매내역"}
+      mobileOpen={mobileDetailOpen}
+      onMobileClose={() => setMobileDetailOpen(false)}
+      className="h-full"
+    />
+  ) : introScreen;
+
   return (
     <>
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}
-      <div className="flex flex-col gap-3 h-full min-h-0">
-        {/* 상단 · 검색 + 필터 · 2026-08-26 · clip 제거 (dropdown 잘림 fix) · z-40 dropdown */}
-        <Card padding="md" topAccent className="relative z-30">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <IconTile icon={<Wallet size={15} />} tone="amber" size="md" />
-              <div className="min-w-0">
-                <div className="text-[18px] font-bold text-ink leading-tight tracking-tight">결제입력</div>
-                <div className="text-[14px] text-ink-soft leading-tight mt-0.5">공급사 검색 → 리스트 선택 즉시 · 결제 정보 · 발주·판매내역 조회</div>
-              </div>
-              {selected && (
-                <StatusPill tone="emerald" size="sm" dot>선택 · {selected.company_name}</StatusPill>
-              )}
-              {selected && (
-                <button
-                  type="button"
-                  onClick={() => { setSelectedId(null); setQuery(""); setDropdownOpen(false); }}
-                  className="ml-auto inline-flex items-center h-8 px-3 rounded-lg bg-white border border-line text-[15px] font-bold text-ink-soft hover:border-brand-deep/40 hover:text-brand-deep transition cursor-pointer"
-                  title="다른 공급사 검색"
-                >
-                  초기화
-                </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <SupplierSearchInput
-                query={query}
-                setQuery={setQuery}
-                dropdownOpen={dropdownOpen}
-                setDropdownOpen={setDropdownOpen}
-                filtered={filtered}
-                onSelect={(v) => { setSelectedId(v.id); setQuery(String(v.company_name ?? "")); setDropdownOpen(false); }}
-                selectFirstMatch={selectFirstMatch}
-              />
-              <CategoryChips
-                value={category}
-                onChange={(v) => setCategory(String(v))}
-                options={chipOptions}
-                size="sm"
-                ariaLabel="공급사 분류 필터"
-              />
-            </div>
-          </div>
-        </Card>
-
-        {selected ? (
-          <SplitPanel
-            storageKey="paymentInput.leftWidth"
-            defaultWidth={typeof window !== "undefined" ? Math.max(380, Math.min(600, Math.floor(window.innerWidth * 0.38))) : 460}
-            minWidth={300}
-            maxWidth={800}
-            dividerColor="amber"
-            left={leftPane}
-            right={rightPane}
-            wrapLeft={false}
-            wrapRight={false}
-            mobileRightAsModal
-            mobileModalTitle={selected.company_name ?? "발주·판매내역"}
-            mobileOpen={mobileDetailOpen}
-            onMobileClose={() => setMobileDetailOpen(false)}
-            className="flex-1 min-h-0"
-          />
-        ) : (
-          introScreen
-        )}
+      <div className="h-full min-h-0">
+        {/* 2026-10-05 · 사용자 지시 · 3분할 레이아웃 (좌 공급사 리스트 · 중 결제입력 · 우 발주·판매내역)
+            SplitPanel 중첩 · 외곽은 좌(리스트) vs 우(중+우) · 내부는 중 vs 우 */}
+        <SplitPanel
+          storageKey="paymentInput.listWidth"
+          defaultWidth={320}
+          minWidth={260}
+          maxWidth={440}
+          dividerColor="amber"
+          left={leftListPanel}
+          right={rightArea}
+          wrapLeft={false}
+          wrapRight={false}
+          className="h-full"
+        />
       </div>
     </>
   );
 };
 
 export default PaymentInputPage;
-
-// -----------------------------------------------------------------------------
-// 공급사 검색 · Portal 드롭다운
-//   · 부모 overflow / sticky / 반응형 wrap 영향 X
-//   · 화면 하단 공간 부족 시 · 위로 flip
-// -----------------------------------------------------------------------------
-interface SupplierSearchInputProps {
-  query: string;
-  setQuery: (v: string) => void;
-  dropdownOpen: boolean;
-  setDropdownOpen: (v: boolean) => void;
-  filtered: VendorItem[];
-  onSelect: (v: VendorItem) => void;
-  selectFirstMatch: () => void;
-}
-
-const SupplierSearchInput: React.FC<SupplierSearchInputProps> = ({
-  query, setQuery, dropdownOpen, setDropdownOpen, filtered, onSelect, selectFirstMatch,
-}) => {
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const [pos, setPos] = useState<{ top: number; left: number; width: number; flip: boolean } | null>(null);
-
-  const open = dropdownOpen && !!query.trim() && filtered.length > 0;
-
-  useEffect(() => {
-    if (!open) { setPos(null); return; }
-    const el = wrapRef.current;
-    if (!el) return;
-    const update = () => {
-      const r = el.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const spaceBelow = vh - r.bottom;
-      const spaceAbove = r.top;
-      const maxListH = 224; // max-h-56
-      const flip = spaceBelow < maxListH + 8 && spaceAbove > spaceBelow;
-      setPos({
-        top: flip ? Math.max(8, r.top - maxListH - 6) : r.bottom + 4,
-        left: r.left,
-        width: r.width,
-        flip,
-      });
-    };
-    update();
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
-    return () => {
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
-    };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDocClick = (e: MouseEvent) => {
-      const t = e.target as Node;
-      if (wrapRef.current?.contains(t)) return;
-      const dd = document.getElementById("supplier-search-portal-dd");
-      if (dd?.contains(t)) return;
-      setDropdownOpen(false);
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [open, setDropdownOpen]);
-
-  return (
-    <div ref={wrapRef} className="relative flex-1 min-w-[220px] max-w-md">
-      <Building2 size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-      <input
-        lang="ko" ref={inputRef}
-        type="text"
-        value={query}
-        onChange={(e) => { setQuery(e.target.value); setDropdownOpen(true); }}
-        onFocus={() => setDropdownOpen(true)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") { e.preventDefault(); selectFirstMatch(); }
-          if (e.key === "Escape") setDropdownOpen(false);
-        }}
-        placeholder="공급사명 검색 · 리스트 클릭 즉시 조회 (Enter · 첫 매치)"
-        className="w-full h-10 pl-8 pr-3 rounded-lg border border-line bg-white text-[16px] text-ink placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint"
-      />
-      {open && pos && ReactDOM.createPortal(
-        <div
-          id="supplier-search-portal-dd"
-          style={{
-            position: "fixed",
-            top: pos.top,
-            left: pos.left,
-            width: pos.width,
-            zIndex: 9999,
-          }}
-        >
-          <Card padding="none" rounded="lg" className="shadow-2xl max-h-56 overflow-y-auto ring-1 ring-black/5">
-            {filtered.map(v => (
-              <button
-                key={v.id}
-                type="button"
-                onClick={() => onSelect(v)}
-                className="w-full text-left px-3 py-2 text-[15px] font-medium text-ink hover:bg-brand-tint/30 flex items-center gap-2 transition-colors border-b border-line/50 last:border-b-0"
-              >
-                <span className="break-keep whitespace-normal leading-tight flex-1">{v.company_name}</span>
-                {v.category && <span className="ml-auto text-[15px] text-ink-soft shrink-0">{v.category}</span>}
-              </button>
-            ))}
-          </Card>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-};

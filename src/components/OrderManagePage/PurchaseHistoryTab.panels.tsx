@@ -22,6 +22,8 @@ import { SplitRightError } from "../common/SplitRightError";
 import { StatusPill } from "../common/StatusPill";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { PeriodSelector } from "../common/PeriodSelector";
+// 2026-10-05 · 사용자 지시 · 월 멀티선택 (비연속 지원) · Supabase 직접 조회
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
 import { SupplierTab } from "../StockManagePage/SupplierTab";
 // 2026-08-23 · #198 Phase 3 · ByProductPanel · SplitListPanel v3 이관
 import { SplitListPanel } from "../common/SplitListPanel";
@@ -71,6 +73,9 @@ interface FilterBarProps {
   setSaleStatusFilter: (v: SaleStatusFilter) => void;
   onRefreshVendor: () => void;
   onRefreshProducts: () => void;
+  // 2026-10-05 · 사용자 지시 · 월 멀티선택 SSOT
+  selectedMonths: string[];
+  setSelectedMonths: (v: string[]) => void;
 }
 
 export const FilterBar: React.FC<FilterBarProps> = ({
@@ -81,7 +86,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   ledgerLoading, allDetailsLoading,
   saleStatusFilter, setSaleStatusFilter,
   onRefreshVendor, onRefreshProducts,
+  selectedMonths, setSelectedMonths,
 }) => {
+  void periodMonths; void setPeriodMonths;
   // 2026-09-20 · #324 · 판매상태 옵션 색상
   const saleStatusOpts: { value: SaleStatusFilter; label: string; activeCls: string }[] = [
     { value: "all",     label: "전체",    activeCls: "bg-zinc-700 text-white" },
@@ -171,23 +178,18 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
       {/* 행 2 · 기간 필터 */}
       <div className="flex flex-wrap items-center gap-2">
-        {/* 2026-08-17 · 기간 UI 프레임워크 통일 · PeriodSelector 공통 · 딥네이비 */}
+        {/* 2026-10-05 · 사용자 지시 · 월 멀티선택 (비연속 지원) · Supabase purchase_details 직접 조회 · 1년 고정 fetch 제거 */}
         <InlineLabel size="sm">기간</InlineLabel>
-        <PeriodSelector
-          options={[
-            { value: 0, label: "10일", title: "최근 10일" },
-            { value: 1, label: "1개월", title: "최근 1개월" },
-            { value: 2, label: "2개월", title: "최근 2개월" },
-            { value: 3, label: "3개월", title: "최근 3개월" },
-            { value: 4, label: "4개월", title: "최근 4개월" },
-            { value: 5, label: "5개월", title: "최근 5개월" },
-            { value: 6, label: "6개월", title: "최근 6개월" },
-          ]}
-          value={periodMonths}
-          onChange={(v) => { setPeriodMonths(v as 0|1|2|3|4|5|6); setPeriodSeason(null); }}
-          size="sm"
+        <MonthToggleSelector
+          selectedMonths={selectedMonths}
+          onChange={(v) => { setSelectedMonths(v); setPeriodSeason(null); }}
+          maxMonths={6}
+          minOne={true}
           ariaLabel="매입이력 조회기간"
         />
+        {selectedMonths.length > 0 && (
+          <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+        )}
         <SeasonButtons
           value={periodSeason ?? null}
           onChange={(v) => { setPeriodSeason(v); }}

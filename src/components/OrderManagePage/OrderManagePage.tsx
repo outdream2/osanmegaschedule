@@ -3,7 +3,6 @@
 // 발주관리 페이지 — 발주/매입/결제/통계 4탭
 import React, { Suspense, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "../../hooks/useConfirm";
-import { SK_DP_PRODUCT_INNER_TAB } from "../../lib/storageKeys";
 // 2026-09-27 · 네비게이션 SSOT · useActiveNav Context
 import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { useToast } from "../../hooks/useToast";
@@ -123,29 +122,33 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // 2026-09-23 · 대원칙 · 페이지 기본화면 = 첫 탭메뉴 · #350 재확인 · 발주요청 first
   // 2026-09-25 · #1 · 사용자 지시 · match·exception 신규 추가 (사용자 클릭 시 진입)
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history" | "match" | "exception">("order");
-  // 2026-08-29 · #193 Phase B · scan/productarrival/productinfo/return · 매장>상품·반품 서브탭으로 완전 이관 · 매입 union 축소
-  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "purchase-history">(() => {
+  // 2026-10-05 · 사용자 지시 · productinfo·productarrival·scan 3개 매장>상품 → 매입 아래로 복귀 · 거래명세서(receipt) 숨김
+  //   · default · purchase-history (매입이력 · 사용자 유지 요청)
+  //   · return 은 매장>반품 서브탭에 그대로 유지 (여기서는 skip)
+  const [purchaseSubTab, setPurchaseSubTab] = useState<"purchase-history" | "productinfo" | "productarrival" | "scan" | "reconciliation">(() => {
     const s = initialPurchaseSubTab as string | undefined;
-    if (s === "scan" || s === "productarrival" || s === "productinfo" || s === "return") return "receipt";
-    return (s as "receipt" | "reconciliation" | "purchase-history" | undefined) ?? "receipt";
+    if (s === "return") return "purchase-history";
+    if (s === "receipt") return "purchase-history"; // 거래명세서 숨김 · fallback
+    return (s as "purchase-history" | "productinfo" | "productarrival" | "scan" | "reconciliation" | undefined) ?? "purchase-history";
   });
   useEffect(() => {
     if (!initialPurchaseSubTab) return;
     const s = initialPurchaseSubTab as string;
-    if (s === "scan" || s === "productarrival" || s === "productinfo" || s === "return") return; // 매장>상품·반품 · 별도 렌더
+    if (s === "return") return; // 매장>반품 · 별도 렌더
+    if (s === "receipt") return; // 거래명세서 숨김
     if (initialPurchaseSubTab !== purchaseSubTab) setPurchaseSubTab(initialPurchaseSubTab as typeof purchaseSubTab);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialPurchaseSubTab]);
 
-  // 2026-08-29 · #193 Phase B · pending 코드 · productinfo 서브탭 자동 전환 로직 · 별도 페이지 라우팅으로 우회 (매장>상품>상품정보 이너)
-  //   · 지금은 topTab 이동 없음 · 사용자가 매장>상품 진입 후 · localStorage 로 이너 탭 지정 필요 (후속 처리)
+  // 2026-10-05 · 사용자 지시 · productinfo 매입 아래로 재이관
+  //   · pending 상품 코드 있을 때 · display>purchase>productinfo 로 라우팅
   useEffect(() => {
     try {
       const pending = sessionStorage.getItem("megatown_scan_pending_product_code");
       if (pending) {
-        // DisplayPage 로 이동 · 상품 서브탭 · info 이너 탭 활성화
-        setActiveByPage("display", "product");
-        try { localStorage.setItem(SK_DP_PRODUCT_INNER_TAB, "info"); } catch { /* noop */ }
+        setActiveByPage("display", "purchase");
+        setPurchaseSubTab("productinfo");
+        setTopTab("purchase");
         ocrTabOnNavigate?.("display");
       }
     } catch { /* noop */ }
@@ -313,8 +316,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     receipts, receiptsLoading, loadReceipts,
   } = useOrderManageData(getCode);
 
-  // 거래명세서 · 탭 전환 시 로드
-  useEffect(() => { if (topTab === "purchase" && purchaseSubTab === "receipt") loadReceipts(); }, [topTab, purchaseSubTab, loadReceipts]);
+  // 2026-10-05 · 거래명세서(receipt) 서브탭 숨김 · loadReceipts 호출 비활성 (OCR 모듈·훅 보존)
 
   const markReceived = async (_receipt: any, _receivedQtyMap?: Record<string, number>) => {
     // 2026-09-03 · 사용자 원칙 · 미구현 기능 · "만들고 있음" 안내 (feedback_unfinished_feature_notice)
@@ -772,16 +774,32 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             purchaseSubTab, setPurchaseSubTab,
             { getTabProps: purchaseSortable.getTabProps, isDragging: purchaseSortable.isDragging },
           )}
+          {/* 2026-10-05 · 사용자 지시 · 거래명세서(receipt) 숨김 · 주석처리 (OcrPage 는 다른 경로에서 재사용 가능)
           {purchaseSubTab === "receipt" && (
             <div className="flex-1 flex flex-col min-h-0 -mt-1"><Suspense fallback={<SubTabFallback />}>
               <OcrPage embedded authSession={ocrTabAuthSession ?? null} onBack={ocrTabOnBack ?? (() => {})} onNavigate={ocrTabOnNavigate} onLogout={ocrTabOnLogout} />
             </Suspense></div>
           )}
+          */}
           {/* 2026-08-25 · 사용자 지시 · reconciliation 키 유지 (URL/사이드바 호환) · 콘텐츠는 유통기한 임박 리스트 */}
           {purchaseSubTab === "reconciliation" && <div className="flex-1 flex flex-col min-h-0"><ExpiryImminentTab /></div>}
-          {/* 2026-08-29 · #193 Phase B · scan · productarrival · productinfo · return 4개 서브탭 렌더 제거
-              · 매장>상품 (3개 이너) 및 매장>반품 (2개 이너) 로 완전 이관 (사용자 지시) */}
           {purchaseSubTab === "purchase-history" && <div className="flex-1 min-h-0"><PurchaseHistoryTab /></div>}
+          {/* 2026-10-05 · 사용자 지시 · productinfo·productarrival·scan 3개 매장>상품 → 매입 아래로 재이관 */}
+          {purchaseSubTab === "productinfo" && (
+            <div className="flex-1 flex flex-col min-h-0"><Suspense fallback={<SubTabFallback />}>
+              <ProductInfoPage authSession={ocrTabAuthSession ?? null} />
+            </Suspense></div>
+          )}
+          {purchaseSubTab === "productarrival" && (
+            <div className="flex-1 flex flex-col min-h-0"><Suspense fallback={<SubTabFallback />}>
+              <ProductArrivalPage embedded onBack={ocrTabOnBack ?? (() => {})} authSession={ocrTabAuthSession ?? null} onNavigate={ocrTabOnNavigate as any} onLogout={ocrTabOnLogout} />
+            </Suspense></div>
+          )}
+          {purchaseSubTab === "scan" && (
+            <div className="flex-1 flex flex-col min-h-0"><Suspense fallback={<SubTabFallback />}>
+              <ScanPage embedded onBack={ocrTabOnBack ?? (() => {})} authSession={ocrTabAuthSession ?? null} onNavigate={ocrTabOnNavigate as any} onLogout={ocrTabOnLogout} />
+            </Suspense></div>
+          )}
         </div>
       )}
 

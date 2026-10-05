@@ -13,9 +13,29 @@ const router = Router();
 router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
-  const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+  // 2026-10-05 · 사용자 지시 · months_list=YM1,YM2 비연속 월 멀티선택 지원
+  //   · days 보다 우선 · 선택된 YM 범위 (min 월 1일 ~ max 월 말일) 조회 + post-filter
+  const monthsListParam = String(req.query.months_list ?? "").trim();
+  const monthsListArr: string[] = monthsListParam
+    ? monthsListParam.split(",").map((s) => s.trim()).filter((s) => /^\d{4}-\d{2}$/.test(s))
+    : [];
+  const useMonthsList = monthsListArr.length > 0;
+  const monthsListSet = new Set(monthsListArr);
+  let cutoffYmd: string;
+  let monthsListTo: string | null = null;
+  if (useMonthsList) {
+    const sortedYm = [...monthsListArr].sort();
+    const minYm = sortedYm[0];
+    const maxYm = sortedYm[sortedYm.length - 1];
+    cutoffYmd = `${minYm}-01`;
+    const [yy, mm] = maxYm.split("-").map(Number);
+    const lastDay = new Date(yy, mm, 0).getDate();
+    monthsListTo = `${maxYm}-${String(lastDay).padStart(2, "0")}`;
+  } else {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+  }
 
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
@@ -85,11 +105,12 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
     const PAGE = 1000;
     let from = 0;
     while (true) {
-      const { data, error } = await supabase
+      let qry = supabase
         .from("purchase_details")
         .select("supplier_name, supplier_code, purchase_date, amount, total, product_code, quantity")
-        .gte("purchase_date", cutoffYmd)
-        .range(from, from + PAGE - 1);
+        .gte("purchase_date", cutoffYmd);
+      if (useMonthsList && monthsListTo) qry = qry.lte("purchase_date", monthsListTo);
+      const { data, error } = await qry.range(from, from + PAGE - 1);
       if (error) {
         if (/relation .* does not exist/i.test(error.message)) { pdRelationMissing = true; break; }
         if (/column .* does not exist/i.test(error.message)) break;
@@ -111,6 +132,11 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
           ? String(r.purchase_date).slice(0, 10)
           : "";
         if (!date) continue;
+        // 2026-10-05 · months_list 모드 · 선택 안 된 월 row 제거 (비연속 중간 월 자동 포함 금지)
+        if (useMonthsList) {
+          const ym = date.slice(0, 7);
+          if (!monthsListSet.has(ym)) continue;
+        }
         const amount = Number(r.amount ?? r.total ?? 0) || 0;
         const qty = Number((r as any).quantity ?? 0) || 0;
         const code = String(r.product_code ?? "").trim();

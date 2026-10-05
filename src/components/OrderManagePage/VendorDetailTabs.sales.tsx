@@ -20,8 +20,8 @@ export const SalesContent: React.FC<{
     </div>
   );
 
-  const totalSaleQty  = products.reduce((s, r) => s + r.sale_qty, 0);
-  const totalPurchQty = products.reduce((s, r) => s + r.purchase_qty, 0);
+  const totalSaleQty  = products.reduce((s, r) => s + r.sale_stock, 0);
+  const totalPurchQty = products.reduce((s, r) => s + r.buy_stock, 0);
   const totalAmount   = products.reduce((s, r) => s + r.total_amount, 0);
 
   return (
@@ -55,7 +55,7 @@ export const SalesContent: React.FC<{
         </thead>
         <tbody className="divide-y divide-zinc-50">
           {products.map((r) => {
-            const isPositive = r.sale_qty > r.purchase_qty;
+            const isPositive = r.sale_stock > r.buy_stock;
             return (
               <tr key={r.product_code} className="hover:bg-zinc-50 transition">
                 <td className="px-4 py-2 text-[15px] text-zinc-800 font-semibold truncate" title={`${r.product_name} · ${r.product_code}`}>
@@ -67,10 +67,10 @@ export const SalesContent: React.FC<{
                     {isPositive
                       ? <TrendingUp size={12} className="text-sky-500" />
                       : <TrendingDown size={12} className="text-zinc-400" />}
-                    {fmt(Math.round(r.sale_qty))}<span className="text-[12px] font-medium ml-0.5 text-zinc-400">개</span>
+                    {fmt(Math.round(r.sale_stock))}<span className="text-[12px] font-medium ml-0.5 text-zinc-400">개</span>
                   </span>
                 </td>
-                <td className="px-3 py-2 text-right text-[15px] tabular-nums text-emerald-700 font-semibold">{fmt(Math.round(r.purchase_qty))}<span className="text-[12px] font-medium ml-0.5 text-zinc-400">개</span></td>
+                <td className="px-3 py-2 text-right text-[15px] tabular-nums text-emerald-700 font-semibold">{fmt(Math.round(r.buy_stock))}<span className="text-[12px] font-medium ml-0.5 text-zinc-400">개</span></td>
                 <td className="px-3 py-2 text-right text-[15px] tabular-nums text-zinc-500">{fmt(Math.round(r.closing_stock))}<span className="text-[12px] font-medium ml-0.5 text-zinc-400">개</span></td>
                 <td className="px-4 py-2 text-right text-[15px] tabular-nums font-extrabold text-violet-700">{fmt(Math.round(r.total_amount))}<span className="text-[12px] font-medium ml-0.5 text-zinc-400">원</span></td>
               </tr>

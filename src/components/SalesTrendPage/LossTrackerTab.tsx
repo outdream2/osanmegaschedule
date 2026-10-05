@@ -19,11 +19,11 @@ const LOSS_SORT_CMP: Record<LossSortKey, Comparator<any>> = {
   name:     (a, b) => String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"),
   // 2026-09-18 · 사용자 지시 · (주)·주식회사 무시 · 정제 후 정렬
   supplier: (a, b) => displayVendorName(a.supplier ?? "").localeCompare(displayVendorName(b.supplier ?? ""), "ko"),
-  opening:  (a, b) => Number(a.opening_stock ?? 0) - Number(b.opening_stock ?? 0),
-  sale:     (a, b) => Number(a.sale_qty ?? 0) - Number(b.sale_qty ?? 0),
+  opening:  (a, b) => Number(a.prv_stock ?? 0) - Number(b.prv_stock ?? 0),
+  sale:     (a, b) => Number(a.sale_stock ?? 0) - Number(b.sale_stock ?? 0),
   current:  (a, b) => Number(a.closing_stock ?? 0) - Number(b.closing_stock ?? 0),
-  expected: (a, b) => (Number(a.opening_stock ?? 0) - Number(a.sale_qty ?? 0)) - (Number(b.opening_stock ?? 0) - Number(b.sale_qty ?? 0)),
-  purchase: (a, b) => Number(a.purchase_qty ?? 0) - Number(b.purchase_qty ?? 0),
+  expected: (a, b) => (Number(a.prv_stock ?? 0) - Number(a.sale_stock ?? 0)) - (Number(b.prv_stock ?? 0) - Number(b.sale_stock ?? 0)),
+  purchase: (a, b) => Number(a.buy_stock ?? 0) - Number(b.buy_stock ?? 0),
   loss:     (a, b) => Number(a.loss ?? 0) - Number(b.loss ?? 0),
 };
 
@@ -143,9 +143,9 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {filtered.map((r, i) => {
-                const open = Number(r.opening_stock ?? 0);
-                const purch = Number(r.purchase_qty ?? 0);
-                const sale = Number(r.sale_qty ?? 0);
+                const open = Number(r.prv_stock ?? 0);
+                const purch = Number(r.buy_stock ?? 0);
+                const sale = Number(r.sale_stock ?? 0);
                 const close = Number(r.closing_stock ?? 0);
                 const expected = open - sale;
                 return (

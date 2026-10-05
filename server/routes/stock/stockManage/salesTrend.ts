@@ -21,23 +21,26 @@ router.get("/api/sales-trend/product", asyncHandler(async (req, res) => {
   const months = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));
   const seasonParam = String(req.query.season ?? "").trim().toLowerCase();
   const seasonMonths = await resolveSeasonMonths(seasonParam);
+  // 2026-10-04 · schema rename · 프론트 PeriodRow 타입 이미 신규 field 사용 중 (src/lib/stockPeriodUtils.tsx)
+  //   · period_start_date→period_start · snapshot_date→period_end · opening_stock→prv_stock
+  //   · purchase_qty→buy_stock · sale_qty→sale_stock · disposal_qty→product_bad_stock
   let q = supabase
     .from("stock_history")
-    .select("period_start_date, snapshot_date, period_type, supplier_name, product_name, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, closing_stock, supply_amount, total_amount")
+    .select("period_start, period_end, period_type, supplier_name, product_name, spec, prv_stock, buy_stock, sale_stock, product_bad_stock, closing_stock, supply_amount, total_amount")
     .eq("product_code", code);
   if (!seasonMonths && months > 0) {
     // 2026-07-16 fix: 정확히 N개월 back
     const today = new Date();
     const cutoff = new Date(today.getFullYear(), today.getMonth() - months, today.getDate());
     const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`;
-    q = q.gte("snapshot_date", cutoffStr);
+    q = q.gte("period_end", cutoffStr);
   }
   const { data, error } = await q
-    .order("period_start_date", { ascending: true, nullsFirst: false })
-    .order("snapshot_date", { ascending: true });
+    .order("period_start", { ascending: true, nullsFirst: false })
+    .order("period_end", { ascending: true });
   if (error) throw new HttpError(500, error.message, "DB_ERROR");
   const rows = seasonMonths
-    ? (data ?? []).filter(r => inSeasonMonths(String(r.snapshot_date ?? ""), seasonMonths))
+    ? (data ?? []).filter((r: any) => inSeasonMonths(String(r.period_end ?? ""), seasonMonths))
     : (data ?? []);
   const payload = { code, months, season: seasonParam || undefined, season_months: seasonMonths ?? undefined, rows };
   res.setHeader("Cache-Control", "no-store");
@@ -125,20 +128,21 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
     const PAGE = 1000;
     let from = 0;
     while (true) {
+      // 2026-10-04 · schema rename · 신규 column 직접 사용 (프론트 PeriodRow 타입과 일치)
       let q = supabase
         .from("stock_history")
-        .select("period_start_date, snapshot_date, period_type, product_code, supplier_name, purchase_qty, sale_qty, closing_stock, supply_amount, total_amount");
-      if (cutoffStr) q = q.gte("snapshot_date", cutoffStr);
+        .select("period_start, period_end, period_type, product_code, supplier_name, buy_stock, sale_stock, closing_stock, supply_amount, total_amount");
+      if (cutoffStr) q = q.gte("period_end", cutoffStr);
       const { data, error } = await q
-        .order("period_start_date", { ascending: true, nullsFirst: false })
+        .order("period_start", { ascending: true, nullsFirst: false })
         .range(from, from + PAGE - 1);
       if (error) throw new HttpError(500, error.message, "DB_ERROR");
       if (!data || data.length === 0) break;
       for (const r of data) {
-        const code = String(r.product_code ?? "").trim();
+        const code = String((r as any).product_code ?? "").trim();
         // products 매칭 or supplier_name 직접 매칭 (양쪽 다 확인)
-        if (!matchedCodes.has(code) && !supplierMatches(r.supplier_name, name)) continue;
-        if (seasonMonths && !inSeasonMonths(String(r.snapshot_date ?? ""), seasonMonths)) continue;
+        if (!matchedCodes.has(code) && !supplierMatches((r as any).supplier_name, name)) continue;
+        if (seasonMonths && !inSeasonMonths(String((r as any).period_end ?? ""), seasonMonths)) continue;
         all.push(r);
       }
       if (data.length < PAGE) break;
@@ -148,13 +152,15 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
     // 2026-09-10 · 사용자 지시 · 정합성 공식 · 재고자산 + 판매원가(사입액) = 매입액(원가)
     //   · cogs_amount = 판매 수량 × 사입단가 (팔린 것의 원가 · 판매원가)
     //   · purchase_cost = 매입 수량 × 사입단가 (실제 매입 원가)
+    // 2026-10-04 · schema rename · period_start_date→period_start · snapshot_date→period_end
+    //   · purchase_qty→buy_stock · sale_qty→sale_stock (프론트 PeriodRow 타입과 일치)
     const byPeriod = new Map<string, {
-      period_start_date: string;
-      snapshot_date: string;
+      period_start: string;
+      period_end: string;
       period_type: string | null;
       product_count: number;
-      purchase_qty: number;
-      sale_qty: number;
+      buy_stock: number;
+      sale_stock: number;
       closing_stock: number;
       supply_amount: number;
       total_amount: number;
@@ -165,32 +171,32 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
     const byProduct = new Map<string, {
       product_code: string;
       product_name: string;
-      purchase_qty: number;
-      sale_qty: number;
+      buy_stock: number;
+      sale_stock: number;
       closing_stock: number;
       total_amount: number;
       cogs_amount: number;
     }>();
     for (const r of all) {
-      const code = String(r.product_code ?? "").trim();
+      const code = String((r as any).product_code ?? "").trim();
       const pp = priceMap.get(code) ?? 0;
       const sp = salePriceMap.get(code) ?? 0;
-      const sqty = Number(r.sale_qty ?? 0) || 0;
-      const pqty = Number(r.purchase_qty ?? 0) || 0;
+      const sqty = Number((r as any).sale_stock ?? 0) || 0;
+      const pqty = Number((r as any).buy_stock ?? 0) || 0;
       const cogs = sqty * pp;
       const pcost = pqty * pp;
-      // 2026-09-10 · 사용자 지시 · 판매액 = sale_qty × sale_price (xlsx total_amount 대신)
+      // 2026-09-10 · 사용자 지시 · 판매액 = sale_stock × sale_price (xlsx total_amount 대신)
       const saleAmount = sqty * sp;
 
-      const key = String(r.period_start_date ?? r.snapshot_date);
+      const key = String((r as any).period_start ?? (r as any).period_end);
       if (!byPeriod.has(key)) {
         byPeriod.set(key, {
-          period_start_date: r.period_start_date ?? r.snapshot_date,
-          snapshot_date: r.snapshot_date,
-          period_type: r.period_type,
+          period_start: (r as any).period_start ?? (r as any).period_end,
+          period_end: (r as any).period_end,
+          period_type: (r as any).period_type,
           product_count: 0,
-          purchase_qty: 0,
-          sale_qty: 0,
+          buy_stock: 0,
+          sale_stock: 0,
           closing_stock: 0,
           supply_amount: 0,
           total_amount: 0,
@@ -200,24 +206,24 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
       }
       const agg = byPeriod.get(key)!;
       agg.product_count += 1;
-      agg.purchase_qty  += pqty;
-      agg.sale_qty      += sqty;
-      agg.closing_stock += Number(r.closing_stock ?? 0) || 0;
-      agg.supply_amount += Number(r.supply_amount ?? 0) || 0;
+      agg.buy_stock     += pqty;
+      agg.sale_stock    += sqty;
+      agg.closing_stock += Number((r as any).closing_stock ?? 0) || 0;
+      agg.supply_amount += Number((r as any).supply_amount ?? 0) || 0;
       // 2026-09-10 · 사용자 지시 · 합계 컬럼(total_amount) 사용 금지 · 판매수량 × 판매단가 계산
       agg.total_amount  += saleAmount;
       agg.cogs_amount   += cogs;
       agg.purchase_cost += pcost;
-      if (r.snapshot_date > agg.snapshot_date) agg.snapshot_date = r.snapshot_date;
+      if ((r as any).period_end > agg.period_end) agg.period_end = (r as any).period_end;
 
-      // 상품별 aggregate · 판매액 · sale_qty × sale_price (합계 컬럼 아님)
+      // 상품별 aggregate · 판매액 · sale_stock × sale_price (합계 컬럼 아님)
       if (code) {
-        const p = byProduct.get(code) ?? { product_code: code, product_name: "", purchase_qty: 0, sale_qty: 0, closing_stock: 0, total_amount: 0, cogs_amount: 0 };
-        p.purchase_qty  += pqty;
-        p.sale_qty      += sqty;
-        p.total_amount  += saleAmount;
-        p.cogs_amount   += cogs;
-        p.closing_stock = Number(r.closing_stock ?? 0) || 0; // 최신 마감 재고 (덮어씀)
+        const p = byProduct.get(code) ?? { product_code: code, product_name: "", buy_stock: 0, sale_stock: 0, closing_stock: 0, total_amount: 0, cogs_amount: 0 };
+        p.buy_stock    += pqty;
+        p.sale_stock   += sqty;
+        p.total_amount += saleAmount;
+        p.cogs_amount  += cogs;
+        p.closing_stock = Number((r as any).closing_stock ?? 0) || 0; // 최신 마감 재고 (덮어씀)
         byProduct.set(code, p);
       }
     }
@@ -239,8 +245,8 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
       for (const p of byProduct.values()) if (!p.product_name) p.product_name = p.product_code;
     }
 
-    const rows = Array.from(byPeriod.values()).sort((a, b) => a.period_start_date.localeCompare(b.period_start_date));
-    const products = Array.from(byProduct.values()).sort((a, b) => b.sale_qty - a.sale_qty); // 판매수량 desc
+    const rows = Array.from(byPeriod.values()).sort((a, b) => a.period_start.localeCompare(b.period_start));
+    const products = Array.from(byProduct.values()).sort((a, b) => b.sale_stock - a.sale_stock); // 판매수량 desc
     res.setHeader("Cache-Control", "no-store");
     res.json({ supplier: name, season: seasonParam || undefined, season_months: seasonMonths ?? undefined, rows, products });
   }
@@ -255,10 +261,11 @@ router.get("/api/sales-trend/overview", asyncHandler(async (_req, res) => {
     const PAGE = 1000;
     let from = 0;
     while (true) {
+      // 2026-10-04 · schema rename · 신규 column 직접 사용 (프론트 PeriodRow 타입과 일치)
       const { data, error } = await supabase
         .from("stock_history")
-        .select("period_start_date, snapshot_date, period_type, purchase_qty, sale_qty, sale_price, closing_stock, supply_amount")
-        .order("period_start_date", { ascending: true, nullsFirst: false })
+        .select("period_start, period_end, period_type, buy_stock, sale_stock, sale_price, closing_stock, supply_amount")
+        .order("period_start", { ascending: true, nullsFirst: false })
         .range(from, from + PAGE - 1);
       if (error) throw new HttpError(500, error.message, "DB_ERROR");
       if (!data || data.length === 0) break;
@@ -268,15 +275,15 @@ router.get("/api/sales-trend/overview", asyncHandler(async (_req, res) => {
     }
     const byPeriod = new Map<string, any>();
     for (const r of all) {
-      const key = String(r.period_start_date ?? r.snapshot_date);
+      const key = String((r as any).period_start ?? (r as any).period_end);
       if (!byPeriod.has(key)) {
         byPeriod.set(key, {
-          period_start_date: r.period_start_date ?? r.snapshot_date,
-          snapshot_date: r.snapshot_date,
-          period_type: r.period_type,
+          period_start: (r as any).period_start ?? (r as any).period_end,
+          period_end: (r as any).period_end,
+          period_type: (r as any).period_type,
           product_count: 0,
-          purchase_qty: 0,
-          sale_qty: 0,
+          buy_stock: 0,
+          sale_stock: 0,
           closing_stock: 0,
           supply_amount: 0,
           total_amount: 0,
@@ -284,17 +291,17 @@ router.get("/api/sales-trend/overview", asyncHandler(async (_req, res) => {
       }
       const agg = byPeriod.get(key)!;
       agg.product_count += 1;
-      agg.purchase_qty  += Number(r.purchase_qty ?? 0) || 0;
-      const q = Number(r.sale_qty ?? 0) || 0;
-      const p = Number(r.sale_price ?? 0) || 0;
-      agg.sale_qty      += q;
-      agg.closing_stock += Number(r.closing_stock ?? 0) || 0;
-      agg.supply_amount += Number(r.supply_amount ?? 0) || 0;
-      // 2026-09-14 · SSOT · 판매액 = sale_qty × sale_price (파생)
+      agg.buy_stock     += Number((r as any).buy_stock ?? 0) || 0;
+      const q = Number((r as any).sale_stock ?? 0) || 0;
+      const p = Number((r as any).sale_price ?? 0) || 0;
+      agg.sale_stock    += q;
+      agg.closing_stock += Number((r as any).closing_stock ?? 0) || 0;
+      agg.supply_amount += Number((r as any).supply_amount ?? 0) || 0;
+      // 2026-09-14 · SSOT · 판매액 = sale_stock × sale_price (파생)
       agg.total_amount  += q * p;
-      if (r.snapshot_date > agg.snapshot_date) agg.snapshot_date = r.snapshot_date;
+      if ((r as any).period_end > agg.period_end) agg.period_end = (r as any).period_end;
     }
-    const rows = Array.from(byPeriod.values()).sort((a, b) => a.period_start_date.localeCompare(b.period_start_date));
+    const rows = Array.from(byPeriod.values()).sort((a, b) => a.period_start.localeCompare(b.period_start));
     res.setHeader("Cache-Control", "no-store");
     res.json({ rows });
   }

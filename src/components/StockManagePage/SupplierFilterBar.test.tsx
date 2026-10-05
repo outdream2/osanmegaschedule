@@ -16,6 +16,9 @@ const baseProps = {
   setSupplierSeason: vi.fn(),
   setSupListLimit: vi.fn(),
   fetchData: vi.fn(),
+  // 2026-10-05 · 사용자 지시 · 월 멀티선택 SSOT 추가 props
+  selectedMonths: [`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`],
+  setSelectedMonths: vi.fn(),
 };
 
 describe("SupplierFilterBar · #185 PageToolbar 통일", () => {
@@ -26,12 +29,12 @@ describe("SupplierFilterBar · #185 PageToolbar 통일", () => {
     expect(container.textContent).toContain("개 사");
   });
 
-  it("기간 selector · PeriodSelector · 옵션 렌더", () => {
+  it("기간 selector · 월 토글 · 각 월 버튼 렌더", () => {
+    // 2026-10-05 · 사용자 지시 · PeriodSelector(10일/1~6개월) → MonthToggleSelector (각 월 독립 toggle)
     const { container } = render(<SupplierFilterBar {...baseProps} />);
-    // 10일 · 1개월 · 2개월 · ... 6개월
-    expect(container.textContent).toContain("10일");
-    expect(container.textContent).toContain("1개월");
-    expect(container.textContent).toContain("6개월");
+    const now = new Date();
+    const curMonth = now.getMonth() + 1;
+    expect(container.textContent).toContain(`${curMonth}월`);
   });
 
   // 2026-09 · Top N 옵션 UI 폐기 · props supListLimit/setSupListLimit 는 API 호환용 (void)

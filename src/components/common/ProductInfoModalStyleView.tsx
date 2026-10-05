@@ -5,7 +5,7 @@
 //   · 수정 버튼 · ProductCreateModal 편집 모달 오픈 (onEditClick)
 //   · 조회 전용 · 편집 없음
 import React from "react";
-import { Hash, Type, Building2, Tags, ShoppingCart, Coins, MapPin, Ruler, Layers, Award, Factory, Pencil } from "lucide-react";
+import { Hash, Type, Building2, Tags, ShoppingCart, Coins, MapPin, Ruler, Layers, Award, Factory, Pencil, Boxes } from "lucide-react";
 import { Spinner } from "./Spinner";
 import { StatusPill } from "./StatusPill";
 import type { ProductDetail } from "../ProductInfoPage/ProductInfoPage";
@@ -43,9 +43,11 @@ interface Props {
   error: string | null;
   canEdit: boolean;
   onEditClick: () => void;
+  // 2026-10-05 · 사용자 지시 · 실재고 확인창 (InventoryEditModal) 오픈 콜백
+  onInventoryClick?: () => void;
 }
 
-export const ProductInfoModalStyleView: React.FC<Props> = ({ product, loading, error, canEdit, onEditClick }) => {
+export const ProductInfoModalStyleView: React.FC<Props> = ({ product, loading, error, canEdit, onEditClick, onInventoryClick }) => {
   if (loading) return <div className="flex items-center justify-center py-16"><Spinner size={22} tone="brand" label="불러오는 중..." /></div>;
   if (error) return <div className="p-4 text-[14px] text-rose-700 font-medium bg-rose-50 rounded-lg border border-rose-200">{error}</div>;
   if (!product) return <div className="p-6 text-center text-[15px] text-zinc-400 font-medium">상품을 선택하세요</div>;
@@ -74,17 +76,30 @@ export const ProductInfoModalStyleView: React.FC<Props> = ({ product, loading, e
             {saleStatus && <StatusPill tone={saleTone} size="sm">{saleStatus}</StatusPill>}
           </div>
         </div>
-        {canEdit && (
-          <button
-            type="button"
-            onClick={onEditClick}
-            className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[10px] text-[15px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] cursor-pointer shadow-sm transition"
-            title="상품정보 수정 · 편집 모달 오픈"
-          >
-            <Pencil size={14} strokeWidth={2.4} />
-            수정
-          </button>
-        )}
+        <div className="shrink-0 flex items-center gap-2">
+          {onInventoryClick && (
+            <button
+              type="button"
+              onClick={onInventoryClick}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[10px] text-[15px] font-bold text-brand-deep bg-brand-tint/40 hover:bg-brand-tint/70 border border-brand-deep/15 cursor-pointer transition"
+              title="실재고 확인 · 창고/매장별 재고 조회 및 편집"
+            >
+              <Boxes size={14} strokeWidth={2.4} />
+              재고 확인
+            </button>
+          )}
+          {canEdit && (
+            <button
+              type="button"
+              onClick={onEditClick}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[10px] text-[15px] font-bold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] cursor-pointer shadow-sm transition"
+              title="상품정보 수정 · 편집 모달 오픈"
+            >
+              <Pencil size={14} strokeWidth={2.4} />
+              수정
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Section 1 · 필수 정보 */}
@@ -100,7 +115,8 @@ export const ProductInfoModalStyleView: React.FC<Props> = ({ product, loading, e
       {/* Section 2 · 분류 · 기타 */}
       <Section title="분류 · 기타">
         <FullRow>
-          <Row icon={<MapPin size={13} strokeWidth={2.4} />} label="진열구역" value={fmt(p.location ?? p.display_location)} />
+          {/* 2026-10-05 · 왼쪽 목록과 동일 소스 (p.location · 서버 /api/products/:code 가 display_location alias 반환) */}
+          <Row icon={<MapPin size={13} strokeWidth={2.4} />} label="진열구역" value={fmt(p.location)} />
         </FullRow>
         {shelfEntries.length > 0 && (
           <FullRow>

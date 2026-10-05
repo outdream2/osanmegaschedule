@@ -1,6 +1,7 @@
 import { supabase } from "../src/supabase/client";
 import { normSupplier } from "./ocr/match";
 import logger from "./lib/logger";
+import { formatDisplayLocation } from "../src/lib/formatDisplayLocation";
 
 export interface ProductInfo {
   code: string;
@@ -181,8 +182,13 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
         // 2026-08-27 · 사용자 지시 재확인 · 엑셀 진열위치 (display_location) 기준만
         //   · spec 은 원본 "규격" (EA · Z 등) · 진열위치 아님 · fallback 제거
         //   · row.location 우선 (SQL 마이그레이션 후) · fallback display_location · spec 절대 사용 X
-        const locationVal = String(row.location ?? row.display_location ?? "").trim() || null;
-        const info: ProductInfo = { code, name: row.product_name ?? "", spec: row.spec ?? "", ...row, location: locationVal };
+        // 2026-10-05 · 사용자 지시 · 진열구역 라벨 축약 (ERP ">" 4-level 원문 → 짧은 표시 라벨)
+        //   · formatDisplayLocation · "벽>22>전체>전체" → "벽 22" · "5매대>Ａ>1열>전체" → "5A 1열"
+        //   · SQL 가져오자마자 변환 · 전수 공용 (map[code].location 축약 라벨)
+        //   · ERP 원본은 display_location 그대로 유지 (DB 수정 X · 메모리 캐시만 변환)
+        const rawLoc = String(row.location ?? row.display_location ?? "").trim();
+        const locationVal = rawLoc ? (formatDisplayLocation(rawLoc) || rawLoc) : null;
+        const info: ProductInfo = { code, name: row.product_name ?? "", spec: row.spec ?? "", ...row, location: locationVal, display_location: locationVal };
         map[code] = info;
         const stripped = code.replace(/^0+/, "");
         if (stripped && stripped !== code && !map[stripped]) map[stripped] = info;

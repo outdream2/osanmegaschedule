@@ -32,6 +32,9 @@ const api = {
   getConfig: () => ipcRenderer.invoke("config:get") as Promise<RendererConfig>,
   patchConfig: (patch: Partial<RendererConfig>) =>
     ipcRenderer.invoke("config:patch", patch) as Promise<{ ok: boolean; config: RendererConfig }>,
+  // 2026-10-05 · ERP 자동 Scheduler 상태 (lastRun/nextRun 포함)
+  erpSchedulerGetStatus: () =>
+    ipcRenderer.invoke("erpScheduler:getStatus") as Promise<{ ok: boolean; status: Record<string, { enabled: boolean; interval: string; time: string; weekday: number; lastRunAt?: string; lastRunResult?: string; nextRunAt?: string; active: boolean }> }>,
 
   // ── Auth ──────────────────────────────────────
   isLoggedIn: () => ipcRenderer.invoke("auth:isLoggedIn") as Promise<boolean>,
@@ -136,6 +139,35 @@ const api = {
         }
       | { ok: false; stage: "config" | "network" | "http" | "decoder" | "fs"; error: string }
     >,
+  // 2026-10-04 · S2 Product Sync Service (상단 "ERP → Supabase 동기화" workflow)
+  productSyncRunCheck: () =>
+    ipcRenderer.invoke("productSync:runCheck") as Promise<{ ok: boolean; result?: unknown; error?: string }>,
+  productSyncApplyWrite: (opts: { allowWrite: boolean }) =>
+    ipcRenderer.invoke("productSync:applyWrite", opts) as Promise<{ ok: boolean; result?: unknown; error?: string }>,
+  productSyncGetHistory: (opts?: { limit?: number }) =>
+    ipcRenderer.invoke("productSync:getHistory", opts) as Promise<{ ok: boolean; history: Array<Record<string, unknown>> }>,
+  // 2026-10-04 · BUY Sync Service (호출자 ERP rows 주입 · Service 는 재조회 X)
+  buySyncRunCheck: (args: { erpRows: Record<string, unknown>[] }) =>
+    ipcRenderer.invoke("buy:runCheck", args) as Promise<{ ok: boolean; result?: unknown; error?: string }>,
+  buySyncApplyWrite: (args: { erpRows: Record<string, unknown>[]; allowWrite: boolean }) =>
+    ipcRenderer.invoke("buy:applyWrite", args) as Promise<{ ok: boolean; result?: unknown; error?: string }>,
+  // 2026-10-04 · stock_history Sync Service (ERP Inventory_Status · metadata 외부 주입)
+  stockHistorySyncRunCheck: (args: { erpRows: Record<string, unknown>[]; metadata: { period_start: string; period_end: string } }) =>
+    ipcRenderer.invoke("stockHistory:runCheck", args) as Promise<{ ok: boolean; result?: unknown; error?: string }>,
+  stockHistorySyncApplyWrite: (args: { erpRows: Record<string, unknown>[]; metadata: { period_start: string; period_end: string }; allowWrite: boolean }) =>
+    ipcRenderer.invoke("stockHistory:applyWrite", args) as Promise<{ ok: boolean; result?: unknown; error?: string }>,
+  saleSyncRunCheck: (args: { erpRows: Record<string, unknown>[] }) =>
+    ipcRenderer.invoke("sale:runCheck", args) as Promise<{ ok: boolean; result?: unknown; error?: string }>,
+  saleSyncApplyWrite: (args: { erpRows: Record<string, unknown>[]; allowWrite: boolean }) =>
+    ipcRenderer.invoke("sale:applyWrite", args) as Promise<{ ok: boolean; result?: unknown; error?: string }>,
+  syncHistoryGet: (args: { dataset: "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS" | "SALE_STATUS"; limit?: number }) =>
+    ipcRenderer.invoke("syncHistory:get", args) as Promise<{ ok: boolean; history: Array<Record<string, unknown>> }>,
+  erpGetFetchHistory: (args: { dataset: "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS" | "SALE_STATUS"; limit?: number }) =>
+    ipcRenderer.invoke("erp:getFetchHistory", args) as Promise<{ ok: boolean; history: Array<Record<string, unknown>> }>,
+  erpGetHistoryIndex: (args: { dataset: "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS" | "SALE_STATUS" }) =>
+    ipcRenderer.invoke("erp:getHistoryIndex", args) as Promise<{ ok: boolean; entries?: Array<Record<string, unknown>>; error?: string }>,
+  erpLoadHistorySnapshot: (args: { dataset: "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS" | "SALE_STATUS"; snapshotId: string; limit?: number }) =>
+    ipcRenderer.invoke("erp:loadHistorySnapshot", args) as Promise<{ ok: boolean; meta?: Record<string, unknown>; rows?: Array<Record<string, unknown>>; total?: number; error?: string }>,
   // ── Iregen 연동 설정 (CorpDB_nm · safeStorage · renderer 로 재전달 X) ──
   iregenGetSettings: () =>
     ipcRenderer.invoke("iregen:getSettings") as Promise<{

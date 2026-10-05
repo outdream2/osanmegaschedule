@@ -26,8 +26,18 @@ import {
 } from "./erpSyncOrchestrator";
 import type { DatasetKey } from "./datasetTypes";
 import { CURRENT_MAPPING_VERSION } from "./datasetTypes";
-import { getSupabaseStatus } from "./supabaseClient";
-import { saveCandidate } from "./snapshotStore";
+import { getSupabaseStatus, getSupabaseClient } from "./supabaseClient";
+import { saveCandidate, loadCandidateFull } from "./snapshotStore";
+import { runProductSyncCheck, applyProductSync } from "./productSyncService";
+import { runBuySyncCheck, applyBuySync } from "./buySyncService";
+import { runStockHistorySyncCheck, applyStockHistorySync } from "./stockHistorySyncService";
+import type { ErpInventoryRow, InventoryMetadata } from "../../../../src/shared/erp/erpInventoryMapper";
+import { runSaleSyncCheck, applySaleSync } from "./saleSyncService";
+import type { ErpSaleRow } from "../../../../src/shared/erp/erpSaleMapper";
+import { getRecentSyncHistory } from "./syncHistoryStore";
+import { appendFetchHistory, getRecentFetchHistory } from "./fetchHistoryStore";
+import { saveWithHistory, loadHistorySnapshot, getHistoryIndex } from "./snapshotHistoryStore";
+import type { ErpBuyRow } from "../../../../src/shared/erp/erpBuyMapper";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2026-10-04 · 최상위 대원칙 · "api값만 사용한다 · 데이터 임의 연결·생성 금지"
@@ -43,17 +53,55 @@ import { saveCandidate } from "./snapshotStore";
  *   · rows 는 ERP 응답 그대로 저장 · 변조·enrich 금지 (최상위 대원칙)
  *   · 실패 시 조회 결과 반환은 유지 (저장 실패가 조회 자체를 깨뜨리지 않도록 best-effort)
  */
-function persistQueryResult(dataset: DatasetKey, result: { ok: boolean; rows?: Record<string, unknown>[]; rowCount?: number; meta?: { queriedAt?: string } }): void {
-  if (!result.ok || !Array.isArray(result.rows)) return;
+function persistQueryResult(
+  dataset: DatasetKey,
+  result: { ok: boolean; rows?: Record<string, unknown>[]; rowCount?: number; stage?: string; error?: string; meta?: { queriedAt?: string; soapMs?: number; totalMs?: number } },
+  opts?: { queryFrom?: string; queryTo?: string },
+): void {
+  // 2026-10-04 · 하단 "Iregen ERP 직접 조회" 는 전부 MANUAL trigger
+  //   · snapshotHistoryStore.saveWithHistory 가 manual-latest + history/*.json.gz 분리 저장
+  //   · 기존 candidate.json.gz 하위호환 (당분간 공존)
+  if (result.ok && Array.isArray(result.rows)) {
+    const fetchedAt = result.meta?.queriedAt ?? new Date().toISOString();
+    try {
+      saveWithHistory({
+        dataset,
+        rows: result.rows,
+        trigger: "MANUAL",
+        fetchedAt,
+        queryFrom: opts?.queryFrom,
+        queryTo: opts?.queryTo,
+      });
+    } catch (err) {
+      console.warn(`[ipc:erp] ${dataset} manual-latest/history 저장 실패 ·`, (err as Error).message);
+    }
+    // 하위호환: candidate.json.gz 유지
+    try {
+      saveCandidate({
+        dataset,
+        rows: result.rows,
+        startedAt: fetchedAt,
+        mappingVersion: CURRENT_MAPPING_VERSION,
+      });
+    } catch (err) {
+      console.warn(`[ipc:erp] ${dataset} candidate (legacy) 저장 실패 ·`, (err as Error).message);
+    }
+  }
+  // 성공·실패 모두 fetch history metadata 기록 (하위호환 · 신규는 history-index.json)
   try {
-    saveCandidate({
-      dataset,
-      rows: result.rows,
-      startedAt: result.meta?.queriedAt ?? new Date().toISOString(),
-      mappingVersion: CURRENT_MAPPING_VERSION,
+    appendFetchHistory(dataset, {
+      fetchedAt: result.meta?.queriedAt ?? new Date().toISOString(),
+      ok: !!result.ok,
+      rowCount: Array.isArray(result.rows) ? result.rows.length : (result.rowCount ?? 0),
+      queryFrom: opts?.queryFrom,
+      queryTo: opts?.queryTo,
+      soapMs: result.meta?.soapMs,
+      totalMs: result.meta?.totalMs,
+      stage: result.ok ? undefined : result.stage,
+      error: result.ok ? undefined : result.error,
     });
   } catch (err) {
-    console.warn(`[ipc:erp] ${dataset} snapshot 저장 실패 (조회 결과는 유지) ·`, (err as Error).message);
+    console.warn(`[ipc:erp] ${dataset} fetch history 기록 실패 ·`, (err as Error).message);
   }
 }
 
@@ -75,7 +123,20 @@ export function registerIpcHandlers() {
       const { applyImportMode } = await import("./index");
       applyImportMode();
     }
+    // 2026-10-05 · ERP 자동 Scheduler 설정 변경 · 해당 dataset 만 live reschedule
+    if (patch.erpAutoScheduler?.datasets) {
+      const { rescheduleDataset } = await import("./erpAutoScheduler");
+      for (const ds of Object.keys(patch.erpAutoScheduler.datasets) as Array<"PRODUCT"|"BUY"|"INVENTORY"|"SALE"|"VENDOR">) {
+        rescheduleDataset(ds);
+      }
+    }
     return { ok: true, config: next };
+  });
+
+  // 2026-10-05 · ERP 자동 Scheduler 상태 조회 (UI 표시용 · lastRun/nextRun 포함)
+  ipcMain.handle("erpScheduler:getStatus", async () => {
+    const { getSchedulerStatus } = await import("./erpAutoScheduler");
+    return { ok: true, status: getSchedulerStatus() };
   });
 
   // ── Auth ──────────────────────────────────────
@@ -192,7 +253,7 @@ export function registerIpcHandlers() {
 
   ipcMain.handle("erp:inventoryStatus", async (_e, opts?: { startDate?: string; endDate?: string }) => {
     const result = await queryInventoryStatus(opts);
-    if (result.ok) persistQueryResult("INVENTORY_STATUS", result);
+    persistQueryResult("INVENTORY_STATUS", result, { queryFrom: opts?.startDate, queryTo: opts?.endDate });
     return result;
   });
 
@@ -208,7 +269,7 @@ export function registerIpcHandlers() {
   //   · 2026-10-04 · snapshot 저장 (BarCode enrich 불필요 · 자기 자신)
   ipcMain.handle("erp:productList", async (_e, opts?: { pageSize?: number; maxPages?: number; concurrency?: number }) => {
     const result = await queryProductList(opts);
-    if (result.ok) persistQueryResult("PRODUCT_LIST", result);
+    persistQueryResult("PRODUCT_LIST", result);
     return result;
   });
 
@@ -217,7 +278,7 @@ export function registerIpcHandlers() {
   //   · 2026-10-04 · 응답 그대로 snapshot 저장 (enrich 금지 · 최상위 대원칙)
   ipcMain.handle("erp:buyStatus", async (_e, opts?: { startDate?: string; endDate?: string }) => {
     const result = await queryBuyStatus(opts);
-    if (result.ok) persistQueryResult("BUY_STATUS", result);
+    persistQueryResult("BUY_STATUS", result, { queryFrom: opts?.startDate, queryTo: opts?.endDate });
     return result;
   });
 
@@ -226,7 +287,7 @@ export function registerIpcHandlers() {
   //   · ERP 응답 그대로 UI 표시 · enrich·join 금지 (최상위 대원칙)
   ipcMain.handle("erp:saleStatus", async (_e, opts?: { startDate?: string; endDate?: string }) => {
     const result = await querySaleStatus(opts);
-    if (result.ok) persistQueryResult("SALE_STATUS", result);
+    persistQueryResult("SALE_STATUS", result, { queryFrom: opts?.startDate, queryTo: opts?.endDate });
     return result;
   });
 
@@ -354,6 +415,152 @@ export function registerIpcHandlers() {
     return { ok: false, dryRun: true, inserted: 0, updated: 0, failed: 0, message: "전체 WRITE 는 Phase 3 사용자 승인 후 활성화" };
   });
 
+  // 2026-10-04 · S2 Product Sync Service · pcode primary identity · local ERP cache 재사용
+  ipcMain.handle("productSync:runCheck", async () => {
+    try {
+      const r = await runProductSyncCheck();
+      return { ok: true, result: r };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
+
+  ipcMain.handle("productSync:applyWrite", async (_e, args: { allowWrite: boolean }) => {
+    try {
+      const r = await applyProductSync({ allowWrite: !!args?.allowWrite });
+      return { ok: r.ok, result: r };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
+
+  // 2026-10-04 · 사용자 지시 · 동기화 이력 조회 (상단 UI 표시용)
+  ipcMain.handle("productSync:getHistory", (_e, args?: { limit?: number }) => {
+    const list = getRecentSyncHistory("PRODUCT_LIST", args?.limit ?? 20);
+    return { ok: true, history: list };
+  });
+
+  // 2026-10-04 · BUY Sync Service · orchestration (호출자가 넘겨준 ERP rows 로만 Diff/Write)
+  //   · Service 는 ERP 재호출 X · Local 재조회 X · 넘겨받은 rows + pcodeToBarcodeMap 만 사용
+  //   · ipc 가 pcodeToBarcodeMap 구성 (Product_List candidate 우선 · Supabase fallback)
+  ipcMain.handle("buy:runCheck", async (_e, args: { erpRows: ErpBuyRow[] }) => {
+    try {
+      if (!Array.isArray(args?.erpRows)) throw new Error("erpRows 배열 필요");
+      const pcodeToBarcodeMap = await buildPCodeToBarcodeMap();
+      const r = await runBuySyncCheck({ erpRows: args.erpRows, pcodeToBarcodeMap });
+      return { ok: true, result: r };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
+
+  ipcMain.handle("buy:applyWrite", async (_e, args: { erpRows: ErpBuyRow[]; allowWrite: boolean }) => {
+    try {
+      if (!Array.isArray(args?.erpRows)) throw new Error("erpRows 배열 필요");
+      const pcodeToBarcodeMap = await buildPCodeToBarcodeMap();
+      const r = await applyBuySync({ erpRows: args.erpRows, pcodeToBarcodeMap, allowWrite: !!args?.allowWrite });
+      const ok = r.failed === 0 && r.identityModified === 0 && r.webModified === 0;
+      return { ok, result: r };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
+
+  // 2026-10-04 · stock_history Sync Service · ERP Inventory_Status → stock_history
+  //   · 호출자 (UI/Scheduler) 가 ERP rows + metadata (period_start/end) 를 넘겨줌
+  //   · Service 는 ERP 재조회 X · Local 재조회 X · 넘겨받은 rows 로만 Supabase diff
+  //   · PROTECTED (product_code · 중복상품정보 · 금액 · xlsx 전용) UPDATE payload 완전 제외
+  ipcMain.handle("stockHistory:runCheck", async (_e, args: { erpRows: ErpInventoryRow[]; metadata: InventoryMetadata }) => {
+    try {
+      if (!Array.isArray(args?.erpRows)) throw new Error("erpRows 배열 필요");
+      if (!args?.metadata?.period_start || !args?.metadata?.period_end) {
+        throw new Error("metadata.period_start / period_end 필요");
+      }
+      const pcodeToBarcodeMap = await buildPCodeToBarcodeMap();
+      const r = await runStockHistorySyncCheck({ erpRows: args.erpRows, metadata: args.metadata, pcodeToBarcodeMap });
+      return { ok: true, result: r };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
+
+  ipcMain.handle("stockHistory:applyWrite", async (_e, args: { erpRows: ErpInventoryRow[]; metadata: InventoryMetadata; allowWrite: boolean }) => {
+    try {
+      if (!Array.isArray(args?.erpRows)) throw new Error("erpRows 배열 필요");
+      if (!args?.metadata?.period_start || !args?.metadata?.period_end) {
+        throw new Error("metadata.period_start / period_end 필요");
+      }
+      const pcodeToBarcodeMap = await buildPCodeToBarcodeMap();
+      const r = await applyStockHistorySync({ erpRows: args.erpRows, metadata: args.metadata, pcodeToBarcodeMap, allowWrite: !!args?.allowWrite });
+      const ok = r.failed === 0 && r.identityModified === 0 && r.protectedModified === 0;
+      return { ok, result: r };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
+
+  // 2026-10-05 · SALE Sync · sales table · stable identity 없음 · sale_date 범위 기반 중복 방지
+  ipcMain.handle("sale:runCheck", async (_e, args: { erpRows: ErpSaleRow[] }) => {
+    try {
+      if (!Array.isArray(args?.erpRows)) throw new Error("erpRows 배열 필요");
+      const r = await runSaleSyncCheck({ erpRows: args.erpRows });
+      return { ok: true, result: r };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
+
+  ipcMain.handle("sale:applyWrite", async (_e, args: { erpRows: ErpSaleRow[]; allowWrite: boolean }) => {
+    try {
+      if (!Array.isArray(args?.erpRows)) throw new Error("erpRows 배열 필요");
+      const r = await applySaleSync({ erpRows: args.erpRows, allowWrite: !!args?.allowWrite });
+      // 2026-10-05 · Fix C · SUCCESS = failed=0 AND inserted=new (전체 NEW row INSERT 완료)
+      const ok = r.failed === 0 && r.inserted === r.new;
+      return { ok, result: r };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
+
+  // 2026-10-04 · 신규 · Dataset 공통 동기화 이력 조회
+  ipcMain.handle("syncHistory:get", (_e, args: { dataset: DatasetKey; limit?: number }) => {
+    const list = getRecentSyncHistory(args.dataset, args?.limit ?? 20);
+    return { ok: true, history: list };
+  });
+
+  // 2026-10-04 · 사용자 지시 · 하단 "직접 조회" 저장 이력 조회 (legacy · metadata only)
+  ipcMain.handle("erp:getFetchHistory", (_e, args: { dataset: DatasetKey; limit?: number }) => {
+    const list = getRecentFetchHistory(args.dataset, args?.limit ?? 20);
+    return { ok: true, history: list };
+  });
+
+  // 2026-10-04 · 신규 · snapshotHistoryStore history-index (실체 snapshot 보존)
+  ipcMain.handle("erp:getHistoryIndex", (_e, args: { dataset: DatasetKey }) => {
+    try {
+      const entries = getHistoryIndex(args.dataset);
+      return { ok: true, entries };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
+
+  // 2026-10-04 · 신규 · 특정 snapshotId 의 실체 rows 로드 (UI 보기용)
+  ipcMain.handle("erp:loadHistorySnapshot", (_e, args: { dataset: DatasetKey; snapshotId: string; limit?: number }) => {
+    try {
+      const full = loadHistorySnapshot<Record<string, unknown>>(args.dataset, args.snapshotId);
+      if (!full) return { ok: false, error: "snapshot 파일 없음 (legacy entry 가능 · 실체 데이터 미보존)" };
+      const limit = args.limit ?? 500;
+      return { ok: true, meta: full.meta, rows: full.rows.slice(0, limit), total: full.rows.length };
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
+
+  // 2026-10-04 · BUY Sync orchestration helper · PCode → BarCode map 구성
+  //   · Product_List candidate snapshot 우선 (ERP 자체 데이터로 매핑)
+  //   · 비어 있으면 Supabase products.pcode → product_code (DB 로 fallback)
+  //   · 새 state/캐시 추가 금지 · 매 호출마다 재구성 (수동 동기화 트리거만 사용)
+
   // ── 폴더 열기 (탐색기) ──
   ipcMain.handle("folder:open", (_e, kind: FileKind, subdir?: "processed" | "failed") => {
     const cfg = loadConfig();
@@ -366,4 +573,38 @@ export function registerIpcHandlers() {
     shell.openPath(target);
     return { ok: true };
   });
+}
+
+/**
+ * BUY Sync orchestration helper · PCode → BarCode map.
+ * 1) Product_List candidate snapshot 우선 (ERP 자체 데이터)
+ * 2) 비어 있으면 Supabase products.pcode → product_code
+ */
+async function buildPCodeToBarcodeMap(): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const prod = loadCandidateFull<{ PCode?: unknown; BarCode?: unknown }>("PRODUCT_LIST");
+  if (prod && prod.rows.length > 0) {
+    for (const r of prod.rows) {
+      const pc = String(r.PCode ?? "").trim();
+      const bc = String(r.BarCode ?? "").trim();
+      if (pc && bc) map.set(pc, bc);
+    }
+    if (map.size > 0) return map;
+  }
+  const sb = getSupabaseClient();
+  if (!sb) throw new Error("PCode→Barcode map 구성 실패 · Product_List snapshot 없고 Supabase client 도 미설정");
+  let from = 0;
+  while (true) {
+    const { data, error } = await sb.from("products").select("pcode, product_code").not("pcode", "is", null).range(from, from + 999);
+    if (error) throw new Error(`products pcode fetch 실패 · ${error.message}`);
+    if (!data || data.length === 0) break;
+    for (const r of data as Array<{ pcode: string | null; product_code: string | null }>) {
+      const pc = String(r.pcode ?? "").trim();
+      const bc = String(r.product_code ?? "").trim();
+      if (pc && bc) map.set(pc, bc);
+    }
+    if (data.length < 1000) break;
+    from += 1000;
+  }
+  return map;
 }

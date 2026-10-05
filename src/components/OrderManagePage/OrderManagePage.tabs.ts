@@ -15,7 +15,8 @@ import {
 //   · exception · 이상목록 · exception_type 별 그룹핑 + 매입완료로 변경
 export type PurchaseOrderKey = "order" | "need" | "history" | "match" | "exception" | "critical";
 // 2026-08-29 · #193 Phase B · scan · productarrival · productinfo · return 4개 · 매장>상품/반품 서브탭으로 완전 이관 (사용자 지시)
-export type PurchaseKey = "receipt" | "reconciliation" | "purchase-history";
+// 2026-10-05 · 사용자 지시 · 재이관 · productinfo · productarrival · scan 3개 매장>상품 → 매입 아래로 복귀 · 거래명세서 숨김 (주석)
+export type PurchaseKey = "purchase-history" | "productinfo" | "productarrival" | "scan" | "reconciliation";
 // 2026-09-02 · #69 · 사용자 지시 · 카드 결제 관리 · 2탭 신규
 //   · card-register · 결제카드등록 (사용할 카드 CRUD)
 //   · card-history  · 카드별 결제내역 (대시보드 · 차월 예정)
@@ -43,11 +44,15 @@ export const PURCHASE_ORDER_DEFAULT_TABS: SubTabDef<PurchaseOrderKey>[] = [
   { key: "critical",  label: "품절임박",    icon: AlertTriangle,  color: "amber"   },
 ];
 
+// 2026-10-05 · 사용자 지시 · 매장>상품 3개 (상품정보·상품입고·실재고확인) 매입 아래로 재이관
+//   · 순서 · 매입이력 → 상품정보 → 상품입고 → 실재고확인 → 유통기한 임박
+//   · 거래명세서 (receipt) · 주석처리 · 숨김 (OCR 모듈·route 는 그대로 유지)
 export const PURCHASE_DEFAULT_TABS: SubTabDef<PurchaseKey>[] = [
   { key: "purchase-history", label: "매입이력",     icon: Building2,      color: "sky"     },
-  { key: "receipt",          label: "거래명세서",   icon: PackageCheck,   color: "violet"  },
-  // 2026-08-29 · #193 Phase B · return (반품필요) · scan (실재고입력) · productarrival (상품입고) · productinfo (상품정보)
-  //   · 4개 매장>상품/반품 서브탭으로 완전 이관 · 매입에서 제거 (사용자 지시 · 다중 재강조)
+  { key: "productinfo",      label: "상품정보",     icon: Info,           color: "sky"     },
+  { key: "productarrival",   label: "상품입고",     icon: PackagePlus,    color: "violet"  },
+  { key: "scan",             label: "실재고확인",   icon: ScanLine,       color: "teal"    },
+  // { key: "receipt",          label: "거래명세서",   icon: PackageCheck,   color: "violet"  }, // 2026-10-05 · 사용자 지시 · 숨김
   { key: "reconciliation",   label: "유통기한 임박", icon: AlertTriangle,  color: "amber"   },
 ];
 

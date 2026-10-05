@@ -29,7 +29,7 @@ async function loadAllProductsFromDb(supabase: SupabaseClient): Promise<DbProduc
       .from("products")
       .select(
         "product_code, product_name, supplier, supplier_code, unit, sale_status, brand, manufacturer, " +
-        "last_purchase_date, last_sale_date, current_stock, display_location, location, " +
+        "last_purchase_date, last_sale_date, current_stock, display_location, " +
         "optimal_stock, memo, hidden, stock_note, imported_at",
       )
       .range(from, from + PAGE - 1);

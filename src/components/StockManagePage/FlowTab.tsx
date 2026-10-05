@@ -126,7 +126,7 @@ export const FlowTab: React.FC = () => {
   // 2026-08-22 · dead code 제거 (availableSnapshots · snapshotPeriods · read 안 됨)
   const [flowPeriodType, setFlowPeriodType] = useState<string | null>(null);
   // 2026-08-31 · #30 root cause · stock_history 최신 스냅샷이 오래됐을 때 (예 · 34일 전) 기본 1개월 조회에 데이터 없음
-  //   · 자동 확장 · 요청 기간 rows==0 · 서버 snapshot_date 참고해서 안내
+  //   · 자동 확장 · 요청 기간 rows==0 · 서버 period_end 참고해서 안내
   //   · #69 (ZoneCategoryContent) 와 동일 패턴 · 안내 배너 노출
   const [flowAutoExpanded, setFlowAutoExpanded] = useState<{ requested: number; effective: number; latestSnapshot: string | null } | null>(null);
 
@@ -239,7 +239,7 @@ export const FlowTab: React.FC = () => {
         const p = new URLSearchParams({ sort: serverSort, dir: flowDir, limit: String(flowLimit) });
         if (flowSeason) p.set("season", flowSeason);
         else if (m > 0) p.set("months", String(m));
-        else if (flowSnapshot) p.set("snapshot_date", flowSnapshot);
+        else if (flowSnapshot) p.set("period_end", flowSnapshot);
         return p;
       };
       const params = buildParams(flowMonths);
@@ -281,12 +281,12 @@ export const FlowTab: React.FC = () => {
       if (data) {
         setStockFlow(Array.isArray(data.rows) ? data.rows : []);
         setFlowPeriodType(data.period_type ?? null);
-        if (flowMonths === 0 && !flowSnapshotAutoSet.current && data.snapshot_date) {
+        if (flowMonths === 0 && !flowSnapshotAutoSet.current && data.period_end) {
           flowSnapshotAutoSet.current = true;
-          if (!flowSnapshot) setFlowSnapshot(data.snapshot_date);
+          if (!flowSnapshot) setFlowSnapshot(data.period_end);
         }
         if (effectiveMonths !== flowMonths) {
-          setFlowAutoExpanded({ requested: flowMonths, effective: effectiveMonths, latestSnapshot: data.snapshot_date ?? null });
+          setFlowAutoExpanded({ requested: flowMonths, effective: effectiveMonths, latestSnapshot: data.period_end ?? null });
         } else {
           setFlowAutoExpanded(null);
         }
@@ -359,7 +359,7 @@ export const FlowTab: React.FC = () => {
     //   · 상품명·코드·공급사 통합 검색 · 대소문자 무시
     const searchQ = infoSearchQuery.trim().toLowerCase();
     const filtered = stockFlow.filter(p => {
-      const qty = p.sale_qty;
+      const qty = p.sale_stock;
       if (minN != null && Number.isFinite(minN) && qty < minN) return false;
       if (maxN != null && Number.isFinite(maxN) && qty > maxN) return false;
       if (flowCategoryFilter !== "전체") {
@@ -376,17 +376,17 @@ export const FlowTab: React.FC = () => {
     });
     const sign = flowDir === "asc" ? 1 : -1;
     if (flowSort === "loss") {
-      const lossOf = (p: any) => (Number(p.opening_stock ?? 0) - Number(p.sale_qty ?? 0)) - Number(p.closing_stock ?? 0);
+      const lossOf = (p: any) => (Number(p.prv_stock ?? 0) - Number(p.sale_stock ?? 0)) - Number(p.closing_stock ?? 0);
       return [...filtered].sort((a, b) => sign * (lossOf(a) - lossOf(b)));
     }
     if (flowSort === "name") return [...filtered].sort((a, b) => sign * String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"));
-    if (flowSort === "opening") return [...filtered].sort((a, b) => sign * (Number(a.opening_stock ?? 0) - Number(b.opening_stock ?? 0)));
+    if (flowSort === "opening") return [...filtered].sort((a, b) => sign * (Number(a.prv_stock ?? 0) - Number(b.prv_stock ?? 0)));
     if (flowSort === "current") return [...filtered].sort((a, b) => sign * (Number((a as any).current_stock ?? 0) - Number((b as any).current_stock ?? 0)));
     const periodDaysLocal = (flowMonths && flowMonths > 0) ? flowMonths * 30 : 30;
     const getVal = (p: any): number | string => {
-      const openV = Number(p.opening_stock ?? 0);
+      const openV = Number(p.prv_stock ?? 0);
       const cur = Number(p.current_stock ?? p.closing_stock ?? 0);
-      const saleV = Number(p.sale_qty ?? 0);
+      const saleV = Number(p.sale_stock ?? 0);
       const purP = Number(p.purchase_price ?? 0);
       const saleP = Number(p.sale_price ?? 0);
       switch (flowSort) {
@@ -404,7 +404,7 @@ export const FlowTab: React.FC = () => {
         case "stock_value": return cur * purP;
         case "sale_price": return saleP;
         case "profit_rate": return saleP > 0 && purP > 0 ? ((saleP - purP) / saleP) * 100 : -999999;
-        case "turnover_3m": return Number(p.sale_qty_cycle ?? 0);
+        case "turnover_3m": return Number(p.sale_stock_cycle ?? 0);
         default: return 0;
       }
     };
@@ -435,11 +435,11 @@ export const FlowTab: React.FC = () => {
   const flowTotals = useMemo(() => {
     let saleV = 0, curV = 0, optV = 0, monthV = 0, purchV = 0, amountV = 0;
     for (const p of filteredFlow) {
-      saleV += Number((p as any).sale_qty ?? 0);
+      saleV += Number((p as any).sale_stock ?? 0);
       curV  += Number((p as any).current_stock ?? 0);
       optV  += Number((p as any).optimal_stock ?? 0);
-      monthV += Number((p as any).sale_qty_month ?? 0);
-      purchV += Number((p as any).purchase_total_qty ?? (p as any).purchase_qty ?? 0);
+      monthV += Number((p as any).sale_stock_month ?? 0);
+      purchV += Number((p as any).purchase_total_qty ?? (p as any).buy_stock ?? 0);
       amountV += Number((p as any).total_amount ?? 0);
     }
     return { saleV, curV, optV, monthV, purchV, amountV };

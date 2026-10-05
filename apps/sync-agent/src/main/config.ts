@@ -56,6 +56,27 @@ export interface AppConfig {
     soapAction: string;
     encryptedCorpDbNm?: string;
   };
+  /** 2026-10-05 · Dataset 별 독립 자동 Scheduler 설정 (local only · Supabase 저장 안 함) */
+  erpAutoScheduler?: {
+    datasets: {
+      PRODUCT:   DatasetSchedule;
+      BUY:       DatasetSchedule;
+      INVENTORY: DatasetSchedule;
+      SALE:      DatasetSchedule;
+      VENDOR:    DatasetSchedule;
+    };
+  };
+}
+
+export type ScheduleInterval = "30min" | "1h" | "2h" | "4h" | "6h" | "12h" | "daily" | "weekly";
+export interface DatasetSchedule {
+  enabled: boolean;
+  interval: ScheduleInterval;
+  time: string;              // "HH:MM" (daily/weekly + interval 기준시간)
+  weekday: number;           // 0=일 ~ 6=토 (weekly 전용)
+  lastRunAt?: string;        // ISO
+  lastRunResult?: "SUCCESS" | "PARTIAL" | "FAILED" | "SKIPPED";
+  nextRunAt?: string;        // ISO (scheduler 계산)
 }
 
 export const DEFAULT_IREGEN_ENDPOINT = "http://soap.iregen.co.kr/App_Service/Irm/SvcInventoryBiz.asmx";
@@ -77,6 +98,16 @@ const DEFAULT_CONFIG: AppConfig = {
     enabled: true,
     endpoint: DEFAULT_IREGEN_ENDPOINT,
     soapAction: DEFAULT_IREGEN_SOAP_ACTION,
+  },
+  // 2026-10-05 · Dataset 별 독립 자동 scheduler 기본값
+  erpAutoScheduler: {
+    datasets: {
+      PRODUCT:   { enabled: true,  interval: "daily",  time: "02:00", weekday: 0 },
+      BUY:       { enabled: true,  interval: "4h",     time: "02:00", weekday: 0 },
+      INVENTORY: { enabled: true,  interval: "30min",  time: "02:00", weekday: 0 },
+      SALE:      { enabled: true,  interval: "30min",  time: "02:00", weekday: 0 },
+      VENDOR:    { enabled: false, interval: "weekly", time: "02:00", weekday: 0 },
+    },
   },
 };
 
@@ -118,6 +149,18 @@ export function saveConfig(config: AppConfig): void {
   }
 }
 
+type SchedulerCfg = AppConfig["erpAutoScheduler"];
+function mergeScheduler(current: SchedulerCfg, patch: SchedulerCfg): SchedulerCfg {
+  if (!patch) return current;
+  const baseDatasets = current?.datasets ?? DEFAULT_CONFIG.erpAutoScheduler!.datasets;
+  const patchDatasets = patch.datasets ?? {};
+  const merged: Partial<Record<keyof typeof baseDatasets, DatasetSchedule>> = {};
+  for (const k of Object.keys(baseDatasets) as Array<keyof typeof baseDatasets>) {
+    merged[k] = { ...baseDatasets[k], ...(patchDatasets[k] ?? {}) };
+  }
+  return { datasets: merged as SchedulerCfg extends { datasets: infer D } ? D : never };
+}
+
 export function patchConfig(patch: Partial<AppConfig>): AppConfig {
   const current = loadConfig();
   const next: AppConfig = {
@@ -130,6 +173,7 @@ export function patchConfig(patch: Partial<AppConfig>): AppConfig {
     lastRun: { ...current.lastRun, ...(patch.lastRun ?? {}) },
     // iregen 은 helper 가 항상 전체 객체 전달 · 단순 교체
     iregen: patch.iregen ?? current.iregen,
+    erpAutoScheduler: mergeScheduler(current.erpAutoScheduler, patch.erpAutoScheduler),
   };
   saveConfig(next);
   return next;

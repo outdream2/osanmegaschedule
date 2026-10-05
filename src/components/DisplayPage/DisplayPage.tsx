@@ -5,16 +5,18 @@
 // 2026-09-27 · 네비게이션 SSOT · useActiveNav Context · 사이드 채널 제거 · self-dispatch 로직 소멸
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
-import { SK_DP_PRODUCT_INNER_TAB, SK_DP_RETURN_INNER_TAB } from "../../lib/storageKeys";
+// 2026-10-05 · 사용자 지시 · product 서브탭 제거 · SK_DP_PRODUCT_INNER_TAB unused
+import { SK_DP_RETURN_INNER_TAB } from "../../lib/storageKeys";
 // 2026-09-27 · 네비게이션 SSOT · useActiveNav Context
 import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { type ZoneStatus, type DowMap, type DisplayZone } from "../../utils/zoneUtils";
 import { type ProductInfo } from "../../lib/productsCache";
+// 2026-10-05 · 사용자 지시 · product 서브탭 제거 · Info/Package2/ScanLine 아이콘 unused
 import {
   CheckCircle2, ChevronLeft, ChevronRight,
   Layers, Save, X, Store,
-  Info, Package2, ScanLine, RotateCcw,
+  RotateCcw,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
@@ -28,10 +30,7 @@ import { useIsMobile } from "../../hooks/use-mobile";
 // 2026-09-03 · #64 · DisplayRequestPanel · 구역 진열요청 삭제와 함께 미사용
 import { StockArrivalPage } from "../StockArrivalPage/StockArrivalPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";
-// 2026-08-29 · #193 · 사용자 지시 · 상품 서브탭 · 3개 이너 탭 (실재고입력·상품입고·상품정보) 매입에서 이관
-const ScanPageLazy = React.lazy(() => import("../ScanPage/ScanPage").then(m => ({ default: m.ScanPage })));
-const ProductArrivalPageLazy = React.lazy(() => import("../ProductArrivalPage/ProductArrivalPage").then(m => ({ default: m.ProductArrivalPage })));
-const ProductInfoPageLazy = React.lazy(() => import("../ProductInfoPage/ProductInfoPage").then(m => ({ default: m.ProductInfoPage })));
+// 2026-10-05 · 사용자 지시 · 상품 서브탭 제거 · ScanPage/ProductArrivalPage/ProductInfoPage lazy import 삭제 · 매입 아래로 재이관
 // 2026-08-29 · #193 · 반품 서브탭 · 매입 우회 · 반품필요 + 반품확정 직접 렌더 (이너 탭)
 const ReturnListPanelLazy = React.lazy(() => import("../OrderManagePage/ReturnListPanel").then(m => ({ default: m.ReturnListPanel })));
 const ReturnConfirmedPanelLazy = React.lazy(() => import("../OrderManagePage/ReturnConfirmedPanel").then(m => ({ default: m.ReturnConfirmedPanel })));
@@ -66,6 +65,8 @@ import { DisplaySearchBar } from "./DisplaySearchBar";
 import { DisplayMobileList } from "./DisplayMobileList";
 import { DisplayProductPanel } from "./DisplayProductPanel";
 import { VendorManageSplit } from "./VendorManageSplit";
+// 2026-10-05 · 매출 (ERP Sales_Days_TimeReport 기반 · 시간대/월별 탭)
+const RevenuePage = React.lazy(() => import("./RevenuePage").then((m) => ({ default: m.RevenuePage })));
 import { useDisplayData } from "./useDisplayData";
 // 2026-08-25 · 사용자 지시 · 매장구역 안 배치구역 불일치 탭
 // 2026-09-24 · #333 · 사용자 지시 · MismatchPage 완전 제거 · 파일 삭제 (`6dbd4334` 후속)
@@ -116,7 +117,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const { perms: dpPerms } = usePagePermissions();
   const dpHiddenSubs = React.useMemo(() => {
     const set = new Set<DpSubTabKey>();
-    const subs: DpSubTabKey[] = ["product", "purchase-order", "purchase", "payment", "statistics", "return", "stock-arrivals", "store", "vendor-manage"];
+    // 2026-10-05 · 사용자 지시 · "product" 제거
+    const subs: DpSubTabKey[] = ["purchase-order", "purchase", "payment", "statistics", "revenue", "return", "stock-arrivals", "store", "vendor-manage"];
     for (const s of subs) {
       const perm = (dpPerms as any)[`display:${s}`];
       if (perm?.hidden === true) set.add(s);
@@ -135,22 +137,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     _setDpSubTab(next);
     setActiveByPage("display", next);
   }, [setActiveByPage]);
-  // 2026-08-29 · #193 · 상품 서브탭 안 · 3개 이너 탭 (실재고입력·상품입고·상품정보)
-  // 2026-09-01 · 사용자 지시 · 순서 재조정 · 실재고입력 · 상품입고 · 상품정보
-  const [productInnerTab, setProductInnerTab] = useState<"scan" | "arrival" | "info">(() => {
-    try {
-      const raw = localStorage.getItem(SK_DP_PRODUCT_INNER_TAB);
-      if (raw === "scan" || raw === "arrival" || raw === "info") return raw;
-    } catch { /* noop */ }
-    return "info"; // 2026-09-07 · 사용자 지시 · 기본 · 상품정보 맨 앞
-  });
-  useEffect(() => {
-    try { localStorage.setItem(SK_DP_PRODUCT_INNER_TAB, productInnerTab); } catch { /* noop */ }
-  }, [productInnerTab]);
-  // 상품 탭 진입 시 항상 맨 앞 탭(상품정보)으로 리셋
-  useEffect(() => {
-    if (dpSubTab === "product") setProductInnerTab("info");
-  }, [dpSubTab]);
+  // 2026-10-05 · 사용자 지시 · 상품 서브탭 제거 · productInnerTab state/useEffect 삭제 · 매입 아래로 재이관
   // 2026-08-29 · #193 · 반품 서브탭 안 · 2개 이너 탭 (반품필요·반품확정)
   const [returnInnerTabDp, setReturnInnerTabDp] = useState<"need" | "confirmed">(() => {
     try {
@@ -570,15 +557,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const popoverZone = useMemo(() => (popoverAnchor ? zones.find((z) => z.id === popoverAnchor.zoneId) ?? null : null), [popoverAnchor, zones]);
 
   const dpVisibilityMap: Record<DpSubTabKey, boolean> = {
-    // 2026-08-29 · #193 · 상품 서브탭 · 매입에서 이관
-    // 2026-08-29 · #201 BUG-1 A안 · manager 이상 (level >= 2) 허용 · 사이드바 managerOnly 와 일치
-    //   · 이전: dpCanSeeStockManage (level>=9) · 사이드바와 불일치 · level 2~8 클릭 시 탭 안 보임
-    //   · 신규: dpUserLevel >= 2 · 사이드바 managerOnly=true 와 정확 매칭
-    "product": dpUserLevel >= 2 && !dpHiddenSubs.has("product"),
+    // 2026-10-05 · 사용자 지시 · "product" 서브탭 제거 · 3개 이너탭 매입 아래로 재이관
     "purchase-order": dpCanSeeStockManage && !dpHiddenSubs.has("purchase-order"),
     "purchase": dpCanSeeStockManage && !dpHiddenSubs.has("purchase"),
     "payment": dpCanSeeStockManage && !dpHiddenSubs.has("payment"),
     "statistics": dpCanSeeStockManage && !dpHiddenSubs.has("statistics"),
+    // 2026-10-05 · 매출 (ERP Sales_Days_TimeReport 기반 · 시간대/월별)
+    "revenue": dpCanSeeStockManage && !dpHiddenSubs.has("revenue"),
     // 2026-08-25 · 반품 신규 · dpCanSeeStockManage 조건 사용 (통계와 동일 레벨)
     "return": dpCanSeeStockManage && !dpHiddenSubs.has("return"),
     "stock-arrivals": dpCanSeeStockArrivals && !dpHiddenSubs.has("stock-arrivals"),
@@ -617,6 +602,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             ocrTabOnLogout={onLogout} initialTopTab={dpSubTab as "purchase-order" | "purchase" | "payment" | "statistics"} hideTopTabs
           />
         </main>
+      ) : dpSubTab === "revenue" && dpCanSeeStockManage ? (
+        <main className="flex-1 flex flex-col min-h-0">
+          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="매출 로딩 중..." size={14} tone="brand" /></div>}>
+            <RevenuePage />
+          </React.Suspense>
+        </main>
       ) : dpSubTab === "return" && dpCanSeeStockManage ? (
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <div className="px-4 pt-4 shrink-0">
@@ -636,28 +627,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             </div>
           </React.Suspense>
         </main>
-      ) : dpSubTab === "product" && dpUserLevel >= 2 ? (
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="px-4 pt-4 shrink-0">
-            <TabBar<"info" | "arrival" | "scan">
-              level={3}
-              tabs={[
-                { key: "info",    label: "상품정보",   icon: Info,     color: "sky"    },
-                { key: "arrival", label: "상품입고",   icon: Package2, color: "violet" },
-                { key: "scan",    label: "실재고확인", icon: ScanLine, color: "teal"   },
-              ]}
-              activeKey={productInnerTab}
-              onSelect={setProductInnerTab}
-            />
-          </div>
-          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
-            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-              {productInnerTab === "scan"    && <ScanPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
-              {productInnerTab === "arrival" && <ProductArrivalPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />}
-              {productInnerTab === "info"    && <ProductInfoPageLazy authSession={authSession ?? null} />}
-            </div>
-          </React.Suspense>
-        </main>
+      /* 2026-10-05 · 사용자 지시 · "product" 서브탭 렌더 블록 제거 · 3개 이너탭 매입 아래로 재이관 */
       ) : (
         <main className={`${PAGE_CONTAINER_CLS} p-4 flex flex-col gap-4 flex-1`}>
           {/* 2026-08-25 · 매장구역도/배치불일치 · 2026-08-26 · 창고1/창고2 추가 */}

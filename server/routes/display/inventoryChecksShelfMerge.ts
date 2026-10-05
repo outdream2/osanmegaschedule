@@ -98,10 +98,10 @@ export async function checkShelfPositionConflicts(
     const otherCodes = conflicts.map(c => String((c as any).product_code));
     const { data: otherProds } = await supabase
       .from("products")
-      .select("product_code, product_name, display_location, location")
+      .select("product_code, product_name, display_location")
       .in("product_code", otherCodes);
     const conflictOther = (otherProds ?? []).find(op => {
-      const otherLoc = (op as any).display_location ?? (op as any).location ?? null;
+      const otherLoc = (op as any).display_location ?? null;
       return String(otherLoc ?? "").trim() === String(currentDisplayLoc).trim();
     });
     if (conflictOther) {
@@ -112,12 +112,13 @@ export async function checkShelfPositionConflicts(
   }
 }
 
-/** products 테이블에서 display_location 조회 (fallback: location · 하위호환) */
+/** products 테이블에서 display_location 조회 */
+// 2026-10-04 · schema fix · products.location column 없음 · display_location 단독
 export async function fetchProductDisplayLoc(productCode: string): Promise<string | null> {
   const { data } = await supabase
     .from("products")
-    .select("display_location, location")
+    .select("display_location")
     .eq("product_code", productCode)
     .maybeSingle();
-  return (data as any)?.display_location ?? (data as any)?.location ?? null;
+  return (data as any)?.display_location ?? null;
 }

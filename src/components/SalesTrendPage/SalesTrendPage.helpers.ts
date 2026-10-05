@@ -3,17 +3,19 @@
 import { ZONE_DEFS, formatZoneCategoryCombined } from "../../constants/displayZones";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
+// 2026-10-04 · stock_history column rename · period_start_date→period_start · snapshot_date→period_end
+//   · opening_stock→prv_stock · purchase_qty→buy_stock · sale_qty→sale_stock · disposal_qty→product_bad_stock
 export type PeriodRow = {
-  period_start_date: string;
-  snapshot_date: string;
+  period_start: string;
+  period_end: string;
   period_type: string | null;
   supplier_name?: string | null;
   product_name?: string | null;
   spec?: string | null;
-  opening_stock?: number;
-  purchase_qty?: number;
-  sale_qty?: number;
-  disposal_qty?: number;
+  prv_stock?: number;
+  buy_stock?: number;
+  sale_stock?: number;
+  product_bad_stock?: number;
   closing_stock?: number;
   supply_amount?: number;
   total_amount?: number;
@@ -140,60 +142,60 @@ export function generatePeriods(rangeDays: number): Array<{ start: string; end: 
 }
 
 // 실제 rows 를 기간 목록에 매핑 · 없는 기간은 0 값 placeholder
-export function fillPeriodsWithRows<T extends { period_start_date: string; snapshot_date: string }>(
+export function fillPeriodsWithRows<T extends { period_start: string; period_end: string }>(
   rows: T[],
   rangeDays: number,
   makeEmpty: (start: string, end: string, periodType: "early" | "mid" | "late") => T,
 ): T[] {
   const periods = generatePeriods(rangeDays);
   const byStart = new Map<string, T>();
-  for (const r of rows) byStart.set(String(r.period_start_date), r);
+  for (const r of rows) byStart.set(String(r.period_start), r);
   return periods.map(p => byStart.get(p.start) ?? makeEmpty(p.start, p.end, p.period_type));
 }
 
 // 10일 기간 rows → 월별 aggregation (같은 YYYY-MM 끼리 합산)
-// 유량(purchase/sale/disposal): SUM · 재고: 마지막 스냅샷 값 · 금액: SUM
+// 유량(buy_stock/sale_stock/product_bad_stock): SUM · 재고: 마지막 스냅샷 값 · 금액: SUM
 export function aggregateToMonths<T extends {
-  period_start_date: string; snapshot_date: string; period_type: string | null;
-  opening_stock?: number; purchase_qty?: number; sale_qty?: number; disposal_qty?: number;
+  period_start: string; period_end: string; period_type: string | null;
+  prv_stock?: number; buy_stock?: number; sale_stock?: number; product_bad_stock?: number;
   closing_stock?: number; supply_amount?: number; total_amount?: number; product_count?: number;
   supplier_name?: string | null; product_name?: string | null; spec?: string | null;
 }>(rows: T[]): T[] {
   const byMonth = new Map<string, T>();
   for (const r of rows) {
-    const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(r.period_start_date);
+    const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(r.period_start);
     if (!m) continue;
     const key = `${m[1]}-${m[2]}`;
     if (!byMonth.has(key)) {
-      byMonth.set(key, { ...r, period_start_date: `${key}-01`, snapshot_date: r.snapshot_date, period_type: null } as T);
+      byMonth.set(key, { ...r, period_start: `${key}-01`, period_end: r.period_end, period_type: null } as T);
       const agg = byMonth.get(key)! as any;
-      agg.opening_stock = Number(r.opening_stock ?? 0) || 0;
-      agg.purchase_qty = 0;
-      agg.sale_qty = 0;
-      agg.disposal_qty = 0;
+      agg.prv_stock = Number(r.prv_stock ?? 0) || 0;
+      agg.buy_stock = 0;
+      agg.sale_stock = 0;
+      agg.product_bad_stock = 0;
       agg.closing_stock = Number(r.closing_stock ?? 0) || 0;
       agg.supply_amount = 0;
       agg.total_amount = 0;
       agg.product_count = 0;
-      agg._first_snap = r.snapshot_date;
-      agg._last_snap = r.snapshot_date;
+      agg._first_snap = r.period_end;
+      agg._last_snap = r.period_end;
     }
     const agg = byMonth.get(key)! as any;
     // 유량: SUM
-    agg.purchase_qty += Number(r.purchase_qty ?? 0) || 0;
-    agg.sale_qty += Number(r.sale_qty ?? 0) || 0;
-    agg.disposal_qty += Number(r.disposal_qty ?? 0) || 0;
+    agg.buy_stock += Number(r.buy_stock ?? 0) || 0;
+    agg.sale_stock += Number(r.sale_stock ?? 0) || 0;
+    agg.product_bad_stock += Number(r.product_bad_stock ?? 0) || 0;
     agg.supply_amount += Number(r.supply_amount ?? 0) || 0;
     agg.total_amount += Number(r.total_amount ?? 0) || 0;
-    // 재고 시작=가장 이른 스냅샷의 opening
-    if (r.snapshot_date < (agg._first_snap ?? r.snapshot_date)) {
-      agg._first_snap = r.snapshot_date;
-      agg.opening_stock = Number(r.opening_stock ?? 0) || 0;
+    // 재고 시작=가장 이른 스냅샷의 prv_stock
+    if (r.period_end < (agg._first_snap ?? r.period_end)) {
+      agg._first_snap = r.period_end;
+      agg.prv_stock = Number(r.prv_stock ?? 0) || 0;
     }
     // 재고 종료=가장 늦은 스냅샷의 closing
-    if (r.snapshot_date > (agg._last_snap ?? "")) {
-      agg._last_snap = r.snapshot_date;
-      agg.snapshot_date = r.snapshot_date;
+    if (r.period_end > (agg._last_snap ?? "")) {
+      agg._last_snap = r.period_end;
+      agg.period_end = r.period_end;
       agg.closing_stock = Number(r.closing_stock ?? 0) || 0;
     }
     // product_count 는 최댓값 (같은 월에 같은 상품이 중복 카운트되지 않도록)
@@ -202,5 +204,5 @@ export function aggregateToMonths<T extends {
   // 내부 헬퍼 필드 제거
   return Array.from(byMonth.values())
     .map(v => { const { _first_snap, _last_snap, ...rest } = v as any; void _first_snap; void _last_snap; return rest as T; })
-    .sort((a, b) => a.period_start_date.localeCompare(b.period_start_date));
+    .sort((a, b) => a.period_start.localeCompare(b.period_start));
 }

@@ -26,22 +26,41 @@ router.get("/api/supplier-purchase-detail", asyncHandler(async (req, res) => {
 
   const vatIncludedPromise = fetchVatIncluded(supplier);
 
-  // supplier_code 조회 (vendors.note 우선)
-  let supplierCode: string | null = null;
+  // 2026-10-05 · 사용자 지시 · supplier_code 기반 매칭 전환
+  //   · vendors.note 조회 + purchase_details.supplier_name 로 1차 조회해서 code 집합 수집
+  //   · 1 code · 2+ name variant (녹십자/대웅제약 등 21건) · code IN 조회로 전부 포함
+  const supplierCodeSet = new Set<string>();
   try {
     const { data: vn, error: vnerr } = await supabase.from("vendors").select("note").eq("company_name", supplier).limit(1);
     if (!vnerr) {
       const c = String((vn ?? [])[0]?.note ?? "").trim();
-      if (c && /^\d{1,5}$/.test(c)) supplierCode = c;
+      if (c && /^\d{1,5}$/.test(c)) supplierCodeSet.add(c);
     }
     try {
       const { data: vs, error: vserr } = await supabase.from("vendors").select("supplier_code").eq("company_name", supplier).limit(1);
       if (!vserr) {
         const c = String((vs ?? [])[0]?.supplier_code ?? "").trim();
-        if (c) supplierCode = c;
+        if (c) supplierCodeSet.add(c);
       }
     } catch { /* silent */ }
   } catch { /* silent */ }
+  try {
+    // purchase_details 자체에서 name 매칭 row 의 supplier_code DISTINCT 수집
+    const { data: nameRows, error: nameErr } = await supabase
+      .from("purchase_details")
+      .select("supplier_code")
+      .eq("supplier_name", supplier)
+      .not("supplier_code", "is", null)
+      .gte("purchase_date", cutoffYmd)
+      .limit(1000);
+    if (!nameErr) {
+      for (const r of nameRows ?? []) {
+        const c = String(r.supplier_code ?? "").trim();
+        if (c) supplierCodeSet.add(c);
+      }
+    }
+  } catch { /* silent */ }
+  if (/^\d{1,5}$/.test(supplier)) supplierCodeSet.add(supplier);
 
   // products.supplier === 이 supplier 인 product_codes 리스트
   const productCodesForSupplier: string[] = [];
@@ -67,8 +86,8 @@ router.get("/api/supplier-purchase-detail", asyncHandler(async (req, res) => {
       ? "id, purchase_date, product_code, product_name, quantity, unit_price, amount, total, vat_amount, supply_amount"
       : "id, purchase_date, product_code, product_name, quantity, unit_price, amount, total";
     const byName = supabase.from("purchase_details").select(cols).eq("supplier_name", supplier).gte("purchase_date", cutoffYmd);
-    const byCode = supplierCode
-      ? supabase.from("purchase_details").select(cols).eq("supplier_code", supplierCode).gte("purchase_date", cutoffYmd)
+    const byCode = supplierCodeSet.size > 0
+      ? supabase.from("purchase_details").select(cols).in("supplier_code", [...supplierCodeSet]).gte("purchase_date", cutoffYmd)
       : Promise.resolve({ data: [] as any[], error: null as any });
     const byProductCodes = async () => {
       if (productCodesForSupplier.length === 0) return { data: [] as any[], error: null as any };

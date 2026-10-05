@@ -51,6 +51,14 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
   const start = String(req.query.start ?? "").trim();
   const end   = String(req.query.end ?? "").trim();
   const hasFilter = /^\d{4}-\d{2}-\d{2}$/.test(start) && /^\d{4}-\d{2}-\d{2}$/.test(end);
+  // 2026-10-05 · 사용자 지시 · chunk 지원 · suppliers=A,B,C 지정 시 · WHERE in (…) 로 그 공급사만 집계
+  //   · lite=1 지정 시 · cogs/stock_asset 계산 skip · purchase/payment/balance 만 반환 (빠른 응답)
+  //   · 결제입력 좌측 리스트 · 공급사 chunk × 30 progressive load 용
+  const suppliersRaw = String(req.query.suppliers ?? "").trim();
+  const supplierList = suppliersRaw
+    ? suppliersRaw.split(",").map(s => s.trim()).filter(s => s.length > 0)
+    : null;
+  const liteMode = String(req.query.lite ?? "").trim() === "1";
   const purchaseMap = new Map<string, number>();
   const paymentMap = new Map<string, number>();
 
@@ -63,6 +71,7 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
       .select("supplier_name, amount, purchase_date")
       .range(pdFrom, pdFrom + PD_PAGE - 1);
     if (hasFilter) q = q.gte("purchase_date", start).lte("purchase_date", end);
+    if (supplierList) q = q.in("supplier_name", supplierList);
     const { data, error } = await q;
     if (error) {
       if (/relation .* does not exist/i.test(error.message)) break;
@@ -88,6 +97,7 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
         .select("supplier_name, amount, payment_date")
         .range(spFrom, spFrom + SP_PAGE - 1);
       if (hasFilter) q = q.gte("payment_date", start).lte("payment_date", end);
+      if (supplierList) q = q.in("supplier_name", supplierList);
       const { data, error } = await q;
       if (error) break;
       if (!data || data.length === 0) break;
@@ -100,6 +110,19 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
       spFrom += SP_PAGE;
     }
   } catch { /* silent */ }
+
+  // 2026-10-05 · lite 모드 · cogs/stock_asset 계산 skip · purchase/payment/balance 만 응답 (빠른 응답)
+  if (liteMode) {
+    const values: Record<string, { purchase: number; payment: number; balance: number }> = {};
+    const names = new Set([...purchaseMap.keys(), ...paymentMap.keys()]);
+    for (const n of names) {
+      const p = purchaseMap.get(n) ?? 0;
+      const pay = paymentMap.get(n) ?? 0;
+      values[n] = { purchase: p, payment: pay, balance: p - pay };
+    }
+    res.json({ values });
+    return;
+  }
 
   // 2026-09-10 · #72 · 확정 공식 · 재고자산 = 매입액 - 판매원가 (COGS) 계산 추가
   //   · 판매원가 = SUM(sale_qty × products.purchase_price) · 공급사별
@@ -162,16 +185,16 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
       while (true) {
         let q = supabase
           .from("stock_history")
-          .select("supplier_name, product_code, sale_qty, snapshot_date")
+          .select("supplier_name, product_code, sale_stock, period_end")
           .range(from, from + PAGE - 1);
-        if (hasFilter) q = q.gte("snapshot_date", start).lte("snapshot_date", end);
+        if (hasFilter) q = q.gte("period_end", start).lte("period_end", end);
         const { data } = await q;
         if (!data || data.length === 0) break;
         for (const r of data) {
           const code = String((r as any).product_code ?? "").trim();
           const supRaw = String((r as any).supplier_name ?? "").trim() || productSupplierMap.get(code) || "";
           if (!supRaw) continue;
-          const qty = Number((r as any).sale_qty ?? 0) || 0;
+          const qty = Number((r as any).sale_stock ?? 0) || 0;
           const price = priceMap.get(code) ?? 0;
           if (qty <= 0 || price <= 0) continue;
           cogsMap.set(supRaw, (cogsMap.get(supRaw) ?? 0) + qty * price);
@@ -259,10 +282,10 @@ router.get("/api/supplier-monthly-stock-values/:supplier", asyncHandler(async (r
     while (true) {
       const { data, error } = await supabase
         .from("stock_history")
-        .select("snapshot_date, product_code, closing_stock")
+        .select("period_end, product_code, closing_stock")
         .in("product_code", chunk)
-        .gte("snapshot_date", cutoffStr)
-        .order("snapshot_date", { ascending: false })
+        .gte("period_end", cutoffStr)
+        .order("period_end", { ascending: false })
         .range(from, from + PAGE - 1);
       if (error) {
         if (/relation .* does not exist/i.test(error.message)) break;
@@ -271,7 +294,7 @@ router.get("/api/supplier-monthly-stock-values/:supplier", asyncHandler(async (r
       if (!data || data.length === 0) break;
       for (const r of data) {
         const code = String(r.product_code ?? "").trim();
-        const snap = String(r.snapshot_date ?? "");
+        const snap = String(r.period_end ?? "");
         if (!code || !snap) continue;
         const ym = snap.slice(0, 7);
         const key = `${code}::${ym}`;

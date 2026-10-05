@@ -73,7 +73,7 @@ const PERIOD_OPTIONS: readonly PeriodOption<0 | 1 | 2 | 3 | 6>[] = [
 interface DashboardKpis {
   totalSaleAmount: number;   // 판매액 합계 (수량 × 단가 근사)
   totalSaleQty: number;      // 판매수량 합계
-  productCount: number;      // 판매 상품 수 (sale_qty > 0)
+  productCount: number;      // 판매 상품 수 (sale_stock > 0)
   totalLossQty: number;      // 손실 합계 (양수만 · calcLoss > 0)
   lossRatePct: number;       // 손실률 = 손실 합계 / 판매수량 합계 × 100
   avgProfitRatePct: number;  // 평균 이익률 (판매가/사입가 있는 상품 대상 · 판매수량 가중)
@@ -88,7 +88,7 @@ const computeKpis = (rows: StockFlowRow[]): DashboardKpis => {
   let profitRateWeight = 0;
 
   for (const r of rows) {
-    const saleQty = Number(r.sale_qty ?? 0) || 0;
+    const saleQty = Number(r.sale_stock ?? 0) || 0;
     const salePrice = Number(r.sale_price ?? 0) || 0;
     const purchasePrice = Number((r as any).purchase_price ?? 0) || 0;
     const loss = calcLoss(r);
@@ -251,12 +251,12 @@ export const DashboardTab: React.FC = () => {
 
         if (cancelled) return;
         setRows(Array.isArray(j?.rows) ? j.rows : []);
-        if (j?.snapshot_date) setSnapshot(j.snapshot_date);
+        if (j?.period_end) setSnapshot(j.period_end);
         if (effectiveMonths !== months) {
           setAutoExpanded({
             requested: months,
             effective: effectiveMonths,
-            latestSnapshot: j?.snapshot_date ?? null,
+            latestSnapshot: j?.period_end ?? null,
           });
         } else {
           setAutoExpanded(null);
@@ -644,7 +644,7 @@ export const DashboardTab: React.FC = () => {
                               )}
                             </td>
                             <td className="text-right px-1 py-1.5 tabular-nums font-bold text-orange-700 bg-orange-50/40 align-top">
-                              {fmt(Number(p.sale_qty ?? 0))}
+                              {fmt(Number(p.sale_stock ?? 0))}
                             </td>
                             <td
                               className="text-right px-1 py-1.5 tabular-nums text-indigo-700 font-bold bg-indigo-50/40 align-top"
@@ -678,7 +678,7 @@ export const DashboardTab: React.FC = () => {
                                   ? "text-emerald-600 font-bold"
                                   : "text-zinc-400"
                               }`}
-                              title={`손실 = (시작${fmt(Number(p.opening_stock ?? 0))} − 판매${fmt(Number(p.sale_qty ?? 0))}) − 종료${fmt(Number(p.closing_stock ?? 0))}`}
+                              title={`손실 = (시작${fmt(Number(p.prv_stock ?? 0))} − 판매${fmt(Number(p.sale_stock ?? 0))}) − 종료${fmt(Number(p.closing_stock ?? 0))}`}
                             >
                               {loss === 0
                                 ? "0"
@@ -737,7 +737,7 @@ export const DashboardTab: React.FC = () => {
                           <div className="grid grid-cols-2 gap-x-3 gap-y-1 pl-5">
                             <div className="flex items-center justify-between">
                               <span className="text-[12px] text-orange-500 font-semibold">판매</span>
-                              <span className="text-[13px] font-bold text-orange-700 tabular-nums">{fmt(Number(p.sale_qty ?? 0))}</span>
+                              <span className="text-[13px] font-bold text-orange-700 tabular-nums">{fmt(Number(p.sale_stock ?? 0))}</span>
                             </div>
                             <div className="flex items-center justify-between">
                               <span className="text-[12px] text-indigo-500 font-semibold">판매가</span>

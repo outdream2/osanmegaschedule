@@ -154,7 +154,7 @@ const ZoneCategoryContent: React.FC = () => {
       );
       const key = parsePrimaryZone(zone);
       const cur = map.get(key) ?? { zone: key, saleQty: 0, totalAmount: 0, items: [] };
-      const saleQty = Number(r.sale_qty ?? 0) || 0;
+      const saleQty = Number(r.sale_stock ?? 0) || 0;
       const amount = Number(r.total_amount ?? 0) || 0;
       if (saleQty > 0 || amount > 0) {
         cur.saleQty += saleQty;

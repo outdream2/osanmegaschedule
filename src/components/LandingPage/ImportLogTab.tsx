@@ -13,7 +13,7 @@ type UnifiedLogEntry =
     count: number;
     total?: number;
     history?: number;
-    snapshot_date?: string;
+    period_end?: string;
     start_date?: string | null;
     period_type?: "early" | "mid" | "late" | null;
   }
@@ -34,7 +34,7 @@ interface ImportLogTabProps {
     count: number;
     total?: number;
     history?: number;
-    snapshot_date?: string;
+    period_end?: string;
     start_date?: string | null;
     period_type?: "early" | "mid" | "late" | null;
   }[];
@@ -75,7 +75,7 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
       count: e.count,
       total: e.total,
       history: e.history,
-      snapshot_date: e.snapshot_date,
+      period_end: e.period_end,
       start_date: e.start_date,
       period_type: e.period_type,
     }));
@@ -101,7 +101,7 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
       const haystack: string[] = [entry.timestamp || ""];
       if (entry.kind === "stock") {
         if (entry.start_date) haystack.push(entry.start_date);
-        if (entry.snapshot_date) haystack.push(entry.snapshot_date);
+        if (entry.period_end) haystack.push(entry.period_end);
       } else if (entry.kind === "purchase") {
         haystack.push(entry.startDate, entry.endDate, entry.periodStart ?? "");
       }
@@ -186,7 +186,7 @@ export const ImportLogTab: React.FC<ImportLogTabProps> = ({
                         <tr key={`s-${i}`} className="hover:bg-indigo-50/40 transition">
                           <td className="py-1.5 pl-4 pr-3"><span className="text-[14px] font-bold rounded-full px-1.5 py-0.5 border text-indigo-700 bg-white border-indigo-300">재고</span></td>
                           <td className="py-1.5 pr-3 text-sky-700 tabular-nums font-bold" title={entry.start_date ?? "미입력"}>{entry.start_date ?? <span className="text-gray-300">—</span>}</td>
-                          <td className="py-1.5 pr-3 text-emerald-700 tabular-nums font-bold" title={entry.snapshot_date ?? "미입력"}>{entry.snapshot_date ?? <span className="text-gray-300">—</span>}</td>
+                          <td className="py-1.5 pr-3 text-emerald-700 tabular-nums font-bold" title={entry.period_end ?? "미입력"}>{entry.period_end ?? <span className="text-gray-300">—</span>}</td>
                           <td className="py-1.5 pr-3 text-right text-gray-500 tabular-nums">{when}</td>
                           <td className="py-1.5 pr-4 text-right font-semibold text-indigo-600">{stored.toLocaleString()}개{entry.total && entry.total !== stored && <span className="text-gray-300"> / {entry.total.toLocaleString()}</span>}</td>
                         </tr>

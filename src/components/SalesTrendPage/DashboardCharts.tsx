@@ -43,7 +43,7 @@ const TopSalesChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ r
   const data = useMemo(() => {
     const map = new Map<string, number>();
     for (const r of rows) {
-      const qty = Number(r.sale_qty ?? 0);
+      const qty = Number(r.sale_stock ?? 0);
       const price = Number(r.sale_price ?? 0);
       if (qty <= 0 || price <= 0) continue;
       const name = String(r.product_name ?? "").trim();
@@ -116,7 +116,7 @@ const CategoryDistChart: React.FC<{ rows: StockFlowRow[]; loading: boolean; vend
     const map = new Map<string, number>();
     let t = 0;
     for (const r of rows) {
-      const qty = Number(r.sale_qty ?? 0);
+      const qty = Number(r.sale_stock ?? 0);
       const price = Number(r.sale_price ?? 0);
       if (qty <= 0 || price <= 0) continue;
       const sup = String(r.supplier ?? "").trim();
@@ -204,7 +204,7 @@ const ProfitDistChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({
     for (const r of rows) {
       const sp = Number(r.sale_price ?? 0);
       const pp = Number((r as any).purchase_price ?? 0);
-      const qty = Number(r.sale_qty ?? 0);
+      const qty = Number(r.sale_stock ?? 0);
       if (qty <= 0 || sp <= 0 || pp <= 0) continue;
       const rate = ((sp - pp) / sp) * 100;
       if (!Number.isFinite(rate)) continue;
@@ -349,7 +349,7 @@ const SupplierTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = (
     for (const r of rows) {
       const sup = String((r as any).supplier ?? "").trim();
       if (!sup) continue;
-      const qty = Number(r.sale_qty ?? 0);
+      const qty = Number(r.sale_stock ?? 0);
       const price = Number(r.sale_price ?? 0);
       if (qty <= 0 || price <= 0) continue;
       const cur = map.get(sup) ?? { amount: 0, count: 0 };
@@ -424,7 +424,7 @@ const StockVsSalesScatter: React.FC<{ rows: StockFlowRow[]; loading: boolean }> 
     return rows
       .map(r => ({
         name: String(r.product_name ?? "").trim(),
-        sale: Number(r.sale_qty ?? 0),
+        sale: Number(r.sale_stock ?? 0),
         stock: Number((r as any).closing_stock ?? (r as any).current_stock ?? 0),
         loss: calcLoss(r),
       }))
@@ -510,7 +510,7 @@ const PriceBandChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ 
       let count = 0;
       for (const r of rows) {
         const sp = Number(r.sale_price ?? 0);
-        const sq = Number(r.sale_qty ?? 0);
+        const sq = Number(r.sale_stock ?? 0);
         if (sq <= 0) continue;
         if (sp >= b.min && sp < b.max) {
           qty += sq;
@@ -754,13 +754,13 @@ const PurchaseStockTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }
   );
 };
 
-// ─── 9. 급상승 Top 10 · 소진율 기준 (sale_qty / (opening+purchase) × 100)
+// ─── 9. 급상승 Top 10 · 소진율 기준 (sale_stock / (prv_stock+buy_stock) × 100)
 const SurgingTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ rows, loading }) => {
   const data = useMemo(() => {
     return rows
       .map(r => {
-        const sale = Number(r.sale_qty ?? 0);
-        const avail = Number(r.opening_stock ?? 0) + Number(r.purchase_qty ?? 0);
+        const sale = Number(r.sale_stock ?? 0);
+        const avail = Number(r.prv_stock ?? 0) + Number(r.buy_stock ?? 0);
         if (sale <= 0 || avail <= 0) return null;
         const rate = (sale / avail) * 100;
         return {
@@ -834,7 +834,7 @@ const ZoneTopChart: React.FC<{ rows: StockFlowRow[]; loading: boolean }> = ({ ro
     const map = new Map<string, { amount: number; qty: number }>();
     for (const r of rows) {
       const zone = String((r as any).location ?? "").trim() || "미지정";
-      const qty = Number(r.sale_qty ?? 0);
+      const qty = Number(r.sale_stock ?? 0);
       const price = Number(r.sale_price ?? 0);
       if (qty <= 0) continue;
       const cur = map.get(zone) ?? { amount: 0, qty: 0 };

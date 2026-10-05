@@ -15,7 +15,14 @@ import {
   assertNoProtectedField,
   isErpEmpty,
 } from "./erpSyncWhitelist";
-import { transformErpLocation, decideLocationApply } from "./erpLocationTransform";
+// 2026-10-04 · Location 정책 변경 · display_location ← LocationName raw · 변환 미사용
+//   · transformErpLocation 호출 제거 · ERP_OWNED whitelist 안에서 자동 처리
+//   · ProductMapperResult.locationResult / locationDecision 는 호출부 호환성 유지용 dummy
+import type { LocationTransformResult } from "./erpLocationTransform";
+// 2026-10-04 · timestamp 비교 · UTC instant 기준 (ERP "YYYY-MM-DD HH:MM:SS" vs Postgres ISO)
+import { timestampsEqual } from "./timestampCompare";
+
+const TIMESTAMP_FIELDS = new Set(["erp_registered_at", "erp_modified_at"]);
 
 /** ERP Product_List 한 row (관심 field 만 명시 · 그 외는 untyped) */
 export interface ErpProductRow {
@@ -36,21 +43,26 @@ export interface ErpProductRow {
   [k: string]: unknown;
 }
 
-/** Supabase products 한 row (관심 field 만 명시) */
+/** Supabase products 한 row (관심 field 만 명시 · 2026-10-04 · location 제거 · pcode/erp_* 추가) */
 export interface DbProductRow {
   product_code: string;
+  pcode?: string | null;
   product_name?: string | null;
   supplier?: string | null;
   supplier_code?: string | null;
   unit?: string | null;
   sale_status?: string | null;
-  brand?: string | null;
-  manufacturer?: string | null;
+  brand?: string | null;         // deprecated (ERP 제외) · DB column 자체는 유지
+  manufacturer?: string | null;  // deprecated (ERP 제외)
   last_purchase_date?: string | null;
   last_sale_date?: string | null;
   current_stock?: number | null;
-  display_location?: string | null;
-  location?: string | null;
+  display_location?: string | null;  // ERP LocationName raw
+  purchase_price?: number | null;
+  sale_price?: number | null;
+  category?: string | null;
+  erp_registered_at?: string | null;
+  erp_modified_at?: string | null;
   [k: string]: unknown;
 }
 
@@ -74,9 +86,9 @@ export interface ProductMapperResult {
   readonly diffs: FieldDiff[];
   /** 변경될 field 수 (SAME 제외) */
   readonly changedCount: number;
-  /** Location 변환 결과 요약 */
-  readonly locationResult: ReturnType<typeof transformErpLocation>;
-  /** Location apply 결정 */
+  /** @deprecated · 2026-10-04 · Location 정책 변경 · raw LocationName 저장 · 참조 금지 (호환성 더미) */
+  readonly locationResult: LocationTransformResult;
+  /** @deprecated · 2026-10-04 · 호환성 유지용 더미 · 실제 로직은 ERP_OWNED whitelist 안에서 처리 */
   readonly locationDecision: "apply" | "keep" | "review";
 }
 
@@ -128,7 +140,10 @@ export function buildErpProductPayload(
     else if (!erpEmpty && dbEmpty) status = "db_empty_erp_has";
     else {
       // 양쪽 다 non-empty · 값 비교
-      const same = String(erpValue ?? "") === String(dbValue ?? "");
+      //   · timestamp field 는 UTC instant 비교 (format 차이 무시)
+      let same: boolean;
+      if (TIMESTAMP_FIELDS.has(dbField)) same = timestampsEqual(dbValue, erpValue);
+      else same = String(erpValue ?? "") === String(dbValue ?? "");
       status = same ? "same" : "change";
     }
 
@@ -157,46 +172,10 @@ export function buildErpProductPayload(
     diffs.push({ field: dbField, erpSource: mapping.erp, erpValue, dbValue, status, willApply });
   }
 
-  // ── ERP_DERIVED: display_location + location (양쪽 동시) ───────────────────
-  const locationResult = transformErpLocation(erpRow.LocationName as any);
-  const currentDbLoc = dbRow?.display_location ?? dbRow?.location ?? null;
-  const locationDecision = decideLocationApply(locationResult, currentDbLoc as any);
-
-  if (locationDecision === "apply" && locationResult.derived != null) {
-    const same = String(currentDbLoc ?? "") === locationResult.derived;
-    const willApply = !same || action === "INSERT";
-    if (willApply) {
-      payload.display_location = locationResult.derived;
-      payload.location = locationResult.derived;
-      changedCount++;
-    }
-    diffs.push({
-      field: "display_location",
-      erpSource: "LocationName",
-      erpValue: locationResult.derived,
-      dbValue: currentDbLoc,
-      status: same ? "same" : (currentDbLoc == null ? "db_empty_erp_has" : "change"),
-      willApply,
-    });
-  } else if (locationDecision === "keep") {
-    diffs.push({
-      field: "display_location",
-      erpSource: "LocationName",
-      erpValue: null,
-      dbValue: currentDbLoc,
-      status: currentDbLoc == null ? "both_empty" : "erp_empty_db_has",
-      willApply: false, // ERP empty · KEEP (NULL overwrite 금지)
-    });
-  } else if (locationDecision === "review") {
-    diffs.push({
-      field: "display_location",
-      erpSource: "LocationName",
-      erpValue: null,
-      dbValue: currentDbLoc,
-      status: currentDbLoc == null ? "both_empty" : "erp_empty_db_has",
-      willApply: false, // REVIEW · 사용자 선택 전 KEEP
-    });
-  }
+  // 2026-10-04 · Location 블록 완전 제거
+  //   · display_location 은 ERP_OWNED whitelist 안에서 LocationName raw 로 자동 처리 (위 loop)
+  //   · products.location 은 live schema 에 없음 · 참조 완전 제거
+  //   · transformErpLocation() 호출 안 함 · raw 그대로
 
   // ── INSERT 추가 field: product_code (identity) ────────────────────────────
   if (action === "INSERT") {
@@ -205,6 +184,17 @@ export function buildErpProductPayload(
 
   // ── 방어: PROTECTED field 가 payload 에 섞여 있으면 즉시 throw ─────────────
   assertNoProtectedField(payload, PROTECTED_PRODUCT_FIELDS, `buildErpProductPayload(${productCode})`);
+
+  // 2026-10-04 · locationResult / locationDecision 는 호환성 유지용 dummy
+  //   · 실제 Location 반영은 ERP_OWNED whitelist 안에서 처리 (payload.display_location)
+  const rawLocation = String(erpRow.LocationName ?? "").trim();
+  const locationEmpty = rawLocation.length === 0;
+  const locationResult: LocationTransformResult = {
+    derived: locationEmpty ? null : rawLocation,
+    reason: locationEmpty ? "empty" : "ok_wall",
+    major: null, middleRaw: null, middleNormalized: null,
+  };
+  const locationDecision: "apply" | "keep" | "review" = locationEmpty ? "keep" : "apply";
 
   return {
     productCode,
