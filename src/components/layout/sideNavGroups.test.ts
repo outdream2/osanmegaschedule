@@ -35,14 +35,42 @@ describe("SIDE_NAV_GROUPS · 구조", () => {
 });
 
 describe("DERIVED_TOP_TABS · SIDE_NAV_GROUPS 로부터 자동 파생", () => {
-  it("hideInTopTabs 제외 후 · 배열", () => {
+  // 2026-10-06 · 사용자 지시 · surface-specific hide 제거 (hideOnMobile · hideInTopTabs)
+  //   · PC/mobile/top nav visibility 통일 · DB app_settings.page_visibility 로 통일
+  it("모든 그룹 포함 · surface-specific hide 제거됨", () => {
     expect(Array.isArray(DERIVED_TOP_TABS)).toBe(true);
-    expect(DERIVED_TOP_TABS.length).toBeGreaterThan(0);
+    expect(DERIVED_TOP_TABS.length).toBe(SIDE_NAV_GROUPS.length);
     // 각 탭 · 필수 필드
     DERIVED_TOP_TABS.forEach((t) => {
       expect(t.key).toBeTruthy();
       expect(t.label).toBeTruthy();
       expect(t.icon).toBeDefined();
+    });
+  });
+
+  it("vendor / account / display 그룹 모두 상단 nav 노출", () => {
+    // vendor 그룹 · hideInTopTabs 제거 후 상단 노출
+    const vendorGroup = SIDE_NAV_GROUPS.find((g) => g.id === "vendor");
+    expect(vendorGroup).toBeDefined();
+    const vendorTabKey = vendorGroup!.topTab?.key ?? vendorGroup!.items[0]!.key;
+    expect(DERIVED_TOP_TABS.find((t) => t.key === vendorTabKey)).toBeDefined();
+
+    // account 그룹 · hideInTopTabs 제거 후 상단 노출 (mypage)
+    const accountGroup = SIDE_NAV_GROUPS.find((g) => g.id === "account");
+    expect(accountGroup).toBeDefined();
+    const accountTabKey = accountGroup!.topTab?.key ?? accountGroup!.items[0]!.key;
+    expect(DERIVED_TOP_TABS.find((t) => t.key === accountTabKey)).toBeDefined();
+
+    // display 그룹 · 매장 상단 탭
+    expect(DERIVED_TOP_TABS.find((t) => t.key === "display")).toBeDefined();
+  });
+
+  it("surface-specific hide field 없음 (hideOnMobile · hideInTopTabs)", () => {
+    SIDE_NAV_GROUPS.forEach((g) => {
+      expect((g as unknown as { hideOnMobile?: boolean }).hideOnMobile).toBeUndefined();
+      expect(
+        (g.topTab as unknown as { hideInTopTabs?: boolean } | undefined)?.hideInTopTabs,
+      ).toBeUndefined();
     });
   });
 });

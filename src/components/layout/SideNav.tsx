@@ -438,7 +438,8 @@ export const SideNav: React.FC<SideNavProps> = ({
   // 2026-09-27 · 네비게이션 SSOT · useActiveNav Context 기반 · 현재 페이지 활성 서브탭 tracking
   const { activeNav } = useActiveNav();
   const activeSubTab = activeNav?.itemKey === activePage ? (activeNav.subTab ?? null) : null;
-  // 2026-08-12 · hideOnMobile 그룹은 반응형(모바일)에서 숨김 (거래처 그룹 등 · PC 관리자 전용)
+  // 2026-10-06 · 사용자 지시 · surface-specific hide 제거 (hideOnMobile)
+  //   · PC/mobile/top nav 노출 통일 · DB app_settings.page_visibility 로 통일
   // 2026-08-16 · 페이지 숨김 반영 · 서버 perms 참조
   const { perms } = usePagePermissions();
   // 2026-08-20 · #175 · 본인 재직 상태 · document-writer 서브탭 filter · admin·pending_resignation 만 노출
@@ -447,7 +448,6 @@ export const SideNav: React.FC<SideNavProps> = ({
   const { isVisible } = usePageVisibility();
   const viewport = isMobile ? "mobile" : "pc";
   const groups = filterGroupsForSession(authSession, perms, employmentStatus)
-    .filter(g => !(isMobile && g.hideOnMobile))
     .map(g => ({
       ...g,
       // 2026-08-25 · 사용자 지시 · 서브탭별 개별 노출 지원 · 그룹키 hidden 또는 composite key hidden 이면 숨김

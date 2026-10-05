@@ -42,17 +42,18 @@ export interface SideNavGroup {
   icon?: Icon;
   managerOnly?: boolean;
   pharmacistOnly?: boolean;
-  /** 2026-08-12 · 모바일(반응형) 사이드바에서 그룹 숨김 (거래처 그룹 등 · PC 관리자 편의 전용) */
-  hideOnMobile?: boolean;
+  // 2026-10-06 · 사용자 지시 · surface-specific hide 플래그 제거 (hideOnMobile)
+  //   · visibility SSOT = DB app_settings.page_visibility
+  //   · PC/mobile/top nav 는 동일 visibility 기준 적용 · 환경별 숨김은 DB 설정으로 통일
   items: SideNavItem[];
-  /** 공통헤더 TABS 파생 · 없으면 그룹 자동 노출 · hideInTopTabs=true 면 헤더에 노출 안 함 */
+  /** 공통헤더 TABS 파생 · 없으면 그룹 자동 노출 */
   topTab?: {
     /** AppNavPage or "business" 확장 키 · 없으면 group.items[0].key 사용 */
     key?: string;
     /** 짧은 모바일 라벨 · 기본 group.label */
     mobileLabel?: string;
-    /** true 면 헤더에서 숨김 (예: 계정 그룹) */
-    hideInTopTabs?: boolean;
+    // 2026-10-06 · 사용자 지시 · surface-specific hide 제거 (hideInTopTabs)
+    //   · 상단 nav 노출 여부도 DB app_settings.page_visibility 로 통일
   };
 }
 
@@ -129,8 +130,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     label: "거래처",
     color: "emerald",
     icon: Buildings,
-    hideOnMobile: true,
-    topTab: { hideInTopTabs: true },
+    // 2026-10-06 · 사용자 지시 · surface-specific hide 제거
+    //   · PC/mobile/top nav 노출 통일 · 숨김 필요 시 DB app_settings.page_visibility 로 설정
     items: [
       { key: "reservation", label: "방문예약",       icon: CalendarDots, color: "emerald" },
       { key: "display",     label: "공급사 정보",     icon: Buildings,    color: "emerald", subTab: "vendor-manage" },
@@ -203,7 +204,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     label: "계정",
     color: "slate",
     icon: UserCircle,
-    topTab: { hideInTopTabs: true }, // 헤더 노출 안 함 · 사이드바 전용
+    // 2026-10-06 · 사용자 지시 · surface-specific hide 제거 · PC/mobile/top nav 통일
     items: [{ key: "mypage", label: "마이페이지", icon: UserCircle, color: "slate" }],
   },
 ];
@@ -223,8 +224,9 @@ export interface DerivedTopTab {
   icon: Icon;                  // group.icon ?? group.items[0].icon
 }
 
+// 2026-10-06 · 사용자 지시 · hideInTopTabs filter 제거 · 모든 그룹 상단 nav 노출
+//   · visibility 는 DB app_settings.page_visibility 로 통일 · AppNavHeader 에서 isVisible 적용
 export const DERIVED_TOP_TABS: DerivedTopTab[] = SIDE_NAV_GROUPS
-  .filter(g => !g.topTab?.hideInTopTabs)
   .map(g => ({
     key: g.topTab?.key ?? g.items[0]?.key ?? g.id,
     label: g.label,

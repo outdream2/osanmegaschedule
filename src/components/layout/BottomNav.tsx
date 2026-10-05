@@ -66,8 +66,9 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
   // 2026-08-29 · #196 · "더보기" 시트에 노출할 그룹 · items 동적 파생
   //   · filterGroupsForSession 로 접근 가능한 그룹만
   //   · 하단 4탭 그룹 (landing · schedule · requests · board) 은 시트에서 제외
-  //   · vendor 그룹은 hideOnMobile · 필터에서 자동 제외
-  //   · account 그룹 (마이페이지) · 시트 노출
+  // 2026-10-06 · 사용자 지시 · surface-specific hide 제거 · vendor/account 포함 모두 노출
+  //   · subTab 단위 composite key 체크 추가 (SideNav 와 동일 로직)
+  //   · 매출(display:revenue) 등 subTab 노출 여부가 PC 사이드바와 완전 일치
   const sheetGroups = useMemo(() => {
     const bottomTabSet = new Set<string>(BOTTOM_TAB_KEYS as readonly string[]);
     return filterGroupsForSession(authSession ?? null, perms, employmentStatus)
@@ -77,7 +78,11 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
       })
       .map(g => ({
         ...g,
-        items: g.items.filter(it => mobileVisible(String(it.key))),
+        items: g.items.filter(it => {
+          if (!mobileVisible(String(it.key))) return false;
+          if (it.subTab && !mobileVisible(`${it.key}:${it.subTab}`)) return false;
+          return true;
+        }),
       }))
       .filter(g => g.items.length > 0);
   }, [authSession, perms, employmentStatus, mobileVisible]);
