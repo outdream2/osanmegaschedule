@@ -377,7 +377,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        <div className="flex items-center h-9 gap-1 sm:gap-1.5 shrink-0">
           {authSession?.employeeName && (
             <button
               type="button"

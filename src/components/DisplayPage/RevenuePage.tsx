@@ -342,7 +342,7 @@ const HourlyReportTab: React.FC = () => {
       )}
 
       {/* 오늘 KPI = 오늘 날짜만 */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
         <KpiBox label={`${today} 매출총액`} value={show ? fmtWon(totalSale) : "-"} />
         <KpiBox label={`${today} 매출이익`} value={show ? fmtWon(totalMargin) : "-"} />
         <KpiBox label={`${today} 마진율`} value={show ? `${marginRate.toFixed(1)}%` : "-"} />
@@ -497,9 +497,9 @@ const HourlyReportTab: React.FC = () => {
 };
 
 const KpiBox: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="bg-white border border-zinc-200 rounded-lg p-4">
-    <div className="text-[15px] text-zinc-500 font-semibold mb-1">{label}</div>
-    <div className="text-[21px] font-bold text-ink">{value}</div>
+  <div className="bg-white border border-zinc-200 rounded-xl p-3 md:p-4 min-w-0 shadow-[0_1px_2px_rgba(10,46,74,0.04)]">
+    <div className="text-[12px] md:text-[14px] text-zinc-500 font-semibold mb-1 truncate-none break-keep leading-tight">{label}</div>
+    <div className="text-[16px] md:text-[20px] font-bold text-ink tabular-nums leading-tight break-all">{value}</div>
   </div>
 );
 
@@ -799,10 +799,10 @@ const MonthlyReportTab: React.FC = () => {
       </div>
 
       {/* 선택월 상세 · 미니멀 · 텍스트 위주 */}
-      <div className="bg-white border border-zinc-200 rounded-lg p-5">
-        <div className="flex items-baseline gap-2 mb-4 flex-wrap">
-          <span className="text-[20px] font-bold text-zinc-900">{year}년 {month}월</span>
-          {isCurMonth && <span className="text-[13px] text-zinc-500">· 이번달{asOfLabel}</span>}
+      <div className="bg-white border border-zinc-200 rounded-xl p-4 md:p-5">
+        <div className="flex items-baseline gap-2 mb-3 md:mb-4 flex-wrap">
+          <span className="text-[18px] md:text-[20px] font-bold text-zinc-900">{year}년 {month}월</span>
+          {isCurMonth && <span className="text-[12px] md:text-[13px] text-zinc-500">· 이번달{asOfLabel}</span>}
         </div>
         {!show ? (
           <div className="text-center py-8 text-zinc-400 text-[15px]">
@@ -811,7 +811,7 @@ const MonthlyReportTab: React.FC = () => {
         ) : !selSale && !selBuy ? (
           <div className="text-center py-8 text-zinc-400 text-[15px]">선택 월 데이터 없음</div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 md:gap-x-6 gap-y-4 md:gap-y-5">
             {(() => {
               const avg = sel.customerCnt > 0 ? sel.saleTotal / sel.customerCnt : 0;
               const items: Array<{ label: string; value: string }> = [
@@ -823,9 +823,9 @@ const MonthlyReportTab: React.FC = () => {
                 { label: "방문객수", value: sel.customerCnt.toLocaleString() + "명" },
               ];
               return items.map((it) => (
-                <div key={it.label}>
-                  <div className="text-[13px] text-zinc-500 mb-1">{it.label}</div>
-                  <div className="text-[20px] font-bold text-zinc-900 tabular-nums">{it.value}</div>
+                <div key={it.label} className="min-w-0">
+                  <div className="text-[12px] md:text-[13px] text-zinc-500 font-medium mb-1 leading-tight">{it.label}</div>
+                  <div className="text-[16px] md:text-[20px] font-bold text-zinc-900 tabular-nums leading-tight break-all">{it.value}</div>
                 </div>
               ));
             })()}
@@ -878,37 +878,37 @@ const MonthlyReportTab: React.FC = () => {
 
               if (!cell) {
                 return (
-                  <div key={ci} className="min-h-[140px] bg-zinc-50/50 border-r border-zinc-100 last:border-r-0 p-2">
+                  <div key={ci} className="min-h-[90px] md:min-h-[140px] bg-zinc-50/50 border-r border-zinc-100 last:border-r-0 p-1 md:p-2 min-w-0">
                     {hasWeek && ws && <WeekSubtotalBlock ws={ws} />}
                   </div>
                 );
               }
               const isToday = cell.dateStr === todayStr;
               return (
-                <div key={ci} className={`min-h-[140px] p-2 border-r border-zinc-100 last:border-r-0 ${isToday ? "bg-amber-50" : "bg-white"}`}>
-                  <div className={`text-[15px] font-bold ${isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-700"} ${isToday ? "text-amber-700" : ""}`}>
-                    {cell.day}{isToday && <span className="ml-1 text-[13px] text-amber-700">● 오늘</span>}
+                <div key={ci} className={`min-h-[90px] md:min-h-[140px] p-1 md:p-2 border-r border-zinc-100 last:border-r-0 min-w-0 ${isToday ? "bg-amber-50/60" : "bg-white"}`}>
+                  <div className={`text-[13px] md:text-[15px] font-bold ${isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-700"} ${isToday ? "text-amber-700" : ""} leading-tight`}>
+                    {cell.day}{isToday && <span className="ml-1 text-[11px] md:text-[13px] text-amber-700">● 오늘</span>}
                   </div>
-                  <div className="mt-1 space-y-[2px] text-[14px]">
+                  <div className="mt-1 space-y-[2px] text-[11px] md:text-[14px]">
                     {cell.buy && (
-                      <div className="flex justify-between items-baseline">
-                        <span className="text-zinc-500">매입</span>
-                        <span className="tabular-nums">{fmtNum(Number(cell.buy.BuyTotal ?? 0))}</span>
+                      <div className="flex justify-between items-baseline gap-1 min-w-0">
+                        <span className="text-zinc-400 shrink-0">매입</span>
+                        <span className="tabular-nums text-zinc-700 truncate">{fmtNum(Number(cell.buy.BuyTotal ?? 0))}</span>
                       </div>
                     )}
                     {cell.sale && (
                       <>
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-zinc-500">매출</span>
-                          <span className="tabular-nums font-semibold text-zinc-800">{fmtNum(Number(cell.sale.SaleTotal ?? 0))}</span>
+                        <div className="flex justify-between items-baseline gap-1 min-w-0">
+                          <span className="text-zinc-400 shrink-0">매출</span>
+                          <span className="tabular-nums font-semibold text-zinc-900 truncate">{fmtNum(Number(cell.sale.SaleTotal ?? 0))}</span>
                         </div>
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-zinc-500">객수/단가</span>
-                          <span className="tabular-nums">{Number(cell.sale.CustomerCnt ?? 0).toLocaleString()}/{fmtNum(Number(cell.sale.AvgPerCustomer ?? 0))}</span>
+                        <div className="flex justify-between items-baseline gap-1 min-w-0">
+                          <span className="text-zinc-400 shrink-0">객/단가</span>
+                          <span className="tabular-nums text-zinc-600 truncate">{Number(cell.sale.CustomerCnt ?? 0).toLocaleString()}/{fmtNum(Number(cell.sale.AvgPerCustomer ?? 0))}</span>
                         </div>
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-zinc-500">마진</span>
-                          <span className="tabular-nums">{fmtNum(Number(cell.sale.Margin ?? 0))}</span>
+                        <div className="flex justify-between items-baseline gap-1 min-w-0">
+                          <span className="text-zinc-400 shrink-0">마진</span>
+                          <span className="tabular-nums text-zinc-600 truncate">{fmtNum(Number(cell.sale.Margin ?? 0))}</span>
                         </div>
                       </>
                     )}
@@ -926,12 +926,12 @@ const MonthlyReportTab: React.FC = () => {
 };
 
 const WeekSubtotalBlock: React.FC<{ ws: { buyTotal: number; saleTotal: number; cust: number; avg: number; margin: number; marginPct: number } }> = ({ ws }) => (
-  <div className="mt-2 pt-2 border-t-2 border-rose-200 space-y-[2px] text-[13px] bg-rose-50/60 rounded px-1 py-1">
-    <div className="text-rose-700 font-semibold">[주간 합계]</div>
-    <div className="flex justify-between items-baseline"><span className="text-zinc-600">매입</span><span className="tabular-nums text-zinc-800">{fmtNum(ws.buyTotal)}</span></div>
-    <div className="flex justify-between items-baseline"><span className="text-zinc-600">매출</span><span className="tabular-nums font-semibold text-zinc-900">{fmtNum(ws.saleTotal)}</span></div>
-    <div className="flex justify-between items-baseline"><span className="text-zinc-600">객수/단가</span><span className="tabular-nums text-zinc-800">{ws.cust.toLocaleString()}/{fmtNum(ws.avg)}</span></div>
-    <div className="flex justify-between items-baseline"><span className="text-zinc-600">마진</span><span className="tabular-nums text-zinc-800">{fmtNum(ws.margin)}</span></div>
+  <div className="mt-2 pt-2 border-t border-rose-200 space-y-[2px] text-[11px] md:text-[13px] bg-rose-50/40 rounded px-1 py-1 min-w-0">
+    <div className="text-rose-700 font-semibold leading-tight">[주간 합계]</div>
+    <div className="flex justify-between items-baseline gap-1 min-w-0"><span className="text-zinc-500 shrink-0">매입</span><span className="tabular-nums text-zinc-800 truncate">{fmtNum(ws.buyTotal)}</span></div>
+    <div className="flex justify-between items-baseline gap-1 min-w-0"><span className="text-zinc-500 shrink-0">매출</span><span className="tabular-nums font-semibold text-zinc-900 truncate">{fmtNum(ws.saleTotal)}</span></div>
+    <div className="flex justify-between items-baseline gap-1 min-w-0"><span className="text-zinc-500 shrink-0">객/단가</span><span className="tabular-nums text-zinc-700 truncate">{ws.cust.toLocaleString()}/{fmtNum(ws.avg)}</span></div>
+    <div className="flex justify-between items-baseline gap-1 min-w-0"><span className="text-zinc-500 shrink-0">마진</span><span className="tabular-nums text-zinc-700 truncate">{fmtNum(ws.margin)}</span></div>
   </div>
 );
 

@@ -80,37 +80,51 @@ export const TodayRevenueKpiPanel: React.FC<Props> = ({ onOpenRevenue }) => {
 
   return (
     <div
-      className="w-full mb-3 flex items-center gap-6 flex-wrap bg-gradient-to-br from-sky-50 to-indigo-50 border border-sky-200 rounded-lg px-4 py-3 hover:brightness-[0.98] cursor-pointer transition"
+      className="w-full mb-3 bg-white border border-zinc-200 rounded-2xl shadow-[0_1px_3px_rgba(10,46,74,0.05)] hover:shadow-[0_2px_10px_rgba(10,46,74,0.08)] hover:border-brand-deep/25 cursor-pointer transition overflow-hidden relative"
       onClick={onOpenRevenue}
       role="button"
       title="매장 > 매출 페이지로 이동"
     >
-      <div className="flex items-baseline gap-2">
-        <span className="text-[13px] text-zinc-500 font-semibold">현재매출금액</span>
-        <span className="text-[22px] font-bold text-brand-deep tabular-nums">
-          {showValue ? fmt(sale) + "원" : "-"}
-        </span>
+      <div className="flex items-stretch divide-x divide-zinc-100">
+        {/* 매출 (메인) · 좌측 brand accent bar · 색 포인트 */}
+        <div className="flex-[2] px-4 sm:px-6 py-3 sm:py-3.5 min-w-0 relative">
+          <span className="absolute left-0 top-3 bottom-3 w-[3px] bg-brand-deep rounded-r-full" aria-hidden />
+          <div className="text-[15px] sm:text-[16px] text-zinc-500 font-semibold mb-1 tracking-tight">현재 매출</div>
+          <div className="text-[18px] sm:text-[22px] font-bold tabular-nums leading-tight text-brand-deep truncate">
+            {showValue ? fmt(sale) + "원" : "-"}
+          </div>
+        </div>
+        {/* 객단가 */}
+        <div className="flex-1 px-3 sm:px-4 py-3 sm:py-3.5 min-w-0">
+          <div className="text-[15px] sm:text-[16px] text-zinc-500 font-semibold mb-1 tracking-tight">객단가</div>
+          <div className="text-[18px] sm:text-[22px] font-bold tabular-nums text-ink leading-tight truncate">
+            {showValue && txn > 0 ? fmt(sale / txn) + "원" : "-"}
+          </div>
+        </div>
+        {/* 방문객 */}
+        <div className="flex-1 px-3 sm:px-4 py-3 sm:py-3.5 min-w-0">
+          <div className="text-[15px] sm:text-[16px] text-zinc-500 font-semibold mb-1 tracking-tight">방문객</div>
+          <div className="text-[18px] sm:text-[22px] font-bold tabular-nums text-ink leading-tight truncate">
+            {showValue ? fmt(txn) + "명" : "-"}
+          </div>
+        </div>
+        {/* 매출 상세 → (PC) */}
+        <div className="hidden sm:flex items-center px-4 bg-zinc-50/60 hover:bg-zinc-100 transition">
+          <div className="text-[16px] text-brand-deep font-semibold whitespace-nowrap">매출 상세 ›</div>
+        </div>
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-[13px] text-zinc-500 font-semibold">객단가</span>
-        <span className="text-[20px] font-bold text-brand-deep tabular-nums">
-          {showValue && txn > 0 ? fmt(sale / txn) + "원" : "-"}
+      {/* 모바일 하단 바 (상태 + 매출 상세) */}
+      <div className="sm:hidden flex items-center justify-between px-3 py-1.5 bg-zinc-50/60 text-[15px] border-t border-zinc-100">
+        <span className="text-zinc-500">
+          {status === "error" ? <span className="text-rose-600 font-semibold">⚠ 조회 실패</span> :
+           status === "loading" ? "조회 중..." :
+           "실시간 ERP"}
         </span>
+        <span className="text-brand-deep font-semibold">매출 상세 ›</span>
       </div>
-      <div className="flex items-baseline gap-2">
-        <span className="text-[13px] text-zinc-500 font-semibold">방문객수</span>
-        <span className="text-[20px] font-bold text-brand-deep tabular-nums">
-          {showValue ? fmt(txn) + "명" : "-"}
-        </span>
-      </div>
-      <div className="flex-1" />
       {status === "error" && (
-        <span className="text-[11px] text-rose-600 font-semibold" title={errMsg}>조회 실패</span>
+        <span className="hidden sm:block absolute top-2 right-2 text-[11px] text-rose-600 font-semibold" title={errMsg}>⚠ 조회 실패</span>
       )}
-      {status === "loading" && <span className="text-[11px] text-zinc-400">조회 중...</span>}
-      <div className="text-[12px] text-brand-deep font-semibold hover:underline">
-        매출 상세 ›
-      </div>
     </div>
   );
 };
