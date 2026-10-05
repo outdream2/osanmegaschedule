@@ -30,12 +30,25 @@ const router = Router();
 
 const PROJECT_ROOT = process.cwd();
 const SAMPLES_DIR = path.resolve(PROJECT_ROOT, "tools/iregen-bridge/samples");
-const DECODER_EXE = path.resolve(PROJECT_ROOT, "tools/iregen-bridge/bin/Debug/net48/iregen-decoder.exe");
-// 2026-10-05 fix · ROOT CAUSE · decoder 실제 저장 경로는 bin/output/stdin-full.json (bin 폴더 아래)
-//   · 이전까지 output/stdin-full.json 체크 · 이전 cache 로 운좋게 작동
-//   · fresh state 추가로 진짜 bug 노출됨
-//   · decoder stderr: "전체 DataSet JSON · ...bin\output\stdin-full.json" 메시지에서 확정
-const DECODER_OUT_JSON = path.resolve(PROJECT_ROOT, "tools/iregen-bridge/bin/output/stdin-full.json");
+
+// 2026-10-05 · decoder 플랫폼 분기
+//   · Windows: 기존 .NET Framework 4.8 decoder (iregen-bridge) 유지
+//   · Linux  : System.Formats.Nrbf 기반 cross-platform decoder (iregen-decoder)
+//              · self-contained publish → .NET runtime 설치 불필요
+//              · 산출물: tools/iregen-decoder/publish/linux-x64/iregen-decoder (ELF binary)
+//   · 두 decoder 는 output JSON contract 100% 동일 (byte-level MATCH 확인됨)
+const IS_WIN = process.platform === "win32";
+const WIN_DECODER_EXE = path.resolve(PROJECT_ROOT, "tools/iregen-bridge/bin/Debug/net48/iregen-decoder.exe");
+const WIN_DECODER_CWD = path.resolve(PROJECT_ROOT, "tools/iregen-bridge/bin");
+const WIN_DECODER_OUT = path.resolve(PROJECT_ROOT, "tools/iregen-bridge/bin/output/stdin-full.json");
+const LIN_DECODER_EXE = path.resolve(PROJECT_ROOT, "tools/iregen-decoder/publish/linux-x64/iregen-decoder");
+const LIN_DECODER_CWD = path.resolve(PROJECT_ROOT, "tools/iregen-decoder/publish/linux-x64");
+const LIN_DECODER_OUT = path.resolve(PROJECT_ROOT, "tools/iregen-decoder/publish/linux-x64/output/stdin-full.json");
+
+const DECODER_EXE = IS_WIN ? WIN_DECODER_EXE : LIN_DECODER_EXE;
+const DECODER_CWD = IS_WIN ? WIN_DECODER_CWD : LIN_DECODER_CWD;
+const DECODER_OUT_JSON = IS_WIN ? WIN_DECODER_OUT : LIN_DECODER_OUT;
+
 const ERP_ENDPOINT = "http://soap.iregen.co.kr/App_Service/Irm/SvcStatisticsBiz.asmx";
 
 const HOURLY_SOAP_ACTION = "http://tempuri.org/Sales_Days_TimeReport";
@@ -44,9 +57,8 @@ const MONTHLY_SOAP_ACTION = "http://tempuri.org/Statistics_Month_DashBoard";
 const HOURLY_FIXTURE = "salestatus_daytime-request.txt";
 const MONTHLY_FIXTURE = "salestatus_month-request.txt";
 
-// Dev 환경 체크 (iregen-decoder.exe 는 Windows .NET Framework 전용)
+// Decoder 사용 가능 판정 · 플랫폼별 executable 존재만 체크 (platform guard X)
 function isDecoderAvailable(): boolean {
-  if (process.platform !== "win32") return false;
   return existsSync(DECODER_EXE);
 }
 
@@ -245,7 +257,7 @@ async function runDecoder(base64: string): Promise<DecodedPayload> {
   return new Promise<DecodedPayload>((resolve, reject) => {
     const proc = spawn(DECODER_EXE, [], {
       stdio: ["pipe", "pipe", "pipe"],
-      cwd: path.dirname(path.dirname(path.dirname(DECODER_EXE))), // tools/iregen-bridge
+      cwd: DECODER_CWD, // Windows: iregen-bridge/bin · Linux: iregen-decoder/publish/linux-x64
     });
     let stderrBuf = "";
     proc.stdout.on("data", () => { /* discard · decoder writes to file */ });
@@ -280,7 +292,7 @@ router.get("/api/erp/sale-hourly-report", asyncHandler(async (req, res) => {
   if (!isDecoderAvailable()) {
     return res.status(503).json({
       ok: false,
-      error: "ERP decoder 미지원 환경 (Windows dev 전용 · Render Linux 지원 X)",
+      error: `ERP decoder 실행 파일 없음 (${IS_WIN ? "Windows" : "Linux"}) · ${DECODER_EXE}`,
     });
   }
   try {
@@ -360,7 +372,7 @@ router.get("/api/erp/sale-monthly-report", asyncHandler(async (req, res) => {
   if (!isDecoderAvailable()) {
     return res.status(503).json({
       ok: false,
-      error: "ERP decoder 미지원 환경 (Windows dev 전용 · Render Linux 지원 X)",
+      error: `ERP decoder 실행 파일 없음 (${IS_WIN ? "Windows" : "Linux"}) · ${DECODER_EXE}`,
     });
   }
   const mm = String(month).padStart(2, "0");

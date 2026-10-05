@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- 2026-10-05 · System.Formats.Nrbf 기반 cross-platform decoder -->
+    <!-- · Linux/Windows/macOS 작동 · BinaryFormatter.Deserialize 사용 금지 -->
+    <!-- · 기존 iregen-bridge 와 output JSON contract 100% 호환 -->
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>IregenDecoder</RootNamespace>
+    <AssemblyName>iregen-decoder</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Formats.Nrbf" Version="10.0.12" />
+  </ItemGroup>
+</Project>

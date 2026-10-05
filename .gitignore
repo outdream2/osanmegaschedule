@@ -56,3 +56,10 @@ data/snapshots/*.json
 
 # 2026-10-03 · ERP C# decoder 중간 산출물 (프로젝트 root 에 생성됨)
 debug/
+
+# 2026-10-05 · iregen-decoder (cross-platform NRBF decoder) build artifacts
+# · publish/linux-x64/iregen-decoder (ELF binary) 자체는 git tracking 필요
+tools/iregen-decoder/bin/
+tools/iregen-decoder/obj/
+tools/iregen-decoder/publish/**/*.pdb
+tools/iregen-decoder/publish/**/output/
