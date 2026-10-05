@@ -108,6 +108,12 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
+  // 2026-10-05 · 배포(Render) reverse proxy 뒤 · X-Forwarded-For 신뢰 · express-rate-limit ERR_ERL_UNEXPECTED_X_FORWARDED_FOR 방지
+  //   · 1 = 바로 앞 1단계 proxy 만 신뢰 (Render 구성과 일치 · `true` 는 보안상 비권장)
+  //   · 미설정 시 · rate-limit validator 가 요청마다 throw · 전체 API 실패 (ERP·판매현황·로그인 등)
+  //   · 로컬은 proxy 없음 · 영향 없음
+  app.set("trust proxy", 1);
+
   // 2026-09-14 · real_map 컬럼 존재 check 제거 (2026-09-08 DROP 완료 · stale warning)
 
   if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
