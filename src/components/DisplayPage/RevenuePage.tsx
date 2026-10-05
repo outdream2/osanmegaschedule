@@ -781,21 +781,33 @@ const MonthlyReportTab: React.FC = () => {
                     <span className={`text-[9px] font-bold ${qt.text} tracking-wider`}>{qt.label}</span>
                   </div>
                 </div>
-                {/* 중앙 · 매출 금액 · 큰 숫자 */}
-                <div className="relative flex-1 flex items-center justify-center px-3">
+                {/* 중앙 · 매출 금액 · 큰 숫자 + 하단 마진/객단가 */}
+                <div className="relative flex-1 flex flex-col items-center justify-center px-2 gap-0.5 min-w-0">
                   {row === undefined ? (
                     <span className="text-[13px] text-zinc-300">...</span>
                   ) : !hasData ? (
                     <span className="text-[13px] text-zinc-300">—</span>
                   ) : (
-                    <span className={`text-[22px] font-extrabold tabular-nums tracking-tight ${isSelected ? "text-zinc-900" : qt.text}`}>
-                      {fmtWonShort(row.saleTotal)}
-                    </span>
+                    <>
+                      <div className="flex items-baseline gap-1 min-w-0">
+                        <span className="text-[9px] font-bold text-rose-500 tracking-wider">매출</span>
+                        <span className={`text-[18px] font-extrabold tabular-nums tracking-tight leading-none ${isSelected ? "text-zinc-900" : "text-rose-600"}`}>
+                          {fmtWonShort(row.saleTotal)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-center gap-2 text-[10px] tabular-nums whitespace-nowrap">
+                        <span className="text-emerald-700">
+                          <span className="text-[8px] font-bold text-emerald-500 tracking-wide mr-0.5">마진</span>
+                          {fmtWonShort(row.margin)}
+                        </span>
+                        <span className="text-zinc-300">·</span>
+                        <span className="text-brand-deep">
+                          <span className="text-[8px] font-bold text-brand-deep/70 tracking-wide mr-0.5">객단</span>
+                          {row.customerCnt > 0 ? fmtWonShort(row.saleTotal / row.customerCnt) : "-"}
+                        </span>
+                      </div>
+                    </>
                   )}
-                </div>
-                {/* 하단 · subtle 라벨 */}
-                <div className="relative px-3 pb-2 text-[10px] font-medium text-zinc-400 text-right">
-                  {hasData ? "매출" : ""}
                 </div>
               </button>
             );
@@ -916,31 +928,27 @@ const MonthlyReportTab: React.FC = () => {
                     className={`flex-1 w-full text-left p-1 md:p-2 min-w-0 transition ${hasData ? "cursor-pointer hover:bg-brand-tint/30" : "cursor-default"}`}
                     title={hasData ? `${cell.dateStr} 상세 보기` : undefined}
                   >
-                    <div className={`text-[13px] md:text-[15px] font-bold ${isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-700"} ${isToday ? "text-amber-700" : ""} leading-tight`}>
-                      {cell.day}{isToday && <span className="ml-1 text-[11px] md:text-[13px] text-amber-700">● 오늘</span>}
+                    <div className={`text-[14px] md:text-[16px] font-bold ${isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-700"} ${isToday ? "text-amber-700" : ""} leading-tight`}>
+                      {cell.day}{isToday && <span className="ml-1 text-[12px] md:text-[14px] text-amber-700">● 오늘</span>}
                     </div>
-                    <div className="mt-1 space-y-1 text-[11px] md:text-[13px]">
+                    <div className="mt-1 space-y-1 text-[12px] md:text-[14px]">
+                      {cell.sale && (
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-rose-600 font-semibold leading-tight">매출</span>
+                          <span className="tabular-nums font-bold text-rose-700 leading-tight break-all">{fmtNum(Number(cell.sale.SaleTotal ?? 0))}</span>
+                        </div>
+                      )}
                       {cell.buy && (
                         <div className="flex flex-col min-w-0">
-                          <span className="text-amber-600 font-semibold leading-tight">매입</span>
-                          <span className="tabular-nums text-amber-900 font-medium leading-tight break-all">{fmtNum(Number(cell.buy.BuyTotal ?? 0))}</span>
+                          <span className="text-brand-deep font-semibold leading-tight">매입</span>
+                          <span className="tabular-nums text-brand-deep leading-tight break-all">{fmtNum(Number(cell.buy.BuyTotal ?? 0))}</span>
                         </div>
                       )}
                       {cell.sale && (
-                        <>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-brand-deep font-semibold leading-tight">매출</span>
-                            <span className="tabular-nums font-bold text-brand-deep leading-tight break-all">{fmtNum(Number(cell.sale.SaleTotal ?? 0))}</span>
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sky-600 font-semibold leading-tight">객수/단가</span>
-                            <span className="tabular-nums text-sky-900 leading-tight break-all">{Number(cell.sale.CustomerCnt ?? 0).toLocaleString()} / {fmtNum(Number(cell.sale.AvgPerCustomer ?? 0))}</span>
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-emerald-600 font-semibold leading-tight">마진</span>
-                            <span className="tabular-nums text-emerald-900 leading-tight break-all">{fmtNum(Number(cell.sale.Margin ?? 0))}</span>
-                          </div>
-                        </>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-emerald-600 font-semibold leading-tight">객수/단가</span>
+                          <span className="tabular-nums text-emerald-800 leading-tight break-all">{Number(cell.sale.CustomerCnt ?? 0).toLocaleString()} / {fmtNum(Number(cell.sale.AvgPerCustomer ?? 0))}</span>
+                        </div>
                       )}
                     </div>
                   </button>
@@ -1035,23 +1043,19 @@ const DayDetailModal: React.FC<{
 };
 
 const WeekSubtotalBlock: React.FC<{ ws: { buyTotal: number; saleTotal: number; cust: number; avg: number; margin: number; marginPct: number } }> = ({ ws }) => (
-  <div className="mt-2 pt-2 border-t border-brand-deep/15 space-y-1 text-[11px] md:text-[13px] bg-gradient-to-br from-brand-tint/40 to-sky-50/50 rounded px-1.5 py-1.5 min-w-0">
+  <div className="mt-2 pt-2 border-t border-brand-deep/15 space-y-1 text-[12px] md:text-[14px] bg-gradient-to-br from-brand-tint/40 to-sky-50/50 rounded px-1.5 py-1.5 min-w-0">
     <div className="text-brand-deep font-bold leading-tight tracking-tight">[주간 합계]</div>
     <div className="flex flex-col min-w-0">
-      <span className="text-amber-600 font-semibold leading-tight">매입</span>
-      <span className="tabular-nums text-amber-900 leading-tight break-all">{fmtNum(ws.buyTotal)}</span>
+      <span className="text-rose-600 font-semibold leading-tight">매출</span>
+      <span className="tabular-nums font-bold text-rose-700 leading-tight break-all">{fmtNum(ws.saleTotal)}</span>
     </div>
     <div className="flex flex-col min-w-0">
-      <span className="text-brand-deep font-semibold leading-tight">매출</span>
-      <span className="tabular-nums font-bold text-brand-deep leading-tight break-all">{fmtNum(ws.saleTotal)}</span>
+      <span className="text-brand-deep font-semibold leading-tight">매입</span>
+      <span className="tabular-nums text-brand-deep leading-tight break-all">{fmtNum(ws.buyTotal)}</span>
     </div>
     <div className="flex flex-col min-w-0">
-      <span className="text-sky-600 font-semibold leading-tight">객/단가</span>
-      <span className="tabular-nums text-sky-900 leading-tight break-all">{ws.cust.toLocaleString()} / {fmtNum(ws.avg)}</span>
-    </div>
-    <div className="flex flex-col min-w-0">
-      <span className="text-emerald-600 font-semibold leading-tight">마진</span>
-      <span className="tabular-nums text-emerald-900 leading-tight break-all">{fmtNum(ws.margin)}</span>
+      <span className="text-emerald-600 font-semibold leading-tight">객/단가</span>
+      <span className="tabular-nums text-emerald-800 leading-tight break-all">{ws.cust.toLocaleString()} / {fmtNum(ws.avg)}</span>
     </div>
   </div>
 );
