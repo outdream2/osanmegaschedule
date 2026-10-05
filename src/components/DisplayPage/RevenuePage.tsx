@@ -8,6 +8,8 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/apiClient";
+import { Modal } from "../common/Modal";
+import { CalendarDays } from "lucide-react";
 
 type RevenueTab = "hourly" | "monthly";
 type FetchStatus = "idle" | "loading" | "success" | "error";
@@ -580,6 +582,9 @@ const MonthlyReportTab: React.FC = () => {
   const [yearOverview, setYearOverview] = useState<Map<number, YearOverviewItem>>(new Map());
   const [overviewYear, setOverviewYear] = useState<number | null>(null);
   const [mobileExpanded, setMobileExpanded] = useState<boolean>(false);
+
+  // 2026-10-05 · 캘린더 날짜 클릭 → 상세 모달
+  const [modalDay, setModalDay] = useState<{ day: number; dateStr: string; buy?: MonthlyBuyDaily; sale?: MonthlySaleDaily } | null>(null);
   useEffect(() => {
     let cancelled = false;
     setYearOverview(new Map());
@@ -901,54 +906,153 @@ const MonthlyReportTab: React.FC = () => {
                 );
               }
               const isToday = cell.dateStr === todayStr;
+              const hasData = !!(cell.buy || cell.sale);
               return (
-                <div key={ci} className={`min-h-[90px] md:min-h-[140px] p-1 md:p-2 border-r border-zinc-100 last:border-r-0 min-w-0 ${isToday ? "bg-amber-50/60" : "bg-white"}`}>
-                  <div className={`text-[13px] md:text-[15px] font-bold ${isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-700"} ${isToday ? "text-amber-700" : ""} leading-tight`}>
-                    {cell.day}{isToday && <span className="ml-1 text-[11px] md:text-[13px] text-amber-700">● 오늘</span>}
-                  </div>
-                  <div className="mt-1 space-y-[2px] text-[11px] md:text-[14px]">
-                    {cell.buy && (
-                      <div className="flex justify-between items-baseline gap-1 min-w-0">
-                        <span className="text-zinc-400 shrink-0">매입</span>
-                        <span className="tabular-nums text-zinc-700 truncate">{fmtNum(Number(cell.buy.BuyTotal ?? 0))}</span>
-                      </div>
-                    )}
-                    {cell.sale && (
-                      <>
-                        <div className="flex justify-between items-baseline gap-1 min-w-0">
-                          <span className="text-zinc-400 shrink-0">매출</span>
-                          <span className="tabular-nums font-semibold text-zinc-900 truncate">{fmtNum(Number(cell.sale.SaleTotal ?? 0))}</span>
+                <div key={ci} className={`min-h-[90px] md:min-h-[140px] border-r border-zinc-100 last:border-r-0 min-w-0 flex flex-col ${isToday ? "bg-amber-50/60" : "bg-white"}`}>
+                  <button
+                    type="button"
+                    onClick={() => hasData && setModalDay(cell)}
+                    disabled={!hasData}
+                    className={`flex-1 w-full text-left p-1 md:p-2 min-w-0 transition ${hasData ? "cursor-pointer hover:bg-brand-tint/30" : "cursor-default"}`}
+                    title={hasData ? `${cell.dateStr} 상세 보기` : undefined}
+                  >
+                    <div className={`text-[13px] md:text-[15px] font-bold ${isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-700"} ${isToday ? "text-amber-700" : ""} leading-tight`}>
+                      {cell.day}{isToday && <span className="ml-1 text-[11px] md:text-[13px] text-amber-700">● 오늘</span>}
+                    </div>
+                    <div className="mt-1 space-y-1 text-[11px] md:text-[13px]">
+                      {cell.buy && (
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-amber-600 font-semibold leading-tight">매입</span>
+                          <span className="tabular-nums text-amber-900 font-medium leading-tight break-all">{fmtNum(Number(cell.buy.BuyTotal ?? 0))}</span>
                         </div>
-                        <div className="flex justify-between items-baseline gap-1 min-w-0">
-                          <span className="text-zinc-400 shrink-0">객/단가</span>
-                          <span className="tabular-nums text-zinc-600 truncate">{Number(cell.sale.CustomerCnt ?? 0).toLocaleString()}/{fmtNum(Number(cell.sale.AvgPerCustomer ?? 0))}</span>
-                        </div>
-                        <div className="flex justify-between items-baseline gap-1 min-w-0">
-                          <span className="text-zinc-400 shrink-0">마진</span>
-                          <span className="tabular-nums text-zinc-600 truncate">{fmtNum(Number(cell.sale.Margin ?? 0))}</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                      )}
+                      {cell.sale && (
+                        <>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-brand-deep font-semibold leading-tight">매출</span>
+                            <span className="tabular-nums font-bold text-brand-deep leading-tight break-all">{fmtNum(Number(cell.sale.SaleTotal ?? 0))}</span>
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sky-600 font-semibold leading-tight">객수/단가</span>
+                            <span className="tabular-nums text-sky-900 leading-tight break-all">{Number(cell.sale.CustomerCnt ?? 0).toLocaleString()} / {fmtNum(Number(cell.sale.AvgPerCustomer ?? 0))}</span>
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-emerald-600 font-semibold leading-tight">마진</span>
+                            <span className="tabular-nums text-emerald-900 leading-tight break-all">{fmtNum(Number(cell.sale.Margin ?? 0))}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </button>
                   {/* 일요일 셀 안 주간 subtotal */}
-                  {hasWeek && ws && <WeekSubtotalBlock ws={ws} />}
+                  {hasWeek && ws && <div className="px-1 md:px-2 pb-1 md:pb-2"><WeekSubtotalBlock ws={ws} /></div>}
                 </div>
               );
             })}
           </div>
         ))}
       </div>
+
+      {/* 날짜 상세 모달 · 2026-10-05 */}
+      {modalDay && (
+        <DayDetailModal day={modalDay} year={year} month={month} onClose={() => setModalDay(null)} />
+      )}
     </div>
   );
 };
 
+// 날짜 상세 모달 · Modal primitive · 각 metric 별 컬러 엑센트
+type AccentColor = "brand" | "amber" | "emerald" | "indigo" | "sky" | "rose";
+const ACCENT_STYLES: Record<AccentColor, { bg: string; border: string; bar: string; label: string; value: string }> = {
+  brand:   { bg: "bg-brand-tint/40",  border: "border-brand-deep/20", bar: "bg-gradient-to-b from-brand-deep via-sky-500 to-indigo-500", label: "text-brand-deep",   value: "text-brand-deep" },
+  amber:   { bg: "bg-amber-50",       border: "border-amber-200",     bar: "bg-amber-500",   label: "text-amber-700",   value: "text-amber-900" },
+  emerald: { bg: "bg-emerald-50",     border: "border-emerald-200",   bar: "bg-emerald-500", label: "text-emerald-700", value: "text-emerald-900" },
+  indigo:  { bg: "bg-indigo-50",      border: "border-indigo-200",    bar: "bg-indigo-500",  label: "text-indigo-700",  value: "text-indigo-900" },
+  sky:     { bg: "bg-sky-50",         border: "border-sky-200",       bar: "bg-sky-500",     label: "text-sky-700",     value: "text-sky-900" },
+  rose:    { bg: "bg-rose-50",        border: "border-rose-200",      bar: "bg-rose-500",    label: "text-rose-700",    value: "text-rose-900" },
+};
+
+const MetricCard: React.FC<{ color: AccentColor; label: string; value: string; big?: boolean; full?: boolean }> = ({ color, label, value, big, full }) => {
+  const s = ACCENT_STYLES[color];
+  return (
+    <div className={`relative overflow-hidden rounded-xl border ${s.bg} ${s.border} ${full ? "col-span-2" : ""} ${big ? "p-4" : "p-3"}`}>
+      <span className={`absolute left-0 top-2 bottom-2 w-[3px] ${s.bar} rounded-r-full`} aria-hidden />
+      <div className="pl-2 min-w-0">
+        <div className={`text-[12px] md:text-[13px] font-semibold mb-1 tracking-tight ${s.label}`}>{label}</div>
+        <div className={`font-bold tabular-nums leading-tight break-all ${s.value} ${big ? "text-[22px] md:text-[26px]" : "text-[17px] md:text-[19px]"}`}>{value}</div>
+      </div>
+    </div>
+  );
+};
+
+const DayDetailModal: React.FC<{
+  day: { day: number; dateStr: string; buy?: MonthlyBuyDaily; sale?: MonthlySaleDaily };
+  year: number;
+  month: number;
+  onClose: () => void;
+}> = ({ day, year, month, onClose }) => {
+  const dow = ["일","월","화","수","목","금","토"][new Date(day.dateStr + "T00:00:00").getDay()];
+  const buyTotal = Number(day.buy?.BuyTotal ?? 0);
+  const saleTotal = Number(day.sale?.SaleTotal ?? 0);
+  const margin = Number(day.sale?.Margin ?? 0);
+  const marginPct = saleTotal > 0 ? (margin / saleTotal) * 100 : 0;
+  const cust = Number(day.sale?.CustomerCnt ?? 0);
+  const avg = Number(day.sale?.AvgPerCustomer ?? 0);
+  const t = new Date();
+  const todayStr = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`;
+  const isToday = day.dateStr === todayStr;
+  const dowColor = dow === "일" ? "text-rose-600" : dow === "토" ? "text-sky-600" : "text-zinc-600";
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      size="sm"
+      icon={<CalendarDays size={18} />}
+      title={
+        <span className="flex items-baseline gap-2 flex-wrap">
+          <span>{year}년 {month}월 {day.day}일</span>
+          <span className={`text-[14px] font-bold ${dowColor}`}>({dow})</span>
+          {isToday && <span className="text-[12px] text-amber-700 font-bold">● 오늘</span>}
+        </span>
+      }
+      titleAccent
+    >
+      <div className="space-y-3">
+        {/* 매출 · brand gradient · 메인 포인트 */}
+        <MetricCard color="brand" label="매출" value={fmtWon(saleTotal)} big full />
+        {/* 2 column grid · 각 metric 별 컬러 엑센트 */}
+        <div className="grid grid-cols-2 gap-3">
+          <MetricCard color="amber"   label="매입"     value={fmtWon(buyTotal)} />
+          <MetricCard color="emerald" label="매출이익" value={fmtWon(margin)} />
+          <MetricCard color="indigo"  label="마진율"   value={saleTotal > 0 ? `${marginPct.toFixed(1)}%` : "-"} />
+          <MetricCard color="sky"     label="방문객"   value={cust > 0 ? cust.toLocaleString() + "명" : "-"} />
+          <MetricCard color="rose"    label="객단가"   value={avg > 0 ? fmtWon(avg) : "-"} full />
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
 const WeekSubtotalBlock: React.FC<{ ws: { buyTotal: number; saleTotal: number; cust: number; avg: number; margin: number; marginPct: number } }> = ({ ws }) => (
-  <div className="mt-2 pt-2 border-t border-rose-200 space-y-[2px] text-[11px] md:text-[13px] bg-rose-50/40 rounded px-1 py-1 min-w-0">
-    <div className="text-rose-700 font-semibold leading-tight">[주간 합계]</div>
-    <div className="flex justify-between items-baseline gap-1 min-w-0"><span className="text-zinc-500 shrink-0">매입</span><span className="tabular-nums text-zinc-800 truncate">{fmtNum(ws.buyTotal)}</span></div>
-    <div className="flex justify-between items-baseline gap-1 min-w-0"><span className="text-zinc-500 shrink-0">매출</span><span className="tabular-nums font-semibold text-zinc-900 truncate">{fmtNum(ws.saleTotal)}</span></div>
-    <div className="flex justify-between items-baseline gap-1 min-w-0"><span className="text-zinc-500 shrink-0">객/단가</span><span className="tabular-nums text-zinc-700 truncate">{ws.cust.toLocaleString()}/{fmtNum(ws.avg)}</span></div>
-    <div className="flex justify-between items-baseline gap-1 min-w-0"><span className="text-zinc-500 shrink-0">마진</span><span className="tabular-nums text-zinc-700 truncate">{fmtNum(ws.margin)}</span></div>
+  <div className="mt-2 pt-2 border-t border-brand-deep/15 space-y-1 text-[11px] md:text-[13px] bg-gradient-to-br from-brand-tint/40 to-sky-50/50 rounded px-1.5 py-1.5 min-w-0">
+    <div className="text-brand-deep font-bold leading-tight tracking-tight">[주간 합계]</div>
+    <div className="flex flex-col min-w-0">
+      <span className="text-amber-600 font-semibold leading-tight">매입</span>
+      <span className="tabular-nums text-amber-900 leading-tight break-all">{fmtNum(ws.buyTotal)}</span>
+    </div>
+    <div className="flex flex-col min-w-0">
+      <span className="text-brand-deep font-semibold leading-tight">매출</span>
+      <span className="tabular-nums font-bold text-brand-deep leading-tight break-all">{fmtNum(ws.saleTotal)}</span>
+    </div>
+    <div className="flex flex-col min-w-0">
+      <span className="text-sky-600 font-semibold leading-tight">객/단가</span>
+      <span className="tabular-nums text-sky-900 leading-tight break-all">{ws.cust.toLocaleString()} / {fmtNum(ws.avg)}</span>
+    </div>
+    <div className="flex flex-col min-w-0">
+      <span className="text-emerald-600 font-semibold leading-tight">마진</span>
+      <span className="tabular-nums text-emerald-900 leading-tight break-all">{fmtNum(ws.margin)}</span>
+    </div>
   </div>
 );
 
