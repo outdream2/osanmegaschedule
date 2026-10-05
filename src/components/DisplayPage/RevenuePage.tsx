@@ -117,7 +117,7 @@ export const RevenuePage: React.FC = () => {
             { k: "monthly" as const, label: "📅 월별 조회" },
           ]).map((t) => (
             <button key={t.k} onClick={() => setTab(t.k)}
-              className={`px-4 py-2 rounded text-[17px] font-semibold transition ${
+              className={`px-4 py-2 rounded text-[18px] font-semibold transition ${
                 tab === t.k ? "bg-brand-deep text-white" : "text-zinc-600 hover:bg-zinc-100"
               }`}>
               {t.label}
@@ -156,6 +156,13 @@ const HourlyReportTab: React.FC = () => {
   const [hourlyLastSuccessAt, setHourlyLastSuccessAt] = useState<string | null>(null);
   const [hourlyFromDate, setHourlyFromDate] = useState<string>(() => todayYmd());
   const [hourlyToDate, setHourlyToDate] = useState<string>(() => todayYmd());
+  // 2026-10-05 · 모바일 반응형 · 날짜별 세로 접이식 · 오늘만 기본 펼침
+  const [expandedDates, setExpandedDates] = useState<Set<string>>(() => new Set([todayYmd()]));
+  const toggleDate = (date: string) => setExpandedDates((prev) => {
+    const next = new Set(prev);
+    if (next.has(date)) next.delete(date); else next.add(date);
+    return next;
+  });
 
   // HOURLY 전용 loader · /api/erp/sale-hourly-report · Sales_Days_TimeReport
   const loadHourly = useCallback(async (from: string, to: string) => {
@@ -275,39 +282,39 @@ const HourlyReportTab: React.FC = () => {
       {/* 상단 TODAY KPI (HOURLY 전용 · 오늘 데이터만) */}
       <div className="bg-gradient-to-br from-sky-50 to-indigo-50 border border-sky-200 rounded-lg p-4 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <div className="text-[14px] text-zinc-600 font-semibold">오늘 {today} {curTimeLabel} 기준</div>
+          <div className="text-[15px] text-zinc-600 font-semibold">오늘 {today} {curTimeLabel} 기준</div>
           <div className="flex items-center gap-6 mt-1">
             <div>
-              <span className="text-[14px] text-zinc-500">누적 고객수</span>
-              <span className="ml-2 text-[22px] font-bold text-brand-deep tabular-nums">{showTopKpi ? todayCust.toLocaleString() + "명" : "-"}</span>
+              <span className="text-[15px] text-zinc-500">누적 고객수</span>
+              <span className="ml-2 text-[23px] font-bold text-brand-deep tabular-nums">{showTopKpi ? todayCust.toLocaleString() + "명" : "-"}</span>
             </div>
             <div>
-              <span className="text-[14px] text-zinc-500">누적 매출</span>
-              <span className="ml-2 text-[22px] font-bold text-brand-deep tabular-nums">{showTopKpi ? fmtWon(todaySale) : "-"}</span>
+              <span className="text-[15px] text-zinc-500">누적 매출</span>
+              <span className="ml-2 text-[23px] font-bold text-brand-deep tabular-nums">{showTopKpi ? fmtWon(todaySale) : "-"}</span>
             </div>
           </div>
         </div>
-        <div className="text-[13px] text-zinc-500">마지막 ERP 조회: {hourlyLastSuccessAt ? fmtHHmm(new Date(hourlyLastSuccessAt)) : "-"}</div>
+        <div className="text-[14px] text-zinc-500">마지막 ERP 조회: {hourlyLastSuccessAt ? fmtHHmm(new Date(hourlyLastSuccessAt)) : "-"}</div>
       </div>
 
       {/* 날짜 선택 UI · HOURLY 전용 */}
       <div className="bg-white border border-zinc-200 rounded-lg p-3 flex items-center gap-2 flex-wrap">
-        <span className="text-[15px] font-semibold text-zinc-700">조회 기간</span>
+        <span className="text-[16px] font-semibold text-zinc-700">조회 기간</span>
         <input type="date" value={fromDate} onChange={(e) => setHourlyFromDate(e.target.value)}
-          className="px-3 py-1.5 border border-zinc-300 rounded text-[15px]" />
+          className="px-3 py-1.5 border border-zinc-300 rounded text-[16px]" />
         <span className="text-zinc-400">~</span>
         <input type="date" value={toDate} onChange={(e) => setHourlyToDate(e.target.value)}
-          className="px-3 py-1.5 border border-zinc-300 rounded text-[15px]" />
+          className="px-3 py-1.5 border border-zinc-300 rounded text-[16px]" />
         <button onClick={() => void loadHourly(fromDate, toDate)} disabled={status === "loading"}
-          className="px-4 py-1.5 bg-brand-deep text-white rounded hover:bg-brand-deep/90 text-[15px] font-bold disabled:opacity-50">
+          className="px-4 py-1.5 bg-brand-deep text-white rounded hover:bg-brand-deep/90 text-[16px] font-bold disabled:opacity-50">
           {status === "loading" ? "조회 중..." : "🔍 조회"}
         </button>
         <button onClick={onResetToday}
-          className="px-3 py-1.5 border border-brand-deep text-brand-deep rounded bg-white hover:bg-sky-50 text-[14px] font-semibold">
+          className="px-3 py-1.5 border border-brand-deep text-brand-deep rounded bg-white hover:bg-sky-50 text-[15px] font-semibold">
           오늘로
         </button>
         <div className="flex-1" />
-        <div className="text-[14px] font-semibold text-zinc-700">
+        <div className="text-[15px] font-semibold text-zinc-700">
           {dates.length === 0
             ? "데이터 없음"
             : dates.length === 1
@@ -316,20 +323,20 @@ const HourlyReportTab: React.FC = () => {
         </div>
       </div>
       {hourlySchemaMismatch && error && (
-        <div className="bg-amber-50 border border-amber-300 text-amber-800 border text-[14px] p-3 rounded flex items-center justify-between gap-2">
+        <div className="bg-amber-50 border border-amber-300 text-amber-800 border text-[15px] p-3 rounded flex items-center justify-between gap-2">
           <div>
             <span className="font-semibold">⚠ ERP 응답 비정상 · 다시 조회 시도</span>
-            <div className="text-[12px] mt-1 opacity-80">{error}</div>
+            <div className="text-[13px] mt-1 opacity-80">{error}</div>
           </div>
           <button onClick={() => void loadHourly(fromDate, toDate)}
-            className="shrink-0 px-3 py-1.5 border border-current rounded text-[13px] font-semibold hover:bg-white/50">
+            className="shrink-0 px-3 py-1.5 border border-current rounded text-[14px] font-semibold hover:bg-white/50">
             다시 조회
           </button>
         </div>
       )}
 
       {status === "error" && error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-700 text-[15px] p-3 rounded">
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 text-[16px] p-3 rounded">
           ERP 조회 실패: {error}
         </div>
       )}
@@ -342,19 +349,19 @@ const HourlyReportTab: React.FC = () => {
         <KpiBox label={`${today} 고객수`} value={show ? totalCust.toLocaleString() + "명" : "-"} />
       </div>
 
-      {/* 날짜별 column group */}
-      <div className="bg-white border border-zinc-200 rounded-lg overflow-auto">
-        <table className="w-full text-[15px] border-collapse">
+      {/* 날짜별 column group · PC 전용 */}
+      <div className="hidden md:block bg-white border border-zinc-200 rounded-lg overflow-auto">
+        <table className="w-full text-[16px] border-collapse">
           <thead>
             <tr className="bg-zinc-50 border-b border-zinc-200">
               <th rowSpan={2} className="text-center px-3 py-2 font-semibold text-zinc-600 border-r border-zinc-200 bg-zinc-50 sticky left-0 z-10" style={{ minWidth: 72 }}>시간</th>
               {dateData.map((d) => (
                 <th key={d.date} colSpan={6} className={`text-center px-3 py-2 font-semibold text-zinc-700 border-r border-zinc-200 ${d.date === today ? "bg-amber-50" : "bg-sky-50"}`}>
-                  {d.date}{d.date === today && <span className="ml-1 text-amber-700 text-[13px]">● 오늘</span>}
+                  {d.date}{d.date === today && <span className="ml-1 text-amber-700 text-[14px]">● 오늘</span>}
                 </th>
               ))}
             </tr>
-            <tr className="bg-zinc-50 border-b border-zinc-200 text-[13px]">
+            <tr className="bg-zinc-50 border-b border-zinc-200 text-[14px]">
               {dateData.map((d) => (
                 <React.Fragment key={d.date}>
                   <th className="text-right px-2 py-1 font-semibold text-zinc-600">객단가</th>
@@ -399,7 +406,7 @@ const HourlyReportTab: React.FC = () => {
                       <td className={`px-2 py-2 text-right tabular-nums ${isCurrent ? "bg-sky-100 font-semibold" : ""}`}>{fmtNum(Number(r.AvgChargeTotal ?? 0))}</td>
                       <td className={`px-2 py-2 text-right tabular-nums ${isCurrent ? "bg-sky-100 font-semibold" : ""}`}>{fmtNum(Number(r.CustomerCnt ?? 0))}</td>
                       <td className={`px-2 py-2 text-right tabular-nums ${isCurrent ? "bg-sky-100 font-semibold" : ""}`}>{fmtNum(Number(r.SaleTotal ?? 0))}</td>
-                      <td className={`px-2 py-2 text-right tabular-nums ${isCurrent ? "bg-sky-100 font-semibold" : ""}`}>{Number(r.MarginRate ?? 0).toFixed(1)}{isCurrent && <span className="ml-1 text-sky-600 text-[13px]">← 현재</span>}</td>
+                      <td className={`px-2 py-2 text-right tabular-nums ${isCurrent ? "bg-sky-100 font-semibold" : ""}`}>{Number(r.MarginRate ?? 0).toFixed(1)}{isCurrent && <span className="ml-1 text-sky-600 text-[14px]">← 현재</span>}</td>
                       <td className="px-2 py-2 text-right tabular-nums bg-amber-50 font-semibold text-amber-800">{fmtNum(r.cumCust)}</td>
                       <td className="px-2 py-2 text-right tabular-nums bg-amber-50 font-semibold text-amber-800 border-r border-zinc-200">{fmtNum(r.cumSale)}</td>
                     </React.Fragment>
@@ -410,14 +417,89 @@ const HourlyReportTab: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {/* 날짜별 세로 접이식 · 모바일 전용 · 오늘만 기본 펼침 */}
+      <div className="md:hidden flex flex-col gap-2">
+        {!show ? (
+          <div className="bg-white border border-zinc-200 rounded-lg p-8 text-center text-zinc-400">
+            {status === "idle" || status === "loading" ? "조회 중..." : status === "error" ? "조회 실패" : "데이터 없음"}
+          </div>
+        ) : dateData.length === 0 ? (
+          <div className="bg-white border border-zinc-200 rounded-lg p-8 text-center text-zinc-400">데이터 없음</div>
+        ) : (
+          dateData.map((d) => {
+            const isExp = expandedDates.has(d.date);
+            const isToday = d.date === today;
+            const dayRows = [...d.rowMap.values()].sort((a, b) => Number(a.SaleTime) - Number(b.SaleTime));
+            const dMarginRate = d.totalSale > 0 ? (d.totalMargin / d.totalSale) * 100 : 0;
+            return (
+              <div key={d.date} className={`bg-white border rounded-lg overflow-hidden ${isToday ? "border-amber-300" : "border-zinc-200"}`}>
+                <button
+                  type="button"
+                  onClick={() => toggleDate(d.date)}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 transition ${isToday ? "bg-amber-50 hover:bg-amber-100" : "bg-zinc-50 hover:bg-zinc-100"}`}
+                  aria-expanded={isExp}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[16px] font-semibold text-zinc-800 whitespace-nowrap">{d.date}</span>
+                    {isToday && <span className="text-amber-700 text-[13px] font-bold whitespace-nowrap">● 오늘</span>}
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right text-[13px] text-zinc-600">
+                      <div className="font-semibold text-zinc-800 tabular-nums">{fmtWon(d.totalSale)}</div>
+                      <div className="tabular-nums">{d.totalCust.toLocaleString()}명 · {dMarginRate.toFixed(1)}%</div>
+                    </div>
+                    <span className="text-zinc-600 text-[14px] font-bold w-4 text-center">{isExp ? "▲" : "▼"}</span>
+                  </div>
+                </button>
+                {isExp && (
+                  <div className="border-t border-zinc-200 overflow-x-auto">
+                    <table className="w-full text-[14px] border-collapse">
+                      <thead>
+                        <tr className="bg-zinc-50 border-b border-zinc-200 text-[12px]">
+                          <th className="text-center px-2 py-1.5 font-semibold text-zinc-600">시간</th>
+                          <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">객단가</th>
+                          <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">고객</th>
+                          <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">합계</th>
+                          <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">마진%</th>
+                          <th className="text-right px-2 py-1.5 font-semibold text-amber-800 bg-amber-50">누적고객</th>
+                          <th className="text-right px-2 py-1.5 font-semibold text-amber-800 bg-amber-50">누적합계</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dayRows.map((r) => {
+                          const isCurrent = isToday && r.SaleTime === curSlot;
+                          return (
+                            <tr key={r.SaleTime} className={`border-b border-zinc-100 ${isCurrent ? "bg-sky-50" : ""}`}>
+                              <td className={`px-2 py-1.5 text-center font-semibold ${isCurrent ? "text-sky-700" : "text-zinc-700"}`}>
+                                {r.SaleTime}{isCurrent && <span className="ml-0.5 text-sky-600 text-[11px]">●</span>}
+                              </td>
+                              <td className="px-2 py-1.5 text-right tabular-nums">{fmtNum(Number(r.AvgChargeTotal ?? 0))}</td>
+                              <td className="px-2 py-1.5 text-right tabular-nums">{fmtNum(Number(r.CustomerCnt ?? 0))}</td>
+                              <td className="px-2 py-1.5 text-right tabular-nums">{fmtNum(Number(r.SaleTotal ?? 0))}</td>
+                              <td className="px-2 py-1.5 text-right tabular-nums">{Number(r.MarginRate ?? 0).toFixed(1)}</td>
+                              <td className="px-2 py-1.5 text-right tabular-nums bg-amber-50/40 text-amber-800 font-semibold">{fmtNum(r.cumCust)}</td>
+                              <td className="px-2 py-1.5 text-right tabular-nums bg-amber-50/40 text-amber-800 font-semibold">{fmtNum(r.cumSale)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 };
 
 const KpiBox: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div className="bg-white border border-zinc-200 rounded-lg p-4">
-    <div className="text-[14px] text-zinc-500 font-semibold mb-1">{label}</div>
-    <div className="text-[20px] font-bold text-ink">{value}</div>
+    <div className="text-[15px] text-zinc-500 font-semibold mb-1">{label}</div>
+    <div className="text-[21px] font-bold text-ink">{value}</div>
   </div>
 );
 
@@ -588,17 +670,17 @@ const MonthlyReportTab: React.FC = () => {
       {/* 월 navigator */}
       <div className="bg-white border border-zinc-200 rounded-lg p-4 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2">
-          <button onClick={goPrev} className="px-3 py-1.5 border border-zinc-300 rounded bg-white hover:bg-zinc-50 text-[15px]">‹ 이전달</button>
-          <div className="px-4 py-1.5 text-[17px] font-bold text-brand-deep min-w-[140px] text-center">{year}년 {month}월</div>
-          <button onClick={goNext} className="px-3 py-1.5 border border-zinc-300 rounded bg-white hover:bg-zinc-50 text-[15px]">다음달 ›</button>
-          <button onClick={goThisMonth} className="ml-2 px-3 py-1.5 border border-brand-deep text-brand-deep rounded bg-white hover:bg-sky-50 text-[15px] font-semibold">이번달</button>
+          <button onClick={goPrev} className="px-3 py-1.5 border border-zinc-300 rounded bg-white hover:bg-zinc-50 text-[16px]">‹ 이전달</button>
+          <div className="px-4 py-1.5 text-[18px] font-bold text-brand-deep min-w-[140px] text-center">{year}년 {month}월</div>
+          <button onClick={goNext} className="px-3 py-1.5 border border-zinc-300 rounded bg-white hover:bg-zinc-50 text-[16px]">다음달 ›</button>
+          <button onClick={goThisMonth} className="ml-2 px-3 py-1.5 border border-brand-deep text-brand-deep rounded bg-white hover:bg-sky-50 text-[16px] font-semibold">이번달</button>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => void load(year, month)} disabled={status === "loading"}
-            className="px-3 py-1.5 border border-zinc-300 rounded bg-white hover:bg-zinc-50 text-[16px] font-semibold disabled:opacity-50">
+            className="px-3 py-1.5 border border-zinc-300 rounded bg-white hover:bg-zinc-50 text-[17px] font-semibold disabled:opacity-50">
             {status === "loading" ? "조회 중..." : "🔄 새로고침"}
           </button>
-          <div className="text-[15px] text-zinc-500">
+          <div className="text-[16px] text-zinc-500">
             {status === "success" && lastSuccessAt ? `${new Date(lastSuccessAt).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })} ERP 조회` :
              status === "error" ? "조회 실패" :
              status === "loading" ? "..." : "조회 전"}
@@ -607,74 +689,162 @@ const MonthlyReportTab: React.FC = () => {
       </div>
 
       {status === "error" && error && (
-        <div className={`${schemaMismatch ? "bg-amber-50 border-amber-300 text-amber-800" : "bg-rose-50 border-rose-200 text-rose-700"} border text-[16px] p-3 rounded flex items-center justify-between gap-2`}>
+        <div className={`${schemaMismatch ? "bg-amber-50 border-amber-300 text-amber-800" : "bg-rose-50 border-rose-200 text-rose-700"} border text-[17px] p-3 rounded flex items-center justify-between gap-2`}>
           <div>
             <span className="font-semibold">{schemaMismatch ? "⚠ ERP 응답 비정상 (schema mismatch · 2회 재시도 실패)" : "ERP 조회 실패"}</span>
-            <div className="text-[14px] mt-1 opacity-80">{error}</div>
+            <div className="text-[15px] mt-1 opacity-80">{error}</div>
           </div>
           <button onClick={() => void load(year, month)}
-            className="shrink-0 px-3 py-1.5 border border-current rounded text-[15px] font-semibold hover:bg-white/50">
+            className="shrink-0 px-3 py-1.5 border border-current rounded text-[16px] font-semibold hover:bg-white/50">
             다시 조회
           </button>
         </div>
       )}
 
-      {/* 12개월 가로 bar grid · 반응형 접기 (모바일) */}
-      <div className="bg-white border border-zinc-200 rounded-lg p-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-[15px] font-bold text-zinc-700">📊 {overviewYear ?? year}년 월별 매출</div>
+      {/* 12개월 매출 테이블 · 반응형 접기 (모바일 기본 접힘 · PC 항상 펼침) */}
+      <div className="bg-white border border-zinc-200 rounded-xl p-3 sm:p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-[17px] sm:text-[18px] font-bold text-zinc-800">📊 {overviewYear ?? year}년 월별 매출{isCurMonth ? asOfLabel : ""}</div>
           <div className="flex items-center gap-2">
-            <div className="text-[12px] text-zinc-500">{yearOverview.size === 0 ? "조회 중..." : yearOverview.size === 12 ? "완료" : `${yearOverview.size}/12`}</div>
+            <div className="text-[13px] text-zinc-500">{yearOverview.size === 0 ? "조회 중..." : yearOverview.size === 12 ? "완료" : `${yearOverview.size}/12`}</div>
             <button onClick={() => setMobileExpanded((v) => !v)}
-              className="md:hidden px-2 py-1 border border-zinc-300 rounded bg-white hover:bg-zinc-50 text-[12px] font-semibold">
+              className="md:hidden px-2 py-1 border border-zinc-300 rounded bg-white hover:bg-zinc-50 text-[13px] font-semibold">
               {mobileExpanded ? "접기 ▲" : "펼치기 ▼"}
             </button>
           </div>
         </div>
+        {/* 2026-10-05 · 사용자 지시 · 달력 느낌 2×6 카드 그리드 · 분기별 컬러 accent · Linear/Vercel 톤 */}
         {(() => {
           const maxSale = Math.max(0, ...[...yearOverview.values()].map(v => v.saleTotal));
+          const QUARTER_TONES: Record<number, { label: string; accent: string; bar: string; text: string; ring: string }> = {
+            1: { label: "Q1", accent: "bg-emerald-500", bar: "from-emerald-500/80 to-emerald-400/40", text: "text-emerald-700", ring: "ring-emerald-200/60" },
+            2: { label: "Q2", accent: "bg-amber-500",   bar: "from-amber-500/80 to-amber-400/40",     text: "text-amber-700",   ring: "ring-amber-200/60" },
+            3: { label: "Q3", accent: "bg-rose-500",    bar: "from-rose-500/80 to-rose-400/40",       text: "text-rose-700",    ring: "ring-rose-200/60" },
+            4: { label: "Q4", accent: "bg-indigo-500",  bar: "from-indigo-500/80 to-indigo-400/40",   text: "text-indigo-700",  ring: "ring-indigo-200/60" },
+          };
+          const renderMonth = (m: number) => {
+            const row = yearOverview.get(m);
+            const isSelected = m === month;
+            const isCurrent = m === now.getMonth() + 1 && year === now.getFullYear();
+            const hasData = row && row.saleTotal > 0;
+            const ratio = hasData && maxSale > 0 ? row.saleTotal / maxSale : 0;
+            const q = Math.ceil(m / 3);
+            const qt = QUARTER_TONES[q];
+            return (
+              <button key={m} onClick={() => setMonth(m)}
+                title={`${qt.label} · ${m}월`}
+                className={`group relative text-left rounded-xl border bg-white transition-all overflow-hidden h-[108px] flex flex-col ${
+                  isSelected
+                    ? "border-zinc-900 shadow-lg ring-2 ring-zinc-900/10 -translate-y-0.5"
+                    : `border-zinc-200 hover:border-zinc-300 hover:shadow-md hover:-translate-y-0.5 hover:ring-2 hover:${qt.ring}`
+                }`}
+              >
+                {/* 분기 accent · 좌측 세로 bar */}
+                <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${qt.accent}`} />
+                {/* 매출 bar · 하단 fill */}
+                {hasData && (
+                  <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t ${qt.bar} opacity-20`}
+                       style={{ height: `${Math.round(ratio * 100)}%` }} />
+                )}
+                {/* 상단 · 월 라벨 + 분기 미니 chip */}
+                <div className="relative flex items-start justify-between px-3 pt-2.5 pb-1">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className={`text-[17px] font-extrabold tabular-nums leading-none ${isSelected ? "text-zinc-900" : "text-zinc-800"}`}>{m}</span>
+                    <span className={`text-[11px] font-semibold ${isSelected ? "text-zinc-500" : "text-zinc-400"}`}>월</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {isCurrent && (
+                      <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">오늘</span>
+                    )}
+                    <span className={`text-[9px] font-bold ${qt.text} tracking-wider`}>{qt.label}</span>
+                  </div>
+                </div>
+                {/* 중앙 · 매출 금액 · 큰 숫자 */}
+                <div className="relative flex-1 flex items-center justify-center px-3">
+                  {row === undefined ? (
+                    <span className="text-[13px] text-zinc-300">...</span>
+                  ) : !hasData ? (
+                    <span className="text-[13px] text-zinc-300">—</span>
+                  ) : (
+                    <span className={`text-[22px] font-extrabold tabular-nums tracking-tight ${isSelected ? "text-zinc-900" : qt.text}`}>
+                      {fmtWonShort(row.saleTotal)}
+                    </span>
+                  )}
+                </div>
+                {/* 하단 · subtle 라벨 */}
+                <div className="relative px-3 pb-2 text-[10px] font-medium text-zinc-400 text-right">
+                  {hasData ? "매출" : ""}
+                </div>
+              </button>
+            );
+          };
           return (
-            <div className={`grid grid-cols-12 gap-1 ${mobileExpanded ? "" : "hidden md:grid"}`}>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
-                const row = yearOverview.get(m);
-                const isSelected = m === month;
-                const isCurrent = m === now.getMonth() + 1 && year === now.getFullYear();
-                const hasData = row && row.saleTotal > 0;
-                const ratio = hasData && maxSale > 0 ? row.saleTotal / maxSale : 0;
-                return (
-                  <button key={m} onClick={() => setMonth(m)}
-                    className={`flex flex-col items-center justify-end rounded border transition p-1 h-[72px] relative overflow-hidden ${
-                      isSelected ? "border-brand-deep bg-sky-50 ring-2 ring-brand-deep/30"
-                                 : "border-zinc-200 bg-white hover:bg-zinc-50"
-                    }`}>
-                    <div className="absolute inset-x-1 bottom-1 bg-gradient-to-t from-brand-deep/70 to-sky-300/50 rounded-sm transition-all"
-                         style={{ height: `${Math.round(ratio * 48)}px` }} />
-                    <div className="relative text-[11px] font-semibold text-zinc-600 mb-0.5">
-                      {m}월
-                      {isCurrent && <span className="ml-0.5 text-[8px] text-amber-700">●</span>}
-                    </div>
-                    <div className={`relative text-[11px] font-bold tabular-nums ${hasData ? "text-brand-deep" : "text-zinc-300"}`}>
-                      {row === undefined ? "..." : !hasData ? "-" : fmtWonShort(row.saleTotal)}
-                    </div>
-                  </button>
-                );
-              })}
+            <div className={`flex flex-col gap-2 ${mobileExpanded ? "" : "hidden md:flex"}`}>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {[1, 2, 3, 4, 5, 6].map(renderMonth)}
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {[7, 8, 9, 10, 11, 12].map(renderMonth)}
+              </div>
+              {/* 분기 legend */}
+              <div className="hidden sm:flex items-center justify-end gap-4 pt-2 text-[11px] text-zinc-500">
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" />Q1 봄</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" />Q2 여름</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" />Q3 가을</span>
+                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-indigo-500" />Q4 겨울</span>
+              </div>
             </div>
           );
         })()}
       </div>
 
-      {/* 선택월 상세 KPI · 반응형 (모바일 2열 · PC 5열) */}
-      <div className="bg-white border border-zinc-200 rounded-lg p-4">
-        <div className="text-[15px] font-bold text-zinc-700 mb-3">
-          📊 {year}년 {month}월 {isCurMonth ? "누계" : "집계"}{asOfLabel}
+      {/* 선택월 상세 · 미니멀 · 텍스트 위주 */}
+      <div className="bg-white border border-zinc-200 rounded-lg p-5">
+        <div className="flex items-baseline gap-2 mb-4 flex-wrap">
+          <span className="text-[20px] font-bold text-zinc-900">{year}년 {month}월</span>
+          {isCurMonth && <span className="text-[13px] text-zinc-500">· 이번달{asOfLabel}</span>}
         </div>
         {!show ? (
-          <div className="text-center py-6 text-zinc-400 text-[15px]">
+          <div className="text-center py-8 text-zinc-400 text-[15px]">
             {status === "idle" || status === "loading" ? "조회 중..." : status === "error" ? "조회 실패" : "데이터 없음"}
           </div>
         ) : !selSale && !selBuy ? (
-          <div className="text-center py-6 text-zinc-400 text-[15px]">데이터 없음 (ERP 응답에 해당 월 없음)</div>
+          <div className="text-center py-8 text-zinc-400 text-[15px]">선택 월 데이터 없음</div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-5">
+            {(() => {
+              const avg = sel.customerCnt > 0 ? sel.saleTotal / sel.customerCnt : 0;
+              const items: Array<{ label: string; value: string }> = [
+                { label: "매출총액", value: fmtWon(sel.saleTotal) },
+                { label: "객단가",   value: fmtWon(avg) },
+                { label: "매입총액", value: fmtWon(sel.buyTotal) },
+                { label: "매출이익", value: fmtWon(sel.margin) },
+                { label: "마진율",   value: `${sel.marginPercent.toFixed(1)}%` },
+                { label: "방문객수", value: sel.customerCnt.toLocaleString() + "명" },
+              ];
+              return items.map((it) => (
+                <div key={it.label}>
+                  <div className="text-[13px] text-zinc-500 mb-1">{it.label}</div>
+                  <div className="text-[20px] font-bold text-zinc-900 tabular-nums">{it.value}</div>
+                </div>
+              ));
+            })()}
+          </div>
+        )}
+      </div>
+
+      {/* 2026-10-05 · 선택월 KPI 는 12개월 cell 안 drop-down 으로 통합 · 별도 섹션 제거 */}
+      {false && (
+      <div className="bg-white border border-zinc-200 rounded-lg p-4">
+        <div className="text-[16px] font-bold text-zinc-700 mb-3">
+          📊 {year}년 {month}월 {isCurMonth ? "누계" : "집계"}{asOfLabel}
+        </div>
+        {!show ? (
+          <div className="text-center py-6 text-zinc-400 text-[16px]">
+            {status === "idle" || status === "loading" ? "조회 중..." : status === "error" ? "조회 실패" : "데이터 없음"}
+          </div>
+        ) : !selSale && !selBuy ? (
+          <div className="text-center py-6 text-zinc-400 text-[16px]">데이터 없음 (ERP 응답에 해당 월 없음)</div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             <KpiBox label="매입총액" value={fmtWon(sel.buyTotal)} />
@@ -685,13 +855,14 @@ const MonthlyReportTab: React.FC = () => {
           </div>
         )}
       </div>
+      )}
 
       {/* 달력 grid */}
       <div className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
         {/* 요일 header */}
         <div className="grid grid-cols-7 bg-zinc-50 border-b border-zinc-200">
           {["일", "월", "화", "수", "목", "금", "토"].map((w, i) => (
-            <div key={w} className={`px-2 py-2 text-center text-[14px] font-semibold border-r border-zinc-200 last:border-r-0 ${
+            <div key={w} className={`px-2 py-2 text-center text-[15px] font-semibold border-r border-zinc-200 last:border-r-0 ${
               i === 0 ? "text-rose-600" : i === 6 ? "text-sky-600" : "text-zinc-700"
             }`}>{w}</div>
           ))}
@@ -715,10 +886,10 @@ const MonthlyReportTab: React.FC = () => {
               const isToday = cell.dateStr === todayStr;
               return (
                 <div key={ci} className={`min-h-[140px] p-2 border-r border-zinc-100 last:border-r-0 ${isToday ? "bg-amber-50" : "bg-white"}`}>
-                  <div className={`text-[14px] font-bold ${isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-700"} ${isToday ? "text-amber-700" : ""}`}>
-                    {cell.day}{isToday && <span className="ml-1 text-[12px] text-amber-700">● 오늘</span>}
+                  <div className={`text-[15px] font-bold ${isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-700"} ${isToday ? "text-amber-700" : ""}`}>
+                    {cell.day}{isToday && <span className="ml-1 text-[13px] text-amber-700">● 오늘</span>}
                   </div>
-                  <div className="mt-1 space-y-[2px] text-[13px]">
+                  <div className="mt-1 space-y-[2px] text-[14px]">
                     {cell.buy && (
                       <div className="flex justify-between items-baseline">
                         <span className="text-zinc-500">매입</span>
@@ -755,7 +926,7 @@ const MonthlyReportTab: React.FC = () => {
 };
 
 const WeekSubtotalBlock: React.FC<{ ws: { buyTotal: number; saleTotal: number; cust: number; avg: number; margin: number; marginPct: number } }> = ({ ws }) => (
-  <div className="mt-2 pt-2 border-t-2 border-rose-200 space-y-[2px] text-[12px] bg-rose-50/60 rounded px-1 py-1">
+  <div className="mt-2 pt-2 border-t-2 border-rose-200 space-y-[2px] text-[13px] bg-rose-50/60 rounded px-1 py-1">
     <div className="text-rose-700 font-semibold">[주간 합계]</div>
     <div className="flex justify-between items-baseline"><span className="text-zinc-600">매입</span><span className="tabular-nums text-zinc-800">{fmtNum(ws.buyTotal)}</span></div>
     <div className="flex justify-between items-baseline"><span className="text-zinc-600">매출</span><span className="tabular-nums font-semibold text-zinc-900">{fmtNum(ws.saleTotal)}</span></div>
