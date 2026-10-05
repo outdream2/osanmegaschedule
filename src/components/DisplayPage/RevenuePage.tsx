@@ -269,6 +269,10 @@ const HourlyReportTab: React.FC = () => {
     return [...set].sort();
   }, [dateData]);
 
+  // 2026-10-05 · 표시 순서: 최신일 먼저 (PC 좌측, 모바일 상단)
+  //   · 집계용 dateData 는 ascending 유지 (라벨 "오래된 ~ 최신" 자연 순서)
+  const displayDateData = useMemo(() => [...dateData].reverse(), [dateData]);
+
   // 오늘만 KPI
   const todayBlock = dateData.find((d) => d.date === today);
   const totalSale = todayBlock?.totalSale ?? 0;
@@ -279,22 +283,35 @@ const HourlyReportTab: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 상단 TODAY KPI (HOURLY 전용 · 오늘 데이터만) */}
-      <div className="bg-gradient-to-br from-sky-50 to-indigo-50 border border-sky-200 rounded-lg p-4 flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <div className="text-[15px] text-zinc-600 font-semibold">오늘 {today} {curTimeLabel} 기준</div>
-          <div className="flex items-center gap-6 mt-1">
-            <div>
-              <span className="text-[15px] text-zinc-500">누적 고객수</span>
-              <span className="ml-2 text-[23px] font-bold text-brand-deep tabular-nums">{showTopKpi ? todayCust.toLocaleString() + "명" : "-"}</span>
+      {/* 상단 TODAY KPI (HOURLY 전용 · 오늘 데이터만) · 미묘 톤 · 매출 색 포인트 */}
+      <div className="bg-white border border-zinc-200 rounded-xl p-3 md:p-4">
+        <div className="text-[13px] md:text-[14px] text-zinc-500 font-semibold mb-2">오늘 {today} {curTimeLabel} 기준</div>
+        <div className="flex items-stretch divide-x divide-zinc-100">
+          {/* 매출 (color point) */}
+          <div className="flex-1 pr-3 relative min-w-0">
+            <span className="absolute left-0 top-1 bottom-1 w-[2px] bg-brand-deep rounded-r-full" aria-hidden />
+            <div className="pl-2">
+              <div className="text-[13px] md:text-[14px] text-zinc-500 font-semibold mb-0.5">누적 매출</div>
+              <div className="text-[17px] md:text-[20px] font-bold tabular-nums text-brand-deep leading-tight truncate">
+                {showTopKpi ? fmtWon(todaySale) : "-"}
+              </div>
             </div>
-            <div>
-              <span className="text-[15px] text-zinc-500">누적 매출</span>
-              <span className="ml-2 text-[23px] font-bold text-brand-deep tabular-nums">{showTopKpi ? fmtWon(todaySale) : "-"}</span>
+          </div>
+          {/* 객단가 */}
+          <div className="flex-1 px-3 min-w-0">
+            <div className="text-[13px] md:text-[14px] text-zinc-500 font-semibold mb-0.5">객단가</div>
+            <div className="text-[17px] md:text-[20px] font-bold tabular-nums text-ink leading-tight truncate">
+              {showTopKpi && todayCust > 0 ? fmtWon(todaySale / todayCust) : "-"}
+            </div>
+          </div>
+          {/* 고객수 */}
+          <div className="flex-1 pl-3 min-w-0">
+            <div className="text-[13px] md:text-[14px] text-zinc-500 font-semibold mb-0.5">누적 고객수</div>
+            <div className="text-[17px] md:text-[20px] font-bold tabular-nums text-ink leading-tight truncate">
+              {showTopKpi ? todayCust.toLocaleString() + "명" : "-"}
             </div>
           </div>
         </div>
-        <div className="text-[14px] text-zinc-500">마지막 ERP 조회: {hourlyLastSuccessAt ? fmtHHmm(new Date(hourlyLastSuccessAt)) : "-"}</div>
       </div>
 
       {/* 날짜 선택 UI · HOURLY 전용 */}
@@ -355,14 +372,14 @@ const HourlyReportTab: React.FC = () => {
           <thead>
             <tr className="bg-zinc-50 border-b border-zinc-200">
               <th rowSpan={2} className="text-center px-3 py-2 font-semibold text-zinc-600 border-r border-zinc-200 bg-zinc-50 sticky left-0 z-10" style={{ minWidth: 72 }}>시간</th>
-              {dateData.map((d) => (
+              {displayDateData.map((d) => (
                 <th key={d.date} colSpan={6} className={`text-center px-3 py-2 font-semibold text-zinc-700 border-r border-zinc-200 ${d.date === today ? "bg-amber-50" : "bg-sky-50"}`}>
                   {d.date}{d.date === today && <span className="ml-1 text-amber-700 text-[14px]">● 오늘</span>}
                 </th>
               ))}
             </tr>
             <tr className="bg-zinc-50 border-b border-zinc-200 text-[14px]">
-              {dateData.map((d) => (
+              {displayDateData.map((d) => (
                 <React.Fragment key={d.date}>
                   <th className="text-right px-2 py-1 font-semibold text-zinc-600">객단가</th>
                   <th className="text-right px-2 py-1 font-semibold text-zinc-600">고객수</th>
@@ -376,7 +393,7 @@ const HourlyReportTab: React.FC = () => {
           </thead>
           <tbody>
             {!show ? (
-              <tr><td colSpan={1 + dateData.length * 6} className="text-center py-8 text-zinc-400">
+              <tr><td colSpan={1 + displayDateData.length * 6} className="text-center py-8 text-zinc-400">
                 {status === "idle" || status === "loading" ? "조회 중..." : status === "error" ? "조회 실패" : "데이터 없음"}
               </td></tr>
             ) : allSlots.length === 0 ? (
@@ -386,7 +403,7 @@ const HourlyReportTab: React.FC = () => {
                 <td className="px-3 py-2 text-center font-semibold text-zinc-700 border-r border-zinc-200 sticky left-0 bg-white z-10">
                   {slot}
                 </td>
-                {dateData.map((d) => {
+                {displayDateData.map((d) => {
                   const r = d.rowMap.get(slot);
                   const isCurrent = d.date === today && slot === curSlot;
                   if (!r) {
@@ -424,10 +441,10 @@ const HourlyReportTab: React.FC = () => {
           <div className="bg-white border border-zinc-200 rounded-lg p-8 text-center text-zinc-400">
             {status === "idle" || status === "loading" ? "조회 중..." : status === "error" ? "조회 실패" : "데이터 없음"}
           </div>
-        ) : dateData.length === 0 ? (
+        ) : displayDateData.length === 0 ? (
           <div className="bg-white border border-zinc-200 rounded-lg p-8 text-center text-zinc-400">데이터 없음</div>
         ) : (
-          dateData.map((d) => {
+          displayDateData.map((d) => {
             const isExp = expandedDates.has(d.date);
             const isToday = d.date === today;
             const dayRows = [...d.rowMap.values()].sort((a, b) => Number(a.SaleTime) - Number(b.SaleTime));

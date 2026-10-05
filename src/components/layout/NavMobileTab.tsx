@@ -50,7 +50,7 @@ export const NavMobileTab: React.FC<NavMobileTabProps> = ({
           <span className="inline-flex" style={{ filter: `drop-shadow(0 0 6px ${mobileAccent.hex}) drop-shadow(0 0 12px ${mobileAccent.hex}60)` }}>
             <Icon size={26} weight="fill" className={`${mobileAccent.iconText} scale-110 transition-transform`} />
           </span>
-          <span className="leading-tight text-center whitespace-nowrap">경영</span>
+          <span className="leading-tight text-center whitespace-nowrap min-h-[2.2em] flex flex-col justify-start">경영</span>
         </span>
       );
     }
@@ -58,7 +58,7 @@ export const NavMobileTab: React.FC<NavMobileTabProps> = ({
       <button key="business" type="button" onClick={bizOnClick} disabled={!onNavigate}
         className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/[0.10] cursor-pointer disabled:opacity-40`}>
         <Icon size={26} weight="fill" className={`${mobileAccent.iconText} opacity-75`} />
-        <span className="leading-tight text-center">경영</span>
+        <span className="leading-tight text-center min-h-[2.2em] flex flex-col justify-start">경영</span>
       </button>
     );
   }
@@ -72,7 +72,7 @@ export const NavMobileTab: React.FC<NavMobileTabProps> = ({
         <span className="inline-flex" style={{ filter: `drop-shadow(0 0 6px ${mobileAccent.hex}) drop-shadow(0 0 12px ${mobileAccent.hex}60)` }}>
           <Icon size={26} weight="fill" className={`${mobileAccent.iconText} scale-110 transition-transform`} />
         </span>
-        <span className="leading-tight text-center">{splitLabel(tab.label)}</span>
+        <span className="leading-tight text-center min-h-[2.2em] flex flex-col justify-start">{splitLabel(tab.label)}</span>
       </span>
     );
   }
@@ -80,7 +80,7 @@ export const NavMobileTab: React.FC<NavMobileTabProps> = ({
     <button key={tab.key} onClick={onClick} disabled={!onNavigate && !onBack}
       className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/[0.10] cursor-pointer disabled:opacity-40`}>
       <Icon size={26} weight="fill" className={`${mobileAccent.iconText} opacity-75`} />
-      <span className="leading-tight text-center whitespace-nowrap">
+      <span className="leading-tight text-center whitespace-nowrap min-h-[2.2em] flex flex-col justify-start">
         {tab.label.length > 3 ? (
           <>
             <div>{tab.label.slice(0, tab.label.length - 2)}</div>
