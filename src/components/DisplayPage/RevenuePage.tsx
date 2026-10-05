@@ -585,32 +585,37 @@ const MonthlyReportTab: React.FC = () => {
 
   // 2026-10-05 · 캘린더 날짜 클릭 → 상세 모달
   const [modalDay, setModalDay] = useState<{ day: number; dateStr: string; buy?: MonthlyBuyDaily; sale?: MonthlySaleDaily } | null>(null);
+  // 2026-10-05 · 12개월 overview · Supabase cache 기반 신규 route 로 전환
+  //   · 기존: 12 × /api/erp/sale-monthly-report (decoder lock 때문에 사실상 순차 · 12~24s)
+  //   · 신규: 1 × /api/erp/sale-year-overview (cache hit → ~50ms · cache miss 월만 ERP)
+  interface YearOverviewApiResponse {
+    ok: boolean;
+    year?: number;
+    results?: Record<string, { buyTotal: number; saleTotal: number; margin: number; customerCnt: number } | null>;
+    cachedCount?: number;
+    fetchedCount?: number;
+    error?: string;
+  }
   useEffect(() => {
     let cancelled = false;
     setYearOverview(new Map());
     setOverviewYear(year);
     (async () => {
-      const results = await Promise.all(
-        Array.from({ length: 12 }, (_, i) => i + 1).map(async (m) => {
-          try {
-            const r = await api.get<MonthlyApiResponse>(`/api/erp/sale-monthly-report?year=${year}&month=${m}`);
-            if (!r.data.ok) return { m, buyTotal: 0, saleTotal: 0, margin: 0, customerCnt: 0 };
-            const sale0 = r.data.sale?.[0];
-            const buy0 = r.data.buy?.[0];
-            return {
-              m,
-              buyTotal: Number(buy0?.BuyTotal ?? 0),
-              saleTotal: Number(sale0?.SaleTotal ?? 0),
-              margin: Number(sale0?.Margin ?? 0),
-              customerCnt: Number(sale0?.CustomerCnt ?? 0),
-            };
-          } catch { return { m, buyTotal: 0, saleTotal: 0, margin: 0, customerCnt: 0 }; }
-        }),
-      );
-      if (cancelled) return;
-      const map = new Map<number, YearOverviewItem>();
-      results.forEach((r) => map.set(r.m, { buyTotal: r.buyTotal, saleTotal: r.saleTotal, margin: r.margin, customerCnt: r.customerCnt }));
-      setYearOverview(map);
+      try {
+        const r = await api.get<YearOverviewApiResponse>(`/api/erp/sale-year-overview?year=${year}`);
+        if (cancelled) return;
+        if (!r.data.ok || !r.data.results) {
+          return;
+        }
+        const map = new Map<number, YearOverviewItem>();
+        for (let m = 1; m <= 12; m++) {
+          const row = r.data.results[String(m)];
+          if (row) {
+            map.set(m, { buyTotal: row.buyTotal, saleTotal: row.saleTotal, margin: row.margin, customerCnt: row.customerCnt });
+          }
+        }
+        setYearOverview(map);
+      } catch { /* noop · UI 에서 조회중 표시 */ }
     })();
     return () => { cancelled = true; };
   }, [year]);

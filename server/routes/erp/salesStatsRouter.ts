@@ -25,6 +25,7 @@ import { spawn } from "node:child_process";
 import * as path from "node:path";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import logger from "../../lib/logger";
+import { supabase } from "../../../src/supabase/client";
 
 const router = Router();
 
@@ -458,6 +459,159 @@ router.get("/api/erp/sale-monthly-report", asyncHandler(async (req, res) => {
     return res.json({ ok: true, buy, sale, buyDaily: buyDaily ?? [], saleDaily: saleDaily ?? [] });
   } catch (e) {
     logger.warn(`[sale-monthly-report] 실패: ${(e as Error).message}`);
+    return res.json({ ok: false, error: (e as Error).message });
+  }
+}));
+
+// ═════════════════════════════════════════════════════════════════
+// GET /api/erp/sale-year-overview?year=YYYY
+// ─────────────────────────────────────────────────────────────────
+// 2026-10-05 · 사용자 지시 · 12개월 overview 로딩 ~50ms 로 단축 (기존 12 × ERP = 12~24s)
+//   · Supabase erp_monthly_sales_cache 테이블 사용
+//   · 과거 월: cache 영구 사용 (ERP 값 변동 X)
+//   · 현재 월: cache 1시간 안이면 사용 · 아니면 ERP 재조회 + upsert
+//   · 미래 월: null 반환 (조회 skip)
+//   · cache miss 월만 ERP 호출 → 순차 (decoder lock) · schema validator + retry
+// ═════════════════════════════════════════════════════════════════
+
+interface MonthlyOverview {
+  buyTotal: number;
+  saleTotal: number;
+  margin: number;
+  customerCnt: number;
+}
+
+async function fetchMonthlyOverviewFromErp(year: number, month: number): Promise<MonthlyOverview> {
+  const mm = String(month).padStart(2, "0");
+  const lastDay = new Date(year, month, 0).getDate();
+  const startStr = `${year}-${mm}-01`;
+  const endStr = `${year}-${mm}-${String(lastDay).padStart(2, "0")}`;
+
+  return withDecoderLock(async () => {
+    const fixture = await readFixtureBody(MONTHLY_FIXTURE);
+    let body = substituteTag(fixture, "StartDate", startStr);
+    body = substituteTag(body, "EndDate", endStr);
+
+    const isMonthlyShape = (tables: DecodedPayload["tables"]): boolean => {
+      if (!tables || tables.length < 2) return false;
+      const buyCols = (tables[0]?.columns ?? []).map((c) => c.name);
+      const saleCols = (tables[1]?.columns ?? []).map((c) => c.name);
+      return !buyCols.includes("SaleTime") && !saleCols.includes("SaleTime");
+    };
+
+    const callOnce = async (attempt: number): Promise<DecodedPayload["tables"]> => {
+      logger.info(`[sale-year-overview:${year}-${mm}] attempt=${attempt} · range=${startStr}~${endStr}`);
+      const xmlResp = await callSoap(MONTHLY_SOAP_ACTION, body);
+      const b64 = extractResult(xmlResp, "Statistics_Month_DashBoardResult");
+      const parsed = await runDecoder(b64);
+      return parsed.tables ?? [];
+    };
+
+    const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+    let tables = await callOnce(1);
+    for (let attempt = 2; attempt <= 10 && !isMonthlyShape(tables); attempt++) {
+      await sleep(500);
+      tables = await callOnce(attempt);
+    }
+    if (!isMonthlyShape(tables)) throw new Error("ERP_RESPONSE_SCHEMA_MISMATCH");
+
+    const buyRaw: Record<string, unknown>[] = tables[0]?.rows ?? [];
+    const saleRaw: Record<string, unknown>[] = tables[1]?.rows ?? [];
+    const buyNorm = buyRaw.map(normalizeMonthlyBuyRow).filter((r): r is Record<string, unknown> => r !== null);
+    const saleNorm = saleRaw.map(normalizeMonthlySaleRow).filter((r): r is Record<string, unknown> => r !== null);
+    const buy = aggregateByMonth(buyNorm, ["BuyTotal"]);
+    const sale = aggregateByMonth(saleNorm, ["CostTotal", "SaleTotal", "CustomerCnt", "Margin"]);
+
+    const buy0 = buy[0];
+    const sale0 = sale[0];
+    return {
+      buyTotal: Number(buy0?.BuyTotal ?? 0),
+      saleTotal: Number(sale0?.SaleTotal ?? 0),
+      margin: Number(sale0?.Margin ?? 0),
+      customerCnt: Number(sale0?.CustomerCnt ?? 0),
+    };
+  });
+}
+
+router.get("/api/erp/sale-year-overview", asyncHandler(async (req, res) => {
+  const year = Number(req.query.year);
+  if (!Number.isInteger(year) || year < 2020 || year > 2100) {
+    return res.json({ ok: false, error: "year 필수 (2020-2100 정수)" });
+  }
+  const now = new Date();
+  const curYear = now.getFullYear();
+  const curMonth = now.getMonth() + 1;
+  const TTL_MS = 60 * 60 * 1000; // 현재 월 cache TTL = 1시간
+
+  try {
+    // 1. Supabase cache (year 전체) 조회
+    const { data: cached, error: fetchErr } = await supabase
+      .from("erp_monthly_sales_cache")
+      .select("month, buy_total, sale_total, margin, customer_cnt, cached_at")
+      .eq("year", year);
+    if (fetchErr) throw new Error(`cache fetch: ${fetchErr.message}`);
+    const cacheMap = new Map<number, { month: number; buy_total: number | null; sale_total: number | null; margin: number | null; customer_cnt: number | null; cached_at: string }>();
+    for (const r of cached ?? []) cacheMap.set(r.month, r);
+
+    // 2. 각 월 분류 · 캐시 hit / ERP 필요
+    type MonthData = { buyTotal: number; saleTotal: number; margin: number; customerCnt: number } | null;
+    const results: Record<number, MonthData> = {};
+    const toFetch: number[] = [];
+    for (let m = 1; m <= 12; m++) {
+      const isPast = year < curYear || (year === curYear && m < curMonth);
+      const isCurrent = year === curYear && m === curMonth;
+      const isFuture = year > curYear || (year === curYear && m > curMonth);
+      if (isFuture) { results[m] = null; continue; }
+      const row = cacheMap.get(m);
+      if (row && isPast) {
+        results[m] = { buyTotal: Number(row.buy_total ?? 0), saleTotal: Number(row.sale_total ?? 0), margin: Number(row.margin ?? 0), customerCnt: Number(row.customer_cnt ?? 0) };
+        continue;
+      }
+      if (row && isCurrent) {
+        const age = Date.now() - new Date(row.cached_at).getTime();
+        if (age < TTL_MS) {
+          results[m] = { buyTotal: Number(row.buy_total ?? 0), saleTotal: Number(row.sale_total ?? 0), margin: Number(row.margin ?? 0), customerCnt: Number(row.customer_cnt ?? 0) };
+          continue;
+        }
+      }
+      toFetch.push(m);
+    }
+
+    // 3. cache miss / stale 월만 ERP 호출 (순차 · decoder lock)
+    if (toFetch.length > 0 && !isDecoderAvailable()) {
+      return res.status(503).json({
+        ok: false,
+        error: `ERP decoder 실행 파일 없음 (${IS_WIN ? "Windows" : "Linux"})`,
+      });
+    }
+    for (const m of toFetch) {
+      try {
+        const monthData = await fetchMonthlyOverviewFromErp(year, m);
+        results[m] = monthData;
+        // Supabase upsert (fire-and-forget · 실패해도 결과 반환 유지)
+        const { error: upsertErr } = await supabase
+          .from("erp_monthly_sales_cache")
+          .upsert({
+            year,
+            month: m,
+            buy_total: monthData.buyTotal,
+            sale_total: monthData.saleTotal,
+            margin: monthData.margin,
+            customer_cnt: monthData.customerCnt,
+            cached_at: new Date().toISOString(),
+          }, { onConflict: "year,month" });
+        if (upsertErr) logger.warn(`[sale-year-overview] cache upsert 실패 · year=${year} month=${m} · ${upsertErr.message}`);
+      } catch (e) {
+        logger.warn(`[sale-year-overview] ERP 호출 실패 · year=${year} month=${m} · ${(e as Error).message}`);
+        // 실패해도 null 로 두지 않고 0 fill (UI 에서 '—' 표시)
+        results[m] = { buyTotal: 0, saleTotal: 0, margin: 0, customerCnt: 0 };
+      }
+    }
+
+    logger.info(`[sale-year-overview] year=${year} · cached=${cached?.length ?? 0} · fetched=${toFetch.length}`);
+    return res.json({ ok: true, year, cachedCount: cached?.length ?? 0, fetchedCount: toFetch.length, results });
+  } catch (e) {
+    logger.warn(`[sale-year-overview] 실패 · ${(e as Error).message}`);
     return res.json({ ok: false, error: (e as Error).message });
   }
 }));
