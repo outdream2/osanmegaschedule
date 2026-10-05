@@ -740,16 +740,16 @@ const MonthlyReportTab: React.FC = () => {
             </button>
           </div>
         </div>
-        {/* 2026-10-05 · 사용자 지시 · 달력 느낌 2×6 카드 그리드 · 분기별 컬러 accent · Linear/Vercel 톤 */}
+        {/* 2026-10-05 · 사용자 지시 · 12개월 가로 막대바 chart · 분기별 컬러 accent · Linear 톤 */}
         {(() => {
           const maxSale = Math.max(0, ...[...yearOverview.values()].map(v => v.saleTotal));
-          const QUARTER_TONES: Record<number, { label: string; accent: string; bar: string; text: string; ring: string }> = {
-            1: { label: "Q1", accent: "bg-emerald-500", bar: "from-emerald-500/80 to-emerald-400/40", text: "text-emerald-700", ring: "ring-emerald-200/60" },
-            2: { label: "Q2", accent: "bg-amber-500",   bar: "from-amber-500/80 to-amber-400/40",     text: "text-amber-700",   ring: "ring-amber-200/60" },
-            3: { label: "Q3", accent: "bg-rose-500",    bar: "from-rose-500/80 to-rose-400/40",       text: "text-rose-700",    ring: "ring-rose-200/60" },
-            4: { label: "Q4", accent: "bg-indigo-500",  bar: "from-indigo-500/80 to-indigo-400/40",   text: "text-indigo-700",  ring: "ring-indigo-200/60" },
+          const QUARTER_TONES: Record<number, { label: string; accent: string; barFrom: string; barTo: string; barMuted: string; text: string; ring: string }> = {
+            1: { label: "Q1", accent: "bg-emerald-500", barFrom: "from-emerald-500", barTo: "to-emerald-300", barMuted: "bg-emerald-200", text: "text-emerald-700", ring: "ring-emerald-300" },
+            2: { label: "Q2", accent: "bg-amber-500",   barFrom: "from-amber-500",   barTo: "to-amber-300",   barMuted: "bg-amber-200",   text: "text-amber-700",   ring: "ring-amber-300" },
+            3: { label: "Q3", accent: "bg-rose-500",    barFrom: "from-rose-500",    barTo: "to-rose-300",    barMuted: "bg-rose-200",    text: "text-rose-700",    ring: "ring-rose-300" },
+            4: { label: "Q4", accent: "bg-indigo-500",  barFrom: "from-indigo-500",  barTo: "to-indigo-300",  barMuted: "bg-indigo-200",  text: "text-indigo-700",  ring: "ring-indigo-300" },
           };
-          const renderMonth = (m: number) => {
+          const renderMonthBar = (m: number) => {
             const row = yearOverview.get(m);
             const isSelected = m === month;
             const isCurrent = m === now.getMonth() + 1 && year === now.getFullYear();
@@ -760,77 +760,75 @@ const MonthlyReportTab: React.FC = () => {
             return (
               <button key={m} onClick={() => setMonth(m)}
                 title={`${qt.label} · ${m}월`}
-                className={`group relative text-left rounded-xl border bg-white transition-all overflow-hidden h-[108px] flex flex-col ${
+                className={`group flex-1 flex flex-col items-center min-w-0 rounded-lg px-1 py-1.5 transition-all ${
                   isSelected
-                    ? "border-zinc-900 shadow-lg ring-2 ring-zinc-900/10 -translate-y-0.5"
-                    : `border-zinc-200 hover:border-zinc-300 hover:shadow-md hover:-translate-y-0.5 hover:ring-2 hover:${qt.ring}`
+                    ? `ring-2 ${qt.ring} bg-zinc-50`
+                    : "hover:bg-zinc-50"
                 }`}
               >
-                {/* 분기 accent · 좌측 세로 bar */}
-                <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${qt.accent}`} />
-                {/* 매출 bar · 하단 fill */}
-                {hasData && (
-                  <div className={`absolute inset-x-0 bottom-0 bg-gradient-to-t ${qt.bar} opacity-20`}
-                       style={{ height: `${Math.round(ratio * 100)}%` }} />
-                )}
-                {/* 상단 · 월 라벨 + 분기 미니 chip */}
-                <div className="relative flex items-start justify-between px-3 pt-2.5 pb-1">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className={`text-[17px] font-extrabold tabular-nums leading-none ${isSelected ? "text-zinc-900" : "text-zinc-800"}`}>{m}</span>
-                    <span className={`text-[11px] font-semibold ${isSelected ? "text-zinc-500" : "text-zinc-400"}`}>월</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {isCurrent && (
-                      <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">오늘</span>
-                    )}
-                    <span className={`text-[9px] font-bold ${qt.text} tracking-wider`}>{qt.label}</span>
-                  </div>
-                </div>
-                {/* 중앙 · 매출 금액 · 큰 숫자 + 하단 마진/객단가 */}
-                <div className="relative flex-1 flex flex-col items-center justify-center px-2 gap-0.5 min-w-0">
+                {/* 상단 · 매출 금액 + 보조 metric */}
+                <div className="h-[42px] flex flex-col items-center justify-end gap-0.5 min-w-0 w-full">
                   {row === undefined ? (
-                    <span className="text-[13px] text-zinc-300">...</span>
+                    <span className="text-[11px] text-zinc-300">...</span>
                   ) : !hasData ? (
-                    <span className="text-[13px] text-zinc-300">—</span>
+                    <span className="text-[14px] text-zinc-300 font-bold">—</span>
                   ) : (
                     <>
-                      <div className="flex items-baseline gap-1 min-w-0">
-                        <span className="text-[9px] font-bold text-rose-500 tracking-wider">매출</span>
-                        <span className={`text-[18px] font-extrabold tabular-nums tracking-tight leading-none ${isSelected ? "text-zinc-900" : "text-rose-600"}`}>
-                          {fmtWonShort(row.saleTotal)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-center gap-2 text-[10px] tabular-nums whitespace-nowrap">
-                        <span className="text-emerald-700">
-                          <span className="text-[8px] font-bold text-emerald-500 tracking-wide mr-0.5">마진</span>
-                          {fmtWonShort(row.margin)}
-                        </span>
+                      <span className={`text-[13px] md:text-[14px] font-extrabold tabular-nums tracking-tight leading-none ${isCurrent ? "text-rose-600" : "text-zinc-800"}`}>
+                        {fmtWonShort(row.saleTotal)}
+                      </span>
+                      <div className="flex items-center gap-1 text-[9px] md:text-[10px] tabular-nums whitespace-nowrap leading-none">
+                        <span className="text-emerald-700">{fmtWonShort(row.margin)}</span>
                         <span className="text-zinc-300">·</span>
-                        <span className="text-brand-deep">
-                          <span className="text-[8px] font-bold text-brand-deep/70 tracking-wide mr-0.5">객단</span>
-                          {row.customerCnt > 0 ? fmtWonShort(row.saleTotal / row.customerCnt) : "-"}
-                        </span>
+                        <span className="text-brand-deep">{row.customerCnt > 0 ? fmtWonShort(row.saleTotal / row.customerCnt) : "-"}</span>
                       </div>
                     </>
+                  )}
+                </div>
+                {/* 세로 bar */}
+                <div className="w-full h-[140px] md:h-[180px] flex items-end justify-center mt-1.5 mb-1.5">
+                  {hasData ? (
+                    <div
+                      className={`w-full max-w-[42px] rounded-t-md transition-all bg-gradient-to-t ${qt.barFrom} ${qt.barTo} ${isCurrent ? "shadow-[0_-2px_8px_rgba(244,63,94,0.25)] ring-1 ring-white" : "opacity-80 group-hover:opacity-100"}`}
+                      style={{ height: `${Math.max(ratio * 100, 3)}%` }}
+                    />
+                  ) : (
+                    <div className="w-full max-w-[42px] h-[2px] bg-zinc-200 rounded" />
+                  )}
+                </div>
+                {/* 하단 · 월 + 오늘 뱃지 + 분기 */}
+                <div className="flex flex-col items-center gap-0.5">
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[13px] md:text-[14px] font-bold tabular-nums leading-none ${isCurrent ? "text-amber-700" : "text-zinc-700"}`}>{m}</span>
+                    <span className={`text-[10px] font-semibold ${isCurrent ? "text-amber-600" : "text-zinc-400"}`}>월</span>
+                  </div>
+                  {isCurrent ? (
+                    <span className="text-[9px] font-bold text-amber-700 bg-amber-100 px-1 py-0.5 rounded leading-none">오늘</span>
+                  ) : (
+                    <span className={`text-[9px] font-bold ${qt.text} tracking-wider leading-none`}>{qt.label}</span>
                   )}
                 </div>
               </button>
             );
           };
           return (
-            <div className={`flex flex-col gap-2 ${mobileExpanded ? "" : "hidden md:flex"}`}>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                {[1, 2, 3, 4, 5, 6].map(renderMonth)}
+            <div className={`${mobileExpanded ? "" : "hidden md:block"}`}>
+              {/* 가로 scroll · 모바일 좁은 폭 대응 · min-w 로 bar 폭 보장 */}
+              <div className="overflow-x-auto -mx-1">
+                <div className="flex items-end gap-0.5 sm:gap-1 px-1 min-w-[640px] md:min-w-0">
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(renderMonthBar)}
+                </div>
               </div>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                {[7, 8, 9, 10, 11, 12].map(renderMonth)}
-              </div>
-              {/* 분기 legend */}
-              <div className="hidden sm:flex items-center justify-end gap-4 pt-2 text-[11px] text-zinc-500">
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" />Q1 봄</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500" />Q2 여름</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" />Q3 가을</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-indigo-500" />Q4 겨울</span>
+              {/* 범례 · 매출(rose) · 마진(emerald) · 객단(brand) */}
+              <div className="flex items-center justify-end gap-3 pt-2 text-[10px] md:text-[11px] text-zinc-500 flex-wrap">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500" />매출</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />마진</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-deep" />객단가</span>
+                <span className="text-zinc-300">|</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />Q1</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" />Q2</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500" />Q3</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-500" />Q4</span>
               </div>
             </div>
           );
