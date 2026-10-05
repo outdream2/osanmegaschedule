@@ -152,13 +152,26 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
   // 2026-08-25 · Framework Phase 4 · 서브탭 초기화 · 2026-09-27 activeNav 전달
   useDpInitialSubTab(dpSubTab, setDpSubTab, dpHiddenSubs, activeNav);
-  // 2026-09-27 · mount 시 · activeNav 정착 (딥링크 · 새로고침)
+  // 2026-10-05 · 외부 네비게이션 동기화 (LandingPage "매출 상세" 등 setActiveByPage 호출)
+  //   · Render production 에서 useState initializer 가 activeNav commit 전에 실행되어
+  //     외부에서 지정한 subTab (e.g. "revenue") 가 fallback 으로 덮이는 문제 해결
+  //   · LOCAL 은 React 18 StrictMode double-invoke 로 두 번째 mount 때 반영되지만
+  //     production single-invoke 에서는 소실 → activeNav deps watch 로 양방향 sync
   useEffect(() => {
-    if (activeNav?.itemKey !== "display" || activeNav.subTab !== dpSubTab) {
+    // 외부에서 activeNav.subTab 가 설정되어 있으면 dpSubTab 로 당기기
+    if (
+      activeNav?.itemKey === "display" &&
+      activeNav.subTab &&
+      activeNav.subTab !== dpSubTab
+    ) {
+      _setDpSubTab(activeNav.subTab as DpSubTabKey);
+    }
+    // activeNav 가 비어 있거나 다른 페이지면 dpSubTab 로 정착 (기존 로직 보존)
+    else if (activeNav?.itemKey !== "display" || !activeNav.subTab) {
       setActiveByPage("display", dpSubTab);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [activeNav?.itemKey, activeNav?.subTab]);
 
   // 2026-08-30 · 사용자 지시 · 접기/펼치기 제거 · 그냥 보이게 (mapCollapsed prop 유지 안 함)
   // 2026-08-25 · 사용자 지시 · 매장구역 subtab 안 · 매장구역도 vs 배치구역 불일치 탭
