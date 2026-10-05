@@ -288,7 +288,8 @@ router.get(
       if (sentAts.length > 0) {
         const minSent = Math.min(...sentAts);
         const maxSent = Math.max(...sentAts);
-        const fromDate = new Date(minSent).toISOString().slice(0, 10);
+        // 2026-10-05 · 사용자 지시 · 발주일 ±N일 window (기존 [sent, sent+N] → [sent-N, sent+N])
+        const fromDate = new Date(minSent - days * DAY_MS).toISOString().slice(0, 10);
         const toDate = new Date(maxSent + days * DAY_MS).toISOString().slice(0, 10);
 
         for (let i = 0; i < productCodes.length; i += CHUNK) {
@@ -350,7 +351,8 @@ router.get(
         if (sentAtMs != null && p.purchase_date) {
           const pMs = new Date(p.purchase_date).getTime();
           if (!Number.isFinite(pMs)) return false;
-          if (pMs < sentAtMs - DAY_MS) return false; // 발주 이전 매입은 제외 (1일 여유)
+          // 2026-10-05 · 사용자 지시 · 발주일 ±N일 window (기존 [sent-1, sent+N] → [sent-N, sent+N])
+          if (pMs < sentAtMs - days * DAY_MS) return false;
           if (pMs > sentAtMs + days * DAY_MS) return false;
         }
         return true;
