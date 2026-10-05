@@ -466,12 +466,13 @@ router.get("/api/erp/sale-monthly-report", asyncHandler(async (req, res) => {
 // ═════════════════════════════════════════════════════════════════
 // GET /api/erp/sale-year-overview?year=YYYY
 // ─────────────────────────────────────────────────────────────────
-// 2026-10-05 · 사용자 지시 · 12개월 overview 로딩 ~50ms 로 단축 (기존 12 × ERP = 12~24s)
-//   · Supabase erp_monthly_sales_cache 테이블 사용
-//   · 과거 월: cache 영구 사용 (ERP 값 변동 X)
-//   · 현재 월: cache 1시간 안이면 사용 · 아니면 ERP 재조회 + upsert
+// 2026-10-05 · 사용자 지시 · 지나간 월 = DB · 현재 월 = 실시간 ERP
+//   · 과거 월: Supabase erp_monthly_sales_cache 영구 사용 (ERP 값 변동 X)
+//              · cache miss 시 1회 ERP + upsert (이후 영구 hit)
+//   · 현재 월: 매번 실시간 ERP 호출 (cache 사용 안함 · 당일 매출 반영)
+//              · 응답은 upsert 로 저장 (다음 월 전환 시 과거 월 cache 자동 형성)
 //   · 미래 월: null 반환 (조회 skip)
-//   · cache miss 월만 ERP 호출 → 순차 (decoder lock) · schema validator + retry
+//   · sync-agent 주기 populate 불필요 (사용자 지시 2026-10-05)
 // ═════════════════════════════════════════════════════════════════
 
 interface MonthlyOverview {
@@ -541,7 +542,6 @@ router.get("/api/erp/sale-year-overview", asyncHandler(async (req, res) => {
   const now = new Date();
   const curYear = now.getFullYear();
   const curMonth = now.getMonth() + 1;
-  const TTL_MS = 60 * 60 * 1000; // 현재 월 cache TTL = 1시간
 
   try {
     // 1. Supabase cache (year 전체) 조회
@@ -554,26 +554,29 @@ router.get("/api/erp/sale-year-overview", asyncHandler(async (req, res) => {
     for (const r of cached ?? []) cacheMap.set(r.month, r);
 
     // 2. 각 월 분류 · 캐시 hit / ERP 필요
+    //   · 과거 월: 월 종료 이후 저장된 cache 만 영구 신뢰 (사용자 지시 "매월 1일에 지난 달 cache 확정")
+    //              · 월 종료 이전 저장된 cache 는 1회 refresh (최종값 확정)
+    //   · 현재 월: 매번 실시간 ERP (cache 안 씀 · upsert 로 저장)
+    //   · 미래 월: null (skip)
     type MonthData = { buyTotal: number; saleTotal: number; margin: number; customerCnt: number } | null;
     const results: Record<number, MonthData> = {};
     const toFetch: number[] = [];
     for (let m = 1; m <= 12; m++) {
       const isPast = year < curYear || (year === curYear && m < curMonth);
-      const isCurrent = year === curYear && m === curMonth;
       const isFuture = year > curYear || (year === curYear && m > curMonth);
       if (isFuture) { results[m] = null; continue; }
       const row = cacheMap.get(m);
-      if (row && isPast) {
-        results[m] = { buyTotal: Number(row.buy_total ?? 0), saleTotal: Number(row.sale_total ?? 0), margin: Number(row.margin ?? 0), customerCnt: Number(row.customer_cnt ?? 0) };
-        continue;
-      }
-      if (row && isCurrent) {
-        const age = Date.now() - new Date(row.cached_at).getTime();
-        if (age < TTL_MS) {
+      if (isPast && row) {
+        // 해당 월 마지막 날 23:59:59 (local time 기준) 이후 저장된 cache 만 영구 신뢰
+        const monthEnd = new Date(year, m, 0, 23, 59, 59);
+        const cachedAt = new Date(row.cached_at);
+        if (cachedAt > monthEnd) {
           results[m] = { buyTotal: Number(row.buy_total ?? 0), saleTotal: Number(row.sale_total ?? 0), margin: Number(row.margin ?? 0), customerCnt: Number(row.customer_cnt ?? 0) };
           continue;
         }
+        // 월 종료 전 저장 · 최종값 확정 위해 1회 refresh (이후 영구 cache)
       }
+      // 현재 월 · 과거 월 cache miss · 과거 월 pre-close cache → ERP
       toFetch.push(m);
     }
 
