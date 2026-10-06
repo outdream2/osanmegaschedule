@@ -129,3 +129,36 @@ describe("useSettings · settings-updated 이벤트", () => {
     expect(result.current.positions).toEqual(["동기화됨"]);
   });
 });
+
+// 2026-10-07 · Phase 2 · DB AUTHORITY · status flag · DB fetch 실패 시 business 계산 금지
+describe("useSettings · Phase 2 · status flag", () => {
+  it("mount 직후 · status=loading", () => {
+    mockGet.mockResolvedValue({ data: { value: null } });
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.status).toBe("loading");
+    expect(result.current.isReady).toBe(false);
+  });
+
+  it("DB 응답 성공 (value 있음) · status=ready", async () => {
+    mockGet.mockResolvedValue({ data: { value: { positions: ["약사"], employmentTypes: ["정직원"] } } });
+    const { result } = renderHook(() => useSettings());
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.isReady).toBe(true);
+    expect(result.current.errorMessage).toBeNull();
+  });
+
+  it("DB 응답 성공 (value=null · empty bootstrap) · status=ready · errorMessage=null", async () => {
+    mockGet.mockResolvedValue({ data: { value: null } });
+    const { result } = renderHook(() => useSettings());
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    expect(result.current.errorMessage).toBeNull();
+  });
+
+  it("DB fetch 실패 · status=error · errorMessage 노출 · business 계산 금지", async () => {
+    mockGet.mockRejectedValue(new Error("Network down"));
+    const { result } = renderHook(() => useSettings());
+    await waitFor(() => expect(result.current.status).toBe("error"));
+    expect(result.current.isReady).toBe(false);
+    expect(result.current.errorMessage).toBe("Network down");
+  });
+});

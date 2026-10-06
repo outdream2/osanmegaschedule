@@ -69,10 +69,18 @@ const DB_KEY = "all_settings";
 // 2026-08-05 · 근로계약서 시급 default (사용자 편집 가능한 초기값)
 //  - 약사: 주중 35,000 / 주말 40,000
 //  - 사원 (그 외 직급 · 캐셔·물류 등): 2026년 최저시급 기준 · 주중 10,030 / 주말 12,000
+// 2026-10-07 · Phase 2 · runtime fallback 제거 완료 (resolveEmployeeWage SSOT)
+//   · 아래 상수는 사용자 설정 UI (SettingsModal) seed/preset 전용 · business runtime 계산에서 사용 금지
+/** @deprecated 2026-10-07 · business runtime 계산에서 사용 금지 · SettingsModal preset 전용 */
 export const DEFAULT_PHARMACIST_WAGE: WageRate = { weekday: 35000, weekend: 40000 };
+/** @deprecated 2026-10-07 · business runtime 계산에서 사용 금지 · SettingsModal preset 전용 */
 export const DEFAULT_STAFF_WAGE: WageRate = { weekday: 10030, weekend: 12000 };
 
-/** 직급명 → default 시급. positions 목록에 있으면 자동으로 default 를 제공. */
+/**
+ * @deprecated 2026-10-07 · Phase 2 · 하드코드 runtime fallback 금지
+ *   · business runtime 에서 사용 X · 반드시 `src/lib/wageResolver.ts::resolveEmployeeWage` 사용
+ *   · SettingsModal UI seed/preset 또는 테스트용으로만 유지
+ */
 export function defaultWageForPosition(position: string): WageRate {
   return position === "약사" ? { ...DEFAULT_PHARMACIST_WAGE } : { ...DEFAULT_STAFF_WAGE };
 }
@@ -219,13 +227,23 @@ function loadFromLocalStorage(): AppSettings {
   }
 }
 
-async function fetchAllSettings(): Promise<AppSettings | null> {
+/** 2026-10-07 · Phase 2 · DB fetch 결과 구분
+ *  · ready    = DB 응답 성공 → authoritative business settings
+ *  · empty    = DB 응답 성공 but key missing (초기 bootstrap 상태 · DEFAULT 노출)
+ *  · error    = fetch 실패 → business 계산 금지 · 사용자 UI 안내 필요
+ */
+type FetchResult =
+  | { kind: "ready"; settings: AppSettings }
+  | { kind: "empty" }
+  | { kind: "error"; message: string };
+
+async function fetchAllSettings(): Promise<FetchResult> {
   try {
     const { data } = await api.get<{ value?: Partial<AppSettings> }>(`/api/settings?key=${DB_KEY}`);
-    if (!data?.value) return null;
-    return mergeWithDefaults(data.value);
-  } catch {
-    return null;
+    if (!data?.value) return { kind: "empty" };
+    return { kind: "ready", settings: mergeWithDefaults(data.value) };
+  } catch (err: any) {
+    return { kind: "error", message: err?.message ?? "DB 조회 실패" };
   }
 }
 
@@ -242,20 +260,49 @@ function dispatchSettingsUpdated(next: AppSettings): void {
   } catch { /* silent */ }
 }
 
+/** 2026-10-07 · Phase 2 · BUSINESS SETTINGS AUTHORITY · DB first
+ *  · loading : mount 직후 · DB fetch 진행 중 · localStorage 는 UI preview 전용
+ *  · ready   : DB 응답 성공 · 계산 authority
+ *  · error   : DB fetch 실패 · 사용자 UI "설정 정보를 불러오지 못했습니다." 노출 · 계산 금지
+ */
+export type SettingsStatus = "loading" | "ready" | "error";
+
 export function useSettings() {
   const [settings, setSettings] = useState<AppSettings>(loadFromLocalStorage);
+  const [status, setStatus] = useState<SettingsStatus>("loading");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // On mount: load from DB and override localStorage
   useEffect(() => {
-    fetchAllSettings().then((dbSettings) => {
-      if (!dbSettings) return;
-      setSettings(dbSettings);
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dbSettings)); } catch {}
-    }).catch(() => {});
-    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+    let cancelled = false;
+    fetchAllSettings().then((result) => {
+      if (cancelled) return;
+      if (result.kind === "ready") {
+        setSettings(result.settings);
+        setStatus("ready");
+        setErrorMessage(null);
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(result.settings)); } catch { /* silent */ }
+      } else if (result.kind === "empty") {
+        // DB bootstrap · settings row 없음 · 관리자가 저장할 때까지 DEFAULT 사용 · ready 상태
+        setStatus("ready");
+        setErrorMessage(null);
+      } else {
+        // DB fetch 실패 · business 계산 금지
+        setStatus("error");
+        setErrorMessage(result.message);
+      }
+    }).catch((err) => {
+      if (cancelled) return;
+      setStatus("error");
+      setErrorMessage(err?.message ?? "설정 로드 실패");
+    });
+    return () => {
+      cancelled = true;
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
   }, []);
 
   // 다른 useSettings 인스턴스(다른 탭/컴포넌트)에서 발행한 settings-updated 이벤트 수신
@@ -264,7 +311,10 @@ export function useSettings() {
       const next = (e as CustomEvent<AppSettings>).detail;
       if (!next) return;
       setSettings(next);
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      // 다른 인스턴스가 저장 성공 후 broadcast → ready 상태로 확정
+      setStatus("ready");
+      setErrorMessage(null);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { /* silent */ }
     };
     window.addEventListener(SETTINGS_UPDATED_EVENT, handler);
     return () => window.removeEventListener(SETTINGS_UPDATED_EVENT, handler);
@@ -318,5 +368,11 @@ export function useSettings() {
     settings,
     update,
     saveNow,
+    /** 2026-10-07 · Phase 2 · settings 로드 상태 · "ready" 일 때만 business 계산 authority */
+    status,
+    /** 2026-10-07 · Phase 2 · status === "error" 일 때 노출할 메시지 */
+    errorMessage,
+    /** 2026-10-07 · Phase 2 · business 계산 authority (status === "ready") shortcut */
+    isReady: status === "ready",
   };
 }
