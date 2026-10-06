@@ -18,17 +18,13 @@ import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
 import { AccentBar } from "../common/AccentBar";
 import { Modal } from "../common/Modal";
-import { PeriodSelector, type PeriodOption } from "../common/PeriodSelector";
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
 import type { ArrivalItem } from "./helpers";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
-const ARRIVAL_DAYS_PRESET: readonly PeriodOption<number>[] = [
-  { value: 7,  label: "7일",  title: "최근 7일"  },
-  { value: 30, label: "30일", title: "최근 30일" },
-  { value: 90, label: "90일", title: "최근 90일" },
-] as const;
+// 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · MonthToggleSelector) · 7/30/90일 preset 폐기
 
 // ─── 입고내역 타입 (기존 inline 정의 이관) ─────────────────────
 export interface ArrivalHistoryItem {
@@ -194,8 +190,9 @@ export const FinalDecisionCard: React.FC<FinalDecisionCardProps> = ({
 interface ArrivalHistoryTabProps {
   arrivals: ArrivalHistoryRow[];
   arrivalsLoading: boolean;
-  arrivalDays: 7 | 30 | 90;
-  setArrivalDays: (v: 7 | 30 | 90) => void;
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD) · arrivalDays(number) → arrivalMonths(string[])
+  arrivalMonths: string[];
+  setArrivalMonths: (v: string[]) => void;
   loadArrivals: () => void;
   selectedArrivalId: string | number | null;
   setSelectedArrivalId: (v: string | number | null) => void;
@@ -223,7 +220,7 @@ interface SupplierArrivalGroup {
 }
 
 export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
-  arrivals, arrivalsLoading, arrivalDays, setArrivalDays,
+  arrivals, arrivalsLoading, arrivalMonths, setArrivalMonths,
   loadArrivals, selectedArrivalId, setSelectedArrivalId, deleteArrival,
 }) => {
   // 공급사별 그룹핑
@@ -279,15 +276,19 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
         <Package size={16} className="text-brand-deep shrink-0" />
         <span className="text-[16px] font-bold text-ink tracking-tight">입고내역</span>
         <StatusPill tone="brand" size="md">{arrivals.length}건</StatusPill>
-        <span className="text-[15px] font-medium text-ink-soft ml-2 hidden sm:inline">공급사 {groups.length} · 최근 {arrivalDays}일</span>
-        <PeriodSelector
-          options={ARRIVAL_DAYS_PRESET}
-          value={arrivalDays}
-          onChange={(v) => setArrivalDays(Number(v) as 7 | 30 | 90)}
-          accent="indigo"
-          size="sm"
+        <span className="text-[15px] font-medium text-ink-soft ml-2 hidden sm:inline">공급사 {groups.length}</span>
+        {/* 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
+        <MonthToggleSelector
+          selectedMonths={arrivalMonths}
+          onChange={setArrivalMonths}
+          maxMonths={6}
+          minOne
+          ariaLabel="입하이력 조회기간"
           className="ml-auto"
         />
+        {arrivalMonths.length > 0 && (
+          <span className="text-[13px] text-ink-soft tabular-nums">{arrivalMonths.length}개월 선택</span>
+        )}
         <button onClick={loadArrivals} disabled={arrivalsLoading}
           className="inline-flex w-8 h-8 items-center justify-center rounded-lg border border-line text-zinc-500 hover:text-brand-deep hover:border-brand-deep hover:bg-zinc-50 transition cursor-pointer disabled:opacity-50"
           title="새로고침">
@@ -299,7 +300,7 @@ export const ArrivalHistoryTab: React.FC<ArrivalHistoryTabProps> = ({
         {arrivalsLoading && arrivals.length === 0 ? (
           <div className="py-12 flex items-center justify-center"><Spinner tone="zinc" size={16} label="불러오는 중..." labelSize={15} /></div>
         ) : arrivals.length === 0 ? (
-          <div className="py-12 text-center text-zinc-400 text-[15px] font-semibold">최근 {arrivalDays}일 입고내역 없음</div>
+          <div className="py-12 text-center text-zinc-400 text-[15px] font-semibold">선택 월 입고내역 없음</div>
         ) : (
           <div className="divide-y divide-zinc-100">
             {groups.map((g) => {

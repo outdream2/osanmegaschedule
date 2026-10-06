@@ -23,14 +23,17 @@ router.get("/api/sales-trend/product", asyncHandler(async (req, res) => {
   const months = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));
   const seasonParam = String(req.query.season ?? "").trim().toLowerCase();
   const seasonMonths = await resolveSeasonMonths(seasonParam);
+  // 2026-10-06 · months_list 비연속 월 멀티선택 지원 (STANDARD · 사용자 지시)
+  //   · period_end 축 · months/season 과 상호 배타 · 지정 시 range + YM post-filter
+  const monthsList = parseMonthsList(req.query.months_list);
   // 2026-10-04 · schema rename · 프론트 PeriodRow 타입 이미 신규 field 사용 중 (src/lib/stockPeriodUtils.tsx)
-  //   · period_start_date→period_start · snapshot_date→period_end · opening_stock→prv_stock
-  //   · purchase_qty→buy_stock · sale_qty→sale_stock · disposal_qty→product_bad_stock
   let q = supabase
     .from("stock_history")
     .select("period_start, period_end, period_type, supplier_name, product_name, spec, prv_stock, buy_stock, sale_stock, product_bad_stock, closing_stock, supply_amount, total_amount")
     .eq("product_code", code);
-  if (!seasonMonths && months > 0) {
+  if (!monthsList.isEmpty && monthsList.from && monthsList.to) {
+    q = q.gte("period_end", monthsList.from).lte("period_end", monthsList.to);
+  } else if (!seasonMonths && months > 0) {
     // 2026-07-16 fix: 정확히 N개월 back
     const today = new Date();
     const cutoff = new Date(today.getFullYear(), today.getMonth() - months, today.getDate());
@@ -41,9 +44,13 @@ router.get("/api/sales-trend/product", asyncHandler(async (req, res) => {
     .order("period_start", { ascending: true, nullsFirst: false })
     .order("period_end", { ascending: true });
   if (error) throw new HttpError(500, error.message, "DB_ERROR");
-  const rows = seasonMonths
-    ? (data ?? []).filter((r: any) => inSeasonMonths(String(r.period_end ?? ""), seasonMonths))
-    : (data ?? []);
+  // 2026-10-06 · months_list 비연속 월 post-filter · 중간 월 자동 포함 금지
+  let rows: unknown[] = data ?? [];
+  if (!monthsList.isEmpty) {
+    rows = (data ?? []).filter((r: { period_end: string | null }) => isDateInSelectedMonths(r.period_end, monthsList.set));
+  } else if (seasonMonths) {
+    rows = (data ?? []).filter((r: { period_end: string | null }) => inSeasonMonths(String(r.period_end ?? ""), seasonMonths));
+  }
   const payload = { code, months, season: seasonParam || undefined, season_months: seasonMonths ?? undefined, rows };
   res.setHeader("Cache-Control", "no-store");
   res.json(payload);

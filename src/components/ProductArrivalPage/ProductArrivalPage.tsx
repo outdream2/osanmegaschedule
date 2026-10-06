@@ -15,6 +15,7 @@ import { getProductByCode } from "../../lib/productsApi";
 import { getErrorMessage } from "../../lib/errorMessage";
 import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
 import { useConfirm } from "../../hooks/useConfirm";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { SplitPanel } from "../common/SplitPanel";
 import {
   ScanLine, AlertCircle, PackagePlus, Clock,
@@ -113,7 +114,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   // 2026-08-22 · Framework Phase 4 · 타입은 ProductArrivalPage.panels.tsx 로 이관
   const [arrivals, setArrivals] = useState<ArrivalHistoryRow[]>([]);
   const [arrivalsLoading, setArrivalsLoading] = useState(false);
-  const [arrivalDays, setArrivalDays] = useState<7 | 30 | 90>(30);
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+  //   · default · 현재 월 1개 · 비연속 월 지원 · verified_at 축 (서버 /api/product-arrivals 지원 완료)
+  const { selectedMonths: arrivalMonths, setSelectedMonths: setArrivalMonths, monthsList: arrivalMonthsList } = useMonthFilter();
   // 2026-08-29 · #198 Phase 3 · selectedArrivalId · string (groupId) or 레거시 number 호환
   const [selectedArrivalId, setSelectedArrivalId] = useState<string | number | null>(null);
   const [arrivalDetail, setArrivalDetail] = useState<ArrivalHistoryDetail | null>(null);
@@ -121,9 +124,12 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   const loadArrivals = useCallback(async () => {
     setArrivalsLoading(true);
     try {
-      const { data: j } = await api.get<{ rows?: any[] }>(`/api/product-arrivals?limit=100&days=${arrivalDays}`);
+      const url = arrivalMonthsList
+        ? `/api/product-arrivals?limit=100&months_list=${encodeURIComponent(arrivalMonthsList)}`
+        : `/api/product-arrivals?limit=100`;
+      const { data: j } = await api.get<{ rows?: any[] }>(url);
       const rows = Array.isArray(j?.rows) ? j.rows : [];
-      console.info(`[ProductArrivalPage] loadArrivals · rows=${rows.length} · days=${arrivalDays}`);
+      console.info(`[ProductArrivalPage] loadArrivals · rows=${rows.length} · months=${arrivalMonthsList || "(default)"}`);
       setArrivals(rows);
     } catch (e: unknown) {
       // 2026-09-07 · 사용자 지시 · silent 실패 방지 · 에러 원인 표면화
@@ -133,7 +139,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       setArrivals([]);
     }
     finally { setArrivalsLoading(false); }
-  }, [arrivalDays, showError]);
+  }, [arrivalMonthsList, showError]);
   useEffect(() => { if (arrivalTab === "history") loadArrivals(); }, [arrivalTab, loadArrivals]);
   // 2026-09-07 · 사용자 지시 · 입고내역 자동 업데이트 · 어느 탭이든 검수 저장·상품 변경 시 즉시 리로드
   //   · product-mutated 이벤트 · 검수 저장 (POST /api/product-arrivals) 후 · 자동 dispatch
@@ -859,8 +865,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         <ArrivalHistoryTab
           arrivals={arrivals}
           arrivalsLoading={arrivalsLoading}
-          arrivalDays={arrivalDays}
-          setArrivalDays={setArrivalDays}
+          arrivalMonths={arrivalMonths}
+          setArrivalMonths={setArrivalMonths}
           loadArrivals={loadArrivals}
           selectedArrivalId={selectedArrivalId}
           setSelectedArrivalId={setSelectedArrivalId}

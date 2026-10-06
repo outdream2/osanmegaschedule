@@ -22,6 +22,7 @@ import { CreateProductArrivalSchema } from "../../../src/shared/schemas/productA
 import { resetProductCache } from "../../productCache";
 import { buildInitialShelfPositions } from "../../../src/shared/warehouseZones";
 import logger from "../../lib/logger";
+import { parseMonthsList, isDateInSelectedMonths } from "../../lib/periodFilter";
 
 const router = Router();
 
@@ -377,18 +378,29 @@ router.post("/api/product-arrivals", authorize(3), validateBody(CreateProductArr
 router.get("/api/product-arrivals", asyncHandler(async (req, res) => {
   const limit = Math.max(1, Math.min(500, parseInt(String(req.query.limit ?? "50"), 10) || 50));
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "30"), 10) || 30));
-  const since = new Date(); since.setDate(since.getDate() - days);
-
-  const { data, error } = await supabase
+  // 2026-10-06 · months_list=YM1,YM2 비연속 월 멀티선택 지원 (STANDARD · 사용자 지시)
+  //   · verified_at 축 · days 와 상호 배타 · min YM-01 ~ max YM-last_day range + YM post-filter
+  const months = parseMonthsList(req.query.months_list);
+  let qry = supabase
     .from("purchase_details")
     .select("id, purchase_date, supplier_name, product_code, product_name, quantity, verified_by, verify_status, verified_expiring, verified_at")
     .not("verify_status", "is", null)
-    .gte("verified_at", since.toISOString())
     .order("verified_at", { ascending: false })
     .limit(5000); // 그룹핑 위해 넉넉히
+  if (!months.isEmpty && months.from && months.to) {
+    qry = qry.gte("verified_at", `${months.from}T00:00:00`).lte("verified_at", `${months.to}T23:59:59.999`);
+  } else {
+    const since = new Date(); since.setDate(since.getDate() - days);
+    qry = qry.gte("verified_at", since.toISOString());
+  }
+  const { data, error } = await qry;
   if (error) throw new HttpError(500, error.message);
 
-  const rows = data ?? [];
+  // 2026-10-06 · months_list 비연속 월 post-filter · 중간 월 자동 포함 금지
+  const effData = months.isEmpty
+    ? (data ?? [])
+    : (data ?? []).filter((r: { verified_at: string | null }) => isDateInSelectedMonths(r.verified_at, months.set));
+  const rows = effData;
   // 2026-09-07 · 사용자 지시 · 입고내역 UX 재설계
   //   · 그룹핑 · groupId (verified_at date + verified_by) · 헤더 집계
   //   · items 필드 추가 · 각 group 내 개별 상품 (product_code · name · qty · verify_status · verified_at)

@@ -16,7 +16,8 @@ import { Package, ChevronDown, ChevronRight, FileDown, Truck } from "lucide-reac
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { PageToolbar } from "../common/PageToolbar";
-import { PeriodSelector } from "../common/PeriodSelector";
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { InlineLabel } from "../common/InlineLabel";
 import { StatusPill } from "../common/StatusPill";
 import { Card } from "../common/Card";
@@ -92,7 +93,9 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [days, setDays] = useState(90);
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+  //   · default · 현재 월 1개 · 비연속 월 지원 · sent_at 축
+  const { selectedMonths, setSelectedMonths, monthsList } = useMonthFilter();
 
   // PO 접기 · 기본 open · 클릭 시 collapse
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -109,7 +112,10 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
     setLoading(true);
     setError(null);
     setNotice(null);
-    api.get<{ orders?: OrderHistoryOrder[]; notice?: string }>(`/api/vendor/order-history?days=${days}`)
+    const url = monthsList
+      ? `/api/vendor/order-history?months_list=${encodeURIComponent(monthsList)}`
+      : `/api/vendor/order-history`;
+    api.get<{ orders?: OrderHistoryOrder[]; notice?: string }>(url)
       .then(({ data }) => {
         setOrders(Array.isArray(data?.orders) ? data.orders : []);
         if (data?.notice) setNotice(String(data.notice));
@@ -120,7 +126,7 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
         showError(`발주이력 조회 실패: ${msg}`);
       })
       .finally(() => setLoading(false));
-  }, [days, showError]);
+  }, [monthsList, showError]);
 
   useEffect(() => {
     load();
@@ -275,20 +281,19 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
             </span>
           }
           right={
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <InlineLabel size="sm">기간</InlineLabel>
-              <PeriodSelector
-                options={[
-                  { value: 30,  label: "30일",  title: "최근 30일" },
-                  { value: 90,  label: "90일",  title: "최근 90일" },
-                  { value: 180, label: "180일", title: "최근 180일" },
-                  { value: 365, label: "1년",   title: "최근 1년" },
-                ]}
-                value={days}
-                onChange={(v) => setDays(v)}
-                size="sm"
+              {/* 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
+              <MonthToggleSelector
+                selectedMonths={selectedMonths}
+                onChange={setSelectedMonths}
+                maxMonths={6}
+                minOne
                 ariaLabel="발주이력 조회기간"
               />
+              {selectedMonths.length > 0 && (
+                <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+              )}
             </div>
           }
         />
@@ -327,7 +332,7 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
             <div className="p-8 text-center text-rose-600 text-[17px] font-bold">{error}</div>
           ) : orders.length === 0 ? (
             <div className="p-12 text-center text-zinc-400 text-[17px]">
-              발주 이력 없음 · 최근 {days}일간 발주 없음
+              발주 이력 없음 · 선택 월에 발주 없음
             </div>
           ) : (
             <div className="divide-y divide-zinc-100">

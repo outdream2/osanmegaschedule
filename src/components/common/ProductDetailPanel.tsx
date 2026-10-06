@@ -20,6 +20,8 @@ import { type ProductDetail } from "../ProductInfoPage/ProductInfoPage";
 import { getProductByCode } from "../../lib/productsApi";
 import { ProductInfoModalStyleView } from "./ProductInfoModalStyleView";
 import { SeasonButtons } from "./SeasonButtons";
+import { MonthToggleSelector } from "./MonthToggleSelector";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { AccentBar } from "./AccentBar";
 import { InlineLabel } from "./InlineLabel";
 // 2026-08-25 · 우측 탭 프리미티브 · 폰트 +2 · v9 시그니처
@@ -65,7 +67,9 @@ export interface ProductDetailPanelProps {
 const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = ({ productCode, productName }) => {
   const [rows, setRows] = useState<PeriodRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [months, setMonths] = useState<1 | 2 | 3 | 4 | 5 | 6>(6);
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+  //   · 1-6개월 preset 폐기 · 비연속 월 지원 · default · 현재 월 1개
+  const { selectedMonths, setSelectedMonths, monthsList } = useMonthFilter();
   const [season, setSeason] = useState<SeasonKey | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   // 2026-07-29 · 사용자 요청 · x축 그룹 · month(월중) / 10day(초순·중순·하순)
@@ -74,7 +78,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
 
   useEffect(() => {
     if (!productCode) { setRows([]); return; }
-    const cacheKey = `${productCode}::${season ?? ""}`;
+    const cacheKey = `${productCode}::${season ?? ""}::${monthsList}`;
     const cached = cache.current.get(cacheKey);
     if (cached) { setRows(cached); return; }
     let cancelled = false;
@@ -83,7 +87,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
       try {
         const params = new URLSearchParams({ code: productCode });
         if (season) params.set("season", season);
-        else params.set("months", "6");
+        else if (monthsList) params.set("months_list", monthsList);
         const { data } = await api.get<any>(`/api/sales-trend/product?${params}`);
         const fetched: PeriodRow[] = Array.isArray(data) ? data : (data?.rows ?? []);
         if (!cancelled) {
@@ -94,7 +98,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
       finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [productCode, season]);
+  }, [productCode, season, monthsList]);
 
   return (
     <Card variant="raw-sm" padding="sm" rounded="xl">
@@ -159,27 +163,21 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
       })()}
       {!collapsed && (
         <>
-          {/* 조회기간 행 · 2026-08-17 · 딥네이비 통일 · segmented pill */}
+          {/* 조회기간 행 · 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <InlineLabel size="sm">조회기간</InlineLabel>
-            <div className="inline-flex shrink-0 bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-              {([1, 2, 3, 4, 5, 6] as const).map(m => {
-                const active = !season && months === m;
-                return (
-                  <button
-                    key={m}
-                    onClick={() => { setSeason(null); setMonths(m); }}
-                    className={`min-w-[32px] min-h-[34px] px-2 py-0.5 text-[14px] font-semibold rounded-md transition-colors cursor-pointer ${active
-                      ? "bg-brand-deep text-white shadow-sm"
-                      : "text-ink hover:text-brand-deep hover:bg-white"
-                    }`}
-                  >{m}</button>
-                );
-              })}
-              <span className="text-[14px] font-semibold text-ink-soft self-center px-1">개월</span>
-            </div>
+            <MonthToggleSelector
+              selectedMonths={selectedMonths}
+              onChange={months => { setSelectedMonths(months); setSeason(null); }}
+              maxMonths={6}
+              minOne
+              ariaLabel="상품 재고흐름 기간"
+            />
+            {selectedMonths.length > 0 && !season && (
+              <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+            )}
             <div className="shrink-0">
-              <SeasonButtons value={season} onChange={setSeason} size="sm" hideLabel />
+              <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setSelectedMonths([]); }} size="sm" hideLabel />
             </div>
           </div>
           {/* 단위 행 · 2026-08-17 · 폰트 +2 */}
@@ -203,9 +201,11 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
       ) : rows.length === 0 ? (
         <div className="text-center text-[15px] text-ink-soft py-8 font-medium">기간 데이터 없음</div>
       ) : (() => {
+        // 2026-10-06 · 월 멀티선택 통일 · selectedMonths.length 를 과거 months 값 대체
+        const monthsCount = Math.max(1, selectedMonths.length || 1);
         const filled = fillPeriodsWithRows(
           rows,
-          season ? 400 : months * 30,
+          season ? 400 : monthsCount * 30,
           (start, end, period_type): PeriodRow => ({
             period_start: start,
             period_end: end,
@@ -219,7 +219,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
         const useMonthly = !season && xAxisMode === "month";
         const chartRows = season
           ? filled
-          : (useMonthly ? aggregateToMonths(filled).slice(-months * 3) : filled.slice(-months * 3));
+          : (useMonthly ? aggregateToMonths(filled).slice(-monthsCount * 3) : filled.slice(-monthsCount * 3));
         const hasDisposal = chartRows.some(r => (r.product_bad_stock ?? 0) > 0);
         // 10day 라벨 · period_type "early|mid|late" → 초순/중순/하순
         const partLabel = (pt: string | null | undefined): string => {

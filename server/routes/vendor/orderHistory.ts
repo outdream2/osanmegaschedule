@@ -15,6 +15,7 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { authorize, getSession } from "../../middleware/requireAuth";
 import { HttpError, forbidden, unauthorized } from "../../middleware/errorHandler";
 import logger from "../../lib/logger";
+import { parseMonthsList, isDateInSelectedMonths } from "../../lib/periodFilter";
 
 const router = Router();
 
@@ -37,17 +38,29 @@ router.get("/api/vendor/order-history", authorize(0), asyncHandler(async (req, r
   }
 
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "90")) || 90));
-  const since = new Date(Date.now() - days * 86400000).toISOString();
+  // 2026-10-06 · months_list=YM1,YM2 비연속 월 멀티선택 지원 (STANDARD · 사용자 지시)
+  //   · sent_at 축 · days 와 상호 배타 · min YM-01 ~ max YM-last_day range + YM post-filter
+  const months = parseMonthsList(req.query.months_list);
+  let since: string;
+  let sinceTo: string | null = null;
+  if (!months.isEmpty && months.from && months.to) {
+    since = `${months.from}T00:00:00`;
+    sinceTo = `${months.to}T23:59:59.999`;
+  } else {
+    since = new Date(Date.now() - days * 86400000).toISOString();
+  }
 
   // status ordered · matched 둘 다 (매입확인 후에도 이력 보임)
   // supplier === session.name 강제 필터 (권한 격리 · 다른 vendor 데이터 노출 X)
-  const { data, error } = await supabase
+  let q = supabase
     .from("order_requests")
     .select("id, order_number, order_date, desired_arrival, supplier, supplier_contact, supplier_email, supplier_phone, product_code, product_name, current_stock, order_qty, unit_price, memo, sent_at, note, status")
     .in("status", ["ordered", "matched"])
     .eq("supplier", supplierName)
     .gte("sent_at", since)
     .order("sent_at", { ascending: false });
+  if (sinceTo) q = q.lte("sent_at", sinceTo);
+  const { data, error } = await q;
 
   if (error) {
     if (/column|does not exist|status/i.test(error.message)) {
@@ -58,9 +71,13 @@ router.get("/api/vendor/order-history", authorize(0), asyncHandler(async (req, r
     throw new HttpError(500, error.message);
   }
 
+  // 2026-10-06 · months_list 비연속 월 post-filter · 중간 월 자동 포함 금지
+  const effData = months.isEmpty
+    ? (data ?? [])
+    : (data ?? []).filter((r: { sent_at: string | null }) => isDateInSelectedMonths(r.sent_at, months.set));
   // order_number GROUP · 발주서 단위
   const grouped = new Map<string, any>();
-  for (const row of (data ?? []) as any[]) {
+  for (const row of (effData ?? []) as any[]) {
     const key = String(row.order_number ?? row.id);
     if (!grouped.has(key)) {
       grouped.set(key, {
