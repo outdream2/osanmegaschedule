@@ -25,6 +25,8 @@ import { EmptyState } from "../common/EmptyState";
 // UI 목업 대원칙 준수 · docs/UI_MOCKUP_2026-08-21.html · Linear/Vercel 톤 · 딥네이비 accent
 import { SplitListPanel } from "../common/SplitListPanel";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
+// 2026-10-06 · 사용자 지시 · 조회 목록 전수 pagination · 공통 Pagination 적용
+import { Pagination, usePagination } from "../common/Pagination";
 
 const VendorDetailModalLazy = React.lazy(() => import("../LandingPage/VendorListEditor").then(m => ({ default: m.VendorDetailModal })));
 
@@ -101,6 +103,14 @@ export const VendorManageSplit: React.FC = () => {
 
   const selected = useMemo(() => vendors.find(v => v.id === selectedId) ?? null, [vendors, selectedId]);
 
+  // 2026-10-06 · 사용자 지시 · 조회 목록 전수 pagination
+  //   · filtered(원본 정렬된 리스트) → pageRows 로 slice · 합계·총 N건(filtered.length) 은 원본 유지
+  //   · resetDeps · 검색/카테고리/정렬 변경 시 page=1
+  const { pageRows, page, setPage, pageSize, setPageSize, totalCount } = usePagination(
+    filtered,
+    { defaultPageSize: 50, resetDeps: [search, catFilter, sortKey, sortDir] },
+  );
+
 
   // 2026-08-23 · #198 Phase 3A · CategoryChips 프리미티브 · 5 카테고리 통일
   //   · UI 목업 준수 · Linear/Vercel 톤 · 파스텔 지양 · 프레임워크 색상 시스템
@@ -153,6 +163,15 @@ export const VendorManageSplit: React.FC = () => {
         />
       }
       bodyClassName="flex-1 min-h-0 overflow-auto"
+      footer={
+        <Pagination
+          totalCount={totalCount}
+          page={page}
+          setPage={setPage}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+        />
+      }
     >
       <>
       {/* 2026-08-10 · 신규 공급사 등록 모달 */}
@@ -172,7 +191,7 @@ export const VendorManageSplit: React.FC = () => {
             <li className="py-12 text-center text-[15px] font-semibold text-zinc-400">
               {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
             </li>
-          ) : filtered.map(v => {
+          ) : pageRows.map(v => {
             const isActive = selectedId === v.id;
             const catCls = v.category === "위탁" ? "bg-violet-50 text-violet-700 border-violet-200"
               : v.category === "선결제"  ? "bg-rose-50 text-rose-700 border-rose-200"
@@ -241,7 +260,7 @@ export const VendorManageSplit: React.FC = () => {
                   {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
                 </td>
               </tr>
-            ) : filtered.map(v => {
+            ) : pageRows.map(v => {
               const isActive = selectedId === v.id;
               const catCls = v.category === "위탁" ? "text-violet-700"
                 : v.category === "선결제"  ? "text-rose-700"

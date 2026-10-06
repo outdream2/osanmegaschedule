@@ -4,7 +4,9 @@
 //   · ByVendorPanel · 공급사별 SplitPanel (좌 SupplierTab + 우 VendorHeader·SubTabs)
 //   · ByProductPanel · 상품별 SplitPanel (좌 상품리스트 + 우 상품상세/파이차트)
 
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
+// 2026-10-06 · 사용자 지시 · 조회 목록 pagination · 공통 컴포넌트
+import { Pagination, usePagination } from "../common/Pagination";
 import { Building2, Package, RefreshCw, Info, ArrowRight, X } from "lucide-react";
 import { SortHeader } from "../common/SortHeader";
 import { SegmentedControl } from "../common/SegmentedControl";
@@ -473,19 +475,12 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
   productSortDir, toggleProductSort,
   allDetailsLoading, allDetailsError, loadAllDetails,
 }) => {
-  // 2026-10-06 · 사용자 지시 · split window 왼쪽 상품 리스트 UI pagination
+  // 2026-10-06 · 사용자 지시 · 상품별 왼쪽 리스트 UI pagination · 공통 Pagination 훅
   //   · 데이터는 filteredProducts 유지 · 렌더만 page slice
-  //   · 검색/정렬/pageSize 변경 시 page 1 reset
-  const [pageSize, setPageSize] = useState<number>(50);
-  const [page, setPage] = useState<number>(1);
-  const totalCount = filteredProducts.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  useEffect(() => { setPage(1); }, [totalCount, pageSize, productSort, productSortDir, productSearch]);
-  const safePage = Math.min(page, totalPages);
-  const pageStart = (safePage - 1) * pageSize;
-  const pageRows = useMemo(
-    () => filteredProducts.slice(pageStart, pageStart + pageSize),
-    [filteredProducts, pageStart, pageSize],
+  //   · 정렬/검색 변경 시 page 1 reset
+  const { pageRows, page, setPage, pageSize, setPageSize, totalCount } = usePagination(
+    filteredProducts,
+    { defaultPageSize: 50, resetDeps: [productSort, productSortDir, productSearch] },
   );
   return (
     <SplitPanel
@@ -511,6 +506,15 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
           onSearchChange={setProductSearch}
           searchPlaceholder="상품명 · 코드 검색"
           bodyClassName="bg-white rounded-xl border border-line shadow-sm flex-1 min-h-0 max-h-[calc(100dvh-200px)] flex flex-col overflow-hidden mt-2"
+          footer={
+            <Pagination
+              totalCount={totalCount}
+              page={page}
+              setPage={setPage}
+              pageSize={pageSize}
+              setPageSize={setPageSize}
+            />
+          }
         >
           <>
           {/* sticky 정렬 헤더 · lg 이상에서만 표시 · 2026-10-06 겹침 fix: md→lg · 불투명 배경 */}
@@ -719,55 +723,6 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
             </>
           )}
           </div>
-          {/* 2026-10-06 · 사용자 지시 · split window 왼쪽 리스트 pagination 컨트롤 */}
-          {totalCount > 0 && (
-            <div className="shrink-0 border-t border-line bg-zinc-50/60 px-3 py-2 flex items-center gap-2 text-[14px] text-zinc-600 flex-wrap">
-              <span className="tabular-nums">
-                {`${(pageStart + 1).toLocaleString()}–${Math.min(pageStart + pageRows.length, totalCount).toLocaleString()} / ${totalCount.toLocaleString()}건`}
-              </span>
-              <div className="ml-auto flex items-center gap-1">
-                <label className="text-[13px] text-zinc-500 mr-1">페이지당</label>
-                <select
-                  value={pageSize}
-                  onChange={e => setPageSize(Number(e.target.value))}
-                  className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] cursor-pointer hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                >
-                  {[25, 50, 100, 200].map(n => <option key={n} value={n}>{n}</option>)}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => setPage(1)}
-                  disabled={safePage <= 1}
-                  className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
-                  aria-label="첫 페이지"
-                >‹‹</button>
-                <button
-                  type="button"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={safePage <= 1}
-                  className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
-                  aria-label="이전 페이지"
-                >‹</button>
-                <span className="px-2 tabular-nums text-[14px] font-semibold text-zinc-700">
-                  {safePage.toLocaleString()} / {totalPages.toLocaleString()}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={safePage >= totalPages}
-                  className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
-                  aria-label="다음 페이지"
-                >›</button>
-                <button
-                  type="button"
-                  onClick={() => setPage(totalPages)}
-                  disabled={safePage >= totalPages}
-                  className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
-                  aria-label="마지막 페이지"
-                >››</button>
-              </div>
-            </div>
-          )}
           </>
         </SplitListPanel>
       }

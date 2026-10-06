@@ -30,6 +30,8 @@ import { Spinner } from "../common/Spinner";
 // 2026-09-11 · #68 · 사용자 지시 · 검색창 · SearchBar 프리미티브 통일
 import { SearchBar } from "../common/SearchBar";
 import { SortHeaderContent } from "../common/SortHeader";
+// 2026-10-06 · 사용자 지시 · 조회 목록 전수 pagination · 공통 Pagination 적용
+import { Pagination, usePagination } from "../common/Pagination";
 
 interface VendorListEditorProps {
   // 기존 API 호환용 · 무시됨 (모달 방식으로 통일)
@@ -223,6 +225,15 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
     [filtered, compactSortKey, compactSortDir, supplierAggMap],
   );
 
+  // 2026-10-06 · 사용자 지시 · 조회 목록 전수 pagination
+  //   · compactSorted(원본 정렬된 리스트) → pageRows 로 slice
+  //   · 합계·총 N건(filtered.length / vendors.length) 은 원본 유지
+  //   · resetDeps · 검색/카테고리/정렬 변경 시 page=1
+  const { pageRows, page, setPage, pageSize, setPageSize, totalCount } = usePagination(
+    compactSorted,
+    { defaultPageSize: 50, resetDeps: [search, categoryFilter, filterMissingBiz, compactSortKey, compactSortDir, aggregateMonths, monthsListStr] },
+  );
+
   return (
     <div className="flex flex-col gap-2 min-h-0 flex-1">
 
@@ -363,7 +374,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
                 </span>
               </div>
-            ) : compactSorted.map((v) => {
+            ) : pageRows.map((v) => {
               const isActive = activeId === v.id;
               const catBorder = v.category ? (CATEGORY_LEFT_BORDER[v.category] ?? "border-l-zinc-200") : "border-l-zinc-200";
               const catBg = v.category ? (CATEGORY_LEFT_BG[v.category] ?? "") : "";
@@ -534,7 +545,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                     </div>
                   </td>
                 </tr>
-              ) : compactSorted.map((v) => {
+              ) : pageRows.map((v) => {
                 const isActive  = activeId === v.id;
                 const catBorder = v.category ? (CATEGORY_LEFT_BORDER[v.category] ?? "border-l-zinc-200") : "border-l-zinc-200";
                 const catBg     = v.category ? (CATEGORY_LEFT_BG[v.category] ?? "") : "";
@@ -659,7 +670,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
               <div className="text-center py-10 text-zinc-400 text-sm font-semibold">
                 {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
               </div>
-            ) : compactSorted.map((v, i) => (
+            ) : pageRows.map((v, i) => (
               <button
                 key={v.id}
                 onClick={() => handleVendorClick(v.id)}
@@ -800,7 +811,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                     {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
                   </td>
                 </tr>
-              ) : compactSorted.map((v, i) => (
+              ) : pageRows.map((v, i) => (
                 <tr
                   key={v.id}
                   onClick={() => handleVendorClick(v.id)}
@@ -857,6 +868,18 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* 2026-10-06 · 사용자 지시 · 조회 목록 전수 pagination · compact/일반 공용 하단 Pagination */}
+      {!loading && compactSorted.length > 0 && (
+        <Pagination
+          totalCount={totalCount}
+          page={page}
+          setPage={setPage}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+          className="rounded-xl border border-line shadow-sm"
+        />
       )}
 
       {/* 상세 모달 · 기존 vendor 편집·조회 */}

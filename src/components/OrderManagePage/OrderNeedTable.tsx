@@ -1,11 +1,13 @@
 // src/components/OrderManagePage/OrderNeedTable.tsx
 // 발주필요 탭 · 테이블 + 선택/일괄발주 컨트롤 · 2026-08-31 분리
+// 2026-10-06 · 사용자 지시 · 조회 목록 pagination 적용
 import React from "react";
 import { Card } from "../common/Card";
 import { GradientAccent } from "../common/GradientAccent";
 import { Spinner } from "../common/Spinner";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { StepperInput } from "../common/StepperInput";
+import { Pagination, usePagination } from "../common/Pagination";
 import { stripVendorAnnotation, displayVendorName } from "../../utils/vendorNameNormalize";
 import type { ProductInfo } from "./OrderManagePage.types";
 
@@ -79,7 +81,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
     return <div className="text-center text-[15px] text-zinc-300 py-6">발주 필요 상품 없음</div>;
   }
 
-  const sorted = [...displayed].sort((a, b) => {
+  const sortedAll = [...displayed].sort((a, b) => {
     const dir = needSortDir === "asc" ? 1 : -1;
     const aCode = getCode(a), bCode = getCode(b);
     const aInv = invStockMap.get(aCode); const bInv = invStockMap.get(bCode);
@@ -103,7 +105,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
     }
   });
 
-  // 합계
+  // 합계 (전체 displayed 기준 · page 와 무관)
   let sumCur = 0, sumOpt = 0, sumShort = 0;
   for (const p of displayed) {
     const c = Number(p.current_stock ?? 0);
@@ -111,6 +113,13 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
     sumCur += c; sumOpt += o;
     sumShort += Math.max(0, o - c);
   }
+
+  // 2026-10-06 · 사용자 지시 · 발주필요 리스트 UI pagination · 공통 Pagination 훅
+  //   · sort/필터 변경 시 page 1 reset · 합계 row 는 전체 sortedAll 기준 유지
+  const { pageRows, page, setPage, pageSize, setPageSize, totalCount } = usePagination(
+    sortedAll,
+    { defaultPageSize: 50, resetDeps: [needSortKey, needSortDir] },
+  );
 
   return (
     <>
@@ -207,9 +216,9 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
               <td className="bg-zinc-100" />
               <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-amber-800 bg-zinc-100">
                 {(() => {
-                  const total = sorted.reduce((sum, p) => {
+                  const total = sortedAll.reduce((sum, p) => {
                     const code = getCode(p);
-                    const qty = orderQtyOverride?.get(code) ?? Math.max(1, Number(p.optimal_stock ?? 0) - Number(p.current_stock ?? 0));
+                    const qty = orderQtyOverride?.get(code) ?? Math.max(0, Number(p.optimal_stock ?? 0) - Number(p.current_stock ?? 0));
                     const price = Number(p.purchase_price ?? 0);
                     return sum + qty * price;
                   }, 0);
@@ -219,10 +228,11 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
               <td className="bg-zinc-100" />
             </tr>
 
-            {sorted.map(p => {
+            {/* 2026-10-06 · pageRows (slice) · pagination */}
+            {pageRows.map(p => {
               const cur = Number(p.current_stock), opt = Number(p.optimal_stock);
               const unitPrice = Number(p.purchase_price ?? 0);
-              const orderQty = orderQtyOverride?.get(getCode(p)) ?? Math.max(1, opt - cur);
+              const orderQty = orderQtyOverride?.get(getCode(p)) ?? Math.max(0, opt - cur);
               const lineAmount = orderQty * unitPrice;
               const code = getCode(p);
               const name = getName(p);
@@ -296,7 +306,7 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
                     <td className="text-center px-0.5 py-1 align-middle whitespace-nowrap bg-amber-50/20">
                       <div className="flex items-center justify-center">
                         <StepperInput
-                          value={orderQtyOverride?.get(code) ?? Math.max(1, opt - cur)}
+                          value={orderQtyOverride?.get(code) ?? Math.max(0, opt - cur)}
                           onChange={(v) => {
                             if (!setOrderQtyOverride) return;
                             // 2026-09-24 · E-011 · 사용자 지시 · 빈 값 or 0 이하 · Map 삭제 (default 로 폴백)
@@ -364,6 +374,14 @@ export const OrderNeedTable: React.FC<OrderNeedTableProps> = ({
           </tbody>
         </table>
       </div>
+      {/* 2026-10-06 · 사용자 지시 · 발주필요 리스트 pagination 컨트롤 */}
+      <Pagination
+        totalCount={totalCount}
+        page={page}
+        setPage={setPage}
+        pageSize={pageSize}
+        setPageSize={setPageSize}
+      />
     </>
   );
 };

@@ -22,6 +22,8 @@ import { useConfirm } from "../../../hooks/useConfirm";
 // 2026-09-08 · 상세 진열위치 뱃지 · 배치구역 옆 표시
 import { ShelfPositionsBadge } from "../../common/ShelfPositionsBadge";
 import { useShelfPositionsMap } from "../../../hooks/useShelfPositionsMap";
+// 2026-10-06 · 진열구역 라벨 축약 공용 포매터 · "벽>22>전체>전체" → "벽 22" 등
+import { formatDisplayLocation } from "../../../lib/formatDisplayLocation";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -210,7 +212,9 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
               <InfoRow label="제조사"     value={infoData.manufacturer ?? "-"} />
               <InfoRow label="배치구역"   value={
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span>{infoData.location ?? infoData.display_location ?? "-"}</span>
+                  <span>
+                    {formatDisplayLocation(infoData.location ?? infoData.display_location) || "-"}
+                  </span>
                   <ShelfPositionsBadge positions={shelfPositions} size="sm" />
                 </div>
               } />

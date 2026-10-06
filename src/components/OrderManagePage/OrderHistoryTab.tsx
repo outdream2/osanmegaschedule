@@ -48,6 +48,8 @@ import { useVendors } from "../../hooks/useVendors";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 // 2026-09-13 · #117 · 매입확인 버튼 · confirm
 import { useConfirm } from "../../hooks/useConfirm";
+// 2026-10-06 · 사용자 지시 · 조회 목록 pagination · 공통 컴포넌트
+import { Pagination, usePagination } from "../common/Pagination";
 
 
 interface OrderHistoryItem {
@@ -312,16 +314,24 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
     "desc",
   );
 
-  // 2026-09-24 · 날짜별 그룹핑
+  // 2026-10-06 · 사용자 지시 · 발주이력 리스트 UI pagination · 공통 Pagination 훅
+  //   · sortedOrders 를 page slice → pagedOrders · 날짜 그룹핑도 page 내에서만
+  //   · 정렬/필터 변경 시 page 1 reset
+  const { pageRows: pagedOrders, page: histPage, setPage: setHistPage, pageSize: histPageSize, setPageSize: setHistPageSize, totalCount: histTotalCount } = usePagination(
+    sortedOrders,
+    { defaultPageSize: 30, resetDeps: [sortKey, sortDir] },
+  );
+
+  // 2026-09-24 · 날짜별 그룹핑 · 2026-10-06 pagedOrders 기준
   const groupedByDate = React.useMemo(() => {
     const map = new Map<string, OrderHistoryOrder[]>();
-    for (const o of sortedOrders) {
+    for (const o of pagedOrders) {
       const dateKey = String(o.order_date ?? o.sent_at?.slice(0, 10) ?? "unknown");
       if (!map.has(dateKey)) map.set(dateKey, []);
       map.get(dateKey)!.push(o);
     }
     return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a));
-  }, [sortedOrders]);
+  }, [pagedOrders]);
 
   // 첫 로드 · 최신 날짜 자동 open
   React.useEffect(() => {
@@ -782,6 +792,15 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
 
           </div>
         )}
+        {/* 2026-10-06 · 사용자 지시 · 발주이력 pagination 컨트롤 */}
+        <Pagination
+          totalCount={histTotalCount}
+          page={histPage}
+          setPage={setHistPage}
+          pageSize={histPageSize}
+          setPageSize={setHistPageSize}
+          pageSizeOptions={[10, 20, 30, 50, 100]}
+        />
       </Card>
     </div>
     {/* 오프스크린 PDF 프리뷰 */}

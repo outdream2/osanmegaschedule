@@ -11,6 +11,8 @@ import React, { useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { SplitPanel } from "../common/SplitPanel";
 import { SplitListPanel } from "../common/SplitListPanel";
+// 2026-10-06 · 사용자 지시 · 조회 목록 전수 pagination · 공통 Pagination 적용
+import { Pagination, usePagination } from "../common/Pagination";
 // 2026-09-18 · 사용자 지시 · 공급사 검색 · (주)·주식회사 무시
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
@@ -106,6 +108,14 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
     return list;
   }, [critical, categoryFilter, getVendorCategory, search, getCode]);
 
+  // 2026-10-06 · 사용자 지시 · 조회 목록 전수 pagination
+  //   · filtered(원본 정렬된 리스트) → pageRows 로 slice · 합계·총 N건은 원본 유지
+  //   · resetDeps · 검색어/카테고리/판매필터 변경 시 page=1
+  const { pageRows, page, setPage, pageSize, setPageSize, totalCount } = usePagination(
+    filtered,
+    { defaultPageSize: 50, resetDeps: [categoryFilter, search, saleFilter] },
+  );
+
   const chipOptions = useMemo(() => {
     const opts: Array<{ value: string; label: string; tone?: ChipTone; count?: number }> = [
       { value: "all", label: `전체 (${critical.length})`, tone: "zinc" },
@@ -151,6 +161,15 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
         </div>
       }
       bodyClassName="flex-1 min-h-0 overflow-auto"
+      footer={
+        <Pagination
+          totalCount={totalCount}
+          page={page}
+          setPage={setPage}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+        />
+      }
     >
       {filtered.length === 0 ? (
         <div className="py-12 text-center text-[17px] font-semibold text-zinc-400">
@@ -167,7 +186,7 @@ export const CriticalTab: React.FC<CriticalTabProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100">
-            {filtered.map(p => {
+            {pageRows.map(p => {
               const code = getCode(p);
               const inv = invStockMap.get(code);
               const supplier = String(p.supplier ?? "-");

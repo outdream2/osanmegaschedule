@@ -1,6 +1,8 @@
 // src/components/OrderManagePage/OrderRequestTab.tsx
 // 2026-08-22 · Framework Phase 4 · 발주요청 탭 분리
+// 2026-10-06 · 사용자 지시 · 조회 목록 pagination
 import React from "react";
+import { Pagination, usePagination } from "../common/Pagination";
 import { ShoppingCart, CheckSquare, Square, Send, ChevronRight, ChevronDown, History } from "lucide-react";
 // 2026-08-23 · #182 · 공급사별 발주이력 모달
 import { OrderHistorySupplierModal } from "./OrderHistorySupplierModal";
@@ -123,6 +125,15 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
       return n;
     });
   };
+
+  // 2026-10-06 · 사용자 지시 · 발주요청 리스트 UI pagination · 공통 Pagination 훅
+  //   · displayedReqs 를 page slice → pagedReqs · 모바일 그룹뷰·PC 테이블 모두 pagedReqs 사용
+  //   · stats (상단 통계) · 전체 displayedReqs 유지 (page 와 무관)
+  //   · 공급사 그룹은 각 page 내에서 재구성 (그룹이 page 경계에서 분할 가능)
+  const { pageRows: pagedReqs, page, setPage, pageSize, setPageSize, totalCount } = usePagination(
+    displayedReqs,
+    { defaultPageSize: 50, resetDeps: [saleFilter, orderSortKey, orderSortDir] },
+  );
 
   // 2026-09-15 · #107·#258 v4 · 헤더 통계 · 부족·품절 카운트 (사용자 승인 목업)
   const stats = React.useMemo(() => {
@@ -275,7 +286,8 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                   const p = cv.map(c => allProductsMap[c]).find(Boolean) as any;
                   return ((p?.supplier || r.supplier || "").trim()) || "(공급사 미지정)";
                 };
-                const sortedReqs = [...displayedReqs].sort((a, b) => resolveSup(a).localeCompare(resolveSup(b), "ko"));
+                // 2026-10-06 · pagedReqs (slice) · pagination 적용
+                const sortedReqs = [...pagedReqs].sort((a, b) => resolveSup(a).localeCompare(resolveSup(b), "ko"));
                 const bySup = new Map<string, OrderRequest[]>();
                 for (const rr of sortedReqs) {
                   const s = resolveSup(rr);
@@ -454,7 +466,8 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                         const p = cv.map(c => allProductsMap[c]).find(Boolean) as any;
                         return ((p?.supplier || r.supplier || "").trim()) || "(공급사 미지정)";
                       };
-                      const sorted = [...displayedReqs].sort((a, b) => {
+                      // 2026-10-06 · pagedReqs (slice) · pagination 적용
+                      const sorted = [...pagedReqs].sort((a, b) => {
                         const supA = resolveSup(a);
                         const supB = resolveSup(b);
                         const supCmp = supA.localeCompare(supB, "ko");
@@ -684,6 +697,14 @@ export const OrderRequestTab: React.FC<OrderRequestTabProps> = ({
                   </tbody>
                 </table>
               </div>
+              {/* 2026-10-06 · 사용자 지시 · 발주요청 리스트 pagination 컨트롤 (모바일/PC 공통) */}
+              <Pagination
+                totalCount={totalCount}
+                page={page}
+                setPage={setPage}
+                pageSize={pageSize}
+                setPageSize={setPageSize}
+              />
             </>
           )}
         </section>

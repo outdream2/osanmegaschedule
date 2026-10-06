@@ -12,6 +12,8 @@ import { Card } from "../common/Card";
 import { EmptyState } from "../common/EmptyState";
 import { Spinner } from "../common/Spinner";
 import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/TableList";
+// 2026-10-06 · 사용자 지시 · 조회 목록 전수 pagination · 공통 Pagination 적용
+import { Pagination, usePagination } from "../common/Pagination";
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-09-13 · #92 · 유통기한 해제 토글 · confirm
 import { useConfirm } from "../../hooks/useConfirm";
@@ -134,6 +136,14 @@ export const ExpiryImminentTab: React.FC = () => {
     );
   }, [rows, q, saleMatches]);
 
+  // 2026-10-06 · 사용자 지시 · 조회 목록 전수 pagination
+  //   · filtered(원본 정렬된 리스트) → pageRows 로 slice · 합계·총 N건(rows.length) 은 원본 유지
+  //   · resetDeps · 검색어/판매필터 변경 시 page=1
+  const { pageRows, page, setPage, pageSize, setPageSize, totalCount } = usePagination(
+    filtered,
+    { defaultPageSize: 50, resetDeps: [q, saleFilter] },
+  );
+
   return (
     <>
       {toast && (
@@ -205,7 +215,7 @@ export const ExpiryImminentTab: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {filtered.map(p => {
+                {pageRows.map(p => {
                   const d = dayDiff(p.expiry_date);
                   const urgent = d != null && d <= 0;
                   return (
@@ -245,6 +255,17 @@ export const ExpiryImminentTab: React.FC = () => {
               </tbody>
             </table>
           </TableListWrap>
+        )}
+        {/* 2026-10-06 · 사용자 지시 · 조회 목록 전수 pagination · 하단 공통 Pagination */}
+        {!loading && !error && rows.length > 0 && (
+          <Pagination
+            totalCount={totalCount}
+            page={page}
+            setPage={setPage}
+            pageSize={pageSize}
+            setPageSize={setPageSize}
+            className="rounded-b-xl"
+          />
         )}
       </div>
     </>

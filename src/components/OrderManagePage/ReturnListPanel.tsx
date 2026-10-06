@@ -31,6 +31,8 @@ import { matchesProductQuery } from "../../lib/productMatch";
 // 2026-08-31 · #37 · 프레임워크 이관 · SplitPanel + SplitListPanel
 import { SplitPanel } from "../common/SplitPanel";
 import { SplitListPanel } from "../common/SplitListPanel";
+// 2026-10-06 · 사용자 지시 · 조회 목록 전수 pagination · 공통 Pagination 적용
+import { Pagination, usePagination } from "../common/Pagination";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { StatusPill } from "../common/StatusPill";
 import { Button } from "../common/Button";
@@ -314,8 +316,17 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
     });
   }, [returnList, returnSupplierSearch, returnCategoryFilter, vendorCategoryMap, returnSortKey, returnSortDir, saleMatches]);
 
-  // 전체 선택 · 필터 후 rows 기준
-  const visibleCodes = useMemo(() => filteredSortedRows.map(x => x.product_code), [filteredSortedRows]);
+  // 2026-10-06 · 사용자 지시 · 조회 목록 전수 pagination
+  //   · filteredSortedRows(원본 정렬된 리스트) → pageRows 로 slice
+  //   · 합계·총 N건(returnList.length / filteredSortedRows.length) 은 원본 유지
+  //   · resetDeps · 검색/카테고리/판매필터/정렬 변경 시 page=1
+  const { pageRows, page, setPage, pageSize, setPageSize, totalCount } = usePagination(
+    filteredSortedRows,
+    { defaultPageSize: 50, resetDeps: [returnSupplierSearch, returnCategoryFilter, saleFilter, returnSortKey, returnSortDir] },
+  );
+
+  // 전체 선택 · 현재 페이지에서 보이는 rows 기준 (사용자 체감 "화면 표시 항목")
+  const visibleCodes = useMemo(() => pageRows.map(x => x.product_code), [pageRows]);
   const allChecked = visibleCodes.length > 0 && visibleCodes.every(c => returnSelected.has(c));
   const someChecked = visibleCodes.some(c => returnSelected.has(c)) && !allChecked;
   const toggleAllReturn = () => setReturnSelected(prev => {
@@ -548,6 +559,15 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
         </div>
       }
       bodyClassName={`flex-1 min-h-0 overflow-auto ${returnLoading && returnList.length > 0 ? "opacity-50 pointer-events-none transition-opacity" : "transition-opacity"}`}
+      footer={
+        <Pagination
+          totalCount={totalCount}
+          page={page}
+          setPage={setPage}
+          pageSize={pageSize}
+          setPageSize={setPageSize}
+        />
+      }
     >
       <table className="w-full text-xs" style={{ tableLayout: "fixed" }}>
         {/* 테이블 헤더 */}
@@ -614,7 +634,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-50">
-          {filteredSortedRows.map((x, i) => {
+          {pageRows.map((x, i) => {
             const isSelected = returnSelectedProduct?.code === x.product_code;
             const isChecked = returnSelected.has(x.product_code);
             const toggleOne = () => setReturnSelected(prev => {
