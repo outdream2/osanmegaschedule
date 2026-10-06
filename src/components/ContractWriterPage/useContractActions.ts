@@ -3,7 +3,9 @@
 
 import { useCallback, useMemo, useState, type Dispatch, type SetStateAction, type MutableRefObject } from 'react';
 import { useConfirm } from '../../hooks/useConfirm';
-import { defaultWageForPosition, type WageRate, type AppSettings } from '../../hooks/useSettings';
+import { type AppSettings } from '../../hooks/useSettings';
+// 2026-10-07 · Phase 2 · 하드코드 wage fallback 제거 · resolveEmployeeWage SSOT 사용
+import { resolveEmployeeWage } from '../../lib/wageResolver';
 type SettingsObject = Pick<AppSettings, 'wageRates' | 'employeeWageOverrides'>;
 import { SIGN_KEYS, REQUIRED_SIGN_COUNT } from '../../hooks/useContractSignatures';
 import type { SignKey } from '../../hooks/useContractSignatures';
@@ -93,14 +95,14 @@ export function useContractActions({
     }
 
     const positionRaw = String(emp.position || "").trim();
-    const empOverride = settings.employeeWageOverrides?.[emp.id];
-    const positionRate = positionRaw ? settings.wageRates?.[positionRaw] : undefined;
-    const resolvedRate: WageRate | null =
-      (empOverride && (empOverride.weekday > 0 || empOverride.weekend > 0)) ? empOverride
-      : (positionRate && (positionRate.weekday > 0 || positionRate.weekend > 0)) ? positionRate
-      : (positionRaw ? defaultWageForPosition(positionRaw) : null);
+    // 2026-10-07 · Phase 2 · resolveEmployeeWage SSOT · 하드코드 fallback 제거
+    //   · unconfigured 이면 wage=null · 폼의 wd/we 변경 X · UI "시급 미설정" 안내
+    const { status: wageStatus, wage: resolvedRate } = resolveEmployeeWage(emp.id, positionRaw, {
+      wageRates: settings.wageRates ?? {},
+      employeeWageOverrides: settings.employeeWageOverrides ?? {},
+    });
 
-    if (resolvedRate) {
+    if (wageStatus === "configured" && resolvedRate) {
       wageAutoLoadedRef.current = true;
       lastAutoWageRef.current = {
         wd: String(resolvedRate.weekday),
@@ -116,8 +118,9 @@ export function useContractActions({
       employeeAddress: emp.address || prev.employeeAddress,
       employeeNumber: (emp as any).employee_number != null ? String((emp as any).employee_number) : prev.employeeNumber,
       annualLeaveDays: emp.annual_leave_days != null ? String(emp.annual_leave_days) : prev.annualLeaveDays,
-      weekdayHourly: resolvedRate ? String(resolvedRate.weekday) : prev.weekdayHourly,
-      weekendHourly: resolvedRate ? String(resolvedRate.weekend) : prev.weekendHourly,
+      // 2026-10-07 · Phase 2 · unconfigured 이면 prev 유지 (하드코드 치환 X)
+      weekdayHourly: (wageStatus === "configured" && resolvedRate) ? String(resolvedRate.weekday) : prev.weekdayHourly,
+      weekendHourly: (wageStatus === "configured" && resolvedRate) ? String(resolvedRate.weekend) : prev.weekendHourly,
       employeeCategory: (() => {
         const pos = positionRaw;
         if (pos === "약사") return "약사" as const;

@@ -2,7 +2,9 @@
 // 직원 목록 로드 · prefill · 회사정보 sync · 계약이력 · 직군 설정
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
-import { useSettings, defaultWageForPosition } from '../../hooks/useSettings';
+import { useSettings } from '../../hooks/useSettings';
+// 2026-10-07 · Phase 2 · 하드코드 wage fallback 제거 · resolveEmployeeWage SSOT 사용
+import { resolveEmployeeWage } from '../../lib/wageResolver';
 import { useKvSetting } from '../../hooks/useKvSetting';
 import {
   loadContractSettings,
@@ -110,12 +112,15 @@ export function useContractLoad({ form, setForm }: UseContractLoadProps) {
         if (isDefaultWage) {
           const rawPos = typeof p.position === "string" ? p.position : "";
           const empId = typeof p.employeeId === "number" ? p.employeeId : null;
-          const override = empId != null ? settings.employeeWageOverrides?.[empId] : undefined;
-          const positionRate = rawPos ? settings.wageRates?.[rawPos] : undefined;
-          const rate = override ?? positionRate ?? (rawPos ? defaultWageForPosition(rawPos) : null);
-          if (rate) {
-            wd = String(rate.weekday);
-            we = String(rate.weekend);
+          // 2026-10-07 · Phase 2 · resolveEmployeeWage SSOT · 하드코드 fallback 제거
+          //   · configured 아니면 wd/we 변경 X (사용자가 미설정 상태 확인 후 수동 입력)
+          const { status, wage } = resolveEmployeeWage(empId, rawPos, {
+            wageRates: settings.wageRates ?? {},
+            employeeWageOverrides: settings.employeeWageOverrides ?? {},
+          });
+          if (status === "configured" && wage) {
+            wd = String(wage.weekday);
+            we = String(wage.weekend);
             wageAutoLoadedRef.current = true;
             lastAutoWageRef.current = { wd, we };
           }

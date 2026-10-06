@@ -2,7 +2,9 @@
 // 임금 자동계산 · category→wage sync · wageComponents 동기화 · grossSalary auto · workDays derived
 
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction, type MutableRefObject } from 'react';
-import { defaultWageForPosition, type WageRate, type AppSettings } from '../../hooks/useSettings';
+import { type WageRate, type AppSettings } from '../../hooks/useSettings';
+// 2026-10-07 · Phase 2 · 하드코드 wage fallback 제거 · resolveEmployeeWage SSOT 사용
+import { resolveEmployeeWage } from '../../lib/wageResolver';
 type SettingsObject = Pick<AppSettings, 'wageRates' | 'employeeWageOverrides'>;
 import {
   grossUp as payrollGrossUp,
@@ -50,11 +52,14 @@ export function useWageAuto({ form, setForm, settings, wageAutoLoadedRef, lastAu
   //   · 4-key core (약사·매장·창고) → 동일 이름 posKey
   //   · "기타" · 빈값 → custom → "사원" fallback
   //   · 그 외 임의 문자열 (확장 직군 · 예: "배송") → 자체를 posKey 로 사용 (settings.wageRates lookup)
+  // 2026-10-07 · Phase 2 · 하드코드 wage fallback 제거
+  //   · configured → wage 반환 · unconfigured → null (호출측 "미설정" 처리)
+  //   · "사원" fallback posKey 유지 (기존 UX · 캐셔/진열 등 category 매핑) · but defaultWage runtime fallback 제거
   const resolveWageForCategory = useCallback((
     cat: ContractForm["employeeCategory"],
     custom: string,
     empId: number | null,
-  ): WageRate & { posKey: string } => {
+  ): (WageRate & { posKey: string; configured: boolean }) => {
     const catToPositionKey = (c: ContractForm["employeeCategory"]): string => {
       if (c === "약사") return "약사";
       if (c === "매장") return "매장";
@@ -64,14 +69,18 @@ export function useWageAuto({ form, setForm, settings, wageAutoLoadedRef, lastAu
       return String(c);
     };
     const posKey = catToPositionKey(cat) || custom || "사원";
-    const override = empId != null ? settings.employeeWageOverrides?.[empId] : undefined;
-    const positionRate = posKey ? settings.wageRates?.[posKey] : undefined;
-    const rate = override ?? positionRate ?? defaultWageForPosition(posKey);
-    return { weekday: rate.weekday, weekend: rate.weekend, posKey };
-  }, [settings.wageRates, settings.employeeWageOverrides]);
+    const { status, wage } = resolveEmployeeWage(empId, posKey, settings);
+    if (status === "configured" && wage) {
+      return { weekday: wage.weekday, weekend: wage.weekend, posKey, configured: true };
+    }
+    // UNCONFIGURED · wage 변경 X · 호출측에서 configured flag 로 분기
+    return { weekday: 0, weekend: 0, posKey, configured: false };
+  }, [settings]);
 
   const applyDefaultHourly = useCallback(() => {
-    const { weekday, weekend } = resolveWageForCategory(form.employeeCategory, form.employeeCategoryCustom, form.employeeId);
+    // 2026-10-07 · Phase 2 · unconfigured → form 변경 X · 사용자 수동 입력 안내
+    const { weekday, weekend, configured } = resolveWageForCategory(form.employeeCategory, form.employeeCategoryCustom, form.employeeId);
+    if (!configured) return;
     setForm(prev => ({ ...prev, weekdayHourly: String(weekday), weekendHourly: String(weekend) }));
     wageAutoLoadedRef.current = true;
     lastAutoWageRef.current = { wd: String(weekday), we: String(weekend) };
@@ -83,7 +92,8 @@ export function useWageAuto({ form, setForm, settings, wageAutoLoadedRef, lastAu
     if (!wageAutoLoadedRef.current) return;
     const wd = form.weekdayHourly;
     const we = form.weekendHourly;
-    const { weekday, weekend } = resolveWageForCategory(form.employeeCategory, form.employeeCategoryCustom, form.employeeId);
+    const { weekday, weekend, configured } = resolveWageForCategory(form.employeeCategory, form.employeeCategoryCustom, form.employeeId);
+    if (!configured) return; // 2026-10-07 · unconfigured → auto-sync skip
     const nextWd = String(weekday);
     const nextWe = String(weekend);
     if (nextWd === wd && nextWe === we) return;
@@ -96,7 +106,8 @@ export function useWageAuto({ form, setForm, settings, wageAutoLoadedRef, lastAu
     if (!wageAutoLoadedRef.current) return;
     const wd = form.weekdayHourly;
     const we = form.weekendHourly;
-    const { weekday, weekend } = resolveWageForCategory(form.employeeCategory, form.employeeCategoryCustom, form.employeeId);
+    const { weekday, weekend, configured } = resolveWageForCategory(form.employeeCategory, form.employeeCategoryCustom, form.employeeId);
+    if (!configured) return; // 2026-10-07 · unconfigured → auto-sync skip
     const nextWd = String(weekday);
     const nextWe = String(weekend);
     if (nextWd === wd && nextWe === we) return;
