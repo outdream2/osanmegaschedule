@@ -513,7 +513,8 @@ export const MobileVisibilitySection: React.FC = () => {
         <div className="flex-1 min-w-0">
           <div className="text-[17px] font-bold text-zinc-800 leading-tight">메뉴 표시</div>
           <div className="text-[17px] text-zinc-500 mt-0.5">
-            페이지 · 뷰포트별 노출 · 기본 · 둘 다 표시 · 체크 해제 시 · 해당 뷰포트에서 페이지 숨김
+            {/* 2026-10-06 · 사용자 지시 · 메뉴 visibility 는 화면 종류와 관계없이 하나 · PC/모바일 동일 */}
+            페이지 노출 · 기본 · 표시 · 체크 해제 시 · PC · 반응형 · 모바일 모두 해당 페이지 숨김
           </div>
         </div>
         <StatusBadge state={saveState as SaveState} />
@@ -526,43 +527,34 @@ export const MobileVisibilitySection: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {g.items.map((it) => {
-                const pcOn = isVisible(it.pageKey, "pc");
-                const mobileOn = isVisible(it.pageKey, "mobile");
-                const bothOn = pcOn && mobileOn;
+                // 2026-10-06 · 사용자 지시 · 단일 visibility toggle · PC/모바일 분리 UI 제거
+                //   · setVisible 가 내부적으로 pc + mobile 동시 저장 · viewport parameter 는 signature 호환 유지만
+                const on = isVisible(it.pageKey, "pc");
                 return (
-                  <div
+                  <label
                     key={`${g.id}-${it.pageKey}`}
                     className={[
-                      "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors",
-                      bothOn
+                      "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors cursor-pointer select-none",
+                      on
                         ? "border-emerald-200 bg-emerald-50/40"
                         : "border-violet-200 bg-violet-50/60",
                     ].join(" ")}
+                    title={`${it.label} · 메뉴 노출`}
                   >
+                    <input
+                      type="checkbox"
+                      checked={on}
+                      onChange={(e) => setVisible(it.pageKey, "pc", e.target.checked)}
+                      className="w-4 h-4 accent-brand-deep cursor-pointer shrink-0"
+                      aria-label={`${it.label} 메뉴 노출`}
+                    />
                     <span className="text-[17px] font-bold text-zinc-800 flex-1 min-w-0 truncate">
                       {it.label}
                     </span>
-                    <label className="inline-flex items-center gap-1 text-[15px] font-semibold text-zinc-600 cursor-pointer select-none" title={`${it.label} · PC 노출`}>
-                      <input
-                        type="checkbox"
-                        checked={pcOn}
-                        onChange={(e) => setVisible(it.pageKey, "pc", e.target.checked)}
-                        className="w-4 h-4 accent-brand-deep cursor-pointer"
-                        aria-label={`${it.label} PC 노출`}
-                      />
-                      PC
-                    </label>
-                    <label className="inline-flex items-center gap-1 text-[15px] font-semibold text-zinc-600 cursor-pointer select-none" title={`${it.label} · 모바일 노출`}>
-                      <input
-                        type="checkbox"
-                        checked={mobileOn}
-                        onChange={(e) => setVisible(it.pageKey, "mobile", e.target.checked)}
-                        className="w-4 h-4 accent-brand-deep cursor-pointer"
-                        aria-label={`${it.label} 모바일 노출`}
-                      />
-                      모바일
-                    </label>
-                  </div>
+                    <span className={`text-[13px] font-semibold ${on ? "text-emerald-700" : "text-zinc-400"}`}>
+                      {on ? "표시" : "숨김"}
+                    </span>
+                  </label>
                 );
               })}
             </div>

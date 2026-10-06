@@ -1,15 +1,19 @@
 // @vitest-environment jsdom
-// 2026-08-23 · #188 · usePageVisibility 훅 · sanitize · isVisible · setVisible · 마이그레이션
+// 2026-08-23 · #188 · usePageVisibility 훅 · sanitize · isVisible · setVisible
+// 2026-10-06 · 사용자 지시 · 단일 visibility 정책 · PC/mobile 동일 결과 · 자동 마이그레이션 제거
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { usePageVisibility } from "./usePageVisibility";
 
-// useKvSetting mock · in-memory storage
+// useKvSetting mock · in-memory storage (sanitize 통과)
 const kvStore = new Map<string, unknown>();
 vi.mock("./useKvSetting", () => ({
   useKvSetting: <T,>(opts: { key: string; defaultValue: T; sanitize?: (raw: unknown) => T | null }) => {
     const cur = kvStore.get(opts.key);
-    const value = (cur ?? opts.defaultValue) as T;
+    // 2026-10-06 · sanitize 가 pc=mobile 통일을 담당하므로 read 시 적용
+    const raw = cur ?? opts.defaultValue;
+    const sanitized = opts.sanitize ? (opts.sanitize(raw) ?? opts.defaultValue) : raw;
+    const value = sanitized as T;
     return {
       value,
       setValue: (updater: T | ((prev: T) => T)) => {
@@ -23,93 +27,77 @@ vi.mock("./useKvSetting", () => ({
   },
 }));
 
-// useMobilePageLevel mock (마이그레이션 소스)
-let legacyLevel: Record<string, number> = {};
-vi.mock("./useMobilePageLevel", () => ({
-  useMobilePageLevel: () => ({
-    minLevelMap: legacyLevel,
-    loaded: true,
-    saveState: "idle" as const,
-    getMinLevel: (k: string) => legacyLevel[k] ?? 0,
-    setMinLevel: vi.fn(),
-    canAccessOnMobile: vi.fn(),
-    setAll: vi.fn(),
-    reload: vi.fn(),
-  }),
-}));
-
 beforeEach(() => {
   kvStore.clear();
-  legacyLevel = {};
 });
 
 afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("usePageVisibility · 기본 동작", () => {
-  it("값 없으면 · isVisible 둘 다 true (기본 노출)", () => {
+describe("usePageVisibility · 단일 visibility 정책 (2026-10-06)", () => {
+  it("값 없으면 · 둘 다 true (기본 노출)", () => {
     const { result } = renderHook(() => usePageVisibility());
     expect(result.current.isVisible("landing", "pc")).toBe(true);
     expect(result.current.isVisible("landing", "mobile")).toBe(true);
   });
 
-  it("setVisible false · isVisible false 반환", () => {
+  it("setVisible false · PC/모바일 둘 다 false 저장 · isVisible 둘 다 false", () => {
     const { result } = renderHook(() => usePageVisibility());
-    act(() => { result.current.setVisible("display", "mobile", false); });
+    act(() => { result.current.setVisible("display", "pc", false); });
+    const saved = kvStore.get("page_visibility") as Record<string, { pc: boolean; mobile: boolean }>;
+    expect(saved["display"]).toEqual({ pc: false, mobile: false });
     const { result: r2 } = renderHook(() => usePageVisibility());
+    expect(r2.current.isVisible("display", "pc")).toBe(false);
     expect(r2.current.isVisible("display", "mobile")).toBe(false);
-    expect(r2.current.isVisible("display", "pc")).toBe(true);
   });
 
-  it("둘 다 true 로 돌아오면 · 항목 삭제 (데이터 최소화)", () => {
-    kvStore.set("page_visibility", { display: { pc: true, mobile: false } });
+  it("setVisible true 로 돌아오면 · 항목 삭제 (데이터 최소화)", () => {
+    kvStore.set("page_visibility", { display: { pc: false, mobile: false } });
     const { result } = renderHook(() => usePageVisibility());
-    act(() => { result.current.setVisible("display", "mobile", true); });
+    act(() => { result.current.setVisible("display", "pc", true); });
     const saved = kvStore.get("page_visibility") as Record<string, unknown>;
     expect(saved["display"]).toBeUndefined();
   });
 
-  it("PC · 모바일 · 각각 독립 토글", () => {
-    const { result } = renderHook(() => usePageVisibility());
-    act(() => { result.current.setVisible("stockcheck", "pc", false); });
-    const { result: r2 } = renderHook(() => usePageVisibility());
-    expect(r2.current.isVisible("stockcheck", "pc")).toBe(false);
-    expect(r2.current.isVisible("stockcheck", "mobile")).toBe(true);
-  });
-});
-
-describe("usePageVisibility · 자동 마이그레이션 (레벨 → 체크박스)", () => {
-  it("page_visibility 비어있고 · legacy 레벨 5+ · mobile OFF 로 마이그레이션", async () => {
-    legacyLevel = { display: 5, stockcheck: 9, landing: 3 };
-    renderHook(() => usePageVisibility());
-    // useEffect 실행 대기
-    await waitFor(() => {
-      const saved = kvStore.get("page_visibility") as Record<string, unknown>;
-      expect(saved).toBeDefined();
-    });
-    const saved = kvStore.get("page_visibility") as Record<string, { pc: boolean; mobile: boolean }>;
-    expect(saved["display"]).toEqual({ pc: true, mobile: false });
-    expect(saved["stockcheck"]).toEqual({ pc: true, mobile: false });
-    // 레벨 3 (< 5) · 마이그레이션 안 함
-    expect(saved["landing"]).toBeUndefined();
-  });
-
-  it("page_visibility 이미 있으면 · 마이그레이션 skip", async () => {
+  it("legacy DB · pc=true/mobile=false divergence · canonical pc 로 통일 (양쪽 true 반환)", () => {
+    // 과거 저장된 divergence · sanitize 가 mobile=pc 로 교정
     kvStore.set("page_visibility", { display: { pc: true, mobile: false } });
-    legacyLevel = { schedule: 9 }; // legacy 는 있지만 마이그레이션 안 함
-    renderHook(() => usePageVisibility());
-    await new Promise(r => setTimeout(r, 50));
-    const saved = kvStore.get("page_visibility") as Record<string, unknown>;
-    // 원래 값 유지 · schedule 은 마이그레이션 안 됨
-    expect(saved["schedule"]).toBeUndefined();
-    expect(saved["display"]).toEqual({ pc: true, mobile: false });
+    const { result } = renderHook(() => usePageVisibility());
+    expect(result.current.isVisible("display", "pc")).toBe(true);
+    expect(result.current.isVisible("display", "mobile")).toBe(true);
   });
 
-  it("legacy 레벨 없음 · 마이그레이션 skip · 빈 값 유지", async () => {
-    legacyLevel = {};
-    renderHook(() => usePageVisibility());
-    await new Promise(r => setTimeout(r, 50));
+  it("legacy DB · pc=false/mobile=true divergence · canonical pc 로 통일 (양쪽 false 반환)", () => {
+    kvStore.set("page_visibility", { stockcheck: { pc: false, mobile: true } });
+    const { result } = renderHook(() => usePageVisibility());
+    expect(result.current.isVisible("stockcheck", "pc")).toBe(false);
+    expect(result.current.isVisible("stockcheck", "mobile")).toBe(false);
+  });
+
+  it("viewport 무관 · isVisible 결과 항상 동일 (SideNav/BottomNav/Header 통일)", () => {
+    kvStore.set("page_visibility", { display: { pc: false, mobile: false } });
+    const { result } = renderHook(() => usePageVisibility());
+    const pcResult = result.current.isVisible("display", "pc");
+    const mobileResult = result.current.isVisible("display", "mobile");
+    expect(pcResult).toBe(mobileResult);
+    expect(pcResult).toBe(false);
+  });
+
+  it("composite key fallback · 'approval-request:lunch' leaf 'lunch' 조회", () => {
+    kvStore.set("page_visibility", { "approval-request:lunch": { pc: false, mobile: false } });
+    const { result } = renderHook(() => usePageVisibility());
+    expect(result.current.isVisible("lunch", "pc")).toBe(false);
+    expect(result.current.isVisible("lunch", "mobile")).toBe(false);
+  });
+
+  it("자동 마이그레이션 제거 확인 · mobile_min_level 영향 없음 (레거시 제거됨)", () => {
+    // 2026-10-06 · usePageVisibility 는 더 이상 useMobilePageLevel 참조 안함
+    //   · divergence 재발 방지 · 설정은 UI 체크박스로만 변경
+    const { result } = renderHook(() => usePageVisibility());
+    expect(result.current.isVisible("display", "pc")).toBe(true);
+    expect(result.current.isVisible("display", "mobile")).toBe(true);
+    // storage 는 비어있음 · auto-migration 저장 없음
     const saved = kvStore.get("page_visibility");
     expect(saved).toBeUndefined();
   });
