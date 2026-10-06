@@ -361,8 +361,11 @@ export const OrderPurchaseMatchTab: React.FC = () => {
         {/* 좌·우 · 한눈에 비교 · 데스크탑 (lg 이상) 리사이저블 · 모바일 스택 */}
         <div className={`min-h-0 ${isDesktop ? "flex items-stretch gap-0" : "flex flex-col gap-4"}`}>
           {/* ─── 왼쪽 · OrderHistoryTab (Props 확장 · BC 유지) · 데스크탑 폭 조절 ─── */}
+          {/* 2026-10-06 · 사용자 지시 · 좌·우 나란히 비교 UI · 좌측도 높이 제한 + 자체 스크롤 (우측과 동일 max-h) */}
           <div
-            className={isDesktop ? "shrink-0 min-h-0" : "min-h-0"}
+            className={isDesktop
+              ? "shrink-0 min-h-0 max-h-[calc(100vh-180px)] overflow-auto"
+              : "min-h-0"}
             style={isDesktop ? { width: `${leftWidth}px` } : undefined}
           >
             <OrderHistoryTab

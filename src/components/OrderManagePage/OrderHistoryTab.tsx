@@ -140,8 +140,10 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
   // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
   //   · default · 현재 월 1개 · sent_at 축 (서버 /api/order-history 지원 완료)
   const { selectedMonths, setSelectedMonths, monthsList: monthsListStr } = useMonthFilter();
-  // 2026-09-24 · collapsed set · 기본 open (열림이 기본) · 클릭 시 추가 = 접힘
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  // 2026-10-06 · 사용자 지시 · 한 번에 발주 1건만 펼침 (one-at-a-time accordion)
+  //   · 기존 collapsed Set → openKey single string state 로 전환
+  //   · 다른 발주 클릭 시 이전 open 자동 close · 발주매입대조 좌·우 비교 안정
+  const [openKey, setOpenKey] = useState<string | null>(null);
   // 2026-09-24 · 날짜별 그룹핑 · 날짜 헤더 클릭 시 그룹 접기/펼치기
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [datesInitialized, setDatesInitialized] = useState(false);
@@ -239,14 +241,9 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
     load();
   }, [load]);
 
-  // 2026-09-24 · 정비 · collapsed set 기반 토글 (기본 open · 클릭 시 collapse)
+  // 2026-10-06 · 사용자 지시 · one-at-a-time toggle · 다른 발주 클릭 시 이전 자동 close
   const togglePo = (k: string) =>
-    setCollapsed((prev) => {
-      const n = new Set(prev);
-      if (n.has(k)) n.delete(k);
-      else n.add(k);
-      return n;
-    });
+    setOpenKey((prev) => (prev === k ? null : k));
 
   const fmtWon = (n: number) => n.toLocaleString() + "원";
 
@@ -476,6 +473,32 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
         ) : (
           <div className="divide-y divide-zinc-100">
 
+            {/* 2026-10-06 · PC 리스트 상단 sticky COLUMN HEADER · 날짜 그룹 안 반복 제거 · table-fixed 로 PO row 와 정렬 */}
+            <div className="hidden md:block sticky top-0 z-20 bg-white border-b border-zinc-200/80 shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+              <table className="w-full text-[12px] font-semibold text-zinc-500 uppercase tracking-wide table-fixed">
+                <colgroup>
+                  <col className="w-8" />
+                  <col className="min-w-[160px]" />
+                  <col className="w-[110px]" />
+                  <col className="w-[88px]" />
+                  <col className="w-[110px]" />
+                  <col className="w-[68px]" />
+                  <col className="w-[120px]" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th className="px-3 py-2.5" aria-hidden />
+                    <th className="pl-1 pr-3 py-2.5 text-left">발주번호 · 공급사/담당</th>
+                    <th className="px-2 py-2.5 text-left">발주기간</th>
+                    <th className="px-2 py-2.5 text-right">품목·수량</th>
+                    <th className="px-2 py-2.5 text-right">발주금액</th>
+                    <th className="px-2 py-2.5 text-center">문서</th>
+                    <th className="pl-2 pr-3 py-2.5 text-right">매입</th>
+                  </tr>
+                </thead>
+              </table>
+            </div>
+
             {groupedByDate.map(([dateKey, ordersOfDate]) => {
               const summary = groupSummary(ordersOfDate);
               const displayDate = dateKey === "unknown" ? "날짜 없음" : dateKey;
@@ -485,10 +508,11 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
                 <React.Fragment key={`date-group-${dateKey}`}>
 
                   {/* ── 날짜 그룹 헤더 ─────────────────────────────────────── */}
+                  {/* 2026-10-06 · PC 에서는 column header (높이 ~37px) 아래로 offset · 모바일은 top-0 유지 */}
                   <button
                     type="button"
                     onClick={() => toggleDate(dateKey)}
-                    className="sticky top-0 z-[9] w-full bg-zinc-50 hover:bg-zinc-100/80 border-b border-zinc-200 px-4 py-2.5 flex items-center gap-3 cursor-pointer transition-colors"
+                    className="sticky top-0 md:top-[37px] z-[9] w-full bg-zinc-50 hover:bg-zinc-100/80 border-b border-zinc-200 px-4 py-2.5 flex items-center gap-3 cursor-pointer transition-colors"
                   >
                     {/* chevron */}
                     <span className="text-zinc-400 shrink-0">
@@ -514,30 +538,22 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
 
                   {isDateOpen && (
                     <>
-                      {/* ── PC (md+) · 테이블 형태 ─────────────────────────── */}
+                      {/* PC 테이블 · table-fixed → 상단 sticky column header 와 정렬 일치 */}
                       <div className="hidden md:block">
-                        {/* 날짜 그룹 내 컬럼 헤더 (그룹마다 반복 필요 없으나 sticky 처리 위해) */}
-                        <table className="w-full text-[15px]">
+                        <table className="w-full text-[15px] table-fixed">
                           <colgroup>
-                            {/* toggle / accent bar */}
                             <col className="w-8" />
-                            {/* 발주번호·공급사 */}
                             <col className="min-w-[160px]" />
-                            {/* 발주→희망 */}
                             <col className="w-[110px]" />
-                            {/* 종·개 */}
                             <col className="w-[88px]" />
-                            {/* 총금액 */}
                             <col className="w-[110px]" />
-                            {/* PDF */}
                             <col className="w-[68px]" />
-                            {/* 매입확인 · 줄바꿈·말줄임표 방지 · 폭 확보 */}
                             <col className="w-[120px]" />
                           </colgroup>
                           <tbody className="divide-y divide-zinc-100">
                             {ordersOfDate.map((o) => {
                               const key = String(o.order_number ?? o.sent_at);
-                              const isOpen = !collapsed.has(key);
+                              const isOpen = openKey === key;
                               const isMatched = o.status === "matched";
                               // 2026-09-25 · 사용자 정정 · 발주매입대조 · 선택된 발주 하이라이트
                               const isSelected = selectionMode
@@ -665,7 +681,7 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
                                     </td>
                                   </tr>
 
-                                  {/* 상세 행 · 2026-09-24 · 사용자 지시 · accent bar · PO 헤더와 동일 색상 (하위내용 시각 연결) */}
+                                  {/* 상세 · accent bar + label header + max-h overflow-auto (2026-10-06 · 리스트 안정) */}
                                   {isOpen && (
                                     <tr>
                                       {/* accent bar 연속 · 헤더와 동일 톤 */}
@@ -674,55 +690,49 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
                                       </td>
                                       <td colSpan={6} className="py-0 pl-1 pr-3">
                                         <div className={`bg-zinc-50/70 border-l-2 ${isMatched ? "border-emerald-300" : "border-sky-300"} ml-0.5 mb-2 mt-0 rounded-r-lg overflow-hidden`}>
-                                          {/* 2026-09-24 · 사용자 지시 · 담당자·이메일·전화 · 공급사 옆으로 이동 · 상세에서 제거
-                                              · 메모만 · 있을 때 · 상세 상단 유지 */}
                                           {o.memo && (
-                                            <div className="px-4 py-2 border-b border-zinc-100 text-[13px] text-zinc-500 italic">
-                                              메모 · {o.memo}
-                                            </div>
+                                            <div className="px-4 py-2 border-b border-zinc-100 text-[13px] text-zinc-500 italic">메모 · {o.memo}</div>
                                           )}
-                                          {/* 2026-09-24 · 사용자 지시 · 하위구조 · 헤더 있는 테이블 · 세련되게
-                                              · 상품 코드 · 상품명 위 (2줄) · 헤더 · Linear/Notion 얇은 톤 · 라벨 +2 */}
-                                          <table className="w-full text-[15px] tabular-nums">
-                                            <thead>
-                                              <tr className="text-[13px] font-semibold text-zinc-500 border-b border-zinc-200 bg-zinc-50/50">
-                                                <th className="text-center px-3 py-2 w-10">#</th>
-                                                <th className="text-left px-3 py-2 min-w-[220px]">상품</th>
-                                                <th className="text-right px-3 py-2 w-16">수량</th>
-                                                <th className="text-right px-3 py-2 w-28">단가</th>
-                                                <th className="text-right px-3 py-2 w-32">금액</th>
-                                              </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-zinc-100">
-                                              {o.items.map((it, i) => (
-                                                <tr key={it.id} className="hover:bg-white/60">
-                                                  <td className="text-center px-3 py-2.5 text-[14px] text-zinc-400 tabular-nums font-medium align-middle">
-                                                    {String(i + 1).padStart(2, "0")}
-                                                  </td>
-                                                  <td className="text-left px-3 py-2.5 align-middle">
-                                                    {/* 2026-09-24 · 사용자 지시 · 코드 · md+ 상품명 앞 · md 이하 (반응형) 위 */}
-                                                    <div className="flex flex-col md:flex-row md:items-baseline md:gap-2 leading-snug">
-                                                      <span className="text-[13px] text-zinc-400 tabular-nums font-medium shrink-0">
-                                                        {it.product_code}
-                                                      </span>
-                                                      <span className="text-[16px] font-bold text-zinc-800 whitespace-normal break-words">
-                                                        {it.product_name}
-                                                      </span>
-                                                    </div>
-                                                  </td>
-                                                  <td className="text-right px-3 py-2.5 align-middle text-[15px] font-bold text-rose-600 tabular-nums">
-                                                    {Number(it.order_qty).toLocaleString()}
-                                                  </td>
-                                                  <td className="text-right px-3 py-2.5 align-middle text-[15px] text-zinc-500 tabular-nums">
-                                                    {it.unit_price > 0 ? fmtWon(it.unit_price) : "—"}
-                                                  </td>
-                                                  <td className="text-right px-3 py-2.5 align-middle text-[16px] font-bold text-emerald-700 tabular-nums">
-                                                    {it.line_amount > 0 ? fmtWon(it.line_amount) : "—"}
-                                                  </td>
+                                          <div className="px-4 py-2 border-b border-zinc-200 bg-zinc-100/40 flex items-baseline gap-2 flex-wrap">
+                                            <span className="text-[13px] font-bold text-zinc-700 tracking-tight">품목 상세</span>
+                                            <span className="text-[12px] text-zinc-400">·</span>
+                                            <span className="text-[13px] font-medium text-zinc-500 tabular-nums">{o.items.length}종 · {Number(o.total_qty ?? 0).toLocaleString()}개</span>
+                                            <span className="text-[12px] text-zinc-400">·</span>
+                                            <span className="text-[13px] font-bold text-emerald-700 tabular-nums">{fmtWon(o.total_amount)}</span>
+                                          </div>
+                                          <div className="max-h-[280px] overflow-y-auto">
+                                            <table className="w-full text-[15px] tabular-nums table-fixed">
+                                              <colgroup>
+                                                <col className="w-10" /><col className="min-w-[220px]" /><col className="w-16" /><col className="w-28" /><col className="w-32" />
+                                              </colgroup>
+                                              <thead className="sticky top-0 z-[5] bg-zinc-50/95 backdrop-blur-sm">
+                                                <tr className="text-[13px] font-semibold text-zinc-500 border-b border-zinc-200">
+                                                  <th className="text-center px-3 py-2">No</th>
+                                                  <th className="text-left px-3 py-2">상품</th>
+                                                  <th className="text-right px-3 py-2">발주수량</th>
+                                                  <th className="text-right px-3 py-2">단가</th>
+                                                  <th className="text-right px-3 py-2">금액</th>
                                                 </tr>
-                                              ))}
-                                            </tbody>
-                                          </table>
+                                              </thead>
+                                              <tbody className="divide-y divide-zinc-100">
+                                                {o.items.map((it, i) => (
+                                                  <tr key={it.id} className="hover:bg-white/60">
+                                                    <td className="text-center px-3 py-2.5 text-[14px] text-zinc-400 tabular-nums font-medium align-middle">{String(i + 1).padStart(2, "0")}</td>
+                                                    <td className="text-left px-3 py-2.5 align-middle">
+                                                      {/* 상품명 canonical · 없으면 "-" · code secondary · fallback 금지 */}
+                                                      <div className="flex flex-col leading-snug">
+                                                        <span className="text-[16px] font-bold text-zinc-800 whitespace-normal break-words">{it.product_name && String(it.product_name).trim() !== "" ? it.product_name : "-"}</span>
+                                                        <span className="text-[12px] text-zinc-400 tabular-nums font-medium">{it.product_code}</span>
+                                                      </div>
+                                                    </td>
+                                                    <td className="text-right px-3 py-2.5 align-middle text-[15px] font-bold text-rose-600 tabular-nums">{Number(it.order_qty).toLocaleString()}</td>
+                                                    <td className="text-right px-3 py-2.5 align-middle text-[15px] text-zinc-500 tabular-nums">{it.unit_price > 0 ? fmtWon(it.unit_price) : "—"}</td>
+                                                    <td className="text-right px-3 py-2.5 align-middle text-[16px] font-bold text-emerald-700 tabular-nums">{it.line_amount > 0 ? fmtWon(it.line_amount) : "—"}</td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                          </div>
                                         </div>
                                       </td>
                                     </tr>
@@ -738,7 +748,7 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
                       <div className="md:hidden px-3 py-2 space-y-2">
                         {ordersOfDate.map((o) => {
                           const key = String(o.order_number ?? o.sent_at);
-                          const isOpen = !collapsed.has(key);
+                          const isOpen = openKey === key;
                           // 2026-09-25 · 사용자 정정 · 발주매입대조 · 카드 선택 상태
                           const isSelectedMob = selectionMode
                             && selectedOrderNumber != null
