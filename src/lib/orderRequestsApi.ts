@@ -19,6 +19,8 @@ export interface CreateOrderRequestPayload {
   /** 2026-09-10 · 발주필요에서 지정한 발주 수량 (부족량 또는 조정값) */
   order_qty?: number | null;
   supplier?: string | null;
+  /** 2026-10-06 · 사용자 지시 · canonical supplier_code 명시 전달 (name 역추정 금지) · DB type text */
+  supplier_code?: string | null;
   requested_at?: string;
   note?: string;
 }
@@ -32,6 +34,8 @@ export interface OrderRequestRow {
   order_qty?: number | null;
   requested_at: string;
   supplier?: string | null;
+  /** 2026-10-06 · canonical supplier_code · vendors.supplier_code / products.supplier_code 와 동일 identity */
+  supplier_code?: string | null;
   supplier_contact?: string | null;
   supplier_email?: string | null;
   supplier_phone?: string | null;

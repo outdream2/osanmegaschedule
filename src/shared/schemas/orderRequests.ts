@@ -10,6 +10,10 @@ export const CreateOrderRequestSchema = z.object({
   product_code: z.string().min(1, "product_code 필수").max(50),
   product_name: z.string().max(300).optional(),
   supplier: z.string().max(300).nullable().optional(),
+  // 2026-10-06 · 사용자 지시 · canonical supplier_code 명시 전달 (name 역추정 금지)
+  //   · DB type · text (vendors/products/purchase_details 통일) · nullable
+  //   · UI 가 선택한 product/vendor 의 supplier_code 를 그대로 전달 · 서버에서 lookup 금지
+  supplier_code: z.string().max(50).nullable().optional(),
   current_stock: z.coerce.number().nullable().optional(),
   // 2026-09-10 · 사용자 지시 · [요청] 클릭 시 · 부족량(자동) or 사용자 조정 수량 · 그대로 발주요청 전달
   order_qty: z.coerce.number().nullable().optional(),
