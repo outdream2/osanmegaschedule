@@ -6,13 +6,14 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ErpQueryView, type ColumnSpec, type ErpQueryResult } from "../components/ErpQueryView";
 
-type TabKey = "products" | "inventory" | "buy" | "sale";
-type ErpDataset = "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS" | "SALE_STATUS";
+type TabKey = "products" | "inventory" | "buy" | "sale" | "vendor";
+type ErpDataset = "PRODUCT_LIST" | "INVENTORY_STATUS" | "BUY_STATUS" | "SALE_STATUS" | "VENDOR_LIST";
 const TAB_TO_DATASET: Record<TabKey, ErpDataset> = {
   products:  "PRODUCT_LIST",
   inventory: "INVENTORY_STATUS",
   buy:       "BUY_STATUS",
   sale:      "SALE_STATUS",
+  vendor:    "VENDOR_LIST",
 };
 
 interface FetchHistoryEntry {
@@ -34,6 +35,8 @@ const TABS: Array<{ key: TabKey; label: string; icon: string; sub: string }> = [
   { key: "inventory", label: "상품 재고 현황", icon: "📊", sub: "Inventory_Status · SvcInventoryBiz · 42 col" },
   { key: "buy",       label: "매입 현황",       icon: "💰", sub: "Buy_Status · SvcBuyBiz · DevStartDate/EndDate" },
   { key: "sale",      label: "판매현황",        icon: "🧾", sub: "Sale_Status · SvcSaleBiz · StartDate/EndDate" },
+  // 2026-10-06 · 사용자 지시 · BuyCustomer_List → vendors · 날짜 파라미터 없음 · PageSize=1000 · 전체 1page
+  { key: "vendor",    label: "공급사 · 매입처",  icon: "🏢", sub: "BuyCustomer_List · SvcBuyBiz · 전체 조회" },
 ];
 
 // 각 탭 표시 컬럼 · ERP response 가 돌아와야 최종 확정 가능 · 1차는 공통 field 추정
@@ -90,6 +93,19 @@ const SALE_COLS: ColumnSpec[] = [
   { erp: "UnitSale", label: "판매단가", align: "right" },
   { erp: "SaleTotal", label: "합계", align: "right" },
   { erp: "Margin", label: "마진", align: "right" },
+];
+// 2026-10-06 · 공급사 · BuyCustomer_List → vendors 7필드 매핑 (erpVendorMapper.ts 와 동일)
+//   CtCode (identity → supplier_code) · CorpNameView (거래처명) · CorpBizNo (사업자번호)
+//   Phone · Email · ScateName (소분류) · Remark (비고)
+//   api 값만 사용 · join 금지
+const VENDOR_COLS: ColumnSpec[] = [
+  { erp: "CtCode", label: "거래처코드" },
+  { erp: "CorpNameView", label: "거래처명" },
+  { erp: "CorpBizNo", label: "사업자번호" },
+  { erp: "Phone", label: "전화" },
+  { erp: "Email", label: "이메일" },
+  { erp: "ScateName", label: "소분류" },
+  { erp: "Remark", label: "비고" },
 ];
 
 export const ErpSection: React.FC = () => {
@@ -290,6 +306,25 @@ export const ErpSection: React.FC = () => {
             }
           />
         )}
+
+        {/* 2026-10-06 · 공급사 · BuyCustomer_List · 날짜 파라미터 없음 · 전체 1page */}
+        {tab === "vendor" && (
+          <ErpQueryView
+            name="vendor"
+            queryLabel="공급사 전체 조회"
+            queryFn={() => window.api.erpVendorList()}
+            displayCols={VENDOR_COLS}
+            searchFields={["CtCode", "CorpNameView", "CorpBizNo"]}
+            idField="CtCode"
+            subtitleField="CorpNameView"
+            searchPlaceholder="거래처코드 · 거래처명 · 사업자번호 검색 (전체 대상)"
+            conditionsSlot={
+              <div className="text-[12px] text-zinc-500">
+                전체 공급사 · PageSize=1000 · 날짜 조건 없음 · identity = CtCode
+              </div>
+            }
+          />
+        )}
       </div>
     </div>
   );
@@ -304,6 +339,8 @@ declare global {
       erpProductList: (opts?: { pageSize?: number; maxPages?: number; concurrency?: number }) => Promise<ErpQueryResult>;
       erpBuyStatus: (opts?: { startDate?: string; endDate?: string }) => Promise<ErpQueryResult>;
       erpSaleStatus: (opts?: { startDate?: string; endDate?: string }) => Promise<ErpQueryResult>;
+      // 2026-10-06 · 공급사 · BuyCustomer_List · 전체 조회 · 파라미터 없음
+      erpVendorList: () => Promise<ErpQueryResult>;
       onErpProductProgress?: (cb: (p: { page: number; rowsAccum: number; done?: boolean }) => void) => () => void;
       [key: string]: any;
     };
