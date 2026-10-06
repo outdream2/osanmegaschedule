@@ -1,9 +1,11 @@
 // src/components/DisplayPage/DisplayPage.helpers.ts
 // 2026-08-22 · Framework Phase 4 · DisplayPage 대형 파일 분리 · constants + helpers 이관
 // 2026-10-05 · 사용자 지시 · product 서브탭 제거 · Boxes 아이콘 unused
+// 2026-10-05 · 사용자 지시 · 공통모듈화 · DP_SUBTAB_DEFAULTS 를 SIDE_NAV_GROUPS 매장 그룹에서 자동 파생
+//   · 매장 서브탭 추가·순서 변경 → sideNavGroups.ts 한 곳만 수정 (사이드바·TabBar 자동 동기)
 import {
   Bell, ClipboardList, Package, Store, BarChart2, Wallet, Building2,
-  RotateCcw,
+  RotateCcw, CircleDollarSign,
 } from "lucide-react";
 import { ZONE_DEFS } from "../../constants/displayZones";
 import {
@@ -12,24 +14,44 @@ import {
 } from "../../utils/zoneUtils";
 import { api, ApiError } from "../../lib/apiClient";
 import { type TabDef as CommonTabDef } from "../common/TabBar";
+import { SIDE_NAV_GROUPS } from "../layout/sideNavGroups";
 import type { DpSubTabKey, DisplayRequest } from "./DisplayPage.types";
 
-// ─── DisplayPage 서브탭 (level 2) 정의 · 상수 · 컴포넌트 외부 배치 (참조 안정성 · 훅 재등록 방지)
-// 2026-08-25 · 사용자 지시 · "통계" → "판매" 라벨 변경 · 반품 메뉴 추가 (반품필요 이관 대상)
-export const DP_SUBTAB_DEFAULTS: CommonTabDef<DpSubTabKey>[] = [
-  // 2026-10-05 · 사용자 지시 · 상품 서브탭 제거 · 3개 이너탭 매입 아래로 재이관
-  { key: "purchase-order", label: "발주",       icon: ClipboardList, color: "sky"    },
-  { key: "purchase",       label: "매입",       icon: Package,       color: "amber"  },
-  { key: "payment",        label: "결제",       icon: Wallet,        color: "teal"   },
-  { key: "statistics",     label: "판매",       icon: BarChart2,     color: "indigo" },
-  // 2026-08-25 · 사용자 지시 · 신규 반품 메뉴 · 반품필요/반품확정 통합 예정
-  { key: "return",         label: "반품",       icon: RotateCcw,     color: "rose"   },
-  { key: "stock-arrivals", label: "입고알림",   icon: Bell,          color: "orange" },
-  // "display-request" 서브탭 제거 · RequestsPage 진열요청 탭으로 통합 (2026-08-05)
-  { key: "store",          label: "매장구역도", icon: Store,         color: "violet" },
-  // 2026-08-09 · 사용자 요청 · 공급사관리 (경영관리에서 이동)
-  { key: "vendor-manage",  label: "공급사관리", icon: Building2,     color: "rose"   },
-];
+// ─── DisplayPage 서브탭 (level 2) · TabBar 전용 메타 (아이콘/색상)
+//   · 리스트·순서·라벨은 SIDE_NAV_GROUPS 매장 그룹 items 가 single source
+//   · 여기엔 subTab key 별 TabBar 아이콘·color 만 매핑 (phosphor ↔ lucide 분리)
+type DpSubTabMeta = { icon: CommonTabDef<DpSubTabKey>["icon"]; color: CommonTabDef<DpSubTabKey>["color"] };
+const DP_SUBTAB_META: Record<DpSubTabKey, DpSubTabMeta> = {
+  "purchase-order": { icon: ClipboardList,    color: "sky"     },
+  "purchase":       { icon: Package,          color: "amber"   },
+  "statistics":     { icon: BarChart2,        color: "indigo"  },
+  "revenue":        { icon: CircleDollarSign, color: "emerald" },
+  "payment":        { icon: Wallet,           color: "teal"    },
+  "return":         { icon: RotateCcw,        color: "rose"    },
+  "stock-arrivals": { icon: Bell,             color: "orange"  },
+  "store":          { icon: Store,            color: "violet"  },
+  "vendor-manage":  { icon: Building2,        color: "rose"    },
+};
+
+// ─── 매장 서브탭 defaults · SIDE_NAV_GROUPS 매장 그룹 items 자동 파생
+//   · 사이드바 매장 items 중 subTab 있는 것만 추출 · 순서·라벨 그대로
+//   · 아이콘·color 는 DP_SUBTAB_META 매핑 사용
+export const DP_SUBTAB_DEFAULTS: CommonTabDef<DpSubTabKey>[] = (() => {
+  const displayGroup = SIDE_NAV_GROUPS.find(g => g.id === "display");
+  if (!displayGroup) return [];
+  return displayGroup.items
+    .filter(it => !!it.subTab)
+    .map(it => {
+      const key = it.subTab as DpSubTabKey;
+      const meta = DP_SUBTAB_META[key];
+      return {
+        key,
+        label: it.label,
+        icon: meta?.icon ?? ClipboardList,
+        color: meta?.color ?? "slate",
+      } as CommonTabDef<DpSubTabKey>;
+    });
+})();
 
 // ─── DOW(요일) 마스크 유틸 ───────────────────────────────────────────
 // 비트: 일(1) 월(2) 화(4) 수(8) 목(16) 금(32) 토(64) → 모든요일=127

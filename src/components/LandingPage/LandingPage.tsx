@@ -445,7 +445,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {isManagerOrAdmin && (
             <div className="w-full mb-7">
               <SectionLabel tone="teal">오늘의 판매현황</SectionLabel>
-              <TodayRevenueKpiPanel onOpenRevenue={() => onNavigate("display", authSession!)} />
+              <TodayRevenueKpiPanel onOpenRevenue={() => {
+                // 2026-10-05 · 사용자 지시 · 네비게이션 SSOT · setActiveByPage 로 subTab 지정 후 이동
+                setActiveByPage("display", "revenue");
+                onNavigate("display", authSession!);
+              }} />
             </div>
           )}
 
