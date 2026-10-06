@@ -16,11 +16,14 @@ import { applyProductSync } from "./productSyncService";
 import { applyBuySync } from "./buySyncService";
 import { applyStockHistorySync } from "./stockHistorySyncService";
 import { applySaleSync } from "./saleSyncService";
+import { applyVendorSync } from "./vendorSyncService";
+import { queryVendorList } from "./iregenSoap";
 import { loadCandidateFull } from "./snapshotStore";
 import { getSupabaseClient } from "./supabaseClient";
 import type { ErpBuyRow } from "../../../../src/shared/erp/erpBuyMapper";
 import type { ErpInventoryRow, InventoryMetadata } from "../../../../src/shared/erp/erpInventoryMapper";
 import type { ErpSaleRow } from "../../../../src/shared/erp/erpSaleMapper";
+import type { ErpVendorRow } from "../../../../src/shared/erp/erpVendorMapper";
 
 export type SchedulerDataset = "PRODUCT" | "BUY" | "INVENTORY" | "SALE" | "VENDOR";
 const DATASET_ORDER: SchedulerDataset[] = ["PRODUCT", "BUY", "INVENTORY", "SALE", "VENDOR"];
@@ -165,6 +168,8 @@ interface RunResult {
   dataset: SchedulerDataset;
   ok: boolean;
   skipped: boolean;
+  // 2026-10-06 · 사용자 요청 · recoverable duplicate 발생 시 WARNING (복구) status
+  recovered?: number;
   summary?: string;
 }
 
@@ -176,7 +181,21 @@ async function runDataset(ds: SchedulerDataset): Promise<RunResult> {
   syncRunning = true;
   try {
     if (ds === "VENDOR") {
-      return { dataset: ds, ok: false, skipped: true, summary: "Vendor ERP sync 미구현 · pending" };
+      // 2026-10-06 · 사용자 승인 2차 (merge policy · 15섹션 스펙) · BuyCustomer_List → vendors sync
+      //   · ERP 조회 → decode → applyVendorSync (merge · WEB-only 보존 · DELETE 금지)
+      //   · ambiguous/codeConflict 는 자동 skip (정상 흐름 · ok 에 영향 X)
+      const erpRes = await queryVendorList();
+      if (!erpRes.ok) {
+        return { dataset: ds, ok: false, skipped: false, summary: `vendor ERP 조회 실패 · ${erpRes.error ?? erpRes.stage}` };
+      }
+      const rows = (erpRes.rows ?? []) as ErpVendorRow[];
+      if (rows.length === 0) {
+        return { dataset: ds, ok: false, skipped: true, summary: "vendor ERP 응답 0 rows" };
+      }
+      const r = await applyVendorSync({ erpRows: rows, allowWrite: true });
+      const okVendor = r.failed === 0 && r.inserted === r.new;
+      const skipPart = r.skipped > 0 ? ` · SKIP ${r.skipped}(복수후보${r.ambiguous}+코드충돌${r.codeConflict})` : "";
+      return { dataset: ds, ok: okVendor, skipped: false, summary: `INSERT ${r.inserted} · UPDATE ${r.updated}${skipPart} · 실패 ${r.failed}` };
     }
     if (ds === "PRODUCT") {
       await enqueueFetchAwait("PRODUCT_LIST");
@@ -194,7 +213,10 @@ async function runDataset(ds: SchedulerDataset): Promise<RunResult> {
       if (cand.meta.validation?.blockingErrors) return { dataset: ds, ok: false, skipped: true, summary: "validation blocked" };
       const pcodeToBarcodeMap = await buildPCodeToBarcodeMap();
       const r = await applyBuySync({ erpRows: cand.rows, pcodeToBarcodeMap, allowWrite: true });
-      return { dataset: ds, ok: r.failed === 0 && r.identityModified === 0 && r.webModified === 0, skipped: false, summary: `INSERT ${r.inserted} · UPDATE ${r.updated} · 실패 ${r.failed}` };
+      const recovered = r.recoveredSame + r.recoveredUpdated;
+      const ok = r.failed === 0 && r.identityModified === 0 && r.webModified === 0;
+      const recoveryPart = recovered > 0 ? ` · 복구 ${recovered}(SAME ${r.recoveredSame}+UPDATE ${r.recoveredUpdated})` : "";
+      return { dataset: ds, ok, skipped: false, recovered, summary: `INSERT ${r.inserted} · UPDATE ${r.updated} · 실패 ${r.failed}${recoveryPart}` };
     }
     if (ds === "INVENTORY") {
       // 2026-10-05 · A안 · 당월 고정 range (identity 안정화)
@@ -252,6 +274,10 @@ async function triggerAndRecord(ds: SchedulerDataset): Promise<void> {
   if (r.skipped) {
     console.log(`[SCHEDULER] ${ds} sync skipped: ${r.summary ?? ""}`);
     recordRun(ds, started, "SKIPPED");
+  } else if (r.ok && (r.recovered ?? 0) > 0) {
+    // 2026-10-06 · 사용자 요청 · recoverable duplicate · fresh query 후 자동 복구 완료
+    console.log(`[SCHEDULER] ${ds} sync completed with recovery: ${r.summary ?? ""}`);
+    recordRun(ds, started, "WARNING");
   } else if (r.ok) {
     console.log(`[SCHEDULER] ${ds} sync completed: ${r.summary ?? ""}`);
     recordRun(ds, started, "SUCCESS");
@@ -273,7 +299,7 @@ async function triggerAndRecord(ds: SchedulerDataset): Promise<void> {
   }
 }
 
-function recordRun(ds: SchedulerDataset, startedAt: string, result: "SUCCESS" | "PARTIAL" | "FAILED" | "SKIPPED"): void {
+function recordRun(ds: SchedulerDataset, startedAt: string, result: "SUCCESS" | "WARNING" | "PARTIAL" | "FAILED" | "SKIPPED"): void {
   try {
     const cfg = loadConfig();
     const cur = cfg.erpAutoScheduler?.datasets?.[ds];

@@ -17,7 +17,19 @@ const SLUG: Record<DatasetKey, string> = {
   INVENTORY_STATUS: "inventory-status",
   BUY_STATUS: "buy-status",
   SALE_STATUS: "sale-status",
+  VENDOR_LIST: "vendor-list",
 };
+
+export interface SyncErrorSample {
+  readonly identity: string;
+  readonly message: string;
+  // 2026-10-06 · 사용자 요청 · UI 모달 상세 표시 · recoverable 분류
+  readonly errorType?: string;
+  readonly operation?: "INSERT" | "UPDATE";
+  readonly dbCode?: string;
+  readonly cause?: string;
+  readonly recovery?: "SAME" | "UPDATED" | "UNRECOVERED";
+}
 
 export interface SyncHistoryEntry {
   readonly id: string;
@@ -36,6 +48,12 @@ export interface SyncHistoryEntry {
   readonly erpCacheFetchedAt: string | null;
   readonly erpCacheRowCount: number | null;
   readonly message?: string;
+  // 2026-10-06 · 사용자 승인 · 실패 디버깅용 · service 측에서 slice(0, 20) 로 샘플 저장
+  readonly errors?: ReadonlyArray<SyncErrorSample>;
+  // 2026-10-06 · 사용자 요청 · 23505 recoverable 통계 (BUY 전용 · optional)
+  readonly recoveredSame?: number;
+  readonly recoveredUpdated?: number;
+  readonly erpInternalDuplicates?: number;
 }
 
 function historyPath(dataset: DatasetKey): string {

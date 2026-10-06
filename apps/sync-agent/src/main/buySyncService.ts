@@ -71,6 +71,24 @@ export interface BuySyncCheckResult {
   readonly entries: ReadonlyArray<BuySyncEntry>;
 }
 
+export type BuyErrorType =
+  | "DB_INSERT_ERROR"
+  | "DB_UPDATE_ERROR"
+  | "DUPLICATE_RECOVERED_SAME"
+  | "DUPLICATE_RECOVERED_UPDATED"
+  | "ERP_IDENTITY_CONFLICT";
+
+export interface BuySyncErrorEntry {
+  readonly identity: { bm_code: string; row_num: number };
+  readonly message: string;
+  // 2026-10-06 · 사용자 요청 · UI 모달에서 operation/code/cause/recovery 표시
+  readonly errorType?: BuyErrorType;
+  readonly operation?: "INSERT" | "UPDATE";
+  readonly dbCode?: string;
+  readonly cause?: string;
+  readonly recovery?: "SAME" | "UPDATED" | "UNRECOVERED";
+}
+
 export interface BuySyncApplyResult extends BuySyncCheckResult {
   readonly allowWrite: boolean;
   readonly inserted: number;
@@ -82,7 +100,11 @@ export interface BuySyncApplyResult extends BuySyncCheckResult {
   readonly readbackMismatch: number;
   readonly webModified: number;
   readonly identityModified: number;
-  readonly errors: ReadonlyArray<{ identity: { bm_code: string; row_num: number }; message: string }>;
+  // 2026-10-06 · 사용자 요청 · recoverable 23505 reconciliation
+  readonly recoveredSame: number;      // DB 에 이미 identical row → write 없이 복구
+  readonly recoveredUpdated: number;   // DB 에 다른 값 row → UPDATE 로 복구
+  readonly erpInternalDuplicates: number; // ERP candidate 내부 (BmCode,ROWNUM) 중복 (pre-dedup)
+  readonly errors: ReadonlyArray<BuySyncErrorEntry>;
   readonly message?: string;
 }
 
@@ -169,7 +191,11 @@ interface DiffBundle {
   };
 }
 
-function buildBuyDiff(input: BuySyncInput, dbByKey: Map<string, DbRow>): DiffBundle {
+function buildBuyDiff(
+  input: BuySyncInput,
+  dbByKey: Map<string, DbRow>,
+  erpDedupeStats?: { duplicates: number; conflicts: BuySyncErrorEntry[] },
+): DiffBundle {
   const entries: BuySyncEntry[] = [];
   const inserts: DiffBundle["inserts"] = [];
   const updates: DiffBundle["updates"] = [];
@@ -179,7 +205,56 @@ function buildBuyDiff(input: BuySyncInput, dbByKey: Map<string, DbRow>): DiffBun
   let countChanged = 0;
   let countSame = 0;
 
+  // 2026-10-06 · 사용자 요청 · ERP internal duplicate pre-check
+  //   같은 (BmCode, ROWNUM) 이 ERP candidate 안에 2건 이상 있으면:
+  //     · 값 동일 → 1건만 유지 (silent dedupe)
+  //     · 값 다름 → ERP_IDENTITY_CONFLICT 보고 · 임의 선택 금지 (양쪽 모두 skip)
+  const erpSeen = new Map<string, ErpBuyRow>();
+  const erpSkipKeys = new Set<string>();
+  for (const r of input.erpRows) {
+    const bm = String(r.BmCode ?? "").trim();
+    const rn = Number(r.ROWNUM);
+    if (!bm || !Number.isInteger(rn) || rn < 1) continue;
+    const key = `${bm}#${rn}`;
+    const prev = erpSeen.get(key);
+    if (!prev) { erpSeen.set(key, r); continue; }
+    // compare ERP fields
+    let identical = true;
+    for (const mapping of Object.values(ERP_OWNED_PURCHASE_FIELDS)) {
+      const a = (prev as Record<string, unknown>)[mapping.erp];
+      const b = (r as Record<string, unknown>)[mapping.erp];
+      const na = isErpEmpty(a) ? "" : String(a).trim();
+      const nb = isErpEmpty(b) ? "" : String(b).trim();
+      if (na !== nb) { identical = false; break; }
+    }
+    if (erpDedupeStats) {
+      erpDedupeStats.duplicates++;
+      if (!identical) {
+        erpSkipKeys.add(key);
+        erpDedupeStats.conflicts.push({
+          identity: { bm_code: bm, row_num: rn },
+          message: `ERP candidate 내 동일 identity 가 서로 다른 값으로 2건 이상 존재`,
+          errorType: "ERP_IDENTITY_CONFLICT",
+          operation: "INSERT",
+          dbCode: "-",
+          cause: "ERP (BmCode, ROWNUM) duplicate with conflicting values",
+          recovery: "UNRECOVERED",
+        });
+      }
+    }
+  }
+
+  const seenInLoop = new Set<string>();
   for (const erpRow of input.erpRows) {
+    // 2026-10-06 · ERP internal dedupe · 같은 key 2회+ 는 1회만 처리 (identical) 또는 전부 skip (conflict)
+    const bmKey = String(erpRow.BmCode ?? "").trim();
+    const rnKey = Number(erpRow.ROWNUM);
+    if (bmKey && Number.isInteger(rnKey)) {
+      const key = `${bmKey}#${rnKey}`;
+      if (erpSkipKeys.has(key)) continue;
+      if (seenInLoop.has(key)) continue;
+      seenInLoop.add(key);
+    }
     let mapped;
     try {
       mapped = buildBuyRowFromErp(erpRow, input.pcodeToBarcodeMap);
@@ -291,7 +366,8 @@ export async function runBuySyncCheck(input: BuySyncInput): Promise<BuySyncCheck
 
   const supabaseFetchedAt = new Date().toISOString();
   const dbByKey = await fetchDbByIdentity(supabase, getBmCodes(input));
-  const diff = buildBuyDiff(input, dbByKey);
+  const dedupeStats = { duplicates: 0, conflicts: [] as BuySyncErrorEntry[] };
+  const diff = buildBuyDiff(input, dbByKey, dedupeStats);
 
   return {
     supabaseFetchedAt,
@@ -306,6 +382,151 @@ export async function runBuySyncCheck(input: BuySyncInput): Promise<BuySyncCheck
   };
 }
 
+/**
+ * 23505 (unique_violation) recoverable 처리.
+ * INSERT batch 가 duplicate 로 실패하면 batch 전체가 Postgres에 commit 안 되므로
+ *   fresh re-query 로 각 identity 를 분류:
+ *     A. DB SAME → RECOVERED_SAME (write 없음)
+ *     B. DB CHANGED → UPDATE 1건 → RECOVERED_UPDATED
+ *     C. DB NOT FOUND → race 또는 ERP identity conflict · 재시도 1회 · 그래도 실패하면 UNRECOVERED
+ */
+async function reconcileDuplicateBatch(
+  supabase: SupabaseClient,
+  batch: Array<{ identity: { bm_code: string; row_num: number }; payload: Record<string, unknown> }>,
+): Promise<{
+  recoveredSame: number;
+  recoveredUpdated: number;
+  updatedCells: number;
+  realErrors: number;
+  inserted: number;
+  errors: BuySyncErrorEntry[];
+}> {
+  const bmCodes = [...new Set(batch.map((b) => b.identity.bm_code))];
+  const dbMap = await fetchDbByIdentity(supabase, bmCodes);
+
+  let recoveredSame = 0;
+  let recoveredUpdated = 0;
+  let updatedCells = 0;
+  let realErrors = 0;
+  let inserted = 0;
+  const errors: BuySyncErrorEntry[] = [];
+  const updateTargets: Array<{ identity: { bm_code: string; row_num: number }; payload: Record<string, unknown>; changedFields: string[] }> = [];
+  const retryInserts: typeof batch = [];
+
+  for (const item of batch) {
+    const key = `${item.identity.bm_code}#${item.identity.row_num}`;
+    const dbRow = dbMap.get(key);
+    if (!dbRow) {
+      // race condition · 또 다른 process INSERT 후 UPDATE 가능성 · retry 1회
+      retryInserts.push(item);
+      continue;
+    }
+    // DB 에 존재 · ERP payload 와 compare (ERP-owned 필드만)
+    const changes: Record<string, unknown> = {};
+    const changedFields: string[] = [];
+    for (const [dbCol, mapping] of Object.entries(ERP_OWNED_PURCHASE_FIELDS)) {
+      if (IDENTITY_FIELDS.has(dbCol)) continue;
+      const erpVal = item.payload[dbCol];
+      const erpEmpty = isErpEmpty(erpVal);
+      if (erpEmpty && !mapping.nullOverwrite) continue;
+      const isNumeric = NUMERIC_FIELDS.has(dbCol);
+      if (!sameValue(dbRow[dbCol], erpVal, isNumeric)) {
+        changes[dbCol] = erpVal;
+        changedFields.push(dbCol);
+      }
+    }
+    if (changedFields.length === 0) {
+      recoveredSame++;
+      errors.push({
+        identity: item.identity,
+        message: "DB 에 identical row 존재 · write 없이 복구",
+        errorType: "DUPLICATE_RECOVERED_SAME",
+        operation: "INSERT",
+        dbCode: "23505",
+        cause: "Identity already existed with same values",
+        recovery: "SAME",
+      });
+    } else {
+      assertNoProtectedField(changes, PROTECTED_PURCHASE_FIELDS, `reconcileDuplicateBatch UPDATE (${key})`);
+      updateTargets.push({ identity: item.identity, payload: changes, changedFields });
+    }
+  }
+
+  // UPDATE 적용 (parallel 10)
+  const PAR = 10;
+  for (let i = 0; i < updateTargets.length; i += PAR) {
+    const slice = updateTargets.slice(i, i + PAR);
+    const results = await Promise.all(
+      slice.map(async (u) => {
+        const { error } = await supabase
+          .from("purchase_details")
+          .update(u.payload)
+          .eq("bm_code", u.identity.bm_code)
+          .eq("row_num", u.identity.row_num);
+        return { u, error: error?.message };
+      }),
+    );
+    for (const r of results) {
+      if (r.error) {
+        realErrors++;
+        errors.push({
+          identity: r.u.identity,
+          message: `복구 UPDATE 실패 · ${r.error}`,
+          errorType: "DB_UPDATE_ERROR",
+          operation: "UPDATE",
+          dbCode: "-",
+          cause: "Reconciliation UPDATE failed",
+          recovery: "UNRECOVERED",
+        });
+      } else {
+        recoveredUpdated++;
+        updatedCells += r.u.changedFields.length;
+        errors.push({
+          identity: r.u.identity,
+          message: `DB 에 다른 값 row 존재 · UPDATE ${r.u.changedFields.length}개 field 로 복구`,
+          errorType: "DUPLICATE_RECOVERED_UPDATED",
+          operation: "UPDATE",
+          dbCode: "23505",
+          cause: "Identity already existed with different values",
+          recovery: "UPDATED",
+        });
+      }
+    }
+  }
+
+  // retryInserts · fresh query 에서도 못 찾은 identity · race condition 또는 ERP conflict
+  if (retryInserts.length > 0) {
+    const retryPayloads = retryInserts.map((x) => x.payload);
+    const { data, error } = await supabase
+      .from("purchase_details")
+      .insert(retryPayloads)
+      .select("bm_code, row_num");
+    if (error) {
+      realErrors += retryInserts.length;
+      for (const item of retryInserts) {
+        errors.push({
+          identity: item.identity,
+          message: `재시도 INSERT 실패 · ${error.message}`,
+          errorType: "DB_INSERT_ERROR",
+          operation: "INSERT",
+          dbCode: typeof error.code === "string" ? error.code : "-",
+          cause: "Retry INSERT also failed",
+          recovery: "UNRECOVERED",
+        });
+      }
+    } else {
+      inserted += (data?.length ?? 0);
+    }
+  }
+
+  return { recoveredSame, recoveredUpdated, updatedCells, realErrors, inserted, errors };
+}
+
+function isUniqueViolation(error: { code?: string; message?: string }): boolean {
+  if (error.code === "23505") return true;
+  return /duplicate key value violates unique constraint/i.test(String(error.message ?? ""));
+}
+
 /** APPLY · 동일 rows + fresh Supabase fetch · NEW INSERT + CHANGED UPDATE + Read-back */
 export async function applyBuySync(
   input: BuySyncInput & { allowWrite: boolean },
@@ -315,7 +536,9 @@ export async function applyBuySync(
   if (!supabase) throw new Error("Supabase client 미설정");
 
   const dbByKey = await fetchDbByIdentity(supabase, getBmCodes(input));
-  const diff = buildBuyDiff(input, dbByKey);
+  // 2026-10-06 · ERP internal dedupe 통계 수집
+  const dedupeStats = { duplicates: 0, conflicts: [] as BuySyncErrorEntry[] };
+  const diff = buildBuyDiff(input, dbByKey, dedupeStats);
 
   const base: BuySyncCheckResult = {
     supabaseFetchedAt: startedAt,
@@ -336,6 +559,8 @@ export async function applyBuySync(
       inserted: 0, updated: 0, updatedCells: 0, skippedSame: diff.stats.same,
       failed: 0, readbackMatched: 0, readbackMismatch: 0,
       webModified: 0, identityModified: 0,
+      recoveredSame: 0, recoveredUpdated: 0,
+      erpInternalDuplicates: dedupeStats.duplicates,
       errors: [],
       message: "allowWrite=false · WRITE 안 함 (안전장치)",
     };
@@ -348,11 +573,18 @@ export async function applyBuySync(
     webBefore.set(key, snap);
   }
 
-  const errors: Array<{ identity: { bm_code: string; row_num: number }; message: string }> = [];
+  const errors: BuySyncErrorEntry[] = [];
+  // ERP internal conflicts 가 있으면 errors 에 먼저 적재 (fresh verify 전에 UI 노출)
+  for (const e of dedupeStats.conflicts) {
+    if (errors.length < 20) errors.push(e);
+  }
   let inserted = 0;
   let updated = 0;
   let updatedCells = 0;
   let failed = 0;
+  // 2026-10-06 · 사용자 요청 · recoverable reconciliation 통계
+  let recoveredSame = 0;
+  let recoveredUpdated = 0;
 
   for (const batch of chunk(diff.inserts, 500)) {
     const payloads = batch.map((b) => b.payload);
@@ -360,20 +592,48 @@ export async function applyBuySync(
       .from("purchase_details")
       .insert(payloads)
       .select("bm_code, row_num");
-    if (error) {
-      failed += batch.length;
-      // batch 전체 실패 · 첫 identity + error 전문 + payload sample 기록
-      const samplePayload = payloads[0] ? JSON.stringify(payloads[0]).slice(0, 200) : "(empty)";
-      console.error(
-        `[buySyncService] INSERT batch 실패 · batch=${batch.length}건 · error="${error.message}" · code=${error.code ?? "-"} · hint="${error.hint ?? "-"}" · details="${error.details ?? "-"}" · payload[0]=${samplePayload}`,
-      );
-      // errors[] 에 batch 안 identity 전부 기록 (상한 20 유지 · 원인 추적용)
-      for (const item of batch) {
-        if (errors.length >= 20) break;
-        errors.push({ identity: item.identity, message: `INSERT batch 실패 · ${error.message}` });
-      }
-    } else {
+    if (!error) {
       inserted += (data?.length ?? 0);
+      continue;
+    }
+    // 2026-10-06 · 사용자 요청 · 23505 unique_violation 은 recoverable
+    //   batch 전체가 Postgres 레벨 rollback 되므로 fresh re-query 로 각 identity 분류:
+    //     A. DB SAME → RECOVERED_SAME (write 없음)
+    //     B. DB CHANGED → UPDATE → RECOVERED_UPDATED
+    //     C. DB NOT FOUND → race condition · retry 1회 · 그래도 실패하면 UNRECOVERED
+    const samplePayload = payloads[0] ? JSON.stringify(payloads[0]).slice(0, 200) : "(empty)";
+    console.warn(
+      `[buySyncService] INSERT batch 23505/error · batch=${batch.length}건 · error="${error.message}" · code=${error.code ?? "-"} · hint="${error.hint ?? "-"}" · details="${error.details ?? "-"}" · payload[0]=${samplePayload}`,
+    );
+    if (isUniqueViolation(error as { code?: string; message?: string })) {
+      const rec = await reconcileDuplicateBatch(supabase, batch);
+      recoveredSame += rec.recoveredSame;
+      recoveredUpdated += rec.recoveredUpdated;
+      updatedCells += rec.updatedCells;
+      inserted += rec.inserted;
+      failed += rec.realErrors;
+      for (const e of rec.errors) {
+        if (errors.length < 20) errors.push(e);
+      }
+      console.info(
+        `[buySyncService] reconcile · recoveredSame=${rec.recoveredSame} · recoveredUpdated=${rec.recoveredUpdated} · retryInserted=${rec.inserted} · realErrors=${rec.realErrors}`,
+      );
+    } else {
+      // non-unique DB error → batch 전체 real error · UNRECOVERED
+      failed += batch.length;
+      for (const item of batch) {
+        if (errors.length < 20) {
+          errors.push({
+            identity: item.identity,
+            message: `INSERT batch 실패 · ${error.message}`,
+            errorType: "DB_INSERT_ERROR",
+            operation: "INSERT",
+            dbCode: typeof error.code === "string" ? error.code : "-",
+            cause: "INSERT batch non-unique error",
+            recovery: "UNRECOVERED",
+          });
+        }
+      }
     }
   }
 
@@ -393,7 +653,17 @@ export async function applyBuySync(
     for (const r of results) {
       if (r.error) {
         failed++;
-        if (errors.length < 20) errors.push({ identity: r.u.identity, message: r.error });
+        if (errors.length < 20) {
+          errors.push({
+            identity: r.u.identity,
+            message: `UPDATE 실패 · ${r.error}`,
+            errorType: "DB_UPDATE_ERROR",
+            operation: "UPDATE",
+            dbCode: "-",
+            cause: "DB UPDATE failed",
+            recovery: "UNRECOVERED",
+          });
+        }
       } else {
         updated++;
         updatedCells += r.u.changedFields.length;
@@ -479,6 +749,9 @@ export async function applyBuySync(
     readbackMismatch,
     webModified,
     identityModified,
+    recoveredSame,
+    recoveredUpdated,
+    erpInternalDuplicates: dedupeStats.duplicates,
     errors,
   };
 
@@ -486,8 +759,9 @@ export async function applyBuySync(
     appendSyncHistory("BUY_STATUS", {
       startedAt,
       completedAt: new Date().toISOString(),
+      // 2026-10-06 · ok = unrecovered failed === 0 (복구된 duplicate 는 성공 간주)
       ok: failed === 0 && identityModified === 0 && webModified === 0,
-      updatedRows: inserted + updated,
+      updatedRows: inserted + updated + recoveredUpdated,
       updatedCells,
       skippedSame: diff.stats.same,
       failed,
@@ -495,16 +769,25 @@ export async function applyBuySync(
       identityModified,
       readbackMatched,
       readbackMismatch,
+      // 2026-10-06 · 사용자 요청 · recovery / ERP duplicate 통계 저장 (UI 모달 요약)
+      recoveredSame,
+      recoveredUpdated,
+      erpInternalDuplicates: dedupeStats.duplicates,
       erpCacheFetchedAt: null,
       erpCacheRowCount: diff.stats.erpTotal,
-      // 2026-10-06 · 사용자 승인 · 실패 디버깅용 샘플 저장 (최대 20건)
+      // 2026-10-06 · 사용자 승인 · 실패 디버깅용 샘플 저장 (최대 20건) · errorType/operation/code/cause/recovery 포함
       errors: errors.length > 0
         ? errors.slice(0, 20).map((e) => ({
             identity: `${e.identity.bm_code}#${e.identity.row_num}`,
             message: e.message,
+            errorType: e.errorType,
+            operation: e.operation,
+            dbCode: e.dbCode,
+            cause: e.cause,
+            recovery: e.recovery,
           }))
         : undefined,
-    });
+    } as Parameters<typeof appendSyncHistory>[1]);
   } catch (err) {
     console.warn(`[buySyncService] 이력 기록 실패 · ${(err as Error).message}`);
   }

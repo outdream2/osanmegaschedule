@@ -25,6 +25,12 @@ interface DsSchedule {
 interface SyncHistoryError {
   identity: string;
   message: string;
+  // 2026-10-06 · 사용자 요청 · recoverable 분류
+  errorType?: string;
+  operation?: "INSERT" | "UPDATE";
+  dbCode?: string;
+  cause?: string;
+  recovery?: "SAME" | "UPDATED" | "UNRECOVERED";
 }
 
 interface SyncHistoryItem {
@@ -43,6 +49,10 @@ interface SyncHistoryItem {
   readbackMatched?: number;
   readbackMismatch?: number;
   erpCacheRowCount?: number;
+  // 2026-10-06 · 사용자 요청 · 23505 recovery 통계
+  recoveredSame?: number;
+  recoveredUpdated?: number;
+  erpInternalDuplicates?: number;
 }
 
 // 2026-10-05 · scheduler DsKey ↔ syncHistoryStore DatasetKey 매핑
@@ -88,11 +98,16 @@ function fmt(iso?: string): string {
   const m = String(d.getMinutes()).padStart(2, "0");
   return `${M}.${D} ${H}:${m}`;
 }
+// 2026-10-06 · 사용자 지정 3색 체계
+//   🟢 SUCCESS = 오류 없이 완료
+//   🟠 WARNING = 중간 충돌 발생 · fresh query 후 자동 복구 완료 (사람 확인 불필요)
+//   🔴 PARTIAL / FAILED = 실제 DB 저장 실패 · 사람 확인 필요
 function resultLabel(r?: string): { text: string; color: string } {
   if (!r) return { text: "-", color: "#94a3b8" };
   if (r === "SUCCESS") return { text: "성공", color: "#10b981" };
-  if (r === "PARTIAL") return { text: "일부 실패", color: "#f59e0b" };
+  if (r === "WARNING") return { text: "복구", color: "#f59e0b" };
   if (r === "SKIPPED") return { text: "SKIPPED", color: "#94a3b8" };
+  if (r === "PARTIAL") return { text: "실패", color: "#ef4444" };
   return { text: "실패", color: "#ef4444" };
 }
 
@@ -135,6 +150,11 @@ export const AutoSchedulerPanel: React.FC = () => {
                 return {
                   identity: typeof er.identity === "string" ? er.identity : JSON.stringify(er.identity ?? ""),
                   message: String(er.message ?? ""),
+                  errorType: typeof er.errorType === "string" ? er.errorType : undefined,
+                  operation: er.operation === "INSERT" || er.operation === "UPDATE" ? er.operation : undefined,
+                  dbCode: typeof er.dbCode === "string" ? er.dbCode : undefined,
+                  cause: typeof er.cause === "string" ? er.cause : undefined,
+                  recovery: er.recovery === "SAME" || er.recovery === "UPDATED" || er.recovery === "UNRECOVERED" ? er.recovery : undefined,
                 };
               }),
               startedAt: typeof rec.startedAt === "string" ? rec.startedAt : undefined,
@@ -145,6 +165,9 @@ export const AutoSchedulerPanel: React.FC = () => {
               readbackMatched: rec.readbackMatched == null ? undefined : Number(rec.readbackMatched),
               readbackMismatch: rec.readbackMismatch == null ? undefined : Number(rec.readbackMismatch),
               erpCacheRowCount: rec.erpCacheRowCount == null ? undefined : Number(rec.erpCacheRowCount),
+              recoveredSame: rec.recoveredSame == null ? undefined : Number(rec.recoveredSame),
+              recoveredUpdated: rec.recoveredUpdated == null ? undefined : Number(rec.recoveredUpdated),
+              erpInternalDuplicates: rec.erpInternalDuplicates == null ? undefined : Number(rec.erpInternalDuplicates),
             };
           });
         }
@@ -297,38 +320,56 @@ export const AutoSchedulerPanel: React.FC = () => {
                         border: "1px solid #e2e8f0", borderRadius: 6, background: "#fafafa",
                       }}>
                         {list.map((h) => {
-                          const clickable = !h.ok;
+                          // 2026-10-06 · 사용자 지정 3색 체계
+                          //   recovered > 0 && ok 이면 🟠 WARNING · 그래도 클릭해서 상세 가능
+                          const recovered = (h.recoveredSame ?? 0) + (h.recoveredUpdated ?? 0);
+                          const status: "SUCCESS" | "WARNING" | "FAILED" =
+                            !h.ok ? "FAILED" : recovered > 0 ? "WARNING" : "SUCCESS";
+                          const clickable = status !== "SUCCESS";
+                          const dotColor = status === "SUCCESS" ? "#10b981" : status === "WARNING" ? "#f59e0b" : "#ef4444";
+                          const bgColor = status === "SUCCESS" ? "transparent" : status === "WARNING" ? "#fffbeb" : "#fef2f2";
+                          const hoverBg = status === "WARNING" ? "#fef3c7" : "#fee2e2";
+                          const label = status === "SUCCESS" ? "성공" : status === "WARNING" ? "복구" : "실패";
+                          const labelColor = dotColor;
+                          const title = status === "WARNING"
+                            ? "클릭 · 복구 상세 보기 (중간 충돌 발생 · 자동 복구 완료)"
+                            : status === "FAILED"
+                              ? "클릭 · 실패 상세 보기 (사람 확인 필요)"
+                              : undefined;
                           return (
                             <div
                               key={h.id}
                               onClick={clickable ? () => setDetailModal({ ds, item: h }) : undefined}
-                              title={clickable ? "클릭 · 실패 상세 보기" : undefined}
+                              title={title}
                               style={{
                                 display: "flex", alignItems: "center", gap: 6,
                                 padding: "4px 8px",
                                 borderBottom: "1px solid #e5e7eb",
                                 fontSize: 11,
-                                background: h.ok ? "transparent" : "#fef2f2",
+                                background: bgColor,
                                 cursor: clickable ? "pointer" : "default",
                               }}
-                              onMouseEnter={(e) => { if (clickable) (e.currentTarget as HTMLDivElement).style.background = "#fee2e2"; }}
-                              onMouseLeave={(e) => { if (clickable) (e.currentTarget as HTMLDivElement).style.background = "#fef2f2"; }}
+                              onMouseEnter={(e) => { if (clickable) (e.currentTarget as HTMLDivElement).style.background = hoverBg; }}
+                              onMouseLeave={(e) => { if (clickable) (e.currentTarget as HTMLDivElement).style.background = bgColor; }}
                             >
                               <span style={{
                                 display: "inline-block", width: 6, height: 6, borderRadius: "50%",
-                                background: h.ok ? "#10b981" : "#ef4444", flexShrink: 0,
+                                background: dotColor, flexShrink: 0,
                               }} />
                               <span style={{ color: "#64748b", fontVariantNumeric: "tabular-nums", minWidth: 68 }}>
                                 {fmt(h.completedAt)}
                               </span>
                               <span style={{ color: "#334155", flex: 1, fontVariantNumeric: "tabular-nums" }}>
                                 {h.updatedRows.toLocaleString()}건
+                                {recovered > 0 && (
+                                  <span style={{ color: "#b45309", marginLeft: 4 }}>· 복구 {recovered.toLocaleString()}</span>
+                                )}
                                 {h.failed > 0 && (
                                   <span style={{ color: "#ef4444", marginLeft: 4 }}>· 실패 {h.failed.toLocaleString()}</span>
                                 )}
                               </span>
-                              <strong style={{ color: h.ok ? "#10b981" : "#ef4444", fontSize: 10, flexShrink: 0 }}>
-                                {h.ok ? "성공" : "실패"}
+                              <strong style={{ color: labelColor, fontSize: 10, flexShrink: 0 }}>
+                                {label}
                               </strong>
                             </div>
                           );
@@ -395,9 +436,13 @@ export const AutoSchedulerPanel: React.FC = () => {
               }}>
                 {[
                   { label: "ERP rows", v: detailModal.item.erpCacheRowCount },
-                  { label: "실패", v: detailModal.item.failed, danger: true },
+                  { label: "실패 (사람 확인)", v: detailModal.item.failed, danger: (detailModal.item.failed ?? 0) > 0 },
                   { label: "변경 완료", v: detailModal.item.updatedRows },
                   { label: "SAME skip", v: detailModal.item.skippedSame },
+                  // 2026-10-06 · 사용자 요청 · 23505 복구 통계
+                  { label: "복구(SAME)", v: detailModal.item.recoveredSame, warn: (detailModal.item.recoveredSame ?? 0) > 0 },
+                  { label: "복구(UPDATE)", v: detailModal.item.recoveredUpdated, warn: (detailModal.item.recoveredUpdated ?? 0) > 0 },
+                  { label: "ERP 내부중복", v: detailModal.item.erpInternalDuplicates, warn: (detailModal.item.erpInternalDuplicates ?? 0) > 0 },
                   { label: "updatedCells", v: detailModal.item.updatedCells },
                   { label: "webModified", v: detailModal.item.webModified, danger: (detailModal.item.webModified ?? 0) > 0 },
                   { label: "identityModified", v: detailModal.item.identityModified, danger: (detailModal.item.identityModified ?? 0) > 0 },
@@ -405,12 +450,12 @@ export const AutoSchedulerPanel: React.FC = () => {
                 ].map((s) => (
                   <div key={s.label} style={{
                     border: "1px solid #e2e8f0", borderRadius: 8, padding: "6px 10px",
-                    background: s.danger ? "#fef2f2" : "#f8fafc",
+                    background: (s as { danger?: boolean }).danger ? "#fef2f2" : (s as { warn?: boolean }).warn ? "#fffbeb" : "#f8fafc",
                   }}>
                     <div style={{ fontSize: 10, color: "#64748b" }}>{s.label}</div>
                     <div style={{
                       fontSize: 15, fontWeight: 600,
-                      color: s.danger ? "#dc2626" : "#111827",
+                      color: (s as { danger?: boolean }).danger ? "#dc2626" : (s as { warn?: boolean }).warn ? "#b45309" : "#111827",
                       fontVariantNumeric: "tabular-nums",
                     }}>
                       {s.v == null ? "-" : Number(s.v).toLocaleString()}
@@ -438,31 +483,78 @@ export const AutoSchedulerPanel: React.FC = () => {
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                     <thead style={{ background: "#f1f5f9" }}>
                       <tr>
-                        <th style={{ textAlign: "left", padding: "6px 10px", color: "#475569", borderBottom: "1px solid #e2e8f0", width: 40 }}>#</th>
-                        <th style={{ textAlign: "left", padding: "6px 10px", color: "#475569", borderBottom: "1px solid #e2e8f0", width: 200 }}>identity</th>
-                        <th style={{ textAlign: "left", padding: "6px 10px", color: "#475569", borderBottom: "1px solid #e2e8f0" }}>message</th>
+                        <th style={{ textAlign: "left", padding: "6px 8px", color: "#475569", borderBottom: "1px solid #e2e8f0", width: 32 }}>#</th>
+                        <th style={{ textAlign: "left", padding: "6px 8px", color: "#475569", borderBottom: "1px solid #e2e8f0", width: 160 }}>identity</th>
+                        <th style={{ textAlign: "left", padding: "6px 8px", color: "#475569", borderBottom: "1px solid #e2e8f0", width: 60 }}>op</th>
+                        <th style={{ textAlign: "left", padding: "6px 8px", color: "#475569", borderBottom: "1px solid #e2e8f0", width: 56 }}>DB code</th>
+                        <th style={{ textAlign: "left", padding: "6px 8px", color: "#475569", borderBottom: "1px solid #e2e8f0" }}>cause / recovery</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {(detailModal.item.errors ?? []).map((e, i) => (
-                        <tr key={`${e.identity}-${i}`} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                          <td style={{ padding: "6px 10px", color: "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{i + 1}</td>
-                          <td style={{
-                            padding: "6px 10px", color: "#1e293b",
-                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                            wordBreak: "break-all",
-                          }}>
-                            {e.identity}
-                          </td>
-                          <td style={{
-                            padding: "6px 10px", color: "#991b1b",
-                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                            wordBreak: "break-word",
-                          }}>
-                            {e.message}
-                          </td>
-                        </tr>
-                      ))}
+                      {(detailModal.item.errors ?? []).map((e, i) => {
+                        const recColor =
+                          e.recovery === "SAME" ? "#059669" :
+                          e.recovery === "UPDATED" ? "#d97706" :
+                          e.recovery === "UNRECOVERED" ? "#dc2626" :
+                          "#64748b";
+                        const recBg =
+                          e.recovery === "SAME" ? "#ecfdf5" :
+                          e.recovery === "UPDATED" ? "#fffbeb" :
+                          e.recovery === "UNRECOVERED" ? "#fef2f2" :
+                          "transparent";
+                        return (
+                          <tr key={`${e.identity}-${i}`} style={{ borderBottom: "1px solid #f1f5f9", background: recBg }}>
+                            <td style={{ padding: "6px 8px", color: "#94a3b8", fontVariantNumeric: "tabular-nums" }}>{i + 1}</td>
+                            <td style={{
+                              padding: "6px 8px", color: "#1e293b",
+                              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                              wordBreak: "break-all",
+                            }}>
+                              {e.identity}
+                            </td>
+                            <td style={{
+                              padding: "6px 8px", color: "#475569",
+                              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                            }}>
+                              {e.operation ?? "-"}
+                            </td>
+                            <td style={{
+                              padding: "6px 8px", color: "#475569",
+                              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                              fontVariantNumeric: "tabular-nums",
+                            }}>
+                              {e.dbCode ?? "-"}
+                            </td>
+                            <td style={{ padding: "6px 8px" }}>
+                              <div style={{ color: "#1e293b", fontSize: 11 }}>
+                                {e.cause ?? e.message}
+                              </div>
+                              {e.recovery && (
+                                <div style={{
+                                  marginTop: 2, display: "inline-block",
+                                  padding: "1px 6px", borderRadius: 4,
+                                  fontSize: 10, fontWeight: 600,
+                                  color: recColor, background: "#fff",
+                                  border: `1px solid ${recColor}`,
+                                }}>
+                                  Recovery · {e.recovery}
+                                </div>
+                              )}
+                              {e.errorType && (
+                                <div style={{
+                                  marginTop: 2, marginLeft: 4, display: "inline-block",
+                                  padding: "1px 6px", borderRadius: 4,
+                                  fontSize: 10, color: "#64748b", background: "#f8fafc",
+                                  border: "1px solid #e2e8f0",
+                                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                                }}>
+                                  {e.errorType}
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
