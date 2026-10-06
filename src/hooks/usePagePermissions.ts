@@ -20,7 +20,7 @@ async function fetchPerms(): Promise<PagePermissions> {
   inflight = (async () => {
     try {
       const data = await getPagePermissions();
-      const merged: PagePermissions = { ...DEFAULT_PERMISSIONS, ...data };
+      const merged: PagePermissions = { ...DEFAULT_PERMISSIONS, ...data } as PagePermissions;
       cachedPerms = merged;
       return merged;
     } catch {

@@ -206,6 +206,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
   };
 
   const handleDelete = async (id: number) => {
+    if (!employeeId) return;
     if (!await confirm({ message: "이 입고 알림을 삭제하시겠습니까?", danger: true })) return;
     try {
       await deleteStockArrival(id, employeeId);

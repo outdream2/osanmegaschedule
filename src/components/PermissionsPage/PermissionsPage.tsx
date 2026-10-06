@@ -246,7 +246,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
 
   useEffect(() => {
     getPagePermissions()
-      .then(data => setPerms({ ...DEFAULT_PERMISSIONS, ...data }))
+      .then(data => setPerms({ ...DEFAULT_PERMISSIONS, ...data } as PagePermissions))
       .catch(() => setLoadError("권한 설정을 불러오지 못했습니다."));
   }, []);
 
@@ -677,8 +677,8 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
 
         {permSubTab === "employee" && (
           <EmployeeLevelTab
-            employees={employees}
-            filteredEmployees={filteredEmployees}
+            employees={employees as any[]}
+            filteredEmployees={filteredEmployees as any[]}
             empSearch={empSearch}
             setEmpSearch={setEmpSearch}
             empSavingId={empSavingId}

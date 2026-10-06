@@ -240,7 +240,7 @@ export const ProductDetailView: React.FC<DetailProps> = ({ product, loading, err
         await saveInventoryCheck({
           product_code: product.product_code,
           product_name: product.product_name,
-          shelf_positions: shelfDraft,
+          shelf_positions: shelfDraft as Record<string, string | null>,
         });
       }
       showSuccess("상품 정보 저장 완료");

@@ -81,7 +81,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
     (async () => {
       try {
         const list = await listEmployees();
-        setEmployees(list);
+        setEmployees(list.map(e => ({ id: e.id, name: e.name, rank: e.rank, level: e.level ?? undefined })));
       } catch { /* ignore */ }
     })();
   }, []);

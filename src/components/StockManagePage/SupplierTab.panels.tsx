@@ -39,7 +39,7 @@ interface SupplierDetailPanelProps {
   setSupplierSelectedKey: (v: string | null) => void;
   vendorCategoryMap: Record<string, string | null>;
   supplierBalanceMap: Record<string, { balance: number; invoice_date: string | null }>;
-  supplierRowsMap: Record<string, any[]>;
+  supplierRowsMap: Record<string, any[] | null>;
   supplierRowsLoading: Set<string>;
   supDetailSort: { key: SupDetailSortKey; dir: "asc" | "desc" };
   toggleSupDetailSort: (k: SupDetailSortKey) => void;

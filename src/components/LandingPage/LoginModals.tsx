@@ -144,7 +144,7 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
         setEmpNumber("");
       }
       const validRoles = ["superadmin", "admin", "manager", "employee", "vendor"] as const;
-      const authRole: AuthRole = (validRoles as readonly string[]).includes(role) ? (role as AuthRole) : "employee";
+      const authRole: AuthRole = role != null && (validRoles as readonly string[]).includes(role) ? (role as AuthRole) : "employee";
       const auth: AuthSession = { role: authRole, employeeId: id, employeeName: name, level: level ?? 1, employeeRank: rank ?? undefined, rememberMe: rememberMe || undefined };
       onAuthOnly?.(auth);
     } catch (err: unknown) {

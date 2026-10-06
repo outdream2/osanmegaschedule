@@ -597,7 +597,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {dpSubTab === "stock-arrivals" && dpCanSeeStockArrivals ? (
         <main className="flex-1 flex flex-col min-h-0">
-          <StockArrivalPage authSession={authSession} onBack={onBack} onNavigate={onNavigate as any} onLogout={onLogout} embedded />
+          <StockArrivalPage authSession={authSession ?? null} onBack={onBack} onNavigate={onNavigate as any} onLogout={onLogout} embedded />
         </main>
       ) : dpSubTab === "vendor-manage" && dpCanSeeStockManage ? (
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-3">

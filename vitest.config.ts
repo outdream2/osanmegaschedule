@@ -53,6 +53,11 @@ export default defineConfig({
       // 2026-09-23 · B-1 · ScheduleCell refactor safety net
       "src/components/SchedulePage/**/*.test.tsx",
       "src/components/SchedulePage/**/*.test.ts",
+      // 2026-10-06 · NULL HARDENING regression tests
+      "src/components/LandingPage/**/*.test.tsx",
+      "src/components/LandingPage/**/*.test.ts",
+      "src/components/StockArrivalPage/**/*.test.tsx",
+      "src/components/StockArrivalPage/**/*.test.ts",
     ],
     globals: false,
     environment: "node", // 기본 · jsdom 은 파일별 지시자 opt-in

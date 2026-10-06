@@ -15,7 +15,7 @@ interface ScanRightPanelProps {
   filteredRows: StockRow[];
   lastCode: string | null;
   lastAddedKey: string | null;
-  requestingKey: string;
+  requestingKey: string | null;
   scanFilter: "all" | "display" | "expiry";
   setScanFilter: (v: "all" | "display" | "expiry") => void;
   setExpiryModalRow: (r: StockRow | null) => void;

@@ -70,7 +70,7 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
   const confirm = useConfirm();
   // 2026-09-08 · 상세 진열위치 · 상품별 매장/창고 3자리
   const shelfMap = useShelfPositionsMap();
-  const shelfPositions = shelfMap[product.product_code] ?? null;
+  const shelfPositions = product.product_code != null ? (shelfMap[product.product_code] ?? null) : null;
 
   const avgUnitPrice = product.total_qty > 0 ? product.total_amount / product.total_qty : 0;
   const visibleRows = rows.filter(r => !deletedIds.has(r.id));
