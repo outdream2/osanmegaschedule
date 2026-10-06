@@ -29,7 +29,8 @@ import { IconTile } from "../common/IconTile";
 import { SplitPanel } from "../common/SplitPanel";
 import { SplitListPanel } from "../common/SplitListPanel";
 import { SplitRightTabs } from "../common/SplitRightTabs";
-import { PeriodSelector, PERIOD_MONTHS_EXT_PRESET } from "../common/PeriodSelector";
+import { MonthToggleSelector, currentYm } from "../common/MonthToggleSelector";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { Spinner } from "../common/Spinner";
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -106,17 +107,12 @@ const monthLabel = (k: string): string => k.slice(2).replace("-", "/"); // "26/0
 const fmtWon = (n: number): string => n > 0 ? n.toLocaleString() + "원" : "-";
 
 // 2026-09-07 · 사용자 지시 · 기간 필터 대응 · 파라미터화
-function buildMonthBuckets(months: number): Array<{ key: string; label: string }> {
-  const N = months >= 999 ? 12 : Math.max(1, Math.min(24, months));
-  const out: Array<{ key: string; label: string }> = [];
-  const now = new Date();
-  now.setDate(1);
-  for (let i = N - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    out.push({ key: k, label: monthLabel(k) });
-  }
-  return out;
+// 2026-10-06 · 사용자 지시 · 월 멀티선택 전환 (STANDARD)
+//   · selectedMonths 리스트 그대로 bucket · 비연속 월 유지 (중간 월 자동 포함 X)
+//   · 과거→최근 정렬 · bar chart 가독성
+function buildMonthBuckets(selectedMonths: string[]): Array<{ key: string; label: string }> {
+  const sorted = [...selectedMonths].sort((a, b) => a.localeCompare(b));
+  return sorted.map(k => ({ key: k, label: monthLabel(k) }));
 }
 
 export const PaymentInputPage: React.FC = () => {
@@ -129,10 +125,12 @@ export const PaymentInputPage: React.FC = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   // 2026-09-02 · 사용자 지시 · 최근결제내역이 첫 탭 · 기본 선택
   const [rightTab, setRightTab] = useState<RightTab>("payments");
-  // 2026-09-07 · 사용자 지시 · 우측 탭 공통 기간 필터 (1/3/6/12개월/전체)
-  const [rightPeriodMonths, setRightPeriodMonths] = useState<number>(12);
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+  //   · default · 현재 월 1개 · 비연속 월 지원
+  //   · 커스텀 날짜 (customFrom/To) 는 임의 날짜 지정 용도로 유지 (기간 UX 다른 축)
+  const { selectedMonths, setSelectedMonths, monthsList: monthsListStr } = useMonthFilter();
   // 2026-09-08 · 사용자 지시 · 커스텀 기간 지정 (from/to 날짜)
-  //   · 값 있을 때 · rightPeriodMonths 무시 · custom range 우선
+  //   · 값 있을 때 · 월 멀티선택 무시 · custom range 우선
   const [customFrom, setCustomFrom] = useState<string>("");
   const [customTo, setCustomTo] = useState<string>("");
   // 2026-08-26 · P0 fix · 모바일 우측 상세 모달 열림/닫힘 별도 state (기존 rightTab != null 은 항상 true)
@@ -231,24 +229,43 @@ export const PaymentInputPage: React.FC = () => {
     setDataError(null);
     setOrderHistory([]); setPurchaseDetails([]); setSales([]); setBalance(null); setPayments([]);
     const supEnc = encodeURIComponent(supplierName);
-    // 999 = 전체 · 그 외 · months → days 환산
-    // 2026-09-08 · 사용자 지시 · custom from/to 있으면 · 그 기간으로 days 산출
-    let months = rightPeriodMonths >= 999 ? 120 : rightPeriodMonths;
-    let days = months * 30;
-    if (customFrom && customTo) {
-      const f = new Date(customFrom + "T00:00:00");
-      const t = new Date(customTo + "T23:59:59");
-      const diff = Math.max(1, Math.ceil((t.getTime() - f.getTime()) / (24 * 60 * 60 * 1000)));
-      days = diff;
-      months = Math.max(1, Math.round(diff / 30));
-    }
+    // 2026-10-06 · 사용자 지시 · months_list 우선 · customFrom/To 는 days 로 환산 fallback
+    //   · customFrom/To 지정 시 · 임의 날짜 범위 (월 멀티 보다 우선)
+    //   · 서버 route 는 months_list 수신 시 days 무시
+    const periodQs = (() => {
+      if (customFrom && customTo) {
+        const f = new Date(customFrom + "T00:00:00");
+        const t = new Date(customTo + "T23:59:59");
+        const diff = Math.max(1, Math.ceil((t.getTime() - f.getTime()) / (24 * 60 * 60 * 1000)));
+        return { days: String(diff), months: String(Math.max(1, Math.round(diff / 30))), monthsList: "" };
+      }
+      // 월 멀티 모드 · min~max days 환산 (fallback 용 · 서버는 months_list 우선 사용)
+      const sorted = [...selectedMonths].sort((a, b) => a.localeCompare(b));
+      const minYm = sorted[0] ?? currentYm();
+      const maxYm = sorted[sorted.length - 1] ?? minYm;
+      const [yy, mm] = maxYm.split("-").map(Number);
+      const endLast = new Date(yy, mm, 0);
+      const [yy0, mm0] = minYm.split("-").map(Number);
+      const startFirst = new Date(yy0, mm0 - 1, 1);
+      const diffDays = Math.max(1, Math.ceil((endLast.getTime() - startFirst.getTime()) / 86400000) + 1);
+      return { days: String(diffDays), months: String(sorted.length), monthsList: monthsListStr };
+    })();
+    const orderUrl = periodQs.monthsList
+      ? `/api/order-history?months_list=${encodeURIComponent(periodQs.monthsList)}&supplier=${supEnc}`
+      : `/api/order-history?days=${periodQs.days}&supplier=${supEnc}`;
+    const ledgerUrl = periodQs.monthsList
+      ? `/api/supplier-ledger?supplier=${supEnc}&months_list=${encodeURIComponent(periodQs.monthsList)}`
+      : `/api/supplier-ledger?supplier=${supEnc}&days=${periodQs.days}`;
+    const salesUrl = periodQs.monthsList
+      ? `/api/stock-manage/top-sales?months_list=${encodeURIComponent(periodQs.monthsList)}&supplier=${supEnc}&sort=sale&dir=desc&limit=200`
+      : `/api/stock-manage/top-sales?months=${periodQs.months}&supplier=${supEnc}&sort=sale&dir=desc&limit=200`;
     try {
       // 2026-09-11 · #127 · SSOT 통합 · Option A · supplier-ledger 하나로 · 매입·결제·잔고 정합성 100%
       //   · 이전 · order-history + purchase-details + supplier-balances-map + supplier-payments (4개) · 미스매치 원인
       //   · 지금 · /api/supplier-ledger · 매입 (purchase_details) + 결제 (supplier_payments) UNION · running balance
       //   · 유지 · order-history (발주 도메인 · 별도) · top-sales (판매 도메인 · 별도)
       const [orderRes, ledgerRes, salesRes] = await Promise.allSettled([
-        api.get<{ orders?: OrderHistoryItem[] }>(`/api/order-history?days=${days}&supplier=${supEnc}`),
+        api.get<{ orders?: OrderHistoryItem[] }>(orderUrl),
         api.get<{
           supplier: string;
           rows: Array<{
@@ -274,8 +291,8 @@ export const PaymentInputPage: React.FC = () => {
           total_payment_vat: number;
           total_payment_supply: number;
           current_balance: number;
-        }>(`/api/supplier-ledger?supplier=${supEnc}&days=${days}`),
-        api.get<{ rows?: SalesItem[] }>(`/api/stock-manage/top-sales?months=${months}&supplier=${supEnc}&sort=sale&dir=desc&limit=200`),
+        }>(ledgerUrl),
+        api.get<{ rows?: SalesItem[] }>(salesUrl),
       ]);
       if (orderRes.status === "fulfilled") {
         setOrderHistory(Array.isArray(orderRes.value.data?.orders) ? orderRes.value.data.orders : []);
@@ -335,7 +352,7 @@ export const PaymentInputPage: React.FC = () => {
     } finally {
       setDataLoading(false);
     }
-  }, [showError, rightPeriodMonths, customFrom, customTo]);
+  }, [showError, selectedMonths, monthsListStr, customFrom, customTo]);
 
   useEffect(() => {
     if (selected?.company_name) {
@@ -371,7 +388,7 @@ export const PaymentInputPage: React.FC = () => {
   ), [dbVendorCategories]);
 
   // ─── 집계 · 월별 발주 + 월별 판매 + KPI ───────────────────────────────
-  const buckets = useMemo(() => buildMonthBuckets(rightPeriodMonths), [rightPeriodMonths]);
+  const buckets = useMemo(() => buildMonthBuckets(selectedMonths), [selectedMonths]);
 
   const monthlyOrders = useMemo(() => {
     const map = new Map<string, { amount: number; count: number }>();
@@ -469,9 +486,14 @@ export const PaymentInputPage: React.FC = () => {
       <VendorInfoHeader vendor={selected as any} />
 
       {/* KPI 3 카드 · 잔고 · 총 매입 · 총 판매 */}
-      {/* 2026-09-11 · 사용자 지시 · 라벨 · 기간 반영 · rightPeriodMonths (1개월·3개월·6개월·1년·전체) */}
+      {/* 2026-09-11 · 사용자 지시 · 라벨 · 기간 반영
+          · 2026-10-06 · 월 멀티선택 · 1개월이면 YYYY-MM · 다수면 N개월 선택 · 커스텀 지정 시 "직접 지정" */}
       {(() => {
-        const periodLabel = rightPeriodMonths >= 999 ? "전체" : rightPeriodMonths >= 12 ? "12개월" : `${rightPeriodMonths}개월`;
+        const periodLabel = (customFrom && customTo)
+          ? "직접 지정"
+          : selectedMonths.length === 1
+            ? selectedMonths[0]
+            : `${selectedMonths.length}개월 선택`;
         return (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <Card padding="md" topAccent>
@@ -558,14 +580,17 @@ export const PaymentInputPage: React.FC = () => {
       {/* 2026-09-08 · 사용자 지시 · 프리셋 옆에 커스텀 기간 (from/to) 지정 */}
       <div className="flex items-center gap-2 px-1 flex-wrap">
         <span className="text-[14px] font-semibold text-ink-soft shrink-0">기간</span>
-        <PeriodSelector
-          options={PERIOD_MONTHS_EXT_PRESET}
-          value={rightPeriodMonths}
-          onChange={(v) => { setRightPeriodMonths(Number(v)); setCustomFrom(""); setCustomTo(""); }}
-          accent="teal"
-          size="sm"
+        {/* 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
+        <MonthToggleSelector
+          selectedMonths={selectedMonths}
+          onChange={(months) => { setSelectedMonths(months); setCustomFrom(""); setCustomTo(""); }}
+          maxMonths={6}
+          minOne
           ariaLabel="우측 탭 기간 선택"
         />
+        {selectedMonths.length > 0 && !customFrom && !customTo && (
+          <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+        )}
         <span className="text-zinc-300 text-[13px]">|</span>
         <span className="text-[13px] font-medium text-ink-soft">직접 지정</span>
         <input
@@ -661,7 +686,7 @@ export const PaymentInputPage: React.FC = () => {
         // 2026-09-07 · 사용자 지시 · 매입내역 · purchase_details 원본 · 월별 집계 + 최근 리스트
         (() => {
           // 월별 집계
-          const buckets = buildMonthBuckets(rightPeriodMonths);
+          const buckets = buildMonthBuckets(selectedMonths);
           const monthMap = new Map<string, number>();
           const monthQtyMap = new Map<string, number>();
           for (const b of buckets) { monthMap.set(b.key, 0); monthQtyMap.set(b.key, 0); }

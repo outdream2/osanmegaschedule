@@ -14,6 +14,7 @@ import { StatusPill } from "../common/StatusPill";
 import { AccentBar } from "../common/AccentBar";
 import { CARD_BASE } from "../../styles/tokens";
 import { SeasonButtons } from "../common/SeasonButtons";
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { Modal } from "../common/Modal";
@@ -30,7 +31,10 @@ type AnyProduct = any;
 
 interface FlowFilterBarProps {
   filteredFlowCount: number;
-  flowMonths: number;
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · MonthToggleSelector)
+  //   · flowMonths(number) → flowSelectedMonths(string[]) · 비연속 월 지원
+  flowSelectedMonths: string[];
+  setFlowSelectedMonths: (v: string[]) => void;
   flowSeason: SeasonKey | null;
   flowSnapshot: string | null;
   flowDateRange: string | null;
@@ -43,8 +47,6 @@ interface FlowFilterBarProps {
   salesQtyMax: string;
   loading: boolean;
   setFlowSeason: (v: SeasonKey | null) => void;
-  setPendingFlowMonths: (v: number) => void;
-  setFlowMonths: (v: number) => void;
   setFlowLimit: (v: number) => void;
   setInfoSearchQuery: (v: string) => void;
   setInfoSearchResults: (v: AnyProduct[]) => void;
@@ -59,15 +61,18 @@ interface FlowFilterBarProps {
 }
 
 export const FlowFilterBar: React.FC<FlowFilterBarProps> = ({
-  filteredFlowCount, flowMonths, flowSeason, flowSnapshot, flowDateRange,
+  filteredFlowCount, flowSelectedMonths, setFlowSelectedMonths,
+  flowSeason, flowSnapshot, flowDateRange,
   flowLimit, flowCategoryFilter,
   infoSearchQuery, infoSearchResults, infoSelected: _infoSelected,
   salesQtyMin, salesQtyMax, loading,
-  setFlowSeason, setPendingFlowMonths, setFlowMonths, setFlowLimit,
+  setFlowSeason, setFlowLimit,
   setInfoSearchQuery, setInfoSearchResults, setInfoSelected, runInfoSearch: _runInfoSearch,
   loadFlowSelectedProduct, setSalesQtyMin, setSalesQtyMax,
   onOpenHiddenManagerModal, setFlowCategoryFilter, onFetchStockFlow,
 }) => {
+  // 2026-10-06 · 10일 스냅샷 모드 · selectedMonths=[] && !season 일 때 활성
+  const isSnapshotMode = flowSelectedMonths.length === 0 && !flowSeason;
   // 2026-08-26 · 사용자 지시 · 발주필요 리스트와 동일한 상단 배치 · PageToolbar + CategoryChips
   return (
     <div className="flex flex-col gap-2">
@@ -130,30 +135,32 @@ export const FlowFilterBar: React.FC<FlowFilterBarProps> = ({
 
       {/* 하단 · 필터바 (기간·TopN·판매출고계·숨김관리·새로고침) */}
       <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
-      {/* 조회기간 */}
+      {/* 조회기간 · 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className="text-[15px] font-bold text-ink tracking-tight shrink-0">기간</span>
-        {flowMonths === 0 && !flowSeason && flowSnapshot && (
+        {isSnapshotMode && flowSnapshot && (
           <span className="text-[15px] tabular-nums font-medium text-zinc-600 bg-zinc-50 border border-line rounded-md px-2 py-0.5">
             {flowDateRange ?? flowSnapshot}
           </span>
         )}
-        {flowMonths > 0 && (() => {
-          const today = new Date();
-          const start = new Date(today.getFullYear(), today.getMonth() - flowMonths, 1);
-          const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
-          const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-          return <span className="text-[15px] tabular-nums font-medium text-zinc-600 bg-zinc-50 border border-line rounded-md px-2 py-0.5">{s} ~ {e}</span>;
-        })()}
-        <div className="flex flex-wrap bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-          <button onClick={() => { setFlowSeason(null); setPendingFlowMonths(0); setFlowMonths(0); }}
-            className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === 0 ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>10일</button>
-          {([1, 2, 3, 4, 5, 6] as const).map(m => (
-            <button key={m} onClick={() => { setFlowSeason(null); setPendingFlowMonths(m); setFlowMonths(m); }}
-              className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === m ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>{m}개월</button>
-          ))}
-        </div>
-        <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
+        <MonthToggleSelector
+          selectedMonths={flowSelectedMonths}
+          onChange={months => { setFlowSelectedMonths(months); setFlowSeason(null); }}
+          maxMonths={6}
+          ariaLabel="재고 Flow 기간"
+        />
+        <button
+          type="button"
+          onClick={() => { setFlowSelectedMonths([]); setFlowSeason(null); }}
+          className={`px-2 h-6 text-[15px] font-semibold rounded transition cursor-pointer whitespace-nowrap ${isSnapshotMode ? "bg-teal-500 text-white shadow-sm" : "text-zinc-500 bg-zinc-100 hover:bg-zinc-200 border border-line"}`}
+          title="10일 스냅샷 모드 · 최신 period_end 조회"
+        >
+          10일 스냅샷
+        </button>
+        {flowSelectedMonths.length > 0 && (
+          <span className="text-[13px] text-ink-soft tabular-nums">{flowSelectedMonths.length}개월 선택</span>
+        )}
+        <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) setFlowSelectedMonths([]); }} size="sm" hideLabel />
       </div>
 
       {/* Top N */}

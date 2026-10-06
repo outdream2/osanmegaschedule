@@ -13,6 +13,8 @@ import { GradientAccent } from "../common/GradientAccent";
 import { EmptyState } from "../common/EmptyState";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { SeasonButtons } from "../common/SeasonButtons";
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { StatusPill } from "../common/StatusPill";
 import { fmtWon } from "../../lib/format";
 import { api } from "../../lib/apiClient";
@@ -83,10 +85,12 @@ export const StockFlowPanel: React.FC<{
   const [limit] = useState<number>(50000);
   const [snapshot, setSnapshot] = useState<string>("");
   const [query, setQuery] = useState<string>("");
-  const [monthsLocal, setMonthsLocal] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
-  const months = monthsProp ?? monthsLocal;
-  const setMonths = onMonthsChange ?? setMonthsLocal;
-  const [pendingMonths, setPendingMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(months);
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+  //   · months/onMonthsChange props 는 BC 유지 (사용 안 됨 · dead API)
+  //   · 10일 스냅샷 모드 (selectedMonths=[]) · 비연속 월 지원
+  void monthsProp; void onMonthsChange;
+  const { selectedMonths, setSelectedMonths, monthsList } = useMonthFilter({ initial: [] });
+  const isSnapshotMode = selectedMonths.length === 0;
   const [season, setSeason] = useState<SeasonKey | null>(null);
   const [saleMin, setSaleMin] = useState<string>("");
   const [saleMax, setSaleMax] = useState<string>("");
@@ -112,44 +116,23 @@ export const StockFlowPanel: React.FC<{
     (async () => {
       try {
         const serverSort = (["sale", "purchase", "amount", "closing"] as FlowSortKey[]).includes(sort) ? sort : "sale";
-        const buildParams = (m: number) => {
-          const p = new URLSearchParams({ sort: serverSort, dir, limit: String(limit) });
-          if (season) p.set("season", season);
-          else if (m > 0) p.set("months", String(m));
-          else if (snapshot) p.set("period_end", snapshot);
-          return p;
-        };
-        // 2026-08-31 · #30 root cause · stock_history 최신 스냅샷 stale (예 · 34일 전) 시 · months=1 → 0 rows
-        //   · rows==0 && season 없음 && months>0 && months<12 · 2/3/6/12 자동 확장 · 첫 성공 결과 사용
-        const fetchOnce = (m: number) => api.get<any>(`/api/stock-manage/top-sales?${buildParams(m)}`);
-        let { data: j } = await fetchOnce(months);
-        let effectiveMonths: number = months;
-        const initialCount = Array.isArray(j?.rows) ? j.rows.length : 0;
-        if (initialCount === 0 && !season && months > 0 && months < 12) {
-          for (const nextM of [2, 3, 6, 12].filter(x => x > months)) {
-            try {
-              const resp = await fetchOnce(nextM);
-              if (Array.isArray(resp.data?.rows) && resp.data.rows.length > 0) {
-                j = resp.data;
-                effectiveMonths = nextM;
-                break;
-              }
-            } catch { /* 다음 시도 */ }
-          }
-        }
+        // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD)
+        //   · 자동 확장 로직 제거 (비연속 월 원칙과 상충)
+        //   · 3 모드 상호 배타: season / months_list / snapshot (10일)
+        const p = new URLSearchParams({ sort: serverSort, dir, limit: String(limit) });
+        if (season) p.set("season", season);
+        else if (monthsList) p.set("months_list", monthsList);
+        else if (snapshot) p.set("period_end", snapshot);
+        const { data: j } = await api.get<any>(`/api/stock-manage/top-sales?${p}`);
         setRows(Array.isArray(j.rows) ? j.rows : []);
-        if (!season && months === 0 && !snapshot && j.period_end) setSnapshot(j.period_end);
-        if (effectiveMonths !== months) {
-          setAutoExpanded({ requested: months, effective: effectiveMonths, latestSnapshot: j.period_end ?? null });
-        } else {
-          setAutoExpanded(null);
-        }
+        if (!season && isSnapshotMode && !snapshot && j.period_end) setSnapshot(j.period_end);
+        setAutoExpanded(null);
       } catch (err) {
         setAutoExpanded(null);
         showError(`재고흐름 로드 실패: ${err instanceof Error ? err.message : String(err)}`);
       } finally { setLoading(false); }
     })();
-  }, [sort, dir, limit, snapshot, months, season]);
+  }, [sort, dir, limit, snapshot, monthsList, season, isSnapshotMode]);
 
   const toggleSort = (k: FlowSortKey) => {
     if (sort === k) setDir(dir === "desc" ? "asc" : "desc");
@@ -239,42 +222,35 @@ export const StockFlowPanel: React.FC<{
           💡 상품명을 누르면 판매추이 그래프가 나옵니다
         </p>
       </div>
-      {/* 조회기간 */}
+      {/* 조회기간 · 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
       <div className="px-3 py-2 border-b border-zinc-100 flex items-center gap-1 flex-wrap text-[14px]">
         <span className="text-zinc-500 font-bold shrink-0 mr-1">조회기간</span>
-        <button onClick={() => { setPendingMonths(0); setSeason(null); }}
-          className={`px-1.5 py-0.5 rounded font-bold transition ${!season && pendingMonths === 0 ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100"}`}>10일</button>
-        {[1, 2, 3, 4, 5, 6].map(m => (
-          <button key={m} onClick={() => { setPendingMonths(m as any); setSeason(null); }}
-            className={`px-1.5 py-0.5 rounded font-bold transition ${!season && pendingMonths === m ? "bg-orange-500 text-white" : "text-zinc-500 hover:bg-zinc-100"}`}>{m}개월</button>
-        ))}
-        {pendingMonths !== months && !season ? (
-          <button onClick={() => setMonths(pendingMonths)}
-            className="ml-1 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-orange-500 text-white font-bold hover:bg-orange-600 shadow-sm cursor-pointer transition animate-pulse"
-            title="선택한 기간으로 조회">확인 →</button>
-        ) : (
-          <span className="ml-1 text-[15px] text-zinc-400 font-semibold">{season ? "계절 조회 중" : "조회 완료"}</span>
+        <MonthToggleSelector
+          selectedMonths={selectedMonths}
+          onChange={months => { setSelectedMonths(months); setSeason(null); }}
+          maxMonths={6}
+          ariaLabel="재고흐름 기간"
+        />
+        <button
+          type="button"
+          onClick={() => { setSelectedMonths([]); setSeason(null); }}
+          className={`px-2 h-6 text-[13px] font-semibold rounded transition cursor-pointer whitespace-nowrap ${isSnapshotMode && !season ? "bg-orange-500 text-white shadow-sm" : "text-zinc-500 bg-zinc-100 hover:bg-zinc-200 border border-line"}`}
+          title="10일 스냅샷 모드 · 최신 period_end 조회"
+        >
+          10일 스냅샷
+        </button>
+        {selectedMonths.length > 0 && !season && (
+          <span className="ml-1 text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
         )}
         <SeasonButtons
           value={season}
           onChange={(v) => {
             setSeason(v);
-            if (v) { setPendingMonths(0); setMonths(0); }
+            if (v) setSelectedMonths([]);
           }}
           size="sm"
           className="ml-1"
         />
-        {months > 0 && (() => {
-          const today = new Date();
-          const start = new Date(today.getFullYear(), today.getMonth() - months, 1);
-          const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
-          const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-          return (
-            <span className="ml-1">
-              <StatusPill tone="emerald" size="xs">{s} ~ {e}</StatusPill>
-            </span>
-          );
-        })()}
       </div>
       {/* 검색 + 필터 */}
       <div className="px-3 py-2 border-b border-zinc-100 flex flex-col gap-1.5">

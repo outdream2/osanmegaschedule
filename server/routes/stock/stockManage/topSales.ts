@@ -1,5 +1,9 @@
 // GET /api/stock-manage/top-sales
 // 재고 스냅샷의 상품별 흐름 — season/months/single-snapshot 3가지 모드
+// 2026-10-06 · 사용자 지시 · 판매 SSOT = sales (판매원장)
+//   · stock_history 는 재고 snapshot/movement 전용 (prv/buy/closing/bad)
+//   · sale_stock, total_amount, sale_qty_month/60d/90d, sale_qty_cycle 모두 sales 축으로 재계산
+//   · 날짜 축: sales.sale_date · 상품 relation: sales.pcode → products.pcode
 import { Router } from "express";
 import { supabase } from "../../../../src/supabase/client";
 import { resolveSeasonMonths } from "../../settings/settings";
@@ -12,6 +16,67 @@ import { parseMonthsList } from "../../../lib/periodFilter";
 // 2026-09-14 · 사용자 대원칙 · topSalesCache 제거 · 매 요청 실시간 조회
 
 const router = Router();
+
+// ─── sales SSOT 집계 helper ────────────────────────────────────────────────
+// 2026-10-06 · 사용자 지시 · 판매 데이터는 sales 테이블만 소스
+//   · 반품/취소 (total_stock <= 0) 제외 · 사용자 지시 (trending.ts 동일 규칙)
+//   · pcode → code 매핑 · join 실패 silent drop 금지 · 로그
+interface SalesAggOptions {
+  fromYmd: string | null;         // "YYYY-MM-DD" · 하한 (null = 생략)
+  toYmd: string | null;           // "YYYY-MM-DD" · 상한 (null = 생략)
+  monthsListSet?: Set<string>;    // 비연속 YM post-filter (season/months_list 모드)
+  seasonMonths?: number[] | null; // season 1~12 월 번호
+  pcodeToCode: Map<string, string>;      // sales.pcode → products.product_code
+  salePriceByCode: Map<string, number>;  // products.sale_price for amount 계산
+  codeFilter?: Set<string> | null;       // supplier filter 적용 결과 code 제한 (null = 제한 없음)
+}
+async function aggregateSalesByCode(opts: SalesAggOptions): Promise<Map<string, { qty: number; amount: number }>> {
+  const out = new Map<string, { qty: number; amount: number }>();
+  let unmatched = 0;
+  const PAGE = 1000;
+  let from = 0;
+  while (true) {
+    let q = supabase
+      .from("sales")
+      .select("pcode, sale_date, total_stock")
+      .not("pcode", "is", null)
+      .range(from, from + PAGE - 1);
+    if (opts.fromYmd) q = q.gte("sale_date", opts.fromYmd);
+    if (opts.toYmd) q = q.lte("sale_date", opts.toYmd);
+    const { data, error } = await q;
+    if (error) {
+      if (/relation|does not exist/i.test(error.message)) return out;
+      throw new HttpError(500, error.message, "DB_ERROR");
+    }
+    if (!data || data.length === 0) break;
+    for (const r of data) {
+      const pc = String((r as any).pcode ?? "").trim();
+      if (!pc) continue;
+      const code = opts.pcodeToCode.get(pc);
+      if (!code) { unmatched++; continue; }
+      if (opts.codeFilter && !opts.codeFilter.has(code)) continue;
+      const d = String((r as any).sale_date ?? "");
+      if (opts.seasonMonths && !inSeasonMonths(d, opts.seasonMonths)) continue;
+      if (opts.monthsListSet) {
+        const ym = /^(\d{4}-\d{2})/.exec(d)?.[1];
+        if (!ym || !opts.monthsListSet.has(ym)) continue;
+      }
+      const qty = Number((r as any).total_stock ?? 0) || 0;
+      if (qty <= 0) continue;  // 반품/취소 제외
+      const price = opts.salePriceByCode.get(code) ?? 0;
+      const cur = out.get(code) ?? { qty: 0, amount: 0 };
+      cur.qty += qty;
+      cur.amount += qty * price;
+      out.set(code, cur);
+    }
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  if (unmatched > 0) {
+    logger.info(`[top-sales/sales-ssot] sales.pcode → products.pcode join 실패 ${unmatched} rows (silent drop 금지 · 로그만)`);
+  }
+  return out;
+}
 
 router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
@@ -76,9 +141,12 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
 
       // products 매핑 (숨김 제외)
       // 2026-10-06 · 대원칙 · DB 2단계 JOIN · products 전수 로드 (code + pcode 양방향 Map)
+      // 2026-10-06 · 사용자 지시 · sales SSOT · pcodeToCode 매핑도 함께 구성 (sales.pcode → products.product_code)
       type ProductInfo = { product_name: string | null; optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; min_order: number; location: string | null; sale_status: string | null };
       const productMap = new Map<string, ProductInfo>();
       const productByPcode = new Map<string, ProductInfo>();
+      const pcodeToCode = new Map<string, string>();
+      const salePriceByCode = new Map<string, number>();
       const hiddenSet = new Set<string>();
       const hiddenPcodeSet = new Set<string>();
       try {
@@ -111,6 +179,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             };
             if (code)  productMap.set(code, info);
             if (pcode) productByPcode.set(pcode, info);
+            if (code && pcode) pcodeToCode.set(pcode, code);
+            if (code) salePriceByCode.set(code, info.sale_price);
           }
           if (page.length < PAGE) break;
           pf += PAGE;
@@ -162,14 +232,11 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           });
         }
         const agg = byCode.get(key)!;
-        const prodSp = prod;
-        const sqty = Number((r as any).sale_stock ?? 0) || 0;
+        void prod;
         // 2026-10-05 · 사용자 지시 · 매입 SSOT = purchase_details · stock_history.buy_stock 집계 제거
-        //   · agg.buy_stock 은 아래 purchase_details 조인에서 info.totalQty 로 설정
-        agg.sale_stock        += sqty;
+        // 2026-10-06 · 사용자 지시 · 판매 SSOT = sales · stock_history.sale_stock 집계 제거
+        //   · agg.sale_stock, agg.total_amount 은 아래 sales SSOT 블록에서 재할당
         agg.product_bad_stock += Number((r as any).product_bad_stock ?? 0) || 0;
-        // 2026-09-10 · 사용자 지시 · 판매액 = sale_stock × sale_price (xlsx total_amount 사용 금지)
-        agg.total_amount += sqty * (Number(prodSp?.sale_price ?? 0) || 0);
         if (snap < agg.first_snap) {
           agg.first_snap = snap;
           agg.prv_stock = Number((r as any).prv_stock ?? 0) || 0;
@@ -179,6 +246,40 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           agg.closing_stock = Number((r as any).closing_stock ?? 0) || 0;
         }
         // 2026-07-29 · 매입일 stock_history fallback 완전 제거 · 아래 purchase_details 조인만 신뢰
+      }
+
+      // ═══ sales SSOT 집계 (season/months_list 모드) · 판매 SSOT · sale_date 축 ═══
+      // 2026-10-06 · 사용자 지시 · 판매 데이터는 sales 테이블만 소스 · stock_history 사용 금지
+      try {
+        const codesInResult = new Set(Array.from(byCode.values()).map(a => a.product_code).filter(Boolean) as string[]);
+        // 기간 범위 (sales.sale_date 축) · season/months_list 각각
+        let fromYmd: string | null = null;
+        let toYmd: string | null = null;
+        if (seasonMonths) {
+          // season 은 년도 무관 월 번호 매칭 → 전체 스캔 후 post-filter (범위 생략)
+        } else if (monthsListSet.size > 0) {
+          const sortedYm = [...monthsListSet].sort();
+          fromYmd = `${sortedYm[0]}-01`;
+          const [yy, mm] = sortedYm[sortedYm.length - 1].split("-").map(Number);
+          toYmd = `${sortedYm[sortedYm.length - 1]}-${String(new Date(yy, mm, 0).getDate()).padStart(2, "0")}`;
+        }
+        const salesAgg = await aggregateSalesByCode({
+          fromYmd,
+          toYmd,
+          monthsListSet: monthsListSet.size > 0 ? monthsListSet : undefined,
+          seasonMonths: seasonMonths ?? null,
+          pcodeToCode,
+          salePriceByCode,
+          codeFilter: codesInResult,
+        });
+        for (const agg of byCode.values()) {
+          const s = agg.product_code ? salesAgg.get(agg.product_code) : undefined;
+          agg.sale_stock = s?.qty ?? 0;
+          agg.total_amount = s?.amount ?? 0;
+        }
+        logger.info(`[top-sales/season] sales SSOT 집계: ${salesAgg.size}개 상품 · sale_date 축 (판매 SSOT=sales · 대원칙)`);
+      } catch (e: any) {
+        logger.warn(`[top-sales/season] sales SSOT 집계 실패:`, e?.message);
       }
 
       // ═══ purchase_details 조인 (season 모드) · 매입 SSOT · 기간 필터 적용 ═══
@@ -307,9 +408,12 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       }
 
       // 2026-10-06 · 대원칙 · DB 2단계 JOIN · products 전수 로드 (code + pcode 양방향 Map)
+      // 2026-10-06 · 사용자 지시 · sales SSOT · pcodeToCode / salePriceByCode 매핑 구성
       type ProductInfoM = { product_name: string | null; optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number; location: string | null; sale_status: string | null };
       const productMap = new Map<string, ProductInfoM>();
       const productByPcode = new Map<string, ProductInfoM>();
+      const pcodeToCode = new Map<string, string>();
+      const salePriceByCode = new Map<string, number>();
       const hiddenSet = new Set<string>();
       const hiddenPcodeSet = new Set<string>();
       try {
@@ -343,6 +447,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             };
             if (code)  productMap.set(code, info);
             if (pcode) productByPcode.set(pcode, info);
+            if (code && pcode) pcodeToCode.set(pcode, code);
+            if (code) salePriceByCode.set(code, info.sale_price);
           }
           if (page.length < OP_PAGE) break;
           opFrom += OP_PAGE;
@@ -394,14 +500,11 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           });
         }
         const agg = byCode.get(key)!;
-        const prodSp = prod;
-        const sqty = Number((r as any).sale_stock ?? 0) || 0;
+        void prod;
         // 2026-10-05 · 사용자 지시 · 매입 SSOT = purchase_details · stock_history.buy_stock 집계 제거
-        //   · agg.buy_stock 은 아래 purchase_details 조인에서 info.totalQty 로 설정
-        agg.sale_stock        += sqty;
+        // 2026-10-06 · 사용자 지시 · 판매 SSOT = sales · stock_history.sale_stock 집계 제거
+        //   · agg.sale_stock, agg.total_amount 은 아래 sales SSOT 블록에서 재할당
         agg.product_bad_stock += Number((r as any).product_bad_stock ?? 0) || 0;
-        // 2026-09-10 · 사용자 지시 · 판매액 = sale_stock × sale_price (xlsx total_amount 사용 금지)
-        agg.total_amount += sqty * (Number(prodSp?.sale_price ?? 0) || 0);
         if (snap < agg.first_snap) {
           agg.first_snap = snap;
           agg.prv_stock = Number((r as any).prv_stock ?? 0) || 0;
@@ -466,23 +569,59 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         logger.warn(`[top-sales/months] purchase_details 조인 실패:`, e?.message);
       }
       // 2026-07-28 · 회전율 = 최근매입일 ~ 그 전매입일 사이 판매량
-      // 2026-10-01 · 사용자 지시 · 공통기능 공식 통일 · raw total_amount (xlsx 원본 · 78.6% 불일치) 제거
-      //   · 판매액 = sale_qty × sale_price (products SSOT · 대원칙 #3)
-      // 2026-10-04 · schema rename · sale_qty→sale_stock · snapshot_date→period_end
+      // 2026-10-06 · 사용자 지시 · 판매 SSOT = sales · stock_history 참조 제거
+      //   · sale_date 축 집계 · 날짜별 (sale_date) 집계 Map 구성
+      //   · 반품/취소 (total_stock <= 0) 제외
       const salesByCodeByDate = new Map<string, Map<string, { qty: number; amount: number }>>();
-      for (const r of rawRows) {
-        const code = String((r as any).product_code ?? "").trim();
-        if (!code) continue;
-        const snap = String((r as any).period_end ?? "");
-        if (!snap) continue;
-        const q = Number((r as any).sale_stock ?? 0) || 0;
-        const sp = Number(productMap.get(code)?.sale_price ?? 0) || 0;
-        const a = q * sp;
-        if (q <= 0 && a <= 0) continue;
-        const bySup = salesByCodeByDate.get(code) ?? new Map<string, { qty: number; amount: number }>();
-        const prev = bySup.get(snap) ?? { qty: 0, amount: 0 };
-        bySup.set(snap, { qty: prev.qty + q, amount: prev.amount + a });
-        salesByCodeByDate.set(code, bySup);
+      try {
+        const PAGE = 1000;
+        let from = 0;
+        // sales 전체 fetch · cutoffStr 하한 · supplier filter 는 pcode→code→supplier_code 로 간접
+        while (true) {
+          const { data, error } = await supabase
+            .from("sales")
+            .select("pcode, sale_date, total_stock")
+            .not("pcode", "is", null)
+            .gte("sale_date", cutoffStr)
+            .lte("sale_date", todayStr)
+            .range(from, from + PAGE - 1);
+          if (error) {
+            if (/relation|does not exist/i.test(error.message)) break;
+            throw new HttpError(500, error.message, "DB_ERROR");
+          }
+          if (!data || data.length === 0) break;
+          for (const r of data) {
+            const pc = String((r as any).pcode ?? "").trim();
+            if (!pc) continue;
+            const code = pcodeToCode.get(pc);
+            if (!code) continue;
+            // supplier filter 적용 (byCode 에 포함된 code 만 집계 대상)
+            if (!byCode.has(code)) continue;
+            const d = String((r as any).sale_date ?? "");
+            const q = Number((r as any).total_stock ?? 0) || 0;
+            if (q <= 0) continue;  // 반품/취소 제외
+            const sp = salePriceByCode.get(code) ?? 0;
+            const bySup = salesByCodeByDate.get(code) ?? new Map<string, { qty: number; amount: number }>();
+            const prev = bySup.get(d) ?? { qty: 0, amount: 0 };
+            bySup.set(d, { qty: prev.qty + q, amount: prev.amount + q * sp });
+            salesByCodeByDate.set(code, bySup);
+          }
+          if (data.length < PAGE) break;
+          from += PAGE;
+        }
+        logger.info(`[top-sales/months] sales SSOT 집계: ${salesByCodeByDate.size}개 상품 · sale_date 축 (판매 SSOT=sales)`);
+      } catch (e: any) {
+        logger.warn(`[top-sales/months] sales SSOT 집계 실패:`, e?.message);
+      }
+      // sale_stock / total_amount 재할당 (전체 기간 SUM)
+      for (const agg of byCode.values()) {
+        const bySup = agg.product_code ? salesByCodeByDate.get(agg.product_code) : undefined;
+        let totalQty = 0, totalAmount = 0;
+        if (bySup) {
+          for (const v of bySup.values()) { totalQty += v.qty; totalAmount += v.amount; }
+        }
+        agg.sale_stock = totalQty;
+        agg.total_amount = totalAmount;
       }
       // 2026-07-30 · 최근 한달 판매량 + 판매액
       // 2026-08-03 · 60일/90일 판매량 추가
@@ -556,27 +695,22 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         }
       });
       // 2026-07-28 · 3개월 재고회전율
+      // 2026-10-06 · 사용자 지시 · 판매 SSOT = sales · 재고 축은 stock_history 유지
+      //   · sale_qty_3m 는 sales 집계 · opening/closing 은 stock_history snapshot
       const compute3mMap = new Map<string, { sale_qty_3m: number; opening_3m: number; closing_3m: number }>();
-      if (monthsParam === 3) {
-        for (const agg of aggRows) {
-          compute3mMap.set(agg.product_code, {
-            sale_qty_3m: agg.sale_stock,
-            opening_3m:  agg.prv_stock,
-            closing_3m:  agg.closing_stock,
-          });
-        }
-      } else {
+      {
         const today3 = new Date();
         const cutoff3 = new Date(today3.getFullYear(), today3.getMonth() - 3, today3.getDate());
         const cutoff3Str = `${cutoff3.getFullYear()}-${String(cutoff3.getMonth() + 1).padStart(2, "0")}-${String(cutoff3.getDate()).padStart(2, "0")}`;
+        // 재고 축 (opening/closing) · stock_history 유지
+        const by3Stock = new Map<string, { first_snap: string; last_snap: string; opening: number; closing: number }>();
         try {
           const rows3: any[] = [];
           const PAGE3 = 1000;
           let from3 = 0;
           while (true) {
-            // 2026-10-04 · schema rename · 신규 column 직접 사용
             let q3 = supabase.from("stock_history")
-              .select("period_end, product_code, prv_stock, sale_stock, closing_stock")
+              .select("period_end, product_code, prv_stock, closing_stock")
               .gte("period_end", cutoff3Str)
               .order("period_end", { ascending: true });
             if (supplierFilter)     q3 = q3.eq("supplier_name", supplierFilter);
@@ -587,23 +721,55 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
             if (data.length < PAGE3) break;
             from3 += PAGE3;
           }
-          const by3 = new Map<string, { first_snap: string; last_snap: string; opening: number; closing: number; sale_qty: number }>();
           for (const r of rows3) {
             const code = String((r as any).product_code ?? "").trim();
             if (!code) continue;
             const snap = String((r as any).period_end ?? "");
-            if (!by3.has(code)) {
-              by3.set(code, { first_snap: snap, last_snap: snap, opening: Number((r as any).prv_stock ?? 0) || 0, closing: Number((r as any).closing_stock ?? 0) || 0, sale_qty: 0 });
+            if (!by3Stock.has(code)) {
+              by3Stock.set(code, { first_snap: snap, last_snap: snap, opening: Number((r as any).prv_stock ?? 0) || 0, closing: Number((r as any).closing_stock ?? 0) || 0 });
             }
-            const agg3 = by3.get(code)!;
-            agg3.sale_qty += Number((r as any).sale_stock ?? 0) || 0;
+            const agg3 = by3Stock.get(code)!;
             if (snap < agg3.first_snap) { agg3.first_snap = snap; agg3.opening = Number((r as any).prv_stock ?? 0) || 0; }
             if (snap > agg3.last_snap)  { agg3.last_snap  = snap; agg3.closing = Number((r as any).closing_stock ?? 0) || 0; }
           }
-          for (const [code, v] of by3) {
-            compute3mMap.set(code, { sale_qty_3m: v.sale_qty, opening_3m: v.opening, closing_3m: v.closing });
+        } catch { /* silent */ }
+        // 판매 축 (sale_qty_3m) · sales SSOT
+        const sales3Map = new Map<string, number>();
+        try {
+          const PAGE = 1000;
+          let from = 0;
+          while (true) {
+            const { data, error } = await supabase
+              .from("sales")
+              .select("pcode, sale_date, total_stock")
+              .not("pcode", "is", null)
+              .gte("sale_date", cutoff3Str)
+              .range(from, from + PAGE - 1);
+            if (error) break;
+            if (!data || data.length === 0) break;
+            for (const r of data) {
+              const pc = String((r as any).pcode ?? "").trim();
+              if (!pc) continue;
+              const code = pcodeToCode.get(pc);
+              if (!code) continue;
+              const q = Number((r as any).total_stock ?? 0) || 0;
+              if (q <= 0) continue;
+              sales3Map.set(code, (sales3Map.get(code) ?? 0) + q);
+            }
+            if (data.length < PAGE) break;
+            from += PAGE;
           }
         } catch { /* silent */ }
+        // 병합
+        const allCodes = new Set<string>([...by3Stock.keys(), ...sales3Map.keys()]);
+        for (const code of allCodes) {
+          const stock = by3Stock.get(code);
+          compute3mMap.set(code, {
+            sale_qty_3m: sales3Map.get(code) ?? 0,
+            opening_3m:  stock?.opening ?? 0,
+            closing_3m:  stock?.closing ?? 0,
+          });
+        }
       }
       for (const agg of aggRows) {
         const m3 = compute3mMap.get(agg.product_code);
@@ -726,9 +892,12 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
     }
 
     // 2026-10-06 · 대원칙 · DB 2단계 JOIN · products 전수 로드 (code + pcode 양방향 Map)
+    // 2026-10-06 · 사용자 지시 · sales SSOT · pcodeToCode / salePriceByCode 매핑 구성
     type ProductInfoS = { product_name: string | null; optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number; location: string | null; sale_status: string | null };
     const productMap = new Map<string, ProductInfoS>();
     const productByPcode = new Map<string, ProductInfoS>();
+    const pcodeToCode = new Map<string, string>();
+    const salePriceByCode = new Map<string, number>();
     const hiddenSet = new Set<string>();
     const hiddenPcodeSet = new Set<string>();
     const codesInResult = Array.from(new Set(data.map(r => String(r.product_code ?? "").trim()).filter(Boolean)));
@@ -763,12 +932,54 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
           };
           if (code)  productMap.set(code, info);
           if (pcode) productByPcode.set(pcode, info);
+          if (code && pcode) pcodeToCode.set(pcode, code);
+          if (code) salePriceByCode.set(code, info.sale_price);
         }
         if (page.length < OP_PAGE) break;
         opFrom += OP_PAGE;
       }
     } catch (e: any) {
       logger.warn("[top-sales] products fetch 실패:", e?.message);
+    }
+
+    // ═══ sales SSOT 집계 (snapshot 모드) · 그 날짜 (targetDate) 판매 ═══
+    // 2026-10-06 · 사용자 지시 · 판매 SSOT = sales · sale_date = targetDate 단일 날짜
+    //   · stock_history.sale_stock 사용 금지 · sales SSOT 로 재계산
+    const salesSnapshotMap = new Map<string, { qty: number; amount: number }>();
+    try {
+      const PAGE = 1000;
+      let from = 0;
+      while (true) {
+        const { data: sRows, error: sErr } = await supabase
+          .from("sales")
+          .select("pcode, total_stock")
+          .not("pcode", "is", null)
+          .eq("sale_date", targetDate)
+          .range(from, from + PAGE - 1);
+        if (sErr) {
+          if (/relation|does not exist/i.test(sErr.message)) break;
+          throw new HttpError(500, sErr.message, "DB_ERROR");
+        }
+        if (!sRows || sRows.length === 0) break;
+        for (const r of sRows) {
+          const pc = String((r as any).pcode ?? "").trim();
+          if (!pc) continue;
+          const code = pcodeToCode.get(pc);
+          if (!code) continue;
+          const q = Number((r as any).total_stock ?? 0) || 0;
+          if (q <= 0) continue;
+          const sp = salePriceByCode.get(code) ?? 0;
+          const cur = salesSnapshotMap.get(code) ?? { qty: 0, amount: 0 };
+          cur.qty += q;
+          cur.amount += q * sp;
+          salesSnapshotMap.set(code, cur);
+        }
+        if (sRows.length < PAGE) break;
+        from += PAGE;
+      }
+      logger.info(`[top-sales/snapshot] sales SSOT 집계: ${salesSnapshotMap.size}개 상품 · targetDate=${targetDate} (판매 SSOT=sales)`);
+    } catch (e: any) {
+      logger.warn("[top-sales/snapshot] sales SSOT 집계 실패:", e?.message);
     }
 
     // ═══ purchase_details 조인 · 최근/최초 매입일 + 매입 금액 + 횟수
@@ -827,8 +1038,8 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
       // 2026-10-06 · 대원칙 · DB 2단계 JOIN · code 매칭 실패 시 pcode 재조회
       const prod = (code ? productMap.get(code) : undefined) ?? (pcode ? productByPcode.get(pcode) : undefined);
       const purchaseInfo = code ? purchaseInfoMap.get(code) : undefined;
-      const sqty = Number((r as any).sale_stock ?? 0) || 0;
-      const salePriceFromProd = Number(prod?.sale_price ?? 0) || 0;
+      // 2026-10-06 · 사용자 지시 · 판매 SSOT = sales · stock_history.sale_stock 사용 금지
+      const salesInfo = code ? salesSnapshotMap.get(code) : undefined;
       return {
         product_code:      code || null,
         pcode:             pcode || null,
@@ -839,13 +1050,13 @@ router.get("/api/stock-manage/top-sales", asyncHandler(async (req, res) => {
         // 2026-10-05 · 사용자 지시 · 매입 SSOT = purchase_details · stock_history.buy_stock 참조 중단
         //   · 단일 snapshot 모드는 "그 날짜 재고" 라 매입 기간이 불명 → purchase_total_qty (전체 기간 누적) 노출
         buy_stock:         purchaseInfo?.totalQty ?? 0,
-        sale_stock:        sqty,
+        sale_stock:        salesInfo?.qty ?? 0,
         product_bad_stock: Number((r as any).product_bad_stock ?? 0) || 0,
         internal_qty:      Number((r as any).internal_qty      ?? 0) || 0,
         adjustment_qty:    Number((r as any).adjustment_qty    ?? 0) || 0,
         closing_stock:     Number((r as any).closing_stock     ?? 0) || 0,
         // 2026-10-01 · 사용자 대원칙 #3 · 판매액 = 수량 × 판매가 (xlsx raw total_amount 금지)
-        total_amount:      sqty * salePriceFromProd,
+        total_amount:      salesInfo?.amount ?? 0,
         optimal_stock:     prod?.optimal_stock  ?? 0,
         sale_price:        prod?.sale_price     ?? 0,
         purchase_price:    prod?.purchase_price ?? 0,

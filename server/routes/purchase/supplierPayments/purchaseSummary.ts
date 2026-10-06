@@ -4,6 +4,7 @@ import { supabase } from "../../../../src/supabase/client";
 import { asyncHandler } from "../../../middleware/asyncHandler";
 import { HttpError } from "../../../middleware/errorHandler";
 import logger from "../../../lib/logger";
+import { parseMonthsList } from "../../../lib/periodFilter";
 
 const router = Router();
 
@@ -15,22 +16,16 @@ router.get("/api/supplier-purchase-summary", asyncHandler(async (req, res) => {
   const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
   // 2026-10-05 · 사용자 지시 · months_list=YM1,YM2 비연속 월 멀티선택 지원
   //   · days 보다 우선 · 선택된 YM 범위 (min 월 1일 ~ max 월 말일) 조회 + post-filter
-  const monthsListParam = String(req.query.months_list ?? "").trim();
-  const monthsListArr: string[] = monthsListParam
-    ? monthsListParam.split(",").map((s) => s.trim()).filter((s) => /^\d{4}-\d{2}$/.test(s))
-    : [];
-  const useMonthsList = monthsListArr.length > 0;
-  const monthsListSet = new Set(monthsListArr);
+  // 2026-10-06 · 공통 parser 재사용 (server/lib/periodFilter · 복붙 통일 · 사용자 지시)
+  const months = parseMonthsList(req.query.months_list);
+  const useMonthsList = !months.isEmpty;
+  const monthsListSet = months.set;
+  void months.arr;
   let cutoffYmd: string;
   let monthsListTo: string | null = null;
-  if (useMonthsList) {
-    const sortedYm = [...monthsListArr].sort();
-    const minYm = sortedYm[0];
-    const maxYm = sortedYm[sortedYm.length - 1];
-    cutoffYmd = `${minYm}-01`;
-    const [yy, mm] = maxYm.split("-").map(Number);
-    const lastDay = new Date(yy, mm, 0).getDate();
-    monthsListTo = `${maxYm}-${String(lastDay).padStart(2, "0")}`;
+  if (useMonthsList && months.from && months.to) {
+    cutoffYmd = months.from;
+    monthsListTo = months.to;
   } else {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);

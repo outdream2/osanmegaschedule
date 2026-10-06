@@ -6,6 +6,7 @@ import { asyncHandler } from "../../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../../middleware/errorHandler";
 import { splitVat, fetchVatIncluded } from "./helpers";
 import logger from "../../../lib/logger";
+import { parseMonthsList, isDateInSelectedMonths } from "../../../lib/periodFilter";
 
 const router = Router();
 
@@ -48,9 +49,16 @@ router.get("/api/supplier-stock-values-map", asyncHandler(async (_req, res) => {
 router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   // 2026-09-14 · #140 · 기간 필터 · optional start/end (YYYY-MM-DD) · 결제대시보드 사용
+  // 2026-10-06 · months_list=YM1,YM2 비연속 월 멀티선택 지원 (STANDARD 통일 · 사용자 지시)
+  //   · 각 날짜 축 유지 · purchase_date / payment_date / sale_date 각각 range + post-filter
+  //   · months_list 지정 시 start/end 무시
+  const months = parseMonthsList(req.query.months_list);
   const start = String(req.query.start ?? "").trim();
   const end   = String(req.query.end ?? "").trim();
-  const hasFilter = /^\d{4}-\d{2}-\d{2}$/.test(start) && /^\d{4}-\d{2}-\d{2}$/.test(end);
+  const hasStartEnd = /^\d{4}-\d{2}-\d{2}$/.test(start) && /^\d{4}-\d{2}-\d{2}$/.test(end);
+  const hasFilter = !months.isEmpty || hasStartEnd;
+  const effStart = !months.isEmpty ? months.from! : start;
+  const effEnd   = !months.isEmpty ? months.to!   : end;
   // 2026-10-05 · 사용자 지시 · chunk 지원 · suppliers=A,B,C 지정 시 · WHERE in (…) 로 그 공급사만 집계
   //   · lite=1 지정 시 · cogs/stock_asset 계산 skip · purchase/payment/balance 만 반환 (빠른 응답)
   //   · 결제입력 좌측 리스트 · 공급사 chunk × 30 progressive load 용
@@ -70,7 +78,7 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
       .from("purchase_details")
       .select("supplier_name, amount, purchase_date")
       .range(pdFrom, pdFrom + PD_PAGE - 1);
-    if (hasFilter) q = q.gte("purchase_date", start).lte("purchase_date", end);
+    if (hasFilter) q = q.gte("purchase_date", effStart).lte("purchase_date", effEnd);
     if (supplierList) q = q.in("supplier_name", supplierList);
     const { data, error } = await q;
     if (error) {
@@ -81,6 +89,8 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
     for (const r of data) {
       const s = String((r as any).supplier_name ?? "").trim();
       if (!s) continue;
+      // 2026-10-06 · months_list 비연속 월 post-filter · 중간 월 자동 포함 금지
+      if (!months.isEmpty && !isDateInSelectedMonths((r as any).purchase_date, months.set)) continue;
       purchaseMap.set(s, (purchaseMap.get(s) ?? 0) + (Number((r as any).amount) || 0));
     }
     if (data.length < PD_PAGE) break;
@@ -96,7 +106,7 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
         .from("supplier_payments")
         .select("supplier_name, amount, payment_date")
         .range(spFrom, spFrom + SP_PAGE - 1);
-      if (hasFilter) q = q.gte("payment_date", start).lte("payment_date", end);
+      if (hasFilter) q = q.gte("payment_date", effStart).lte("payment_date", effEnd);
       if (supplierList) q = q.in("supplier_name", supplierList);
       const { data, error } = await q;
       if (error) break;
@@ -104,6 +114,8 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
       for (const r of data) {
         const s = String((r as any).supplier_name ?? "").trim();
         if (!s) continue;
+        // 2026-10-06 · months_list 비연속 월 post-filter · payment_date 축
+        if (!months.isEmpty && !isDateInSelectedMonths((r as any).payment_date, months.set)) continue;
         paymentMap.set(s, (paymentMap.get(s) ?? 0) + (Number((r as any).amount) || 0));
       }
       if (data.length < SP_PAGE) break;
@@ -176,25 +188,53 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
         }
       }
     }
-    // 2) stock_history · sale_qty × purchase_price · 공급사 (supplier_name or products.supplier fallback) 합
-    //    2026-09-25 · E-2 · 사용자 지시 · 기간 필터 적용 · 매입액·판매원가·재고자산 정합
-    //    매입액 (purchase_details) · 결제 (supplier_payments) · 판매원가 (stock_history) · 모두 같은 기간
+    // 2) sales (SSOT · ERP Sale_Status) · total_stock × purchase_price · 공급사별 COGS
+    // 2026-10-05 · 판매 SSOT = sales.total_stock (pcode backfill 완료 · coverage 99.82%)
+    //   · 공식 #4 · 판매원가 = products.purchase_price × sales.total_stock
+    //   · 공급사는 products.supplier (sales에 supplier 없음)
     {
+      // pcode → product_code 매핑
+      const pcodeToCode = new Map<string, string>();
+      {
+        const PAGE = 1000;
+        let from = 0;
+        while (true) {
+          const { data } = await supabase
+            .from("products")
+            .select("product_code, pcode")
+            .range(from, from + PAGE - 1);
+          if (!data || data.length === 0) break;
+          for (const p of data) {
+            const pc = String((p as any).pcode ?? "").trim();
+            const code = String((p as any).product_code ?? "").trim();
+            if (pc && code) pcodeToCode.set(pc, code);
+          }
+          if (data.length < PAGE) break;
+          from += PAGE;
+        }
+      }
+
       const PAGE = 1000;
       let from = 0;
       while (true) {
         let q = supabase
-          .from("stock_history")
-          .select("supplier_name, product_code, sale_stock, period_end")
+          .from("sales")
+          .select("pcode, sale_date, total_stock")
+          .not("pcode", "is", null)
           .range(from, from + PAGE - 1);
-        if (hasFilter) q = q.gte("period_end", start).lte("period_end", end);
+        if (hasFilter) q = q.gte("sale_date", effStart).lte("sale_date", effEnd);
         const { data } = await q;
         if (!data || data.length === 0) break;
         for (const r of data) {
-          const code = String((r as any).product_code ?? "").trim();
-          const supRaw = String((r as any).supplier_name ?? "").trim() || productSupplierMap.get(code) || "";
+          const pc = String((r as any).pcode ?? "").trim();
+          if (!pc) continue;
+          // 2026-10-06 · months_list 비연속 월 post-filter · sale_date 축
+          if (!months.isEmpty && !isDateInSelectedMonths((r as any).sale_date, months.set)) continue;
+          const code = pcodeToCode.get(pc);
+          if (!code) continue;
+          const supRaw = productSupplierMap.get(code) ?? "";
           if (!supRaw) continue;
-          const qty = Number((r as any).sale_stock ?? 0) || 0;
+          const qty = Number((r as any).total_stock ?? 0) || 0;
           const price = priceMap.get(code) ?? 0;
           if (qty <= 0 || price <= 0) continue;
           cogsMap.set(supRaw, (cogsMap.get(supRaw) ?? 0) + qty * price);
@@ -207,8 +247,38 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
     logger.error(`[balance] cogs 계산 실패: ${e?.message}`);
   }
 
+  // 2026-10-05 · 사용자 공식 재확정 (대원칙 #1) · 재고자산 = 매입단가 × 현재고
+  //   · 이전 · stock_asset = purchase − cogs (기간 재고자산) · 폐기
+  //   · 신규 · SUM(products.current_stock × products.purchase_price) by 공급사명 · hidden 포함
+  const stockAssetMap = new Map<string, number>();
+  {
+    const PAGE = 1000;
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("products")
+        .select("supplier, current_stock, purchase_price")
+        .range(from, from + PAGE - 1);
+      if (error) {
+        if (/relation .* does not exist/i.test(error.message)) break;
+        break;
+      }
+      if (!data || data.length === 0) break;
+      for (const p of data) {
+        const sup = String((p as any).supplier ?? "").trim();
+        if (!sup) continue;
+        const qty = Number((p as any).current_stock ?? 0) || 0;
+        const price = Number((p as any).purchase_price ?? 0) || 0;
+        if (qty === 0 || price === 0) continue;
+        stockAssetMap.set(sup, (stockAssetMap.get(sup) ?? 0) + qty * price);
+      }
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+  }
+
   const values: Record<string, { purchase: number; payment: number; balance: number; cogs: number; stock_asset: number }> = {};
-  const allNames = new Set([...purchaseMap.keys(), ...paymentMap.keys(), ...cogsMap.keys()]);
+  const allNames = new Set([...purchaseMap.keys(), ...paymentMap.keys(), ...cogsMap.keys(), ...stockAssetMap.keys()]);
   for (const name of allNames) {
     const purchase = purchaseMap.get(name) ?? 0;
     const payment = paymentMap.get(name) ?? 0;
@@ -217,8 +287,8 @@ router.get("/api/supplier-balances-map", asyncHandler(async (req, res) => {
       purchase,
       payment,
       cogs,
-      stock_asset: purchase - cogs,  // 재고자산 = 매입액 − 판매원가
-      balance: purchase - payment,   // 실제잔고 = 매입액 − 결제액
+      stock_asset: stockAssetMap.get(name) ?? 0,  // 2026-10-05 · 재고자산 = 매입단가 × 현재고 (대원칙 #1)
+      balance: purchase - payment,                 // 실제잔고 = 매입액 − 결제액 (대원칙 #2)
     };
   }
   // 2026-09-11 · #126 · 사용자 지시 · 중요 데이터 캐시 X · 즉시 DB
@@ -398,16 +468,27 @@ router.get("/api/supplier-balance/:supplier", asyncHandler(async (req, res) => {
 
 // GET /api/supplier-ledger?supplier=X&days=90
 //   · 매입(purchase_details) + 결제(supplier_payments) UNION · running balance 계산
+// 2026-10-06 · months_list=YM1,YM2 비연속 월 멀티선택 지원 (STANDARD 통일 · 사용자 지시)
+//   · days 와 상호 배타 · months_list 지정 시 days 무시
+//   · purchase_date / payment_date 각각 range + post-filter · 비연속 중간 월 자동 포함 금지
 router.get("/api/supplier-ledger", asyncHandler(async (req, res) => {
   // 2026-09-11 · #127·#126 · 대원칙 · 캐시 X · 즉시 업데이트
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const supplier = String(req.query.supplier ?? "").trim();
   if (!supplier) throw badRequest("supplier 필수");
   const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
+  const months = parseMonthsList(req.query.months_list);
 
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
-  const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+  let cutoffYmd: string;
+  let cutoffYmdTo: string | null = null;
+  if (!months.isEmpty && months.from && months.to) {
+    cutoffYmd = months.from;
+    cutoffYmdTo = months.to;
+  } else {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+  }
 
   const vatIncludedPromise = fetchVatIncluded(supplier);
 
@@ -416,6 +497,9 @@ router.get("/api/supplier-ledger", asyncHandler(async (req, res) => {
   {
     const rows = await queryPurchaseDetails({ supplier, sinceYmd: cutoffYmd });
     for (const r of rows) {
+      // 2026-10-06 · months_list 비연속 월 post-filter + range 상한 (queryPurchaseDetails 는 상한 미지원)
+      if (cutoffYmdTo && r.purchase_date > cutoffYmdTo) continue;
+      if (!months.isEmpty && !isDateInSelectedMonths(r.purchase_date, months.set)) continue;
       purchases.push({
         type: "purchase",
         id: r.id,
@@ -439,23 +523,30 @@ router.get("/api/supplier-ledger", asyncHandler(async (req, res) => {
   const payments: any[] = [];
   {
     let data: any[] | null = null;
-    const r1 = await supabase
+    // 2026-10-06 · months_list 모드 · payment_date range 상한도 적용
+    let r1q = supabase
       .from("supplier_payments")
       .select("id, supplier_name, payment_date, amount, method, memo, vat_amount, tax_invoice_no")
       .eq("supplier_name", supplier)
       .gte("payment_date", cutoffYmd);
+    if (cutoffYmdTo) r1q = r1q.lte("payment_date", cutoffYmdTo);
+    const r1 = await r1q;
     if (!r1.error) data = r1.data ?? [];
     else if (/vat_amount|tax_invoice_no/i.test(r1.error.message)) {
-      const r2 = await supabase
+      let r2q = supabase
         .from("supplier_payments")
         .select("id, supplier_name, payment_date, amount, method, memo")
         .eq("supplier_name", supplier)
         .gte("payment_date", cutoffYmd);
+      if (cutoffYmdTo) r2q = r2q.lte("payment_date", cutoffYmdTo);
+      const r2 = await r2q;
       if (!r2.error) data = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, tax_invoice_no: null }));
       else if (!/relation .* does not exist/i.test(r2.error.message)) throw new HttpError(500, r2.error.message);
     } else if (!/relation .* does not exist/i.test(r1.error.message)) throw new HttpError(500, r1.error.message);
 
     for (const r of data ?? []) {
+      // 2026-10-06 · months_list 비연속 월 post-filter
+      if (!months.isEmpty && !isDateInSelectedMonths(r.payment_date, months.set)) continue;
       payments.push({
         type: "payment",
         id: r.id,

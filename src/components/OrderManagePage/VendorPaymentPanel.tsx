@@ -8,7 +8,7 @@ import type { Vendor } from "../LandingPage/VendorListEditor";
 import { VendorDetailTabs } from "./VendorDetailTabs";
 import { CARD_BASE } from "../../styles/tokens";
 import { EmptyState } from "../common/EmptyState";
-import { PeriodSelector, PERIOD_MONTHS_PRESET } from "../common/PeriodSelector";
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
 import { SeasonButtons } from "../common/SeasonButtons";
 // 2026-09-18 · 사용자 지시 · (주)·주식회사 표시 정제
 import { displayVendorName } from "../../utils/vendorNameNormalize";
@@ -21,9 +21,11 @@ interface VendorPaymentPanelProps {
   vendorSelected: Vendor | null;
   onEditRequest: (vendorId: number) => void;
   onSelectVendor: (v: Vendor | null) => void;
-  // 2026-09-10 · #71 · 상단 통합 기간·계절 필터
-  periodMonths: number;
-  onPeriodMonthsChange: (v: number) => void;
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (매입이력 STANDARD · MonthToggleSelector)
+  //   · periodMonths/onPeriodMonthsChange 교체 · selectedMonths 리스트
+  //   · 비연속 월 지원 · months_list 로 하위 fetch
+  selectedMonths: string[];
+  onSelectedMonthsChange: (v: string[]) => void;
   periodSeason: string | null;
   onPeriodSeasonChange: (v: string | null) => void;
 }
@@ -36,8 +38,8 @@ export const VendorPaymentPanel: React.FC<VendorPaymentPanelProps> = ({
   vendorSelected,
   onEditRequest,
   onSelectVendor,
-  periodMonths,
-  onPeriodMonthsChange,
+  selectedMonths,
+  onSelectedMonthsChange,
   periodSeason,
   onPeriodSeasonChange,
 }) => {
@@ -45,15 +47,19 @@ export const VendorPaymentPanel: React.FC<VendorPaymentPanelProps> = ({
   return (
     <div className="flex flex-col gap-2">
       {/* 2026-09-10 · #71 · 상단 통합 툴바 · 기간 + 계절 + 새로고침 (다른 페이지 스타일과 통일) */}
+      {/* 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
       <div className={`${CARD_BASE} px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5`}>
         <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
-        <PeriodSelector<number>
-          options={PERIOD_MONTHS_PRESET}
-          value={periodMonths}
-          onChange={v => { onPeriodMonthsChange(v); onPeriodSeasonChange(null); }}
-          accent="teal"
+        <MonthToggleSelector
+          selectedMonths={selectedMonths}
+          onChange={months => { onSelectedMonthsChange(months); onPeriodSeasonChange(null); }}
+          maxMonths={6}
+          minOne
           ariaLabel="공급사별 결제내역 기간"
         />
+        {selectedMonths.length > 0 && !periodSeason && (
+          <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+        )}
         <SeasonButtons
           value={(periodSeason as any) ?? null}
           onChange={(v: any) => onPeriodSeasonChange(v ?? null)}
@@ -79,7 +85,7 @@ export const VendorPaymentPanel: React.FC<VendorPaymentPanelProps> = ({
             initialSelectedId={vendorPreselectId}
             onEditRequest={onEditRequest}
             compact
-            externalAggregateMonths={periodMonths}
+            externalSelectedMonths={selectedMonths}
           />
         </div>
         <div onMouseDown={onVendorResizeStart}
@@ -114,7 +120,7 @@ export const VendorPaymentPanel: React.FC<VendorPaymentPanelProps> = ({
           ) : (
             <VendorDetailTabs
               vendor={vendorSelected}
-              externalPeriodMonths={periodMonths}
+              externalSelectedMonths={selectedMonths}
               externalPeriodSeason={periodSeason}
             />
           )}

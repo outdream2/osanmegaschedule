@@ -5,6 +5,8 @@ import { Search, Building2, X } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { SeasonButtons } from "../common/SeasonButtons";
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { api } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { API_LIMITS } from "../../constants/apiLimits";
@@ -29,12 +31,7 @@ type SupplierAggRow = {
 type SupRowsSortKey = "name" | "sale" | "purchase_price" | "sale_price" | "profit_rate" | "sale_amount";
 type SupRowsSortDir = "asc" | "desc";
 
-const PERIOD_PRESETS: { key: 0 | 1 | 3 | 6; label: string }[] = [
-  { key: 0, label: "전체" },
-  { key: 1, label: "1개월" },
-  { key: 3, label: "3개월" },
-  { key: 6, label: "6개월" },
-];
+// 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · MonthToggleSelector) · 1/3/6개월 preset 폐기
 
 // ─── 공급사별 판매추이 탭 ────────────────────────────────────────────────────
 const SupplierTrendTab: React.FC<{
@@ -57,7 +54,10 @@ const SupplierTrendTab: React.FC<{
   const supplierFetchedRef = useRef<Set<string>>(new Set());
   const supplierInflightRef = useRef<Set<string>>(new Set());
   const [supRowsSort, setSupRowsSort] = useState<{ key: SupRowsSortKey; dir: SupRowsSortDir }>({ key: "sale_amount", dir: "desc" });
-  const [periodMonths, setPeriodMonths] = useState<0 | 1 | 3 | 6>(0);
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+  //   · periodMonths(number) → selectedMonths(string[]) · 비연속 월 지원 · default = []
+  //   · "전체" 모드 유지 (selectedMonths=[] && !season)
+  const { selectedMonths, setSelectedMonths, monthsList } = useMonthFilter({ initial: [] });
   const [season, setSeason] = useState<SeasonKey | null>(null);
 
   const toggleSupRowsSort = (k: SupRowsSortKey) => {
@@ -101,7 +101,7 @@ const SupplierTrendTab: React.FC<{
       try {
         const params = new URLSearchParams({ limit: String(API_LIMITS.MEDIUM) });
         if (season) params.set("season", season);
-        else if (periodMonths > 0) params.set("months", String(periodMonths));
+        else if (monthsList) params.set("months_list", monthsList);
         const { data } = await api.get<any>(`/api/stock-manage/supplier-purchases?${params}`);
         if (cancelled) return;
         const src = Array.isArray(data?.rows) ? data.rows : [];
@@ -127,7 +127,7 @@ const SupplierTrendTab: React.FC<{
       } finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [periodMonths, season]);
+  }, [monthsList, season]);
 
   const toggleSupplierExpand = useCallback(async (sup: SupplierAggRow) => {
     const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
@@ -147,7 +147,7 @@ const SupplierTrendTab: React.FC<{
       if (sup.supplier_code) params.set("supplier_code", sup.supplier_code);
       else if (sup.supplier) params.set("supplier", sup.supplier);
       if (season) params.set("season", season);
-      else if (periodMonths > 0) params.set("months", String(periodMonths));
+      else if (monthsList) params.set("months_list", monthsList);
       const { data: j } = await api.get<any>(`/api/stock-manage/top-sales?${params}`);
       const rows = Array.isArray(j?.rows) ? j.rows : [];
       setSupplierRowsMap(prev => ({ ...prev, [key]: rows }));
@@ -159,7 +159,7 @@ const SupplierTrendTab: React.FC<{
       supplierInflightRef.current.delete(key);
       setSupplierRowsLoading(prev => { const n = new Set(prev); n.delete(key); return n; });
     }
-  }, [periodMonths, season]);
+  }, [monthsList, season]);
 
   const filteredSuppliers = useMemo(() => {
     const q = query.trim();
@@ -188,18 +188,22 @@ const SupplierTrendTab: React.FC<{
             {visibleSuppliers.length}개 사<span className="text-zinc-400 font-semibold"> / 총 {filteredSuppliers.length}개</span>
           </span>
         </div>
-        {/* 필터 바 */}
+        {/* 필터 바 · 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
         <div className="flex items-center gap-2 mb-2 flex-wrap text-[15px]">
           <span className="text-zinc-500 font-bold text-[14px] shrink-0">기간</span>
-          <div className="inline-flex bg-zinc-100/80 border border-line/60 rounded-lg p-0.5 shadow-inner">
-            {PERIOD_PRESETS.map(p => (
-              <button key={p.key} type="button" onClick={() => { setPeriodMonths(p.key); setSeason(null); }}
-                className={`px-2 py-1 text-[14px] font-bold rounded transition cursor-pointer ${!season && periodMonths === p.key ? "bg-white text-sky-700 shadow-sm ring-1 ring-zinc-200" : "text-zinc-500 hover:text-zinc-800"}`}>
-                {p.label}
-              </button>
-            ))}
-          </div>
-          <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setPeriodMonths(0); }} size="sm" hideLabel />
+          <MonthToggleSelector
+            selectedMonths={selectedMonths}
+            onChange={months => { setSelectedMonths(months); setSeason(null); }}
+            maxMonths={6}
+            ariaLabel="공급사 트렌드 기간"
+          />
+          {selectedMonths.length > 0 && (
+            <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+          )}
+          {selectedMonths.length === 0 && !season && (
+            <span className="text-[13px] text-ink-soft">전체</span>
+          )}
+          <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setSelectedMonths([]); }} size="sm" hideLabel />
           {/* 2026-09-11 · #106 · 사용자 지시 · 판매중/판매중지 필터 추가 · 확장된 상품 리스트에 적용 */}
           <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
         </div>

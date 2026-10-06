@@ -20,6 +20,7 @@ import {
   AddBorrowingSignatureSchema,
 } from "../../../src/shared/schemas/borrowings";
 import logger from "../../lib/logger";
+import { parseMonthsList, isDateInSelectedMonths } from "../../lib/periodFilter";
 
 const router = Router();
 
@@ -30,6 +31,9 @@ const SELECT_COLS = "id, created_at, direction, supplier, product_code, product_
 // GET /api/borrowings?status=open&supplier=X&direction=lend&days=90&limit=200
 // 2026-08-29 · 보안 감사 P2 fix · authorize(1) · 서명 dataURL 등 민감정보 노출 방지
 // 2026-09-17 · 대원칙 · 결제·잔고 캐시 X · no-store 추가
+// 2026-10-06 · months_list=YM1,YM2 비연속 월 멀티선택 지원 (사용자 지시 · STANDARD 통일)
+//   · created_at 축 · min YM-01 ~ max YM-last_day range + YM post-filter
+//   · days 와 상호 배타 · months_list 지정 시 days 무시
 router.get("/api/borrowings", authorize(1), asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const status    = String(req.query.status ?? "").trim();
@@ -37,13 +41,22 @@ router.get("/api/borrowings", authorize(1), asyncHandler(async (req, res) => {
   const direction = String(req.query.direction ?? "").trim();
   const days      = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "180"), 10) || 180));
   const limit     = Math.max(1, Math.min(2000, parseInt(String(req.query.limit ?? "500"), 10) || 500));
-  const since = new Date(); since.setDate(since.getDate() - days);
+  const months = parseMonthsList(req.query.months_list);
+
   let q = supabase
     .from("borrowings")
     .select(SELECT_COLS)
-    .gte("created_at", since.toISOString())
     .order("created_at", { ascending: false })
     .limit(limit);
+
+  if (!months.isEmpty && months.from && months.to) {
+    // created_at 은 timestamptz · YMD 비교는 '00:00:00' / 'T23:59:59' 로 bracketing
+    q = q.gte("created_at", `${months.from}T00:00:00`).lte("created_at", `${months.to}T23:59:59.999`);
+  } else {
+    const since = new Date(); since.setDate(since.getDate() - days);
+    q = q.gte("created_at", since.toISOString());
+  }
+
   if (status)    q = q.eq("status", status);
   if (direction) q = q.eq("direction", direction);
   if (supplier)  q = q.ilike("supplier", `%${supplier}%`);
@@ -54,7 +67,12 @@ router.get("/api/borrowings", authorize(1), asyncHandler(async (req, res) => {
     }
     throw new HttpError(500, error.message);
   }
-  res.json({ rows: data ?? [], count: (data ?? []).length });
+  let rows = data ?? [];
+  // 비연속 월 post-filter · 중간 월 자동 포함 금지
+  if (!months.isEmpty) {
+    rows = rows.filter((r: { created_at: string | null }) => isDateInSelectedMonths(r.created_at, months.set));
+  }
+  res.json({ rows, count: rows.length });
 }));
 
 // POST /api/borrowings

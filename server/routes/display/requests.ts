@@ -12,6 +12,7 @@ import { clearLowStockCache } from "../stock/stockManage";
 import { scheduleSnapshotBackground } from "../stock/lossTracking";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest, notFound } from "../../middleware/errorHandler";
+import { parseMonthsList, isDateInSelectedMonths } from "../../lib/periodFilter";
 import { validateBody } from "../../middleware/zodValidate";
 import { CreateOrderRequestSchema, BulkSendOrderSchema } from "../../../src/shared/schemas/orderRequests";
 import {
@@ -663,6 +664,14 @@ router.post("/api/order-requests", authorize(1), validateBody(CreateOrderRequest
     order_number: null,
   };
   if (supplierVal) basePayload.supplier = supplierVal;
+  // 2026-10-06 · 사용자 지시 · canonical supplier_code 명시 저장 (payload 그대로 · name 역추정 금지)
+  //   · UI 가 선택한 product/vendor 의 supplier_code 직선 전달
+  //   · supplier_code 없으면 null · vendors company_name 으로 lookup 금지 (identity inference)
+  //   · DB type · text (nullable)
+  const supplierCodeVal = b.supplier_code != null && String(b.supplier_code).trim() !== ""
+    ? String(b.supplier_code).trim()
+    : null;
+  if (supplierCodeVal !== null) basePayload.supplier_code = supplierCodeVal;
   // 2026-09-10 · 사용자 지시 · 발주필요에서 지정한 수량 · 발주요청에 그대로 저장
   if (b.order_qty != null) basePayload.order_qty = Number(b.order_qty);
   // 2026-09-24 · 사용자 지시 · 발주 시점 · unit_price 스냅샷 (회계·감사 표준)
@@ -709,7 +718,17 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
   // 2026-09-13 · #115 · 대원칙 · 발주 관련 · 캐시 X · 즉시 업데이트 (기존 에러 케이스에만 있던 것을 함수 시작으로 이동)
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "90")) || 90));
-  const since = new Date(Date.now() - days * 86400000).toISOString();
+  // 2026-10-06 · months_list=YM1,YM2 비연속 월 멀티선택 지원 (STANDARD · 사용자 지시)
+  //   · sent_at 축 · days 와 상호 배타 · months_list 지정 시 range + post-filter
+  const months = parseMonthsList(req.query.months_list);
+  let since: string;
+  let sinceTo: string | null = null;
+  if (!months.isEmpty && months.from && months.to) {
+    since = `${months.from}T00:00:00`;
+    sinceTo = `${months.to}T23:59:59.999`;
+  } else {
+    since = new Date(Date.now() - days * 86400000).toISOString();
+  }
   let supplier = String(req.query.supplier ?? "").trim();
 
   // 2026-10-01 · 사용자 지시 · role 분기 · vendor 세션 · 자기 공급사만 · admin · 전체
@@ -732,6 +751,7 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
     .in("status", ["ordered", "matched"])
     .gte("sent_at", since)
     .order("sent_at", { ascending: false });
+  if (sinceTo) q = q.lte("sent_at", sinceTo);
   if (supplier) q = q.eq("supplier", supplier);
   const { data, error } = await q;
   if (error) {
@@ -742,9 +762,13 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
     }
     throw new HttpError(500, error.message);
   }
+  // 2026-10-06 · months_list 비연속 월 post-filter · 중간 월 자동 포함 금지
+  const effData = months.isEmpty
+    ? (data ?? [])
+    : (data ?? []).filter((r: { sent_at: string | null }) => isDateInSelectedMonths(r.sent_at, months.set));
   // order_number 로 GROUP · 발주서 단위
   const grouped = new Map<string, any>();
-  for (const row of (data ?? []) as any[]) {
+  for (const row of (effData ?? []) as any[]) {
     const key = String(row.order_number ?? row.id);
     if (!grouped.has(key)) {
       grouped.set(key, {

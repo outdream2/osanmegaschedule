@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { VendorInfoHeader, type VendorBasic, type VendorKpi, type LedgerRowMinimal } from "./VendorInfoHeader";
 import { SeasonButtons } from "../common/SeasonButtons";
+import { MonthToggleSelector, monthsListParam as toMonthsListParam, currentYm } from "../common/MonthToggleSelector";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { StatusPill, type PillTone } from "../common/StatusPill";
 import { SplitRightTabs } from "../common/SplitRightTabs";
@@ -36,12 +37,18 @@ interface VendorDetailTabsProps {
   vendor: VendorBasic;
   // 2026-09-10 · #71 · 사용자 지시 · 부모 상단 툴바 · 기간 통합 시 · 값 수신
   externalPeriodMonths?: number;
+  /**
+   * 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (매입이력 STANDARD)
+   *   · 지정 시 · externalPeriodMonths 보다 우선 · months_list=YM,YM 로 서버 호출
+   *   · 비연속 월 지원 (중간 월 자동 포함 금지)
+   */
+  externalSelectedMonths?: string[];
   externalPeriodSeason?: string | null;
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, externalPeriodMonths, externalPeriodSeason }) => {
+export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, externalPeriodMonths, externalSelectedMonths, externalPeriodSeason }) => {
   const { toast, showError } = useToast();
   // 2026-08-24 · 사용자 지시 · 공급사 정보 수정 · openVendorInfo · [수정] 버튼 wiring
   const { openVendorInfo, modalElement: vendorModalElement } = useVendorInfoModal();
@@ -58,10 +65,15 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
 
   // 기간 필터 (내부 관리)
   // 2026-09-10 · #71 · 사용자 지시 · external 값 있으면 사용 · 없으면 내부 관리 (fallback)
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD) · externalSelectedMonths 우선
   const [periodMonthsLocal, setPeriodMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
   const [periodSeasonLocal, setPeriodSeason] = useState<SeasonKey | null>(null);
+  const [localSelectedMonths, setLocalSelectedMonths] = useState<string[]>(() => [currentYm()]);
   const periodMonths = (externalPeriodMonths != null ? (externalPeriodMonths as 0|1|2|3|4|5|6) : periodMonthsLocal);
   const periodSeason = (externalPeriodSeason !== undefined ? (externalPeriodSeason as SeasonKey | null) : periodSeasonLocal);
+  const selectedMonths = externalSelectedMonths ?? localSelectedMonths;
+  const useMonthsListMode = externalSelectedMonths != null || externalPeriodMonths == null;
+  const monthsListStr = useMemo(() => toMonthsListParam(selectedMonths), [selectedMonths]);
   // 미사용 setter 경고 회피
   void setPeriodMonths; void setPeriodSeason;
 
@@ -93,7 +105,10 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
     setLedgerLoading(true);
     setLedgerError(null);
     try {
-      const params = new URLSearchParams({ supplier: vendor.company_name, days: String(days) });
+      const params = new URLSearchParams({ supplier: vendor.company_name });
+      // 2026-10-06 · 월 멀티 모드 우선 · 레거시 days fallback (externalPeriodMonths 전용)
+      if (useMonthsListMode && monthsListStr) params.set("months_list", monthsListStr);
+      else params.set("days", String(days));
       const { data: j } = await api.get<any>(`/api/supplier-ledger?${params}`);
       setLedger({
         supplier: j.supplier ?? vendor.company_name,
@@ -114,44 +129,58 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
       setLedger(null);
       showError(`원장 로드 실패: ${msg}`);
     } finally { setLedgerLoading(false); }
-  }, [vendor, days]);
+  }, [vendor, days, useMonthsListMode, monthsListStr]);
 
   const loadDetail = useCallback(async () => {
     if (!vendor) return;
     setDetailLoading(true);
     try {
-      const { data: j } = await api.get<any>(`/api/supplier-purchase-detail?supplier=${encodeURIComponent(vendor.company_name)}&days=${days}`);
+      // 2026-10-06 · 월 멀티 모드 우선 · 레거시 days fallback
+      const url = useMonthsListMode && monthsListStr
+        ? `/api/supplier-purchase-detail?supplier=${encodeURIComponent(vendor.company_name)}&months_list=${encodeURIComponent(monthsListStr)}`
+        : `/api/supplier-purchase-detail?supplier=${encodeURIComponent(vendor.company_name)}&days=${days}`;
+      const { data: j } = await api.get<any>(url);
       setDetailRows(Array.isArray(j.rows) ? j.rows : []);
     } catch (e: any) {
       setDetailRows([]);
       showError(`매입내역 로드 실패: ${e?.message ?? "네트워크 오류"}`);
     } finally { setDetailLoading(false); }
-  }, [vendor, days]);
+  }, [vendor, days, useMonthsListMode, monthsListStr]);
 
   const loadOrders = useCallback(async () => {
     if (!vendor) return;
     setOrderLoading(true);
     try {
-      const { data: j } = await api.get<any>(`/api/order-history?supplier=${encodeURIComponent(vendor.company_name)}&days=${days}`);
+      // 2026-10-06 · 월 멀티 모드 우선 · 레거시 days fallback
+      const url = useMonthsListMode && monthsListStr
+        ? `/api/order-history?supplier=${encodeURIComponent(vendor.company_name)}&months_list=${encodeURIComponent(monthsListStr)}`
+        : `/api/order-history?supplier=${encodeURIComponent(vendor.company_name)}&days=${days}`;
+      const { data: j } = await api.get<any>(url);
       setOrderGroups(Array.isArray(j.orders) ? j.orders : []);
     } catch {
       setOrderGroups([]);
     } finally { setOrderLoading(false); }
-  }, [vendor, days]);
+  }, [vendor, days, useMonthsListMode, monthsListStr]);
 
   const loadSales = useCallback(async () => {
     if (!vendor) return;
     setSalesLoading(true);
     try {
-      const months = periodSeason ? 12 : (periodMonths === 0 ? 1 : periodMonths);
-      const { data: j } = await api.get<any>(`/api/sales-trend/supplier?name=${encodeURIComponent(vendor.company_name)}&months=${months}`);
+      // 2026-10-06 · 월 멀티 모드 우선 · 레거시 months 환산 fallback
+      const url = useMonthsListMode && monthsListStr
+        ? `/api/sales-trend/supplier?name=${encodeURIComponent(vendor.company_name)}&months_list=${encodeURIComponent(monthsListStr)}`
+        : (() => {
+            const months = periodSeason ? 12 : (periodMonths === 0 ? 1 : periodMonths);
+            return `/api/sales-trend/supplier?name=${encodeURIComponent(vendor.company_name)}&months=${months}`;
+          })();
+      const { data: j } = await api.get<any>(url);
       setSalesRows(Array.isArray(j.rows) ? j.rows : []);
       setSalesProducts(Array.isArray(j.products) ? j.products : []);
     } catch {
       setSalesRows([]);
       setSalesProducts([]);
     } finally { setSalesLoading(false); }
-  }, [vendor, periodMonths, periodSeason]);
+  }, [vendor, periodMonths, periodSeason, useMonthsListMode, monthsListStr]);
 
   // 공급사/기간 변경 시 재조회
   useEffect(() => {
@@ -216,24 +245,23 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor, exte
 
       {/* 2026-09-10 · #71 · 사용자 지시 · 기간 필터 · 상단 툴바 (VendorPaymentPanel) 로 통합
           · external 값 사용 시 · 자체 UI 완전 숨김 · 외부 툴바가 기간 관리 */}
-      {externalPeriodMonths == null && (
+      {/* 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 · 자체 UI 도 월 멀티로 */}
+      {externalPeriodMonths == null && externalSelectedMonths == null && (
         <div className={`${CARD_BASE} px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5`}>
           <span className="text-[14px] font-semibold text-zinc-400 uppercase tracking-wider shrink-0">기간</span>
-          <div className="flex flex-wrap bg-zinc-50 border border-line rounded-lg p-0.5 gap-0.5">
-            <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
-              className={`px-2.5 h-6 text-[15px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
-              10일
-            </button>
-            {([1, 2, 3, 4, 5, 6] as const).map(m => (
-              <button key={m} onClick={() => { setPeriodSeason(null); setPeriodMonths(m); }}
-                className={`px-2.5 h-6 text-[15px] font-semibold rounded-md transition cursor-pointer ${!periodSeason && periodMonths === m ? "bg-sky-500 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
-                {m}개월
-              </button>
-            ))}
-          </div>
+          <MonthToggleSelector
+            selectedMonths={localSelectedMonths}
+            onChange={months => { setLocalSelectedMonths(months); setPeriodSeason(null); }}
+            maxMonths={6}
+            minOne
+            ariaLabel="공급사 상세 기간"
+          />
+          {localSelectedMonths.length > 0 && !periodSeason && (
+            <span className="text-[13px] text-ink-soft tabular-nums">{localSelectedMonths.length}개월 선택</span>
+          )}
           <SeasonButtons
             value={periodSeason}
-            onChange={v => { setPeriodSeason(v); if (v) setPeriodMonths(0); }}
+            onChange={v => { setPeriodSeason(v); }}
             size="sm"
             hideLabel
           />

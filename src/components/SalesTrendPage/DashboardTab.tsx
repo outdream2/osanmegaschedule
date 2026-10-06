@@ -16,7 +16,8 @@ import { KpiCard } from "../common/KpiCard";
 import { SearchBar } from "../common/SearchBar";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { StatusPill } from "../common/StatusPill";
-import { PeriodSelector, type PeriodOption } from "../common/PeriodSelector";
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { LoadingState } from "../common/LoadingState";
 import { EmptyState } from "../common/EmptyState";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -60,14 +61,8 @@ const toServerSort = (k: DashSortKey): string => {
   return "sale";
 };
 
-// ─── 기간 프리셋 · PeriodSelector 옵션 ─────────────────────────────────────
-const PERIOD_OPTIONS: readonly PeriodOption<0 | 1 | 2 | 3 | 6>[] = [
-  { value: 0, label: "10일", title: "최근 스냅샷 (10일 스냅)" },
-  { value: 1, label: "1개월" },
-  { value: 2, label: "2개월" },
-  { value: 3, label: "3개월" },
-  { value: 6, label: "6개월" },
-] as const;
+// 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+//   · PeriodSelector(1/2/3/6개월) 프리셋 제거 · 비연속 월 지원
 
 // ─── KPI 계산 ────────────────────────────────────────────────────────────────
 interface DashboardKpis {
@@ -148,8 +143,8 @@ export const DashboardTab: React.FC = () => {
     return m;
   }, [vendors]);
 
-  // 기간 · 계절
-  const [months, setMonths] = useState<0 | 1 | 2 | 3 | 6>(1);
+  // 기간 · 계절 (2026-10-06 · 월 멀티선택 통일 · STANDARD · season과 상호 배타)
+  const { selectedMonths, setSelectedMonths, monthsList } = useMonthFilter();
   const [season, setSeason] = useState<SeasonKey | null>(null);
 
   // 리스트 · 정렬 · 검색
@@ -218,49 +213,17 @@ export const DashboardTab: React.FC = () => {
     (async () => {
       try {
         const serverSort = SERVER_SORT_KEYS.includes(sort) ? toServerSort(sort) : "sale";
-        const buildParams = (m: number) => {
-          const p = new URLSearchParams({
-            sort: serverSort,
-            dir,
-            limit: String(limit),
-          });
-          if (season) p.set("season", season);
-          else if (m > 0) p.set("months", String(m));
-          return p;
-        };
-        const fetchOnce = (m: number) =>
-          api.get<any>(`/api/stock-manage/top-sales?${buildParams(m)}`);
-
-        let { data: j } = await fetchOnce(months);
-        let effectiveMonths: number = months;
-        const initialCount = Array.isArray(j?.rows) ? j.rows.length : 0;
-
-        // stock_history 스냅샷 stale 대비 · 자동 확장 (StockFlowPanel 동일 패턴)
-        if (initialCount === 0 && !season && months > 0 && months < 12) {
-          for (const nextM of [2, 3, 6, 12].filter(x => x > months)) {
-            try {
-              const resp = await fetchOnce(nextM);
-              if (Array.isArray(resp.data?.rows) && resp.data.rows.length > 0) {
-                j = resp.data;
-                effectiveMonths = nextM;
-                break;
-              }
-            } catch { /* 다음 시도 */ }
-          }
-        }
+        // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD)
+        //   · 자동 확장 로직 제거 (비연속 월 원칙과 상충 · 사용자가 명시적으로 월 추가)
+        const p = new URLSearchParams({ sort: serverSort, dir, limit: String(limit) });
+        if (season) p.set("season", season);
+        else if (monthsList) p.set("months_list", monthsList);
+        const { data: j } = await api.get<any>(`/api/stock-manage/top-sales?${p}`);
 
         if (cancelled) return;
         setRows(Array.isArray(j?.rows) ? j.rows : []);
         if (j?.period_end) setSnapshot(j.period_end);
-        if (effectiveMonths !== months) {
-          setAutoExpanded({
-            requested: months,
-            effective: effectiveMonths,
-            latestSnapshot: j?.period_end ?? null,
-          });
-        } else {
-          setAutoExpanded(null);
-        }
+        setAutoExpanded(null);
       } catch (err) {
         if (cancelled) return;
         setAutoExpanded(null);
@@ -271,7 +234,7 @@ export const DashboardTab: React.FC = () => {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sort, dir, limit, months, season]);
+  }, [sort, dir, limit, monthsList, season]);
 
   // 2026-09-07 · 사용자 지시 · classFilter 별 카운트 (판매중 필터 반영 · location 기반 분류)
   const classCounts = useMemo(() => {
@@ -389,17 +352,20 @@ export const DashboardTab: React.FC = () => {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`${TEXT.caption} text-ink-soft shrink-0`}>기간</span>
-          <PeriodSelector
-            options={PERIOD_OPTIONS}
-            value={months}
-            onChange={(v) => { setMonths(v); setSeason(null); }}
-            accent="teal"
-            size="sm"
+          {/* 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
+          <MonthToggleSelector
+            selectedMonths={selectedMonths}
+            onChange={months => { setSelectedMonths(months); setSeason(null); }}
+            maxMonths={6}
+            minOne
             ariaLabel="판매 대시보드 기간 선택"
           />
+          {selectedMonths.length > 0 && !season && (
+            <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+          )}
           <SeasonButtons
             value={season}
-            onChange={(v) => { setSeason(v); if (v) setMonths(0); }}
+            onChange={(v) => { setSeason(v); if (v) setSelectedMonths([]); }}
             size="sm"
             hideLabel
           />

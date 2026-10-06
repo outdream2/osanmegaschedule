@@ -26,7 +26,8 @@ import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
 import { SplitListPanel } from "../common/SplitListPanel";
 import { SegmentedControl, type SegmentedOption } from "../common/SegmentedControl";
-import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { BorrowingCard, type BorrowingCardData } from "../common/borrowing/BorrowingCard";
 import { StatusPill } from "../common/StatusPill";
 import { InlineLabel } from "../common/InlineLabel";
@@ -109,7 +110,9 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
   const [error, setError] = useState<string | null>(null);
 
   // ── 필터·검색 상태 ─────────────────────────────────────────
-  const [days, setDays] = useState<number>(180);
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+  //   · default · 현재 월 1개 · created_at 축 (서버 /api/borrowings · 1차에서 months_list 지원 완료)
+  const { selectedMonths, setSelectedMonths, monthsList: monthsListStr } = useMonthFilter();
   const [status, setStatus] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
 
@@ -122,11 +125,13 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
 
   const { toast, showError } = useToast();
 
-  // ── 서버 조회 (status·days · 서버 필터) ─────────────────────
+  // ── 서버 조회 (status·months_list · 서버 필터) ─────────────────────
+  // 2026-10-06 · months_list 우선 (STANDARD) · 비연속 월 지원
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    const params: ListBorrowingsParams = { days };
+    const params: ListBorrowingsParams = {};
+    if (monthsListStr) params.monthsList = monthsListStr;
     if (status !== "all") params.status = status;
     listBorrowings(params)
       .then((rs) => setRows(rs))
@@ -136,7 +141,7 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
         showError(`차용 조회 실패: ${msg}`);
       })
       .finally(() => setLoading(false));
-  }, [days, status, showError]);
+  }, [monthsListStr, status, showError]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -180,15 +185,19 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
         variant="pills"
         ariaLabel="차용 상태 필터"
       />
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 flex-wrap">
         <InlineLabel size="sm">기간</InlineLabel>
-        <PeriodSelector<number>
-          options={PERIOD_DAYS_PRESET}
-          value={days}
-          onChange={(v) => setDays(Number(v) || 180)}
-          size="sm"
+        {/* 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
+        <MonthToggleSelector
+          selectedMonths={selectedMonths}
+          onChange={setSelectedMonths}
+          maxMonths={6}
+          minOne
           ariaLabel="차용 조회 기간"
         />
+        {selectedMonths.length > 0 && (
+          <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+        )}
       </div>
     </div>
   );

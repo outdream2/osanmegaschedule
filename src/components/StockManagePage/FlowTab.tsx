@@ -16,6 +16,7 @@ import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
 import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 import { EmptyState } from "../common/EmptyState";
 
@@ -73,12 +74,16 @@ export const FlowTab: React.FC = () => {
   };
 
   // 한도 · 기간 · 시즌
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+  //   · flowMonths(0-6) 폐기 · selectedMonths(string[]) 로 대체 · 비연속 월 지원
+  //   · 10일 스냅샷 모드 유지 (selectedMonths=[] && !flowSeason 일 때 period_end 조회)
   const [flowLimit, setFlowLimit] = useState<number>(300);
-  const [flowMonths, setFlowMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
-  const [pendingFlowMonths, setPendingFlowMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
+  const { selectedMonths: flowSelectedMonths, setSelectedMonths: setFlowSelectedMonths, monthsList: flowMonthsList } = useMonthFilter();
   const [flowSeason, setFlowSeason] = useState<SeasonKey | null>(null);
   const [flowSnapshot, setFlowSnapshot] = useState<string>("");
   const flowSnapshotAutoSet = useRef(false);
+  // 10일 스냅샷 모드 · selectedMonths=[] && !flowSeason 일 때 활성
+  const isFlowSnapshotMode = flowSelectedMonths.length === 0 && !flowSeason;
 
   // 검색
   // 2026-08-22 · flowSearch state 제거 · UI 없음 · dead code
@@ -234,15 +239,13 @@ export const FlowTab: React.FC = () => {
     setLoading(true);
     try {
       const serverSort = (["sale", "purchase", "amount", "closing"] as SortKey[]).includes(flowSort) ? flowSort : "sale";
-      // 2026-08-31 · #30 · buildParams · 자동 확장 시 months 만 바꿔서 재호출
-      const buildParams = (m: number) => {
-        const p = new URLSearchParams({ sort: serverSort, dir: flowDir, limit: String(flowLimit) });
-        if (flowSeason) p.set("season", flowSeason);
-        else if (m > 0) p.set("months", String(m));
-        else if (flowSnapshot) p.set("period_end", flowSnapshot);
-        return p;
-      };
-      const params = buildParams(flowMonths);
+      // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD)
+      //   · 자동 확장 로직 제거 (비연속 월 원칙과 상충 · 사용자가 명시적으로 월 추가)
+      //   · 3 가지 모드 상호 배타: season / months_list / snapshot(10일)
+      const params = new URLSearchParams({ sort: serverSort, dir: flowDir, limit: String(flowLimit) });
+      if (flowSeason) params.set("season", flowSeason);
+      else if (flowMonthsList) params.set("months_list", flowMonthsList);
+      else if (flowSnapshot) params.set("period_end", flowSnapshot);
       const cacheKey = params.toString();
 
       // 캐시 hit → 즉시 표시
@@ -253,43 +256,19 @@ export const FlowTab: React.FC = () => {
         setFlowPeriodType(d.period_type ?? null);
       }
 
-      // 1단계 basic fetch · skip_purchase=1 · 자동 확장 지원
-      // 2026-08-31 · #30 root cause · stock_history 스냅샷 stale (예 · 34일 전) → 기본 months=1 = 0 rows
-      //   · rows==0 && season 없음 && months>0 && months<12 → 2/3/6/12 자동 확장 · 첫 성공 결과 사용
-      const fetchBasic = async (m: number) => {
-        const bp = buildParams(m);
-        bp.set("skip_purchase", "1");
-        return api.get<any>(`/api/stock-manage/top-sales?${bp}`);
-      };
-      let { data } = await fetchBasic(flowMonths);
-      let effectiveMonths: number = flowMonths;
-      let effectiveCacheKey = cacheKey;
-      const initialRowsCount = Array.isArray(data?.rows) ? data.rows.length : 0;
-      if (initialRowsCount === 0 && !flowSeason && flowMonths > 0 && flowMonths < 12) {
-        for (const nextM of [2, 3, 6, 12].filter(x => x > flowMonths)) {
-          try {
-            const resp = await fetchBasic(nextM);
-            if (Array.isArray(resp.data?.rows) && resp.data.rows.length > 0) {
-              data = resp.data;
-              effectiveMonths = nextM;
-              effectiveCacheKey = buildParams(nextM).toString();
-              break;
-            }
-          } catch { /* 다음 시도 */ }
-        }
-      }
+      // 1단계 basic fetch · skip_purchase=1
+      const bp = new URLSearchParams(params);
+      bp.set("skip_purchase", "1");
+      const { data } = await api.get<any>(`/api/stock-manage/top-sales?${bp}`);
+      const effectiveCacheKey = cacheKey;
       if (data) {
         setStockFlow(Array.isArray(data.rows) ? data.rows : []);
         setFlowPeriodType(data.period_type ?? null);
-        if (flowMonths === 0 && !flowSnapshotAutoSet.current && data.period_end) {
+        if (isFlowSnapshotMode && !flowSnapshotAutoSet.current && data.period_end) {
           flowSnapshotAutoSet.current = true;
           if (!flowSnapshot) setFlowSnapshot(data.period_end);
         }
-        if (effectiveMonths !== flowMonths) {
-          setFlowAutoExpanded({ requested: flowMonths, effective: effectiveMonths, latestSnapshot: data.period_end ?? null });
-        } else {
-          setFlowAutoExpanded(null);
-        }
+        setFlowAutoExpanded(null);
         setLoading(false);
 
         // 2단계: purchase-info-batch (백그라운드)
@@ -323,7 +302,7 @@ export const FlowTab: React.FC = () => {
         }
       }
     } catch { setLoading(false); }
-  }, [flowSnapshot, flowSort, flowDir, flowLimit, flowMonths, flowSeason]);
+  }, [flowSnapshot, flowSort, flowDir, flowLimit, flowMonthsList, flowSeason, isFlowSnapshotMode]);
 
   useEffect(() => { fetchStockFlow(); }, [fetchStockFlow]);
   useEffect(() => { fetchStockFlowRef.current = fetchStockFlow; }, [fetchStockFlow]);
@@ -382,7 +361,8 @@ export const FlowTab: React.FC = () => {
     if (flowSort === "name") return [...filtered].sort((a, b) => sign * String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"));
     if (flowSort === "opening") return [...filtered].sort((a, b) => sign * (Number(a.prv_stock ?? 0) - Number(b.prv_stock ?? 0)));
     if (flowSort === "current") return [...filtered].sort((a, b) => sign * (Number((a as any).current_stock ?? 0) - Number((b as any).current_stock ?? 0)));
-    const periodDaysLocal = (flowMonths && flowMonths > 0) ? flowMonths * 30 : 30;
+    // 2026-10-06 · 월 멀티선택 통일 · 선택 월 수 × 30 (사용자 선택 월 수 기준 · snapshot 모드 fallback 30)
+    const periodDaysLocal = flowSelectedMonths.length > 0 ? flowSelectedMonths.length * 30 : 30;
     const getVal = (p: any): number | string => {
       const openV = Number(p.prv_stock ?? 0);
       const cur = Number(p.current_stock ?? p.closing_stock ?? 0);
@@ -417,7 +397,7 @@ export const FlowTab: React.FC = () => {
       });
     }
     return filtered;
-  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowMonths, flowCategoryFilter, vendorCategoryMap, infoSearchQuery]);
+  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSelectedMonths, flowCategoryFilter, vendorCategoryMap, infoSearchQuery]);
 
   // 3-way tab 카운트
   const getRealMap = useCallback((p: any) => resolveProductLocation(p) ?? productRealMapById[String(p.product_code)] ?? null, [productRealMapById]);
@@ -467,7 +447,8 @@ export const FlowTab: React.FC = () => {
       {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · FlowFilterBar */}
       <FlowFilterBar
         filteredFlowCount={filteredFlow.length}
-        flowMonths={flowMonths}
+        flowSelectedMonths={flowSelectedMonths}
+        setFlowSelectedMonths={setFlowSelectedMonths}
         flowSeason={flowSeason}
         flowSnapshot={flowSnapshot}
         flowDateRange={flowDateRange}
@@ -480,8 +461,6 @@ export const FlowTab: React.FC = () => {
         salesQtyMax={salesQtyMax}
         loading={loading}
         setFlowSeason={setFlowSeason}
-        setPendingFlowMonths={setPendingFlowMonths as (v: number) => void}
-        setFlowMonths={setFlowMonths as (v: number) => void}
         setFlowLimit={setFlowLimit}
         setInfoSearchQuery={setInfoSearchQuery}
         setInfoSearchResults={setInfoSearchResults}

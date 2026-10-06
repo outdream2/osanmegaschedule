@@ -40,6 +40,7 @@ import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
 import logger from "../../lib/logger";
+import { parseMonthsList } from "../../lib/periodFilter";
 
 const router = express.Router();
 
@@ -511,24 +512,13 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
   // 2026-10-05 · 사용자 지시 · months_list=YM1,YM2 비연속 월 멀티선택 지원
   //   · purchase_date 가 선택된 YM 중 하나에 속하는 row 만 반환
   //   · 중간 월 자동 포함 X · ERP 호출 없음 · Supabase purchase_details 만 조회
-  const monthsListParam = String(req.query.months_list ?? "").trim();
-  const monthsListArr: string[] = monthsListParam
-    ? monthsListParam.split(",").map((s) => s.trim()).filter((s) => /^\d{4}-\d{2}$/.test(s))
-    : [];
-  const useMonthsList = monthsListArr.length > 0;
-  const monthsListSet = new Set(monthsListArr);
-  // DB 조회 범위 축소 · min 월 1일 ~ max 월 말일 (양 끝) · 중간 월은 post-filter 로 제외
-  let monthsListFrom: string | null = null;
-  let monthsListTo: string | null = null;
-  if (useMonthsList) {
-    const sortedYm = [...monthsListArr].sort();
-    const minYm = sortedYm[0];
-    const maxYm = sortedYm[sortedYm.length - 1];
-    monthsListFrom = `${minYm}-01`;
-    const [yy, mm] = maxYm.split("-").map(Number);
-    const lastDay = new Date(yy, mm, 0).getDate();
-    monthsListTo = `${maxYm}-${String(lastDay).padStart(2, "0")}`;
-  }
+  // 2026-10-06 · 공통 parser 재사용 (server/lib/periodFilter · 복붙 통일)
+  const monthsParsed = parseMonthsList(req.query.months_list);
+  const useMonthsList = !monthsParsed.isEmpty;
+  const monthsListSet = monthsParsed.set;
+  const monthsListArr = monthsParsed.arr;
+  const monthsListFrom = monthsParsed.from;
+  const monthsListTo = monthsParsed.to;
 
   let q = supabase
     .from("purchase_details")

@@ -24,6 +24,8 @@ import {
   ReturnRequestBulkSendSchema,
   canTransitionStatus,
 } from "../../../src/shared/schemas/returnRequests";
+// 2026-10-06 · 사용자 지시 · months_list=YM1,YM2 비연속 월 멀티선택 지원 (STANDARD · created_at 축)
+import { parseMonthsList, isDateInSelectedMonths } from "../../lib/periodFilter";
 
 const router = Router();
 
@@ -67,13 +69,20 @@ router.get("/api/return-requests", asyncHandler(async (req, res) => {
   const status = String(req.query.status ?? "").trim();
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "60"), 10) || 60));
   const limit = Math.max(1, Math.min(2000, parseInt(String(req.query.limit ?? "200"), 10) || 200));
-  const since = new Date(); since.setDate(since.getDate() - days);
+  // 2026-10-06 · months_list=YM1,YM2 비연속 월 멀티선택 지원 (STANDARD · 사용자 지시)
+  //   · created_at 축 · days 와 상호 배타 · 지정 시 range + YM post-filter
+  const months = parseMonthsList(req.query.months_list);
   let q = supabase
     .from("return_requests")
     .select("id, created_at, product_code, product_name, supplier, qty, current_stock, purchase_price, reason, requested_by, requested_by_id, status")
-    .gte("created_at", since.toISOString())
     .order("created_at", { ascending: false })
     .limit(limit);
+  if (!months.isEmpty && months.from && months.to) {
+    q = q.gte("created_at", `${months.from}T00:00:00`).lte("created_at", `${months.to}T23:59:59.999`);
+  } else {
+    const since = new Date(); since.setDate(since.getDate() - days);
+    q = q.gte("created_at", since.toISOString());
+  }
   if (supplier) q = q.ilike("supplier", `%${supplier}%`);
   if (status) q = q.eq("status", status);
   const { data, error } = await q;
@@ -81,8 +90,13 @@ router.get("/api/return-requests", asyncHandler(async (req, res) => {
     if (/relation .* does not exist/i.test(error.message)) return res.json({ rows: [], count: 0, warning: "return_requests 테이블 없음" });
     throw new HttpError(500, error.message);
   }
+  // 2026-10-06 · months_list 비연속 월 post-filter · 중간 월 자동 포함 금지
+  let rows = data ?? [];
+  if (!months.isEmpty) {
+    rows = rows.filter((r: { created_at: string | null }) => isDateInSelectedMonths(r.created_at, months.set));
+  }
   // T-SLIM E · 표준 shape · { rows, count } · 프론트는 rows 만 소비 (count 추가 필드)
-  res.json({ rows: data ?? [], count: (data ?? []).length });
+  res.json({ rows, count: rows.length });
 }));
 
 // GET /api/return-requests/by-supplier?days=60
@@ -91,17 +105,28 @@ router.get("/api/return-requests", asyncHandler(async (req, res) => {
 router.get("/api/return-requests/by-supplier", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "60"), 10) || 60));
-  const since = new Date(); since.setDate(since.getDate() - days);
-  const { data, error } = await supabase
+  // 2026-10-06 · months_list 비연속 월 멀티선택 지원 (STANDARD · 사용자 지시)
+  const months = parseMonthsList(req.query.months_list);
+  let qry = supabase
     .from("return_requests")
-    .select("id, created_at, product_code, product_name, supplier, qty, current_stock, purchase_price, reason, requested_by, requested_by_id, status")
-    .gte("created_at", since.toISOString());
+    .select("id, created_at, product_code, product_name, supplier, qty, current_stock, purchase_price, reason, requested_by, requested_by_id, status");
+  if (!months.isEmpty && months.from && months.to) {
+    qry = qry.gte("created_at", `${months.from}T00:00:00`).lte("created_at", `${months.to}T23:59:59.999`);
+  } else {
+    const since = new Date(); since.setDate(since.getDate() - days);
+    qry = qry.gte("created_at", since.toISOString());
+  }
+  const { data, error } = await qry;
   if (error) {
     if (/relation .* does not exist/i.test(error.message)) return res.json({ groups: [] });
     throw new HttpError(500, error.message);
   }
   const map = new Map<string, { supplier: string; count: number; total_qty: number; total_amount: number; statuses: Record<string, number>; latest_at: string; items: any[] }>();
-  for (const r of (data ?? [])) {
+  // 2026-10-06 · months_list 비연속 월 post-filter · 중간 월 자동 포함 금지
+  const effData = months.isEmpty
+    ? (data ?? [])
+    : (data ?? []).filter((r: { created_at: string | null }) => isDateInSelectedMonths(r.created_at, months.set));
+  for (const r of effData) {
     const sup = String((r as any).supplier ?? "미지정");
     const cur = map.get(sup) ?? { supplier: sup, count: 0, total_qty: 0, total_amount: 0, statuses: {}, latest_at: "", items: [] };
     cur.count++;

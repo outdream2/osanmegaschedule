@@ -19,6 +19,7 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 // 2026-08-04 · 매입이력 공통 리스트 컴포넌트
 import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 import { PeriodSelector, PERIOD_MONTHS_PRESET } from "../common/PeriodSelector";
+import { MonthToggleSelector, monthsListParam as toMonthsListParam, currentYm } from "../common/MonthToggleSelector";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { StatusPill } from "../common/StatusPill";
 import { fmtWonCompact } from "../../lib/format";
@@ -39,6 +40,12 @@ interface VendorListEditorProps {
   compact?: boolean;
   /** 2026-09-10 · #71 · 사용자 지시 · 부모에서 기간 통합 관리 시 · 외부 값 사용 (자체 기간 UI 숨김) */
   externalAggregateMonths?: number;
+  /**
+   * 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (매입이력 STANDARD)
+   *   · 지정 시 · externalAggregateMonths 보다 우선 · months_list=YM,YM 로 서버 호출
+   *   · 비연속 월 지원 (중간 월 자동 포함 금지)
+   */
+  externalSelectedMonths?: string[];
 }
 
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · types + utils
@@ -62,6 +69,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   onEditRequest,
   compact = false,
   externalAggregateMonths,
+  externalSelectedMonths,
 }) => {
   const confirm = useConfirm();
 
@@ -92,6 +100,13 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   // 2026-09-10 · #71 · 사용자 지시 · 외부에서 관리하면 · 그 값 우선 (자체 상태는 fallback)
   const [aggregateMonthsLocal, setAggregateMonths] = useState<number>(3);
   const aggregateMonths = externalAggregateMonths ?? aggregateMonthsLocal;
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 (매입이력 STANDARD · externalSelectedMonths 우선)
+  //   · 지정 시 · months_list 로 서버 호출 · 비연속 월 지원
+  //   · 미지정 시 · 기존 aggregateMonths (number) 로 자동 변환 (최근 N개월 연속)
+  const [localSelectedMonths, setLocalSelectedMonths] = useState<string[]>(() => [currentYm()]);
+  const effectiveSelectedMonths = externalSelectedMonths ?? localSelectedMonths;
+  const monthsListStr = useMemo(() => toMonthsListParam(effectiveSelectedMonths), [effectiveSelectedMonths]);
+  const useMonthsListMode = externalSelectedMonths != null;
   const toggleCompactSort = (key: CompactSortKey) => {
     if (compactSortKey === key) {
       setCompactSortDir(d => d === "asc" ? "desc" : "asc");
@@ -124,13 +139,24 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         //   · /api/supplier-balances-map · values[supplier] = { purchase, payment, cogs, stock_asset, balance }
         //   · 판매액 (salesTotal) 은 여전히 supplier-purchases 사용 · 두 API 병렬
         // 2026-09-25 · E-2 · 사용자 지시 · balances-map 도 · 같은 aggregateMonths 기간 · 매입액=재고자산+판매원가 정합
-        const now = new Date();
-        const endDate = now.toISOString().slice(0, 10);
-        const startDateObj = new Date(now.getFullYear(), now.getMonth() - aggregateMonths, now.getDate());
-        const startDate = `${startDateObj.getFullYear()}-${String(startDateObj.getMonth() + 1).padStart(2, "0")}-${String(startDateObj.getDate()).padStart(2, "0")}`;
+        // 2026-10-06 · 월 멀티선택 모드 (externalSelectedMonths 지정) · months_list 로 호출 · 비연속 월 지원
+        //   · 미지정 (레거시) · 기존 start/end + months 수량 방식 유지
+        const purchUrl = useMonthsListMode
+          ? `/api/stock-manage/supplier-purchases?months_list=${encodeURIComponent(monthsListStr)}&limit=50000`
+          : `/api/stock-manage/supplier-purchases?months=${aggregateMonths}&limit=50000`;
+        let balUrl: string;
+        if (useMonthsListMode) {
+          balUrl = `/api/supplier-balances-map?months_list=${encodeURIComponent(monthsListStr)}`;
+        } else {
+          const now = new Date();
+          const endDate = now.toISOString().slice(0, 10);
+          const startDateObj = new Date(now.getFullYear(), now.getMonth() - aggregateMonths, now.getDate());
+          const startDate = `${startDateObj.getFullYear()}-${String(startDateObj.getMonth() + 1).padStart(2, "0")}-${String(startDateObj.getDate()).padStart(2, "0")}`;
+          balUrl = `/api/supplier-balances-map?start=${startDate}&end=${endDate}`;
+        }
         const [purchRes, balRes] = await Promise.all([
-          api.get<any>(`/api/stock-manage/supplier-purchases?months=${aggregateMonths}&limit=50000`),
-          api.get<{ values: Record<string, { purchase: number; payment: number; cogs: number; stock_asset: number; balance: number }> }>(`/api/supplier-balances-map?start=${startDate}&end=${endDate}`),
+          api.get<any>(purchUrl),
+          api.get<{ values: Record<string, { purchase: number; payment: number; cogs: number; stock_asset: number; balance: number }> }>(balUrl),
         ]);
         const rows: any[] = Array.isArray(purchRes.data?.rows) ? purchRes.data.rows : [];
         const balMap = balRes.data?.values ?? {};
@@ -157,7 +183,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
       finally { if (!cancelled) setSupplierAggLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [compact, aggregateMonths]);
+  }, [compact, aggregateMonths, useMonthsListMode, monthsListStr]);
 
   useEffect(() => {
     if (initialSelectedId != null && vendors.find(v => v.id === initialSelectedId)) {
@@ -250,7 +276,8 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
               </span>
             )}
             {/* 2026-09-10 · #71 · 사용자 지시 · 외부 기간 사용 시 · 자체 기간 UI 숨김 (상단 툴바로 통합) */}
-            {externalAggregateMonths == null && (
+            {/* 2026-10-06 · externalSelectedMonths 지정 시도 자체 UI 숨김 (월 멀티 모드) */}
+            {externalAggregateMonths == null && externalSelectedMonths == null && (
               <PeriodSelector<number>
                 options={PERIOD_MONTHS_PRESET}
                 value={aggregateMonths}

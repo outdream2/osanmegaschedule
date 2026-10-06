@@ -102,17 +102,20 @@ export interface ListBorrowingsParams {
   supplier?: string;
   direction?: "lend" | "borrow";
   days?: number;
+  /** 2026-10-06 · months_list=YM1,YM2 · 비연속 월 멀티선택 · days 와 상호 배타 (STANDARD · 사용자 지시) */
+  monthsList?: string;
   limit?: number;
 }
 
 /** GET /api/borrowings · 리스트 조회 */
 export async function listBorrowings(params?: ListBorrowingsParams): Promise<BorrowingRow[]> {
   const qs = new URLSearchParams();
-  if (params?.status)    qs.set("status", params.status);
-  if (params?.supplier)  qs.set("supplier", params.supplier);
-  if (params?.direction) qs.set("direction", params.direction);
-  if (params?.days)      qs.set("days", String(params.days));
-  if (params?.limit)     qs.set("limit", String(params.limit));
+  if (params?.status)     qs.set("status", params.status);
+  if (params?.supplier)   qs.set("supplier", params.supplier);
+  if (params?.direction)  qs.set("direction", params.direction);
+  if (params?.monthsList) qs.set("months_list", params.monthsList);
+  else if (params?.days)  qs.set("days", String(params.days));
+  if (params?.limit)      qs.set("limit", String(params.limit));
   const { data } = await api.get<{ rows: BorrowingRow[]; count?: number }>(`/api/borrowings?${qs.toString()}`);
   return data?.rows ?? [];
 }

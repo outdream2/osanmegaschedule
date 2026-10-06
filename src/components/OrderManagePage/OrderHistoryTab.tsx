@@ -33,7 +33,8 @@ import { matchesProductQuery } from "../../lib/productMatch";
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { GradientAccent } from "../common/GradientAccent";
 import { InlineLabel } from "../common/InlineLabel";
-import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { StatusPill } from "../common/StatusPill";
 import { Card } from "../common/Card";
 // 2026-08-24 · v3 리스트 UI 프레임워크 · 사용자 지시
@@ -136,7 +137,9 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [days, setDays] = useState(90);
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+  //   · default · 현재 월 1개 · sent_at 축 (서버 /api/order-history 지원 완료)
+  const { selectedMonths, setSelectedMonths, monthsList: monthsListStr } = useMonthFilter();
   // 2026-09-24 · collapsed set · 기본 open (열림이 기본) · 클릭 시 추가 = 접힘
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   // 2026-09-24 · 날짜별 그룹핑 · 날짜 헤더 클릭 시 그룹 접기/펼치기
@@ -216,7 +219,10 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
     setLoading(true);
     setError(null);
     setNotice(null);
-    api.get<{ orders?: OrderHistoryOrder[]; notice?: string }>(`/api/order-history?days=${days}`)
+    const url = monthsListStr
+      ? `/api/order-history?months_list=${encodeURIComponent(monthsListStr)}`
+      : `/api/order-history`;
+    api.get<{ orders?: OrderHistoryOrder[]; notice?: string }>(url)
       .then(({ data }) => {
         setOrders(Array.isArray(data?.orders) ? data.orders : []);
         if (data?.notice) setNotice(String(data.notice));
@@ -227,7 +233,7 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
         showError(`발주이력 조회 실패: ${msg}`);
       })
       .finally(() => setLoading(false));
-  }, [days]);
+  }, [monthsListStr, showError]);
 
   useEffect(() => {
     load();
@@ -402,21 +408,19 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
           </span>
         }
         right={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <InlineLabel size="sm">기간</InlineLabel>
-            <PeriodSelector
-              options={[
-                { value: 7,   label: "7일",   title: "최근 7일" },
-                { value: 30,  label: "30일",  title: "최근 30일" },
-                { value: 90,  label: "90일",  title: "최근 90일" },
-                { value: 180, label: "180일", title: "최근 180일" },
-                { value: 365, label: "1년",   title: "최근 1년" },
-              ]}
-              value={days}
-              onChange={(v) => setDays(v)}
-              size="sm"
+            {/* 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
+            <MonthToggleSelector
+              selectedMonths={selectedMonths}
+              onChange={setSelectedMonths}
+              maxMonths={6}
+              minOne
               ariaLabel="발주이력 조회기간"
             />
+            {selectedMonths.length > 0 && (
+              <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+            )}
           </div>
         }
       />

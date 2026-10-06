@@ -7,6 +7,7 @@ import { useConfirm } from "../../hooks/useConfirm";
 import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { useToast } from "../../hooks/useToast";
 import { useVendors } from "../../hooks/useVendors";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { Spinner } from "../common/Spinner";
 import { matchHangul } from "../../lib/hangulSearch";
 // 2026-08-29 · 상품명 검색 · 통일 로직
@@ -169,7 +170,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [vendorReloadKey, setVendorReloadKey] = useState(0);
   const [supplierInfoModal, setSupplierInfoModal] = useState<Vendor | null>(null);
   // 2026-09-10 · #71 · 사용자 지시 · 결제 페이지 · 기간 필터 통합 (상단 툴바 · 좌우 공용)
-  const [vendorPeriodMonths, setVendorPeriodMonths] = useState<number>(3);
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter)
+  //   · default · 현재 월 1개 · 비연속 월 지원 · months_list 로 하위 fetch
+  const { selectedMonths: vendorSelectedMonths, setSelectedMonths: setVendorSelectedMonths } = useMonthFilter();
   const [vendorPeriodSeason, setVendorPeriodSeason] = useState<string | null>(null);
 
   // 접기 상태
@@ -397,10 +400,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     );
     if (ok !== true) return;
     // 2026-09-10 · 사용자 지시 · 발주필요 수량 · 발주요청으로 그대로 전달
-    //   · 우선순위 · orderQtyOverride[code] > Math.max(1, opt-cur) > null
+    //   · 2026-10-05 · 사용자 지시 C · Math.max(1,...) → Math.max(0,...) · 대원칙 부족수량 공식 통일
+    //   · 우선순위 · orderQtyOverride[code] > Math.max(0, opt-cur) > null
     const cur = Number(p.current_stock ?? 0);
     const opt = Number(p.optimal_stock ?? 0);
-    const shortage = Math.max(1, opt - cur);
+    const shortage = Math.max(0, opt - cur);
     const orderQty = orderQtyOverride.get(code) ?? shortage;
     setRequestingOrder(prev => { const n = new Set(prev); n.add(code); return n; });
     try {
@@ -410,6 +414,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         current_stock: p.current_stock,
         order_qty: orderQty,
         supplier: p.supplier,
+        // 2026-10-06 · 사용자 지시 · canonical supplier_code 명시 전달 (products.supplier_code · name 역추정 금지)
+        supplier_code: (p as { supplier_code?: string | null }).supplier_code ?? null,
       });
       devLog("[handleRequestOrder] POST result: ok");
       await loadOrderReqs();
@@ -468,7 +474,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     const buildDetail = (arr: ProductInfo[]) => arr.map(p => {
       const cur = Number(p.current_stock ?? 0);
       const opt = Number(p.optimal_stock ?? 0);
-      const shortage = Math.max(1, opt - cur);
+      const shortage = Math.max(0, opt - cur);
       const code = getCode(p);
       const qty = orderQtyOverride.get(code) ?? shortage;
       return `• ${getName(p)} · 수량 ${qty}`;
@@ -490,7 +496,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         const name = getName(p);
         const cur = Number(p.current_stock ?? 0);
         const opt = Number(p.optimal_stock ?? 0);
-        const shortage = Math.max(1, opt - cur);
+        const shortage = Math.max(0, opt - cur);
         const orderQty = orderQtyOverride.get(code) ?? shortage;
         try {
           await createOrderRequest({
@@ -498,6 +504,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             current_stock: p.current_stock,
             order_qty: orderQty,
             supplier: p.supplier,
+            // 2026-10-06 · 사용자 지시 · canonical supplier_code 명시 전달
+            supplier_code: (p as { supplier_code?: string | null }).supplier_code ?? null,
           });
         } catch (e: any) {
           showError(`[${name}] 발주 요청 실패: ${e?.message ?? "오류"}`);
@@ -815,7 +823,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             <VendorPaymentPanel vendorPanelWidth={vendorPanelWidth} onVendorResizeStart={onVendorResizeStart}
               vendorReloadKey={vendorReloadKey} vendorPreselectId={vendorPreselectId}
               vendorSelected={vendorSelected} onEditRequest={handleVendorEditRequest} onSelectVendor={setVendorSelected}
-              periodMonths={vendorPeriodMonths} onPeriodMonthsChange={setVendorPeriodMonths}
+              selectedMonths={vendorSelectedMonths} onSelectedMonthsChange={setVendorSelectedMonths}
               periodSeason={vendorPeriodSeason} onPeriodSeasonChange={setVendorPeriodSeason}
             />
           )}

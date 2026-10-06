@@ -5,6 +5,7 @@ import { asyncHandler } from "../../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../../middleware/errorHandler";
 import { splitVat, fetchVatIncluded } from "./helpers";
 import logger from "../../../lib/logger";
+import { parseMonthsList, isDateInSelectedMonths } from "../../../lib/periodFilter";
 
 const router = Router();
 
@@ -19,10 +20,20 @@ router.get("/api/supplier-purchase-detail", asyncHandler(async (req, res) => {
   const supplier = String(req.query.supplier ?? "").trim();
   if (!supplier) throw badRequest("supplier 필수");
   const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "365"), 10) || 365));
+  // 2026-10-06 · months_list=YM1,YM2 비연속 월 멀티선택 지원 (STANDARD · 사용자 지시)
+  //   · days 와 상호 배타 · months_list 지정 시 range + post-filter
+  const months = parseMonthsList(req.query.months_list);
 
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
-  const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+  let cutoffYmd: string;
+  let cutoffYmdTo: string | null = null;
+  if (!months.isEmpty && months.from && months.to) {
+    cutoffYmd = months.from;
+    cutoffYmdTo = months.to;
+  } else {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+  }
 
   const vatIncludedPromise = fetchVatIncluded(supplier);
 
@@ -46,13 +57,16 @@ router.get("/api/supplier-purchase-detail", asyncHandler(async (req, res) => {
   } catch { /* silent */ }
   try {
     // purchase_details 자체에서 name 매칭 row 의 supplier_code DISTINCT 수집
-    const { data: nameRows, error: nameErr } = await supabase
+    // 2026-10-06 · months_list 모드 · range 상한 적용 (code 수집 범위 일치)
+    let nameRowsQ = supabase
       .from("purchase_details")
       .select("supplier_code")
       .eq("supplier_name", supplier)
       .not("supplier_code", "is", null)
       .gte("purchase_date", cutoffYmd)
       .limit(1000);
+    if (cutoffYmdTo) nameRowsQ = nameRowsQ.lte("purchase_date", cutoffYmdTo);
+    const { data: nameRows, error: nameErr } = await nameRowsQ;
     if (!nameErr) {
       for (const r of nameRows ?? []) {
         const c = String(r.supplier_code ?? "").trim();
@@ -81,13 +95,20 @@ router.get("/api/supplier-purchase-detail", asyncHandler(async (req, res) => {
   } catch { /* silent */ }
 
   // purchase_details 조회 헬퍼 (name + code + product_codes IN · dedup by id)
+  // 2026-10-06 · months_list 지원 · range 상한 (cutoffYmdTo) 적용
   const fetchPdByNameAndCode = async (withVatCols: boolean) => {
     const cols = withVatCols
       ? "id, purchase_date, product_code, product_name, quantity, unit_price, amount, total, vat_amount, supply_amount"
       : "id, purchase_date, product_code, product_name, quantity, unit_price, amount, total";
-    const byName = supabase.from("purchase_details").select(cols).eq("supplier_name", supplier).gte("purchase_date", cutoffYmd);
+    let byNameQ = supabase.from("purchase_details").select(cols).eq("supplier_name", supplier).gte("purchase_date", cutoffYmd);
+    if (cutoffYmdTo) byNameQ = byNameQ.lte("purchase_date", cutoffYmdTo);
+    const byName = byNameQ;
     const byCode = supplierCodeSet.size > 0
-      ? supabase.from("purchase_details").select(cols).in("supplier_code", [...supplierCodeSet]).gte("purchase_date", cutoffYmd)
+      ? (() => {
+          let q = supabase.from("purchase_details").select(cols).in("supplier_code", [...supplierCodeSet]).gte("purchase_date", cutoffYmd);
+          if (cutoffYmdTo) q = q.lte("purchase_date", cutoffYmdTo);
+          return q;
+        })()
       : Promise.resolve({ data: [] as any[], error: null as any });
     const byProductCodes = async () => {
       if (productCodesForSupplier.length === 0) return { data: [] as any[], error: null as any };
@@ -95,7 +116,9 @@ router.get("/api/supplier-purchase-detail", asyncHandler(async (req, res) => {
       const CHUNK = 500;
       for (let i = 0; i < productCodesForSupplier.length; i += CHUNK) {
         const chunk = productCodesForSupplier.slice(i, i + CHUNK);
-        const { data, error } = await supabase.from("purchase_details").select(cols).in("product_code", chunk).gte("purchase_date", cutoffYmd);
+        let q = supabase.from("purchase_details").select(cols).in("product_code", chunk).gte("purchase_date", cutoffYmd);
+        if (cutoffYmdTo) q = q.lte("purchase_date", cutoffYmdTo);
+        const { data, error } = await q;
         if (error) return { data: [] as any[], error };
         merged.push(...(data ?? []));
       }
@@ -161,7 +184,16 @@ router.get("/api/supplier-purchase-detail", asyncHandler(async (req, res) => {
   if (!data) data = [];
 
   const vatIncluded = await vatIncludedPromise;
-  const rows = (data ?? []).map((r: any) => {
+  // 2026-10-06 · months_list 모드 · 비연속 월 post-filter · 중간 월 자동 포함 금지
+  const effData = months.isEmpty
+    ? (data ?? [])
+    : (data ?? []).filter((r: { invoice_date?: string | null; saved_at?: string | null }) => {
+        const d = (r.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(r.invoice_date))
+          ? r.invoice_date
+          : String(r.saved_at ?? "").slice(0, 10);
+        return isDateInSelectedMonths(d, months.set);
+      });
+  const rows = (effData ?? []).map((r: any) => {
     const date = (r.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(r.invoice_date))
       ? r.invoice_date
       : String(r.saved_at ?? "").slice(0, 10);
