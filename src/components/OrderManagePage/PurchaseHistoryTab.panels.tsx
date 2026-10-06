@@ -500,8 +500,8 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
           bodyClassName="bg-white rounded-xl border border-line shadow-sm flex-1 min-h-0 max-h-[calc(100dvh-200px)] flex flex-col overflow-hidden mt-2"
         >
           <>
-          {/* sticky 정렬 헤더 · md 이상에서만 표시 */}
-          <div className="sticky top-0 z-10 hidden md:block">
+          {/* sticky 정렬 헤더 · lg 이상에서만 표시 · 2026-10-06 겹침 fix: md→lg · 불투명 배경 */}
+          <div className="sticky top-0 z-10 hidden lg:block">
             <table className="w-full border-collapse table-fixed">
               <colgroup>
                 <col style={{ width: "auto", minWidth: 120 }} />
@@ -511,7 +511,7 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                 <col style={{ width: 80 }} />
                 <col style={{ width: 68 }} />
               </colgroup>
-              <thead className="bg-zinc-50/95 backdrop-blur-sm border-b-2 border-zinc-200">
+              <thead className="bg-white border-b-2 border-zinc-200 shadow-sm">
                 <tr className="text-zinc-500">
                   <SortTh label="상품명" colKey="name" activeKey={productSort} dir={productSortDir} onToggle={toggleProductSort} />
                   <th className="py-2 text-[12px] font-bold tracking-wide uppercase select-none text-right pr-2 text-zinc-400">코드</th>
@@ -541,8 +541,8 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
             </div>
           ) : (
             <>
-            {/* ─── PC 테이블 뷰 (md 이상) ─── */}
-            <table className="w-full border-collapse table-fixed text-[14px] hidden md:table">
+            {/* ─── PC 테이블 뷰 (lg 이상) · 2026-10-06 breakpoint md→lg (태블릿 세로 카드뷰로) ─── */}
+            <table className="w-full border-collapse table-fixed text-[14px] hidden lg:table">
               <colgroup>
                 <col style={{ width: "auto", minWidth: 120 }} />
                 <col style={{ width: 80 }} />
@@ -624,8 +624,8 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                 })}
               </tbody>
             </table>
-            {/* ─── 모바일 카드 뷰 (md 미만) ─── */}
-            <div className="md:hidden flex flex-col divide-y divide-zinc-100">
+            {/* ─── 모바일/태블릿 카드 뷰 (lg 미만) · 2026-10-06 ─── */}
+            <div className="lg:hidden flex flex-col divide-y divide-zinc-100">
               {filteredProducts.map(p => {
                 // 2026-10-06 · 사용자 지시 · identity = canonical product_code only (name fallback 제거)
                 const key = String(p.product_code ?? "").trim();

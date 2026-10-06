@@ -7,6 +7,7 @@ import React from "react";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { useSidebarWidth } from "../../hooks/useSidebar";
 import { MobileOnlyGate } from "../common/MobileOnlyGate";
+import { RotateDeviceOverlay } from "../common/RotateDeviceOverlay";
 import { AppFooter } from "./AppFooter";
 import { SideNav } from "./SideNav";
 import { SidebarProvider, SidebarInset } from "../ui/sidebar";
@@ -27,6 +28,9 @@ export interface AppLayoutProps {
 // 모바일 감지 · 모바일이면 기존 렌더 · 데스크탑이면 사이드바 · React hook rules 준수 위해 wrapper 컴포넌트 분리
 export const SidebarLayoutWrapper: React.FC<AppLayoutProps> = (props) => {
   const isMobile = useIsMobile();
+  // 2026-10-06 · 사용자 지시 · 태블릿 세로모드 가로 회전 안내 · 로그인 후만 적용
+  //   · 휴대폰(min<600) · PC(max>1400) 는 overlay 내부에서 자동 제외
+  const rotateOverlay = props.authSession ? <RotateDeviceOverlay /> : null;
   if (isMobile) {
     return (
       <>
@@ -35,10 +39,16 @@ export const SidebarLayoutWrapper: React.FC<AppLayoutProps> = (props) => {
         </MobileOnlyGate>
         <AppFooter />
         {props.timeoutWarningOverlay}
+        {rotateOverlay}
       </>
     );
   }
-  return <SidebarLayout {...props} />;
+  return (
+    <>
+      <SidebarLayout {...props} />
+      {rotateOverlay}
+    </>
+  );
 };
 
 const SIDEBAR_OPEN_KEY = "sidebar.open";
