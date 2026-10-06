@@ -19,4 +19,8 @@ export type SlotMap = Record<string, number[]>;
 export type ZoneMap = Record<string, SlotMap>;
 
 export const TYPE_ORDER: Record<string, number> = { "오픈": 0, "오전반차": 1, "미들": 2, "오후반차": 3, "마감": 4 };
-export const SKIP_TYPES = new Set(["휴무", "월차", "지정휴무"]);
+// 2026-10-07 · Phase 2 · OFF SSOT · 하드코드 ["휴무","월차","지정휴무"] 제거
+//   · 이전: "결근" 누락 bug · DayTimelineModal 에서 결근 직원이 보임
+//   · 이후: shared OFF_TYPES (휴무/월차/지정휴무/결근) 통일
+import { OFF_TYPES as SHARED_OFF_TYPES } from "../../shared/schedule/offTypes";
+export const SKIP_TYPES: Set<string> = new Set<string>(SHARED_OFF_TYPES);

@@ -8,6 +8,8 @@ import { Clock, MessageSquare, Save, X, ToggleLeft, Settings2 } from "lucide-rea
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 import { useEditScheduleForm, SCHEDULE_CYCLE } from "./useEditScheduleForm";
 import { usePopoverPosition } from "./usePopoverPosition";
+// 2026-10-07 · Phase 2 · OFF/WORK SSOT · shared helper 사용
+import { OFF_TYPES as SHARED_OFF_TYPES, WORK_TYPES as SHARED_WORK_TYPES, HALF_DAY_TYPES as SHARED_HALF_TYPES } from "../../shared/schedule/offTypes";
 
 interface ScheduleCellProps {
   schedule?: Schedule;
@@ -274,8 +276,11 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
             {/* Quick Presets */}
             {(() => {
-              const WORK_TYPES = new Set(["오픈", "미들", "마감", "오전반차", "오후반차"]);
-              const OFF_TYPES = new Set(["휴무", "월차", "지정휴무", "결근"]);
+              // 2026-10-07 · Phase 2 · shared OFF/WORK SSOT · 하드코드 제거
+              //   · ScheduleCell UI 분류 · WORK = 정상 근무 + 반차 (반나절 근무도 WORK 그룹)
+              //   · OFF = 완전 결근 (지정휴무 포함)
+              const WORK_TYPES = new Set<string>([...SHARED_WORK_TYPES, ...SHARED_HALF_TYPES]);
+              const OFF_TYPES = new Set<string>(SHARED_OFF_TYPES);
               const currentGroup = WORK_TYPES.has(type) ? "work" : OFF_TYPES.has(type) ? "off" : null;
               const workTypes = activeScheduleTypes.filter(t => WORK_TYPES.has(t.value));
               const offTypes = activeScheduleTypes.filter(t => OFF_TYPES.has(t.value));

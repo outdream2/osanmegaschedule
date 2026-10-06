@@ -1,6 +1,7 @@
 // src/components/SchedulePage/scheduleHelpers.ts
 // 2026-08-22 · #framework-4 · SchedulePage 분리 · 순수 헬퍼 함수
 // #342 · 2026-09-23 · positionToCategoryDynamic import · wageRateKeys 기반 동적 필터 지원
+// 2026-10-07 · Phase 2 · OFF_TYPES/HALF_DAY_TYPES shared helper 사용 · "지정휴무" 포함 보장
 import { Employee, MonthlySummary } from "../../types";
 import {
   isPharmPosition as isPharm,
@@ -10,6 +11,7 @@ import {
 } from "../../lib/employeeCategory";
 import type { ScheduleTypeEntry } from "../../constants";
 import { positionToCategoryDynamic } from "./usePositionCategories";
+import { isOffType, isHalfDayType } from "../../shared/schedule/offTypes";
 
 export const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -41,6 +43,9 @@ export const POSITION_TO_CATEGORY: Record<string, PositionCategory> = {
  * position 문자열을 PositionCategory 로 분류.
  * - 정확 매칭이 최우선, 매칭 실패 시 부분 매칭(물류/창고 하위 표기 대응) → "기타"
  * - 회귀 방지: 기존 buildFilteredEmployees·getCalculatedSummary 규칙과 동치
+ *
+ * 2026-10-07 · Phase 2 · 레거시 API 유지 · 신규 코드는 `positionToCategoryV2` 사용 권장
+ *   · 실제 "기타" position 과 mapping 실패 UNMAPPED 를 구분하려면 V2 를 사용
  */
 export function positionToCategory(pos: string): PositionCategory {
   if (!pos) return "기타";
@@ -49,6 +54,27 @@ export function positionToCategory(pos: string): PositionCategory {
   // 부분 매칭 (기존 코드: emp.position.includes("물류"))
   if (pos.includes("물류")) return "창고";
   return "기타";
+}
+
+/**
+ * 2026-10-07 · Phase 2 · UNMAPPED 분리 버전
+ *   · 실제 canonical "기타" (position === "기타") → "기타"
+ *   · 빈 값 → "UNMAPPED"
+ *   · POSITION_TO_CATEGORY mapping 실패 (대표/임원 등) → "UNMAPPED"
+ *   · "물류" 부분 매칭 유지
+ *
+ * - 사용자 금지 규칙 · "position mapping 실패 → 기타 자동 흡수" 완화
+ * - observable · console.warn 으로 mapping 실패 추적 가능
+ */
+export type PositionCategoryV2 = PositionCategory | "UNMAPPED";
+
+export function positionToCategoryV2(pos: string): PositionCategoryV2 {
+  if (!pos) return "UNMAPPED";
+  if (pos === "기타") return "기타"; // canonical 기타
+  const exact = POSITION_TO_CATEGORY[pos];
+  if (exact) return exact;
+  if (pos.includes("물류")) return "창고";
+  return "UNMAPPED";
 }
 
 /**
@@ -123,7 +149,14 @@ export const getBreakHoursForEmp = (emp: Employee): number => {
   return Math.max(0, min) / 60;
 };
 
-export const OFF_TYPES_SET = new Set(["휴무", "월차", "결근"]);
+/**
+ * @deprecated 2026-10-07 · Phase 2 · 하드코드 OFF 집합 제거 완료
+ *   · 신규 코드는 `isOffType` (shared/schedule/offTypes) 사용
+ *   · 레거시 import 호환을 위해 export 유지하되 shared SSOT 기반으로 재구성
+ *   · 이전: ["휴무","월차","결근"] (지정휴무 누락 bug)
+ *   · 이후: shared OFF_TYPES ["휴무","월차","지정휴무","결근"]
+ */
+export const OFF_TYPES_SET = new Set<string>(["휴무", "월차", "지정휴무", "결근"]);
 
 export const getEmpMonthStats = (
   emp: Employee,
@@ -133,16 +166,23 @@ export const getEmpMonthStats = (
   settingsEmployeeWageOverrides: Record<number, any>
 ) => {
   const visibleSchedules = emp.schedules.filter(s => s.date.startsWith(monthKey));
-  const workDays = visibleSchedules.filter(s => s.type && !OFF_TYPES_SET.has(s.type)).length;
+  // 2026-10-07 · Phase 2 · isOffType SSOT · "지정휴무" 포함 보장
+  //   · 지정휴무도 완전 OFF · workDays 집계에서 제외 · labor 계산 skip
+  const workDays = visibleSchedules.filter(s => s.type && !isOffType(s.type)).length;
   let totalHours = 0;
   let laborCost = 0;
 
-  const empRate = settingsEmployeeWageOverrides[emp.id] ?? settingsWageRates[emp.position] ?? null;
+  // 2026-10-07 · Phase 2 · wage 결정 SSOT · 하드코드 fallback 제거
+  //   · empRate=null (unconfigured) → laborCost 계산 skip · UI "시급 미설정" 안내
+  const override = settingsEmployeeWageOverrides?.[emp.id];
+  const base = settingsWageRates?.[emp.position];
+  const empRate = (isValidWageRateObj(override) ? override : (isValidWageRateObj(base) ? base : null));
+  const wageConfigured = empRate !== null;
   const shiftHourFallback = getTypeHoursMap(emp.position, emp.employmentType, settingsScheduleTypes);
   const breakHours = getBreakHoursForEmp(emp);
 
   for (const s of visibleSchedules) {
-    if (!s.type || OFF_TYPES_SET.has(s.type)) continue;
+    if (!s.type || isOffType(s.type)) continue;
     const wh = s.workingHours || shiftHourFallback[s.type] || "";
     const rawHours = parseWorkingHours(wh);
     const paidHours = Math.max(0, rawHours - breakHours);
@@ -154,8 +194,18 @@ export const getEmpMonthStats = (
     }
   }
 
-  return { workDays, totalHours, laborCost };
+  // 2026-10-07 · Phase 2 · wageConfigured flag · UI "시급 미설정" 노출용 · 0 과 unknown 구분
+  return { workDays, totalHours, laborCost, wageConfigured };
 };
+
+/** 2026-10-07 · Phase 2 · WageRate shape 안전 체크 */
+function isValidWageRateObj(v: unknown): v is { weekday: number; weekend: number } {
+  return (
+    typeof v === "object" && v !== null &&
+    typeof (v as any).weekday === "number" && Number.isFinite((v as any).weekday) &&
+    typeof (v as any).weekend === "number" && Number.isFinite((v as any).weekend)
+  );
+}
 
 export const getCalculatedSummary = (
   sourceEmployees: Employee[],
@@ -178,7 +228,8 @@ export const getCalculatedSummary = (
         else if (type === "미들") middleCount++;
         else if (type === "마감" || type === "오후반차") closeCount++;
 
-        const isOff = ["휴무", "월차", "결근"].includes(type);
+        // 2026-10-07 · Phase 2 · isOffType SSOT · "지정휴무" 포함 보장
+        const isOff = isOffType(type);
         if (!isOff && type.trim() !== "") {
           // 2026-09-18 · #91 · Plan C · positionToCategory + isOtherPosition 하이브리드
           // - isOtherPosition 은 employmentType(알바 등) 기반 → 우선 판정 유지
@@ -186,15 +237,25 @@ export const getCalculatedSummary = (
           if (isPharm(emp.position)) pharmacistCount++;
           else if (isOtherPosition(emp.position, emp.employmentType)) otherCount++;
           else {
-            const cat = positionToCategory(emp.position);
-            if (cat === "창고") {
+            // 2026-10-07 · Phase 2 · UNMAPPED 분리 · observable warn
+            //   · V2 결과가 "UNMAPPED" 이면 schema 유지상 otherCount 로 흡수하되 observable 로 추적
+            //   · 사용자 금지 규칙 · "position mapping 실패 → 기타 자동 흡수" 완화 · 로그로 노출
+            const catV2 = positionToCategoryV2(emp.position);
+            if (catV2 === "창고") {
               // 물류/창고 세분화 (기존 규칙 유지)
               if (emp.position === "창고") warehouseCount++;
               else if (emp.position.includes("물류")) logisticsCount++;
               else warehouseCount++; // 기타 창고 카테고리 · 창고로 흡수
               staffCount++;
-            } else if (cat === "기타") {
-              // 신규/미매핑 직군 · MonthlySummary 스키마 유지 · otherCount 로 흡수
+            } else if (catV2 === "기타") {
+              // canonical "기타" position
+              otherCount++;
+            } else if (catV2 === "UNMAPPED") {
+              // mapping 실패 (대표/임원/신규 직군) · schema 유지상 otherCount 흡수
+              //   · P1 D-6 · MonthlySummary.unmappedCount schema 분리 후 교체 가능
+              if (typeof console !== "undefined" && typeof console.warn === "function") {
+                console.warn(`[scheduleHelpers] position mapping 실패 (UNMAPPED) · pos="${emp.position}" · emp=${emp.id}`);
+              }
               otherCount++;
             } else {
               // "사원", "매장" → staffCount
@@ -317,11 +378,12 @@ export const buildFilteredEmployees = (
       return sortOrder === "asc" ? a.name.localeCompare(b.name, "ko") : b.name.localeCompare(a.name, "ko");
     }
     if (sortBy === "today" || (sortBy === "none" && todayFirst)) {
-      const TODAY_OFF_TYPES = new Set(["휴무", "월차", "지정휴무", "결근", "오전반차", "오후반차"]);
+      // 2026-10-07 · Phase 2 · isOffType/isHalfDayType SSOT · 정렬 OFF 집합도 shared helper 사용
+      //   · OFF (지정휴무 포함) + 반차 → "오늘 쉬는 사람" group (sort 3)
       const TODAY_TYPE_ORDER: Record<string, number> = { "오픈": 0, "마감": 1 };
       const getOrder = (type: string): number => {
         if (!type) return 4;
-        if (TODAY_OFF_TYPES.has(type)) return 3;
+        if (isOffType(type) || isHalfDayType(type)) return 3;
         return TODAY_TYPE_ORDER[type] ?? 2;
       };
       const aType = a.schedules.find(s => s.date === todayStr)?.type ?? "";

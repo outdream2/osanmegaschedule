@@ -7,9 +7,12 @@ import { validateBody } from "../../middleware/zodValidate";
 import { badRequest, forbidden, unauthorized, HttpError } from "../../middleware/errorHandler";
 import { UpsertLunchRequestSchema } from "../../../src/shared/schemas/lunch";
 import type { LunchRequestsResponse, LunchAttendanceResponse } from "../../../src/shared/dtos/lunch";
+// 2026-10-07 · Phase 2 · OFF SSOT · shared isOffType + isHalfDayType 사용
+//   · 이전: 하드코드 ["휴무","월차","지정휴무","결근","오전반차","오후반차"]
+//   · 이후: shared OFF_TYPES ∪ HALF_DAY_TYPES (점심 신청 가능 판정)
+import { isOffType, isHalfDayType } from "../../../src/shared/schedule/offTypes";
 
 const router = Router();
-const OFF_TYPES = ["휴무", "월차", "지정휴무", "결근", "오전반차", "오후반차"];
 
 // 특정 날짜 출근 현황
 router.get("/api/lunch-attendance", asyncHandler(async (req, res) => {
@@ -20,9 +23,10 @@ router.get("/api/lunch-attendance", asyncHandler(async (req, res) => {
   if (schErr) throw new HttpError(500, schErr.message);
   const schedMap = new Map<number, string>();
   for (const s of (schedules ?? [])) schedMap.set(s.employeeId, s.type);
+  // 2026-10-07 · Phase 2 · OFF SSOT · 완전 OFF (지정휴무 포함) + 반차 모두 "점심 식사 미대상"
   const working = (employees ?? []).filter(e => {
     const t = schedMap.get(e.id);
-    return t && !OFF_TYPES.includes(t);
+    return t && !isOffType(t) && !isHalfDayType(t);
   });
   const pharmacistCount = working.filter(e => e.position === "약사").length;
   const staffCount = working.length - pharmacistCount;

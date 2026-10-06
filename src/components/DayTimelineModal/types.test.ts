@@ -68,17 +68,24 @@ describe("TYPE_ORDER · 근무유형 정렬 순서", () => {
 });
 
 describe("SKIP_TYPES · 타임라인 스킵 대상 (Set)", () => {
-  it("3개 · 휴무·월차·지정휴무", () => {
-    expect(SKIP_TYPES.size).toBe(3);
+  // 2026-10-07 · Phase 2 · OFF SSOT 통일 · "결근" 포함 (이전 missing bug 수정)
+  it("4개 · 휴무·월차·지정휴무·결근 (shared OFF_TYPES)", () => {
+    expect(SKIP_TYPES.size).toBe(4);
     expect(SKIP_TYPES.has("휴무")).toBe(true);
     expect(SKIP_TYPES.has("월차")).toBe(true);
     expect(SKIP_TYPES.has("지정휴무")).toBe(true);
+    expect(SKIP_TYPES.has("결근")).toBe(true);
   });
 
   it("근무 타입 · 스킵 대상 아님", () => {
     expect(SKIP_TYPES.has("오픈")).toBe(false);
     expect(SKIP_TYPES.has("미들")).toBe(false);
     expect(SKIP_TYPES.has("마감")).toBe(false);
+  });
+
+  it("반차 · 스킵 대상 아님 (반나절 근무 · OFF 아님)", () => {
+    expect(SKIP_TYPES.has("오전반차")).toBe(false);
+    expect(SKIP_TYPES.has("오후반차")).toBe(false);
   });
 
   it("빈 문자열 · 스킵 대상 아님", () => {

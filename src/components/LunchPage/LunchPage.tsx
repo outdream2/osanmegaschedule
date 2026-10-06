@@ -15,6 +15,8 @@ import { EmptyState } from "../common/EmptyState";
 import type { AuthSession } from "../../types";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
+// 2026-10-07 · Phase 2 · OFF SSOT · 하드코드 OFF_TYPES 제거
+import { isOffType, isHalfDayType } from "../../shared/schedule/offTypes";
 
 interface LunchRequest {
   id: number;
@@ -64,7 +66,11 @@ const TIME_SLOTS = [
 ];
 const SLOT_W = 72; // px per 30-min slot
 
-const OFF_TYPES = new Set(["휴무", "월차", "지정휴무", "결근", "오전반차", "오후반차"]);
+// 2026-10-07 · Phase 2 · OFF SSOT · shared isOffType + isHalfDayType 사용
+//   · 점심 신청 가능 판정 · 완전 OFF + 반차 모두 "점심 식사 불가" 로 간주 (기존 로직 유지)
+function isLunchSkipType(type: string | null | undefined): boolean {
+  return isOffType(type) || isHalfDayType(type);
+}
 
 function todayString() {
   const d = new Date();
@@ -134,9 +140,9 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
       setMyRequest(employeeId ? (requests.find(r => r.employee_id === employeeId) ?? null) : null);
       if (attResp) {
         setAttendance({
-          pharmacistCount: attResp.data.pharmacistCount,
-          staffCount: attResp.data.staffCount,
-          totalCount: attResp.data.totalCount,
+          pharmacistCount: attResp.data.pharmacistCount ?? 0,
+          staffCount: attResp.data.staffCount ?? 0,
+          totalCount: attResp.data.totalCount ?? 0,
         });
       }
     } catch (e: any) {
@@ -161,7 +167,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
       const emps: DayEmployee[] = (data.employees ?? [])
         .filter((emp: any) => {
           const s = (emp.schedules ?? []).find((sc: any) => sc.date === selectedDate);
-          return s && s.type && !OFF_TYPES.has(s.type);
+          return s && s.type && !isLunchSkipType(s.type);
         })
         .map((emp: any) => ({
           id: emp.id,
@@ -325,16 +331,16 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               <div className="flex items-center gap-1.5">
                 <Stethoscope size={13} className="text-indigo-400" />
                 <span className="text-gray-500 font-medium">약사</span>
-                <span className="font-bold text-indigo-700">{attendance.pharmacistCount}명</span>
+                <span className="font-bold text-indigo-700">{attendance?.pharmacistCount}명</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <UserRound size={13} className="text-amber-400" />
                 <span className="text-gray-500 font-medium">직원</span>
-                <span className="font-bold text-amber-700">{attendance.staffCount}명</span>
+                <span className="font-bold text-amber-700">{attendance?.staffCount}명</span>
               </div>
               <div className="ml-auto flex items-center gap-1">
                 <span className="text-[14px] text-gray-400 font-medium">총</span>
-                <span className="font-bold text-gray-800 text-base">{attendance.totalCount}명</span>
+                <span className="font-bold text-gray-800 text-base">{attendance?.totalCount}명</span>
                 <span className="text-[14px] text-gray-400 font-medium">출근</span>
               </div>
             </div>
