@@ -30,9 +30,16 @@ const dateLabel = fmtDateSlice;
 
 interface ProductAgg {
   key: string;
-  // 2026-10-06 · 사용자 지시 · 상품명 앞 공급사 컬럼 (ERP 매입이력 정렬 UX 일치)
-  //   · identity 는 product_code 유지 (previous commit 07b59756 원칙) · supplier 는 display only
-  supplier_name: string;
+  // 2026-10-06 · 사용자 지시 · 상품 identity = product_code 유지 (07b59756 원칙)
+  //   · supplier 는 display/aggregation 정보 · identity/grouping 아님
+  //   · 같은 product_code 그룹의 non-empty supplier_name 전체 unique Set 수집
+  //     - count 0 → "-"
+  //     - count 1 → 공급사명 그대로
+  //     - count ≥ 2 → "공급사 N곳" (title tooltip 에 전체 목록)
+  //   · 첫 공급사를 대표로 쓰지 않음 (대표 공급사 근거 없음)
+  suppliers: string[];                  // 가나다 정렬된 unique supplier_name
+  // 정렬용 내부 key · 단일=이름 · 복수=join (가나다 정렬된 전체 목록)
+  supplier_sort_key: string;
   product_name: string;
   product_code: string | null;
   total_qty: number;
@@ -42,12 +49,14 @@ interface ProductAgg {
   purchase_count: number;
   avg_interval: number | null; // 2026-08-06 · 평균 매입주기 (일) · 2회+ 만 계산
   _dates: Set<string>; // 계산 임시
+  _supplierSet: Set<string>; // 수집 임시 (post-process 에서 suppliers / sort_key 생성)
 }
 
 type ProductSortKey = "supplier_name" | "product_name" | "total_qty" | "avg_unit_price" | "last_date" | "purchase_count" | "total_amount" | "avg_interval";
 
 const PRODUCT_AGG_CMP: Record<ProductSortKey, Comparator<ProductAgg>> = {
-  supplier_name:  (a, b) => a.supplier_name.localeCompare(b.supplier_name, "ko"),
+  // 2026-10-06 · 복수 공급사 안정 정렬 · 가나다 정렬 후 join 한 내부 key 비교
+  supplier_name:  (a, b) => a.supplier_sort_key.localeCompare(b.supplier_sort_key, "ko"),
   product_name:   (a, b) => a.product_name.localeCompare(b.product_name, "ko"),
   total_qty:      (a, b) => a.total_qty - b.total_qty,
   avg_unit_price: (a, b) => a.avg_unit_price - b.avg_unit_price,
@@ -60,8 +69,9 @@ const PRODUCT_AGG_CMP: Record<ProductSortKey, Comparator<ProductAgg>> = {
 export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ rows, loading }) => {
   const aggregated = useMemo<ProductAgg[]>(() => {
     // 2026-10-06 · 사용자 지시 · identity/group key = canonical product_code
-    //   · product_name · supplier_name 은 display only (DB 에서 받은 값 그대로 보존)
-    //   · 상품명 · 공급사 모두 · 첫 non-empty 값으로 display 보강 (상품별 1 row 유지)
+    //   · product_name · supplier_name 은 display/aggregation only (DB 받은 값 그대로)
+    //   · product_name · 첫 non-empty 로 display 보강 (상품별 1 row)
+    //   · supplier · 같은 code 그룹의 non-empty unique Set 전체 수집 (대표 공급사 없음)
     //   · product_code 가 없는 row 는 unmapped · 집계에서 skip (ghost merge 방지)
     const map = new Map<string, ProductAgg>();
     for (const r of rows) {
@@ -73,7 +83,8 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
       if (!a) {
         a = {
           key: code,
-          supplier_name: sname || "-",
+          suppliers: [],
+          supplier_sort_key: "",
           product_name: pname || "-",
           product_code: code,
           total_qty: 0,
@@ -83,12 +94,14 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
           purchase_count: 0,
           avg_interval: null,
           _dates: new Set<string>(),
+          _supplierSet: new Set<string>(),
         };
         map.set(code, a);
-      } else {
-        if ((a.product_name === "-" || !a.product_name) && pname) a.product_name = pname;
-        if ((a.supplier_name === "-" || !a.supplier_name) && sname) a.supplier_name = sname;
+      } else if ((a.product_name === "-" || !a.product_name) && pname) {
+        // 첫 non-empty product_name 으로 display 보강
+        a.product_name = pname;
       }
+      if (sname) a._supplierSet.add(sname);
       a.total_qty += r.quantity;
       a.total_amount += r.amount;
       a.purchase_count += 1;
@@ -107,6 +120,9 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
         }
         a.avg_interval = Math.round(total / (dates.length - 1));
       }
+      // supplier 가나다 정렬 unique list · 정렬 key (단일=이름 · 복수=join)
+      a.suppliers = Array.from(a._supplierSet).sort((x, y) => x.localeCompare(y, "ko"));
+      a.supplier_sort_key = a.suppliers.join(" · ");
     }
     return Array.from(map.values());
   }, [rows]);
@@ -200,11 +216,23 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
           {sorted.map((a, i) => (
             <tr key={`pa-${a.key}-${i}`} className="hover:bg-zinc-50/60 transition-all duration-100">
               <td className="px-2 py-1.5 text-zinc-300 text-[17px] tabular-nums align-top">{i + 1}</td>
-              {/* 2026-10-06 · 공급사 셀 (상품명 앞) · 상품별 첫 non-empty supplier_name */}
+              {/* 2026-10-06 · 공급사 셀 · unique Set 집계 · 복수면 "공급사 N곳" + title tooltip 전체 목록
+                   · 대표 공급사 없음 (첫 공급사 가정 금지) */}
               <td className="px-2 py-1.5 align-top">
-                <div className="text-[15px] font-semibold text-zinc-600 break-words whitespace-normal leading-snug">
-                  {a.supplier_name}
-                </div>
+                {a.suppliers.length === 0 ? (
+                  <div className="text-[15px] text-zinc-300">-</div>
+                ) : a.suppliers.length === 1 ? (
+                  <div className="text-[15px] font-semibold text-zinc-600 break-words whitespace-normal leading-snug">
+                    {a.suppliers[0]}
+                  </div>
+                ) : (
+                  <div
+                    className="text-[15px] font-semibold text-zinc-600 whitespace-nowrap cursor-help"
+                    title={a.suppliers.join("\n")}
+                  >
+                    공급사 {a.suppliers.length}곳
+                  </div>
+                )}
               </td>
               {/* 2026-10-06 · 사용자 지시 · 코드 셀 제거 · 상품명만 표시 */}
               <td className="px-2 py-1.5 align-top">
