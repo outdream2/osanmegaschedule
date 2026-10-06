@@ -20,6 +20,8 @@ import { AccentBar } from "../common/AccentBar";
 // 2026-08-23 · #185 · PageToolbar 프리미티브 통일
 import { PageToolbar } from "../common/PageToolbar";
 import { InlineLabel } from "../common/InlineLabel";
+// 2026-10-06 · 월 멀티선택 공통 컴포넌트
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 import { api } from "../../lib/apiClient";
@@ -30,12 +32,14 @@ import { useToast, toastClass } from "../../hooks/useToast";
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface TrendingRow {
   product_code: string;
-  product_name: string;
+  // 2026-10-06 · fallback 금지 (DB 연동 우선) · products.product_name NULL 시 null 유지
+  product_name: string | null;
   supplier: string | null;
   recent_sale: number;
   prior_sale: number;
   growth_rate: number | null;
-  absolute_delta: number;
+  // 2026-10-06 · 사용자 지시 · absolute_delta → delta rename · 별도 개념 제거
+  delta: number;
   newly_trending: boolean;
   current_stock: number;
   optimal_stock: number;
@@ -45,12 +49,13 @@ interface TrendingRow {
 
 interface PeriodBucketRow {
   product_code: string;
-  product_name: string;
+  // 2026-10-06 · fallback 금지 (DB 연동 우선) · products.product_name NULL 시 null 유지
+  product_name: string | null;
   supplier: string | null;
   recent_sale: number;
   prior_sale: number;
   growth_rate: number | null;
-  absolute_delta: number;
+  delta: number;
   newly_trending: boolean;
   current_stock: number;
 }
@@ -200,7 +205,7 @@ const PeriodBucketCard: React.FC<{
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     type="button"
-                    onClick={() => onProductClick?.({ code: r.product_code, name: r.product_name })}
+                    onClick={() => onProductClick?.({ code: r.product_code, name: r.product_name ?? undefined })}
                     className="text-[16px] font-semibold text-zinc-700 hover:text-indigo-700 hover:underline text-left break-words cursor-pointer transition"
                   >
                     {r.product_name}
@@ -215,8 +220,8 @@ const PeriodBucketCard: React.FC<{
                   <span className="text-zinc-300">·</span>
                   <span className="text-zinc-400">이전 {fmt(r.prior_sale)}</span>
                   <span className="text-zinc-300">·</span>
-                  <span className={`font-bold ${r.absolute_delta > 0 ? "text-indigo-600" : r.absolute_delta < 0 ? "text-rose-500" : "text-zinc-400"}`}>
-                    {r.absolute_delta > 0 ? `+${fmt(r.absolute_delta)}` : fmt(r.absolute_delta)}
+                  <span className={`font-bold ${r.delta > 0 ? "text-indigo-600" : r.delta < 0 ? "text-rose-500" : "text-zinc-400"}`}>
+                    {r.delta > 0 ? `+${fmt(r.delta)}` : fmt(r.delta)}
                   </span>
                   <span className="text-zinc-300">·</span>
                   <span className={`font-semibold ${r.newly_trending ? "text-indigo-600" : (r.growth_rate ?? 0) > 0 ? "text-indigo-500" : "text-zinc-400"}`}>
@@ -279,8 +284,16 @@ export const TrendingTab: React.FC = () => {
   });
   const [rows, setRows] = useState<TrendingRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [windowDays, setWindowDays] = useState<10 | 30 | 90 | 180>(30);
-  const [meta, setMeta] = useState<{ recent_from: string; prior_from: string; total: number } | null>(null);
+  // 2026-10-06 · 사용자 지시 · days window → 월 멀티선택 전환 · default = 현재월
+  const [selectedMonths, setSelectedMonths] = useState<string[]>(() => {
+    const d = new Date();
+    return [`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`];
+  });
+  const monthsListParamStr = useMemo(
+    () => [...selectedMonths].sort((a, b) => a.localeCompare(b)).join(","),
+    [selectedMonths],
+  );
+  const [meta, setMeta] = useState<{ recent_months: string[]; prior_months: string[]; recent_from: string; prior_from: string; total: number } | null>(null);
   // 상비약/일반약/전체 3-way 필터 (localStorage 저장) · 기본값: 상비약
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
     try {
@@ -303,16 +316,23 @@ export const TrendingTab: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (!monthsListParamStr) return;
     setLoading(true);
-    // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-    api.get<{ rows?: TrendingRow[]; recent_from?: string; prior_from?: string; total?: number }>(`/api/stock-manage/trending?window=${windowDays}&limit=1000`)
+    // 2026-10-06 · 사용자 지시 · 월 멀티선택 (months_list) 서버 전달
+    api.get<{ rows?: TrendingRow[]; recent_months?: string[]; prior_months?: string[]; recent_from?: string; prior_from?: string; total?: number }>(`/api/stock-manage/trending?months_list=${encodeURIComponent(monthsListParamStr)}&limit=1000`)
       .then(({ data: j }) => {
         setRows(Array.isArray(j?.rows) ? j.rows : []);
-        setMeta({ recent_from: j?.recent_from ?? "", prior_from: j?.prior_from ?? "", total: Number(j?.total ?? 0) });
+        setMeta({
+          recent_months: Array.isArray(j?.recent_months) ? j.recent_months : [],
+          prior_months:  Array.isArray(j?.prior_months)  ? j.prior_months  : [],
+          recent_from:   j?.recent_from ?? "",
+          prior_from:    j?.prior_from  ?? "",
+          total:         Number(j?.total ?? 0),
+        });
       })
       .catch((e: any) => { setRows([]); setMeta(null); showError(`급상승 로드 실패: ${e?.message ?? "네트워크 오류"}`); })
       .finally(() => setLoading(false));
-  }, [windowDays]);
+  }, [monthsListParamStr, showError]);
 
   // classFilter 를 제외한 기타 조건이 적용된 base list (탭 카운트 계산용)
   const baseFiltered = rows;
@@ -332,36 +352,29 @@ export const TrendingTab: React.FC = () => {
     return rows.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, classFilter));
   }, [rows, classFilter, productRealMapById]);
 
-  // 정렬 컬럼 · 툴바 버튼(최근판매·성장률)과 표 헤더 클릭 모두 동일 상태 조작 (T30 · useSortableTable)
-  //   - recent  : 최근 판매 desc (기본)
-  //   - growth  : 신규진입(newly_trending) 상단 후 성장률 desc
-  //   - name    : 상품명 asc (한글 로케일) — 헤더 클릭용
-  //   - prior   : 이전 판매 desc — 헤더 클릭용
-  //   - current : 현재고 desc — 헤더 클릭용
-  //   - optimal : 적정재고 desc — 헤더 클릭용
-  //   - delta   : 증가량 desc — 헤더 클릭용
-  type SortKey = "recent" | "growth" | "name" | "prior" | "current" | "optimal" | "delta";
+  // 2026-10-06 · 사용자 지시 · default sort = delta desc > growth desc > recent desc
+  //   · 서버와 동일 정렬 · 클라이언트가 recent desc 로 override 하지 않음
+  //   · newly_trending 은 최상단 강제 X · badge/상태 표시만
+  type SortKey = "delta" | "recent" | "growth" | "name" | "prior" | "current" | "optimal";
   const sortComparators = useMemo<Record<SortKey, Comparator<TrendingRow>>>(() => ({
-    recent:  (a, b) => a.recent_sale - b.recent_sale,
-    // growth: newly_trending 우선 (항상 상단), 그다음 성장률 큰 순
-    //   defaultDir="desc" 이므로 desc 방향에서 이 asc-비교의 결과가 부호반전됨
-    //   → asc-return 값을 "성장률 asc" 로 두면 desc 클릭 시 큰 순으로 나옴
-    //   newly_trending 은 방향과 무관하게 항상 상단이어야 하므로 sign 을 안 타는 별도 처리 필요
-    //   → 훅이 sign 만 곱하므로 newly_trending 도 정렬 방향을 타게 됨.
-    //     desc 기본값에서만 신규 상단이 보장되므로 여기서는 desc-우선 정렬을 가정하고
-    //     신규 상단 로직도 desc-friendly 로 작성 (b - a 관점)
-    growth: (a, b) => {
-      if (a.newly_trending !== b.newly_trending) return a.newly_trending ? 1 : -1; // desc 시 부호반전 → 신규가 상단
-      return (a.growth_rate ?? -999999) - (b.growth_rate ?? -999999);
+    // delta: tiebreak with growth, then recent (서버 default 와 동일)
+    delta:   (a, b) => {
+      if (a.delta !== b.delta) return a.delta - b.delta;
+      const ga = a.growth_rate ?? -1;
+      const gb = b.growth_rate ?? -1;
+      if (ga !== gb) return ga - gb;
+      return a.recent_sale - b.recent_sale;
     },
-    name:    (a, b) => a.product_name.localeCompare(b.product_name, "ko"),
+    recent:  (a, b) => a.recent_sale - b.recent_sale,
+    // growth: 성장률 asc (desc 클릭 시 큰 순) · newly 상단 강제 로직 제거
+    growth:  (a, b) => (a.growth_rate ?? -999999) - (b.growth_rate ?? -999999),
+    name:    (a, b) => (a.product_name ?? "").localeCompare(b.product_name ?? "", "ko"),
     prior:   (a, b) => a.prior_sale - b.prior_sale,
     current: (a, b) => a.current_stock - b.current_stock,
     optimal: (a, b) => a.optimal_stock - b.optimal_stock,
-    delta:   (a, b) => a.absolute_delta - b.absolute_delta,
   }), []);
   const { sorted: displayed, sortKey, sortDir, toggleSort, setSort } =
-    useSortableTable<TrendingRow, SortKey>(filtered, "recent", sortComparators, "desc");
+    useSortableTable<TrendingRow, SortKey>(filtered, "delta", sortComparators, "desc");
 
   const fmt = (n: number) => n.toLocaleString();
 
@@ -378,18 +391,27 @@ export const TrendingTab: React.FC = () => {
         count={meta?.total}
         leftSlot={
           <span className="text-[17px] text-ink-soft hidden sm:block">
-            {meta ? `최근 ${windowDays}일 (${meta.recent_from} ~) vs 이전 ${windowDays}일 비교` : `최근 ${windowDays}일 vs 이전 기간 판매 비교 · 신규진입 상단`}
+            {meta && meta.recent_months.length > 0
+              ? `선택 월 [${meta.recent_months.join(", ")}] vs 직전 [${meta.prior_months.join(", ")}] 판매 비교`
+              : "월 선택 vs 직전 동일 개월 판매 비교"}
           </span>
         }
         right={
           <button
             type="button"
             onClick={() => {
+              if (!monthsListParamStr) return;
               setLoading(true);
-              api.get<{ rows?: TrendingRow[]; recent_from?: string; prior_from?: string; total?: number }>(`/api/stock-manage/trending?window=${windowDays}&limit=1000`)
+              api.get<{ rows?: TrendingRow[]; recent_months?: string[]; prior_months?: string[]; recent_from?: string; prior_from?: string; total?: number }>(`/api/stock-manage/trending?months_list=${encodeURIComponent(monthsListParamStr)}&limit=1000`)
                 .then(({ data: j }) => {
                   setRows(Array.isArray(j?.rows) ? j.rows : []);
-                  setMeta({ recent_from: j?.recent_from ?? "", prior_from: j?.prior_from ?? "", total: Number(j?.total ?? 0) });
+                  setMeta({
+                    recent_months: Array.isArray(j?.recent_months) ? j.recent_months : [],
+                    prior_months:  Array.isArray(j?.prior_months)  ? j.prior_months  : [],
+                    recent_from:   j?.recent_from ?? "",
+                    prior_from:    j?.prior_from  ?? "",
+                    total:         Number(j?.total ?? 0),
+                  });
                 })
                 .catch((e: any) => { setRows([]); setMeta(null); showError(`새로고침 실패: ${e?.message ?? "네트워크 오류"}`); })
                 .finally(() => setLoading(false));
@@ -407,21 +429,22 @@ export const TrendingTab: React.FC = () => {
       <div className={`${CARD_BASE} overflow-hidden`}>
         {/* 2026-08-17 · 컨트롤 · 공용 FilterSortBar 톤 · accent bar + segmented pill · 딥네이비 */}
         <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap border-b border-line bg-white">
-          {/* 비교기간 */}
-          <InlineLabel>비교 기간</InlineLabel>
-          <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
-            {([10, 30, 90, 180] as const).map(w => (
-              <button key={w} onClick={() => setWindowDays(w)}
-                className={`h-7 px-2.5 text-[16px] font-semibold rounded-md transition-colors cursor-pointer ${windowDays === w ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
-                {w === 10 ? "10일" : w === 30 ? "1개월" : w === 90 ? "3개월" : "6개월"}
-              </button>
-            ))}
-          </div>
+          {/* 비교 월 · 2026-10-06 · days window → 월 멀티선택 · 비연속 지원 · minOne (최소 1개월) */}
+          <InlineLabel>비교 월</InlineLabel>
+          <MonthToggleSelector
+            selectedMonths={selectedMonths}
+            onChange={setSelectedMonths}
+            maxMonths={6}
+            minOne
+            ariaLabel="급상승 비교 월 선택"
+          />
           <InlineLabel>정렬</InlineLabel>
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {([
-              { k: "recent" as const, label: "최근판매" },
+              // 2026-10-06 · 사용자 지시 · default = delta · 서버 정렬과 동일
+              { k: "delta" as const,  label: "증가량" },
               { k: "growth" as const, label: "성장률" },
+              { k: "recent" as const, label: "최근판매" },
             ]).map(o => (
               <button key={o.k} onClick={() => setSort(o.k, "desc")}
                 className={`h-7 px-2.5 text-[16px] font-semibold rounded-md transition-colors cursor-pointer ${sortKey === o.k ? "bg-brand-deep text-white shadow-sm" : "text-ink hover:text-brand-deep hover:bg-white"}`}>
@@ -487,7 +510,7 @@ export const TrendingTab: React.FC = () => {
                     className="relative text-right px-2 py-1.5 bg-indigo-50/50 text-indigo-600 cursor-pointer select-none hover:bg-indigo-100/60 transition"
                     style={{ width: getWidth("recent"), minWidth: getWidth("recent") }}
                   >
-                    최근{windowDays}일<SortIcon k="recent" sortKey={sortKey} sortDir={sortDir} />
+                    선택월<SortIcon k="recent" sortKey={sortKey} sortDir={sortDir} />
                     <span {...resizerProps("recent")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
@@ -496,7 +519,7 @@ export const TrendingTab: React.FC = () => {
                     className="relative text-right px-2 py-1.5 bg-indigo-50/30 text-indigo-500 cursor-pointer select-none hover:bg-indigo-100/60 transition"
                     style={{ width: getWidth("prior"), minWidth: getWidth("prior") }}
                   >
-                    이전{windowDays}일<SortIcon k="prior" sortKey={sortKey} sortDir={sortDir} />
+                    직전월<SortIcon k="prior" sortKey={sortKey} sortDir={sortDir} />
                     <span {...resizerProps("prior")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
                   </th>
                   <th
@@ -542,7 +565,7 @@ export const TrendingTab: React.FC = () => {
                   <tr key={r.product_code} className={`hover:bg-indigo-50/20 transition ${r.newly_trending ? "bg-indigo-50/10" : ""}`}>
                     <td className="text-center px-2 py-2 text-[17px] font-medium text-zinc-400 tabular-nums align-top">{i + 1}</td>
                     <td className="text-left px-2 py-2 align-top">
-                      <button onClick={() => openProduct({ code: r.product_code, name: r.product_name })}
+                      <button onClick={() => openProduct({ code: r.product_code, name: r.product_name ?? undefined })}
                         className="text-left text-[16px] font-semibold text-zinc-700 hover:text-indigo-700 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition">
                         {r.product_name}
                       </button>
@@ -562,8 +585,8 @@ export const TrendingTab: React.FC = () => {
                       }`}>
                       {r.newly_trending ? "NEW" : r.growth_rate != null ? `${r.growth_rate > 0 ? "+" : ""}${r.growth_rate}%` : "-"}
                     </td>
-                    <td className={`text-right px-2 py-2 text-[16px] font-semibold tabular-nums align-top bg-indigo-50/20 ${r.absolute_delta > 0 ? "text-indigo-600" : r.absolute_delta < 0 ? "text-rose-500" : "text-zinc-400"}`}>
-                      {r.absolute_delta > 0 ? `+${fmt(r.absolute_delta)}` : fmt(r.absolute_delta)}
+                    <td className={`text-right px-2 py-2 text-[16px] font-semibold tabular-nums align-top bg-indigo-50/20 ${r.delta > 0 ? "text-indigo-600" : r.delta < 0 ? "text-rose-500" : "text-zinc-400"}`}>
+                      {r.delta > 0 ? `+${fmt(r.delta)}` : fmt(r.delta)}
                     </td>
                     <td className={`text-right px-2 py-2 text-[16px] font-semibold tabular-nums align-top ${r.below_optimal ? "text-rose-500" : "text-zinc-600"}`}
                       title={r.below_optimal ? `현재고 부족 · ${r.current_stock} < 적정 ${r.optimal_stock}` : ""}>
