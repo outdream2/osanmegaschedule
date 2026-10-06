@@ -1,0 +1,2 @@
+# 2026-10-06 · Render build command 가 `pip install -r requirements.txt` 를 실행하도록 설정됨
+# 현재 Python 의존성 필요 없음 (OCR 는 external 서버 사용) · 빈 파일로 pip exit code 0 보장
