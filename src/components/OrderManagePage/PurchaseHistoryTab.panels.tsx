@@ -4,7 +4,7 @@
 //   · ByVendorPanel · 공급사별 SplitPanel (좌 SupplierTab + 우 VendorHeader·SubTabs)
 //   · ByProductPanel · 상품별 SplitPanel (좌 상품리스트 + 우 상품상세/파이차트)
 
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Building2, Package, RefreshCw, Info, ArrowRight, X } from "lucide-react";
 import { SortHeader } from "../common/SortHeader";
 import { SegmentedControl } from "../common/SegmentedControl";
@@ -33,7 +33,6 @@ import PurchaseSubTabs, {
   type PurchaseLedgerRow,
   type PurchaseDetailRow,
   type TabKey as PurchaseSubTabKey,
-  CategoryPieChart,
   MonthlyPieChart,
   TopProductsPieChart,
 } from "./PurchaseHistoryTab/PurchaseSubTabs";
@@ -474,6 +473,20 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
   productSortDir, toggleProductSort,
   allDetailsLoading, allDetailsError, loadAllDetails,
 }) => {
+  // 2026-10-06 · 사용자 지시 · split window 왼쪽 상품 리스트 UI pagination
+  //   · 데이터는 filteredProducts 유지 · 렌더만 page slice
+  //   · 검색/정렬/pageSize 변경 시 page 1 reset
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [page, setPage] = useState<number>(1);
+  const totalCount = filteredProducts.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  useEffect(() => { setPage(1); }, [totalCount, pageSize, productSort, productSortDir, productSearch]);
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * pageSize;
+  const pageRows = useMemo(
+    () => filteredProducts.slice(pageStart, pageStart + pageSize),
+    [filteredProducts, pageStart, pageSize],
+  );
   return (
     <SplitPanel
       key="by-product"
@@ -552,7 +565,8 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                 <col style={{ width: 68 }} />
               </colgroup>
               <tbody className="divide-y divide-zinc-100">
-                {filteredProducts.map(p => {
+                {/* 2026-10-06 · pageRows (slice) · split window 왼쪽 리스트 pagination */}
+                {pageRows.map(p => {
                   // 2026-10-06 · 사용자 지시 · identity = canonical product_code only (name fallback 제거)
                   const key = String(p.product_code ?? "").trim();
                   const active = selectedProductKey === key;
@@ -624,9 +638,9 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                 })}
               </tbody>
             </table>
-            {/* ─── 모바일/태블릿 카드 뷰 (lg 미만) · 2026-10-06 ─── */}
+            {/* ─── 모바일/태블릿 카드 뷰 (lg 미만) · 2026-10-06 pageRows (slice) ─── */}
             <div className="lg:hidden flex flex-col divide-y divide-zinc-100">
-              {filteredProducts.map(p => {
+              {pageRows.map(p => {
                 // 2026-10-06 · 사용자 지시 · identity = canonical product_code only (name fallback 제거)
                 const key = String(p.product_code ?? "").trim();
                 const active = selectedProductKey === key;
@@ -705,6 +719,55 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
             </>
           )}
           </div>
+          {/* 2026-10-06 · 사용자 지시 · split window 왼쪽 리스트 pagination 컨트롤 */}
+          {totalCount > 0 && (
+            <div className="shrink-0 border-t border-line bg-zinc-50/60 px-3 py-2 flex items-center gap-2 text-[14px] text-zinc-600 flex-wrap">
+              <span className="tabular-nums">
+                {`${(pageStart + 1).toLocaleString()}–${Math.min(pageStart + pageRows.length, totalCount).toLocaleString()} / ${totalCount.toLocaleString()}건`}
+              </span>
+              <div className="ml-auto flex items-center gap-1">
+                <label className="text-[13px] text-zinc-500 mr-1">페이지당</label>
+                <select
+                  value={pageSize}
+                  onChange={e => setPageSize(Number(e.target.value))}
+                  className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] cursor-pointer hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                >
+                  {[25, 50, 100, 200].map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setPage(1)}
+                  disabled={safePage <= 1}
+                  className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
+                  aria-label="첫 페이지"
+                >‹‹</button>
+                <button
+                  type="button"
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                  className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
+                  aria-label="이전 페이지"
+                >‹</button>
+                <span className="px-2 tabular-nums text-[14px] font-semibold text-zinc-700">
+                  {safePage.toLocaleString()} / {totalPages.toLocaleString()}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                  className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
+                  aria-label="다음 페이지"
+                >›</button>
+                <button
+                  type="button"
+                  onClick={() => setPage(totalPages)}
+                  disabled={safePage >= totalPages}
+                  className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
+                  aria-label="마지막 페이지"
+                >››</button>
+              </div>
+            </div>
+          )}
           </>
         </SplitListPanel>
       }
@@ -730,12 +793,10 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
                 <span>매입 데이터 로딩 중...</span>
               </div>
             ) : (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-2 pb-2">
-                <CategoryPieChart rows={filteredAllDetails} />
+              <div className="flex flex-col gap-2 pb-2">
+                {/* 2026-10-06 · 사용자 지시 · 카테고리별 매입액 비중 제거 */}
                 <TopProductsPieChart rows={filteredAllDetails} />
-                <div className="xl:col-span-2">
-                  <MonthlyPieChart rows={filteredAllDetails} />
-                </div>
+                <MonthlyPieChart rows={filteredAllDetails} />
               </div>
             )}
           </div>

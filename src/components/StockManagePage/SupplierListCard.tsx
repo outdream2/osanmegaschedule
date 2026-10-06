@@ -1,8 +1,9 @@
 // src/components/StockManagePage/SupplierListCard.tsx
 // 공급사 리스트 카드 · SupplierTab.tsx 분리 (2026-08-26 · Framework audit large-file-warn 해결)
 // 순수 렌더 컴포넌트 · 모든 state/handler 는 부모(SupplierTab)에서 props 로 주입
+// 2026-10-06 · 사용자 지시 · split window 왼쪽 리스트 pagination 추가 · 대량 공급사 렌더 부하 완화
 
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Building2, RefreshCw, ChevronRight } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
@@ -95,6 +96,21 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
 }) => {
   const isGroupCollapsed = (g: SupplierGroup) => supplierGroupCollapsed.has(g);
 
+  // 2026-10-06 · 사용자 지시 · 공급사 리스트 UI pagination · split window 왼쪽 렌더 부하 완화
+  //   · 데이터는 그대로 (displayedXlsxSuppliers 유지) · 렌더만 page slice
+  //   · 정렬/카테고리/검색 변경 시 page 1 reset (totalCount 변화로 감지)
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [page, setPage] = useState<number>(1);
+  const totalCount = displayedXlsxSuppliers.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  useEffect(() => { setPage(1); }, [totalCount, pageSize, supListSort.key, supListSort.dir]);
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * pageSize;
+  const pageRows = useMemo(
+    () => displayedXlsxSuppliers.slice(pageStart, pageStart + pageSize),
+    [displayedXlsxSuppliers, pageStart, pageSize],
+  );
+
   return (
     <SplitListPanel
       topAccent
@@ -169,7 +185,8 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
       bodyClassName="relative flex-1 overflow-auto"
     >
       {/* 2026-09-11 · 사용자 지시 · 리스트 다시 불러올 때 · 전체 리스트 화면에 overlay spinner (기존 상단 카드 spinner + 반투명 오버레이) */}
-      {loading && xlsxSuppliers.length > 0 && (
+      {/* 2026-10-05 · 조건 수정 · displayedXlsxSuppliers 기준 · 매입이력 by-vendor 는 useVendors 캐시로 stub 즉시 채워져 xlsxSuppliers=[] 라도 테이블 렌더 → 기존 조건은 초기 로딩 중 overlay 미표시 */}
+      {loading && displayedXlsxSuppliers.length > 0 && (
         <>
           <Card variant="flat" bg="bg-sky-50" borderColor="border-sky-200" rounded="md" padding="none" className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mt-2">
             <Spinner size={12} tone="sky" label="조건 변경 · 새로 불러오는 중..." labelSize={14} />
@@ -312,7 +329,8 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                 )}
               </tr>
             )}
-            {displayedXlsxSuppliers.map((sup, i) => {
+            {/* 2026-10-06 · pageRows (slice) · split window 왼쪽 리스트 pagination */}
+            {pageRows.map((sup, i) => {
               const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
               const isSelected = supplierSelectedKey === key;
               const isInline = inlineExpanded.has(key);
@@ -325,7 +343,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                     className={`cursor-pointer transition-colors ${isSelected ? "bg-brand-tint/60 hover:bg-brand-tint" : "hover:bg-brand-tint/30"}`}
                     title="클릭 → 오른쪽 패널에 상세">
                     {/* 2026-09-21 · #323 · 사용자 지시 · 접힘 화살표 컬럼 제거 · 우측 상세 패널로 충분 */}
-                    <td className="text-center align-middle py-1.5 text-[17px] font-semibold text-zinc-400 tabular-nums">{i + 1}</td>
+                    <td className="text-center align-middle py-1.5 text-[17px] font-semibold text-zinc-400 tabular-nums">{pageStart + i + 1}</td>
                     <td className="text-left px-3 py-1.5 align-top">
                       <div className="flex flex-col leading-tight gap-0.5">
                         {(() => {
@@ -384,9 +402,9 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
             })}
           </tbody>
         </table>
-        {/* ─── 모바일 카드 뷰 (md 미만) ─── */}
+        {/* ─── 모바일 카드 뷰 (md 미만) ─── · 2026-10-06 pageRows (slice) */}
         <div className={`md:hidden flex flex-col divide-y divide-zinc-100 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-          {displayedXlsxSuppliers.map((sup, i) => {
+          {pageRows.map((sup, i) => {
             const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
             const isSelected = supplierSelectedKey === key;
             const isInline = inlineExpanded.has(key);
@@ -406,7 +424,7 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
                 >
                   {/* 줄 1 · 번호 + 공급사명 + 인라인 토글 */}
                   <div className="flex items-start gap-2">
-                    <span className="text-[14px] font-semibold tabular-nums text-zinc-400 shrink-0 mt-0.5">{i + 1}</span>
+                    <span className="text-[14px] font-semibold tabular-nums text-zinc-400 shrink-0 mt-0.5">{pageStart + i + 1}</span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {cat && <VendorCategoryBadge category={cat} />}
@@ -453,6 +471,55 @@ export const SupplierListCard: React.FC<SupplierListCardProps> = ({
             );
           })}
         </div>
+        {/* 2026-10-06 · 사용자 지시 · pagination 컨트롤 · split window 왼쪽 리스트 공통 */}
+        {totalCount > 0 && (
+          <div className="shrink-0 border-t border-line bg-zinc-50/60 px-3 py-2 flex items-center gap-2 text-[14px] text-zinc-600 flex-wrap">
+            <span className="tabular-nums">
+              {`${(pageStart + 1).toLocaleString()}–${Math.min(pageStart + pageRows.length, totalCount).toLocaleString()} / ${totalCount.toLocaleString()}건`}
+            </span>
+            <div className="ml-auto flex items-center gap-1">
+              <label className="text-[13px] text-zinc-500 mr-1">페이지당</label>
+              <select
+                value={pageSize}
+                onChange={e => setPageSize(Number(e.target.value))}
+                className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] cursor-pointer hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
+              >
+                {[25, 50, 100, 200].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+              <button
+                type="button"
+                onClick={() => setPage(1)}
+                disabled={safePage <= 1}
+                className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
+                aria-label="첫 페이지"
+              >‹‹</button>
+              <button
+                type="button"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+                className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
+                aria-label="이전 페이지"
+              >‹</button>
+              <span className="px-2 tabular-nums text-[14px] font-semibold text-zinc-700">
+                {safePage.toLocaleString()} / {totalPages.toLocaleString()}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={safePage >= totalPages}
+                className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
+                aria-label="다음 페이지"
+              >›</button>
+              <button
+                type="button"
+                onClick={() => setPage(totalPages)}
+                disabled={safePage >= totalPages}
+                className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
+                aria-label="마지막 페이지"
+              >››</button>
+            </div>
+          </div>
+        )}
         </>
       )}
     </SplitListPanel>

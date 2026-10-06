@@ -1,7 +1,7 @@
 {
-  "created": "2026-10-05",
+  "created": "2026-10-06",
   "version": 1,
-  "totalViolations": 529,
+  "totalViolations": 526,
   "files": {
     "server/ocr/pipeline/stages/03-vendor-match.ts": {
       "lines": 684,
@@ -84,7 +84,7 @@
       "totalWeight": 25
     },
     "server/routes/display/requests.ts": {
-      "lines": 1600,
+      "lines": 1645,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -132,7 +132,7 @@
       "totalWeight": 16
     },
     "server/routes/purchase/purchase.ts": {
-      "lines": 757,
+      "lines": 770,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -142,7 +142,7 @@
       "totalWeight": 11
     },
     "server/routes/stock/salesAutoRecommend.ts": {
-      "lines": 379,
+      "lines": 393,
       "violations": [
         {
           "ruleId": "no-raw-console-server",
@@ -217,16 +217,6 @@
       ],
       "totalWeight": 9
     },
-    "server/routes/purchase/vendors.ts": {
-      "lines": 639,
-      "violations": [
-        {
-          "ruleId": "no-any-server",
-          "count": 9
-        }
-      ],
-      "totalWeight": 9
-    },
     "server/ocr/parsing/preprocess.ts": {
       "lines": 159,
       "violations": [
@@ -249,6 +239,16 @@
     },
     "server/routes/board/board.ts": {
       "lines": 519,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 8
+        }
+      ],
+      "totalWeight": 8
+    },
+    "server/routes/purchase/vendors.ts": {
+      "lines": 800,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -281,6 +281,16 @@
       ],
       "totalWeight": 7
     },
+    "src/components/DisplayPage/RevenuePage.tsx": {
+      "lines": 1321,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 6
+    },
     "src/components/LeavePage/LeavePage.tsx": {
       "lines": 1397,
       "violations": [
@@ -291,8 +301,18 @@
       ],
       "totalWeight": 6
     },
+    "src/components/OrderManagePage/PaymentInputPage.tsx": {
+      "lines": 1015,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 6
+    },
     "src/components/OrderManagePage/PurchaseHistoryTab.tsx": {
-      "lines": 1095,
+      "lines": 1162,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -302,7 +322,7 @@
       "totalWeight": 6
     },
     "src/components/ProductInfoPage/ProductInfoPage.tsx": {
-      "lines": 1120,
+      "lines": 1125,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -322,7 +342,7 @@
       "totalWeight": 6
     },
     "server/routes/purchase/supplierPayments/balance.ts": {
-      "lines": 525,
+      "lines": 616,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -332,7 +352,7 @@
       "totalWeight": 6
     },
     "server/routes/purchase/supplierPayments/purchaseDetail.ts": {
-      "lines": 189,
+      "lines": 250,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -342,7 +362,7 @@
       "totalWeight": 6
     },
     "server/routes/purchase/vat.ts": {
-      "lines": 594,
+      "lines": 641,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -352,7 +372,7 @@
       "totalWeight": 6
     },
     "server/routes/stock/stockManage/topSales.ts": {
-      "lines": 830,
+      "lines": 1093,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -396,7 +416,7 @@
       "totalWeight": 5
     },
     "server/routes/payment/borrowings.ts": {
-      "lines": 308,
+      "lines": 328,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -406,7 +426,7 @@
       "totalWeight": 5
     },
     "server/routes/stock/productArrivals.ts": {
-      "lines": 670,
+      "lines": 786,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -476,7 +496,7 @@
       "totalWeight": 4
     },
     "server/routes/stock/products.ts": {
-      "lines": 1353,
+      "lines": 1382,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -495,18 +515,8 @@
       ],
       "totalWeight": 4
     },
-    "src/components/DisplayPage/RevenuePage.tsx": {
-      "lines": 807,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
     "src/components/LandingPage/VendorListEditor.tsx": {
-      "lines": 852,
+      "lines": 884,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -516,7 +526,7 @@
       "totalWeight": 3
     },
     "src/components/OrderManagePage/OrderManagePage.tsx": {
-      "lines": 889,
+      "lines": 911,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -525,8 +535,8 @@
       ],
       "totalWeight": 3
     },
-    "src/components/OrderManagePage/PaymentInputPage.tsx": {
-      "lines": 988,
+    "src/components/OrderManagePage/PurchaseHistoryTab.panels.tsx": {
+      "lines": 815,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -556,7 +566,7 @@
       "totalWeight": 3
     },
     "src/components/ProductArrivalPage/ProductArrivalPage.tsx": {
-      "lines": 937,
+      "lines": 943,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -575,18 +585,8 @@
       ],
       "totalWeight": 3
     },
-    "src/components/SalesTrendPage/DashboardTab.tsx": {
-      "lines": 811,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
     "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 964,
+      "lines": 974,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -616,7 +616,7 @@
       "totalWeight": 3
     },
     "server/productCache.ts": {
-      "lines": 406,
+      "lines": 432,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -627,16 +627,6 @@
     },
     "server/routes/settings/holidays.ts": {
       "lines": 254,
-      "violations": [
-        {
-          "ruleId": "no-any-server",
-          "count": 3
-        }
-      ],
-      "totalWeight": 3
-    },
-    "server/routes/stock/stockManage/salesTrend.ts": {
-      "lines": 311,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -786,7 +776,7 @@
       "totalWeight": 2
     },
     "server/routes/purchase/returnRequests.ts": {
-      "lines": 200,
+      "lines": 228,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -806,7 +796,7 @@
       "totalWeight": 2
     },
     "server/routes/purchase/supplierPayments/purchaseSummary.ts": {
-      "lines": 264,
+      "lines": 259,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -817,6 +807,16 @@
     },
     "server/routes/staff/employeeContracts.ts": {
       "lines": 607,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 2
+        }
+      ],
+      "totalWeight": 2
+    },
+    "server/routes/stock/stockManage/salesTrend.ts": {
+      "lines": 377,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -887,16 +887,6 @@
     },
     "server/routes/daily/reservations.ts": {
       "lines": 54,
-      "violations": [
-        {
-          "ruleId": "no-any-server",
-          "count": 1
-        }
-      ],
-      "totalWeight": 1
-    },
-    "server/routes/display/mismatches.ts": {
-      "lines": 128,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -986,7 +976,7 @@
       "totalWeight": 1
     },
     "server/routes/stock/stockManage/productHistory.ts": {
-      "lines": 44,
+      "lines": 69,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -996,7 +986,7 @@
       "totalWeight": 1
     },
     "server/routes/stock/stockManage/trending.ts": {
-      "lines": 261,
+      "lines": 369,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -1016,7 +1006,7 @@
       "totalWeight": 1
     },
     "server/utils/purchaseDetailsQuery.ts": {
-      "lines": 272,
+      "lines": 376,
       "violations": [
         {
           "ruleId": "no-any-server",
