@@ -27,6 +27,8 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import type { AuthSession } from "../../types";
 // 2026-10-06 · 공급사 승인 접근 fix · URL 직접 접근 차단 · vendor session + approval_status 체크
 import { VendorApprovalGuard } from "./VendorApprovalGuard";
+// 2026-10-06 · 사용자 지시 · breadcrumb 통일 · 네비게이션 SSOT · activeNav 정착
+import { useSetActiveByPage } from "../../contexts/ActiveNavContext";
 
 // ─── 타입 ──────────────────────────────────────────────────────────────
 // 2026-09-24 · 사용자 지시 · min_stock 유령 필드 제거 (DB 미존재)
@@ -153,6 +155,14 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
   });
 
   const { toast, showError } = useToast(4000);
+
+  // 2026-10-06 · 사용자 지시 · breadcrumb 통일 · 페이지 mount 시 activeNav 정착
+  //   · AppNavHeader 가 buildBreadcrumbFromNav(activeNav) 로 breadcrumb 생성
+  //   · vendor-stock 그룹(id=vendor) · "거래처 > 공급사 재고확인" 노출
+  const setActiveByPage = useSetActiveByPage();
+  useEffect(() => {
+    setActiveByPage("vendor-stock");
+  }, [setActiveByPage]);
 
   // ─── 데이터 로드 ────────────────────────────────────────────────────
   const fetchData = useCallback(() => {

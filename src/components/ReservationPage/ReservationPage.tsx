@@ -26,6 +26,8 @@ import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import type { AuthSession } from "../../types";
 import { AppNavHeader } from "../layout/AppNavHeader";
+// 2026-10-06 · 사용자 지시 · breadcrumb 통일 · 네비게이션 SSOT · activeNav 정착
+import { useSetActiveByPage } from "../../contexts/ActiveNavContext";
 import { Modal } from "../common/Modal";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
@@ -99,6 +101,13 @@ const getTargetFromNote = (noteStr: string): string => {
 export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSession }) => {
   const { toast } = useToast();
   const isVendor = authSession?.role === "vendor";
+  // 2026-10-06 · 사용자 지시 · breadcrumb 통일 · 페이지 mount 시 activeNav 정착
+  //   · AppNavHeader 가 buildBreadcrumbFromNav(activeNav) 로 breadcrumb 생성
+  //   · reservation 그룹(id=vendor) · "거래처 > 방문예약" 노출
+  const setActiveByPage = useSetActiveByPage();
+  useEffect(() => {
+    setActiveByPage("reservation");
+  }, [setActiveByPage]);
   // Internal staff (level >= 2) can block/unblock time slots
   const isInternalStaff = !isVendor && (authSession?.level ?? 0) >= 2;
   const now = new Date();
@@ -318,7 +327,8 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
 
-      <AppNavHeader activePage="landing" authSession={authSession ?? null} onBack={onBack} />
+      {/* 2026-10-06 · 사용자 지시 · activePage="reservation" 정정 (기존 "landing" 은 breadcrumb/탭 하이라이트 오매칭) */}
+      <AppNavHeader activePage="reservation" authSession={authSession ?? null} onBack={onBack} />
 
       <div className={`flex-1 flex flex-col lg:flex-row gap-0 lg:overflow-hidden ${PAGE_CONTAINER_CLS}`}>
 

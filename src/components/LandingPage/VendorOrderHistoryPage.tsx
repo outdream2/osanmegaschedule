@@ -26,7 +26,7 @@ import { Spinner } from "../common/Spinner";
 import { OrderHistoryPoCard, type OrderHistoryPoCardOrder } from "../OrderManagePage/OrderHistoryPoCard";
 import { OrderPdfPreview } from "../OrderManagePage/OrderPdfPreview";
 import type { OrderModalState } from "../OrderManagePage/OrderModal";
-import { displayVendorName } from "../../utils/vendorNameNormalize";
+// 2026-10-06 · 사용자 지시 · "공급사" 컬럼 제거 → displayVendorName 미사용
 import { shortDate } from "../../lib/dateFormat";
 import { api, ApiError } from "../../lib/apiClient";
 import { getErrorMessage } from "../../lib/errorMessage";
@@ -38,6 +38,8 @@ import jsPDF from "jspdf";
 import type { AuthSession } from "../../types";
 // 2026-10-06 · 공급사 승인 접근 fix · URL 직접 접근 차단 공통 guard
 import { VendorApprovalGuard } from "./VendorApprovalGuard";
+// 2026-10-06 · 사용자 지시 · breadcrumb 통일 · 네비게이션 SSOT · activeNav 정착
+import { useSetActiveByPage } from "../../contexts/ActiveNavContext";
 
 // ─── 타입 · OrderHistoryTab 응답 구조와 동일 ────────────────────────────
 interface OrderHistoryItem {
@@ -133,6 +135,14 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
   useEffect(() => {
     load();
   }, [load]);
+
+  // 2026-10-06 · 사용자 지시 · breadcrumb 통일 · 페이지 mount 시 activeNav 정착
+  //   · AppNavHeader 가 buildBreadcrumbFromNav(activeNav) 로 breadcrumb 생성
+  //   · vendor-order-history 그룹(id=vendor) · "거래처 > 발주이력 확인" 노출
+  const setActiveByPage = useSetActiveByPage();
+  useEffect(() => {
+    setActiveByPage("vendor-order-history");
+  }, [setActiveByPage]);
 
   const togglePo = (k: string) =>
     setCollapsed((prev) => {
@@ -412,17 +422,21 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
                                           </div>
                                         </div>
                                       </td>
+                                      {/* 2026-10-06 · 사용자 지시 · "공급사" 컬럼 제거 (중복 · vendor 로그인 = 자기 공급사 · 상단 StatusPill 에 노출)
+                                            · 발주번호만 표기 · 메모 있으면 노출 */}
                                       <td className="py-2.5 pl-1 pr-3">
-                                        <div className="text-[12px] text-zinc-400 tabular-nums font-medium leading-none mb-0.5">
-                                          #{o.order_number ?? "—"}
-                                        </div>
                                         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 leading-snug">
                                           <span className="inline-flex items-baseline gap-1.5">
-                                            <span className="text-[13px] text-zinc-400 font-semibold">공급사</span>
-                                            <span className="text-[16px] font-bold text-zinc-800 whitespace-normal break-words">
-                                              {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
+                                            <span className="text-[13px] text-zinc-400 font-semibold">발주번호</span>
+                                            <span className="text-[16px] font-bold text-zinc-800 tabular-nums whitespace-normal break-words">
+                                              #{o.order_number ?? "—"}
                                             </span>
                                           </span>
+                                          {o.memo && (
+                                            <span className="text-[13px] text-zinc-500 italic truncate max-w-[260px]">
+                                              {o.memo}
+                                            </span>
+                                          )}
                                         </div>
                                       </td>
                                       <td className="py-2.5 px-2 text-[14px] font-medium text-zinc-500 tabular-nums whitespace-nowrap">
@@ -467,24 +481,9 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
                                         </td>
                                         <td colSpan={6} className="py-0 pl-1 pr-3">
                                           <div className={`bg-zinc-50/70 border-l-2 ${isMatched ? "border-emerald-300" : "border-sky-300"} ml-0.5 mb-2 mt-0 rounded-r-lg overflow-hidden`}>
-                                            {/* 약국 담당자 정보 · #352 · 사용자 지시 · "약국 담당자" 라벨 (헷갈리지 않게) */}
-                                            <div className="px-4 py-2 border-b border-zinc-100 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[13px] text-zinc-600">
-                                              <span className="inline-flex items-baseline gap-1.5">
-                                                <span className="text-[12px] text-sky-600 font-semibold">약국 담당자</span>
-                                                <span className="text-[14px] font-bold text-zinc-800">{pharmacyName}</span>
-                                              </span>
-                                              {pharmacyPhone && (
-                                                <span className="inline-flex items-baseline gap-1.5">
-                                                  <span className="text-[12px] text-zinc-400 font-semibold">연락처</span>
-                                                  <span className="text-[13px] text-zinc-600 tabular-nums">{pharmacyPhone}</span>
-                                                </span>
-                                              )}
-                                            </div>
-                                            {o.memo && (
-                                              <div className="px-4 py-2 border-b border-zinc-100 text-[13px] text-zinc-500 italic">
-                                                메모 · {o.memo}
-                                              </div>
-                                            )}
+                                            {/* 2026-10-06 · 사용자 지시 · "약국 담당자" 상세 영역 제거 (중복)
+                                                  · 상단 "발주 약국" 배너(Card)에 이미 pharmacyName + pharmacyPhone 노출
+                                                  · 메모는 PO 행 안으로 이동 (상단 발주번호 옆) · 상세는 아이템 표만 */}
                                             <table className="w-full text-[15px] tabular-nums">
                                               <thead>
                                                 <tr className="text-[13px] font-semibold text-zinc-500 border-b border-zinc-200 bg-zinc-50/50">
@@ -550,6 +549,11 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
                                 pdfLoading={pdfSavingKey === String(o.order_number ?? o.sent_at)}
                                 fmtWon={fmtWon}
                                 hideMatchAction
+                                // 2026-10-06 · 사용자 지시 · 중복 노출 제거
+                                //   · hideSupplier · vendor 로그인 = 자기 공급사 (헤더 StatusPill 노출)
+                                //   · hideContacts · 상단 "발주 약국" 배너에 pharmacyName/phone 노출
+                                hideSupplier
+                                hideContacts
                               />
                             );
                           })}

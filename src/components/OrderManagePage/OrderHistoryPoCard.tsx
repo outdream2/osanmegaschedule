@@ -67,6 +67,16 @@ export interface OrderHistoryPoCardProps {
    */
   hideMatchAction?: boolean;
   /**
+   * 2026-10-06 · 사용자 지시 · 공급사 중복 노출 제거 (vendor 뷰)
+   *   · vendor 로그인 = 자기 공급사 · AppNavHeader rightSlot 에 이미 노출 · PO 카드 안 "공급사" 라벨 숨김
+   */
+  hideSupplier?: boolean;
+  /**
+   * 2026-10-06 · 사용자 지시 · 약국담당자(공급사 담당자/연락처/이메일) 중복 제거 (vendor 뷰)
+   *   · 상단 "발주 약국" 배너에 이미 pharmacyName/phone 노출 · PO 카드 안 담당자/연락처/이메일 숨김
+   */
+  hideContacts?: boolean;
+  /**
    * 2026-09-25 · 사용자 정정 · 발주매입대조 왼쪽 패널 · 카드 선택 콜백 · 없으면 기존 동작 유지 (BC)
    *   · 있으면 카드 헤더 버튼 클릭 = 발주 선택 · chevron 은 확장/축소로 분리
    */
@@ -82,6 +92,7 @@ export interface OrderHistoryPoCardProps {
  */
 export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
   o, isOpen, onToggle, onPdf, onMatch, pdfLoading, matchLoading, fmtWon, hideMatchAction,
+  hideSupplier, hideContacts,
   onSelect, selected,
 }) => {
   const isMatched = o.status === "matched";
@@ -107,30 +118,41 @@ export const OrderHistoryPoCard: React.FC<OrderHistoryPoCardProps> = ({
               <div className="text-[13px] text-zinc-400 tabular-nums font-medium">
                 #{o.order_number ?? "—"}
               </div>
-              {/* 2026-09-24 · 사용자 지시 · 공급사 옆 · 담당자·연락처·이메일 · 라벨 폰트 +2 */}
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 leading-snug">
-                <span className="inline-flex items-baseline gap-1.5">
-                  <span className="text-[13px] text-zinc-400 font-semibold">공급사</span>
-                  <span className="text-[17px] font-bold text-zinc-800 whitespace-normal break-words">
-                    {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
-                  </span>
-                </span>
-                {o.supplier_contact && (
-                  <span className="inline-flex items-center gap-1.5 text-[15px] text-zinc-600">
-                    <span className="text-[13px] text-zinc-400 font-semibold">담당자</span>{o.supplier_contact}
-                  </span>
-                )}
-                {o.supplier_phone && (
-                  <span className="inline-flex items-center gap-1.5 text-[15px] text-zinc-600 tabular-nums">
-                    <span className="text-[13px] text-zinc-400 font-semibold">연락처</span>{o.supplier_phone}
-                  </span>
-                )}
-                {o.supplier_email && (
-                  <span className="inline-flex items-center gap-1.5 text-[15px] text-zinc-600 truncate max-w-[260px]">
-                    <span className="text-[13px] text-zinc-400 font-semibold">이메일</span>{o.supplier_email}
-                  </span>
-                )}
-              </div>
+              {/* 2026-09-24 · 사용자 지시 · 공급사 옆 · 담당자·연락처·이메일 · 라벨 폰트 +2
+                  2026-10-06 · 사용자 지시 · vendor 뷰 · 공급사(자기 공급사·헤더 노출) · 담당자/연락처/이메일(배너 노출) 숨김 */}
+              {(!hideSupplier || !hideContacts) && (
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 leading-snug">
+                  {!hideSupplier && (
+                    <span className="inline-flex items-baseline gap-1.5">
+                      <span className="text-[13px] text-zinc-400 font-semibold">공급사</span>
+                      <span className="text-[17px] font-bold text-zinc-800 whitespace-normal break-words">
+                        {displayVendorName(o.supplier) || o.supplier || "(공급사 미지정)"}
+                      </span>
+                    </span>
+                  )}
+                  {!hideContacts && o.supplier_contact && (
+                    <span className="inline-flex items-center gap-1.5 text-[15px] text-zinc-600">
+                      <span className="text-[13px] text-zinc-400 font-semibold">담당자</span>{o.supplier_contact}
+                    </span>
+                  )}
+                  {!hideContacts && o.supplier_phone && (
+                    <span className="inline-flex items-center gap-1.5 text-[15px] text-zinc-600 tabular-nums">
+                      <span className="text-[13px] text-zinc-400 font-semibold">연락처</span>{o.supplier_phone}
+                    </span>
+                  )}
+                  {!hideContacts && o.supplier_email && (
+                    <span className="inline-flex items-center gap-1.5 text-[15px] text-zinc-600 truncate max-w-[260px]">
+                      <span className="text-[13px] text-zinc-400 font-semibold">이메일</span>{o.supplier_email}
+                    </span>
+                  )}
+                </div>
+              )}
+              {/* 2026-10-06 · vendor 뷰 · 공급사·연락처 숨김 시 · 발주번호 를 상단에 좀 더 눈에 띄게 */}
+              {hideSupplier && hideContacts && (
+                <div className="text-[15px] font-bold text-zinc-800 tabular-nums leading-snug">
+                  발주번호 <span className="font-bold">#{o.order_number ?? "—"}</span>
+                </div>
+              )}
               {/* 날짜범위 · 종·수량 · 금액 */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[14px] text-zinc-500 tabular-nums mt-0.5">
                 <span className="text-zinc-400">{dateRange(o.order_date, o.desired_arrival)}</span>
