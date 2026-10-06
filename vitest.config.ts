@@ -58,6 +58,8 @@ export default defineConfig({
       "src/components/LandingPage/**/*.test.ts",
       "src/components/StockArrivalPage/**/*.test.tsx",
       "src/components/StockArrivalPage/**/*.test.ts",
+      // 2026-10-06 · sync-agent · pure helpers (no Electron deps) · quietHours
+      "apps/sync-agent/src/main/**/*.test.ts",
     ],
     globals: false,
     environment: "node", // 기본 · jsdom 은 파일별 지시자 opt-in

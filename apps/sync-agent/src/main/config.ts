@@ -6,6 +6,7 @@
 import { app, safeStorage } from "electron";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
+import { isInQuietHoursPure, type QuietHours as QuietHoursPure } from "./quietHours";
 
 export type FileKind = "products" | "stock" | "purchase";
 
@@ -66,7 +67,12 @@ export interface AppConfig {
       VENDOR:    DatasetSchedule;
     };
   };
+  /** 2026-10-06 · 야간 동기화 금지 · startHour~endHour 사이 자동 동기화 skip (수동은 영향 X) */
+  quietHours?: QuietHours;
 }
+
+// 2026-10-06 · pure logic 은 ./quietHours.ts · 여기서는 타입 re-export (BC)
+export type QuietHours = QuietHoursPure;
 
 export type ScheduleInterval = "30min" | "1h" | "2h" | "4h" | "6h" | "12h" | "daily" | "weekly";
 export interface DatasetSchedule {
@@ -109,6 +115,8 @@ const DEFAULT_CONFIG: AppConfig = {
       VENDOR:    { enabled: false, interval: "weekly", time: "02:00", weekday: 0 },
     },
   },
+  // 2026-10-06 · 야간 동기화 금지 기본값 (opt-in · 사용자가 체크해야 활성)
+  quietHours: { enabled: false, startTime: "23:00", endTime: "08:00" },
 };
 
 let cachedConfig: AppConfig | null = null;
@@ -174,9 +182,17 @@ export function patchConfig(patch: Partial<AppConfig>): AppConfig {
     // iregen 은 helper 가 항상 전체 객체 전달 · 단순 교체
     iregen: patch.iregen ?? current.iregen,
     erpAutoScheduler: mergeScheduler(current.erpAutoScheduler, patch.erpAutoScheduler),
+    // 2026-10-06 · quietHours · 부분 병합 (enabled 만 토글해도 startHour/endHour 유지)
+    quietHours: patch.quietHours ? { ...(current.quietHours ?? DEFAULT_CONFIG.quietHours!), ...patch.quietHours } : current.quietHours,
   };
   saveConfig(next);
   return next;
+}
+
+// 2026-10-06 · 야간 동기화 금지 · pure logic 은 ./quietHours.isInQuietHoursPure
+//   · 여기서는 loadConfig() 바인딩만 수행 (Electron 의존 분리)
+export function isInQuietHours(now: Date = new Date()): boolean {
+  return isInQuietHoursPure(loadConfig().quietHours, now);
 }
 
 // ── 토큰 암호화 · safeStorage (Electron 내장 · Windows DPAPI) ──
