@@ -10,7 +10,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { Modal } from "../common/Modal";
 import { CalendarDays } from "lucide-react";
-import { LineChart, Line, Bar, ComposedChart, XAxis, YAxis, Tooltip, Legend, CartesianGrid, Brush, ResponsiveContainer } from "recharts";
+import { LineChart, Line, Bar, ComposedChart, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from "recharts";
 import { shortDateWithDow } from "../../lib/dateFormat";
 
 type RevenueTab = "hourly" | "monthly";
@@ -552,7 +552,7 @@ const HourlyReportTab: React.FC = () => {
               <div className="text-[15px] md:text-[16px] font-bold text-zinc-800">시간대별 추이</div>
               <span className="text-[12px] text-zinc-500">{effDateData.length}일</span>
             </div>
-            <div className="w-full min-w-0 max-w-full overflow-hidden" style={{ height: 360 }}>
+            <div className="w-full min-w-0 max-w-full overflow-hidden" style={{ height: 320 }}>
               {(() => {
                 const chartData = buildSeriesData(chartMetric);
                 // 2026-10-06 · 사용자 지시 · percentile 축 자르기 취소 · domain=auto · Brush 로 range 선택
@@ -629,10 +629,6 @@ const HourlyReportTab: React.FC = () => {
                           activeDot={{ r: 5 }} connectNulls={false}
                         />
                       )}
-                      {/* 2026-10-06 · 사용자 지시 · 가로축 range 이동 가능 · Brush
-                          · Brush 범위에 따라 X scope + Y scale 자동 재계산 */}
-                      <Brush dataKey="time" height={22} stroke="#8884d8" travellerWidth={8}
-                        tickFormatter={(v) => `${v}시`} />
                     </LineChart>
                   </ResponsiveContainer>
                 );
