@@ -1,36 +1,36 @@
 // src/components/ReservationPage.tsx
 // 2026-09-18 · vendor 예약 버그 fix · UI 개선
-import React, { useState, useCallback, useEffect } from "react";
+// 2026-10-06 · #VisitorReservationEmployeeAssignment · Phase 7
+//   · 하드코드 "대표/이사" 제거 · settings.visitorReservation.assigneeEmployeeIds 기반
+//   · [대상:xxx] note parse/write 완전 제거
+//   · TIME_SLOTS 하드코드 제거 · 서버 /api/reservations/availability 가 canonical
+//   · 담당자 0명 · 1명 · 2명+ UX 분기
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { api, ApiError } from "../../lib/apiClient";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useApiCall } from "../../hooks/useApiCall";
 import { useVendors } from "../../hooks/useVendors";
+import { useSettings } from "../../hooks/useSettings";
 import {
-  Calendar,
   ChevronLeft,
   ChevronRight,
-  Phone,
-  User,
   Clock,
-  MessageSquare,
   CheckCircle,
   AlertCircle,
   X,
-  Building2,
   Ban,
   Lock,
   LockOpen,
+  UserCheck,
 } from "lucide-react";
 import { Spinner } from "../common/Spinner";
-import { Card } from "../common/Card";
 import type { AuthSession } from "../../types";
 import { AppNavHeader } from "../layout/AppNavHeader";
 // 2026-10-06 · 사용자 지시 · breadcrumb 통일 · 네비게이션 SSOT · activeNav 정착
 import { useSetActiveByPage } from "../../contexts/ActiveNavContext";
-import { Modal } from "../common/Modal";
-// 2026-09-21 · #329 · 한글 IME 우선
-import { KO_INPUT_PROPS } from "../../lib/koreanInput";
+// 2026-10-06 · 모달 분리 (framework audit · 800라인 방지)
+import { ReservationFormModal } from "./ReservationFormModal";
 
 interface ReservationPageProps {
   onBack: () => void;
@@ -39,31 +39,26 @@ interface ReservationPageProps {
 
 interface StaffAvailability {
   employeeId: number;
-  name: string;              // "대표" / "이사"
-  displayName?: string;      // 실제 직원 이름 (강남성 · 강남규)
+  name: string;                    // 실제 직원 이름 (강남성 · 강남규)
+  rank?: string | null;            // 직급 (대표/부장 등) · 노출 참고용
+  displayName?: string;            // 호환용 (= name)
   scheduleType: string | null;
+  workingHours?: string | null;
   isOff: boolean;
 }
 
-// 2026-08-26 · 사용자 지시 · 1시간 텀
-const TIME_SLOTS = [
-  "09:00", "10:00", "11:00", "12:00", "13:00", "14:00",
-  "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00",
-];
+interface AvailabilitySlot { start: string; end: string }
+interface AvailabilityResponse {
+  employeeId: number;
+  date: string;
+  scheduleType: string | null;
+  slotMinutes?: number;
+  bufferMinutes?: number;
+  workingRange?: { start: string; end: string } | null;
+  slots: AvailabilitySlot[];
+}
 
-const PURPOSES = ["결제", "신약 상담", "발주 확인", "제품 상담", "재고 점검", "기타"];
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-
-// 2026-08-23 · #194 · 대표/이사만 · 부장 제거
-const STAFF_NAMES = ["대표", "이사"];
-
-// 기본 staffAvailability — API 응답이 빈 배열이어도 컬럼을 유지하기 위한 fallback
-const DEFAULT_STAFF_AVAIL: StaffAvailability[] = STAFF_NAMES.map((name, i) => ({
-  employeeId: i + 1,
-  name,
-  scheduleType: null,
-  isOff: false,
-}));
 
 const formatYMD = (d: Date): string => {
   const y = d.getFullYear();
@@ -90,20 +85,11 @@ const buildMonthGrid = (year: number, month: number): (Date | null)[] => {
   return cells;
 };
 
-const getTargetFromNote = (noteStr: string): string => {
-  if (!noteStr) return "대표";
-  // 2026-08-23 · #194 · 부장 → 이사 fallback (기존 [대상:부장] 예약 데이터 마이그레이션)
-  const match = noteStr.match(/^\[대상:(대표|이사|부장)\]/);
-  if (!match) return "대표";
-  return match[1] === "부장" ? "이사" : match[1];
-};
-
 export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSession }) => {
   const { toast } = useToast();
+  const { visitorReservation } = useSettings();
   const isVendor = authSession?.role === "vendor";
   // 2026-10-06 · 사용자 지시 · breadcrumb 통일 · 페이지 mount 시 activeNav 정착
-  //   · AppNavHeader 가 buildBreadcrumbFromNav(activeNav) 로 breadcrumb 생성
-  //   · reservation 그룹(id=vendor) · "거래처 > 방문예약" 노출
   const setActiveByPage = useSetActiveByPage();
   useEffect(() => {
     setActiveByPage("reservation");
@@ -118,26 +104,27 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
   const [viewMonth, setViewMonth] = useState(now.getMonth());
   const [selectedDate, setSelectedDate] = useState<string>(todayYMD);
 
-  const [reservations, setReservations] = useState<any[]>([]);
+  // 2026-10-06 · 담당자별 availability slot
+  const [staffAvailability, setStaffAvailability] = useState<StaffAvailability[]>([]);
+  const [availLoading, setAvailLoading] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
+  const [slotsByEmp, setSlotsByEmp] = useState<Record<number, AvailabilitySlot[]>>({});
   const [slotsLoading, setSlotsLoading] = useState(false);
 
   const [blockedSlots, setBlockedSlots] = useState<Record<string, string[]>>({});
   const [togglingSlot, setTogglingSlot] = useState<string | null>(null);
 
-  // 2026-09-18 · fallback: API 빈 배열 반환 시에도 DEFAULT_STAFF_AVAIL 유지
-  const [staffAvailability, setStaffAvailability] = useState<StaffAvailability[]>(DEFAULT_STAFF_AVAIL);
-  const [availLoading, setAvailLoading] = useState(false);
-
   const [monthlyOff, setMonthlyOff] = useState<Record<string, string[]>>({});
 
   const [modalTime, setModalTime] = useState<string | null>(null);
-  const [modalTarget, setModalTarget] = useState<string>("대표");
+  const [modalEmployeeId, setModalEmployeeId] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
   const [company, setCompany] = useState(() => isVendor ? (authSession?.employeeName ?? "") : "");
   const [contactName, setContactName] = useState(() => isVendor ? (authSession?.employeeRank ?? "") : "");
   const [phone, setPhone] = useState("");
-  // 2026-09-18 · 사용자 지시 · vendor 로그인 · 3필드 (거래처·담당자·연락처) DB 조회 · 자동 채움 · 입력 X
+
+  // 2026-09-18 · vendor 로그인 · 3필드 (거래처·담당자·연락처) DB 조회 · 자동 채움
   const { vendors: vendorList } = useVendors();
   useEffect(() => {
     if (!isVendor || !authSession?.employeeId || !vendorList?.length) return;
@@ -147,6 +134,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
     setContactName(String(me.contact_name ?? authSession?.employeeRank ?? ""));
     if (me.phone) setPhone(String(me.phone));
   }, [isVendor, authSession?.employeeId, authSession?.employeeRank, vendorList]);
+
   const [purpose, setPurpose] = useState("");
   const [note, setNote] = useState("");
   const { call: submitCall, loading: submitting } = useApiCall({
@@ -189,22 +177,48 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
     fetchMonthlyOff(viewYear, viewMonth + 1);
   }, [viewYear, viewMonth, fetchMonthlyOff]);
 
-  const bookedByTarget: Record<string, string[]> = {};
-  for (const name of STAFF_NAMES) {
-    bookedByTarget[name] = reservations
-      .filter(r => getTargetFromNote(r.note || r.purpose) === name)
-      .map(r => r.time);
-  }
-
-  const fetchReservations = useCallback(async (ymd: string) => {
-    setSlotsLoading(true);
-    setReservations([]);
+  const fetchStaffAvailability = useCallback(async (ymd: string) => {
+    setAvailLoading(true);
     try {
-      const { data } = await api.get<any[]>(`/api/reservations?date=${ymd}`);
-      setReservations(Array.isArray(data) ? data : []);
-    } catch { setReservations([]); }
-    finally { setSlotsLoading(false); }
+      const { data } = await api.get<StaffAvailability[]>(`/api/staff-availability?date=${ymd}`);
+      setStaffAvailability(Array.isArray(data) ? data : []);
+    } catch {
+      setStaffAvailability([]);
+    } finally {
+      setAvailLoading(false);
+    }
   }, []);
+
+  const fetchAvailabilityForEmployee = useCallback(async (ymd: string, empId: number) => {
+    try {
+      const { data } = await api.get<AvailabilityResponse>(`/api/reservations/availability?date=${ymd}&employeeId=${empId}`);
+      return data?.slots ?? [];
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const fetchAllSlots = useCallback(async (ymd: string, staff: StaffAvailability[]) => {
+    if (staff.length === 0) {
+      setSlotsByEmp({});
+      return;
+    }
+    setSlotsLoading(true);
+    try {
+      const entries: Array<[number, AvailabilitySlot[]]> = await Promise.all(
+        staff.map(async (s): Promise<[number, AvailabilitySlot[]]> => {
+          if (s.isOff) return [s.employeeId, []];
+          const slots = await fetchAvailabilityForEmployee(ymd, s.employeeId);
+          return [s.employeeId, slots];
+        }),
+      );
+      const next: Record<number, AvailabilitySlot[]> = {};
+      for (const [id, slots] of entries) next[id] = slots;
+      setSlotsByEmp(next);
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, [fetchAvailabilityForEmployee]);
 
   const fetchBlockedSlots = useCallback(async (ymd: string) => {
     try {
@@ -213,31 +227,63 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
     } catch { setBlockedSlots({}); }
   }, []);
 
-  const toggleBlockedSlot = async (staffName: string, time: string) => {
-    const key = `${staffName}|${time}`;
+  useEffect(() => {
+    fetchStaffAvailability(selectedDate);
+    fetchBlockedSlots(selectedDate);
+  }, [selectedDate, fetchStaffAvailability, fetchBlockedSlots]);
+
+  // staffAvailability 변경 시 · 각 담당자 slot 조회
+  useEffect(() => {
+    if (staffAvailability.length > 0) {
+      fetchAllSlots(selectedDate, staffAvailability);
+    } else {
+      setSlotsByEmp({});
+    }
+  }, [staffAvailability, selectedDate, fetchAllSlots]);
+
+  // 담당자 1명 자동 선택 (예약 UX 간소화)
+  useEffect(() => {
+    const active = staffAvailability.filter(s => !s.isOff);
+    if (active.length === 1 && selectedEmployeeId !== active[0].employeeId) {
+      setSelectedEmployeeId(active[0].employeeId);
+    } else if (active.length === 0) {
+      setSelectedEmployeeId(null);
+    } else if (selectedEmployeeId && !active.find(s => s.employeeId === selectedEmployeeId)) {
+      // 선택된 담당자가 OFF 로 바뀌었거나 사라졌을 때
+      setSelectedEmployeeId(null);
+    }
+  }, [staffAvailability, selectedEmployeeId]);
+
+  const handleDayClick = (d: Date) => {
+    if (d < todayStart) return;
+    setSelectedDate(formatYMD(d));
+  };
+
+  const toggleBlockedSlot = async (empKey: string, time: string) => {
+    const key = `${empKey}|${time}`;
     if (togglingSlot === key) return;
-    const currentlyBlocked = blockedSlots[staffName]?.includes(time) ?? false;
+    const currentlyBlocked = blockedSlots[empKey]?.includes(time) ?? false;
     setBlockedSlots(prev => {
       const next = { ...prev };
-      if (!next[staffName]) next[staffName] = [];
+      if (!next[empKey]) next[empKey] = [];
       if (currentlyBlocked) {
-        next[staffName] = next[staffName].filter(t => t !== time);
+        next[empKey] = next[empKey].filter(t => t !== time);
       } else {
-        next[staffName] = [...next[staffName], time];
+        next[empKey] = [...next[empKey], time];
       }
       return next;
     });
     setTogglingSlot(key);
     try {
-      await api.post("/api/blocked-slots", { date: selectedDate, staffName, time, blocked: !currentlyBlocked });
+      await api.post("/api/blocked-slots", { date: selectedDate, staffName: empKey, time, blocked: !currentlyBlocked });
     } catch {
       setBlockedSlots(prev => {
         const next = { ...prev };
-        if (!next[staffName]) next[staffName] = [];
+        if (!next[empKey]) next[empKey] = [];
         if (currentlyBlocked) {
-          if (!next[staffName].includes(time)) next[staffName] = [...next[staffName], time];
+          if (!next[empKey].includes(time)) next[empKey] = [...next[empKey], time];
         } else {
-          next[staffName] = next[staffName].filter(t => t !== time);
+          next[empKey] = next[empKey].filter(t => t !== time);
         }
         return next;
       });
@@ -246,39 +292,13 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
     }
   };
 
-  const fetchStaffAvailability = useCallback(async (ymd: string) => {
-    setAvailLoading(true);
-    try {
-      const { data } = await api.get<any[]>(`/api/staff-availability?date=${ymd}`);
-      // 2026-09-18 · 빈 배열 or 비정상 응답 시 DEFAULT_STAFF_AVAIL fallback
-      if (Array.isArray(data) && data.length > 0) {
-        setStaffAvailability(data);
-      } else {
-        setStaffAvailability(DEFAULT_STAFF_AVAIL);
-      }
-    } catch {
-      // API 실패 시에도 기본값 유지 (대표/이사 컬럼 항상 표시)
-      setStaffAvailability(DEFAULT_STAFF_AVAIL);
-    }
-    finally { setAvailLoading(false); }
-  }, []);
-
-  useEffect(() => {
-    fetchReservations(selectedDate);
-    fetchStaffAvailability(selectedDate);
-    fetchBlockedSlots(selectedDate);
-  }, [selectedDate, fetchReservations, fetchStaffAvailability, fetchBlockedSlots]);
-
-  const handleDayClick = (d: Date) => {
-    if (d < todayStart) return;
-    setSelectedDate(formatYMD(d));
-  };
-
-  const openModal = (time: string, target: string) => {
-    if (bookedByTarget[target]?.includes(time)) return;
-    if (blockedSlots[target]?.includes(time)) return;
+  const openModal = (time: string, empId: number) => {
+    const slots = slotsByEmp[empId] ?? [];
+    const available = slots.some(s => s.start === time);
+    if (!available) return;
+    if (blockedSlots[String(empId)]?.includes(time)) return;
     setModalTime(time);
-    setModalTarget(target);
+    setModalEmployeeId(empId);
     setError("");
     setCompany(isVendor ? (authSession?.employeeName ?? "") : "");
     setContactName(isVendor ? (authSession?.employeeRank ?? "") : "");
@@ -288,6 +308,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
 
   const closeModal = () => {
     setModalTime(null);
+    setModalEmployeeId(null);
     setError("");
   };
 
@@ -304,30 +325,74 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!modalEmployeeId) {
+      setError("담당자가 지정되지 않았습니다.");
+      return;
+    }
     if (!company.trim() || !contactName.trim() || !phone.trim() || !purpose) {
       setError("모든 필수 항목을 입력해 주세요.");
       return;
     }
     setError("");
-    const finalNote = `[대상:${modalTarget}]${note ? ` ${note}` : ""}`;
+    // 2026-10-06 · [대상:xxx] note 자동 생성 금지 · note 는 사용자 입력 그대로
     const result = await submitCall(() => api.post("/api/reservations", {
-      date: selectedDate, time: modalTime, company, contactName, phone, purpose, note: finalNote,
+      date: selectedDate,
+      time: modalTime,
+      company,
+      contactName,
+      phone,
+      purpose,
+      note: note || null,
+      assignedEmployeeId: modalEmployeeId,
       ...(isVendor && authSession?.employeeId ? { vendorId: authSession.employeeId } : {}),
     }));
     if (result) {
       setSubmitted(true);
       setModalTime(null);
-      fetchReservations(selectedDate);
+      setModalEmployeeId(null);
+      // 재조회 · 방금 예약한 slot 반영
+      fetchAllSlots(selectedDate, staffAvailability);
     }
   };
 
   const isLoading = slotsLoading || availLoading;
 
+  // 2026-10-06 · 담당자 설정이 비어있는 경우 안내
+  const hasAssignees = (visitorReservation?.assigneeEmployeeIds?.length ?? 0) > 0;
+  const activeStaffList = useMemo(
+    () => staffAvailability.filter(s => !s.isOff),
+    [staffAvailability],
+  );
+
+  // 담당자 선택 시 특정 담당자만 noise · 자동 선택이 되었다면 그대로
+  const visibleStaff = useMemo(() => {
+    if (selectedEmployeeId == null) return staffAvailability;
+    return staffAvailability.filter(s => s.employeeId === selectedEmployeeId || s.isOff);
+  }, [staffAvailability, selectedEmployeeId]);
+
+  // 모달 담당자 라벨
+  const modalEmployeeLabel = useMemo(() => {
+    if (!modalEmployeeId) return "";
+    const s = staffAvailability.find(x => x.employeeId === modalEmployeeId);
+    if (!s) return "";
+    return s.rank ? `${s.name} · ${s.rank}` : s.name;
+  }, [modalEmployeeId, staffAvailability]);
+
+  // slot 전체 수집 (화면 좌측 time axis 용 · union 정렬)
+  const allSlotTimes = useMemo(() => {
+    const set = new Set<string>();
+    for (const emp of visibleStaff) {
+      if (emp.isOff) continue;
+      for (const s of slotsByEmp[emp.employeeId] ?? []) set.add(s.start);
+    }
+    return [...set].sort();
+  }, [visibleStaff, slotsByEmp]);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
 
-      {/* 2026-10-06 · 사용자 지시 · activePage="reservation" 정정 (기존 "landing" 은 breadcrumb/탭 하이라이트 오매칭) */}
+      {/* 2026-10-06 · 사용자 지시 · activePage="reservation" 정정 */}
       <AppNavHeader activePage="reservation" authSession={authSession ?? null} onBack={onBack} />
 
       <div className={`flex-1 flex flex-col lg:flex-row gap-0 lg:overflow-hidden ${PAGE_CONTAINER_CLS}`}>
@@ -352,6 +417,16 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
             <h1 className="text-gray-900 font-bold text-base">방문 예약</h1>
             <p className="text-gray-500 text-xs mt-1">날짜를 선택하면 예약 가능 시간이 표시됩니다</p>
           </div>
+
+          {/* 담당자 설정 없음 안내 */}
+          {!hasAssignees && (
+            <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
+              <AlertCircle size={13} className="text-rose-500 shrink-0 mt-0.5" />
+              <p className="text-rose-700 text-xs leading-snug font-semibold">
+                현재 방문예약 담당자가 설정되지 않았습니다. 관리자에게 문의하세요.
+              </p>
+            </div>
+          )}
 
           {/* Month nav */}
           <div className="flex items-center justify-between">
@@ -398,7 +473,8 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
               const weekday = cell.getDay();
 
               const offStaff = monthlyOff[ymd] ?? [];
-              const isFullyOff = offStaff.length >= 2;
+              const totalAssignees = visitorReservation?.assigneeEmployeeIds?.length ?? 0;
+              const isFullyOff = totalAssignees > 0 && offStaff.length >= totalAssignees;
               const isPartialOff = offStaff.length > 0 && !isFullyOff;
               const isDisabled = isPast || isFullyOff;
 
@@ -454,10 +530,6 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
               <span className="w-2.5 h-2.5 rounded-sm bg-gray-100 inline-block" />
               전원 휴무
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-gray-200 inline-block" />
-              예약불가
-            </span>
           </div>
         </div>
 
@@ -482,11 +554,42 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
               </div>
             </div>
 
-            {/* Column headers */}
+            {/* 담당자 2명+ 선택 UI */}
+            {activeStaffList.length > 1 && (
+              <div className="px-4 sm:px-6 pb-2 flex flex-wrap gap-2">
+                {activeStaffList.map(s => (
+                  <button
+                    key={s.employeeId}
+                    type="button"
+                    onClick={() => setSelectedEmployeeId(prev => prev === s.employeeId ? null : s.employeeId)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer flex items-center gap-1.5 ${
+                      selectedEmployeeId === s.employeeId
+                        ? "bg-indigo-600 border-indigo-600 text-white"
+                        : "bg-white border-gray-300 text-gray-700 hover:border-gray-400"
+                    }`}
+                  >
+                    <UserCheck size={11} />
+                    {s.name}
+                    {s.rank && <span className="opacity-70 font-semibold">· {s.rank}</span>}
+                  </button>
+                ))}
+                {selectedEmployeeId !== null && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedEmployeeId(null)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 bg-gray-50 text-gray-500 hover:border-gray-400 cursor-pointer"
+                  >
+                    전체 보기
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Column headers (담당자별) */}
             <div className="px-4 sm:px-6 pb-2.5 flex items-center gap-3">
               <div className="w-14 shrink-0" />
-              <div className="flex-1 grid grid-cols-2 gap-2">
-                {staffAvailability.map(staff => (
+              <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(1, visibleStaff.length)}, minmax(0, 1fr))` }}>
+                {visibleStaff.map(staff => (
                   <div
                     key={staff.employeeId}
                     className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold border ${
@@ -496,10 +599,9 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     }`}
                   >
                     <span className="font-bold">{staff.name}</span>
-                    {/* 2026-09-18 · 사용자 지시 · displayName = name 중복 방지 · 실제 이름만 노출 */}
-                    {staff.displayName && staff.displayName !== staff.name && (
-                      <span className={`text-xs font-medium ${staff.isOff ? "text-gray-400" : "text-indigo-500"}`}>
-                        {staff.displayName}
+                    {staff.rank && (
+                      <span className={`text-xs font-semibold ${staff.isOff ? "text-gray-400" : "text-indigo-500"}`}>
+                        {staff.rank}
                       </span>
                     )}
                     {staff.isOff && (
@@ -509,6 +611,11 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                     )}
                   </div>
                 ))}
+                {visibleStaff.length === 0 && (
+                  <div className="flex items-center justify-center py-2 rounded-lg text-xs font-semibold bg-gray-50 border border-gray-200 text-gray-400">
+                    담당자 없음
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -519,8 +626,14 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
               <div className="flex items-center justify-center py-16">
                 <Spinner size={18} tone="zinc" label="예약 현황 불러오는 중..." labelSize={14} />
               </div>
+            ) : visibleStaff.length === 0 || allSlotTimes.length === 0 ? (
+              <div className="flex items-center justify-center py-16">
+                <p className="text-xs text-gray-400 font-semibold">
+                  {hasAssignees ? "선택한 날짜에 예약 가능한 시간이 없습니다." : "담당자가 설정되지 않았습니다."}
+                </p>
+              </div>
             ) : (
-              TIME_SLOTS.map(t => {
+              allSlotTimes.map(t => {
                 const [h] = t.split(":").map(Number);
                 const isPeak = h >= 11 && h < 14;
 
@@ -533,9 +646,9 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                       </span>
                     </div>
 
-                    {/* 2 columns */}
-                    <div className="flex-1 grid grid-cols-2 gap-2">
-                      {staffAvailability.map(staff => {
+                    {/* columns per visible staff */}
+                    <div className="flex-1 grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(1, visibleStaff.length)}, minmax(0, 1fr))` }}>
+                      {visibleStaff.map(staff => {
                         if (staff.isOff) {
                           return (
                             <div
@@ -547,13 +660,15 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                           );
                         }
 
-                        const isBooked = bookedByTarget[staff.name]?.includes(t);
-                        const isBlocked = blockedSlots[staff.name]?.includes(t) ?? false;
-                        const slotKey = `${staff.name}|${t}`;
+                        const slots = slotsByEmp[staff.employeeId] ?? [];
+                        const isAvailable = slots.some(s => s.start === t);
+                        const empKey = String(staff.employeeId);
+                        const isBlocked = blockedSlots[empKey]?.includes(t) ?? false;
+                        const slotKey = `${empKey}|${t}`;
                         const isToggling = togglingSlot === slotKey;
 
                         if (isInternalStaff) {
-                          if (isBooked) {
+                          if (!isAvailable) {
                             return (
                               <div
                                 key={staff.employeeId}
@@ -568,7 +683,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                               key={staff.employeeId}
                               type="button"
                               disabled={isToggling}
-                              onClick={() => toggleBlockedSlot(staff.name, t)}
+                              onClick={() => toggleBlockedSlot(empKey, t)}
                               className={`py-2.5 rounded-lg text-xs font-semibold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                                 isBlocked
                                   ? "bg-gray-100 border-gray-300 text-gray-500 hover:bg-gray-50"
@@ -590,23 +705,32 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
                         }
 
                         // Vendor / external user view
+                        if (!isAvailable) {
+                          return (
+                            <div
+                              key={staff.employeeId}
+                              className="py-2.5 rounded-lg text-xs font-semibold border bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed text-center"
+                            >
+                              예약됨
+                            </div>
+                          );
+                        }
+
                         return (
                           <button
                             key={staff.employeeId}
                             type="button"
-                            disabled={isBooked || isBlocked}
-                            onClick={() => openModal(t, staff.name)}
+                            disabled={isBlocked}
+                            onClick={() => openModal(t, staff.employeeId)}
                             className={`py-2.5 rounded-lg text-xs font-semibold border transition-all ${
-                              isBooked
-                                ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
-                                : isBlocked
+                              isBlocked
                                 ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
                                 : isPeak
                                 ? "bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:border-emerald-500 hover:text-white cursor-pointer"
                                 : "bg-white border-gray-200 text-emerald-600 hover:bg-emerald-600 hover:border-emerald-500 hover:text-white cursor-pointer"
                             }`}
                           >
-                            {isBooked ? "예약됨" : isBlocked ? "불가" : "예약"}
+                            {isBlocked ? "불가" : "예약"}
                           </button>
                         );
                       })}
@@ -619,151 +743,28 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
         </div>
       </div>
 
-      {/* ====== MODAL: Reservation Info Form ====== */}
-      <Modal
+      {/* ====== MODAL: Reservation Info Form (분리) ====== */}
+      <ReservationFormModal
         open={!!modalTime}
         onClose={closeModal}
-        align="bottom-mobile"
-        size="lg-narrow"
-        bodyPadding="none"
-        showClose={false}
-      >
-        <div className="flex flex-col h-full">
-          {/* Modal header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
-            <div>
-              <h3 className="text-gray-900 font-bold text-sm leading-tight">예약 정보 입력</h3>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className="text-emerald-700 text-xs font-semibold tabular-nums">{formatKoreanDate(selectedDate)}</span>
-                <span className="text-gray-300 text-xs">·</span>
-                <span className="text-emerald-700 text-xs font-bold tabular-nums flex items-center gap-1">
-                  <Clock size={10} /> {modalTime}
-                </span>
-                <span className="text-gray-300 text-xs">·</span>
-                <span className="text-indigo-600 text-xs font-bold">
-                  대상: {modalTarget}
-                </span>
-              </div>
-            </div>
-            <button onClick={closeModal} className="text-gray-400 hover:text-gray-700 transition cursor-pointer shrink-0">
-              <X size={20} />
-            </button>
-          </div>
-
-          {/* Modal body */}
-          <div className="overflow-y-auto p-5 flex-1 min-h-0">
-            <form onSubmit={handleSubmit} className="space-y-4">
-
-              {error && (
-                <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-rose-50 border border-rose-200">
-                  <AlertCircle size={15} className="text-rose-500 shrink-0 mt-0.5" />
-                  <p className="text-rose-700 text-sm leading-snug">{error}</p>
-                </div>
-              )}
-
-              {/* 거래처명 */}
-              <div>
-                <label className="block text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                  <Building2 size={11} /> 거래처명 <span className="text-rose-500 font-bold">*</span>
-                </label>
-                <input
-                  type="text" {...KO_INPUT_PROPS}
-                  value={company}
-                  onChange={e => setCompany(e.target.value)}
-                  placeholder="(주)한국제약"
-                  readOnly={isVendor}
-                  className={`w-full border rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition ${isVendor ? "bg-gray-50 border-gray-200 cursor-not-allowed" : "bg-white border-gray-300 focus:border-indigo-400"}`}
-                  autoFocus={!isVendor}
-                />
-              </div>
-
-              {/* 담당자 + 연락처 */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <User size={11} /> 담당자 <span className="text-rose-500 font-bold">*</span>
-                  </label>
-                  <input
-                    type="text" {...KO_INPUT_PROPS}
-                    value={contactName}
-                    onChange={e => setContactName(e.target.value)}
-                    placeholder="홍길동"
-                    readOnly={isVendor}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition ${isVendor ? "bg-gray-50 border-gray-200 cursor-not-allowed" : "bg-white border-gray-300 focus:border-indigo-400"}`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                    <Phone size={11} /> 연락처 <span className="text-rose-500 font-bold">*</span>
-                  </label>
-                  <input
-                    lang="ko" type="tel"
-                    value={phone}
-                    onChange={e => handlePhoneChange(e.target.value)}
-                    placeholder="010-0000-0000"
-                    readOnly={isVendor}
-                    className={`w-full border rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition ${isVendor ? "bg-gray-50 border-gray-200 cursor-not-allowed" : "bg-white border-gray-300 focus:border-indigo-400"}`}
-                  />
-                </div>
-              </div>
-
-              {/* 방문 목적 */}
-              <div>
-                <label className="block text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1.5">
-                  방문 목적 <span className="text-rose-500 font-bold">*</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {PURPOSES.map(p => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setPurpose(p)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition cursor-pointer ${
-                        purpose === p
-                          ? "bg-emerald-600 border-emerald-600 text-white"
-                          : "bg-white border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-900"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 추가 요청사항 */}
-              <div>
-                <label className="block text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                  <MessageSquare size={11} /> 추가 요청사항
-                </label>
-                <textarea {...KO_INPUT_PROPS} value={note}
-                  onChange={e => setNote(e.target.value)}
-                  placeholder="특이사항이 있으면 입력해 주세요"
-                  rows={2}
-                  className="w-full bg-white border border-gray-300 focus:border-indigo-400 rounded-xl px-4 py-2.5 text-gray-900 text-sm placeholder-gray-400 focus:outline-none transition resize-none"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 text-white font-bold text-sm rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {submitting ? (
-                  <>
-                    <Spinner size={14} />
-                    <span>예약 접수 중...</span>
-                  </>
-                ) : (
-                  <>
-                    <Calendar size={14} />
-                    <span>예약 신청</span>
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-      </Modal>
+        onSubmit={handleSubmit}
+        submitting={submitting}
+        error={error}
+        isVendor={isVendor}
+        modalTime={modalTime}
+        modalEmployeeLabel={modalEmployeeLabel}
+        selectedDateLabel={formatKoreanDate(selectedDate)}
+        company={company}
+        setCompany={setCompany}
+        contactName={contactName}
+        setContactName={setContactName}
+        phone={phone}
+        onPhoneChange={handlePhoneChange}
+        purpose={purpose}
+        setPurpose={setPurpose}
+        note={note}
+        setNote={setNote}
+      />
     </div>
   );
 };
