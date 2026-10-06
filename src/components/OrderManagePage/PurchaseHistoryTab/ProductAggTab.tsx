@@ -2,7 +2,7 @@
 // 2026-08-21 · Framework Phase 4 · large-file 분리 · PurchaseSubTabs 에서 이관
 // Tab 2 · 상품별 집계 (product_name groupBy)
 // 프레임워크: useSortableTable · useColumnResize
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useSortableTable, type Comparator } from "../../../hooks/useSortableTable";
 import { useColumnResize, RESIZER_CLS } from "../../../hooks/useColumnResize";
 import { fmtWonNoUnit, fmtDateSlice } from "../../../lib/format";
@@ -145,6 +145,18 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
 
   const totalAmount = useMemo(() => aggregated.reduce((s, a) => s + a.total_amount, 0), [aggregated]);
 
+  // 2026-10-06 · 사용자 지시 · 페이지 기능 추가 · 대량 집계 시 렌더 부하 완화
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [page, setPage] = useState<number>(1);
+  const totalCount = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  // 정렬/데이터 변경 시 1페이지로 reset · 또한 totalPages 초과 시 clamp
+  useEffect(() => { setPage(1); }, [sortKey, sortDir, pageSize, totalCount]);
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * pageSize;
+  const pageRows = sorted.slice(pageStart, pageStart + pageSize);
+  const pageSum = useMemo(() => pageRows.reduce((s, a) => s + a.total_amount, 0), [pageRows]);
+
   if (loading) {
     return <div className="flex-1 flex items-center justify-center py-12"><Spinner label="불러오는 중..." size={13} tone="zinc" labelSize={11} /></div>;
   }
@@ -152,7 +164,8 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
     return <div className="flex-1 flex items-center justify-center py-12 text-zinc-400 text-[17px]">해당 기간 매입 상품 없음</div>;
   }
   return (
-    <div className="overflow-auto flex-1 min-h-0">
+    <div className="flex-1 min-h-0 flex flex-col">
+     <div className="overflow-auto flex-1 min-h-0">
       <table className="w-full text-xs min-w-[600px]" style={{ tableLayout: "fixed" }}>
         {/* 2026-08-24 · v3 확산 · bg zinc-100/70 · font-bold */}
         <thead className="sticky top-0 bg-zinc-100/70 z-10 border-b border-line">
@@ -213,9 +226,9 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-50">
-          {sorted.map((a, i) => (
-            <tr key={`pa-${a.key}-${i}`} className="hover:bg-zinc-50/60 transition-all duration-100">
-              <td className="px-2 py-1.5 text-zinc-300 text-[17px] tabular-nums align-top">{i + 1}</td>
+          {pageRows.map((a, i) => (
+            <tr key={`pa-${a.key}-${pageStart + i}`} className="hover:bg-zinc-50/60 transition-all duration-100">
+              <td className="px-2 py-1.5 text-zinc-300 text-[17px] tabular-nums align-top">{pageStart + i + 1}</td>
               {/* 2026-10-06 · 공급사 셀 · unique Set 집계 · 복수면 "공급사 N곳" + title tooltip 전체 목록
                    · 대표 공급사 없음 (첫 공급사 가정 금지) */}
               <td className="px-2 py-1.5 align-top">
@@ -275,12 +288,64 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
         </tbody>
         <tfoot className="sticky bottom-0 bg-white border-t-2 border-line">
           <tr>
-            {/* 2026-10-06 · 공급사 컬럼 추가로 colSpan 7 → 8 */}
-            <td colSpan={8} className="px-2 py-2 text-right text-[17px] font-bold text-zinc-500">합계</td>
-            <td className="px-2 py-2 text-right tabular-nums text-[16px] font-bold text-emerald-700">{fmtWon(totalAmount)}</td>
+            {/* 2026-10-06 · 공급사 컬럼 추가로 colSpan 7 → 8 · 페이지 합계 + 전체 합계 병기 */}
+            <td colSpan={8} className="px-2 py-2 text-right text-[15px] font-bold text-zinc-500">
+              페이지 합계 <span className="ml-1 text-zinc-400 font-normal">(전체 {fmtWon(totalAmount)})</span>
+            </td>
+            <td className="px-2 py-2 text-right tabular-nums text-[16px] font-bold text-emerald-700">{fmtWon(pageSum)}</td>
           </tr>
         </tfoot>
       </table>
+     </div>
+      {/* 2026-10-06 · 페이지네이션 컨트롤 · 대량 집계 렌더 부하 완화 */}
+      <div className="shrink-0 border-t border-line bg-zinc-50/60 px-3 py-2 flex items-center gap-2 text-[14px] text-zinc-600 flex-wrap">
+        <span className="tabular-nums">
+          {totalCount === 0
+            ? "0건"
+            : `${(pageStart + 1).toLocaleString()}–${Math.min(pageStart + pageRows.length, totalCount).toLocaleString()} / ${totalCount.toLocaleString()}건`}
+        </span>
+        <div className="ml-auto flex items-center gap-1">
+          <label className="text-[13px] text-zinc-500 mr-1">페이지당</label>
+          <select
+            value={pageSize}
+            onChange={e => setPageSize(Number(e.target.value))}
+            className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] cursor-pointer hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
+          >
+            {[25, 50, 100, 200].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <button
+            type="button"
+            onClick={() => setPage(1)}
+            disabled={safePage <= 1}
+            className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
+            aria-label="첫 페이지"
+          >‹‹</button>
+          <button
+            type="button"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={safePage <= 1}
+            className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
+            aria-label="이전 페이지"
+          >‹</button>
+          <span className="px-2 tabular-nums text-[14px] font-semibold text-zinc-700">
+            {safePage.toLocaleString()} / {totalPages.toLocaleString()}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={safePage >= totalPages}
+            className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
+            aria-label="다음 페이지"
+          >›</button>
+          <button
+            type="button"
+            onClick={() => setPage(totalPages)}
+            disabled={safePage >= totalPages}
+            className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] disabled:opacity-40 disabled:cursor-not-allowed hover:border-zinc-300 cursor-pointer"
+            aria-label="마지막 페이지"
+          >››</button>
+        </div>
+      </div>
     </div>
   );
 };
