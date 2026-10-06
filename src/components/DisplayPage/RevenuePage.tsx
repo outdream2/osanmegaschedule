@@ -12,6 +12,9 @@ import { Modal } from "../common/Modal";
 import { CalendarDays } from "lucide-react";
 import { LineChart, Line, Bar, ComposedChart, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from "recharts";
 import { shortDateWithDow } from "../../lib/dateFormat";
+// 2026-10-07 · HourlyReportTab 조회기간 월 멀티선택 (STANDARD)
+import { useMonthFilter } from "../../hooks/useMonthFilter";
+import { MonthToggleSelector, dateRangesFromMonths } from "../common/MonthToggleSelector";
 
 type RevenueTab = "hourly" | "monthly";
 type FetchStatus = "idle" | "loading" | "success" | "error";
@@ -167,7 +170,22 @@ const HourlyReportTab: React.FC = () => {
   //   · 주말 포함/제외 체크박스 (default: 포함)
   type ChartMetric = "revenue" | "avg-order" | "margin-rate" | "customers";
   const [chartMetric, setChartMetric] = useState<ChartMetric>("revenue");
+  // 2026-10-06 · 사용자 지시 · chart 상단 탭 · 시간대별 추이 / 일별 추이 / 요일별 추이
+  //   · hour · X=09~22시 · 날짜별 overlay
+  //   · day · X=1~31일 · 월별 overlay
+  //   · weekday · X=09~22시 · 선택 요일 날짜 overlay (요일 선택 radio)
+  type ChartAxis = "hour" | "day" | "week" | "weekday";
+  const [chartAxis, setChartAxis] = useState<ChartAxis>("hour");
+  // 2026-10-06 · 사용자 지시 · 요일 멀티선택 (0=일 ~ 6=토) · default 월
+  const [selectedWeekdays, setSelectedWeekdays] = useState<Set<number>>(() => new Set([1]));
+  const toggleWeekday = (w: number) => setSelectedWeekdays((prev) => {
+    const next = new Set(prev);
+    if (next.has(w)) next.delete(w); else next.add(w);
+    return next;
+  });
   const [includeWeekend, setIncludeWeekend] = useState<boolean>(true);
+  // 2026-10-06 · 사용자 지시 · 주말만 체크박스 · 체크 시 주말 날짜만 표시 (주말 포함과 상호 배타)
+  const [weekendOnly, setWeekendOnly] = useState<boolean>(false);
   const [hourlyRows, setHourlyRows] = useState<HourlyRow[] | null>(null);
   const [hourlyStatus, setHourlyStatus] = useState<FetchStatus>("idle");
   const [hourlyError, setHourlyError] = useState<string | null>(null);
@@ -175,6 +193,8 @@ const HourlyReportTab: React.FC = () => {
   const [hourlyLastSuccessAt, setHourlyLastSuccessAt] = useState<string | null>(null);
   const [hourlyFromDate, setHourlyFromDate] = useState<string>(() => todayYmd());
   const [hourlyToDate, setHourlyToDate] = useState<string>(() => todayYmd());
+  // 2026-10-07 · 월 멀티선택 (STANDARD · useMonthFilter) · initial [] = date 모드 · toggle 시 멀티 fetch · 비연속 지원
+  const { selectedMonths, setSelectedMonths } = useMonthFilter({ initial: [] });
   // 2026-10-05 · 모바일 반응형 · 날짜별 세로 접이식 · 오늘만 기본 펼침
   const [expandedDates, setExpandedDates] = useState<Set<string>>(() => new Set([todayYmd()]));
   const toggleDate = (date: string) => setExpandedDates((prev) => {
@@ -182,23 +202,37 @@ const HourlyReportTab: React.FC = () => {
     if (next.has(date)) next.delete(date); else next.add(date);
     return next;
   });
+  // 2026-10-06 · 사용자 지시 · 일별 추이 축 · 월별 아코디언 · 이번 달 default 펼침
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(() => new Set([todayYmd().slice(0, 7)]));
+  const toggleMonth = (monthKey: string) => setExpandedMonths((prev) => {
+    const next = new Set(prev);
+    if (next.has(monthKey)) next.delete(monthKey); else next.add(monthKey);
+    return next;
+  });
 
-  // HOURLY 전용 loader · /api/erp/sale-hourly-report · Sales_Days_TimeReport
-  const loadHourly = useCallback(async (from: string, to: string) => {
+  // HOURLY loader · 2026-10-07 · ranges[] Promise.all 병렬 fetch · ranges.length===1 → 단일 범위 동작
+  const loadHourlyRanges = useCallback(async (ranges: Array<{ startDate: string; endDate: string }>) => {
+    if (ranges.length === 0) return;
     setHourlyStatus("loading"); setHourlyError(null); setHourlySchemaMismatch(false);
     try {
-      const r = await api.get<HourlyApiResponse>(`/api/erp/sale-hourly-report?from=${from}&to=${to}`);
-      if (!r.data.ok) {
-        if (r.data.schemaMismatch) {
-          setHourlySchemaMismatch(true);
-          setHourlyError(r.data.error ?? "ERP 시간대별 응답 비정상");
-          setHourlyStatus("error");
-          setHourlyRows(null);
-          return;
+      const results = await Promise.all(
+        ranges.map(rng => api.get<HourlyApiResponse>(`/api/erp/sale-hourly-report?from=${rng.startDate}&to=${rng.endDate}`))
+      );
+      const merged: HourlyRow[] = [];
+      for (const r of results) {
+        if (!r.data.ok) {
+          if (r.data.schemaMismatch) {
+            setHourlySchemaMismatch(true);
+            setHourlyError(r.data.error ?? "ERP 시간대별 응답 비정상");
+            setHourlyStatus("error");
+            setHourlyRows(null);
+            return;
+          }
+          throw new Error(r.data.error ?? "조회 실패");
         }
-        throw new Error(r.data.error ?? "조회 실패");
+        if (r.data.rows) merged.push(...r.data.rows);
       }
-      setHourlyRows(r.data.rows ?? []);
+      setHourlyRows(merged);
       setHourlyLastSuccessAt(new Date().toISOString());
       setHourlyStatus("success");
     } catch (e) {
@@ -208,9 +242,18 @@ const HourlyReportTab: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => { void loadHourly(hourlyFromDate, hourlyToDate); }, [loadHourly, hourlyFromDate, hourlyToDate]);
+  // selectedMonths 비어있으면 from/to · 아니면 월 멀티선택 ranges
+  const activeRanges = useMemo((): Array<{ startDate: string; endDate: string }> =>
+    selectedMonths.length > 0 ? dateRangesFromMonths(selectedMonths) : [{ startDate: hourlyFromDate, endDate: hourlyToDate }],
+    [selectedMonths, hourlyFromDate, hourlyToDate]);
 
-  const onResetToday = () => { const y = todayYmd(); setHourlyFromDate(y); setHourlyToDate(y); };
+  useEffect(() => { void loadHourlyRanges(activeRanges); }, [loadHourlyRanges, activeRanges]);
+
+  const onResetToday = () => {
+    const y = todayYmd();
+    setSelectedMonths([]); // 월 멀티선택 해제
+    setHourlyFromDate(y); setHourlyToDate(y);
+  };
 
   // 상단 TODAY KPI = 오늘 날짜 rows 만 (조회 범위에 오늘 포함시만)
   const now = new Date();
@@ -236,9 +279,10 @@ const HourlyReportTab: React.FC = () => {
   const show = status === "success" && rows !== null;
   // 2026-10-05 fix · 사용자 지적 · ERP 가 범위 외 데이터 반환해도 조회 기간 밖은 숨김
   //   · "기간을 위에서 정했으면 그만큼만 나와야 함"
+  // 2026-10-07 · 월 멀티선택 지원 · activeRanges 중 어느 한 범위에 속해야 포함 (비연속 월 지원)
   const dataRows = useMemo(
-    () => (rows ?? []).filter((r) => r.SaleDate >= fromDate && r.SaleDate <= toDate),
-    [rows, fromDate, toDate],
+    () => (rows ?? []).filter((r) => activeRanges.some(rng => r.SaleDate >= rng.startDate && r.SaleDate <= rng.endDate)),
+    [rows, activeRanges],
   );
 
   // 날짜별 group + SaleTime 정순
@@ -334,15 +378,19 @@ const HourlyReportTab: React.FC = () => {
         </div>
       </div>
 
-      {/* 날짜 선택 UI · HOURLY 전용 */}
+      {/* 날짜 선택 UI · HOURLY · 2026-10-07 · 월 멀티선택 추가 (STANDARD) */}
       <div className="bg-white border border-zinc-200 rounded-lg p-3 flex items-center gap-2 flex-wrap">
         <span className="text-[16px] font-semibold text-zinc-700">조회 기간</span>
-        <input type="date" value={fromDate} onChange={(e) => setHourlyFromDate(e.target.value)}
-          className="px-3 py-1.5 border border-zinc-300 rounded text-[16px]" />
+        <MonthToggleSelector selectedMonths={selectedMonths} onChange={setSelectedMonths} maxMonths={6} ariaLabel="월 선택 (멀티)" />
+        <span className="text-zinc-300 mx-1">│</span>
+        <input type="date" value={fromDate} disabled={selectedMonths.length > 0}
+          onChange={(e) => { setSelectedMonths([]); setHourlyFromDate(e.target.value); }}
+          className="px-3 py-1.5 border border-zinc-300 rounded text-[16px] disabled:bg-zinc-100 disabled:text-zinc-400" />
         <span className="text-zinc-400">~</span>
-        <input type="date" value={toDate} onChange={(e) => setHourlyToDate(e.target.value)}
-          className="px-3 py-1.5 border border-zinc-300 rounded text-[16px]" />
-        <button onClick={() => void loadHourly(fromDate, toDate)} disabled={status === "loading"}
+        <input type="date" value={toDate} disabled={selectedMonths.length > 0}
+          onChange={(e) => { setSelectedMonths([]); setHourlyToDate(e.target.value); }}
+          className="px-3 py-1.5 border border-zinc-300 rounded text-[16px] disabled:bg-zinc-100 disabled:text-zinc-400" />
+        <button onClick={() => void loadHourlyRanges(activeRanges)} disabled={status === "loading"}
           className="px-4 py-1.5 bg-brand-deep text-white rounded hover:bg-brand-deep/90 text-[16px] font-bold disabled:opacity-50">
           {status === "loading" ? "조회 중..." : "🔍 조회"}
         </button>
@@ -352,6 +400,9 @@ const HourlyReportTab: React.FC = () => {
         </button>
         <div className="flex-1" />
         <div className="text-[15px] font-semibold text-zinc-700">
+          {selectedMonths.length > 0 && (
+            <span className="text-zinc-500 mr-2">{selectedMonths.length}개월 선택 · </span>
+          )}
           {dates.length === 0
             ? "데이터 없음"
             : dates.length === 1
@@ -365,7 +416,7 @@ const HourlyReportTab: React.FC = () => {
             <span className="font-semibold">⚠ ERP 응답 비정상 · 다시 조회 시도</span>
             <div className="text-[13px] mt-1 opacity-80">{error}</div>
           </div>
-          <button onClick={() => void loadHourly(fromDate, toDate)}
+          <button onClick={() => void loadHourlyRanges(activeRanges)}
             className="shrink-0 px-3 py-1.5 border border-current rounded text-[14px] font-semibold hover:bg-white/50">
             다시 조회
           </button>
@@ -378,19 +429,40 @@ const HourlyReportTab: React.FC = () => {
         </div>
       )}
 
-      {/* 오늘 KPI = 오늘 날짜만 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-        <KpiBox label={`${today} 매출총액`} value={show ? fmtWon(totalSale) : "-"} />
-        <KpiBox label={`${today} 매출이익`} value={show ? fmtWon(totalMargin) : "-"} />
-        <KpiBox label={`${today} 마진율`} value={show ? `${marginRate.toFixed(1)}%` : "-"} />
-        <KpiBox label={`${today} 고객수`} value={show ? totalCust.toLocaleString() + "명" : "-"} />
-      </div>
+      {/* 2026-10-06 · 사용자 지시 · 조회기간 전체 집계 KPI 4개 · 깔끔 텍스트 + 미묘 컬러 포인트 (좌측 strip)
+          · 누적매출총액 · 누적매출이익 · 평균마진율(가중) · 평균고객수(일 평균) */}
+      {show && displayDateData.length > 0 && (() => {
+        const sumSale = displayDateData.reduce((s, d) => s + d.totalSale, 0);
+        const sumMargin = displayDateData.reduce((s, d) => s + d.totalMargin, 0);
+        const sumCust = displayDateData.reduce((s, d) => s + d.totalCust, 0);
+        const avgMarginRate = sumSale > 0 ? (sumMargin / sumSale) * 100 : 0;
+        const avgCust = displayDateData.length > 0 ? sumCust / displayDateData.length : 0;
+        const nDays = displayDateData.length;
+        const items: Array<{ label: string; value: string; accent: string }> = [
+          { label: `${nDays}일 누적 매출총액`, value: fmtWon(sumSale), accent: "bg-brand-deep" },
+          { label: `${nDays}일 누적 매출이익`, value: fmtWon(sumMargin), accent: "bg-emerald-500" },
+          { label: `${nDays}일 평균 마진율`, value: `${avgMarginRate.toFixed(1)}%`, accent: "bg-amber-500" },
+          { label: `${nDays}일 일평균 고객수`, value: `${Math.round(avgCust).toLocaleString()}명`, accent: "bg-sky-500" },
+        ];
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+            {items.map((it) => (
+              <div key={it.label} className="bg-white border border-zinc-200 rounded-xl px-3 py-2.5 min-w-0 shadow-[0_1px_2px_rgba(10,46,74,0.04)] relative overflow-hidden">
+                <span className={`absolute left-0 top-2 bottom-2 w-[3px] ${it.accent} rounded-r-full`} aria-hidden />
+                <div className="pl-2.5 min-w-0">
+                  <div className="text-[12px] md:text-[13px] text-zinc-500 font-semibold mb-0.5 truncate">{it.label}</div>
+                  <div className="text-[16px] md:text-[19px] font-bold tabular-nums text-ink leading-tight truncate">{it.value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
-      {/* 2026-10-06 · 사용자 지시 · 시간대별 chart · 4 metric 탭 분리 (매출/객단가/고객수/마진율)
-          · 모든 탭 Line (꺾은선 그래프)
-          · 주말 포함/제외 체크박스 (default: 포함)
-          · 날짜별 Line overlay · 각 날짜 1 series (평균 X · 데이터 전부 노출) */}
-      {show && displayDateData.length > 0 && allSlots.length > 0 && (() => {
+      {/* 2026-10-06 · 사용자 지시 · 상단 축 탭 (시간대별 추이 / 일별 추이) · 구성 동일 · 데이터 축만 다름
+          · 시간대별: X=09~22시 · series=날짜별 overlay · 주말 체크박스 적용
+          · 일별 추이: X=1~31일 · series=월별 overlay · 주말 체크박스 적용 */}
+      {show && displayDateData.length > 0 && (() => {
         // 요일 필터 · 주말(토=6, 일=0) 포함 여부
         const isWeekend = (dateStr: string): boolean => {
           const [y, m, d] = dateStr.split("-").map(Number);
@@ -398,18 +470,43 @@ const HourlyReportTab: React.FC = () => {
           const dow = new Date(y, m - 1, d).getDay();
           return dow === 0 || dow === 6;
         };
-        const effDateData = includeWeekend
-          ? displayDateData
-          : displayDateData.filter((d) => !isWeekend(d.date));
-        if (effDateData.length === 0) {
-          return (
-            <div className="bg-white border border-zinc-200 rounded-lg p-3 md:p-4 w-full min-w-0 max-w-full overflow-hidden">
-              <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-                <div className="text-[15px] md:text-[16px] font-bold text-zinc-800">시간대별 추이</div>
-              </div>
-              <div className="py-12 text-center text-zinc-400 text-[14px]">주말 제외 시 표시할 날짜 없음</div>
-            </div>
-          );
+        // 2026-10-06 · 사용자 지시 · 축별 effDateData filter
+        //   · hour · day · includeWeekend 체크 적용
+        //   · weekday · selectedWeekdays 멀티선택 적용 (요일 getDay() 매칭)
+        const getDayOfWeek = (dateStr: string): number => {
+          const [y, m, d] = dateStr.split("-").map(Number);
+          if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return -1;
+          return new Date(y, m - 1, d).getDay();
+        };
+        const effDateData = chartAxis === "weekday"
+          ? displayDateData.filter((d) => selectedWeekdays.has(getDayOfWeek(d.date)))
+          : weekendOnly
+            ? displayDateData.filter((d) => isWeekend(d.date))
+            : (includeWeekend ? displayDateData : displayDateData.filter((d) => !isWeekend(d.date)));
+        // 2026-10-06 · 사용자 지시 · effDateData 빈 경우에도 상단 축 탭 · 메트릭 탭 유지 (chart 영역만 메시지)
+        //   · 상황별 안내 메시지 (주말 포함/주말만/요일별)
+        const DOW_KO = ["일", "월", "화", "수", "목", "금", "토"];
+        const emptyChartMsg = chartAxis === "weekday"
+          ? `선택 요일(${[...selectedWeekdays].sort().map((w) => DOW_KO[w]).join("·") || "없음"}) 날짜 없음`
+          : weekendOnly
+            ? "주말만 선택 시 조회 기간 내 주말 날짜 없음"
+            : !includeWeekend
+              ? "주말 제외 시 조회 기간 내 평일 날짜 없음"
+              : "표시할 날짜 없음";
+        const isEffEmpty = effDateData.length === 0;
+        // 2026-10-06 · 사용자 지시 · 요일별 추이 · 각 날짜 W1/W2/.. 주 번호 라벨 (같은 요일 내 오름차순 index+1)
+        const weekLabelMap = new Map<string, string>();
+        if (chartAxis === "weekday") {
+          const byDow = new Map<number, string[]>();
+          for (const d of effDateData) {
+            const dow = getDayOfWeek(d.date);
+            if (!byDow.has(dow)) byDow.set(dow, []);
+            byDow.get(dow)!.push(d.date);
+          }
+          for (const arr of byDow.values()) {
+            arr.sort((a, b) => a.localeCompare(b));
+            arr.forEach((date, idx) => weekLabelMap.set(date, `W${idx + 1}`));
+          }
         }
         // 2026-10-06 · 사용자 지시 · X축 영업시간 고정 (09~22시 · 14 slot) · 화면 폭 responsive
         //   · 데이터에 등장하는 slot 과 영업시간 union · 양쪽 모두 커버
@@ -419,11 +516,9 @@ const HourlyReportTab: React.FC = () => {
         // 2026-10-06 · 사용자 지시 · 현재 시간 이후 slot = 데이터 없음 (null) · 0 으로 처리 X
         //   · 예측 Line (오늘 미래) · 주중/주말 가중 평균 · 형광색 점선
         const nowHour = new Date().getHours();
-        const todayIsWknd = isWeekend(today);
-        // 예측 pool · 오늘과 같은 요일종류 (주중/주말) 의 과거 날짜만
-        const forecastPool = effDateData.filter(
-          (d) => d.date !== today && isWeekend(d.date) === todayIsWknd,
-        );
+        // 2026-10-06 · 사용자 지시 · 예상평균 = 다른날과 비교해서 계산 (주중/주말 구분 제거)
+        //   · 오늘 제외한 모든 다른 날 평균 · 조회 기간 전체 pool
+        const forecastPool = effDateData.filter((d) => d.date !== today);
         // slot 별 예측값 (주중/주말 가중 평균) · metric 별
         const buildForecastBySlot = (metric: ChartMetric): Map<string, number | null> => {
           const out = new Map<string, number | null>();
@@ -521,7 +616,22 @@ const HourlyReportTab: React.FC = () => {
         const PAST_COLORS = ["#2563eb", "#059669", "#d97706", "#7c3aed", "#0891b2", "#db2777", "#0ea5e9"];
         return (
           <div className="bg-white border border-zinc-200 rounded-lg p-3 md:p-4 w-full min-w-0 max-w-full overflow-hidden">
-            {/* 2026-10-06 · 사용자 지시 · 상단 row · 탭 + 주말 체크박스 (같은 라인) */}
+            {/* 2026-10-06 · 사용자 지시 · 최상단 축 탭 (시간대별 / 일별 / 요일별) · 메트릭 탭 위 */}
+            <div className="flex items-center gap-1 mb-2 bg-zinc-100 border border-zinc-200 rounded-lg p-0.5 w-fit">
+              {(["hour", "day", "week", "weekday"] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setChartAxis(k)}
+                  className={`px-3.5 py-1 text-[14px] font-semibold rounded-md transition cursor-pointer whitespace-nowrap ${
+                    chartAxis === k ? "bg-brand-deep text-white shadow-sm" : "text-zinc-600 hover:bg-white"
+                  }`}
+                >
+                  {k === "hour" ? "시간대별 추이" : k === "day" ? "일별 추이" : k === "week" ? "주별 추이" : "요일별 추이"}
+                </button>
+              ))}
+            </div>
+            {/* 2026-10-06 · 사용자 지시 · 메트릭 탭 + 주말 체크 (hour/day) · 요일 멀티선택 (weekday) */}
             <div className="flex items-center justify-start gap-3 mb-2 flex-wrap">
               <div className="inline-flex items-center gap-1 bg-zinc-100 border border-zinc-200 rounded-lg p-0.5">
                 {(["revenue", "avg-order", "margin-rate", "customers"] as const).map((k) => (
@@ -537,23 +647,63 @@ const HourlyReportTab: React.FC = () => {
                   </button>
                 ))}
               </div>
-              <label className="inline-flex items-center gap-1.5 text-[13px] text-zinc-700 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={includeWeekend}
-                  onChange={(e) => setIncludeWeekend(e.target.checked)}
-                  className="w-4 h-4 accent-brand-deep cursor-pointer"
-                />
-                <span>주말 포함</span>
-              </label>
+              {chartAxis !== "weekday" ? (
+                <>
+                  <label className={`inline-flex items-center gap-1.5 text-[13px] cursor-pointer select-none ${weekendOnly ? "text-zinc-400" : "text-zinc-700"}`}>
+                    <input
+                      type="checkbox"
+                      checked={includeWeekend && !weekendOnly}
+                      disabled={weekendOnly}
+                      onChange={(e) => setIncludeWeekend(e.target.checked)}
+                      className="w-4 h-4 accent-brand-deep cursor-pointer disabled:cursor-not-allowed"
+                    />
+                    <span>주말 포함</span>
+                  </label>
+                  <label className="inline-flex items-center gap-1.5 text-[13px] text-zinc-700 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={weekendOnly}
+                      onChange={(e) => setWeekendOnly(e.target.checked)}
+                      className="w-4 h-4 accent-rose-500 cursor-pointer"
+                    />
+                    <span>주말만</span>
+                  </label>
+                </>
+              ) : (
+                <div className="inline-flex items-center gap-1 bg-zinc-100 border border-zinc-200 rounded-lg p-0.5">
+                  {[0, 1, 2, 3, 4, 5, 6].map((w) => {
+                    const label = ["일", "월", "화", "수", "목", "금", "토"][w];
+                    const isSel = selectedWeekdays.has(w);
+                    const isWknd = w === 0 || w === 6;
+                    return (
+                      <button
+                        key={w}
+                        type="button"
+                        onClick={() => toggleWeekday(w)}
+                        className={`px-2.5 py-1 text-[13px] font-semibold rounded-md transition cursor-pointer min-w-[28px] ${
+                          isSel ? "bg-brand-deep text-white shadow-sm" : `${isWknd ? (w === 0 ? "text-rose-600" : "text-sky-600") : "text-zinc-600"} hover:bg-white`
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             {/* 제목 + 일수 */}
             <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <div className="text-[15px] md:text-[16px] font-bold text-zinc-800">시간대별 추이</div>
+              <div className="text-[15px] md:text-[16px] font-bold text-zinc-800">{chartAxis === "hour" ? "시간대별 추이" : "일별 추이"}</div>
               <span className="text-[12px] text-zinc-500">{effDateData.length}일</span>
             </div>
             <div className="w-full min-w-0 max-w-full overflow-hidden" style={{ height: 320 }}>
               {(() => {
+                // 2026-10-06 · 사용자 지시 · chart 영역에서만 empty 메시지 (상단 탭/메트릭 탭 유지)
+                if (isEffEmpty) {
+                  return (
+                    <div className="h-full flex items-center justify-center text-zinc-400 text-[14px]">{emptyChartMsg}</div>
+                  );
+                }
                 const chartData = buildSeriesData(chartMetric);
                 // 2026-10-06 · 사용자 지시 · percentile 축 자르기 취소 · domain=auto · Brush 로 range 선택
                 const yFormatter = chartMetric === "margin-rate"
@@ -572,33 +722,199 @@ const HourlyReportTab: React.FC = () => {
                 //   · 오늘 Line 두껍게 (3.5) + ★ 포인트 · Legend 특별 라벨
                 //   · 매출 탭 forecast · 점선 (과거 평균) · 데이터 없는 slot 에만 예측 표시
                 //   · 데이터 있으면 그리지 않음 (null · connectNulls=false)
+                // 2026-10-06 · 사용자 지시 · Y축 왼쪽 단위 라벨
+                const yUnit = chartMetric === "margin-rate" ? "%" : chartMetric === "customers" ? "명" : "원";
+                // 2026-10-06 · 사용자 지시 · 주별 추이 축 · X=W1~W5 (월 내 주차) · 월별 overlay
+                //   · 주차 = Math.ceil(day/7) · 각 주 안 날짜 합산 (매출/매출이익/고객수)
+                if (chartAxis === "week") {
+                  interface WeekAgg { sale: number; cust: number; marg: number }
+                  const monthWeekMap = new Map<string, Map<number, WeekAgg>>();
+                  for (const d of effDateData) {
+                    const monthKey = d.date.slice(0, 7);
+                    const day = Number(d.date.slice(8, 10));
+                    const w = Math.ceil(day / 7);
+                    if (!monthWeekMap.has(monthKey)) monthWeekMap.set(monthKey, new Map());
+                    const prev = monthWeekMap.get(monthKey)!.get(w) ?? { sale: 0, cust: 0, marg: 0 };
+                    prev.sale += d.totalSale;
+                    prev.cust += d.totalCust;
+                    prev.marg += d.totalMargin;
+                    monthWeekMap.get(monthKey)!.set(w, prev);
+                  }
+                  const months = [...monthWeekMap.keys()].sort();
+                  const weekChartData: Record<string, number | string | null>[] = [];
+                  for (let w = 1; w <= 5; w++) {
+                    const point: Record<string, number | string | null> = { week: w };
+                    for (const monthKey of months) {
+                      const r = monthWeekMap.get(monthKey)!.get(w);
+                      if (!r) { point[monthKey] = null; continue; }
+                      let v: number | null = null;
+                      if (chartMetric === "revenue") v = r.sale;
+                      else if (chartMetric === "avg-order") v = r.cust > 0 ? Math.round(r.sale / r.cust) : null;
+                      else if (chartMetric === "margin-rate") v = r.sale > 0 ? Math.round((r.marg / r.sale) * 1000) / 10 : null;
+                      else if (chartMetric === "customers") v = r.cust;
+                      point[monthKey] = v;
+                    }
+                    weekChartData.push(point);
+                  }
+                  return (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={weekChartData} margin={{ top: 18, right: 15, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
+                        <XAxis dataKey="week" tick={{ fontSize: 13, fill: "#52525b" }} tickFormatter={(v) => `W${v}`} interval={0} />
+                        <YAxis
+                          tick={{ fontSize: 12, fill: "#52525b" }}
+                          tickFormatter={(v) => yFormatter(Number(v))}
+                          width={60}
+                          domain={["auto", "auto"]}
+                          allowDecimals={false}
+                          label={{ value: `(${yUnit})`, position: "insideTopLeft", offset: -4, style: { fontSize: 12, fill: "#71717a", fontWeight: 600 } }}
+                        />
+                        <Tooltip
+                          formatter={(v, name) => {
+                            const nm = String(name);
+                            const raw = nm.replace(" ★ 이번달", "");
+                            const [yy, mm] = raw.split("-");
+                            const monthLbl = yy && mm ? `${yy}년 ${Number(mm)}월` : raw;
+                            return [tooltipValueFormatter(v as number), monthLbl];
+                          }}
+                          labelFormatter={(v) => `W${v} (${Number(v) === 1 ? "1~7" : Number(v) === 2 ? "8~14" : Number(v) === 3 ? "15~21" : Number(v) === 4 ? "22~28" : "29~31"}일)`}
+                          contentStyle={{ fontSize: 13, borderRadius: 8 }}
+                        />
+                        <Legend wrapperStyle={{ fontSize: 13 }} iconType="line" formatter={(name) => {
+                          const nm = String(name);
+                          const raw = nm.replace(" ★ 이번달", "");
+                          const [yy, mm] = raw.split("-");
+                          const monthLbl = yy && mm ? `${yy}년 ${Number(mm)}월` : raw;
+                          if (nm.endsWith("★ 이번달")) return <span style={{ color: "#dc2626", fontWeight: 800 }}>{monthLbl} ★ 이번달</span>;
+                          return monthLbl;
+                        }} />
+                        {months.map((monthKey, i) => {
+                          const isCurMonth = monthKey === today.slice(0, 7);
+                          const color = isCurMonth ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
+                          return (
+                            <Line
+                              key={monthKey} type="monotone" dataKey={monthKey}
+                              name={isCurMonth ? `${monthKey} ★ 이번달` : monthKey}
+                              stroke={color} strokeWidth={isCurMonth ? 3.5 : 2.2}
+                              dot={{ r: isCurMonth ? 5 : 3, strokeWidth: 1 }} activeDot={{ r: isCurMonth ? 7 : 6 }}
+                              connectNulls={true}
+                            />
+                          );
+                        })}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  );
+                }
+                // 2026-10-06 · 사용자 지시 · 일별 추이 축 · X=1~31일 · 월별 overlay (조회 기간 내 각 월 series)
+                if (chartAxis === "day") {
+                  const monthMap = new Map<string, Map<number, { sale: number; cust: number; marg: number }>>();
+                  for (const d of effDateData) {
+                    const monthKey = d.date.slice(0, 7);
+                    const day = Number(d.date.slice(8, 10));
+                    if (!monthMap.has(monthKey)) monthMap.set(monthKey, new Map());
+                    monthMap.get(monthKey)!.set(day, { sale: d.totalSale, cust: d.totalCust, marg: d.totalMargin });
+                  }
+                  const months = [...monthMap.keys()].sort();
+                  const dayChartData: Record<string, number | string | null>[] = [];
+                  for (let day = 1; day <= 31; day++) {
+                    const point: Record<string, number | string | null> = { day };
+                    for (const monthKey of months) {
+                      const r = monthMap.get(monthKey)!.get(day);
+                      if (!r) { point[monthKey] = null; continue; }
+                      const { sale, cust, marg } = r;
+                      let v: number | null = null;
+                      if (chartMetric === "revenue") v = sale;
+                      else if (chartMetric === "avg-order") v = cust > 0 ? Math.round(sale / cust) : null;
+                      else if (chartMetric === "margin-rate") v = sale > 0 ? Math.round((marg / sale) * 1000) / 10 : null;
+                      else if (chartMetric === "customers") v = cust;
+                      point[monthKey] = v;
+                    }
+                    dayChartData.push(point);
+                  }
+                  return (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={dayChartData} margin={{ top: 18, right: 15, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
+                        <XAxis dataKey="day" tick={{ fontSize: 13, fill: "#52525b" }} tickFormatter={(v) => `${v}일`} interval={1} />
+                        <YAxis
+                          tick={{ fontSize: 12, fill: "#52525b" }}
+                          tickFormatter={(v) => yFormatter(Number(v))}
+                          width={60}
+                          domain={["auto", "auto"]}
+                          allowDecimals={false}
+                          label={{ value: `(${yUnit})`, position: "insideTopLeft", offset: -4, style: { fontSize: 12, fill: "#71717a", fontWeight: 600 } }}
+                        />
+                        <Tooltip
+                          formatter={(v, name) => {
+                            const nm = String(name);
+                            const raw = nm.replace(" ★ 이번달", "");
+                            const [yy, mm] = raw.split("-");
+                            const monthLbl = yy && mm ? `${yy}년 ${Number(mm)}월` : raw;
+                            return [tooltipValueFormatter(v as number), monthLbl];
+                          }}
+                          labelFormatter={(v) => `${v}일`}
+                          contentStyle={{ fontSize: 13, borderRadius: 8 }}
+                        />
+                        {/* 2026-10-06 · 사용자 지시 · 현재월 Legend 라벨 굵게 (red bold) · 시간대별 "★ 오늘" 패턴과 통일 */}
+                        <Legend wrapperStyle={{ fontSize: 13 }} iconType="line" formatter={(name) => {
+                          const nm = String(name);
+                          const raw = nm.replace(" ★ 이번달", "");
+                          const [yy, mm] = raw.split("-");
+                          const monthLbl = yy && mm ? `${yy}년 ${Number(mm)}월` : raw;
+                          if (nm.endsWith("★ 이번달")) return <span style={{ color: "#dc2626", fontWeight: 800 }}>{monthLbl} ★ 이번달</span>;
+                          return monthLbl;
+                        }} />
+                        {months.map((monthKey, i) => {
+                          // 2026-10-06 · 사용자 지시 · 일별 추이 · 현재월 붉은색 + 두껍게 (시간대별 추이 "오늘" 패턴과 동일)
+                          const isCurMonth = monthKey === today.slice(0, 7);
+                          const color = isCurMonth ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
+                          return (
+                            <Line
+                              key={monthKey} type="monotone" dataKey={monthKey}
+                              name={isCurMonth ? `${monthKey} ★ 이번달` : monthKey}
+                              stroke={color} strokeWidth={isCurMonth ? 3.5 : 2.2}
+                              dot={{ r: isCurMonth ? 5 : 3, strokeWidth: 1 }} activeDot={{ r: isCurMonth ? 7 : 6 }}
+                              // 2026-10-06 · 사용자 지시 · 주말 미포함 시 주중 point 간 연결 (주말 날짜 null gap 건너뛰기)
+                              connectNulls={!includeWeekend}
+                            />
+                          );
+                        })}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  );
+                }
                 return (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 10, right: 15, left: 0, bottom: 5 }}>
+                    <LineChart data={chartData} margin={{ top: 18, right: 15, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-                      <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#52525b" }} tickFormatter={(v) => `${v}시`} interval={0} />
-                      {/* 2026-10-06 · 사용자 지시 · domain=auto · Brush 로 X range 선택 시 Y 자동 재계산 */}
+                      {/* 2026-10-06 · 사용자 지시 · 차트 글씨 +1 (12→13, 11→12) */}
+                      <XAxis dataKey="time" tick={{ fontSize: 13, fill: "#52525b" }} tickFormatter={(v) => `${v}시`} interval={0} />
                       <YAxis
-                        tick={{ fontSize: 11, fill: "#52525b" }}
+                        tick={{ fontSize: 12, fill: "#52525b" }}
                         tickFormatter={(v) => yFormatter(Number(v))}
                         width={60}
                         domain={["auto", "auto"]}
                         allowDecimals={false}
+                        label={{ value: `(${yUnit})`, position: "insideTopLeft", offset: -4, style: { fontSize: 12, fill: "#71717a", fontWeight: 600 } }}
                       />
                       <Tooltip
                         formatter={(v, name) => {
                           const nm = String(name);
                           if (nm === "forecast") return [tooltipValueFormatter(v as number), "예상"];
+                          // weekday 축 때 name 이 "W1 MM/DD(요일)" 형태 · 그대로 사용
+                          if (nm.includes(" ")) return [tooltipValueFormatter(v as number), nm.replace(" ★ 오늘", "")];
                           return [tooltipValueFormatter(v as number), shortDateWithDow(nm.replace(" ★ 오늘", ""))];
                         }}
                         labelFormatter={(v) => `${v}시`}
-                        contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                        contentStyle={{ fontSize: 13, borderRadius: 8 }}
                       />
                       {/* 2026-10-06 · 사용자 지시 · 오늘 라벨 찐하게 (bold red) · forecast 라벨 예상 */}
-                      <Legend wrapperStyle={{ fontSize: 12 }} iconType="line" formatter={(name) => {
+                      <Legend wrapperStyle={{ fontSize: 13 }} iconType="line" formatter={(name) => {
                         const nm = String(name);
                         if (nm === "forecast") return <span style={{ color: "#71717a", fontStyle: "italic" }}>예상 (평균)</span>;
                         if (nm.endsWith("★ 오늘")) return <span style={{ color: "#dc2626", fontWeight: 800 }}>{nm}</span>;
+                        // weekday 축 "W1 MM/DD(요일)" 형태 · 그대로 사용
+                        if (nm.includes(" ")) return nm;
                         return shortDateWithDow(nm);
                       }} />
                       {effDateData.map((d, i) => {
@@ -607,14 +923,19 @@ const HourlyReportTab: React.FC = () => {
                         const color = isToday ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
                         // 2026-10-06 · 사용자 지시 · 주말 날짜는 다른 선 타입 (dashed) · 오늘이 아닐 때만
                         const dash = isWknd && !isToday ? "6 3" : undefined;
+                        // 2026-10-06 · 사용자 지시 · 요일별 추이 Line 라벨에 주 번호 (W1/W2/..) prefix
+                        const wkPrefix = chartAxis === "weekday" ? (weekLabelMap.get(d.date) ?? "") : "";
+                        const baseName = wkPrefix ? `${wkPrefix} ${shortDateWithDow(d.date)}` : d.date;
                         return (
                           <Line
                             key={d.date} type="monotone" dataKey={d.date}
-                            name={isToday ? `${shortDateWithDow(d.date)} ★ 오늘` : d.date}
+                            name={isToday ? `${shortDateWithDow(d.date)} ★ 오늘` : baseName}
                             stroke={color} strokeWidth={isToday ? 3.5 : 1.8}
                             strokeDasharray={dash}
                             dot={{ r: isToday ? 5 : 3, strokeWidth: 1 }} activeDot={{ r: 7 }}
                             connectNulls={false}
+                            // 2026-10-06 · 사용자 지시 · 요일별 추이 · W1/W2 라벨 그래프 안 표시 (각 point 위)
+                            label={wkPrefix ? { position: "top", fontSize: 10, fontWeight: 700, fill: color, formatter: () => wkPrefix } : undefined}
                           />
                         );
                       })}
@@ -638,85 +959,363 @@ const HourlyReportTab: React.FC = () => {
         );
       })()}
 
-      {/* 날짜별 column group · PC 전용 */}
-      <div className="hidden md:block bg-white border border-zinc-200 rounded-lg overflow-auto">
-        <table className="w-full text-[16px] border-collapse">
-          <thead>
-            <tr className="bg-zinc-50 border-b border-zinc-200">
-              <th rowSpan={2} className="text-center px-3 py-2 font-semibold text-zinc-600 border-r border-zinc-200 bg-zinc-50 sticky left-0 z-10" style={{ minWidth: 72 }}>시간</th>
-              {displayDateData.map((d) => (
-                <th key={d.date} colSpan={6} className={`text-center px-3 py-2 font-semibold text-zinc-700 border-r border-zinc-200 ${d.date === today ? "bg-amber-50" : "bg-sky-50"}`}>
-                  {shortDateWithDow(d.date)}{d.date === today && <span className="ml-1 text-amber-700 text-[14px]">● 오늘</span>}
-                </th>
-              ))}
-            </tr>
-            <tr className="bg-zinc-50 border-b border-zinc-200 text-[14px]">
-              {displayDateData.map((d) => (
-                <React.Fragment key={d.date}>
-                  <th className="text-right px-2 py-1 font-semibold text-zinc-600">객단가</th>
-                  <th className="text-right px-2 py-1 font-semibold text-zinc-600">고객수</th>
-                  <th className="text-right px-2 py-1 font-semibold text-zinc-600">합계금액</th>
-                  <th className="text-right px-2 py-1 font-semibold text-zinc-600">마진율(%)</th>
-                  <th className="text-right px-2 py-1 font-semibold text-amber-800 bg-amber-50">누적 고객수</th>
-                  <th className="text-right px-2 py-1 font-semibold text-amber-800 bg-amber-50 border-r border-zinc-200">누적 합계금액</th>
-                </React.Fragment>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {!show ? (
-              <tr><td colSpan={1 + displayDateData.length * 6} className="text-center py-8 text-zinc-400">
-                {status === "idle" || status === "loading" ? "조회 중..." : status === "error" ? "조회 실패" : "데이터 없음"}
-              </td></tr>
-            ) : allSlots.length === 0 ? (
-              <tr><td colSpan={1} className="text-center py-8 text-zinc-400">데이터 없음 (ERP 응답 0 row)</td></tr>
-            ) : allSlots.map((slot) => (
-              <tr key={slot} className="border-b border-zinc-100 hover:bg-zinc-50">
-                <td className="px-3 py-2 text-center font-semibold text-zinc-700 border-r border-zinc-200 sticky left-0 bg-white z-10">
-                  {slot}
-                </td>
-                {displayDateData.map((d) => {
-                  const r = d.rowMap.get(slot);
-                  const isCurrent = d.date === today && slot === curSlot;
-                  if (!r) {
-                    return (
-                      <React.Fragment key={d.date}>
-                        <td className="px-2 py-2 text-right text-zinc-300">-</td>
-                        <td className="px-2 py-2 text-right text-zinc-300">-</td>
-                        <td className="px-2 py-2 text-right text-zinc-300">-</td>
-                        <td className="px-2 py-2 text-right text-zinc-300">-</td>
-                        <td className="px-2 py-2 text-right text-zinc-300 bg-amber-50/30">-</td>
-                        <td className="px-2 py-2 text-right text-zinc-300 bg-amber-50/30 border-r border-zinc-200">-</td>
-                      </React.Fragment>
-                    );
-                  }
-                  return (
-                    <React.Fragment key={d.date}>
-                      <td className={`px-2 py-2 text-right tabular-nums ${isCurrent ? "bg-sky-100 font-semibold" : ""}`}>{fmtNum(Number(r.AvgChargeTotal ?? 0))}</td>
-                      <td className={`px-2 py-2 text-right tabular-nums ${isCurrent ? "bg-sky-100 font-semibold" : ""}`}>{fmtNum(Number(r.CustomerCnt ?? 0))}</td>
-                      <td className={`px-2 py-2 text-right tabular-nums ${isCurrent ? "bg-sky-100 font-semibold" : ""}`}>{fmtNum(Number(r.SaleTotal ?? 0))}</td>
-                      <td className={`px-2 py-2 text-right tabular-nums ${isCurrent ? "bg-sky-100 font-semibold" : ""}`}>{Number(r.MarginRate ?? 0).toFixed(1)}{isCurrent && <span className="ml-1 text-sky-600 text-[14px]">← 현재</span>}</td>
-                      <td className="px-2 py-2 text-right tabular-nums bg-amber-50 font-semibold text-amber-800">{fmtNum(r.cumCust)}</td>
-                      <td className="px-2 py-2 text-right tabular-nums bg-amber-50 font-semibold text-amber-800 border-r border-zinc-200">{fmtNum(r.cumSale)}</td>
-                    </React.Fragment>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* 날짜별 세로 접이식 · 모바일 전용 · 오늘만 기본 펼침 */}
-      <div className="md:hidden flex flex-col gap-2">
+      {/* 2026-10-06 · 사용자 지시 · PC 가로 테이블 제거 · 세로 아코디언 통일 (모든 viewport)
+          · 각 날짜 세로 블록 · 접었다 폈다 · 최근 날짜 맨 위 (displayDateData reversed) */}
+      <div className="flex flex-col gap-2 w-full min-w-0 max-w-full">
         {!show ? (
           <div className="bg-white border border-zinc-200 rounded-lg p-8 text-center text-zinc-400">
             {status === "idle" || status === "loading" ? "조회 중..." : status === "error" ? "조회 실패" : "데이터 없음"}
           </div>
         ) : displayDateData.length === 0 ? (
           <div className="bg-white border border-zinc-200 rounded-lg p-8 text-center text-zinc-400">데이터 없음</div>
+        ) : chartAxis === "week" ? (
+          // 2026-10-06 · 사용자 지시 · 주별 추이 축 · 주별 아코디언 · 안에 그 주의 일별 테이블
+          //   · 각 주 header · W1~W5 (해당 월 1~7일 · 8~14일 · 15~21일 · 22~28일 · 29~31일)
+          //   · 요약 · 그 주 매출총액 · 매출이익 · 마진율 · 고객수 · 최신 주 맨 위
+          (() => {
+            interface DayData { date: string; totalSale: number; totalMargin: number; totalCust: number }
+            const isWeekendDate = (dateStr: string): boolean => {
+              const [y, m, dd] = dateStr.split("-").map(Number);
+              if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(dd)) return false;
+              const dow = new Date(y, m - 1, dd).getDay();
+              return dow === 0 || dow === 6;
+            };
+            const dayFiltered = weekendOnly
+              ? displayDateData.filter((d) => isWeekendDate(d.date))
+              : (includeWeekend ? displayDateData : displayDateData.filter((d) => !isWeekendDate(d.date)));
+            const weekMap = new Map<string, DayData[]>(); // key = "YYYY-MM/W"
+            for (const d of dayFiltered) {
+              const monthKey = d.date.slice(0, 7);
+              const day = Number(d.date.slice(8, 10));
+              const w = Math.ceil(day / 7);
+              const key = `${monthKey}/W${w}`;
+              if (!weekMap.has(key)) weekMap.set(key, []);
+              weekMap.get(key)!.push({ date: d.date, totalSale: d.totalSale, totalMargin: d.totalMargin, totalCust: d.totalCust });
+            }
+            const weeks = [...weekMap.keys()].sort().reverse();
+            const todayMonth = today.slice(0, 7);
+            const todayWeek = Math.ceil(Number(today.slice(8, 10)) / 7);
+            const todayWeekKey = `${todayMonth}/W${todayWeek}`;
+            return (
+              <>
+                {weeks.map((weekKey) => {
+                  const days = weekMap.get(weekKey)!.slice().sort((a, b) => a.date.localeCompare(b.date));
+                  const wSale = days.reduce((s, d) => s + d.totalSale, 0);
+                  const wMargin = days.reduce((s, d) => s + d.totalMargin, 0);
+                  const wCust = days.reduce((s, d) => s + d.totalCust, 0);
+                  const wRate = wSale > 0 ? (wMargin / wSale) * 100 : 0;
+                  const isCurWeek = weekKey === todayWeekKey;
+                  const isWExp = expandedMonths.has(weekKey);
+                  const [mk, wk] = weekKey.split("/");
+                  const [my, mm] = mk.split("-");
+                  const wn = Number(wk.slice(1));
+                  const dayRange = wn === 1 ? "1~7" : wn === 2 ? "8~14" : wn === 3 ? "15~21" : wn === 4 ? "22~28" : "29~31";
+                  const weekLabel = `${my}년 ${Number(mm)}월 ${wk} (${dayRange}일)`;
+                  return (
+                    <div key={weekKey} className={`bg-white border rounded-lg overflow-hidden ${isCurWeek ? "border-amber-300" : "border-zinc-200"}`}>
+                      <button
+                        type="button"
+                        onClick={() => toggleMonth(weekKey)}
+                        className={`w-full px-3 py-2 md:py-2.5 transition ${isCurWeek ? "bg-amber-50 hover:bg-amber-100" : "bg-zinc-50 hover:bg-zinc-100"}`}
+                        aria-expanded={isWExp}
+                      >
+                        <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                          <div className="flex items-center gap-1.5 shrink-0 min-w-[140px] md:min-w-[180px]">
+                            <span className="text-[15px] md:text-[16px] font-bold text-zinc-800 whitespace-nowrap">{weekLabel}</span>
+                            {isCurWeek && <span className="text-amber-700 text-[12px] md:text-[13px] font-bold whitespace-nowrap">● 이번주</span>}
+                          </div>
+                          <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-2 min-w-0">
+                            {[
+                              { label: "매출총액", value: fmtWon(wSale), accent: "text-brand-deep", bar: "bg-brand-deep" },
+                              { label: "매출이익", value: fmtWon(wMargin), accent: "text-emerald-700", bar: "bg-emerald-500" },
+                              { label: "마진율", value: `${wRate.toFixed(1)}%`, accent: "text-amber-700", bar: "bg-amber-500" },
+                              { label: "고객수", value: `${wCust.toLocaleString()}명`, accent: "text-sky-700", bar: "bg-sky-500" },
+                            ].map((k) => (
+                              <div key={k.label} className="relative pl-2 min-w-0 text-left">
+                                <span className={`absolute left-0 top-0.5 bottom-0.5 w-[2px] ${k.bar} rounded-r-full`} aria-hidden />
+                                <div className="text-[11px] md:text-[12px] text-zinc-500 font-semibold leading-tight truncate">{k.label}</div>
+                                <div className={`text-[13px] md:text-[15px] font-bold tabular-nums leading-tight truncate ${k.accent}`}>{k.value}</div>
+                              </div>
+                            ))}
+                          </div>
+                          <span className="shrink-0 text-zinc-600 text-[14px] font-bold w-4 text-center">{isWExp ? "▲" : "▼"}</span>
+                        </div>
+                      </button>
+                      {isWExp && (
+                        <div className="border-t border-zinc-200">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-[14px] border-collapse">
+                              <thead>
+                                <tr className="bg-zinc-50 border-b border-zinc-200 text-[12px]">
+                                  <th className="text-left px-2 py-1.5 font-semibold text-zinc-600">날짜</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">매출총액</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">매출이익</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">마진율</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">고객수</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">객단가</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {days.slice().reverse().map((r) => {
+                                  const rate = r.totalSale > 0 ? (r.totalMargin / r.totalSale) * 100 : 0;
+                                  const avg = r.totalCust > 0 ? Math.round(r.totalSale / r.totalCust) : 0;
+                                  const isTodayRow = r.date === today;
+                                  return (
+                                    <tr key={r.date} className={`border-b border-zinc-100 ${isTodayRow ? "bg-amber-50/60" : ""}`}>
+                                      <td className={`px-2 py-1.5 text-left font-semibold whitespace-nowrap ${isTodayRow ? "text-amber-800" : "text-zinc-700"}`}>
+                                        {shortDateWithDow(r.date)}{isTodayRow && <span className="ml-1 text-amber-700 text-[11px]">●</span>}
+                                      </td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-brand-deep">{fmtNum(r.totalSale)}</td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums text-emerald-700">{fmtNum(r.totalMargin)}</td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums text-amber-700">{rate.toFixed(1)}%</td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums text-sky-700">{r.totalCust.toLocaleString()}</td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums text-zinc-700">{fmtNum(avg)}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </>
+            );
+          })()
+        ) : chartAxis === "weekday" ? (
+          // 2026-10-06 · 사용자 지시 · 요일별 추이 축 · 요일별 아코디언 · 안에 그 요일 날짜 테이블
+          //   · 각 요일 header · "월요일" 등 · 선택 요일만 (selectedWeekdays)
+          //   · 요약 · 그 요일 전체 매출총액/매출이익/마진율/일평균 고객수
+          //   · 펼침 시 각 날짜 테이블 (W1 10/05(월) 등 · 매출/매출이익/마진율/고객수/객단가)
+          (() => {
+            const DOW_FULL = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+            const dowColor = (w: number) => w === 0 ? "text-rose-600" : w === 6 ? "text-sky-600" : "text-zinc-800";
+            const dowOf = (dateStr: string): number => {
+              const [y, m, dd] = dateStr.split("-").map(Number);
+              if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(dd)) return -1;
+              return new Date(y, m - 1, dd).getDay();
+            };
+            interface DowData { date: string; totalSale: number; totalMargin: number; totalCust: number }
+            const dowMap = new Map<number, DowData[]>();
+            for (const d of displayDateData) {
+              const w = dowOf(d.date);
+              if (!selectedWeekdays.has(w)) continue;
+              if (!dowMap.has(w)) dowMap.set(w, []);
+              dowMap.get(w)!.push({ date: d.date, totalSale: d.totalSale, totalMargin: d.totalMargin, totalCust: d.totalCust });
+            }
+            const dows = [...dowMap.keys()].sort();
+            if (dows.length === 0) {
+              return <div className="bg-white border border-zinc-200 rounded-lg p-8 text-center text-zinc-400">선택 요일 데이터 없음</div>;
+            }
+            return (
+              <>
+                {dows.map((w) => {
+                  const days = dowMap.get(w)!.slice().sort((a, b) => a.date.localeCompare(b.date));
+                  const wkSale = days.reduce((s, d) => s + d.totalSale, 0);
+                  const wkMargin = days.reduce((s, d) => s + d.totalMargin, 0);
+                  const wkCust = days.reduce((s, d) => s + d.totalCust, 0);
+                  const wkRate = wkSale > 0 ? (wkMargin / wkSale) * 100 : 0;
+                  const avgCust = days.length > 0 ? Math.round(wkCust / days.length) : 0;
+                  const dowKey = `dow-${w}`;
+                  const isDExp = expandedMonths.has(dowKey);
+                  return (
+                    <div key={w} className="bg-white border border-zinc-200 rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => toggleMonth(dowKey)}
+                        className="w-full px-3 py-2 md:py-2.5 transition bg-zinc-50 hover:bg-zinc-100"
+                        aria-expanded={isDExp}
+                      >
+                        <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                          <div className="flex items-center gap-1.5 shrink-0 min-w-[90px] md:min-w-[112px]">
+                            <span className={`text-[15px] md:text-[16px] font-bold whitespace-nowrap ${dowColor(w)}`}>{DOW_FULL[w]}</span>
+                            <span className="text-zinc-500 text-[12px]">{days.length}회</span>
+                          </div>
+                          <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-2 min-w-0">
+                            {[
+                              { label: "매출총액", value: fmtWon(wkSale), accent: "text-brand-deep", bar: "bg-brand-deep" },
+                              { label: "매출이익", value: fmtWon(wkMargin), accent: "text-emerald-700", bar: "bg-emerald-500" },
+                              { label: "마진율", value: `${wkRate.toFixed(1)}%`, accent: "text-amber-700", bar: "bg-amber-500" },
+                              { label: "일평균 고객", value: `${avgCust.toLocaleString()}명`, accent: "text-sky-700", bar: "bg-sky-500" },
+                            ].map((k) => (
+                              <div key={k.label} className="relative pl-2 min-w-0 text-left">
+                                <span className={`absolute left-0 top-0.5 bottom-0.5 w-[2px] ${k.bar} rounded-r-full`} aria-hidden />
+                                <div className="text-[11px] md:text-[12px] text-zinc-500 font-semibold leading-tight truncate">{k.label}</div>
+                                <div className={`text-[13px] md:text-[15px] font-bold tabular-nums leading-tight truncate ${k.accent}`}>{k.value}</div>
+                              </div>
+                            ))}
+                          </div>
+                          <span className="shrink-0 text-zinc-600 text-[14px] font-bold w-4 text-center">{isDExp ? "▲" : "▼"}</span>
+                        </div>
+                      </button>
+                      {isDExp && (
+                        <div className="border-t border-zinc-200">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-[14px] border-collapse">
+                              <thead>
+                                <tr className="bg-zinc-50 border-b border-zinc-200 text-[12px]">
+                                  <th className="text-left px-2 py-1.5 font-semibold text-zinc-600">주 · 날짜</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">매출총액</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">매출이익</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">마진율</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">고객수</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">객단가</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {days.map((r, idx) => {
+                                  const rate = r.totalSale > 0 ? (r.totalMargin / r.totalSale) * 100 : 0;
+                                  const avg = r.totalCust > 0 ? Math.round(r.totalSale / r.totalCust) : 0;
+                                  const isTodayRow = r.date === today;
+                                  return (
+                                    <tr key={r.date} className={`border-b border-zinc-100 ${isTodayRow ? "bg-amber-50/60" : ""}`}>
+                                      <td className={`px-2 py-1.5 text-left font-semibold whitespace-nowrap ${isTodayRow ? "text-amber-800" : "text-zinc-700"}`}>
+                                        W{idx + 1} · {shortDateWithDow(r.date)}{isTodayRow && <span className="ml-1 text-amber-700 text-[11px]">●</span>}
+                                      </td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-brand-deep">{fmtNum(r.totalSale)}</td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums text-emerald-700">{fmtNum(r.totalMargin)}</td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums text-amber-700">{rate.toFixed(1)}%</td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums text-sky-700">{r.totalCust.toLocaleString()}</td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums text-zinc-700">{fmtNum(avg)}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </>
+            );
+          })()
+        ) : chartAxis === "day" ? (
+          // 2026-10-06 · 사용자 지시 · 일별 추이 축 · 월별 아코디언 · 안에 일별 데이터 테이블
+          //   · displayDateData 를 YYYY-MM 그룹핑 · 최신 월 맨 위
+          //   · 각 월 header · 그 월 매출총액/매출이익/마진율/고객수 요약 KPI 4
+          //   · 펼침 시 일별 테이블 (날짜 · 매출 · 매출이익 · 마진율 · 고객수 · 객단가)
+          (() => {
+            interface DayData { date: string; totalSale: number; totalMargin: number; totalCust: number }
+            // 2026-10-06 · 사용자 지시 · 월별 아코디언 데이터도 주말 포함/주말만 체크 반영
+            const isWeekendDate = (dateStr: string): boolean => {
+              const [y, m, dd] = dateStr.split("-").map(Number);
+              if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(dd)) return false;
+              const dow = new Date(y, m - 1, dd).getDay();
+              return dow === 0 || dow === 6;
+            };
+            const dayFiltered = weekendOnly
+              ? displayDateData.filter((d) => isWeekendDate(d.date))
+              : (includeWeekend ? displayDateData : displayDateData.filter((d) => !isWeekendDate(d.date)));
+            const monthMap = new Map<string, DayData[]>();
+            for (const d of dayFiltered) {
+              const monthKey = d.date.slice(0, 7);
+              if (!monthMap.has(monthKey)) monthMap.set(monthKey, []);
+              monthMap.get(monthKey)!.push({ date: d.date, totalSale: d.totalSale, totalMargin: d.totalMargin, totalCust: d.totalCust });
+            }
+            const months = [...monthMap.keys()].sort().reverse();
+            const todayMonth = today.slice(0, 7);
+            return (
+              <>
+                {months.map((monthKey) => {
+                  const days = monthMap.get(monthKey)!.slice().sort((a, b) => a.date.localeCompare(b.date));
+                  const mSale = days.reduce((s, d) => s + d.totalSale, 0);
+                  const mMargin = days.reduce((s, d) => s + d.totalMargin, 0);
+                  const mCust = days.reduce((s, d) => s + d.totalCust, 0);
+                  const mRate = mSale > 0 ? (mMargin / mSale) * 100 : 0;
+                  const isCurMonth = monthKey === todayMonth;
+                  const isMExp = expandedMonths.has(monthKey);
+                  const [my, mm] = monthKey.split("-");
+                  const monthLabel = `${my}년 ${Number(mm)}월`;
+                  return (
+                    <div key={monthKey} className={`bg-white border rounded-lg overflow-hidden ${isCurMonth ? "border-amber-300" : "border-zinc-200"}`}>
+                      <button
+                        type="button"
+                        onClick={() => toggleMonth(monthKey)}
+                        className={`w-full px-3 py-2 md:py-2.5 transition ${isCurMonth ? "bg-amber-50 hover:bg-amber-100" : "bg-zinc-50 hover:bg-zinc-100"}`}
+                        aria-expanded={isMExp}
+                      >
+                        <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                          <div className="flex items-center gap-1.5 shrink-0 min-w-[90px] md:min-w-[112px]">
+                            <span className="text-[15px] md:text-[16px] font-bold text-zinc-800 whitespace-nowrap">{monthLabel}</span>
+                            {isCurMonth && <span className="text-amber-700 text-[12px] md:text-[13px] font-bold whitespace-nowrap">● 이번달</span>}
+                          </div>
+                          <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-2 min-w-0">
+                            {[
+                              { label: "매출총액", value: fmtWon(mSale), accent: "text-brand-deep", bar: "bg-brand-deep" },
+                              { label: "매출이익", value: fmtWon(mMargin), accent: "text-emerald-700", bar: "bg-emerald-500" },
+                              { label: "마진율", value: `${mRate.toFixed(1)}%`, accent: "text-amber-700", bar: "bg-amber-500" },
+                              { label: "고객수", value: `${mCust.toLocaleString()}명`, accent: "text-sky-700", bar: "bg-sky-500" },
+                            ].map((k) => (
+                              <div key={k.label} className="relative pl-2 min-w-0 text-left">
+                                <span className={`absolute left-0 top-0.5 bottom-0.5 w-[2px] ${k.bar} rounded-r-full`} aria-hidden />
+                                <div className="text-[11px] md:text-[12px] text-zinc-500 font-semibold leading-tight truncate">{k.label}</div>
+                                <div className={`text-[13px] md:text-[15px] font-bold tabular-nums leading-tight truncate ${k.accent}`}>{k.value}</div>
+                              </div>
+                            ))}
+                          </div>
+                          <span className="shrink-0 text-zinc-600 text-[14px] font-bold w-4 text-center">{isMExp ? "▲" : "▼"}</span>
+                        </div>
+                      </button>
+                      {isMExp && (
+                        <div className="border-t border-zinc-200">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-[14px] border-collapse">
+                              <thead>
+                                <tr className="bg-zinc-50 border-b border-zinc-200 text-[12px]">
+                                  <th className="text-left px-2 py-1.5 font-semibold text-zinc-600">날짜</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">매출총액</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">매출이익</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">마진율</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">고객수</th>
+                                  <th className="text-right px-2 py-1.5 font-semibold text-zinc-600">객단가</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {days.slice().reverse().map((r) => {
+                                  const rate = r.totalSale > 0 ? (r.totalMargin / r.totalSale) * 100 : 0;
+                                  const avg = r.totalCust > 0 ? Math.round(r.totalSale / r.totalCust) : 0;
+                                  const isTodayRow = r.date === today;
+                                  return (
+                                    <tr key={r.date} className={`border-b border-zinc-100 ${isTodayRow ? "bg-amber-50/60" : ""}`}>
+                                      <td className={`px-2 py-1.5 text-left font-semibold whitespace-nowrap ${isTodayRow ? "text-amber-800" : "text-zinc-700"}`}>
+                                        {shortDateWithDow(r.date)}{isTodayRow && <span className="ml-1 text-amber-700 text-[11px]">●</span>}
+                                      </td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-brand-deep">{fmtNum(r.totalSale)}</td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums text-emerald-700">{fmtNum(r.totalMargin)}</td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums text-amber-700">{rate.toFixed(1)}%</td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums text-sky-700">{r.totalCust.toLocaleString()}</td>
+                                      <td className="px-2 py-1.5 text-right tabular-nums text-zinc-700">{fmtNum(avg)}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </>
+            );
+          })()
         ) : (
-          displayDateData.map((d) => {
+          (() => {
+            // 2026-10-06 · 사용자 지시 · hour 축 아코디언 · 주말 포함/주말만 체크 반영
+            const isWknd = (dateStr: string) => {
+              const [y, m, dd] = dateStr.split("-").map(Number);
+              if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(dd)) return false;
+              const dow = new Date(y, m - 1, dd).getDay();
+              return dow === 0 || dow === 6;
+            };
+            if (weekendOnly) return displayDateData.filter((d) => isWknd(d.date));
+            if (!includeWeekend) return displayDateData.filter((d) => !isWknd(d.date));
+            return displayDateData;
+          })().map((d) => {
             const isExp = expandedDates.has(d.date);
             const isToday = d.date === today;
             const dayRows = [...d.rowMap.values()].sort((a, b) => Number(a.SaleTime) - Number(b.SaleTime));
@@ -726,23 +1325,36 @@ const HourlyReportTab: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => toggleDate(d.date)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 transition ${isToday ? "bg-amber-50 hover:bg-amber-100" : "bg-zinc-50 hover:bg-zinc-100"}`}
+                  className={`w-full px-3 py-2 md:py-2.5 transition ${isToday ? "bg-amber-50 hover:bg-amber-100" : "bg-zinc-50 hover:bg-zinc-100"}`}
                   aria-expanded={isExp}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[16px] font-semibold text-zinc-800 whitespace-nowrap">{d.date}</span>
-                    {isToday && <span className="text-amber-700 text-[13px] font-bold whitespace-nowrap">● 오늘</span>}
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="text-right text-[13px] text-zinc-600">
-                      <div className="font-semibold text-zinc-800 tabular-nums">{fmtWon(d.totalSale)}</div>
-                      <div className="tabular-nums">{d.totalCust.toLocaleString()}명 · {dMarginRate.toFixed(1)}%</div>
+                  {/* 2026-10-06 · 사용자 지시 · 접기 바에 KPI 4개 (매출총액/매출이익/마진율/고객수) 노출
+                      · 깔끔 텍스트 + 미묘 컬러 포인트 · PC 한 줄 · 모바일 2 줄 (상단 날짜+화살표 · 하단 KPI 2x2) */}
+                  <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                    <div className="flex items-center gap-1.5 shrink-0 min-w-[90px] md:min-w-[112px]">
+                      <span className="text-[15px] md:text-[16px] font-bold text-zinc-800 whitespace-nowrap">{d.date}</span>
+                      {isToday && <span className="text-amber-700 text-[12px] md:text-[13px] font-bold whitespace-nowrap">● 오늘</span>}
                     </div>
-                    <span className="text-zinc-600 text-[14px] font-bold w-4 text-center">{isExp ? "▲" : "▼"}</span>
+                    <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-1.5 md:gap-2 min-w-0">
+                      {[
+                        { label: "매출총액", value: fmtWon(d.totalSale), accent: "text-brand-deep", bar: "bg-brand-deep" },
+                        { label: "매출이익", value: fmtWon(d.totalMargin), accent: "text-emerald-700", bar: "bg-emerald-500" },
+                        { label: "마진율", value: `${dMarginRate.toFixed(1)}%`, accent: "text-amber-700", bar: "bg-amber-500" },
+                        { label: "고객수", value: `${d.totalCust.toLocaleString()}명`, accent: "text-sky-700", bar: "bg-sky-500" },
+                      ].map((k) => (
+                        <div key={k.label} className="relative pl-2 min-w-0 text-left">
+                          <span className={`absolute left-0 top-0.5 bottom-0.5 w-[2px] ${k.bar} rounded-r-full`} aria-hidden />
+                          <div className="text-[11px] md:text-[12px] text-zinc-500 font-semibold leading-tight truncate">{k.label}</div>
+                          <div className={`text-[13px] md:text-[15px] font-bold tabular-nums leading-tight truncate ${k.accent}`}>{k.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <span className="shrink-0 text-zinc-600 text-[14px] font-bold w-4 text-center">{isExp ? "▲" : "▼"}</span>
                   </div>
                 </button>
                 {isExp && (
-                  <div className="border-t border-zinc-200 overflow-x-auto">
+                  <div className="border-t border-zinc-200">
+                    <div className="overflow-x-auto">
                     <table className="w-full text-[14px] border-collapse">
                       <thead>
                         <tr className="bg-zinc-50 border-b border-zinc-200 text-[12px]">
@@ -774,6 +1386,7 @@ const HourlyReportTab: React.FC = () => {
                         })}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )}
               </div>
@@ -886,6 +1499,28 @@ const MonthlyReportTab: React.FC = () => {
         }
         setYearOverview(map);
       } catch { /* noop · UI 에서 조회중 표시 */ }
+    })();
+    return () => { cancelled = true; };
+  }, [year]);
+
+  // 2026-10-06 · 사용자 지시 · 공식 공휴일 표시 (data.go.kr 특일정보 · /api/holidays?year)
+  //   · 서버 라우트 server/routes/settings/holidays.ts · 24h in-memory cache
+  //   · year 변경 시 1회 조회 · Map<YYYY-MM-DD, name> lookup
+  interface HolidayApiRow { date: string; name: string; is_holiday: boolean }
+  interface HolidayApiResponse { year: number; holidays?: HolidayApiRow[] }
+  const [holidayMap, setHolidayMap] = useState<Map<string, string>>(new Map());
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api.get<HolidayApiResponse>(`/api/holidays?year=${year}`);
+        if (cancelled) return;
+        const m = new Map<string, string>();
+        for (const h of r.data.holidays ?? []) {
+          if (h.is_holiday && h.date && h.name) m.set(h.date, h.name);
+        }
+        setHolidayMap(m);
+      } catch { /* noop · 공휴일 조회 실패시 일반 날짜로 표시 */ }
     })();
     return () => { cancelled = true; };
   }, [year]);
@@ -1207,18 +1842,25 @@ const MonthlyReportTab: React.FC = () => {
               }
               const isToday = cell.dateStr === todayStr;
               const hasData = !!(cell.buy || cell.sale);
+              // 2026-10-06 · 사용자 지시 · 공식 공휴일 (data.go.kr) · 빨간 날짜 + 공휴일명 라벨
+              const holidayName = holidayMap.get(cell.dateStr);
+              const isHoliday = !!holidayName;
+              const dayColor = isHoliday || isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-700";
               return (
-                <div key={ci} className={`min-h-[90px] md:min-h-[140px] border-r border-zinc-100 last:border-r-0 min-w-0 flex flex-col ${isToday ? "bg-amber-50/60" : "bg-white"}`}>
+                <div key={ci} className={`min-h-[90px] md:min-h-[140px] border-r border-zinc-100 last:border-r-0 min-w-0 flex flex-col ${isToday ? "bg-amber-50/60" : isHoliday ? "bg-rose-50/40" : "bg-white"}`}>
                   <button
                     type="button"
                     onClick={() => hasData && setModalDay(cell)}
                     disabled={!hasData}
                     className={`flex-1 w-full text-left p-1 md:p-2 min-w-0 transition ${hasData ? "cursor-pointer hover:bg-brand-tint/30" : "cursor-default"}`}
-                    title={hasData ? `${cell.dateStr} 상세 보기` : undefined}
+                    title={hasData ? `${cell.dateStr} 상세 보기${isHoliday ? ` · ${holidayName}` : ""}` : (isHoliday ? holidayName : undefined)}
                   >
-                    <div className={`text-[14px] md:text-[16px] font-bold ${isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-700"} ${isToday ? "text-amber-700" : ""} leading-tight`}>
+                    <div className={`text-[14px] md:text-[16px] font-bold ${dayColor} ${isToday ? "text-amber-700" : ""} leading-tight`}>
                       {cell.day}{isToday && <span className="ml-1 text-[12px] md:text-[14px] text-amber-700">● 오늘</span>}
                     </div>
+                    {isHoliday && (
+                      <div className="text-[11px] md:text-[12px] text-rose-600 font-semibold leading-tight truncate" title={holidayName}>{holidayName}</div>
+                    )}
                     <div className="mt-1 space-y-1 text-[12px] md:text-[14px]">
                       {cell.sale && (
                         <div className="flex flex-col min-w-0">
