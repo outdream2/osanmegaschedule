@@ -239,27 +239,20 @@ export const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows 
   );
 };
 
-// ── 차트 3 · 상품별 매입 Top 10 비중 ─────────────────────────────────────
+// ── 차트 3 · 카테고리별 매입 Top 10 비중 · 2026-10-06 · 사용자 지시 · 상품명 → 카테고리 ──
 export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
   const { data, total } = useMemo(() => {
-    // 2026-10-06 · 사용자 지시 · group key = canonical product_code · display = product_name
-    const map = new Map<string, { name: string; value: number }>();
+    // 카테고리 group key = classifyProduct(product_name) · chart-helpers 분류 규칙 재사용
+    const map = new Map<string, number>();
     let t = 0;
     for (const r of rows) {
-      const code = String(r.product_code ?? "").trim();
-      if (!code) continue; // identity 없음 → skip
-      const pname = String(r.product_name ?? "").trim();
-      const existing = map.get(code);
-      if (!existing) map.set(code, { name: pname || "-", value: r.amount });
-      else {
-        existing.value += r.amount;
-        if ((existing.name === "-" || !existing.name) && pname) existing.name = pname;
-      }
+      const cat = classifyProduct(String(r.product_name ?? ""));
+      map.set(cat, (map.get(cat) ?? 0) + r.amount);
       t += r.amount;
     }
-    const sorted = Array.from(map.values()).sort((a, b) => b.value - a.value);
-    const top10 = sorted.slice(0, 10).map(x => [x.name, x.value] as [string, number]);
-    const othersSum = sorted.slice(10).reduce((s, x) => s + x.value, 0);
+    const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+    const top10 = sorted.slice(0, 10);
+    const othersSum = sorted.slice(10).reduce((s, [, v]) => s + v, 0);
     const items = othersSum > 0
       ? [...top10, ["기타", othersSum] as [string, number]]
       : top10;
@@ -284,7 +277,7 @@ export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ r
   return (
     <div className={`${CARD_BASE} p-4 flex flex-col gap-3`}>
       <div className="text-[15px] font-bold text-zinc-600 uppercase tracking-wider">
-        상품별 매입 Top 10
+        카테고리별 매입 Top 10
       </div>
       <div className="flex items-center gap-4">
         <div className="w-[120px] h-[120px] shrink-0">
