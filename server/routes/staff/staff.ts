@@ -1,40 +1,60 @@
 // 2026-08-16 · asyncHandler + HttpError 프레임워크 적용
+// 2026-10-06 · 방문예약 담당자 FK 전환 (#VisitorReservationEmployeeAssignment)
+//   · resigned_at 컬럼 bug fix · 실제 컬럼 "retireDate" 로 교정
+//   · 하드코드 RESERVATION_RANKS/env STAFF_IDS 제거 · settings.visitorReservation.assigneeEmployeeIds 로 전환
+//   · 공통 OFF_TYPES helper (shared/schedule/offTypes) · 중복 배열 제거
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+import { isOffType } from "../../../src/shared/schedule/offTypes";
 
 const router = Router();
 
-// 2026-08-26 · 사용자 지시 · 예약 대상 · 부장 제외 · 대표 · 이사만
-//   · env STAFF_IDS 없으면 · employees 테이블에서 rank IN ('대표','이사') 동적 조회
-const RESERVATION_RANKS = ["대표", "이사"] as const;
-const OFF_TYPES = ["휴무", "월차", "지정휴무", "오전반차", "오후반차"];
+const SETTINGS_KEY = "all_settings";
 
-/** 예약 대상 스탭 목록 · env STAFF_IDS 우선 · 없으면 DB 조회 · rank 로 매칭 · 이름은 실제 employees.name (강남성/강남규) */
-async function loadReservationStaffList(): Promise<Array<{ id: number; name: string; rank: string }>> {
-  const envRaw = process.env.STAFF_IDS;
-  if (envRaw) {
-    const parsed = envRaw.split(",").map(e => {
-      const [id, rank] = e.split(":");
-      return { id: parseInt((id ?? "").trim()), name: (rank ?? "").trim(), rank: (rank ?? "").trim() };
-    }).filter(s => !isNaN(s.id) && s.id > 0 && RESERVATION_RANKS.includes(s.rank as any));
-    if (parsed.length > 0) return parsed;
-  }
-  // DB fallback · rank 로 조회 · 이름 정렬 · 최대 각 rank 1명 (대표 1명 · 이사 1명 우선)
+/** 재직 중 담당자 로드 · settings.visitorReservation.assigneeEmployeeIds 기준 · 퇴직자 (retireDate IS NOT NULL) 제외 · 담당자 ID 순서 보존 */
+async function loadReservationStaffList(): Promise<Array<{ id: number; name: string; rank: string | null }>> {
+  // 1. settings 조회
+  const { data: settingsRow } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("key", SETTINGS_KEY)
+    .maybeSingle();
+  const value = (settingsRow?.value ?? {}) as Record<string, unknown>;
+  const vrSetting = (value.visitorReservation ?? {}) as { assigneeEmployeeIds?: unknown };
+  const idsRaw = Array.isArray(vrSetting.assigneeEmployeeIds) ? vrSetting.assigneeEmployeeIds : [];
+  const ids: number[] = (idsRaw as unknown[])
+    .map(v => Number(v))
+    .filter(v => Number.isInteger(v) && v > 0);
+  if (ids.length === 0) return [];
+
+  // 2. employees 조회 · retireDate IS NULL (재직자) · camelCase 컬럼 (실제 DB)
   const { data, error } = await supabase
     .from("employees")
-    .select("id, name, rank, resigned_at")
-    .in("rank", RESERVATION_RANKS as unknown as string[])
-    .is("resigned_at", null);
-  if (error) return [];
-  const rows = (data ?? []) as Array<{ id: number; name: string; rank: string }>;
-  // 순서 · 대표 먼저 · 이사 다음
-  return rows.sort((a, b) => {
-    const ai = RESERVATION_RANKS.indexOf(a.rank as any);
-    const bi = RESERVATION_RANKS.indexOf(b.rank as any);
-    return ai - bi;
-  });
+    .select('id, name, rank, "retireDate"')
+    .in("id", ids)
+    .is("retireDate", null);
+  if (error) {
+    // 2026-10-06 · retireDate 컬럼 없을 수도 (스키마 마이그 안 된 환경) → 다시 조회 (filter 제거)
+    if (/column|does not exist/i.test(error.message)) {
+      const { data: data2, error: e2 } = await supabase
+        .from("employees")
+        .select("id, name, rank")
+        .in("id", ids);
+      if (e2) return [];
+      const rows2 = (data2 ?? []) as Array<{ id: number; name: string; rank: string | null }>;
+      return ids
+        .map(id => rows2.find(r => r.id === id))
+        .filter((r): r is { id: number; name: string; rank: string | null } => Boolean(r));
+    }
+    return [];
+  }
+  const rows = (data ?? []) as Array<{ id: number; name: string; rank: string | null }>;
+  // 설정 순서 유지
+  return ids
+    .map(id => rows.find(r => r.id === id))
+    .filter((r): r is { id: number; name: string; rank: string | null } => Boolean(r));
 }
 
 router.get("/api/staff-availability", asyncHandler(async (req, res) => {
@@ -44,7 +64,7 @@ router.get("/api/staff-availability", asyncHandler(async (req, res) => {
   if (staffList.length === 0) { res.json([]); return; }
   const { data, error } = await supabase
     .from("schedules")
-    .select("employeeId, type")
+    .select("employeeId, type, workingHours")
     .eq("date", date)
     .in("employeeId", staffList.map(s => s.id));
   if (error) throw new HttpError(500, error.message);
@@ -53,10 +73,14 @@ router.get("/api/staff-availability", asyncHandler(async (req, res) => {
     const scheduleType: string | null = row?.type ?? null;
     return {
       employeeId: id,
-      name: rank,          // 클라이언트 컬럼 헤더용 · "대표" / "이사"
-      displayName: name,   // 실제 사람 이름 · 강남성 · 강남규
+      // 2026-10-06 · 하드코드 rank(대표/이사) 제거 · 실제 이름 노출
+      //   · 기존 UI 호환 · name/displayName 두 필드 모두 실제 이름으로 공급
+      name,
+      displayName: name,
+      rank: rank ?? null,
       scheduleType,
-      isOff: scheduleType ? OFF_TYPES.includes(scheduleType) : false,
+      workingHours: (row as any)?.workingHours ?? null,
+      isOff: isOffType(scheduleType),
     };
   });
   res.json(result);
@@ -77,13 +101,15 @@ router.get("/api/staff-monthly", asyncHandler(async (req, res) => {
   if (error) throw new HttpError(500, error.message);
   const result: Record<string, string[]> = {};
   for (const row of (data ?? [])) {
-    if (!OFF_TYPES.includes(row.type)) continue;
+    if (!isOffType(row.type)) continue;
     const staff = staffList.find(s => s.id === row.employeeId);
     if (!staff) continue;
     if (!result[row.date]) result[row.date] = [];
-    result[row.date].push(staff.rank); // 대표 / 이사
+    // 2026-10-06 · 하드코드 rank(대표/이사) 제거 · 실제 이름 저장
+    result[row.date].push(staff.name);
   }
   res.json(result);
 }));
 
 export default router;
+export { loadReservationStaffList };
