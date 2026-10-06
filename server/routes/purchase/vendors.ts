@@ -3,6 +3,7 @@ import { Router } from "express";
 import express from "express";
 import XLSX from "xlsx";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { supabase } from "../../../src/supabase/client";
 import { queryPurchaseDetails } from "../../utils/purchaseDetailsQuery";
 import { authorize } from "../../middleware/requireAuth";
@@ -11,13 +12,31 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { validateBody } from "../../middleware/zodValidate";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
 import type { VendorsListResponse } from "../../../src/shared/dtos/vendors";
-import { CreateVendorSchema, UpdateVendorSchema } from "../../../src/shared/schemas/vendors";
+import { CreateVendorSchema, UpdateVendorSchema, VENDOR_SELF_ALLOWED_FIELDS } from "../../../src/shared/schemas/vendors";
 import { z } from "zod";
 // 2026-09-03 · 사용자 지시 · 거래처 승인 요청 시 · 관리자 알림 발송
 import { notificationsService } from "../../services/notificationsService";
 import logger from "../../lib/logger";
 
 const router = Router();
+
+// 2026-10-06 · PHASE 1-B · 신규 vendor 임시 비밀번호 (16자 영숫자) · 1회 평문 반환
+//   · 공유 '1234' default 제거 (migration bcrypt('1234') 는 schema · 수정 금지)
+//   · 신규 vendor 생성 시 · 매번 다른 random 비밀번호 생성 → bcrypt hash 저장
+//   · 평문은 응답에만 포함 (DB 저장 X · 로그 X)
+//   · 기존 공급사 (이미 '1234') 는 유지 · 사용자 bulk reset 금지 지시
+const PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"; // 혼동 문자 (0/O · 1/l/I) 제외
+function generateTemporaryVendorPassword(length = 16): string {
+  const bytes = crypto.randomBytes(length);
+  let out = "";
+  for (let i = 0; i < length; i++) {
+    out += PASSWORD_ALPHABET[bytes[i] % PASSWORD_ALPHABET.length];
+  }
+  return out;
+}
+async function hashVendorPassword(plain: string): Promise<string> {
+  return bcrypt.hash(plain, 12);
+}
 
 // 2026-09-14 · 사용자 대원칙 · 실시간 정확성 · vendorCache (잔고맵) 제거
 //   · 이전 · withBalances=1 · 5min in-memory 캐시 · 매입 후 잔고 stale 위험
@@ -134,12 +153,23 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
     // 2026-09-02 · fix · 확장 필드 포함 (team_leader · emergency_contact · order_method · special_notes · approval_status 등)
     //   · 저장 후 재조회 시 · 최신 값 반환
     //   · password_hash 는 절대 select 하지 않음 (보안)
+    // 2026-10-06 · PHASE 8 · ct_code (ERP canonical) 추가 · 관리자 UI read-only 노출
+    //   · 컬럼 없는 DB 는 아래 fallback 에서 ct_code 제거
     const r1 = await supabase
       .from("vendors")
-      .select("id, company_name, contact_name, phone, email, category, note, business_number, vat_included, team_leader_name, team_leader_phone, emergency_contact, order_method, region, invoice_method, order_status, special_notes, approval_status, approved_at, approval_requested_at, approved_by, manager_phone, created_at")
+      .select("id, company_name, contact_name, phone, email, category, note, business_number, vat_included, team_leader_name, team_leader_phone, emergency_contact, order_method, region, invoice_method, order_status, special_notes, approval_status, approved_at, approval_requested_at, approved_by, manager_phone, ct_code, created_at")
       .order("company_name");
     if (!r1.error) data = r1.data ?? [];
     else firstErr = r1.error.message;
+  }
+  if (!data) {
+    // ct_code 컬럼 없음 fallback · 그 외 확장 필드는 유지
+    const r1NoCt = await supabase
+      .from("vendors")
+      .select("id, company_name, contact_name, phone, email, category, note, business_number, vat_included, team_leader_name, team_leader_phone, emergency_contact, order_method, region, invoice_method, order_status, special_notes, approval_status, approved_at, approval_requested_at, approved_by, manager_phone, created_at")
+      .order("company_name");
+    if (!r1NoCt.error) data = (r1NoCt.data ?? []).map((v: Record<string, unknown>) => ({ ...v, ct_code: null }));
+    else firstErr = `${firstErr} | ${r1NoCt.error.message}`;
   }
   if (!data) {
     // 2026-09-02 · fix · email 컬럼 부재 DB 대응 · email 제외 후 확장 필드 유지
@@ -148,7 +178,7 @@ router.get("/api/vendors", asyncHandler(async (req, res) => {
       .from("vendors")
       .select("id, company_name, contact_name, phone, category, note, business_number, vat_included, team_leader_name, team_leader_phone, emergency_contact, order_method, region, invoice_method, order_status, special_notes, approval_status, approved_at, approval_requested_at, approved_by, manager_phone, created_at")
       .order("company_name");
-    if (!r1NoEmail.error) data = (r1NoEmail.data ?? []).map((v: any) => ({ ...v, email: null }));
+    if (!r1NoEmail.error) data = (r1NoEmail.data ?? []).map((v: Record<string, unknown>) => ({ ...v, email: null, ct_code: null }));
     else firstErr = `${firstErr} | ${r1NoEmail.error.message}`;
   }
   if (!data) {
@@ -282,6 +312,12 @@ router.post("/api/vendors", authorize(5), validateBody(CreateVendorSchema), asyn
     const { data: phoneDup } = await supabase.from("vendors").select("id, company_name").eq("phone", cleanPhone).maybeSingle();
     if (phoneDup) throw new HttpError(409, `담당자 핸드폰 중복 · 로그인 ID 로 사용됨: ${phoneDup.company_name} (#${phoneDup.id})`);
   }
+  // 2026-10-06 · PHASE 1-B · 공유 '1234' default 제거 · 신규 vendor 임시 비밀번호 (16자) 생성
+  //   · bcrypt hash 저장 · 평문은 응답에만 1회 (관리자 SMS/전달용)
+  //   · password_hash 컬럼 미존재 DB 대응 · insert 재시도 (hash 제외)
+  const tempPassword = generateTemporaryVendorPassword(16);
+  const tempPasswordHash = await hashVendorPassword(tempPassword);
+
   const baseRow = {
     company_name: company_name.trim(),
     contact_name: contact_name ?? null,
@@ -292,18 +328,47 @@ router.post("/api/vendors", authorize(5), validateBody(CreateVendorSchema), asyn
   };
   // 2026-07-22: email 컬럼 없는 DB 호환 · 첫 시도에 email 포함 → 실패 시 email 없이 재시도
   const r1 = await supabase.from("vendors")
-    .insert({ ...baseRow, email: email ?? null })
+    .insert({ ...baseRow, email: email ?? null, password_hash: tempPasswordHash })
     .select("id, company_name, contact_name, phone, email, category, note, business_number, created_at")
     .single();
-  if (!r1.error) { invalidateVendorCache(); return res.status(201).json(r1.data); }
+  if (!r1.error) { invalidateVendorCache(); return res.status(201).json({ ...r1.data, temporaryPassword: tempPassword }); }
+  // password_hash 컬럼 없음 fallback (migration 미실행 DB)
+  if (/password_hash/i.test(r1.error.message)) {
+    const r1b = await supabase.from("vendors")
+      .insert({ ...baseRow, email: email ?? null })
+      .select("id, company_name, contact_name, phone, email, category, note, business_number, created_at")
+      .single();
+    if (!r1b.error) { invalidateVendorCache(); return res.status(201).json(r1b.data); }
+    if (/email/i.test(r1b.error.message)) {
+      const r1c = await supabase.from("vendors")
+        .insert(baseRow)
+        .select("id, company_name, contact_name, phone, category, note, business_number, created_at")
+        .single();
+      if (r1c.error) throw new HttpError(500, `vendors 등록 실패: ${r1c.error.message}`);
+      invalidateVendorCache();
+      return res.status(201).json({ ...r1c.data, email: null });
+    }
+    throw new HttpError(500, r1b.error.message);
+  }
   if (/email/i.test(r1.error.message)) {
     const r2 = await supabase.from("vendors")
-      .insert(baseRow)
+      .insert({ ...baseRow, password_hash: tempPasswordHash })
       .select("id, company_name, contact_name, phone, category, note, business_number, created_at")
       .single();
-    if (r2.error) throw new HttpError(500, `vendors 등록 실패: ${r2.error.message}`);
+    if (r2.error) {
+      if (/password_hash/i.test(r2.error.message)) {
+        const r2b = await supabase.from("vendors")
+          .insert(baseRow)
+          .select("id, company_name, contact_name, phone, category, note, business_number, created_at")
+          .single();
+        if (r2b.error) throw new HttpError(500, `vendors 등록 실패: ${r2b.error.message}`);
+        invalidateVendorCache();
+        return res.status(201).json({ ...r2b.data, email: null });
+      }
+      throw new HttpError(500, `vendors 등록 실패: ${r2.error.message}`);
+    }
     invalidateVendorCache();
-    return res.status(201).json({ ...r2.data, email: null });
+    return res.status(201).json({ ...r2.data, email: null, temporaryPassword: tempPassword });
   }
   throw new HttpError(500, r1.error.message);
 }));
@@ -311,6 +376,12 @@ router.post("/api/vendors", authorize(5), validateBody(CreateVendorSchema), asyn
 // 거래처 수정 · 관리자(lv5+) 또는 거래처 본인 (session.sub === id)
 // 2026-09-02 · 사용자 지시 · vendor 본인은 자기 정보 수정 허용 (승인 요청 위한 5필드 입력)
 //   · vendor session · approval_status · company_name · category · vat_included 제외 (관리자만)
+// 2026-10-06 · PHASE 1-A · vendor-self PATCH mass assignment 방어 (사용자 지시)
+//   · ERP canonical (ct_code · corp_name_view · corp_biz_no · scate_name · remark · 운영 7개) 금지
+//   · legacy mirror (company_name · business_number · category · note) 금지
+//   · approval_status · approved_* · password_hash · created_at 등 승인/보안 필드 금지
+//   · 운영 프로필 (전화·이메일·주소·주문방식·발주 특이사항·팀장·긴급연락처) 만 허용
+//   · 관리자 (level ≥ 5) 는 기존 UpdateVendorSchema 그대로 (ERP 포함 모든 field 변경 가능)
 router.patch("/api/vendors/:id", authorize(0), validateBody(UpdateVendorSchema), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
@@ -318,12 +389,43 @@ router.patch("/api/vendors/:id", authorize(0), validateBody(UpdateVendorSchema),
   const isVendorSelf = authUser?.role === "vendor" && Number(authUser.sub) === id;
   const isManagerPlus = (authUser?.level ?? 0) >= 5;
   if (!isVendorSelf && !isManagerPlus) throw forbidden("본인 정보만 수정 가능합니다");
-  const {
-    company_name, contact_name, phone, email, category, note, business_number,
-    vat_included, team_leader_name, team_leader_phone, emergency_contact,
-    order_method, region, invoice_method, order_status, special_notes,
-    approval_status,
-  } = req.body ?? {};
+
+  // 2026-10-06 · vendor-self 요청인 경우 · body 를 whitelist 로 필터
+  //   · 허용 field 외 전부 drop (silent · 혹은 사용자 명시 비허용 field 전송 시 403 재검토)
+  //   · 관리자(level ≥ 5) · raw body 유지 (ERP canonical 변경 권한 있음)
+  const rawBody = (req.body ?? {}) as Record<string, unknown>;
+  let bodyForUpdate: Record<string, unknown> = rawBody;
+  if (isVendorSelf && !isManagerPlus) {
+    const filtered: Record<string, unknown> = {};
+    for (const k of VENDOR_SELF_ALLOWED_FIELDS) {
+      if (k in rawBody) filtered[k] = rawBody[k as string];
+    }
+    bodyForUpdate = filtered;
+    const rejectedKeys = Object.keys(rawBody).filter(k => !(VENDOR_SELF_ALLOWED_FIELDS as readonly string[]).includes(k));
+    if (rejectedKeys.length > 0) {
+      logger.warn(`[VENDOR PATCH · vendor-self denied fields] id=${id} rejected=[${rejectedKeys.join(",")}]`);
+    }
+  }
+
+  // 2026-10-06 · bodyForUpdate 안의 field 추출 (타입 unknown · 각 field 가드 아래에서 처리)
+  const bu = bodyForUpdate;
+  const company_name     = bu.company_name     as string | undefined;
+  const contact_name     = bu.contact_name     as string | null | undefined;
+  const phone            = bu.phone            as string | null | undefined;
+  const email            = bu.email            as string | null | undefined;
+  const category         = bu.category         as string | null | undefined;
+  const note             = bu.note             as string | null | undefined;
+  const business_number  = bu.business_number  as string | null | undefined;
+  const vat_included     = bu.vat_included     as boolean | null | undefined;
+  const team_leader_name  = bu.team_leader_name  as string | null | undefined;
+  const team_leader_phone = bu.team_leader_phone as string | null | undefined;
+  const emergency_contact = bu.emergency_contact as string | null | undefined;
+  const order_method     = bu.order_method     as string | null | undefined;
+  const region           = bu.region           as string | null | undefined;
+  const invoice_method   = bu.invoice_method   as string | null | undefined;
+  const order_status     = bu.order_status     as string | null | undefined;
+  const special_notes    = bu.special_notes    as string | null | undefined;
+  const approval_status  = bu.approval_status  as string | null | undefined;
   // vendor 본인 · 관리자 전용 필드 요청 시 무시 (silent · 저장은 진행)
   const vendorAllowed = isVendorSelf && !isManagerPlus;
   const updates: Record<string, any> = {};
@@ -444,9 +546,68 @@ router.patch("/api/vendors/:id", authorize(0), validateBody(UpdateVendorSchema),
 }));
 
 // 거래처 삭제 (관리자)
+// 2026-10-06 · PHASE 1-C · 참조 레코드 보호 (사용자 지시)
+//   · 삭제 전 · 발주/매입/결제/반품/OCR/재고이력 테이블의 supplier TEXT 참조 체크
+//   · 참조 하나라도 발견 시 · 409 Conflict · 삭제 금지
+//   · 매칭 축: vendors.company_name ↔ transaction.supplier (레거시 TEXT)
+//   · soft-delete 추가 금지 (사용자 지시 · schema change X)
 router.delete("/api/vendors/:id", authorize(9), asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) throw badRequest("invalid id");
+  // 1) vendor 조회 (company_name 필요 · supplier TEXT 비교)
+  const { data: vendor, error: fetchErr } = await supabase
+    .from("vendors")
+    .select("id, company_name")
+    .eq("id", id)
+    .maybeSingle();
+  if (fetchErr) throw new HttpError(500, fetchErr.message);
+  if (!vendor) throw new HttpError(404, `공급사 없음: id=${id}`);
+  const supplierName = String(vendor.company_name ?? "").trim();
+
+  // 2) 참조 테이블 전수 체크 (하나라도 발견 시 즉시 409)
+  //    테이블/컬럼: products.supplier · purchase_details.supplier_name
+  //    · order_requests.supplier · supplier_payments.supplier_name
+  //    · return_requests.supplier · ocr_confirmed_items.supplier
+  //    · stock_history.supplier
+  if (supplierName) {
+    type Ref = { table: string; column: string };
+    const refs: Ref[] = [
+      { table: "products",             column: "supplier" },
+      { table: "purchase_details",     column: "supplier_name" },
+      { table: "order_requests",       column: "supplier" },
+      { table: "supplier_payments",    column: "supplier_name" },
+      { table: "return_requests",      column: "supplier" },
+      { table: "ocr_confirmed_items",  column: "supplier" },
+      { table: "stock_history",        column: "supplier" },
+    ];
+    const hits: Array<{ table: string; count: number }> = [];
+    for (const r of refs) {
+      try {
+        const { count, error: cErr } = await supabase
+          .from(r.table)
+          .select("*", { count: "exact", head: true })
+          .eq(r.column, supplierName);
+        if (cErr) {
+          // 관련 없는 테이블 (relation 없음 · 컬럼 없음) 는 silent skip
+          if (/relation .* does not exist/i.test(cErr.message)) continue;
+          if (/column .* does not exist/i.test(cErr.message)) continue;
+          logger.warn(`[vendor-delete-guard] ${r.table}.${r.column} 체크 실패: ${cErr.message}`);
+          continue;
+        }
+        if ((count ?? 0) > 0) hits.push({ table: r.table, count: count ?? 0 });
+      } catch (e: any) {
+        logger.warn(`[vendor-delete-guard] ${r.table} 예외: ${e?.message}`);
+      }
+    }
+    if (hits.length > 0) {
+      const detail = hits.map(h => `${h.table}=${h.count}`).join(" · ");
+      throw new HttpError(
+        409,
+        `연결된 발주/매입/결제 데이터가 있어 삭제할 수 없습니다. (${detail})`,
+      );
+    }
+  }
+
   const { error } = await supabase.from("vendors").delete().eq("id", id);
   if (error) throw new HttpError(500, error.message);
   invalidateVendorCache();
