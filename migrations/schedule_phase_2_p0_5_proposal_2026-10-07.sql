@@ -1,0 +1,138 @@
+-- migrations/schedule_phase_2_p0_5_proposal_2026-10-07.sql
+-- 2026-10-07 · Schedule Phase 2 · P0-5 WHOLE JSON LOST UPDATE · PROPOSAL ONLY
+--
+-- ⚠ 중요 · 이 파일은 PROPOSAL 입니다 · production DB 에 apply 금지 ⚠
+--  · 사용자 승인 후 별도 세션에서 적용 결정
+--  · 3 OPTION 중 하나를 선택 후 다른 options 는 삭제
+--
+-- ─────────────────────────────────────────────────────────────────────
+-- PROBLEM 요약
+-- ─────────────────────────────────────────────────────────────────────
+-- Writer (`src/hooks/useSettings.ts:234-236`):
+--     await saveSetting(DB_KEY, s);
+-- Server (`server/routes/settings/settings.ts:163-176`):
+--     upsert({ key, value, updated_at: now }, { onConflict: "key" });
+--
+-- 전체 jsonb 가 매 요청마다 덮어씀 · updated_at/version/revision 없음.
+--
+-- Lost update scenarios:
+--   S1. 두 관리자 동시 편집 (positions vs wageRates) → 뒤에 저장한 사람이 앞 변경 소거
+--   S3. 다른 탭 same user → cross-tab stale base 로 덮어씀
+--   S4. 네트워크 blip 복구 중 저장 → 복구 전 서버 상태 덮어씀
+--
+-- 서버 SELECT → merge → UPDATE 패턴도 lost update 가능 (two concurrent reads
+-- of same current base). SELECT · UPDATE 사이의 race window.
+--
+-- ─────────────────────────────────────────────────────────────────────
+-- OPTION A · DB atomic JSON path update (jsonb_set) · 가장 작은 변경 · 추천 ⭐
+-- ─────────────────────────────────────────────────────────────────────
+-- 요약
+--   · 서버 /api/settings/all_settings/patch · partial JSON path upsert
+--   · jsonb_set(value, '{wageRates,약사}', '{"weekday":35000,"weekend":40000}'::jsonb, true)
+--   · DB atomic · 두 관리자가 서로 다른 path 를 수정하면 lost update 없음
+--   · 같은 path 동시 수정은 last-write-wins (acceptable · 명시적)
+--
+-- Schema 변경 · 없음 (app_settings 그대로)
+--
+-- Client 변경
+--   · useSettings.update(partial) 가 partial 의 top-level key 를 path 로 변환
+--   · 예: update({ wageRates: {...} }) → PATCH /api/settings/all_settings/path
+--         body: [{ path: ["wageRates"], value: {...} }]
+--
+-- Server 신규 route (스케치)
+-- CREATE OR REPLACE FUNCTION settings_patch_jsonb(
+--   p_key text,
+--   p_patches jsonb -- [{"path":["wageRates","약사"], "value":{...}}, ...]
+-- ) RETURNS void LANGUAGE plpgsql AS $$
+-- DECLARE
+--   patch jsonb;
+-- BEGIN
+--   FOR patch IN SELECT * FROM jsonb_array_elements(p_patches)
+--   LOOP
+--     UPDATE app_settings
+--     SET value = jsonb_set(
+--       COALESCE(value, '{}'::jsonb),
+--       (SELECT array_agg(x #>> '{}') FROM jsonb_array_elements(patch->'path') x)::text[],
+--       patch->'value',
+--       true
+--     ),
+--     updated_at = now()
+--     WHERE key = p_key;
+--     -- row 없으면 INSERT
+--     IF NOT FOUND THEN
+--       INSERT INTO app_settings (key, value, updated_at)
+--       VALUES (p_key, jsonb_set('{}'::jsonb,
+--         (SELECT array_agg(x #>> '{}') FROM jsonb_array_elements(patch->'path') x)::text[],
+--         patch->'value', true), now());
+--     END IF;
+--   END LOOP;
+-- END; $$;
+--
+-- Trade-offs
+--   · 장점 · 최소 schema 변경 · 즉시 lost update 해결 (다른 path 간)
+--   · 단점 · 같은 path 동시 쓰기는 여전히 last-write · array/list rename 복잡
+--   · 복잡도 · 서버 1 route 신규 + 클라 update() 분해 로직
+--
+-- Apply 범위
+--   · migration · function 1개 신규
+--   · 코드 · server/routes/settings/settings.ts 1 route + src/hooks/useSettings.ts update()
+--   · 테스트 · 동시 저장 시나리오 2건
+--
+-- ─────────────────────────────────────────────────────────────────────
+-- OPTION B · Optimistic concurrency (revision/updated_at compare)
+-- ─────────────────────────────────────────────────────────────────────
+-- Schema 변경
+--   ALTER TABLE app_settings ADD COLUMN revision bigint NOT NULL DEFAULT 0;
+--   -- 또는 updated_at 을 server-side now() 로 강제 + If-Match (updated_at ISO)
+--
+-- Client flow
+--   1. GET /api/settings → { value, revision }
+--   2. update(partial) → next = { ...prev, ...partial }, send POST with If-Match: revision
+--   3. Server UPDATE WHERE key=X AND revision = p_revision RETURNING revision+1
+--      · 0 rows affected → 409 Conflict · 클라가 refetch + user confirm/retry
+--
+-- Trade-offs
+--   · 장점 · 완전한 lost update 방지 · 명시적 충돌 UX
+--   · 단점 · UX 복잡 (충돌 시 사용자 재시도) · "merge both changes" 어려움
+--   · 복잡도 · schema migration + 서버 WHERE revision + 클라 refetch 흐름
+--
+-- Apply 범위
+--   · migration · ADD COLUMN revision + 트리거 (혹은 서버 코드)
+--   · 코드 · 서버 upsert + 클라 update + refetch 플로우
+--   · 테스트 · 409 재시도, happy path, lost update race
+--
+-- ─────────────────────────────────────────────────────────────────────
+-- OPTION C · Multi-key rows split (settings → 여러 row)
+-- ─────────────────────────────────────────────────────────────────────
+-- 변경
+--   · all_settings (단일 row) 를 positions / wageRates / scheduleTypes / ... 각각 row 로 분리
+--   · 각 row 가 독립적으로 upsert → 다른 key 간 lost update 완전 제거
+--
+-- Trade-offs
+--   · 장점 · 가장 깨끗한 설계 · 각 field 가 self-contained
+--   · 단점 · migration 범위 최대 · 하위 호환 호환성 레이어 필요
+--   · 복잡도 · 서버 reader 전수 변경 · 클라 useSettings merge 재설계
+--   · PHASE 2 STOP 리스트 명시 · all_settings → multi-key migration
+--
+-- Apply 범위
+--   · migration · 대량 DML (현재 all_settings 를 N 개 row 로 분해)
+--   · 코드 · src/hooks/useSettings.ts 전면 재작성 · 서버 reader 전수
+--   · 테스트 · 전면 재검증
+--
+-- ─────────────────────────────────────────────────────────────────────
+-- 추천 순서
+-- ─────────────────────────────────────────────────────────────────────
+--   A → B → C
+--   · A 로 즉시 risk 완화 (production safe · 저위험)
+--   · 운영 상 아직 S1/S3 가 자주 발생하면 B 로 upgrade
+--   · 전체 설계 재정비 결정 시 C
+--
+-- ─────────────────────────────────────────────────────────────────────
+-- STOP CONDITION
+-- ─────────────────────────────────────────────────────────────────────
+--   · 이 phase 는 proposal 작성까지 · production apply 금지
+--   · PHASE 2 STOP 리스트 명시:
+--     · production RPC/schema apply (P0-5)
+--     · all_settings → multi-key migration (C)
+--     · bulk settings data rewrite
+--   · 사용자 명시 승인 전까지 어떠한 변경도 금지
