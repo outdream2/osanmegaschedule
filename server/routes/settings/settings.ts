@@ -3,7 +3,8 @@ import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 // 2026-08-12 · POST /api/settings 인증 · JWT 쿠키 · level ≥ 9 (관리자)
 //   GET 은 공개 유지 · 앱 설정 (brand·contact·permissions) 은 로그인 전에도 필요
-import { authorize } from "../../middleware/requireAuth";
+// 2026-10-07 · Phase 2 · 민감 keys (all_settings 등) GET 은 인증 필요
+import { authorize, getSession } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
 // 2026-08-29 · #197 C-5 fix · 설정 (KV) 편집 후 · 관련 서버 캐시 즉시 무효화
@@ -151,9 +152,31 @@ router.post("/api/settings/season-ranges", authorize(9), validateBody(UpsertSeas
   res.json({ ok: true, ranges: normalized });
 }));
 
+// 2026-10-07 · Phase 2 · 민감 설정 keys · 로그인 사용자만 접근 가능
+//   · all_settings · wageRates/visitorReservation 등 민감 정보 포함 · 비로그인 조회 차단
+//   · order_email_smtp · SMTP 자격 masking 되지만 host/user 민감 · 로그인 필요
+//   · 공개 유지 (vendor/landing 호환):
+//     · page_permissions, zone_groups, storage_locations, blocked_slots_*, event_category_rules
+//     · company_info (vendor 발주 이메일 등 비로그인 vendor 페이지에서 노출)
+const SENSITIVE_SETTINGS_KEYS = new Set<string>([
+  "all_settings",
+  "order_email_smtp",
+]);
+
 router.get("/api/settings", asyncHandler(async (req, res) => {
   const { key } = req.query;
   if (!key || typeof key !== "string") throw badRequest("key required");
+  // 2026-10-07 · Phase 2 · AUTHORIZATION safe fix · 민감 keys GET 은 로그인 사용자만
+  //   · all_settings : wageRates/visitorReservation 포함 · 비로그인 유출 차단
+  //   · order_email_smtp : SMTP 자격 · 관리자 UI 전용 · (실제 POST 는 authorize(9))
+  //   · company_info : 사업자 세부 · 로그인 사용자만
+  //   · 그 외 (page_permissions, zone_groups, storage_locations, blocked_slots_*, event_category_rules, ...) GET 공개 유지
+  if (SENSITIVE_SETTINGS_KEYS.has(key)) {
+    const session = getSession(req);
+    if (!session) {
+      throw new HttpError(401, "로그인이 필요합니다");
+    }
+  }
   const { data, error } = await supabase
     .from("app_settings").select("value").eq("key", key).maybeSingle();
   if (error) throw new HttpError(500, error.message);

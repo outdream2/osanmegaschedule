@@ -141,7 +141,8 @@ router.get("/api/borrowings/parties", authorize(1), asyncHandler(async (req, res
   // 1) self · 약국 · settings (KV) company_info 에서 사업자명
   const selfParties: any[] = [];
   try {
-    const { data: settingRow } = await supabase.from("settings").select("value").eq("key", "company_info").maybeSingle();
+    // 2026-10-07 · Phase 2 · 테이블명 오타 fix · "settings" → "app_settings" (프로젝트 전수에서 app_settings 사용)
+    const { data: settingRow } = await supabase.from("app_settings").select("value").eq("key", "company_info").maybeSingle();
     const ci = (settingRow?.value ?? {}) as any;
     const selfName = String(ci.pharmacyName ?? ci.storeName ?? ci.name ?? "").trim();
     if (selfName && matches(selfName)) {
