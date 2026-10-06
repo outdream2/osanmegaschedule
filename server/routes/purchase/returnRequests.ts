@@ -83,7 +83,10 @@ router.get("/api/return-requests", asyncHandler(async (req, res) => {
     const since = new Date(); since.setDate(since.getDate() - days);
     q = q.gte("created_at", since.toISOString());
   }
-  if (supplier) q = q.ilike("supplier", `%${supplier}%`);
+  // 2026-10-06 · PHASE 3 · fuzzy ilike → exact (identity/aggregation 지점 · 사용자 지시)
+  //   · 벤더 상세 뷰에서 해당 supplier 의 반품 요청만 집계 · 정확 매칭 필요
+  //   · ilike %X% 는 "녹십자" 입력 시 "녹십자셀바이오" 등 다른 벤더 포함 위험
+  if (supplier) q = q.eq("supplier", supplier);
   if (status) q = q.eq("status", status);
   const { data, error } = await q;
   if (error) {

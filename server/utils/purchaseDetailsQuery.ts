@@ -10,7 +10,10 @@ export interface PdRow {
   supplier: string;              // 해결된 supplier_name (fallback 포함)
   purchase_date: string;         // YYYY-MM-DD
   product_code: string;
-  product_name: string;
+  // 2026-10-06 · 대원칙 · canonical SSOT = products.product_name
+  //   · purchase_details.product_name (transaction snapshot) 직접 노출 금지
+  //   · products.product_code JOIN 성공 시 그 값 · 실패 시 null
+  product_name: string | null;
   quantity: number;
   unit_price: number;
   amount: number;
@@ -42,35 +45,101 @@ interface PdInternalRow {
   supply_amount?: number | null;
 }
 
-/** vendors.note (code) → company_name 매핑 로드 · 실패 시 빈 맵 */
-async function loadVendorCodeMap(): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
+/**
+ * 2026-10-06 · PHASE 1-D · vendor identity 맵 분리 (사용자 지시)
+ *   · 이전: 하나의 Map 에 note(숫자) · supplier_code · company_name 섞여 저장
+ *     → note 가 자유 입력 field 인데 identity 로 사용되어 오탐 위험
+ *   · 신규:
+ *     · vendorByCtCode   · ERP canonical CtCode (ct_code 컬럼) 또는 supplier_code 컬럼
+ *     · vendorByNormalizedName · displayVendorName(company_name) → company_name 매핑
+ *   · note 는 identity 로 사용 금지 (제거)
+ *   · lookup 우선순위: ct_code eq · supplier_code eq → normalizedName (fallback)
+ */
+import { displayVendorName } from "../../src/utils/vendorNameNormalize";
+
+export interface VendorIdentityMaps {
+  byCtCode: Map<string, string>;             // code → company_name
+  byNormalizedName: Map<string, string>;     // display name (lowercase · trimmed) → company_name
+}
+
+interface VendorIdentityRow {
+  company_name?: string | null;
+  ct_code?: string | null;
+  supplier_code?: string | null;
+}
+async function loadVendorIdentityMaps(): Promise<VendorIdentityMaps> {
+  const byCtCode = new Map<string, string>();
+  const byNormalizedName = new Map<string, string>();
   try {
-    const { data: vdata, error: verr } = await supabase
-      .from("vendors")
-      .select("company_name, note");
-    if (!verr) {
-      for (const v of vdata ?? []) {
-        const code = String(v.note ?? "").trim();
-        const name = String(v.company_name ?? "").trim();
-        // note 는 자유형식 · 숫자 3~5자리 code 만 매핑 (오탐 방지)
-        if (code && name && /^\d{1,5}$/.test(code)) map.set(code, name);
-      }
+    // ct_code · supplier_code · company_name 전부 fetch (컬럼 없는 DB 는 fallback)
+    const trySelects = [
+      "company_name, ct_code, supplier_code",
+      "company_name, supplier_code",
+      "company_name",
+    ];
+    let rows: VendorIdentityRow[] | null = null;
+    for (const sel of trySelects) {
+      const r = await supabase.from("vendors").select(sel);
+      if (!r.error) { rows = (r.data as unknown as VendorIdentityRow[]) ?? []; break; }
+      if (!/column .* does not exist|does not exist/i.test(r.error.message)) break;
     }
-    // supplier_code 컬럼도 있으면 병행 (없으면 무해)
-    try {
-      const { data: sdata, error: serr } = await supabase
-        .from("vendors")
-        .select("company_name, supplier_code");
-      if (!serr) {
-        for (const v of sdata ?? []) {
-          const code = String(v.supplier_code ?? "").trim();
-          const name = String(v.company_name ?? "").trim();
-          if (code && name) map.set(code, name);
+    for (const v of rows ?? []) {
+      const name = String(v.company_name ?? "").trim();
+      if (!name) continue;
+      const ct = String(v.ct_code ?? "").trim();
+      if (ct) byCtCode.set(ct, name);
+      const sc = String(v.supplier_code ?? "").trim();
+      if (sc) byCtCode.set(sc, name);
+      const norm = displayVendorName(name).toLowerCase();
+      if (norm) byNormalizedName.set(norm, name);
+    }
+  } catch { /* silent · vendors 없어도 무관 */ }
+  return { byCtCode, byNormalizedName };
+}
+
+/** products.product_code → product_name 매핑 (canonical SSOT · 2026-10-06)
+ *  · codes 지정 시 IN 조회 · undefined 면 전체 조회
+ *  · 실패 시 빈 맵
+ */
+async function loadProductNameMap(codes?: string[]): Promise<Map<string, string | null>> {
+  const map = new Map<string, string | null>();
+  try {
+    if (codes && codes.length === 0) return map;
+    const CHUNK = 500;
+    if (codes && codes.length > 0) {
+      for (let i = 0; i < codes.length; i += CHUNK) {
+        const chunk = codes.slice(i, i + CHUNK);
+        const { data, error } = await supabase
+          .from("products")
+          .select("product_code, product_name")
+          .in("product_code", chunk);
+        if (error) break;
+        for (const p of data ?? []) {
+          const pc = String(p.product_code ?? "").trim();
+          const nm = String(p.product_name ?? "").trim();
+          if (pc) map.set(pc, nm || null);
         }
       }
-    } catch { /* silent · 컬럼 없음 */ }
-  } catch { /* silent · vendors 없어도 무관 */ }
+    } else {
+      const PPAGE = 1000;
+      let pfrom = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("products")
+          .select("product_code, product_name")
+          .range(pfrom, pfrom + PPAGE - 1);
+        if (error) break;
+        if (!data || data.length === 0) break;
+        for (const p of data) {
+          const pc = String(p.product_code ?? "").trim();
+          const nm = String(p.product_name ?? "").trim();
+          if (pc) map.set(pc, nm || null);
+        }
+        if (data.length < PPAGE) break;
+        pfrom += PPAGE;
+      }
+    }
+  } catch { /* silent · products 없어도 무관 */ }
   return map;
 }
 
@@ -99,16 +168,31 @@ async function loadProductSupplierMap(): Promise<Map<string, string>> {
   return map;
 }
 
-/** raw purchase_details 행 → PdRow · supplier 해결 (name → code → product_code) */
+/** raw purchase_details 행 → PdRow · supplier 해결 (name → ct_code → normalizedName → product_code)
+ *  2026-10-06 · PHASE 1-D · identity 맵 분리 후 lookup 우선순위 명확화 (사용자 지시)
+ *    · 1차 · r.supplier_name 원문 (DB 저장된 그대로)
+ *    · 2차 · r.supplier_code eq ct_code 또는 supplier_code
+ *    · 3차 · r.supplier_name normalized == displayVendorName 매핑 (레거시 variant 보완)
+ *    · 4차 · products.product_code → supplier (products.supplier TEXT fallback)
+ *  note 는 identity 로 사용하지 않음 (사용자 지시 · 자유 입력 field)
+ */
 function resolveSupplier(
   r: PdInternalRow,
-  vendorCodeMap: Map<string, string>,
+  vendorByCtCode: Map<string, string>,
+  vendorByNormalizedName: Map<string, string>,
   productSupplierMap: Map<string, string>
 ): string {
   let supplier = String(r.supplier_name ?? "").trim();
   if (!supplier) {
     const code = String(r.supplier_code ?? "").trim();
-    if (code && vendorCodeMap.has(code)) supplier = vendorCodeMap.get(code)!;
+    if (code && vendorByCtCode.has(code)) supplier = vendorByCtCode.get(code)!;
+  }
+  if (!supplier) {
+    const rawName = String(r.supplier_name ?? "").trim();
+    if (rawName) {
+      const norm = displayVendorName(rawName).toLowerCase();
+      if (norm && vendorByNormalizedName.has(norm)) supplier = vendorByNormalizedName.get(norm)!;
+    }
   }
   if (!supplier) {
     const pcode = String(r.product_code ?? "").trim();
@@ -129,16 +213,17 @@ export async function queryPurchaseDetails(opts: PdQueryOptions): Promise<PdRow[
   const includeVat = opts.includeVat !== false;
 
   // NULL supplier_name fallback 매핑 로드 (병렬)
-  const [vendorCodeMap, productSupplierMap] = await Promise.all([
-    loadVendorCodeMap(),
+  // 2026-10-06 · PHASE 1-D · identity 맵 분리 (ct_code vs normalized name)
+  const [{ byCtCode: vendorByCtCode, byNormalizedName: vendorByNormalizedName }, productSupplierMap] = await Promise.all([
+    loadVendorIdentityMaps(),
     loadProductSupplierMap(),
   ]);
 
   // supplier 필터가 있으면 · code 도 추출해서 병행 조회 (name/code 모두)
   let supplierCode: string | null = null;
   if (supplierFilter) {
-    // vendorCodeMap 은 code→name · 역방향 찾기
-    for (const [code, name] of vendorCodeMap.entries()) {
+    // vendorByCtCode 는 code→name · 역방향 찾기
+    for (const [code, name] of vendorByCtCode.entries()) {
       if (name === supplierFilter) { supplierCode = code; break; }
     }
   }
@@ -198,9 +283,15 @@ export async function queryPurchaseDetails(opts: PdQueryOptions): Promise<PdRow[
       const c = String(row.supplier_code ?? "").trim();
       if (c) codeSet.add(c);
     }
-    // vendors.note (code → name) 역방향 추가
-    for (const [code, name] of vendorCodeMap.entries()) {
+    // 2026-10-06 · PHASE 1-D · ct_code / supplier_code 역방향 추가 (note identity 제거)
+    for (const [code, name] of vendorByCtCode.entries()) {
       if (name === supplierFilter) codeSet.add(code);
+    }
+    // normalized name variant 매칭 (ERP (주)녹십자 ↔ 녹십자 등 레거시 variant)
+    const normFilter = displayVendorName(supplierFilter).toLowerCase();
+    if (normFilter) {
+      // byNormalizedName 은 code 가 아니라 name 역방향 매핑 · 여기서는 추가 code 수집 X
+      void vendorByNormalizedName;
     }
     // 호출자가 code 를 직접 넘긴 경우 (숫자 1~5자리) 포함
     if (/^\d{1,5}$/.test(supplierFilter)) codeSet.add(supplierFilter);
@@ -239,12 +330,22 @@ export async function queryPurchaseDetails(opts: PdQueryOptions): Promise<PdRow[
     results.push(...r.data);
   }
 
+  // 2026-10-06 · 대원칙 · canonical product_name = products.product_code JOIN
+  //   · 결과 raw rows 의 product_code 수집 후 batch fetch
+  //   · transaction snapshot name 노출 금지 · join 실패 시 null
+  const codeSet = new Set<string>();
+  for (const r of results) {
+    const pc = String(r.product_code ?? "").trim();
+    if (pc) codeSet.add(pc);
+  }
+  const productNameByCode = await loadProductNameMap([...codeSet]);
+
   // 정규화 + dedup (by id)
   for (const r of results) {
     const id = Number(r.id);
     if (Number.isFinite(id) && seen.has(id)) continue;
     if (Number.isFinite(id)) seen.add(id);
-    const supplier = resolveSupplier(r, vendorCodeMap, productSupplierMap);
+    const supplier = resolveSupplier(r, vendorByCtCode, vendorByNormalizedName, productSupplierMap);
     if (!supplier) continue;
     // 2026-10-05 · 공급사 code 기반 매칭 전환 (사용자 지시)
     //   · 기존: `supplier !== supplierFilter` → "(주)녹십자" ≠ "녹십자" variant 깨짐
@@ -252,12 +353,15 @@ export async function queryPurchaseDetails(opts: PdQueryOptions): Promise<PdRow[
     //   · ERP CorpNameView 원문 보존 · DB 수정 없음
     const date = r.purchase_date ? String(r.purchase_date).slice(0, 10) : "";
     if (!date) continue;
+    const productCode = String(r.product_code ?? "").trim();
     rows.push({
       id: Number.isFinite(id) ? id : null,
       supplier,
       purchase_date: date,
-      product_code: String(r.product_code ?? "").trim(),
-      product_name: String(r.product_name ?? ""),
+      product_code: productCode,
+      // 2026-10-06 · canonical SSOT · products.product_code JOIN 성공 시 그 값 · 없으면 null
+      //   · transaction (purchase_details.product_name) 노출 금지
+      product_name: productCode ? (productNameByCode.get(productCode) ?? null) : null,
       quantity: Number(r.quantity) || 0,
       unit_price: Number(r.unit_price) || 0,
       // amount 우선 · total fallback (xlsx total 은 신뢰 낮음)

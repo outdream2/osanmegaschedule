@@ -139,7 +139,10 @@ router.get("/api/ocr-confirmed-items", asyncHandler(async (req, res) => {
   }
 
   if (supplierParam) {
-    query = query.ilike("supplier", `%${supplierParam}%`);
+    // 2026-10-06 · PHASE 3 · fuzzy ilike → exact (identity 지점 · 사용자 지시)
+    //   · 벤더 상세의 OCR 확정 항목 조회 · 정확 매칭 필요
+    //   · partial match 는 다른 벤더 데이터 섞일 위험
+    query = query.eq("supplier", supplierParam);
   }
 
   if (hasBalanceParam) {

@@ -59,7 +59,9 @@ router.get("/api/borrowings", authorize(1), asyncHandler(async (req, res) => {
 
   if (status)    q = q.eq("status", status);
   if (direction) q = q.eq("direction", direction);
-  if (supplier)  q = q.ilike("supplier", `%${supplier}%`);
+  // 2026-10-06 · PHASE 3 · fuzzy ilike → exact (identity 지점 · 사용자 지시)
+  //   · 벤더 상세의 차입/대여 조회 · 정확 매칭 필요
+  if (supplier) q = q.eq("supplier", supplier);
   const { data, error } = await q;
   if (error) {
     if (/relation .* does not exist/i.test(error.message)) {

@@ -528,7 +528,10 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
   if (productCode) q = q.eq("product_code", productCode);
   // 2026-09-07 · #116 · supplier 파라미터 서버 필터 추가 (기존: 읽고 버림 → 클라이언트만 필터)
   //   · case-insensitive 정확 매칭 · 클라이언트에서 vat/법인 접두어 정제 후 재필터 (하위 호환)
-  if (supplier) q = (q as any).ilike("supplier_name", supplier);
+  // 2026-10-06 · PHASE 3 · identity 지점 · ilike → eq · 정확 매칭 보장 (사용자 지시)
+  //   · 이전 ilike(..., supplier) · % 없는 ilike 는 case-insensitive exact 역할
+  //   · 신규 eq(..., supplier) · 명시적 identity · 소문자/대문자 variant 는 vendor identity 맵이 처리 (purchaseDetailsQuery 사용 권장)
+  if (supplier) q = q.eq("supplier_name", supplier);
   if (!seasonMonths && !useMonthsList) {
     if (from && /^\d{4}-\d{2}-\d{2}$/.test(from)) q = q.gte("purchase_date", from);
     if (to && /^\d{4}-\d{2}-\d{2}$/.test(to)) q = q.lte("purchase_date", to);
