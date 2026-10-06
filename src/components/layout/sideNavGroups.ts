@@ -452,9 +452,22 @@ const INNER_TAB_REGISTRY: Record<string, ReadonlyArray<{ key: string; label: str
   "display:statistics":     STAT_DEFAULT_TABS,
 };
 
+// 2026-10-06 · BREADCRUMB SSOT CLEANUP · 그룹 루트 pageKey (overview hub)
+//   · 그룹의 overview 페이지 (SIDE_NAV_GROUPS.items 에 없음) · breadcrumb 는 홈 > 그룹명 2 depth
+//   · 예 · settings-hub = "설정" 그룹의 overview
+const GROUP_ROOT_PAGES: Record<string, string> = {
+  "settings-hub": "settings",
+};
+
 export function buildBreadcrumbFromNav(activeNav: ActiveNavForBreadcrumb | null): BreadcrumbSegment[] {
   if (!activeNav || activeNav.itemKey === "landing") return [{ label: "홈" }];
   const home: BreadcrumbSegment = { label: "홈", page: "landing" };
+  // 2026-10-06 · 그룹 루트 (settings-hub) · 홈 > 그룹명 2 depth
+  const rootGroupId = GROUP_ROOT_PAGES[String(activeNav.itemKey)];
+  if (rootGroupId) {
+    const rg = SIDE_NAV_GROUPS.find(g => g.id === rootGroupId);
+    if (rg) return [home, { label: rg.label }];
+  }
   const group = SIDE_NAV_GROUPS.find(g => g.id === activeNav.groupId);
   if (!group) return [home, { label: String(activeNav.itemKey) }];
 

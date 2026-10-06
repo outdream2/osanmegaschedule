@@ -34,6 +34,8 @@ import { DriveAuthStatus } from "./DriveAuthStatus";
 import { EventCategoryRulesEditor } from "./EventCategoryRulesEditor";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
+// 2026-10-06 · BREADCRUMB SSOT CLEANUP · activeNav 등록 · AppNavHeader 글로벌 breadcrumb 가 유일한 표시 소스
+import { useSetActiveByPage } from "../../contexts/ActiveNavContext";
 
 interface Props {
   onBack: () => void;
@@ -113,6 +115,13 @@ interface FieldState {
 }
 
 const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
+  // 2026-10-06 · BREADCRUMB SSOT CLEANUP · mount 시 activeNav 정착 (사이드바 미경유 직접 진입·refresh 포함)
+  //   · AppNavHeader buildBreadcrumbFromNav(activeNav) 가 유일한 breadcrumb 표시 소스
+  const setActiveByPage = useSetActiveByPage();
+  useEffect(() => {
+    setActiveByPage("system-settings");
+  }, [setActiveByPage]);
+
   // 2026-08-27 · 사용자 지시 · 데이터 업로드 · 랜딩페이지처럼 카드+버튼 → 모달 오픈 (중복 배치 · 랜딩과 병존)
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [cat, setCat] = useState<Cat>("db-auth");

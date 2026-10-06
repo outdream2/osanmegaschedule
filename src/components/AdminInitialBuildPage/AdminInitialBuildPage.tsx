@@ -17,6 +17,8 @@ import {
   Database, ShieldCheck, Package, MapPin, CurrencyKrw, ShoppingCart,
   Warehouse, Shield, Warning, ListChecks, ArrowsClockwise, Lock,
 } from "@phosphor-icons/react";
+// 2026-10-06 · BREADCRUMB SSOT CLEANUP · activeNav 등록 · AppNavHeader 글로벌 breadcrumb 가 유일한 표시 소스
+import { useSetActiveByPage } from "../../contexts/ActiveNavContext";
 
 interface Props {
   onBack: () => void;
@@ -65,6 +67,13 @@ interface DryRunPreview {
 }
 
 export default function AdminInitialBuildPage(_props: Props): React.ReactElement {
+  // 2026-10-06 · BREADCRUMB SSOT CLEANUP · mount 시 activeNav 정착 (사이드바 미경유 직접 진입·refresh 포함)
+  //   · AppNavHeader buildBreadcrumbFromNav(activeNav) 가 유일한 breadcrumb 표시 소스
+  const setActiveByPage = useSetActiveByPage();
+  useEffect(() => {
+    setActiveByPage("admin-initial-build");
+  }, [setActiveByPage]);
+
   const { toast, show } = useToast();
   const [preview, setPreview] = useState<DryRunPreview | null>(null);
   const [loading, setLoading] = useState(false);

@@ -20,6 +20,8 @@ import { useBrandIdentity } from "../../hooks/useBrandIdentity";
 import { ImageUploadField } from "../common/ImageUploadField";
 import { SettingsPageShell } from "../common/SettingsPageShell";
 import { StatusPill } from "../common/StatusPill";
+// 2026-10-06 · BREADCRUMB SSOT CLEANUP · activeNav 등록 · AppNavHeader 글로벌 breadcrumb 가 유일한 표시 소스
+import { useSetActiveByPage } from "../../contexts/ActiveNavContext";
 // 2026-08-29 · #122 P2 · SectionCard 프리미티브
 import { SectionCard } from "../common/SectionCard";
 // 2026-08-12 · 연락처·도장 개별 섹션
@@ -58,6 +60,13 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
   // 2026-09-18 · Plan B · IntersectionObserver 기반 현재 섹션 추적
   const [activeSection, setActiveSection] = useState<SectionId>("section-company");
   const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // 2026-10-06 · BREADCRUMB SSOT CLEANUP · mount 시 activeNav 정착 (사이드바 미경유 직접 진입·refresh 포함)
+  //   · AppNavHeader buildBreadcrumbFromNav(activeNav) 가 유일한 breadcrumb 표시 소스
+  const setActiveByPage = useSetActiveByPage();
+  useEffect(() => {
+    setActiveByPage("company-info");
+  }, [setActiveByPage]);
 
   useEffect(() => {
     const sectionIds = RAIL_ITEMS.map(r => r.id);

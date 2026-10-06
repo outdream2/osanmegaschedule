@@ -17,6 +17,8 @@ import { api, ApiError } from "../../lib/apiClient";
 import type { AuthSession } from "../../types";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
+// 2026-10-06 · BREADCRUMB SSOT CLEANUP · activeNav 등록 · AppNavHeader 글로벌 breadcrumb 가 유일한 표시 소스
+import { useSetActiveByPage } from "../../contexts/ActiveNavContext";
 
 interface SmtpConfig {
   smtp_host: string;
@@ -44,6 +46,13 @@ interface Props {
 }
 
 export const OrderSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavigate, onLogout }) => {
+  // 2026-10-06 · BREADCRUMB SSOT CLEANUP · mount 시 activeNav 정착 (사이드바 미경유 직접 진입·refresh 포함)
+  //   · AppNavHeader buildBreadcrumbFromNav(activeNav) 가 유일한 breadcrumb 표시 소스
+  const setActiveByPage = useSetActiveByPage();
+  useEffect(() => {
+    setActiveByPage("order-settings");
+  }, [setActiveByPage]);
+
   const { toast, showSuccess, showError } = useToast();
   const [form, setForm] = useState<SmtpConfig>(EMPTY);
   const [loading, setLoading] = useState(true);

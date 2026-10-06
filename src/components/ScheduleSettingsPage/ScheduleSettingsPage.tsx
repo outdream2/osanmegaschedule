@@ -8,6 +8,8 @@ import { SectionCard } from "../common/SectionCard";
 import { CalendarBlank, Lock, FloppyDisk } from "@phosphor-icons/react";
 import { useSettings, DEFAULT_ANNUAL_LEAVE } from "../../hooks/useSettings";
 import { useToast, toastClass } from "../../hooks/useToast";
+// 2026-10-06 · BREADCRUMB SSOT CLEANUP · activeNav 등록 · AppNavHeader 글로벌 breadcrumb 가 유일한 표시 소스
+import { useSetActiveByPage } from "../../contexts/ActiveNavContext";
 
 interface Props {
   onBack: () => void;
@@ -17,6 +19,13 @@ interface Props {
 }
 
 const ScheduleSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
+  // 2026-10-06 · BREADCRUMB SSOT CLEANUP · mount 시 activeNav 정착 (사이드바 미경유 직접 진입·refresh 포함)
+  //   · AppNavHeader buildBreadcrumbFromNav(activeNav) 가 유일한 breadcrumb 표시 소스
+  const setActiveByPage = useSetActiveByPage();
+  useEffect(() => {
+    setActiveByPage("schedule-settings");
+  }, [setActiveByPage]);
+
   const level = authSession?.level ?? 0;
   const { defaultAnnualLeave, update, saveNow } = useSettings();
   const { showSuccess, showError, toast } = useToast();

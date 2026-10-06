@@ -32,6 +32,8 @@ import { useSettings } from "../../hooks/useSettings";
 import type { Employee } from "../../types";
 // 2026-08-12 · #99 · 사이드바 그룹 트리 구조 · 페이지 → 그룹 매핑 재사용
 import { SIDE_NAV_GROUPS } from "../layout/sideNavGroups";
+// 2026-10-06 · BREADCRUMB SSOT CLEANUP · activeNav 등록 · AppNavHeader 글로벌 breadcrumb 가 유일한 표시 소스
+import { useSetActiveByPage } from "../../contexts/ActiveNavContext";
 // 2026-08-21 · Framework Phase 4 · large-file 분리
 import { PAGE_LABELS, LEVELS, GROUP_COLOR_CLS } from "./constants";
 import { LevelSelect } from "./LevelSelect";
@@ -50,6 +52,13 @@ interface PermissionsPageProps {
 }
 
 export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, onBack, onLogout, onNavigate, embedded = false }) => {
+  // 2026-10-06 · BREADCRUMB SSOT CLEANUP · mount 시 activeNav 정착 (사이드바 미경유 직접 진입·refresh 포함)
+  //   · AppNavHeader buildBreadcrumbFromNav(activeNav) 가 유일한 breadcrumb 표시 소스
+  const setActiveByPage = useSetActiveByPage();
+  useEffect(() => {
+    setActiveByPage("permissions");
+  }, [setActiveByPage]);
+
   // 2026-08-21 · Framework Phase 3 · window.confirm → useConfirm
   const confirm = useConfirm();
   const [perms, setPerms] = useState<PagePermissions>(DEFAULT_PERMISSIONS);

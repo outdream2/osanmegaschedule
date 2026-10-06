@@ -3,13 +3,17 @@
 //   · 목업 (UI_MOCKUP_2026-08-21) 톤 · 카드 그리드 · 시인성 최우선
 //   · 각 카드 · 아이콘타일 + 제목 + 설명 + 카테고리 배지 + 상태 표시
 
-import React from "react";
+// 2026-10-06 · BREADCRUMB SSOT CLEANUP · 자체 하드코드 breadcrumb 제거
+//   · AppNavHeader 글로벌 (buildBreadcrumbFromNav) 유일 · 중복 2개 → 1개
+//   · House · dead import 제거 (CaretRight 는 카드 chevron 용으로 유지)
+import React, { useEffect } from "react";
 import {
   Lock, CalendarBlank, Buildings, Calendar, Gear, Truck,
-  CaretRight, House,
+  CaretRight,
 } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
+import { useActiveNav } from "../../contexts/ActiveNavContext";
 
 interface Props {
   authSession: AuthSession | null;
@@ -86,6 +90,14 @@ const CARDS: SettingsCard[] = [
 ];
 
 export const SettingsHubPage: React.FC<Props> = ({ authSession, onBack, onNavigate, onLogout }) => {
+  // 2026-10-06 · BREADCRUMB SSOT CLEANUP · 그룹 루트 page · activeNav 세팅
+  //   · settings-hub 는 "설정" 그룹의 overview page · 표시는 "홈 > 설정" 2 depth
+  //   · buildBreadcrumbFromNav 가 settings-hub itemKey 를 그룹 루트로 특수 처리
+  const { setActiveNav } = useActiveNav();
+  useEffect(() => {
+    setActiveNav({ groupId: "settings", itemKey: "settings-hub" as AppNavPage, subTab: null, nested: null });
+  }, [setActiveNav]);
+
   return (
     <div className="min-h-screen bg-[#F4F7FA] flex flex-col">
       <AppNavHeader
@@ -96,19 +108,7 @@ export const SettingsHubPage: React.FC<Props> = ({ authSession, onBack, onNaviga
         onLogout={onLogout}
       />
       <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-4 py-5 flex flex-col gap-5">
-        {/* Breadcrumb */}
-        <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[15px] text-ink-soft font-medium -mb-1">
-          <button
-            type="button"
-            onClick={onBack}
-            className="inline-flex items-center gap-1 hover:text-brand-deep transition cursor-pointer"
-            title="홈으로"
-          >
-            <House size={12} weight="fill" /> 홈
-          </button>
-          <CaretRight size={11} className="text-zinc-300" />
-          <span className="text-ink font-bold">설정</span>
-        </nav>
+        {/* 2026-10-06 · BREADCRUMB SSOT CLEANUP · 자체 breadcrumb 제거 · AppNavHeader 글로벌 유일 */}
 
         {/* Header · 목업 톤 (SettingsPageShell 와 동일 시각 스타일) */}
         <header className="relative overflow-hidden bg-white border border-line rounded-2xl shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_12px_-4px_rgba(10,46,74,0.06)]">

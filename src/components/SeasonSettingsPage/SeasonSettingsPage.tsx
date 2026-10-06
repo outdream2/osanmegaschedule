@@ -4,8 +4,10 @@
 //   · 공통 SettingsPageShell 사용 · UI 통일
 // 2026-08-23 · #193 · 통계 설정 통합 · 계절 정의 + 적정재고 설정 2섹션
 //   · 이름 · "계절 정의" → "통계 설정" (route/key 는 season-settings 유지 · BC)
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import type { AppNavPage } from "../layout/AppNavHeader";
+// 2026-10-06 · BREADCRUMB SSOT CLEANUP · activeNav 등록 · AppNavHeader 글로벌 breadcrumb 가 유일한 표시 소스
+import { useSetActiveByPage } from "../../contexts/ActiveNavContext";
 import type { AuthSession } from "../../types";
 import { SeasonRangesEditor } from "../MyPage/SeasonRangesEditor";
 import { SettingsPageShell } from "../common/SettingsPageShell";
@@ -41,6 +43,14 @@ const STATS_TABS: TabDef<StatsTab>[] = [
 const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const level = authSession?.level ?? 0;
   const employeeId = authSession?.employeeId;
+
+  // 2026-10-06 · BREADCRUMB SSOT CLEANUP · mount 시 activeNav 정착 (사이드바 미경유 직접 진입·refresh 포함)
+  //   · AppNavHeader buildBreadcrumbFromNav(activeNav) 가 유일한 breadcrumb 표시 소스
+  const setActiveByPage = useSetActiveByPage();
+  useEffect(() => {
+    setActiveByPage("season-settings");
+  }, [setActiveByPage]);
+
   // 2026-09-13 · #88 · 활성 탭 · localStorage 유지
   const [statsTab, setStatsTab] = useState<StatsTab>(() => {
     try {
