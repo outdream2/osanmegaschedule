@@ -2,7 +2,8 @@
 import { Router } from "express";
 import webpush from "web-push";
 import { supabase } from "../../../src/supabase/client";
-import { scheduleService } from "../../services/scheduleService";
+// 2026-10-06 · PHASE 1.5 · scheduleService 직접 호출 제거 · 승인은 RPC canonical path 사용
+// (삭제 경로는 schedules 직접 DELETE · scheduleService 미사용)
 import { notificationsService } from "../../services/notificationsService";
 import { checkOwnershipOrAdmin } from "../../lib/ownershipCheck";
 import { asyncHandler } from "../../middleware/asyncHandler";
@@ -112,21 +113,34 @@ router.post("/api/leave-requests", authorize(1), validateBody(CreateLeaveRequest
 
 router.put("/api/leave-requests/:id", authorize(5), validateBody(ReviewLeaveRequestSchema), asyncHandler(async (req, res) => {
   const { status, reviewer_note } = req.body;
-  const authLevel = (req as AuthedRequest).authUser?.level ?? 0;
+  const authSession = (req as AuthedRequest).authUser;
+  const authLevel = authSession?.level ?? 0;
+  const reviewerId = Number(authSession?.sub ?? 0);
 
-  // 2026-10-06 · PHASE 1 · 승인 전 lock 사전 검증 (approved 분기만)
-  //   · pending → approved 시 schedules 자동 반영 · 해당 월(들) lock 상태 미리 확인
-  //   · lv≥9 bypass (기존 semantics 유지) · lock 월에 lv<9 승인 시도 → 403 · leave status 변경 안 함
-  //   · 반려(rejected)·반려→승인 외 상태는 schedules 미반영 → lock 검증 skip
+  // 2026-10-06 · PHASE 1.5 · 승인 분기 · RPC canonical path (approve_leave_request)
+  //   · leave_requests UPDATE + schedules UPSERT (source_leave_id 포함) 를 하나의 PL/pgSQL 트랜잭션으로 수행
+  //   · app-level compensation 제거 (RPC 로 atomicity 보장)
+  //   · 서버 route 는 사전 lock 검증 (가독성 · 명확 에러) + RPC 재검증 (중복 안전장치)
+  //   · lv≥9 bypass 는 p_bypass_lock=true 로 명시 전달
+  //
+  // ** 적용 전제 **
+  //   · DB 에 다음 migration 선 적용 필요:
+  //     1. migrations/schedule_phase_1_5_source_leave_id_2026-10-06.sql
+  //     2. migrations/schedule_phase_1_approve_leave_rpc_2026-10-06.sql
+  //   · RPC 미적용 환경에서는 Supabase 가 "function not found" 반환 → 서버 500 → 사용자 선 적용 후 코드 deploy.
+  //
+  // 반려(rejected) 는 schedules 미영향 → 기존 단순 UPDATE 로 처리.
   if (status === "approved") {
-    // 요청 row read-only 조회 (아직 update 안 함)
+    // 요청 row read-only 조회 (아직 update 안 함) · 사전 lock 검증 + 반환 메타 수집용
     const { data: pre, error: preErr } = await supabase
       .from("leave_requests")
-      .select("start_date, end_date, status")
+      .select("id, employee_id, employee_name, leave_type, start_date, end_date, status")
       .eq("id", req.params.id)
       .maybeSingle();
     if (preErr) throw new HttpError(500, preErr.message);
     if (!pre) throw notFound();
+    if (pre.status !== "pending") throw new HttpError(409, "이미 처리된 요청입니다.", "LEAVE_NOT_PENDING");
+
     const startDate: string = String(pre.start_date).slice(0, 10);
     const endDate: string = String(pre.end_date).slice(0, 10);
     // 날짜 범위 전개
@@ -136,69 +150,77 @@ router.put("/api/leave-requests/:id", authorize(5), validateBody(ReviewLeaveRequ
       dates.push(cur);
       cur = nextKstYmd(cur);
     }
-    // 공통 guard · 월(들) lock 상태 검증 · lv≥9 bypass
+    // 공통 guard · 월(들) lock 상태 검증 · lv≥9 bypass (서버 측 명시 에러 메시지용)
     await assertScheduleNotLockedForDates(dates, authLevel);
+
+    // RPC canonical 호출 · atomic transaction
+    const { error: rpcErr } = await supabase.rpc("approve_leave_request", {
+      p_request_id: req.params.id,
+      p_reviewer_id: reviewerId,
+      p_reviewer_note: reviewer_note ?? "",
+      p_bypass_lock: authLevel >= 9,
+    });
+    if (rpcErr) {
+      const msg = rpcErr.message ?? "";
+      logger.error(`[LEAVE APPROVE RPC] id=${req.params.id} · reviewer=${reviewerId} · ${msg}`);
+      if (/SCHEDULE_LOCKED/.test(msg)) {
+        throw new HttpError(403, "확정된 달은 수정할 수 없습니다. 관리자(lv≥9)만 수정 가능합니다.", "SCHEDULE_LOCKED");
+      }
+      if (/LEAVE_NOT_FOUND/.test(msg)) {
+        throw notFound();
+      }
+      if (/LEAVE_NOT_PENDING/.test(msg)) {
+        throw new HttpError(409, "이미 처리된 요청입니다.", "LEAVE_NOT_PENDING");
+      }
+      // RPC 가 아직 미적용된 환경 (production migration 선행 필요)
+      if (/function .* does not exist|could not find the function/i.test(msg)) {
+        throw new HttpError(
+          500,
+          "서버 설정 오류: approve_leave_request RPC 가 DB 에 아직 적용되지 않았습니다. 관리자에게 문의하세요.",
+          "RPC_NOT_APPLIED",
+        );
+      }
+      throw new HttpError(500, msg);
+    }
+    logger.info(`[LEAVE APPROVE RPC] emp=${pre.employee_id} · leave_type=${pre.leave_type} · dates=[${dates.join(",")}] · atomic approve 성공`);
   }
 
-  const { data, error } = await supabase
-    .from("leave_requests")
-    .update({ status, reviewer_note: reviewer_note ?? "", reviewed_at: new Date().toISOString() })
-    .eq("id", req.params.id).select().single();
-  if (error) throw new HttpError(500, error.message);
-  if (!data) throw notFound();
+  // approved 는 RPC 가 이미 UPDATE 수행 · 반려(rejected) 만 여기서 직접 UPDATE
+  // 2026-10-06 · PHASE 1.5 · unknown shape · 명시 타입 (DB row 스냅샷)
+  type LeaveRequestRow = {
+    id: string;
+    employee_id: number;
+    employee_name: string;
+    leave_type: string;
+    start_date: string;
+    end_date: string;
+    reason: string | null;
+    status: string;
+    reviewer_note: string | null;
+    created_at: string | null;
+    reviewed_at: string | null;
+  };
+  let data: LeaveRequestRow;
+  if (status === "approved") {
+    const { data: fresh, error: freshErr } = await supabase
+      .from("leave_requests")
+      .select("*")
+      .eq("id", req.params.id)
+      .maybeSingle();
+    if (freshErr) throw new HttpError(500, freshErr.message);
+    if (!fresh) throw notFound();
+    data = fresh;
+  } else {
+    const { data: updated, error: updErr } = await supabase
+      .from("leave_requests")
+      .update({ status, reviewer_note: reviewer_note ?? "", reviewed_at: new Date().toISOString() })
+      .eq("id", req.params.id).select().single();
+    if (updErr) throw new HttpError(500, updErr.message);
+    if (!updated) throw notFound();
+    data = updated;
+  }
 
   const label = status === "approved" ? "승인" : "반려";
-
-  if (status === "approved") {
-    const scheduleType = ["오전반차", "오후반차"].includes(data.leave_type) ? data.leave_type : "월차";
-    // 2026-09-11 · #116 · KST off-by-one fix · 문자열 기반 · Date/UTC 변환 회피
-    const dates: string[] = [];
-    let cur: string = String(data.start_date).slice(0, 10);
-    const end: string = String(data.end_date).slice(0, 10);
-    while (compareYmd(cur, end) <= 0) {
-      dates.push(cur);
-      cur = nextKstYmd(cur);
-    }
-    if (dates.length > 0) {
-      // 2026-09-11 · #116 · 에러 삼킴 제거 · 스케쥴 반영 실패 원인 표면화 · try/catch + 자세한 로그
-      // 2026-10-06 · PHASE 1 · atomicity · schedule upsert 실패 시 leave_requests 롤백 (app-level compensation)
-      //   · 이상적 (A안) RPC function 적용 전까지는 compensation 패턴으로 부분 불일치 방지
-      //   · 이후 approve_leave_request RPC 적용 시 이 블록 제거 가능 (migrations/schedule_phase_1_approve_leave_rpc_2026-10-06.sql)
-      try {
-        const result = await scheduleService.batchUpdateSchedules(
-          dates.map(date => ({
-            employeeId: data.employee_id,
-            date,
-            type: scheduleType,
-            workingHours: "",
-            actualHours: "",
-            memo: `연차 승인 (${data.leave_type})`,
-          })),
-        );
-        logger.info(`[LEAVE APPROVE] emp=${data.employee_id} type=${scheduleType} dates=[${dates.join(",")}] · ${result.count}건 스케쥴 반영`);
-      } catch (schedErr: any) {
-        logger.error(`[LEAVE APPROVE FAILED] emp=${data.employee_id} type=${scheduleType} dates=[${dates.join(",")}] · ${schedErr?.message ?? schedErr}`);
-        // 2026-10-06 · PHASE 1 · app-level compensation · leave_requests.status 롤백
-        //   · schedules upsert 실패 → leave status 를 pending 으로 되돌려 부분 불일치 제거
-        //   · rollback 자체 실패 시에도 원 에러를 500 으로 전파 (관리자 수동 복구 로그만 남김)
-        try {
-          const { error: rbErr } = await supabase
-            .from("leave_requests")
-            .update({ status: "pending", reviewer_note: "", reviewed_at: null })
-            .eq("id", req.params.id);
-          if (rbErr) {
-            logger.error(`[LEAVE APPROVE ROLLBACK FAILED] id=${req.params.id} · ${rbErr.message}`);
-          } else {
-            logger.warn(`[LEAVE APPROVE ROLLBACK] id=${req.params.id} · status=approved → pending (schedule upsert 실패로 인한 자동 복구)`);
-          }
-        } catch (rbCatch: any) {
-          logger.error(`[LEAVE APPROVE ROLLBACK EXCEPTION] id=${req.params.id} · ${rbCatch?.message ?? rbCatch}`);
-        }
-        // 연차 승인은 완료된 상태에서 · schedule 반영 실패 · 클라이언트에 500 반환
-        throw new HttpError(500, `연차는 승인되었으나 스케쥴 반영 실패: ${schedErr?.message ?? String(schedErr)}`);
-      }
-    }
-  }
 
   const { data: emp } = await supabase.from("employees").select("push_subscription").eq("id", data.employee_id).maybeSingle();
 
@@ -348,18 +370,77 @@ router.delete("/api/leave-requests/:id", authorize(5), asyncHandler(async (req, 
   //   같은 날짜·같은 type 을 다른 사유 (관리자 수동 입력) 로 넣은 뒤 삭제하면 그 schedule 이 함께 삭제될 수 있음
   //   → identity 불명확 영역 · 자동 수정 금지 · 리포트에 명시.
   if (check.isAdmin && wasApproved && empId && startDate && endDate) {
-    const { error: schedErr } = await supabase
+    // 2026-10-06 · PHASE 1.5 · provenance 기반 cleanup
+    //   1차: source_leave_id = <this leave id> 인 schedules 만 삭제 (정확 매칭)
+    //        — 사용자가 승인 후 schedule 을 수동으로 "오픈" 등으로 바꾼 경우 자동 skip
+    //        — 다른 사유로 입력된 같은 날짜 월차/반차는 영향 없음
+    //   2차 (레거시 호환): source_leave_id IS NULL 인 레거시 schedules 는 (employeeId, date range, type) 매칭으로 삭제
+    //        — PHASE 1.5 적용 전 승인된 연차 (source_leave_id 없음) 는 이 경로로 정리
+    //        — PHASE 1.5 적용 후 신규 승인된 연차는 source_leave_id 매칭만 사용
+    //
+    // 안전 정책:
+    //   · source_leave_id 매칭이 1건 이상 있으면 레거시 매칭 skip (중복 삭제 방지)
+    //   · 두 삭제 모두 실패해도 leave_requests DELETE 는 이미 성공 → warn 로그만 (기존 거동 유지)
+
+    // 1차 · provenance 기반 삭제
+    const { data: provRows, error: provSelErr } = await supabase
       .from("schedules")
-      .delete()
-      .eq("employeeId", empId)
-      .in("type", ["월차", "오전반차", "오후반차"])
-      .gte("date", startDate)
-      .lte("date", endDate);
-    if (schedErr) {
-      logger.warn(`[LEAVE DELETE · schedules cleanup failed] ${schedErr.message}`);
-      // 스케쥴 삭제 실패는 경고만 · leave_requests 삭제는 이미 성공
+      .select("id")
+      .eq("source_leave_id", req.params.id);
+    if (provSelErr) {
+      // source_leave_id 컬럼 미적용 환경 (migration 선행 필요) → 레거시 경로로 폴백
+      if (/column .* does not exist|source_leave_id/i.test(provSelErr.message)) {
+        logger.warn(`[LEAVE DELETE · schedules] source_leave_id 컬럼 없음 (DB migration 미적용) · 레거시 매칭으로 폴백`);
+      } else {
+        logger.warn(`[LEAVE DELETE · schedules provenance select] ${provSelErr.message}`);
+      }
+    }
+
+    const provenanceMatched = Array.isArray(provRows) && provRows.length > 0;
+
+    if (provenanceMatched) {
+      const { error: schedErr } = await supabase
+        .from("schedules")
+        .delete()
+        .eq("source_leave_id", req.params.id);
+      if (schedErr) {
+        logger.warn(`[LEAVE DELETE · schedules provenance cleanup failed] ${schedErr.message}`);
+      } else {
+        logger.info(`[LEAVE DELETE] emp=${empId} · leave=${req.params.id} · provenance 기반 schedules ${provRows!.length}건 정리`);
+      }
     } else {
-      logger.info(`[LEAVE DELETE] emp=${empId} · ${startDate}~${endDate} · schedules 정리`);
+      // 2차 · 레거시 호환 (source_leave_id = NULL 인 schedule 만 대상)
+      //   · PHASE 1.5 적용 후에는 provenance 가 보장되므로 이 경로는 레거시 데이터에만 활성
+      //   · identity 가 불명확하지만 사용자 삭제 의도상 cleanup 수행 (기존 거동 유지)
+      const { error: legacyErr } = await supabase
+        .from("schedules")
+        .delete()
+        .eq("employeeId", empId)
+        .is("source_leave_id", null)
+        .in("type", ["월차", "오전반차", "오후반차"])
+        .gte("date", startDate)
+        .lte("date", endDate);
+      if (legacyErr) {
+        // source_leave_id 컬럼 자체가 없는 환경 → 완전 레거시 경로로 폴백
+        if (/column .* does not exist|source_leave_id/i.test(legacyErr.message)) {
+          const { error: fullLegacyErr } = await supabase
+            .from("schedules")
+            .delete()
+            .eq("employeeId", empId)
+            .in("type", ["월차", "오전반차", "오후반차"])
+            .gte("date", startDate)
+            .lte("date", endDate);
+          if (fullLegacyErr) {
+            logger.warn(`[LEAVE DELETE · schedules full-legacy cleanup failed] ${fullLegacyErr.message}`);
+          } else {
+            logger.info(`[LEAVE DELETE · full-legacy] emp=${empId} · ${startDate}~${endDate} · (source_leave_id 컬럼 없음)`);
+          }
+        } else {
+          logger.warn(`[LEAVE DELETE · schedules legacy cleanup failed] ${legacyErr.message}`);
+        }
+      } else {
+        logger.info(`[LEAVE DELETE · legacy-null-only] emp=${empId} · ${startDate}~${endDate}`);
+      }
     }
   }
   res.json({ ok: true });

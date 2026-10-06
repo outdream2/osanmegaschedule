@@ -45,9 +45,13 @@ ALTER TABLE resignation_requests
   ON UPDATE RESTRICT;
 
 -- [4] leave_requests.employee_id → employees.id
---   audit: leave_requests.total=14 · orphan=2 (employee_id=999, employee_id=3)
+--   audit (2026-10-06 재확인): leave_requests.total=14 · orphan=2 (employee_id=999, employee_id=3)
+--   PHASE 1.5 forensic (scripts/schedule-orphan-forensic-2026-10-06.mjs):
+--     · 30277299-9ff9-4bfb-844d-75ac96b5f81b · employee_id=999 · 이름 "테스트" (mojibake) · 다른 활동 0건 · B 테스트 데이터 가능성 높음 (판별 불가 E 보류)
+--     · 297371b0-c0fb-4706-b783-7a42414c299c · employee_id=3 · 이름 "박부장" · 다른 활동 0건 · E 판별 불가 (현재 employees.id=3 미존재)
 --   → FK 추가 시 오류 발생 (orphan rows violate FK) · 적용 금지
---   → 사용자 수동으로 orphan 2건 처리 (삭제 or 유효 employee 로 재배정) 후 아래 블록 주석 해제하여 적용.
+--   → 사용자 승인 후 수동 orphan 처리 (삭제 or 유효 employee 로 재배정) 후 아래 블록 주석 해제하여 적용.
+--   → 이름 유사도/fuzzy matching 금지. 명확한 증거 없는 자동 복원·재배정 금지.
 --
 -- ALTER TABLE leave_requests
 --   ADD CONSTRAINT fk_leave_requests_employee

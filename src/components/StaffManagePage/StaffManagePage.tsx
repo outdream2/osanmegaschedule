@@ -19,6 +19,7 @@ import {
   uploadBankbook as apiUploadBankbook,
   uploadResignationFile as apiUploadResignation,
   deleteResume as apiDeleteResume,
+  EmployeeDeleteError,
 } from "../../lib/employeeApi";
 import { api, ApiError } from "../../lib/apiClient";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
@@ -340,7 +341,20 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
       await apiDeleteEmployee(emp.id);
       if (selectedId === emp.id) setSelectedId(null);
       loadEmployees();
-    } catch (err: unknown) { showError(`삭제 오류: ${err instanceof Error ? err.message : String(err)}`); }
+    } catch (err: unknown) {
+      // 2026-10-06 · PHASE 1.5 · 409 EMPLOYEE_HAS_RELATED_ROWS 분기 · 명확 안내
+      //   · 서버가 보낸 상세 counts 메시지가 err.message 에 포함됨
+      //   · 사용자에게 "퇴직 처리" 유도 (retireDate 사용)
+      if (err instanceof EmployeeDeleteError && err.code === "EMPLOYEE_HAS_RELATED_ROWS") {
+        showError(
+          "근무/연차/계약 등 이력이 있는 직원은 삭제할 수 없습니다. " +
+          "퇴직 처리해주세요 (직원 상세에서 [퇴사일] 입력)." +
+          (err.message ? `\n\n상세: ${err.message}` : ""),
+        );
+        return;
+      }
+      showError(`삭제 오류: ${err instanceof Error ? err.message : String(err)}`);
+    }
   };
 
   const createEmployee = async (data: Partial<Employee>) => {

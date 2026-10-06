@@ -163,10 +163,36 @@ export async function createEmployee(payload: EmployeeUpdatePayload): Promise<Em
   }
 }
 
+/**
+ * 2026-10-06 · PHASE 1.5 · 409 EMPLOYEE_HAS_RELATED_ROWS 를 Error 에 code 로 전달
+ *   · 서버 메시지 그대로 사용하지만 code 필드 추가하여 호출자가 분기 가능
+ *   · 호출자는 err.message 로 안내 or 특별 메시지로 override
+ */
+export class EmployeeDeleteError extends Error {
+  code?: string;
+  counts?: { schedules?: number; leaveRequests?: number; contracts?: number; resignations?: number };
+  constructor(message: string, code?: string, counts?: EmployeeDeleteError["counts"]) {
+    super(message);
+    this.name = "EmployeeDeleteError";
+    this.code = code;
+    this.counts = counts;
+  }
+}
+
 export async function deleteEmployee(id: number): Promise<void> {
   try {
     await api.del(`/api/employees/${id}`);
   } catch (err) {
+    if (err instanceof ApiError) {
+      const body = err.data as { error?: string; code?: string; counts?: EmployeeDeleteError["counts"] } | undefined;
+      if (body?.code === "EMPLOYEE_HAS_RELATED_ROWS") {
+        throw new EmployeeDeleteError(
+          body.error ?? "근무/연차/계약 등 이력이 있는 직원은 삭제할 수 없습니다. 퇴직 처리해주세요.",
+          "EMPLOYEE_HAS_RELATED_ROWS",
+          body.counts,
+        );
+      }
+    }
     rethrowAsError(err, "직원 삭제 실패");
   }
 }

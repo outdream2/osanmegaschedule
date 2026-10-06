@@ -40,7 +40,22 @@ router.post("/api/schedules/batch", authorize(5), validateBody(BatchScheduleSche
   await assertScheduleNotLocked(firstDate, authLevel);
   return scheduleController.batchUpdateSchedules(req, res);
 }));
-router.post("/api/schedules/copy", authorize(5), validateBody(CopyScheduleSchema), asyncHandler((req, res) => scheduleController.copySchedules(req, res)));
+// 2026-10-06 · PHASE 1.5 · copy 라우트도 schedule lock 검증 추가
+//   · lv<9 + target month locked → 403 SCHEDULE_LOCKED (복사 자체가 target month 전체 upsert 이므로 lock 적용)
+//   · lv≥9 bypass 유지
+//   · source month lock 은 "읽기" 이므로 영향 없음 (copySchedulesFromPreviousMonth 는 source 를 SELECT 만 함)
+//   · zone_day_assignments.is_confirmed 는 다른 의미 · schedule month lock 과 결합하지 않음
+router.post("/api/schedules/copy", authorize(5), validateBody(CopyScheduleSchema), asyncHandler(async (req, res) => {
+  const authLevel = (req as AuthedRequest).authUser?.level ?? 0;
+  const targetYear = Number(req.body.targetYear);
+  const targetMonth = Number(req.body.targetMonth);
+  if (!Number.isFinite(targetYear) || !Number.isFinite(targetMonth) || targetMonth < 1 || targetMonth > 12) {
+    throw badRequest("targetYear / targetMonth 가 올바르지 않습니다");
+  }
+  const targetYm = `${targetYear}-${String(targetMonth).padStart(2, "0")}`;
+  await assertScheduleNotLocked(targetYm, authLevel);
+  return scheduleController.copySchedules(req, res);
+}));
 // 2026-08-29 · 보안 S0 · 직원 신규 등록 · 관리자(lv9) 전용
 router.post("/api/employees", authorize(9), validateBody(CreateEmployeeSchema.partial()), asyncHandler((req, res) => scheduleController.createEmployee(req, res)));
 // #122 · 신규 사번 자동 생성 · MAX + 1 · 3자리 zero-pad
