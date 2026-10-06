@@ -416,38 +416,104 @@ const HourlyReportTab: React.FC = () => {
         const BUSINESS_HOURS = ["09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22"];
         const unionSlotsSet = new Set<string>([...BUSINESS_HOURS, ...allSlots]);
         const fixedSlots = [...unionSlotsSet].sort();
-        // slot 별 각 날짜 series value 계산 · metric 별
-        //   { time, [dateKey]: value, forecast?: number } 형식 · 각 날짜 별도 Line + 예상(평균) 점선
-        const buildSeriesData = (metric: ChartMetric) => fixedSlots.map((slot) => {
-          const point: Record<string, number | string | null> = { time: slot };
-          const todayValues: number[] = [];
-          const pastValues: number[] = [];
-          for (const d of effDateData) {
-            const r = d.rowMap.get(slot);
-            if (!r) { point[d.date] = null; continue; }
-            const sale = Number(r.SaleTotal ?? 0);
-            const cust = Number(r.CustomerCnt ?? 0);
-            const marg = Number(r.Margin ?? 0);
-            let v: number | null = null;
-            if (metric === "revenue") v = sale;
-            else if (metric === "avg-order") v = cust > 0 ? Math.round(sale / cust) : null;
-            else if (metric === "margin-rate") v = sale > 0 ? Math.round((marg / sale) * 1000) / 10 : null;
-            else if (metric === "customers") v = cust;
-            point[d.date] = v;
-            // 2026-10-06 · 예상(forecast) · 과거 날짜 평균 trajectory · 오늘은 제외
-            if (v != null) {
-              if (d.date === today) todayValues.push(v);
-              else pastValues.push(v);
+        // 2026-10-06 · 사용자 지시 · 현재 시간 이후 slot = 데이터 없음 (null) · 0 으로 처리 X
+        //   · 예측 Line (오늘 미래) · 주중/주말 가중 평균 · 형광색 점선
+        const nowHour = new Date().getHours();
+        const todayIsWknd = isWeekend(today);
+        // 예측 pool · 오늘과 같은 요일종류 (주중/주말) 의 과거 날짜만
+        const forecastPool = effDateData.filter(
+          (d) => d.date !== today && isWeekend(d.date) === todayIsWknd,
+        );
+        // slot 별 예측값 (주중/주말 가중 평균) · metric 별
+        const buildForecastBySlot = (metric: ChartMetric): Map<string, number | null> => {
+          const out = new Map<string, number | null>();
+          for (const slot of fixedSlots) {
+            const vals: number[] = [];
+            for (const d of forecastPool) {
+              const r = d.rowMap.get(slot);
+              if (!r) continue;
+              const sale = Number(r.SaleTotal ?? 0);
+              const cust = Number(r.CustomerCnt ?? 0);
+              const marg = Number(r.Margin ?? 0);
+              let v: number | null = null;
+              if (metric === "revenue") v = sale;
+              else if (metric === "avg-order") v = cust > 0 ? sale / cust : null;
+              else if (metric === "margin-rate") v = sale > 0 ? (marg / sale) * 100 : null;
+              else if (metric === "customers") v = cust;
+              if (v != null && Number.isFinite(v)) vals.push(v);
             }
+            out.set(slot, vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null);
           }
-          // 예상 trajectory · 과거 날짜 평균 (오늘 slot 에만 표시 or 전체)
-          //   매출 metric 에서만 노출 · 사용자 지시 "예상매출액"
-          if (metric === "revenue" && pastValues.length > 0) {
-            point.forecast = Math.round(pastValues.reduce((a, b) => a + b, 0) / pastValues.length);
-          }
-          void todayValues;
-          return point;
-        });
+          return out;
+        };
+        // slot 별 각 날짜 series value 계산 · metric 별
+        //   오늘 Line · 현재 시간 이후 null (끊김) · 예측 Line · 현재 시간 이후 만 값
+        const todayInEffData = effDateData.some((d) => d.date === today);
+        const buildSeriesData = (metric: ChartMetric) => {
+          const forecastBySlot = buildForecastBySlot(metric);
+          return fixedSlots.map((slot) => {
+            const point: Record<string, number | string | null> = { time: slot };
+            const slotHour = parseInt(slot, 10);
+            const isFutureSlot = todayInEffData && Number.isFinite(slotHour) && slotHour > nowHour;
+            for (const d of effDateData) {
+              const r = d.rowMap.get(slot);
+              if (!r) { point[d.date] = null; continue; }
+              const sale = Number(r.SaleTotal ?? 0);
+              const cust = Number(r.CustomerCnt ?? 0);
+              const marg = Number(r.Margin ?? 0);
+              let v: number | null = null;
+              if (metric === "revenue") v = sale;
+              else if (metric === "avg-order") v = cust > 0 ? Math.round(sale / cust) : null;
+              else if (metric === "margin-rate") v = sale > 0 ? Math.round((marg / sale) * 1000) / 10 : null;
+              else if (metric === "customers") v = cust;
+              // 오늘 날짜 · 현재 시간 이후 slot 은 데이터 없는 것으로 처리 (null)
+              if (d.date === today && isFutureSlot) {
+                point[d.date] = null;
+              } else {
+                point[d.date] = v;
+              }
+            }
+            // 2026-10-06 · 사용자 지시 · 예측 Line 이 오늘 Line 과 자연 연결 되도록
+            //   · 현재 시간 slot = 오늘 실제값 (bridge · 두 Line 연결점)
+            //   · 미래 slot = 예측값 (주중/주말 pool 평균)
+            //   · 과거 slot = null (예측 Line 그리지 않음)
+            //   · 오늘 날짜가 선택 안 됐으면 forecast 전체 null
+            if (todayInEffData && Number.isFinite(slotHour)) {
+              if (slotHour === nowHour) {
+                // 현재 slot · 오늘 실제값으로 bridging
+                const todayBlock = effDateData.find((d) => d.date === today);
+                const r = todayBlock?.rowMap.get(slot);
+                if (r) {
+                  const sale = Number(r.SaleTotal ?? 0);
+                  const cust = Number(r.CustomerCnt ?? 0);
+                  const marg = Number(r.Margin ?? 0);
+                  let v: number | null = null;
+                  if (metric === "revenue") v = sale;
+                  else if (metric === "avg-order") v = cust > 0 ? Math.round(sale / cust) : null;
+                  else if (metric === "margin-rate") v = sale > 0 ? Math.round((marg / sale) * 1000) / 10 : null;
+                  else if (metric === "customers") v = cust;
+                  point.forecast = v;
+                } else {
+                  // 현재 slot 실제 데이터 없으면 예측으로
+                  const f = forecastBySlot.get(slot);
+                  point.forecast = f != null && Number.isFinite(f)
+                    ? (metric === "margin-rate" ? Math.round(f * 10) / 10 : Math.round(f))
+                    : null;
+                }
+              } else if (slotHour > nowHour) {
+                const f = forecastBySlot.get(slot);
+                point.forecast = f != null && Number.isFinite(f)
+                  ? (metric === "margin-rate" ? Math.round(f * 10) / 10 : Math.round(f))
+                  : null;
+              } else {
+                point.forecast = null;
+              }
+            } else {
+              point.forecast = null;
+            }
+            return point;
+          });
+        };
         const TAB_LABEL: Record<ChartMetric, string> = {
           "revenue": "매출", "avg-order": "객단가", "margin-rate": "마진율", "customers": "고객수",
         };
@@ -489,6 +555,29 @@ const HourlyReportTab: React.FC = () => {
             <div className="w-full" style={{ height: 320 }}>
               {(() => {
                 const chartData = buildSeriesData(chartMetric);
+                // 2026-10-06 · 사용자 지시 · outlier 로 축 왜곡 방지 · percentile (5~95) domain 자동 산출
+                //   · allowDataOverflow · outlier 는 축 밖으로 clip · 전체 데이터 변화 극명
+                const allValues: number[] = [];
+                for (const pt of chartData) {
+                  for (const [k, v] of Object.entries(pt)) {
+                    if (k === "time") continue;
+                    const n = typeof v === "number" ? v : Number(v);
+                    if (Number.isFinite(n)) allValues.push(n);
+                  }
+                }
+                let yDomain: [number | string, number | string] = ["auto", "auto"];
+                if (allValues.length >= 4) {
+                  const sorted = [...allValues].sort((a, b) => a - b);
+                  const p5 = sorted[Math.max(0, Math.floor(sorted.length * 0.05))];
+                  const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))];
+                  const range = p95 - p5;
+                  const buffer = range > 0 ? range * 0.1 : Math.max(1, Math.abs(p95) * 0.05);
+                  const yMin = Math.max(chartMetric === "margin-rate" ? -100 : 0, p5 - buffer);
+                  const yMax = p95 + buffer;
+                  if (Number.isFinite(yMin) && Number.isFinite(yMax) && yMax > yMin) {
+                    yDomain = [Math.floor(yMin), Math.ceil(yMax)];
+                  }
+                }
                 const yFormatter = chartMetric === "margin-rate"
                   ? (v: number) => `${Number(v).toFixed(0)}%`
                   : chartMetric === "customers"
@@ -510,12 +599,14 @@ const HourlyReportTab: React.FC = () => {
                     <LineChart data={chartData} margin={{ top: 10, right: 15, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
                       <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#52525b" }} tickFormatter={(v) => `${v}시`} interval={0} />
-                      {/* 2026-10-06 · 사용자 지시 · 축 최대한 활용 · domain=auto · 수치 변화 극명 */}
+                      {/* 2026-10-06 · 사용자 지시 · outlier 축 왜곡 방지 · percentile domain · 전체 변화 극명
+                          · allowDataOverflow=true · outlier 는 축 밖으로 clip */}
                       <YAxis
                         tick={{ fontSize: 11, fill: "#52525b" }}
                         tickFormatter={(v) => yFormatter(Number(v))}
                         width={60}
-                        domain={["auto", "auto"]}
+                        domain={yDomain}
+                        allowDataOverflow={true}
                         allowDecimals={false}
                       />
                       <Tooltip
@@ -551,12 +642,15 @@ const HourlyReportTab: React.FC = () => {
                           />
                         );
                       })}
-                      {/* 2026-10-06 · 사용자 지시 · 매출 탭 · 예상 매출 점선 (과거 평균) */}
-                      {chartMetric === "revenue" && (
+                      {/* 2026-10-06 · 사용자 지시 · 예측 Line · 오늘 미래 slot 만 · 형광색 점선
+                          · 주중/주말 가중 평균 (오늘 요일 종류의 과거 날짜 pool 평균)
+                          · connectNulls=false · 과거 slot 은 null → 그려지지 않음 · 오늘 Line 과 자연 연결 */}
+                      {todayInEffData && (
                         <Line
                           type="monotone" dataKey="forecast" name="forecast"
-                          stroke="#71717a" strokeDasharray="5 4" strokeWidth={1.6}
-                          dot={false} activeDot={{ r: 4 }} connectNulls={true}
+                          stroke="#a3e635" strokeDasharray="5 4" strokeWidth={2.4}
+                          dot={{ r: 3, fill: "#a3e635", strokeWidth: 1, stroke: "#65a30d" }}
+                          activeDot={{ r: 5 }} connectNulls={false}
                         />
                       )}
                     </LineChart>
