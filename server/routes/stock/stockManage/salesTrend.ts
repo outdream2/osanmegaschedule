@@ -45,12 +45,22 @@ router.get("/api/sales-trend/product", asyncHandler(async (req, res) => {
     .order("period_end", { ascending: true });
   if (error) throw new HttpError(500, error.message, "DB_ERROR");
   // 2026-10-06 · months_list 비연속 월 post-filter · 중간 월 자동 포함 금지
-  let rows: unknown[] = data ?? [];
+  let rawRows: Array<Record<string, unknown>> = (data ?? []) as Array<Record<string, unknown>>;
   if (!monthsList.isEmpty) {
-    rows = (data ?? []).filter((r: { period_end: string | null }) => isDateInSelectedMonths(r.period_end, monthsList.set));
+    rawRows = rawRows.filter((r) => isDateInSelectedMonths((r.period_end ?? null) as string | null, monthsList.set));
   } else if (seasonMonths) {
-    rows = (data ?? []).filter((r: { period_end: string | null }) => inSeasonMonths(String(r.period_end ?? ""), seasonMonths));
+    rawRows = rawRows.filter((r) => inSeasonMonths(String(r.period_end ?? ""), seasonMonths));
   }
+  // 2026-10-06 · 대원칙 · canonical product_name = products.product_name (exact · code 기준)
+  //   · stock_history.product_name (transaction snapshot) 노출 금지 · 매칭 실패 시 null
+  //   · 이 endpoint 는 ?code= 단일 상품 조회 → single lookup
+  let canonicalProductName: string | null = null;
+  try {
+    const { data: p } = await supabase.from("products").select("product_name").eq("product_code", code).maybeSingle();
+    const nm = String((p as any)?.product_name ?? "").trim();
+    canonicalProductName = nm || null;
+  } catch { canonicalProductName = null; }
+  const rows = rawRows.map((r) => ({ ...r, product_name: canonicalProductName }));
   const payload = { code, months, season: seasonParam || undefined, season_months: seasonMonths ?? undefined, rows };
   res.setHeader("Cache-Control", "no-store");
   res.json(payload);

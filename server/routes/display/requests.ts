@@ -612,20 +612,41 @@ router.get("/api/order-requests", asyncHandler(async (req, res) => {
   const { data, error } = await q;
   if (error) throw new HttpError(500, error.message);
   // 2026-09-09 · products JOIN · 최신 optimal_stock 병합
+  // 2026-10-06 · 대원칙 · canonical product_name = products.product_name
+  //   · order_requests.product_name (transaction snapshot) 노출 금지 · 매칭 실패 시 null
   const rows = data ?? [];
   const codes = Array.from(new Set(rows.map((r: any) => String(r.product_code ?? "").trim()).filter(Boolean)));
-  if (codes.length > 0) {
+  if (codes.length === 0) {
+    for (const r of rows as any[]) r.product_name = null;
+  } else {
     try {
-      const { data: prods } = await supabase.from("products").select("product_code, optimal_stock").in("product_code", codes);
-      const optMap = new Map<string, number | null>();
-      for (const p of prods ?? []) {
-        const opt = (p as any).optimal_stock;
-        optMap.set(String((p as any).product_code ?? "").trim(), opt != null ? Number(opt) : null);
+      const CHUNK = 500;
+      const prodMap = new Map<string, { product_name: string | null; optimal_stock: number | null }>();
+      for (let i = 0; i < codes.length; i += CHUNK) {
+        const chunk = codes.slice(i, i + CHUNK);
+        const { data: prods } = await supabase.from("products").select("product_code, product_name, optimal_stock").in("product_code", chunk);
+        for (const p of prods ?? []) {
+          const code = String((p as any).product_code ?? "").trim();
+          if (!code) continue;
+          const nm = String((p as any).product_name ?? "").trim();
+          const opt = (p as any).optimal_stock;
+          prodMap.set(code, {
+            product_name: nm || null,
+            optimal_stock: opt != null ? Number(opt) : null,
+          });
+        }
       }
       for (const r of rows as any[]) {
-        r.optimal_stock = optMap.get(String(r.product_code ?? "").trim()) ?? null;
+        const code = String(r.product_code ?? "").trim();
+        const info = code ? prodMap.get(code) : undefined;
+        // 2026-10-06 · canonical SSOT · products.product_name · transaction snapshot 금지
+        r.product_name = info?.product_name ?? null;
+        r.optimal_stock = info?.optimal_stock ?? null;
       }
-    } catch { /* silent · products 조회 실패 시 · optimal_stock null */ }
+    } catch {
+      // 2026-10-06 · products 조회 실패 시 · transaction snapshot 노출 금지 · product_name null
+      for (const r of rows as any[]) { r.product_name = null; r.optimal_stock = null; }
+    }
   }
   res.json(rows);
 }));
@@ -799,7 +820,10 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
     g.items.push({
       id: row.id,
       product_code: row.product_code,
-      product_name: row.product_name,
+      // 2026-10-06 · 대원칙 · canonical product_name = products.product_name
+      //   · order_requests.product_name (transaction snapshot) 노출 금지
+      //   · 아래 products JOIN 에서 override · 매칭 실패 시 null
+      product_name: null,
       order_qty: qty,
       unit_price: price,
       line_amount: qty * price,
@@ -811,32 +835,35 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
   }
   // 2026-09-09 · products.optimal_stock 병합 · 발주 이력에도 최신값 표시 (재계산 변동 감수)
   // 2026-09-24 · 사용자 지시 · JOIN 방식 · SSOT · products.purchase_price 실시간 조회 · unit_price NULL 폴백
-  //   · Snapshot 방식 · 정합성 위배 (products 정정 시 이력 divergence) · 사용자 대원칙 위배
-  //   · JOIN 방식 · 상품 마스터 = SSOT · 이력 조회 시 · 최신 단가 자동 반영
+  // 2026-10-06 · product_name · canonical SSOT = products.product_name · transaction snapshot 금지
   const allCodes = new Set<string>();
   for (const g of grouped.values()) for (const it of g.items) if (it.product_code) allCodes.add(String(it.product_code));
   if (allCodes.size > 0) {
     try {
-      const { data: prods } = await supabase.from("products").select("product_code, optimal_stock, purchase_price").in("product_code", [...allCodes]);
-      const optMap = new Map<string, number | null>();
-      const priceMap = new Map<string, number | null>();
+      const { data: prods } = await supabase.from("products").select("product_code, product_name, optimal_stock, purchase_price").in("product_code", [...allCodes]);
+      const productsByCode = new Map<string, { product_name: string | null; optimal_stock: number | null; purchase_price: number | null }>();
       for (const p of prods ?? []) {
         const code = String((p as any).product_code ?? "").trim();
+        if (!code) continue;
+        const nm = String((p as any).product_name ?? "").trim();
         const opt = (p as any).optimal_stock;
         const price = (p as any).purchase_price;
-        optMap.set(code, opt != null ? Number(opt) : null);
-        priceMap.set(code, price != null ? Number(price) : null);
+        productsByCode.set(code, {
+          product_name: nm || null,
+          optimal_stock: opt != null ? Number(opt) : null,
+          purchase_price: price != null ? Number(price) : null,
+        });
       }
       for (const g of grouped.values()) {
         for (const it of g.items) {
           const code = String(it.product_code ?? "").trim();
-          it.optimal_stock = optMap.get(code) ?? null;
+          const info = code ? productsByCode.get(code) : undefined;
+          it.product_name = info?.product_name ?? null;
+          it.optimal_stock = info?.optimal_stock ?? null;
           // unit_price · order_requests 값 우선 · NULL/0 이면 · products.purchase_price 폴백
-          //   · 표준 발주 flow · unit_price 저장 안 함 → 항상 products 값 표시
-          //   · 이력 정확도 · products 정정 시 · 이력에도 최신값 반영 (정합성)
           const savedPrice = Number(it.unit_price ?? 0);
           if (!savedPrice || savedPrice <= 0) {
-            const currentPrice = priceMap.get(code) ?? 0;
+            const currentPrice = info?.purchase_price ?? 0;
             it.unit_price = currentPrice;
             it.line_amount = Number(it.order_qty ?? 0) * currentPrice;
           }
@@ -844,7 +871,7 @@ router.get("/api/order-history", asyncHandler(async (req, res) => {
         // 그룹 total_amount 재계산 (JOIN 폴백 반영)
         g.total_amount = g.items.reduce((sum: number, it: { line_amount?: number }) => sum + Number(it.line_amount ?? 0), 0);
       }
-    } catch { /* silent · products 조회 실패 시 · optimal_stock null · unit_price 원본 유지 */ }
+    } catch { /* silent · products 조회 실패 시 · optimal_stock null · unit_price 원본 유지 · product_name null 유지 */ }
   }
   const orders = [...grouped.values()].sort((a, b) => String(b.sent_at ?? "").localeCompare(String(a.sent_at ?? "")));
   // 2026-09-11 · #126 · 사용자 지시 · 발주이력 · 캐시 X · 즉시 DB
