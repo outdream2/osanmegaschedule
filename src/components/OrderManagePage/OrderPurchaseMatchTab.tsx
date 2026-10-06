@@ -257,6 +257,22 @@ export const OrderPurchaseMatchTab: React.FC = () => {
   const handleProcessingChange = useCallback(async (order: OrderGroup, next: ProcessingStatus) => {
     const current = deriveProcessingStatus(order);
     if (current === next) return;
+    // resolved → matched/exception · resolution_* 선행 clear (혼재 상태 방지)
+    //   · auto_status / auto_exception_type 은 서버 런타임 계산 · 보존 보장
+    if (current === "resolved" && (next === "matched" || next === "exception")) {
+      setBusy(true);
+      try {
+        for (const r of order.rows) {
+          if (r.resolution_status === "resolved") {
+            await confirmOrderPurchaseMatch(r.id, { action: "unresolve", exception_type: null, note: null });
+          }
+        }
+      } catch (e) {
+        showError(e instanceof ApiError ? e.message : getErrorMessage(e, "처리 실패"));
+        setBusy(false);
+        return;
+      } finally { setBusy(false); }
+    }
     if (next === "pending") {
       const ok = await confirm({ title: "미판정으로 되돌리기", message: "이 발주의 모든 판정·처리완료를 취소합니다.", confirmLabel: "되돌리기", danger: true });
       if (ok) await runUndo(order.rows);
@@ -267,7 +283,7 @@ export const OrderPurchaseMatchTab: React.FC = () => {
     } else if (next === "resolved") {
       await runResolve(order.rows);
     }
-  }, [confirm, runUndo, runConfirm, runResolve, openException]);
+  }, [confirm, runUndo, runConfirm, runResolve, openException, showError]);
 
   const toggleOpen = useCallback((key: string) => {
     setOpenKey(prev => prev === key ? null : key);
