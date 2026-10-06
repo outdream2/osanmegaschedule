@@ -25,14 +25,15 @@ import { addCachedProduct, lookupProduct, type ProductInfo } from "./productsCac
  * · 나머지 필드는 spread 로 유지 (spec/supplier 등 · 이미 정규화된 필드는 덮어씀)
  */
 export function normalizeProductRow(raw: any, fallbackCode: string): ProductInfo {
-  const locStr = String(raw?.location ?? raw?.display_location ?? raw?.spec ?? "");
+  // 2026-10-06 · 사용자 지시 · spec 을 location fallback 으로 사용하지 않음 (업무 데이터 fallback 제거)
+  const locStr = String(raw?.location ?? raw?.display_location ?? "");
   return {
     code: String(raw?.code ?? raw?.product_code ?? fallbackCode ?? ""),
     name: String(raw?.name ?? raw?.product_name ?? ""),
     spec: locStr,
     supplier: raw?.supplier ?? null,
     ...(raw ?? {}),
-    location: raw?.location ?? raw?.display_location ?? raw?.spec ?? null,
+    location: raw?.location ?? raw?.display_location ?? null,
   } as ProductInfo;
 }
 

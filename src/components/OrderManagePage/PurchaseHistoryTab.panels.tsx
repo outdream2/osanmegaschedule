@@ -222,6 +222,8 @@ interface ByVendorPanelProps {
   setPeriodMonths: (v: 0 | 1 | 2 | 3 | 4 | 5 | 6) => void;
   periodSeason: SeasonKey | null;
   setPeriodSeason: (v: SeasonKey | null) => void;
+  /** 2026-10-05 · 월 멀티선택 · 부모 SSOT · embedded SupplierTab 로 전달 */
+  selectedMonths: string[];
   openVendorInfo: (v: VendorRecord) => void;
   loadVendorData: (supplier: string) => void;
   /** 2026-09-18 · #93 · 옵션 C · 하이브리드 배너 · union 모드 여부 */
@@ -240,6 +242,7 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
   vendors, selectedVendor, setSelectedVendor, subTab, setSubTab,
   detailRows, detailLoading, ledgerRows, ledgerLoading, ledgerError, setLedgerError,
   highlightId, periodMonths, setPeriodMonths, periodSeason, setPeriodSeason,
+  selectedMonths,
   openVendorInfo, loadVendorData,
   unionMode = false, onEnableUnion, onDisableUnion,
   similarWithHistoryCount = 0, unionVendorCount = 0,
@@ -281,6 +284,8 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
           showCycleColumn
           selectedSupplierName={selectedVendor?.company_name ?? null}
           /* 2026-09-01 · 사용자 지시 · 부모 기간 변경 시 · 공급사 리스트 재fetch → loading 스피너 프레임워크 자동 동작 */
+          /* 2026-10-05 · 월 멀티선택 · 부모 selectedMonths SSOT · 변경 시 embedded fetchData 트리거 */
+          selectedMonths={selectedMonths}
           periodMonths={periodMonths}
           periodSeason={periodSeason}
           onSupplierClick={(supplierName) => {
@@ -548,7 +553,8 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
               </colgroup>
               <tbody className="divide-y divide-zinc-100">
                 {filteredProducts.map(p => {
-                  const key = String(p.product_code ?? "").trim() || p.product_name;
+                  // 2026-10-06 · 사용자 지시 · identity = canonical product_code only (name fallback 제거)
+                  const key = String(p.product_code ?? "").trim();
                   const active = selectedProductKey === key;
                   const saleQty = p.sale_qty ?? null;
                   const saleAmt = p.sale_amount ?? null;
@@ -621,7 +627,8 @@ export const ByProductPanel: React.FC<ByProductPanelProps> = ({
             {/* ─── 모바일 카드 뷰 (md 미만) ─── */}
             <div className="md:hidden flex flex-col divide-y divide-zinc-100">
               {filteredProducts.map(p => {
-                const key = String(p.product_code ?? "").trim() || p.product_name;
+                // 2026-10-06 · 사용자 지시 · identity = canonical product_code only (name fallback 제거)
+                const key = String(p.product_code ?? "").trim();
                 const active = selectedProductKey === key;
                 const saleQty = p.sale_qty ?? null;
                 const saleAmt = p.sale_amount ?? null;

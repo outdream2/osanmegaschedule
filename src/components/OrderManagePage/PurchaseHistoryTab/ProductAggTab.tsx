@@ -53,16 +53,20 @@ const PRODUCT_AGG_CMP: Record<ProductSortKey, Comparator<ProductAgg>> = {
 
 export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ rows, loading }) => {
   const aggregated = useMemo<ProductAgg[]>(() => {
+    // 2026-10-06 · 사용자 지시 · identity/group key = canonical product_code
+    //   · product_name 은 display only (DB 에서 받은 값 그대로 보존)
+    //   · product_code 가 없는 row 는 unmapped · 집계에서 skip (ghost merge 방지)
     const map = new Map<string, ProductAgg>();
     for (const r of rows) {
-      const nm = String(r.product_name ?? "").trim() || "(이름없음)";
-      const key = nm;
-      let a = map.get(key);
+      const code = String(r.product_code ?? "").trim();
+      if (!code) continue; // identity 없음 → skip
+      const pname = String(r.product_name ?? "").trim();
+      let a = map.get(code);
       if (!a) {
         a = {
-          key,
-          product_name: nm,
-          product_code: r.product_code,
+          key: code,
+          product_name: pname || "-",
+          product_code: code,
           total_qty: 0,
           total_amount: 0,
           avg_unit_price: 0,
@@ -71,13 +75,15 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
           avg_interval: null,
           _dates: new Set<string>(),
         };
-        map.set(key, a);
+        map.set(code, a);
+      } else if ((a.product_name === "-" || !a.product_name) && pname) {
+        // 첫 non-empty product_name 으로 display 보강
+        a.product_name = pname;
       }
       a.total_qty += r.quantity;
       a.total_amount += r.amount;
       a.purchase_count += 1;
       if (r.date > a.last_date) a.last_date = r.date;
-      if (!a.product_code && r.product_code) a.product_code = r.product_code;
       const d = String(r.date ?? "").slice(0, 10);
       if (/^\d{4}-\d{2}-\d{2}$/.test(d)) a._dates.add(d);
     }

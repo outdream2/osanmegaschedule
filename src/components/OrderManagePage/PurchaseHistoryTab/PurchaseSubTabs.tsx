@@ -240,16 +240,24 @@ export const MonthlyPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows 
 // ── 차트 3 · 상품별 매입 Top 10 비중 ─────────────────────────────────────
 export const TopProductsPieChart: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
   const { data, total } = useMemo(() => {
-    const map = new Map<string, number>();
+    // 2026-10-06 · 사용자 지시 · group key = canonical product_code · display = product_name
+    const map = new Map<string, { name: string; value: number }>();
     let t = 0;
     for (const r of rows) {
-      const nm = String(r.product_name ?? "").trim() || "(이름없음)";
-      map.set(nm, (map.get(nm) ?? 0) + r.amount);
+      const code = String(r.product_code ?? "").trim();
+      if (!code) continue; // identity 없음 → skip
+      const pname = String(r.product_name ?? "").trim();
+      const existing = map.get(code);
+      if (!existing) map.set(code, { name: pname || "-", value: r.amount });
+      else {
+        existing.value += r.amount;
+        if ((existing.name === "-" || !existing.name) && pname) existing.name = pname;
+      }
       t += r.amount;
     }
-    const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-    const top10 = sorted.slice(0, 10);
-    const othersSum = sorted.slice(10).reduce((s, [, v]) => s + v, 0);
+    const sorted = Array.from(map.values()).sort((a, b) => b.value - a.value);
+    const top10 = sorted.slice(0, 10).map(x => [x.name, x.value] as [string, number]);
+    const othersSum = sorted.slice(10).reduce((s, x) => s + x.value, 0);
     const items = othersSum > 0
       ? [...top10, ["기타", othersSum] as [string, number]]
       : top10;
@@ -352,38 +360,49 @@ const Top10Card: React.FC<{
   );
 };
 
-// 매입수량 Top10 (product_name 기준 · 총 수량 합)
+// 매입수량 Top10 (2026-10-06 · identity = product_code · display = product_name)
 const TopQuantityCard: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
   const items = useMemo<Top10Item[]>(() => {
-    const map = new Map<string, number>();
+    const map = new Map<string, { name: string; value: number }>();
     for (const r of rows) {
-      const nm = String(r.product_name ?? "").trim() || "(이름없음)";
-      map.set(nm, (map.get(nm) ?? 0) + (Number(r.quantity) || 0));
+      const code = String(r.product_code ?? "").trim();
+      if (!code) continue;
+      const pname = String(r.product_name ?? "").trim();
+      const q = Number(r.quantity) || 0;
+      const existing = map.get(code);
+      if (!existing) map.set(code, { name: pname || "-", value: q });
+      else {
+        existing.value += q;
+        if ((existing.name === "-" || !existing.name) && pname) existing.name = pname;
+      }
     }
-    return Array.from(map.entries())
-      .filter(([, v]) => v > 0)
-      .sort((a, b) => b[1] - a[1])
+    return Array.from(map.values())
+      .filter(x => x.value > 0)
+      .sort((a, b) => b.value - a.value)
       .slice(0, 10)
-      .map(([name, value], i) => ({ rank: i + 1, name, value }));
+      .map((x, i) => ({ rank: i + 1, name: x.name, value: x.value }));
   }, [rows]);
   return <Top10Card title="매입수량 Top 10" items={items} formatValue={v => `${v.toLocaleString()}`} valueColor="text-amber-700" />;
 };
 
-// 단가 Top10 (product_name 기준 · 평균 단가)
+// 단가 Top10 (2026-10-06 · identity = product_code · display = product_name)
 const TopUnitPriceCard: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
   const items = useMemo<Top10Item[]>(() => {
-    const map = new Map<string, { sum: number; count: number }>();
+    const map = new Map<string, { name: string; sum: number; count: number }>();
     for (const r of rows) {
-      const nm = String(r.product_name ?? "").trim() || "(이름없음)";
+      const code = String(r.product_code ?? "").trim();
+      if (!code) continue;
+      const pname = String(r.product_name ?? "").trim();
       const up = Number(r.unit_price) || 0;
       if (up <= 0) continue;
-      const cur = map.get(nm) ?? { sum: 0, count: 0 };
+      const cur = map.get(code) ?? { name: pname || "-", sum: 0, count: 0 };
+      if ((cur.name === "-" || !cur.name) && pname) cur.name = pname;
       cur.sum += up;
       cur.count += 1;
-      map.set(nm, cur);
+      map.set(code, cur);
     }
-    return Array.from(map.entries())
-      .map(([name, { sum, count }]) => ({ name, avg: sum / count, count }))
+    return Array.from(map.values())
+      .map(({ name, sum, count }) => ({ name, avg: sum / count, count }))
       .sort((a, b) => b.avg - a.avg)
       .slice(0, 10)
       .map((x, i) => ({ rank: i + 1, name: x.name, value: Math.round(x.avg), sub: `${x.count}회` }));
@@ -391,20 +410,23 @@ const TopUnitPriceCard: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => 
   return <Top10Card title="단가 Top 10 (평균)" items={items} formatValue={v => `${fmtWon(v)}원`} valueColor="text-emerald-700" />;
 };
 
-// 매입간격 Top10 (product_name 기준 · 평균 매입 간격 일수 · 짧을수록 상위 = 자주 매입)
+// 매입간격 Top10 (2026-10-06 · identity = product_code · display = product_name)
 const TopIntervalCard: React.FC<{ rows: PurchaseDetailRow[] }> = ({ rows }) => {
   const items = useMemo<Top10Item[]>(() => {
-    const byProduct = new Map<string, Set<string>>();
+    const byProduct = new Map<string, { name: string; dates: Set<string> }>();
     for (const r of rows) {
-      const nm = String(r.product_name ?? "").trim() || "(이름없음)";
+      const code = String(r.product_code ?? "").trim();
+      if (!code) continue;
+      const pname = String(r.product_name ?? "").trim();
       const dt = String(r.date ?? "").slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(dt)) continue;
-      const set = byProduct.get(nm) ?? new Set<string>();
-      set.add(dt);
-      byProduct.set(nm, set);
+      const entry = byProduct.get(code) ?? { name: pname || "-", dates: new Set<string>() };
+      if ((entry.name === "-" || !entry.name) && pname) entry.name = pname;
+      entry.dates.add(dt);
+      byProduct.set(code, entry);
     }
     const result: Array<{ name: string; interval: number; count: number }> = [];
-    for (const [name, dateSet] of byProduct) {
+    for (const { name, dates: dateSet } of byProduct.values()) {
       if (dateSet.size < 2) continue; // 2회 이상 매입만 · 간격 계산 가능
       const dates = Array.from(dateSet).sort();
       let totalDays = 0;
@@ -448,62 +470,38 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
   }, [rows]);
 
   // 파이 차트 · 선택된 metric 기준 top10 분포 (interval 은 매입 횟수 기준)
+  // 2026-10-06 · 사용자 지시 · group key = product_code · display = product_name
   const pieData = useMemo(() => {
-    if (metric === "quantity") {
-      const map = new Map<string, number>();
+    const buildPie = (unitLabel: string, pickValue: (r: PurchaseDetailRow) => number) => {
+      const map = new Map<string, { name: string; value: number }>();
       let t = 0;
       for (const r of rows) {
-        const nm = String(r.product_name ?? "").trim() || "(이름없음)";
-        const v = Number(r.quantity) || 0;
-        map.set(nm, (map.get(nm) ?? 0) + v);
+        const code = String(r.product_code ?? "").trim();
+        if (!code) continue; // identity 없음 → skip
+        const pname = String(r.product_name ?? "").trim();
+        const v = pickValue(r);
+        const existing = map.get(code);
+        if (!existing) map.set(code, { name: pname || "-", value: v });
+        else {
+          existing.value += v;
+          if ((existing.name === "-" || !existing.name) && pname) existing.name = pname;
+        }
         t += v;
       }
-      const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-      const top = sorted.slice(0, 10);
-      const othersSum = sorted.slice(10).reduce((s, [, v]) => s + v, 0);
+      const sorted = Array.from(map.values()).sort((a, b) => b.value - a.value);
+      const top = sorted.slice(0, 10).map(x => [x.name, x.value] as [string, number]);
+      const othersSum = sorted.slice(10).reduce((s, x) => s + x.value, 0);
       const items = othersSum > 0 ? [...top, ["기타", othersSum] as [string, number]] : top;
       return {
         data: items.map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] })),
         total: t,
-        unitLabel: "개",
+        unitLabel,
       };
-    }
-    if (metric === "unitPrice") {
-      // 상품별 총 매입 금액 (amount) 기준 · 단가 자체는 avg 라 pie 부적합 → 매입액 분포로 표시
-      const map = new Map<string, number>();
-      let t = 0;
-      for (const r of rows) {
-        const nm = String(r.product_name ?? "").trim() || "(이름없음)";
-        map.set(nm, (map.get(nm) ?? 0) + r.amount);
-        t += r.amount;
-      }
-      const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-      const top = sorted.slice(0, 10);
-      const othersSum = sorted.slice(10).reduce((s, [, v]) => s + v, 0);
-      const items = othersSum > 0 ? [...top, ["기타", othersSum] as [string, number]] : top;
-      return {
-        data: items.map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] })),
-        total: t,
-        unitLabel: "원",
-      };
-    }
-    // interval → 매입 횟수 분포 (자주 매입 = 큰 조각)
-    const map = new Map<string, number>();
-    let t = 0;
-    for (const r of rows) {
-      const nm = String(r.product_name ?? "").trim() || "(이름없음)";
-      map.set(nm, (map.get(nm) ?? 0) + 1);
-      t += 1;
-    }
-    const sorted = Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-    const top = sorted.slice(0, 10);
-    const othersSum = sorted.slice(10).reduce((s, [, v]) => s + v, 0);
-    const items = othersSum > 0 ? [...top, ["기타", othersSum] as [string, number]] : top;
-    return {
-      data: items.map(([name, value], i) => ({ name, value, color: CHART_COLORS[i % CHART_COLORS.length] })),
-      total: t,
-      unitLabel: "회",
     };
+    if (metric === "quantity")  return buildPie("개", r => Number(r.quantity) || 0);
+    if (metric === "unitPrice") return buildPie("원", r => r.amount);
+    // interval → 매입 횟수 분포 (자주 매입 = 큰 조각)
+    return buildPie("회", () => 1);
   }, [rows, metric]);
 
   if (loading) {

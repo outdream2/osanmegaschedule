@@ -32,6 +32,7 @@ import type {
 import type { ProductSummary } from "./PurchaseHistoryTab/ProductRowCard";
 import type { ProductPurchaseRow } from "./PurchaseHistoryTab/ProductPurchaseDetailPanel";
 import { useLedgerHighlight } from "../../hooks/useLedgerHighlight";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { useVendorInfoModal } from "../common/features/VendorInfoModal";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { api, ApiError } from "../../lib/apiClient";
@@ -126,16 +127,10 @@ export const PurchaseHistoryTab: React.FC = () => {
   // 기간 필터 (3탭 공통 · 2026-08-05 · 매입이력 전용 → 3탭 공통 이관)
   // 2026-10-05 · 사용자 지시 · 월 멀티선택 (비연속 지원) · selectedMonths SSOT · Supabase purchase_details 직접 조회
   //   · periodMonths 는 호환성 유지 (summary API days 변환용 · summary API 는 months_list 지원함)
+  // 2026-10-06 · 공통 hook 재사용 (useMonthFilter · STANDARD)
   const [periodMonths, setPeriodMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
   const [periodSeason, setPeriodSeason] = useState<SeasonKey | null>(null);
-  const [selectedMonths, setSelectedMonths] = useState<string[]>(() => {
-    const now = new Date();
-    return [`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`];
-  });
-  const monthsListParamStr = useMemo(
-    () => [...selectedMonths].sort((a, b) => a.localeCompare(b)).join(","),
-    [selectedMonths],
-  );
+  const { selectedMonths, setSelectedMonths, monthsList: monthsListParamStr } = useMonthFilter();
 
   // ═══════════════════════════════════════════════════════════════════════
   //  상품별 뷰 (#191 · 신규)
@@ -303,15 +298,20 @@ export const PurchaseHistoryTab: React.FC = () => {
     setDetailLoading(true);
     setLedgerError(null);
     try {
-      const isDays10 = periodMonths === 0 && !periodSeason;
-      const days = periodSeason
-        ? 365
-        : isDays10 ? 10 : (periodMonths || 1) * 30;
-      const fromDate = new Date();
-      fromDate.setDate(fromDate.getDate() - days);
-      const fromStr = fromDate.toISOString().slice(0, 10);
-      // no_cycle=1 · cycle_days 계산 스킵 → 서버 응답 수십 배 빠름
-      const params = new URLSearchParams({ supplier, from: fromStr, limit: String(API_LIMITS.LARGE), no_cycle: "1" });
+      // 2026-10-05 · 사용자 지시 · 월 멀티선택 반영 · months_list 우선 · from fallback
+      const useMonthsList = !periodSeason && selectedMonths.length > 0;
+      const params = new URLSearchParams({ supplier, limit: String(API_LIMITS.LARGE), no_cycle: "1" });
+      if (useMonthsList) {
+        params.set("months_list", monthsListParamStr);
+      } else {
+        const isDays10 = periodMonths === 0 && !periodSeason;
+        const days = periodSeason
+          ? 365
+          : isDays10 ? 10 : (periodMonths || 1) * 30;
+        const fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - days);
+        params.set("from", fromDate.toISOString().slice(0, 10));
+      }
       const { data: j } = await api.get<any>(`/api/purchase-details?${params}`);
       const rowsFromApi: any[] = Array.isArray(j.rows) ? j.rows : [];
       // 2026-08-30 · 사용자 지시 · 정제명 매칭 · (주)녹십자 vs 녹십자 · vat 부가정보 무시
@@ -355,7 +355,8 @@ export const PurchaseHistoryTab: React.FC = () => {
       setLedgerLoading(false);
       setDetailLoading(false);
     }
-  }, [periodMonths, periodSeason]);
+    // 2026-10-05 · 월 멀티선택 · deps 에 monthsListParamStr 추가 (period 변경 시 재조회)
+  }, [periodMonths, periodSeason, monthsListParamStr, selectedMonths.length]);
 
   // 공급사 선택 시 · 단일 fetch
   useEffect(() => {
@@ -369,11 +370,12 @@ export const PurchaseHistoryTab: React.FC = () => {
   }, [selectedVendor, loadVendorData]);
 
   // 기간 필터 변경 시 재조회 (2026-08-05 · 3탭 공통 기간 반영)
+  //   2026-10-05 · 월 멀티선택 · monthsListParamStr 추가
   useEffect(() => {
     if (!selectedVendor) return;
     loadVendorData(selectedVendor.company_name);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [periodMonths, periodSeason]);
+  }, [periodMonths, periodSeason, monthsListParamStr]);
 
   // 원장 로드 완료 후 · 서브탭이 ledger 이고 최신 row 가 있으면 잠깐 강조
   useEffect(() => {
@@ -469,14 +471,18 @@ export const PurchaseHistoryTab: React.FC = () => {
       }
       setUnionVendorCount(targets.length);
 
-      // 기간 계산 (loadVendorData 와 동일)
-      const isDays10 = periodMonths === 0 && !periodSeason;
-      const days = periodSeason
-        ? 365
-        : isDays10 ? 10 : (periodMonths || 1) * 30;
-      const fromDate = new Date();
-      fromDate.setDate(fromDate.getDate() - days);
-      const fromStr = fromDate.toISOString().slice(0, 10);
+      // 2026-10-05 · 월 멀티선택 반영 (loadVendorData 와 동일 로직)
+      const useMonthsListU = !periodSeason && selectedMonths.length > 0;
+      let fromStr = "";
+      if (!useMonthsListU) {
+        const isDays10 = periodMonths === 0 && !periodSeason;
+        const days = periodSeason
+          ? 365
+          : isDays10 ? 10 : (periodMonths || 1) * 30;
+        const fromDate = new Date();
+        fromDate.setDate(fromDate.getDate() - days);
+        fromStr = fromDate.toISOString().slice(0, 10);
+      }
 
       const { displayVendorName: dv } = await import("../../utils/vendorNameNormalize");
 
@@ -485,10 +491,11 @@ export const PurchaseHistoryTab: React.FC = () => {
         targets.map(sup => {
           const params = new URLSearchParams({
             supplier: sup,
-            from: fromStr,
             limit: String(API_LIMITS.LARGE),
             no_cycle: "1",
           });
+          if (useMonthsListU) params.set("months_list", monthsListParamStr);
+          else params.set("from", fromStr);
           return api.get<any>(`/api/purchase-details?${params}`);
         }),
       );
@@ -548,16 +555,18 @@ export const PurchaseHistoryTab: React.FC = () => {
     } finally {
       if (runId === unionRunIdRef.current) setUnionLoading(false);
     }
+    // 2026-10-05 · 월 멀티선택 · deps 에 monthsListParamStr 추가
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedVendor, similarVendors, periodMonths, periodSeason]);
+  }, [selectedVendor, similarVendors, periodMonths, periodSeason, monthsListParamStr]);
 
   // unionMode ON · vendor·기간 변경 시 재로드
+  //   2026-10-05 · 월 멀티선택 · monthsListParamStr 추가
   useEffect(() => {
     if (!unionMode) return;
     if (!selectedVendor) return;
     loadUnionData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unionMode, selectedVendor?.id, periodMonths, periodSeason]);
+  }, [unionMode, selectedVendor?.id, periodMonths, periodSeason, monthsListParamStr]);
 
   // 최종 render 용 rows · unionMode 여부에 따라 스왑
   const _rawDisplayLedgerRows = unionMode ? unionLedgerRows : ledgerRows;
@@ -842,28 +851,34 @@ export const PurchaseHistoryTab: React.FC = () => {
   }, [allDetails, periodMonths, periodSeason, selectedMonths]);
 
   // 기간 필터 변경 시 · 선택 상품이 필터된 리스트에 없으면 해제 (2026-08-05)
+  // 2026-10-06 · 사용자 지시 · identity = canonical product_code only (name fallback 제거)
   useEffect(() => {
     if (!selectedProductKey || viewMode !== "by-product") return;
     const found = filteredAllDetails.some(r => {
-      const k = String(r.product_code ?? "").trim() || String(r.product_name ?? "").trim() || "(무명)";
-      return k === selectedProductKey;
+      const k = String(r.product_code ?? "").trim();
+      return !!k && k === selectedProductKey;
     });
     if (!found) setSelectedProductKey(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredAllDetails]);
 
   // ─── 상품별 집계 (filteredAllDetails groupBy · 기간 필터 반영) ────────────
+  // 2026-10-06 · 사용자 지시 · identity/group key = canonical product_code
+  //   · product_name 은 display only (DB 값 그대로 · 비어있으면 "-")
+  //   · product_code 가 없는 row 는 unmapped · 집계에서 skip
   const productList = useMemo<ProductSummary[]>(() => {
     if (filteredAllDetails.length === 0) return [];
     const map = new Map<string, ProductSummary & { supplierSet: Map<string, number> }>();
     for (const r of filteredAllDetails) {
-      const key = String(r.product_code ?? "").trim() || String(r.product_name ?? "").trim() || "(무명)";
+      const code = String(r.product_code ?? "").trim();
+      if (!code) continue; // identity 없음 → skip
+      const pname = String(r.product_name ?? "").trim();
       const supName = detailSupplierMap.get(r.id) ?? null;
-      let a = map.get(key);
+      let a = map.get(code);
       if (!a) {
         a = {
-          product_code: r.product_code ?? null,
-          product_name: String(r.product_name ?? "").trim() || "(이름없음)",
+          product_code: code,
+          product_name: pname || "-",
           total_amount: 0,
           total_qty: 0,
           purchase_count: 0,
@@ -872,7 +887,9 @@ export const PurchaseHistoryTab: React.FC = () => {
           supplier_count: 0,
           supplierSet: new Map<string, number>(),
         };
-        map.set(key, a);
+        map.set(code, a);
+      } else if ((a.product_name === "-" || !a.product_name) && pname) {
+        a.product_name = pname;
       }
       a.total_amount += r.amount;
       a.total_qty += r.quantity;
@@ -974,20 +991,18 @@ export const PurchaseHistoryTab: React.FC = () => {
   }, [productList, productSearch, productSort, productSortDir, saleStatusFilter]);
 
   // 선택 상품의 header + row 목록
+  // 2026-10-06 · 사용자 지시 · identity = canonical product_code only (name fallback 제거)
   const selectedProduct = useMemo<ProductSummary | null>(() => {
     if (!selectedProductKey) return null;
-    return productList.find(p => {
-      const k = String(p.product_code ?? "").trim() || p.product_name;
-      return k === selectedProductKey;
-    }) ?? null;
+    return productList.find(p => String(p.product_code ?? "").trim() === selectedProductKey) ?? null;
   }, [productList, selectedProductKey]);
 
   const selectedProductRows = useMemo<ProductPurchaseRow[]>(() => {
     if (!selectedProductKey) return [];
     const rows: ProductPurchaseRow[] = [];
     for (const r of filteredAllDetails) {
-      const k = String(r.product_code ?? "").trim() || String(r.product_name ?? "").trim() || "(무명)";
-      if (k !== selectedProductKey) continue;
+      const k = String(r.product_code ?? "").trim();
+      if (!k || k !== selectedProductKey) continue;
       rows.push({
         id: r.id,
         date: r.date,
@@ -1056,6 +1071,7 @@ export const PurchaseHistoryTab: React.FC = () => {
             setPeriodMonths={setPeriodMonths}
             periodSeason={periodSeason}
             setPeriodSeason={setPeriodSeason}
+            selectedMonths={selectedMonths}
             openVendorInfo={openVendorInfo as (v: VendorRecord) => void}
             loadVendorData={loadVendorData}
             /* 2026-09-18 · #93 · 옵션 C · 하이브리드 배너 */
