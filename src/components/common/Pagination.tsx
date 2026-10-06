@@ -5,6 +5,22 @@
 //   · ProductAggTab · SupplierListCard · ByProductPanel 등 기존 inline UI 통합 원형
 import React from "react";
 
+/**
+ * 2026-10-06 · 사용자 지시 · 데이터량 기반 adaptive pageSize options
+ *   · 전체 개수가 적으면 큰 숫자 옵션 제외 · 많으면 큰 옵션 추가
+ *   · "전체" 는 Pagination 컴포넌트가 항상 끝에 자동 append
+ *   · pageSizeOptions prop 를 호출측에서 명시하면 그 값 우선 (override)
+ */
+export function adaptivePageSizeOptions(totalCount: number): number[] {
+  if (totalCount <= 25)    return [];                         // 25 이하 · "전체" 만 노출
+  if (totalCount <= 100)   return [25, 50];
+  if (totalCount <= 300)   return [25, 50, 100];
+  if (totalCount <= 1000)  return [50, 100, 200];
+  if (totalCount <= 3000)  return [100, 200, 500];
+  if (totalCount <= 10000) return [200, 500, 1000];
+  return [500, 1000, 2000];
+}
+
 export interface PaginationProps {
   /** 전체 아이템 수 */
   totalCount: number;
@@ -16,7 +32,7 @@ export interface PaginationProps {
   pageSize: number;
   /** pageSize 상태 setter */
   setPageSize: (n: number) => void;
-  /** 선택 가능한 페이지당 옵션 · 기본 [25, 50, 100, 200] */
+  /** 선택 가능한 페이지당 옵션 · 생략 시 adaptivePageSizeOptions(totalCount) 자동 사용 */
   pageSizeOptions?: readonly number[];
   /** totalCount === 0 일 때 숨김 (기본 true) */
   hideWhenEmpty?: boolean;
@@ -32,7 +48,7 @@ export const Pagination: React.FC<PaginationProps> = ({
   setPage,
   pageSize,
   setPageSize,
-  pageSizeOptions = [25, 50, 100, 200],
+  pageSizeOptions,
   hideWhenEmpty = true,
   className,
   rangeLabel,
@@ -46,6 +62,13 @@ export const Pagination: React.FC<PaginationProps> = ({
   const safePage = Math.min(Math.max(1, page), totalPages);
   const pageStart = (safePage - 1) * effectivePageSize;
   const pageEndExclusive = Math.min(pageStart + effectivePageSize, totalCount);
+
+  // 2026-10-06 · 사용자 지시 · 데이터량 기반 adaptive options · 호출측 명시 override 가능
+  //   · 현재 선택된 pageSize 가 자동 options 에 없어도 유지 (사용자 선택 보존)
+  const autoOptions = pageSizeOptions ?? adaptivePageSizeOptions(totalCount);
+  const effectiveOptions = (pageSize > 0 && !autoOptions.includes(pageSize))
+    ? [...autoOptions, pageSize].sort((a, b) => a - b)
+    : autoOptions;
 
   if (hideWhenEmpty && totalCount === 0) return null;
 
@@ -63,7 +86,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           onChange={e => setPageSize(Number(e.target.value))}
           className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] cursor-pointer hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
         >
-          {pageSizeOptions.map(n => <option key={n} value={n}>{n}</option>)}
+          {effectiveOptions.map(n => <option key={n} value={n}>{n}</option>)}
           {/* 2026-10-06 · 사용자 지시 · 끝에 "전체" 옵션 · 전부 1 page */}
           <option value={-1}>전체</option>
         </select>
