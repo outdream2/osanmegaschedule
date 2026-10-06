@@ -63,7 +63,7 @@ export function useProductDetailModal() {
       title={
         open ? (
           <div className="min-w-0">
-            <div className="text-[17px] font-bold text-ink tracking-tight truncate">{open.name ?? open.code}</div>
+            <div className="text-[17px] font-bold text-ink tracking-tight truncate">{open.name ?? "-"}</div>
             <div className="text-[15px] font-mono text-ink-soft mt-0.5">#{open.code}</div>
           </div>
         ) : undefined
@@ -81,7 +81,7 @@ export function useProductDetailModal() {
           <ProductInfoCard
             product={{
               code: (detailFull as any).product_code ?? detailFull.code ?? open.code,
-              name: (detailFull as any).product_name ?? detailFull.name ?? open.name ?? open.code,
+              name: (detailFull as any).product_name ?? detailFull.name ?? open.name ?? "-",
               spec: (detailFull as any).spec ?? "",
               ...detailFull,
               location: (detailFull as any).location ?? (detailFull as any).display_location ?? null,

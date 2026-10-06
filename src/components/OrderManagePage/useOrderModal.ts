@@ -142,7 +142,7 @@ export function useOrderModal({
         if (issues.length > 0) {
           invalidItems.push({
             supplier: s.supplier,
-            product: String(it.product_name ?? it.product_code ?? ""),
+            product: String(it.product_name ?? ""),
             issues,
           });
         }
@@ -206,7 +206,7 @@ export function useOrderModal({
                 key: `pre-item-${si}-${ii}`,
                 className: "text-[14px] text-zinc-700 flex items-baseline gap-2",
               },
-                React.createElement("span", { className: "flex-1 truncate" }, String(it.product_name ?? it.product_code ?? "")),
+                React.createElement("span", { className: "flex-1 truncate" }, String(it.product_name ?? "")),
                 React.createElement("b", { className: "text-zinc-900 tabular-nums shrink-0" }, `${Number(it.order_qty ?? 0)}개`),
               )),
             ),

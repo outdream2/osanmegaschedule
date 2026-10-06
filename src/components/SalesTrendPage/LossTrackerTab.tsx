@@ -167,7 +167,7 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
                       {purch > 0 ? (
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); setLossPurchaseModal({ product_code: String(r.product_code), product_name: String(r.product_name ?? r.product_code) }); }}
+                          onClick={(e) => { e.stopPropagation(); setLossPurchaseModal({ product_code: String(r.product_code), product_name: String(r.product_name ?? "").trim() || "-" }); }}
                           className="underline decoration-dotted decoration-emerald-400 underline-offset-2 hover:decoration-solid hover:text-emerald-800 cursor-pointer transition"
                           title="매입 이력 조회"
                         >{fmt(purch)}</button>

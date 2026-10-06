@@ -184,7 +184,7 @@ export const StockReconciliationTab: React.FC<{
         diffs.push({
           product_code: code,
           product_name: String(
-            prod.product_name ?? prod.name ?? row.product_name ?? code
+            prod.product_name ?? prod.name ?? row.product_name ?? "-"
           ),
           supplier: prod.supplier ?? null,
           erp_qty,

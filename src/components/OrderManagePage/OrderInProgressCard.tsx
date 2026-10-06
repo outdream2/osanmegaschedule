@@ -94,7 +94,7 @@ export const OrderInProgressCard: React.FC<OrderInProgressCardProps> = ({ orderR
           return (
             <li key={r.id} className="flex items-center gap-2 flex-wrap px-2 py-1.5 rounded-md hover:bg-zinc-50 transition">
               <span className="text-[15px] font-semibold text-ink truncate max-w-[280px] sm:max-w-[400px]" title={r.product_name}>
-                {r.product_name || r.product_code}
+                {r.product_name || "-"}
               </span>
               {r.supplier && (
                 <span className="text-[13px] text-ink-soft">· {displayVendorName(r.supplier) || r.supplier}</span>

@@ -90,7 +90,7 @@ export const BorrowingCard: React.FC<BorrowingCardProps> = ({ item, onAction, de
 
         {/* 상품 요약 */}
         <div className="flex-1 min-w-0">
-          <div className="text-[14px] font-bold text-ink break-words whitespace-normal">{item.product_name ?? item.product_code ?? "-"}</div>
+          <div className="text-[14px] font-bold text-ink break-words whitespace-normal">{item.product_name ?? "-"}</div>
           <div className="text-[13px] text-ink-soft tabular-nums">
             {item.qty ?? "-"}개
             {amount != null && ` · ${amount.toLocaleString()}원`}

@@ -13,7 +13,8 @@ import { Card } from "../common/Card";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { EmptyState } from "../common/EmptyState";
-import { PeriodSelector, PERIOD_UNIFIED_DAYS_PRESET } from "../common/PeriodSelector";
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { listBorrowings, type BorrowingRow } from "../../lib/borrowingsApi";
 // 2026-09-14 · #142 · 카드별 결제한도 + 다음달 결제금액 대시보드 추가 (사용자 지시)
@@ -46,22 +47,14 @@ export const PaymentDashboardPage: React.FC = () => {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast, showError } = useToast();
-  // 2026-09-14 · #140 · 기간 필터 · 0 = 전체 · N = 최근 N일
-  //   · 사용자 지시 · 기본값 30일 (1개월)
-  const [periodDays, setPeriodDays] = useState<number>(30);
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+  //   · default · 현재 월 1개 · 비연속 월 지원
+  //   · 서버 · /api/supplier-balances-map?months_list=YM1,YM2 · /api/borrowings?months_list=...
+  const { selectedMonths, setSelectedMonths, monthsList: monthsListStr } = useMonthFilter();
   // 2026-09-14 · #141 · 차용 이력 · 있을 때만 표시
   const [borrowings, setBorrowings] = useState<BorrowingRow[]>([]);
   // 2026-09-14 · #142 · 카드별 결제한도 + 다음달 결제금액 대시보드
   const [cardSummary, setCardSummary] = useState<CardSummary[]>([]);
-
-  const dateRange = useMemo(() => {
-    if (!periodDays || periodDays <= 0) return { start: "", end: "" };
-    const now = new Date();
-    const end = now.toISOString().slice(0, 10);
-    const startD = new Date(now.getTime() - (periodDays - 1) * 86400000);
-    const start = startD.toISOString().slice(0, 10);
-    return { start, end };
-  }, [periodDays]);
 
   const load = React.useCallback(async () => {
     // 2026-09-14 · 사용자 지시 · 기간 변경 시 · 이전 데이터 초기화 → Spinner 표시
@@ -71,10 +64,7 @@ export const PaymentDashboardPage: React.FC = () => {
     setLoading(true);
     try {
       const qs = new URLSearchParams();
-      if (dateRange.start && dateRange.end) {
-        qs.set("start", dateRange.start);
-        qs.set("end", dateRange.end);
-      }
+      if (monthsListStr) qs.set("months_list", monthsListStr);
       const { data } = await api.get<{ values?: Record<string, SupplierValues> }>(
         `/api/supplier-balances-map${qs.toString() ? `?${qs.toString()}` : ""}`
       );
@@ -88,9 +78,10 @@ export const PaymentDashboardPage: React.FC = () => {
         stock_asset: Number(v.stock_asset ?? 0),
       }));
       setRows(list);
-      // 2026-09-14 · #141 · 차용 이력 · 오픈 상태 우선 · 기간 필터 반영 (있을 때)
+      // 2026-09-14 · #141 · 차용 이력 · 오픈 상태 우선 · 기간 필터 반영
+      // 2026-10-06 · months_list 로 전환 · listBorrowings 가 months_list 를 지원하도록 확장 필요 (아래 lib 수정)
       try {
-        const brs = await listBorrowings({ days: periodDays > 0 ? periodDays : undefined, limit: 20 });
+        const brs = await listBorrowings({ monthsList: monthsListStr || undefined, limit: 20 });
         setBorrowings(brs);
       } catch { setBorrowings([]); }
       // 2026-09-14 · #142 · 카드별 결제한도 + 다음달 결제금액 · 기간 무관 (카드 결제일 기반)
@@ -103,7 +94,7 @@ export const PaymentDashboardPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [showError, dateRange, periodDays]);
+  }, [showError, monthsListStr]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -135,13 +126,18 @@ export const PaymentDashboardPage: React.FC = () => {
           <span className="text-[20px] font-bold text-zinc-900 tracking-tight">결제 대시보드</span>
           <span className="text-[13px] tabular-nums text-zinc-400 font-medium">공급사 {rows.length}개</span>
         </div>
-        <div className="flex items-center gap-2">
-          <PeriodSelector<number>
-            options={[{ value: 0, label: "전체", title: "전체 기간" }, ...PERIOD_UNIFIED_DAYS_PRESET]}
-            value={periodDays}
-            onChange={(v) => setPeriodDays(v)}
-            accent="indigo"
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
+          <MonthToggleSelector
+            selectedMonths={selectedMonths}
+            onChange={setSelectedMonths}
+            maxMonths={6}
+            minOne
+            ariaLabel="결제 대시보드 기간"
           />
+          {selectedMonths.length > 0 && (
+            <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+          )}
           <button
             onClick={() => void load()}
             disabled={loading}
@@ -152,11 +148,6 @@ export const PaymentDashboardPage: React.FC = () => {
           </button>
         </div>
       </div>
-      {periodDays > 0 && (
-        <div className="text-[11.5px] text-ink-soft tabular-nums bg-brand-tint/30 border border-brand-tint/50 rounded-md px-2 py-1 self-start">
-          기간 필터 · {dateRange.start} ~ {dateRange.end}
-        </div>
-      )}
 
       {/* KPI 카드 · 4개 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -354,8 +345,8 @@ export const PaymentDashboardPage: React.FC = () => {
               <FileText size={16} className="text-violet-600" />
               <span className="text-[16px] font-bold text-zinc-900">차용 이력</span>
               <span className="text-[12px] tabular-nums text-zinc-400 font-medium">{borrowings.length}건</span>
-              {periodDays > 0 && (
-                <StatusPill tone="zinc" size="xs">최근 {periodDays}일</StatusPill>
+              {selectedMonths.length > 0 && (
+                <StatusPill tone="zinc" size="xs">{selectedMonths.length === 1 ? selectedMonths[0] : `${selectedMonths.length}개월`}</StatusPill>
               )}
             </div>
           </div>
@@ -379,7 +370,7 @@ export const PaymentDashboardPage: React.FC = () => {
                     {isLend ? "대여" : "차용"}
                   </StatusPill>
                   <span className="text-[14px] font-bold text-zinc-900 min-w-0 truncate flex-1">
-                    {b.product_name ?? b.product_code ?? "(상품 미지정)"}
+                    {b.product_name ?? "(상품 미지정)"}
                   </span>
                   <span className="text-[12px] text-zinc-500 tabular-nums">
                     {b.supplier ?? "-"}

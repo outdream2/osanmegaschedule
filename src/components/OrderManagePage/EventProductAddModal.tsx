@@ -71,7 +71,7 @@ export const EventProductAddModal: React.FC<Props> = ({
                   className="w-4 h-4 accent-brand-deep cursor-pointer disabled:cursor-not-allowed"
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[16px] font-bold text-ink truncate">{p.product_name || p.product_code}</div>
+                  <div className="text-[16px] font-bold text-ink truncate">{p.product_name || "-"}</div>
                   <div className="text-[14px] text-ink-soft tabular-nums mt-0.5">
                     재고 {Number(p.current_stock ?? 0)} / 적정 {Number(p.optimal_stock ?? 0)}
                     {p.supplier && <span className="ml-2 truncate">· {p.supplier}</span>}

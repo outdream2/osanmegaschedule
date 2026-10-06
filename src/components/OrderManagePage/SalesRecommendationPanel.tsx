@@ -449,7 +449,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                             <div key={p.product_code} className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-white border border-line hover:border-brand-tint hover:shadow-[0_1px_4px_rgba(10,46,74,0.05)] transition-all">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-[15px] font-bold text-ink truncate">{p.product_name || p.product_code}</span>
+                                  <span className="text-[15px] font-bold text-ink truncate">{p.product_name || "-"}</span>
                                   {isInactive && <StatusPill tone="zinc" size="xs">{p.sale_status}</StatusPill>}
                                 </div>
                                 <div className="flex items-center gap-2 text-[13px] text-ink-soft tabular-nums mt-0.5">
@@ -642,7 +642,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                         </StatusPill>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-[15px] font-bold text-ink truncate">{p.product_name || p.product_code}</span>
+                            <span className="text-[15px] font-bold text-ink truncate">{p.product_name || "-"}</span>
                           </div>
                           <div className="flex items-center gap-2 text-[13px] text-ink-soft tabular-nums mt-0.5">
                             <span>{p.expiry_date ? String(p.expiry_date).slice(0, 10) : "-"}</span>
@@ -689,7 +689,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[15px] font-bold text-ink truncate">{r.product_name || r.product_code}</div>
+                        <div className="text-[15px] font-bold text-ink truncate">{r.product_name || "-"}</div>
                         <div className="flex items-center gap-2 text-[13px] text-ink-soft tabular-nums mt-0.5">
                           <span>재고 <span className="font-semibold text-ink">{r.current}</span></span>
                           <span>/ 적정 <span className="font-semibold text-ink">{r.optimal}</span></span>
@@ -753,7 +753,7 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
   }
 
   const code = String((product as any).product_code ?? (product as any).code ?? "");
-  const name = String((product as any).product_name ?? (product as any).name ?? code);
+  const name = String((product as any).product_name ?? (product as any).name ?? "-");
   const cur = Number(product.current_stock ?? 0) || 0;
   const opt = Number(product.optimal_stock ?? 0) || 0;
 

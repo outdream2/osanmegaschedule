@@ -148,7 +148,7 @@ export const SalesAutoRecommendSection: React.FC<Props> = ({
                       <StatusPill tone={urgencyTone} size="xs">{urgencyLabel}</StatusPill>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[13px] font-bold text-ink truncate">{it.product_name || it.product_code}</span>
+                          <span className="text-[13px] font-bold text-ink truncate">{it.product_name || "-"}</span>
                           <span className={`text-[10px] font-bold px-1 py-0.5 rounded ${evTone.cls} shrink-0`}>{it.event_name}</span>
                         </div>
                         <div className="flex items-center gap-2 text-[11px] text-ink-soft tabular-nums mt-0.5">

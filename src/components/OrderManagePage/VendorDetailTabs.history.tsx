@@ -32,7 +32,7 @@ export const HistoryContent: React.FC<{
     const byCode = new Map<string, ProductStat>();
     for (const r of detailRows) {
       const code = (r.product_code ?? "").trim();
-      const name = (r.product_name ?? code).trim();
+      const name = (r.product_name ?? "-").trim();
       if (!code) continue;
       const cur = byCode.get(code);
       if (cur) {

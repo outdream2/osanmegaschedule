@@ -10,6 +10,8 @@ import { resolveSeasonMonths } from "../../settings/settings";
 import { asyncHandler } from "../../../middleware/asyncHandler";
 import { HttpError, badRequest } from "../../../middleware/errorHandler";
 import { inSeasonMonths } from "./helpers";
+import logger from "../../../lib/logger";
+import { parseMonthsList, isDateInSelectedMonths } from "../../../lib/periodFilter";
 // 2026-09-14 · 사용자 대원칙 · salesTrendCache 제거 · 매 요청 실시간 조회
 
 const router = Router();
@@ -47,56 +49,88 @@ router.get("/api/sales-trend/product", asyncHandler(async (req, res) => {
   res.json(payload);
 }));
 
-// 2026-09-10 · 사용자 지시 · 공급사명 정규화 매칭 (완전 일치 → 정규화 · 양방향 contains)
-//   · Why · products.supplier 와 stock_history.supplier_name 이 서로 짧거나 다르게 저장된 경우
-//     (예: vendor "테스트2" · products.supplier "테스" · stock_history.supplier_name "테스")
-//   · How · normalize (trim·lower·공백·특수문자 제거) 후 · 서로 포함 관계면 매칭
-function normalizeSupplierName(s: string | null | undefined): string {
-  return String(s ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "")
-    .replace(/[()（）\[\]【】·・∙•,\/\\]/g, "");
-}
-function supplierMatches(a: string | null | undefined, b: string | null | undefined): boolean {
-  const na = normalizeSupplierName(a);
-  const nb = normalizeSupplierName(b);
-  if (!na || !nb) return false;
-  return na === nb || na.includes(nb) || nb.includes(na);
-}
-
 // GET /api/sales-trend/supplier
+// 2026-10-05 · 사용자 지시 D · 공급사 연결은 supplier_code eq 만 사용
+//   · 이전 · normalizeSupplierName + 양방향 contains (fuzzy) · 대원칙 feedback_no_data_fabrication 위배 · 제거
+//   · 신규 · ?supplier_code= 또는 ?name= 입력 받음
+//     - supplier_code 직접 제공 시 · 그 code 로만 조인
+//     - name 만 제공 시 · products.supplier eq name 완전일치로 supplier_code 변환 (단일 매핑)
+//     - 변환 실패 시 · UNMAPPED 로그 + 빈 결과 반환
 router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
   const name = String(req.query.name ?? "").trim();
-  if (!name) throw badRequest("name 필수");
+  const codeParam = String(req.query.supplier_code ?? "").trim();
+  if (!name && !codeParam) throw badRequest("name 또는 supplier_code 필수");
   const months = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));
   const seasonParam = String(req.query.season ?? "").trim().toLowerCase();
   const seasonMonths = await resolveSeasonMonths(seasonParam);
+  // 2026-10-06 · months_list 비연속 월 멀티선택 지원 (STANDARD · 사용자 지시)
+  //   · period_end 축 · months / season 과 상호 배타 · 지정 시 range + YM post-filter
+  const monthsList = parseMonthsList(req.query.months_list);
   // 2026-07-16 fix: 정확히 N개월 back
-  const cutoffStr = (!seasonMonths && months > 0)
-    ? (() => { const t = new Date(); const c = new Date(t.getFullYear(), t.getMonth() - months, t.getDate()); return `${c.getFullYear()}-${String(c.getMonth() + 1).padStart(2, "0")}-${String(c.getDate()).padStart(2, "0")}`; })()
-    : null;
+  //   · months_list 지정 시 · min YM-01 ~ max YM-last_day range
+  let cutoffStr: string | null = null;
+  let cutoffStrTo: string | null = null;
+  if (!monthsList.isEmpty && monthsList.from && monthsList.to) {
+    cutoffStr = monthsList.from;
+    cutoffStrTo = monthsList.to;
+  } else if (!seasonMonths && months > 0) {
+    const t = new Date(); const c = new Date(t.getFullYear(), t.getMonth() - months, t.getDate());
+    cutoffStr = `${c.getFullYear()}-${String(c.getMonth() + 1).padStart(2, "0")}-${String(c.getDate()).padStart(2, "0")}`;
+  }
 
-  // 2026-09-10 · 사용자 지시 · products.supplier 정규화 매칭 · product_code 수집 (마스터 기반)
-  const matchedCodes = new Set<string>();
-  {
+  // supplier_code 집합 결정 (fuzzy 금지 · 대원칙 D)
+  const supplierCodes = new Set<string>();
+  if (codeParam) {
+    supplierCodes.add(codeParam);
+  } else {
     const PAGE = 1000;
     let from = 0;
     while (true) {
       const { data, error } = await supabase
         .from("products")
-        .select("product_code, supplier")
+        .select("supplier_code")
+        .eq("supplier", name)
         .range(from, from + PAGE - 1);
       if (error) break;
       if (!data || data.length === 0) break;
       for (const p of data) {
-        if (supplierMatches((p as any).supplier, name)) {
-          const code = String((p as any).product_code ?? "").trim();
-          if (code) matchedCodes.add(code);
-        }
+        const sc = String((p as any).supplier_code ?? "").trim();
+        if (sc) supplierCodes.add(sc);
       }
       if (data.length < PAGE) break;
       from += PAGE;
+    }
+    if (supplierCodes.size === 0) {
+      logger.warn(`[sales-trend/supplier] UNMAPPED · name="${name}" · products.supplier_code 매핑 없음 · 빈 결과 반환`);
+      res.setHeader("Cache-Control", "no-store");
+      return res.json({ supplier: name, months, season: seasonParam || undefined, season_months: seasonMonths ?? undefined, series: [], unmapped: true });
+    }
+  }
+
+  // supplier_code 기반 상품 code 수집
+  const matchedCodes = new Set<string>();
+  {
+    const codesArr = Array.from(supplierCodes);
+    const CHUNK = 500;
+    for (let i = 0; i < codesArr.length; i += CHUNK) {
+      const chunk = codesArr.slice(i, i + CHUNK);
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("products")
+          .select("product_code")
+          .in("supplier_code", chunk)
+          .range(from, from + PAGE - 1);
+        if (error) break;
+        if (!data || data.length === 0) break;
+        for (const p of data) {
+          const code = String((p as any).product_code ?? "").trim();
+          if (code) matchedCodes.add(code);
+        }
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
     }
   }
   // 2026-09-10 · 사용자 지시 · 팔린만큼의 사입액 (COGS) 계산용 · 상품별 purchase_price map
@@ -133,6 +167,7 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
         .from("stock_history")
         .select("period_start, period_end, period_type, product_code, supplier_name, buy_stock, sale_stock, closing_stock, supply_amount, total_amount");
       if (cutoffStr) q = q.gte("period_end", cutoffStr);
+      if (cutoffStrTo) q = q.lte("period_end", cutoffStrTo);
       const { data, error } = await q
         .order("period_start", { ascending: true, nullsFirst: false })
         .range(from, from + PAGE - 1);
@@ -140,9 +175,11 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
       if (!data || data.length === 0) break;
       for (const r of data) {
         const code = String((r as any).product_code ?? "").trim();
-        // products 매칭 or supplier_name 직접 매칭 (양쪽 다 확인)
-        if (!matchedCodes.has(code) && !supplierMatches((r as any).supplier_name, name)) continue;
+        // 2026-10-05 · 사용자 지시 D · supplier_code 기반 매칭 only · supplier_name fuzzy/eq fallback 제거
+        if (!matchedCodes.has(code)) continue;
         if (seasonMonths && !inSeasonMonths(String((r as any).period_end ?? ""), seasonMonths)) continue;
+        // 2026-10-06 · months_list 비연속 월 post-filter · 중간 월 자동 포함 금지
+        if (!monthsList.isEmpty && !isDateInSelectedMonths(String((r as any).period_end ?? ""), monthsList.set)) continue;
         all.push(r);
       }
       if (data.length < PAGE) break;
@@ -231,18 +268,30 @@ router.get("/api/sales-trend/supplier", asyncHandler(async (req, res) => {
     // 상품명 · products JOIN (stock_history 에는 product_name 없을 수 있음)
     const productCodes = Array.from(byProduct.keys());
     if (productCodes.length > 0) {
+      // 2026-10-06 · 대원칙 · DB 2단계 JOIN · code 우선 + pcode fallback
       const CHUNK = 500;
       for (let i = 0; i < productCodes.length; i += CHUNK) {
         const chunk = productCodes.slice(i, i + CHUNK);
-        const { data } = await supabase.from("products").select("product_code, product_name").in("product_code", chunk);
+        const { data } = await supabase.from("products").select("product_code, pcode, product_name").in("product_code", chunk);
         for (const p of data ?? []) {
           const code = String(p.product_code ?? "").trim();
           const item = byProduct.get(code);
-          if (item && !item.product_name) item.product_name = String(p.product_name ?? "").trim() || code;
+          if (item && !item.product_name) item.product_name = String(p.product_name ?? "").trim() || null;
         }
       }
-      // Fallback · 상품명 없으면 코드
-      for (const p of byProduct.values()) if (!p.product_name) p.product_name = p.product_code;
+      // 2단계: 아직 product_name null 인 code 들을 pcode 로 재조회
+      const stillNull = Array.from(byProduct.entries()).filter(([, v]) => !v.product_name).map(([c]) => c);
+      if (stillNull.length > 0) {
+        for (let i = 0; i < stillNull.length; i += CHUNK) {
+          const chunk = stillNull.slice(i, i + CHUNK);
+          const { data } = await supabase.from("products").select("pcode, product_name").in("pcode", chunk);
+          for (const p of data ?? []) {
+            const pc = String(p.pcode ?? "").trim();
+            const item = byProduct.get(pc);
+            if (item && !item.product_name) item.product_name = String(p.product_name ?? "").trim() || null;
+          }
+        }
+      }
     }
 
     const rows = Array.from(byPeriod.values()).sort((a, b) => a.period_start.localeCompare(b.period_start));

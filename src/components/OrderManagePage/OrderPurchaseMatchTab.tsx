@@ -192,7 +192,7 @@ export const OrderPurchaseMatchTab: React.FC = () => {
     async (row: OrderMatchRow) => {
       const ok = await confirm({
         title: "매입 확인",
-        message: `${row.product_name || row.product_code} · 매입확인?`,
+        message: `${row.product_name || "-"} · 매입확인?`,
         confirmLabel: "매입확인",
       });
       if (!ok) return;
@@ -215,7 +215,7 @@ export const OrderPurchaseMatchTab: React.FC = () => {
     async (row: OrderMatchRow) => {
       const ok = await confirm({
         title: "판정 취소",
-        message: `${row.product_name || row.product_code} · 판정 취소?`,
+        message: `${row.product_name || "-"} · 판정 취소?`,
         confirmLabel: "Undo",
         danger: true,
       });

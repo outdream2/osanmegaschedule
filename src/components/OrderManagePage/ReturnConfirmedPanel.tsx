@@ -19,7 +19,8 @@ import { TableListWrap, tableHeadCls, tableThCls, tableTdCls } from "../common/T
 import { StatusPill } from "../common/StatusPill";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
-import { PeriodSelector, PERIOD_DAYS_PRESET } from "../common/PeriodSelector";
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { InlineLabel } from "../common/InlineLabel";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 
@@ -47,7 +48,9 @@ export const ReturnConfirmedPanel: React.FC = () => {
   const [rows, setRows] = useState<ReturnRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [days, setDays] = useState(90);
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+  //   · default · 현재 월 1개 · created_at 축 (서버 /api/return-requests 지원 완료)
+  const { selectedMonths, setSelectedMonths, monthsList: monthsListStr } = useMonthFilter();
   const [q, setQ] = useState("");
   const { toast, showError, showSuccess } = useToast();
   const confirm = useConfirm();
@@ -55,7 +58,9 @@ export const ReturnConfirmedPanel: React.FC = () => {
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    api.get<{ rows?: ReturnRow[] } | ReturnRow[]>(`/api/return-requests?status=done&days=${days}&limit=500`)
+    const qs = new URLSearchParams({ status: "done", limit: "500" });
+    if (monthsListStr) qs.set("months_list", monthsListStr);
+    api.get<{ rows?: ReturnRow[] } | ReturnRow[]>(`/api/return-requests?${qs.toString()}`)
       .then(({ data }) => {
         const list = Array.isArray(data) ? data : (data?.rows ?? []);
         setRows(list);
@@ -66,7 +71,7 @@ export const ReturnConfirmedPanel: React.FC = () => {
         showError(`반품확정 조회 실패: ${msg}`);
       })
       .finally(() => setLoading(false));
-  }, [days, showError]);
+  }, [monthsListStr, showError]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -82,7 +87,7 @@ export const ReturnConfirmedPanel: React.FC = () => {
   }, [filtered]);
 
   const revertOne = async (row: ReturnRow) => {
-    if (!await confirm({ message: `${row.product_name ?? row.product_code} · 반품확정 해제 (대기 상태로 복구)?` })) return;
+    if (!await confirm({ message: `${row.product_name ?? "-"} · 반품확정 해제 (대기 상태로 복구)?` })) return;
     try {
       await api.patch(`/api/return-requests/${row.id}`, { status: "pending" });
       setRows(prev => prev.filter(r => r.id !== row.id));
@@ -93,7 +98,7 @@ export const ReturnConfirmedPanel: React.FC = () => {
   };
 
   const deleteOne = async (row: ReturnRow) => {
-    if (!await confirm({ message: `${row.product_name ?? row.product_code} · 반품 기록 완전 삭제?`, danger: true })) return;
+    if (!await confirm({ message: `${row.product_name ?? "-"} · 반품 기록 완전 삭제?`, danger: true })) return;
     try {
       await api.del(`/api/return-requests/${row.id}`);
       setRows(prev => prev.filter(r => r.id !== row.id));
@@ -121,14 +126,19 @@ export const ReturnConfirmedPanel: React.FC = () => {
               · 수량 {totals.totalQty.toLocaleString()}개 · 금액 {fmtWon(totals.totalAmount)}
             </span>
           )}
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2 flex-wrap">
             <InlineLabel size="sm">기간</InlineLabel>
-            <PeriodSelector
-              options={PERIOD_DAYS_PRESET}
-              value={days}
-              onChange={(v) => setDays(Number(v) || 90)}
-              size="sm"
+            {/* 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
+            <MonthToggleSelector
+              selectedMonths={selectedMonths}
+              onChange={setSelectedMonths}
+              maxMonths={6}
+              minOne
+              ariaLabel="반품확정 조회기간"
             />
+            {selectedMonths.length > 0 && (
+              <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+            )}
             {/* 2026-08-29 · #165 A · SearchBar 프리미티브 */}
             <SearchBar
               value={q}
