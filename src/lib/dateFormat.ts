@@ -19,3 +19,23 @@ export function shortDate(iso: string | null | undefined): string {
   if (!Number.isFinite(mn) || !Number.isFinite(dn)) return s;
   return `${y.slice(-2)}/${mn}/${dn}`;
 }
+
+/**
+ * 2026-10-06 · 사용자 지시 · 년도 제거 · "MM/DD(요일)" 포맷
+ *   · 예 · "2026-10-06" → "10/06(화)"
+ *   · 시간대별 매출추이 · 날짜 overlay · tooltip · legend 공통 formatter
+ */
+const DOW_KO = ["일", "월", "화", "수", "목", "금", "토"] as const;
+export function shortDateWithDow(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const s = String(iso).slice(0, 10);
+  const [y, m, d] = s.split("-");
+  if (!y || !m || !d) return s;
+  const yn = Number(y);
+  const mn = Number(m);
+  const dn = Number(d);
+  if (!Number.isFinite(yn) || !Number.isFinite(mn) || !Number.isFinite(dn)) return s;
+  const date = new Date(yn, mn - 1, dn);
+  const dow = DOW_KO[date.getDay()] ?? "";
+  return `${String(mn).padStart(2, "0")}/${String(dn).padStart(2, "0")}(${dow})`;
+}

@@ -99,22 +99,36 @@ export const TodayRevenueKpiPanel: React.FC<Props> = ({ onOpenRevenue }) => {
               </span>
               <span className="text-[14px] sm:text-[15px] text-zinc-600 font-semibold tracking-tight">현재 매출</span>
             </div>
-            <div className="text-[19px] sm:text-[24px] font-bold tabular-nums leading-tight text-brand-deep truncate">
+            {/* 2026-10-06 · 사용자 지시 · 반응형에서 금액 줄바꿈 금지 · 최신 트렌드 (clamp 반응형 폰트 · whitespace-nowrap)
+                · 폭 좁아지면 폰트 자동 축소 · 금액은 절대 중간 깨짐 X */}
+            <div
+              className="font-bold tabular-nums leading-tight text-brand-deep whitespace-nowrap"
+              style={{ fontSize: "clamp(17px, 3.2vw, 26px)" }}
+              title={showValue ? fmt(sale) + "원" : undefined}
+            >
               {showValue ? fmt(sale) + "원" : "-"}
             </div>
           </div>
         </div>
         {/* 객단가 */}
         <div className="flex-1 px-3 sm:px-4 py-3 sm:py-4 min-w-0 group-hover:bg-zinc-50/60 transition">
-          <div className="text-[14px] sm:text-[15px] text-zinc-500 font-semibold mb-1 tracking-tight">객단가</div>
-          <div className="text-[17px] sm:text-[22px] font-bold tabular-nums text-ink leading-tight truncate">
+          <div className="text-[14px] sm:text-[15px] text-zinc-500 font-semibold mb-1 tracking-tight whitespace-nowrap">객단가</div>
+          <div
+            className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap"
+            style={{ fontSize: "clamp(15px, 2.4vw, 22px)" }}
+            title={showValue && txn > 0 ? fmt(sale / txn) + "원" : undefined}
+          >
             {showValue && txn > 0 ? fmt(sale / txn) + "원" : "-"}
           </div>
         </div>
         {/* 방문객 */}
         <div className="flex-1 px-3 sm:px-4 py-3 sm:py-4 min-w-0 group-hover:bg-zinc-50/60 transition">
-          <div className="text-[14px] sm:text-[15px] text-zinc-500 font-semibold mb-1 tracking-tight">방문객</div>
-          <div className="text-[17px] sm:text-[22px] font-bold tabular-nums text-ink leading-tight truncate">
+          <div className="text-[14px] sm:text-[15px] text-zinc-500 font-semibold mb-1 tracking-tight whitespace-nowrap">방문객</div>
+          <div
+            className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap"
+            style={{ fontSize: "clamp(15px, 2.4vw, 22px)" }}
+            title={showValue ? fmt(txn) + "명" : undefined}
+          >
             {showValue ? fmt(txn) + "명" : "-"}
           </div>
         </div>
