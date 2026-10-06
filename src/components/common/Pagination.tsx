@@ -37,10 +37,15 @@ export const Pagination: React.FC<PaginationProps> = ({
   className,
   rangeLabel,
 }) => {
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  // 2026-10-06 · 사용자 지시 · 페이지당 "전체" 옵션 (sentinel ALL_PAGE_SIZE)
+  //   · 음수 (-1) · effectivePageSize = totalCount (전부 1 page)
+  //   · select 에서 value=-1 → label "전체" 로 표시
+  const isAll = pageSize < 0;
+  const effectivePageSize = isAll ? Math.max(1, totalCount) : pageSize;
+  const totalPages = Math.max(1, Math.ceil(totalCount / effectivePageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
-  const pageStart = (safePage - 1) * pageSize;
-  const pageEndExclusive = Math.min(pageStart + pageSize, totalCount);
+  const pageStart = (safePage - 1) * effectivePageSize;
+  const pageEndExclusive = Math.min(pageStart + effectivePageSize, totalCount);
 
   if (hideWhenEmpty && totalCount === 0) return null;
 
@@ -59,6 +64,8 @@ export const Pagination: React.FC<PaginationProps> = ({
           className="h-7 px-2 rounded border border-zinc-200 bg-white text-[13px] cursor-pointer hover:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
         >
           {pageSizeOptions.map(n => <option key={n} value={n}>{n}</option>)}
+          {/* 2026-10-06 · 사용자 지시 · 끝에 "전체" 옵션 · 전부 1 page */}
+          <option value={-1}>전체</option>
         </select>
         <button
           type="button"
@@ -121,15 +128,18 @@ export function usePagination<T>(
   const [pageSize, setPageSize] = React.useState<number>(options?.defaultPageSize ?? 50);
   const [page, setPage] = React.useState<number>(1);
   const totalCount = data.length;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  // 2026-10-06 · 사용자 지시 · pageSize === -1 → "전체" · effective = totalCount
+  const isAll = pageSize < 0;
+  const effectivePageSize = isAll ? Math.max(1, totalCount) : pageSize;
+  const totalPages = Math.max(1, Math.ceil(totalCount / effectivePageSize));
   // resetDeps 변경 시 · pageSize 변경 시 · totalCount 변경 시 · page 1 reset
   const resetKey = JSON.stringify([pageSize, totalCount, ...(options?.resetDeps ?? [])]);
   React.useEffect(() => { setPage(1); }, [resetKey]);
   const safePage = Math.min(Math.max(1, page), totalPages);
-  const pageStart = (safePage - 1) * pageSize;
+  const pageStart = (safePage - 1) * effectivePageSize;
   const pageRows = React.useMemo(
-    () => data.slice(pageStart, pageStart + pageSize),
-    [data, pageStart, pageSize],
+    () => data.slice(pageStart, pageStart + effectivePageSize),
+    [data, pageStart, effectivePageSize],
   );
   return { pageRows, page, setPage, pageSize, setPageSize, totalCount, totalPages, safePage, pageStart };
 }
