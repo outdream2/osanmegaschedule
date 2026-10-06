@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { Modal } from "../common/Modal";
 import { CalendarDays } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from "recharts";
 
 type RevenueTab = "hourly" | "monthly";
 type FetchStatus = "idle" | "loading" | "success" | "error";
@@ -367,6 +368,61 @@ const HourlyReportTab: React.FC = () => {
         <KpiBox label={`${today} 마진율`} value={show ? `${marginRate.toFixed(1)}%` : "-"} />
         <KpiBox label={`${today} 고객수`} value={show ? totalCust.toLocaleString() + "명" : "-"} />
       </div>
+
+      {/* 2026-10-06 · 사용자 지시 · 시간대별 꺾은선 chart · 날짜별 overlay (조회 기간 내 날짜 전부) */}
+      {show && displayDateData.length > 0 && allSlots.length > 0 && (() => {
+        // 각 시간 slot 별 날짜별 매출 (SaleTotal) · null = 해당 시간대 매출 없음
+        const chartData = allSlots.map((slot) => {
+          const point: Record<string, number | string | null> = { time: slot };
+          for (const d of displayDateData) {
+            const r = d.rowMap.get(slot);
+            point[d.date] = r ? Number(r.SaleTotal ?? 0) : null;
+          }
+          return point;
+        });
+        // 날짜별 색상 · 오늘 날짜는 rose (강조) · 과거 날짜는 다양한 색
+        const PAST_COLORS = ["#2563eb", "#059669", "#d97706", "#7c3aed", "#0891b2", "#db2777", "#0ea5e9"];
+        return (
+          <div className="bg-white border border-zinc-200 rounded-lg p-3 md:p-4">
+            <div className="flex items-baseline justify-between mb-2">
+              <div className="text-[15px] md:text-[16px] font-bold text-zinc-800">시간대별 매출 추이</div>
+              <div className="text-[12px] text-zinc-500">날짜별 겹치기 · 매출 합계금액 (원)</div>
+            </div>
+            <div style={{ width: "100%", height: 280 }}>
+              <ResponsiveContainer>
+                <LineChart data={chartData} margin={{ top: 10, right: 15, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
+                  <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#52525b" }} tickFormatter={(v) => `${v}시`} />
+                  <YAxis tick={{ fontSize: 11, fill: "#52525b" }} tickFormatter={(v) => fmtWonShort(Number(v))} width={60} />
+                  <Tooltip
+                    formatter={(v, name) => [fmtWon(Number(v)), String(name)]}
+                    labelFormatter={(v) => `${v}시`}
+                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} iconType="line" />
+                  {displayDateData.map((d, i) => {
+                    const isToday = d.date === today;
+                    const color = isToday ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
+                    return (
+                      <Line
+                        key={d.date}
+                        type="monotone"
+                        dataKey={d.date}
+                        name={isToday ? `${d.date} (오늘)` : d.date}
+                        stroke={color}
+                        strokeWidth={isToday ? 2.5 : 1.8}
+                        dot={{ r: isToday ? 4 : 3, strokeWidth: 1 }}
+                        activeDot={{ r: 6 }}
+                        connectNulls={false}
+                      />
+                    );
+                  })}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 날짜별 column group · PC 전용 */}
       <div className="hidden md:block bg-white border border-zinc-200 rounded-lg overflow-auto">
@@ -848,7 +904,12 @@ const MonthlyReportTab: React.FC = () => {
         ) : !selSale && !selBuy ? (
           <div className="text-center py-8 text-zinc-400 text-[15px]">선택 월 데이터 없음</div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 md:gap-x-6 gap-y-4 md:gap-y-5">
+          // 2026-10-06 · 사용자 지시 · 금액 줄바꿈 금지 · 최신 트렌드 (Linear/Vercel · whitespace-nowrap + clamp 반응형 폰트)
+          //   · auto-fit minmax 로 좁은 폭에서 자동 2~3단 재배치 · 각 cell 은 금액 폭 자동 확장
+          <div
+            className="grid gap-x-4 md:gap-x-6 gap-y-4 md:gap-y-5"
+            style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}
+          >
             {(() => {
               const avg = sel.customerCnt > 0 ? sel.saleTotal / sel.customerCnt : 0;
               // 2026-10-05 · 사용자 지시 · 각 metric 좌측 color accent bar · 캘린더 색 체계 통일
@@ -864,8 +925,14 @@ const MonthlyReportTab: React.FC = () => {
               return items.map((it) => (
                 <div key={it.label} className="relative pl-2.5 min-w-0">
                   <span className={`absolute left-0 top-1 bottom-1 w-[3px] rounded-r-full ${it.accent}`} aria-hidden />
-                  <div className={`text-[12px] md:text-[13px] font-semibold mb-1 leading-tight tracking-tight ${it.labelColor}`}>{it.label}</div>
-                  <div className={`text-[16px] md:text-[20px] font-bold tabular-nums leading-tight break-all ${it.valueColor}`}>{it.value}</div>
+                  <div className={`text-[12px] md:text-[13px] font-semibold mb-1 leading-tight tracking-tight whitespace-nowrap ${it.labelColor}`}>{it.label}</div>
+                  <div
+                    className={`font-bold tabular-nums leading-tight whitespace-nowrap ${it.valueColor}`}
+                    style={{ fontSize: "clamp(15px, 1.5vw, 22px)" }}
+                    title={it.value}
+                  >
+                    {it.value}
+                  </div>
                 </div>
               ));
             })()}
