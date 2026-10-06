@@ -1,17 +1,13 @@
-// 2026-10-06 · 발주매입대조 v5 · 좌우 2열 GRID 비교 · 자동매칭 · 처리완료 workflow (resolution_status)
+// 2026-10-06 · 발주매입대조 v6 · 단일 7-column row · 대조결과 ↔ 처리 분리 · 액션바 제거
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ClipboardCheck, CheckCircle2, AlertTriangle, RotateCcw,
-  ChevronDown, ChevronRight, Search,
-} from "lucide-react";
+import { ClipboardCheck, ChevronDown, ChevronRight, Search } from "lucide-react";
 import { Card } from "../common/Card";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
 import { EmptyState } from "../common/EmptyState";
 import { InlineLabel } from "../common/InlineLabel";
 import { PeriodSelector } from "../common/PeriodSelector";
-import { Button } from "../common/Button";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { ApiError } from "../../lib/apiClient";
@@ -25,7 +21,7 @@ import {
   type OrderPurchaseMatchResponse,
 } from "../../lib/api/orderPurchaseMatchApi";
 import {
-  fmtQty, fmtWon,
+  fmtWon,
   effectiveStatus, effectiveExceptionType,
   groupBySupplierAndOrder, buildPurchaseGroup,
   type OrderGroup, type FilterKey,
@@ -33,59 +29,139 @@ import {
 import { ExceptionNoteModal } from "./ExceptionNoteModal";
 
 // ═════════════════════════════════════════════════════════════════
-// Diff pill · 수량·단가 차이
+// 1 · 대조결과 (자동 매칭 결과 집계 · 읽기전용)
 // ═════════════════════════════════════════════════════════════════
-function renderDiff(orderQty: number, orderPrice: number | null, purchaseQty: number, purchasePrice: number): React.ReactNode {
-  const qtyDiff = purchaseQty - orderQty;
-  if (qtyDiff !== 0) {
-    return (
-      <StatusPill tone={qtyDiff < 0 ? "rose" : "amber"} size="xs">
-        {qtyDiff > 0 ? "+" : ""}{qtyDiff}
-      </StatusPill>
-    );
+type AutoTone = "emerald" | "amber" | "rose" | "zinc";
+interface AutoResult { label: string; tone: AutoTone; }
+
+function deriveAutoResult(order: OrderGroup): AutoResult {
+  const rows = order.rows;
+  if (rows.length === 0) return { label: "—", tone: "zinc" };
+  if (rows.every(r => r.auto_status === "matched")) return { label: "정상", tone: "emerald" };
+  const types: Record<string, number> = { qty_short: 0, qty_over: 0, price_diff: 0, no_purchase: 0 };
+  let abnormal = 0;
+  for (const r of rows) {
+    if (r.auto_status === "matched") continue;
+    abnormal++;
+    const t = r.auto_exception_type;
+    if (t && t in types) types[t]++;
   }
-  if (orderPrice && orderPrice > 0) {
-    const pct = (purchasePrice - orderPrice) / orderPrice;
-    if (Math.abs(pct) > 0.01) {
-      return (
-        <StatusPill tone="amber" size="xs">{pct > 0 ? "+" : ""}{(pct * 100).toFixed(1)}%</StatusPill>
-      );
+  const nonZero = Object.entries(types).filter(([, v]) => v > 0);
+  if (nonZero.length === 1) {
+    const [type] = nonZero[0];
+    if (type === "qty_short" || type === "qty_over") {
+      let diffMag = 0;
+      for (const r of rows) {
+        if (r.auto_exception_type !== type) continue;
+        const purch = (r.purchase_matches ?? []).reduce((a, m) => a + Number(m.quantity ?? 0), 0);
+        diffMag += Math.abs(purch - Number(r.order_qty ?? 0));
+      }
+      return {
+        label: type === "qty_short" ? `수량부족 ${diffMag}` : `수량초과 ${diffMag}`,
+        tone: type === "qty_short" ? "rose" : "amber",
+      };
     }
+    if (type === "price_diff") return { label: "단가차이", tone: "amber" };
+    if (type === "no_purchase") return { label: "미매입", tone: "zinc" };
   }
-  return <StatusPill tone="emerald" size="xs" dot>일치</StatusPill>;
+  return { label: `이상 ${abnormal}건`, tone: "amber" };
 }
 
-// PO-level status label · MATCHED / PARTIAL / UNMATCHED
-const PO_STATUS_LABEL: Record<"matched" | "exception" | "unmatched" | "mixed" | "resolved", string> = {
-  matched: "완료",
+// ═════════════════════════════════════════════════════════════════
+// 2 · 처리 상태 (수동 workflow · 사용자 결정)
+// ═════════════════════════════════════════════════════════════════
+type ProcessingStatus = "pending" | "matched" | "exception" | "resolved";
+
+const PROC_LABEL: Record<ProcessingStatus, string> = {
+  pending: "미판정",
+  matched: "정상확인",
   exception: "이상",
-  unmatched: "미매입",
-  mixed: "부분",
   resolved: "처리완료",
 };
-const PO_STATUS_TONE: Record<"matched" | "exception" | "unmatched" | "mixed" | "resolved", "emerald" | "amber" | "zinc" | "sky" | "indigo"> = {
-  matched: "emerald",
-  exception: "amber",
-  unmatched: "zinc",
-  mixed: "sky",
-  resolved: "indigo",
+const PROC_DOT: Record<ProcessingStatus, string> = {
+  pending: "bg-zinc-300",
+  matched: "bg-emerald-500",
+  exception: "bg-amber-500",
+  resolved: "bg-indigo-500",
+};
+const PROC_TEXT: Record<ProcessingStatus, string> = {
+  pending: "text-zinc-600",
+  matched: "text-emerald-700",
+  exception: "text-amber-700",
+  resolved: "text-indigo-700",
+};
+
+function deriveProcessingStatus(order: OrderGroup): ProcessingStatus {
+  const rows = order.rows;
+  if (rows.length === 0) return "pending";
+  const anyResolved = rows.some(r => r.resolution_status === "resolved");
+  const anyUnresolvedAbnormal = rows.some(r =>
+    r.resolution_status !== "resolved" &&
+    (r.match_status === "exception" || r.match_status === "unmatched"
+      || (!r.match_status && r.auto_status !== "matched"))
+  );
+  if (anyUnresolvedAbnormal) {
+    const hasExceptionDecision = rows.some(r => r.match_status === "exception" && r.resolution_status !== "resolved");
+    return hasExceptionDecision ? "exception" : "pending";
+  }
+  if (anyResolved) return "resolved";
+  if (rows.every(r => r.match_status === "matched" || r.auto_status === "matched")) {
+    const allUserConfirmed = rows.every(r => r.match_status === "matched");
+    const allAutoMatched = rows.every(r => r.auto_status === "matched" && !r.match_status);
+    if (allUserConfirmed) return "matched";
+    if (allAutoMatched) return "pending";
+    return "matched";
+  }
+  return "pending";
+}
+
+// ═════════════════════════════════════════════════════════════════
+// 3 · 처리 Selector · compact select
+// ═════════════════════════════════════════════════════════════════
+interface ProcessingSelectorProps {
+  current: ProcessingStatus;
+  onChange: (next: ProcessingStatus) => void;
+  disabled?: boolean;
+}
+
+const ProcessingSelector: React.FC<ProcessingSelectorProps> = ({ current, onChange, disabled }) => {
+  return (
+    <div
+      className="relative inline-flex items-center"
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <span className={`absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full ${PROC_DOT[current]} pointer-events-none`} />
+      <select
+        value={current}
+        onChange={(e) => onChange(e.target.value as ProcessingStatus)}
+        disabled={disabled}
+        aria-label="처리 상태"
+        className={`appearance-none text-[14px] font-semibold pl-5 pr-6 py-1 border border-zinc-200 rounded-md bg-white hover:bg-zinc-50 cursor-pointer focus:outline-none focus:border-brand-deep disabled:opacity-50 disabled:cursor-not-allowed ${PROC_TEXT[current]}`}
+      >
+        <option value="pending">{PROC_LABEL.pending}</option>
+        <option value="matched">{PROC_LABEL.matched}</option>
+        <option value="exception">{PROC_LABEL.exception}</option>
+        <option value="resolved">{PROC_LABEL.resolved}</option>
+      </select>
+      <ChevronDown size={11} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+    </div>
+  );
 };
 
 // ═════════════════════════════════════════════════════════════════
-// 메인 컴포넌트
+// 4 · 메인 컴포넌트
 // ═════════════════════════════════════════════════════════════════
 export const OrderPurchaseMatchTab: React.FC = () => {
   const { toast, showError, showSuccess } = useToast();
   const confirm = useConfirm();
 
-  // ─── 필터 state ─────────────────────────────────────
   const [days, setDays] = useState<number>(7);
   const [statusFilter, setStatusFilter] = useState<FilterKey>("all");
   const [supplierSearch, setSupplierSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [openKey, setOpenKey] = useState<string | null>(null);
 
-  // ─── 데이터 state ─────────────────────────────────────
   const [matchData, setMatchData] = useState<OrderPurchaseMatchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,25 +169,19 @@ export const OrderPurchaseMatchTab: React.FC = () => {
   const [exOpen, setExOpen] = useState(false);
   const [exTargetRow, setExTargetRow] = useState<OrderMatchRow | null>(null);
 
-  // ─── 자동 매칭 fetch · days 변경 시 재조회 ─────────────────────
   const loadMatch = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
       const r = await getOrderPurchaseMatchList(days);
       setMatchData(r);
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "매칭 조회 실패");
-      setError(msg);
+      setError(e instanceof ApiError ? e.message : getErrorMessage(e, "매칭 조회 실패"));
       setMatchData(null);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, [days]);
 
   useEffect(() => { void loadMatch(); }, [loadMatch]);
 
-  // ─── 그룹핑 · supplier → order · 자동 ─────────────────────────
   const allRows = useMemo((): OrderMatchRow[] => {
     if (!matchData) return [];
     return [...matchData.matched, ...matchData.exceptions, ...matchData.unmatched];
@@ -119,7 +189,6 @@ export const OrderPurchaseMatchTab: React.FC = () => {
 
   const supplierGroups = useMemo(() => groupBySupplierAndOrder(allRows), [allRows]);
 
-  // ─── 필터 적용 · flat orders ────────────────────────────────
   const filteredOrders = useMemo((): OrderGroup[] => {
     const result: OrderGroup[] = [];
     const supQ = supplierSearch.trim().toLowerCase();
@@ -128,59 +197,50 @@ export const OrderPurchaseMatchTab: React.FC = () => {
       for (const og of sg.orders) {
         if (statusFilter === "pending" && og.pendingCount === 0) continue;
         if (statusFilter === "matched" && og.status !== "matched") continue;
-        if (statusFilter === "exception" && og.status !== "exception" && og.status !== "unmatched" && og.status !== "mixed") continue;
         if (statusFilter === "exception" && og.unresolvedAbnormalCount === 0) continue;
         if (statusFilter === "resolved" && og.resolvedCount === 0) continue;
         if (supQ) {
-          const nameMatch = sg.supplierDisplay.toLowerCase().includes(supQ)
-            || (og.supplierRaw ?? "").toLowerCase().includes(supQ);
-          if (!nameMatch) continue;
+          const hit = sg.supplierDisplay.toLowerCase().includes(supQ) || (og.supplierRaw ?? "").toLowerCase().includes(supQ);
+          if (!hit) continue;
         }
         if (prodQ) {
-          const hit = og.rows.some(r =>
-            (r.product_name ?? "").toLowerCase().includes(prodQ)
-            || r.product_code.toLowerCase().includes(prodQ)
-          );
+          const hit = og.rows.some(r => (r.product_name ?? "").toLowerCase().includes(prodQ) || r.product_code.toLowerCase().includes(prodQ));
           if (!hit) continue;
         }
         result.push(og);
       }
     }
-    // 최신 발주일 desc 정렬
     result.sort((a, b) => (b.sentAt ?? b.orderDate ?? "").localeCompare(a.sentAt ?? a.orderDate ?? ""));
     return result;
   }, [supplierGroups, statusFilter, supplierSearch, productSearch]);
 
-  // ─── 액션 핸들러 (기존 business logic 그대로) ─────────────────
   const runConfirm = useCallback(async (rows: OrderMatchRow[]) => {
     if (rows.length === 0) return;
-    const ok = await confirm({ title: "매입 확인", message: `이 발주 ${rows.length}개 라인을 매입 확인 처리하시겠습니까?`, confirmLabel: "매입확인" });
-    if (!ok) return;
     setBusy(true);
     try {
       for (const r of rows) await confirmOrderPurchaseMatch(r.id, { action: "matched", exception_type: null, note: null });
-      showSuccess("매입 확인 완료"); await loadMatch();
+      showSuccess("정상확인 처리"); await loadMatch();
     } catch (e) { showError(e instanceof ApiError ? e.message : getErrorMessage(e, "처리 실패")); }
     finally { setBusy(false); }
-  }, [confirm, loadMatch, showError, showSuccess]);
+  }, [loadMatch, showError, showSuccess]);
 
   const runUndo = useCallback(async (rows: OrderMatchRow[]) => {
     const decided = rows.filter(r => r.match_status === "matched" || r.match_status === "exception");
-    if (decided.length === 0) return;
-    const ok = await confirm({ title: "판정 취소", message: `이 발주의 판정(${decided.length}건)을 취소하시겠습니까?`, confirmLabel: "Undo", danger: true });
-    if (!ok) return;
+    const resolved = rows.filter(r => r.resolution_status === "resolved");
+    if (decided.length === 0 && resolved.length === 0) return;
     setBusy(true);
     try {
+      for (const r of resolved) await confirmOrderPurchaseMatch(r.id, { action: "unresolve", exception_type: null, note: null });
       for (const r of decided) await confirmOrderPurchaseMatch(r.id, { action: "undo", exception_type: null, note: null });
-      showSuccess("판정 취소 완료"); await loadMatch();
+      showSuccess("미판정 처리"); await loadMatch();
     } catch (e) { showError(e instanceof ApiError ? e.message : getErrorMessage(e, "처리 실패")); }
     finally { setBusy(false); }
-  }, [confirm, loadMatch, showError, showSuccess]);
+  }, [loadMatch, showError, showSuccess]);
 
   const runResolve = useCallback(async (rows: OrderMatchRow[]) => {
     const targets = rows.filter(r => effectiveStatus(r) !== "matched" && r.resolution_status !== "resolved");
     if (targets.length === 0) return;
-    const note = window.prompt(`${targets.length}개 라인 처리완료 · 처리 내용 (예: "거래처 품절 10개, 추가입고 없음 확인")`, "");
+    const note = window.prompt(`${targets.length}개 라인 처리완료 · 처리 내용 (예: "거래처 품절")`, "");
     if (note === null) return;
     setBusy(true);
     try {
@@ -190,41 +250,38 @@ export const OrderPurchaseMatchTab: React.FC = () => {
     finally { setBusy(false); }
   }, [loadMatch, showError, showSuccess]);
 
-  const runUnresolve = useCallback(async (rows: OrderMatchRow[]) => {
-    const targets = rows.filter(r => r.resolution_status === "resolved");
-    if (targets.length === 0) return;
-    const ok = await confirm({ title: "처리완료 취소", message: `${targets.length}개 라인의 처리완료를 취소하시겠습니까?`, confirmLabel: "처리완료 취소", danger: true });
-    if (!ok) return;
-    setBusy(true);
-    try {
-      for (const r of targets) await confirmOrderPurchaseMatch(r.id, { action: "unresolve", exception_type: null, note: null });
-      showSuccess("처리완료 취소됨"); await loadMatch();
-    } catch (e) { showError(e instanceof ApiError ? e.message : getErrorMessage(e, "처리 실패")); }
-    finally { setBusy(false); }
-  }, [confirm, loadMatch, showError, showSuccess]);
-
   const openException = useCallback((row: OrderMatchRow | null) => {
-    setExTargetRow(row);
-    setExOpen(true);
+    setExTargetRow(row); setExOpen(true);
   }, []);
+
+  const handleProcessingChange = useCallback(async (order: OrderGroup, next: ProcessingStatus) => {
+    const current = deriveProcessingStatus(order);
+    if (current === next) return;
+    if (next === "pending") {
+      const ok = await confirm({ title: "미판정으로 되돌리기", message: "이 발주의 모든 판정·처리완료를 취소합니다.", confirmLabel: "되돌리기", danger: true });
+      if (ok) await runUndo(order.rows);
+    } else if (next === "matched") {
+      await runConfirm(order.rows);
+    } else if (next === "exception") {
+      openException(order.rows[0] ?? null);
+    } else if (next === "resolved") {
+      await runResolve(order.rows);
+    }
+  }, [confirm, runUndo, runConfirm, runResolve, openException]);
 
   const toggleOpen = useCallback((key: string) => {
     setOpenKey(prev => prev === key ? null : key);
   }, []);
 
-  // ─── 렌더 ─────────────────────────────────────────────
   const totalMatched = matchData?.counts.matched ?? 0;
   const totalExceptions = matchData?.counts.exceptions ?? 0;
   const totalUnmatched = matchData?.counts.unmatched ?? 0;
 
   return (
     <>
-      {toast && (
-        <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
-      )}
+      {toast && (<div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>)}
 
       <div className="flex flex-col gap-3">
-        {/* ═══ 상단 툴바 · 기간·필터·검색 ═══ */}
         <Card className="p-3 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <ClipboardCheck size={18} className="text-brand-deep" strokeWidth={2.2} />
@@ -233,19 +290,10 @@ export const OrderPurchaseMatchTab: React.FC = () => {
           <div className="flex items-center gap-2">
             <InlineLabel size="sm">기간</InlineLabel>
             <PeriodSelector<number>
-              options={[
-                { value: 3, label: "3일" },
-                { value: 7, label: "7일" },
-                { value: 14, label: "14일" },
-                { value: 30, label: "30일" },
-              ]}
-              value={days}
-              onChange={setDays}
-              size="sm"
-              ariaLabel="발주-매입 매칭 기간"
+              options={[{ value: 3, label: "3일" }, { value: 7, label: "7일" }, { value: 14, label: "14일" }, { value: 30, label: "30일" }]}
+              value={days} onChange={setDays} size="sm" ariaLabel="발주-매입 매칭 기간"
             />
           </div>
-          {/* 상태 필터 */}
           <div className="inline-flex bg-zinc-100 border border-line rounded-lg p-1 gap-0.5">
             {([
               { k: "all" as const,       label: "전체" },
@@ -260,27 +308,17 @@ export const OrderPurchaseMatchTab: React.FC = () => {
               </button>
             ))}
           </div>
-          {/* 공급사 search */}
           <div className="relative">
             <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input
-              type="text"
-              value={supplierSearch}
-              onChange={(e) => setSupplierSearch(e.target.value)}
+            <input type="text" value={supplierSearch} onChange={(e) => setSupplierSearch(e.target.value)}
               placeholder="공급사"
-              className="h-7 pl-7 pr-2 text-[15px] rounded-md border border-line bg-white focus:border-brand-deep focus:outline-none w-32"
-            />
+              className="h-7 pl-7 pr-2 text-[15px] rounded-md border border-line bg-white focus:border-brand-deep focus:outline-none w-32" />
           </div>
-          {/* 상품 search */}
           <div className="relative">
             <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input
-              type="text"
-              value={productSearch}
-              onChange={(e) => setProductSearch(e.target.value)}
+            <input type="text" value={productSearch} onChange={(e) => setProductSearch(e.target.value)}
               placeholder="상품/코드"
-              className="h-7 pl-7 pr-2 text-[15px] rounded-md border border-line bg-white focus:border-brand-deep focus:outline-none w-32"
-            />
+              className="h-7 pl-7 pr-2 text-[15px] rounded-md border border-line bg-white focus:border-brand-deep focus:outline-none w-32" />
           </div>
           <div className="flex-1" />
           {matchData && (
@@ -292,7 +330,6 @@ export const OrderPurchaseMatchTab: React.FC = () => {
           )}
         </Card>
 
-        {/* ═══ 비교 영역 ═══ */}
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Spinner size={16} tone="zinc" label="자동 매칭 조회 중..." labelSize={14} />
@@ -301,53 +338,35 @@ export const OrderPurchaseMatchTab: React.FC = () => {
           <Card className="p-6 border-rose-200 bg-rose-50 text-rose-700 text-[16px]">{error}</Card>
         ) : filteredOrders.length === 0 ? (
           <Card className="p-12">
-            <EmptyState
-              icon={ClipboardCheck}
-              title="조건에 맞는 발주 없음"
-              hint={allRows.length === 0 ? "기간 내 발주가 없거나 매칭 결과가 비어 있습니다" : "필터를 조정해 보세요"}
-            />
+            <EmptyState icon={ClipboardCheck} title="조건에 맞는 발주 없음"
+              hint={allRows.length === 0 ? "기간 내 발주가 없거나 매칭 결과가 비어 있습니다" : "필터를 조정해 보세요"} />
           </Card>
         ) : (
           <Card clip padding="none" className="overflow-hidden">
-            {/* ─── sticky COLUMN HEADER · lg+ 2열 ─── */}
-            <div className="hidden lg:grid lg:grid-cols-2 sticky top-0 z-20 bg-white border-b border-zinc-200/80 shadow-[0_1px_0_rgba(0,0,0,0.03)] text-[14px] font-semibold text-zinc-500 uppercase tracking-wide">
-              <div className="grid grid-cols-[28px_minmax(0,1fr)_76px_72px_84px_52px] gap-x-2 px-3 py-2.5 border-r border-zinc-200/80">
-                <span />
-                <span>발주번호 · 공급사</span>
-                <span>발주기간</span>
-                <span className="text-right">품목·수량</span>
-                <span className="text-right">발주금액</span>
-                <span className="text-center">문서</span>
-              </div>
-              <div className="grid grid-cols-[28px_minmax(0,1fr)_76px_72px_84px_80px] gap-x-2 px-3 py-2.5">
-                <span />
-                <span>매입일 · 공급사</span>
-                <span>매입기간</span>
-                <span className="text-right">품목·수량</span>
-                <span className="text-right">매입금액</span>
-                <span className="text-center">상태</span>
-              </div>
+            {/* sticky COLUMN HEADER · lg+ 단일 7-column */}
+            <div className="hidden lg:grid sticky top-0 z-20 bg-white border-b border-zinc-200/80 shadow-[0_1px_0_rgba(0,0,0,0.03)] text-[13px] font-semibold text-zinc-500 uppercase tracking-wide
+              grid-cols-[28px_minmax(0,1.4fr)_72px_minmax(0,1fr)_72px_minmax(0,1fr)_120px_140px] gap-x-2 px-3 py-2.5">
+              <span />
+              <span>발주번호 · 공급사</span>
+              <span>발주일</span>
+              <span className="text-right">발주 (수량·금액)</span>
+              <span>매입일</span>
+              <span className="text-right">매입 (수량·금액)</span>
+              <span className="text-center">대조결과</span>
+              <span className="text-center">처리</span>
             </div>
-
-            {/* ─── 모바일 (lg 미만) · 스택 설명 ─── */}
+            {/* 모바일 */}
             <div className="lg:hidden px-3 py-2 bg-zinc-50 border-b border-zinc-200/80 text-[14px] text-zinc-500">
-              발주 ↓ 매입 매칭 (좁은 화면: 세로 스택)
+              발주 ↔ 매입 매칭 (좁은 화면: 카드)
             </div>
 
-            {/* ─── 페어 ROWS · lg+ 2열 grid · 전체 페이지 scroll ─── */}
             <div className="divide-y divide-zinc-100">
               {filteredOrders.map((og) => (
-                <PairedRow
-                  key={og.orderKey}
-                  order={og}
+                <PairedRow key={og.orderKey} order={og}
                   isOpen={openKey === og.orderKey}
                   onToggle={() => toggleOpen(og.orderKey)}
                   busy={busy}
-                  onConfirm={runConfirm}
-                  onUndo={runUndo}
-                  onException={openException}
-                  onResolve={runResolve}
-                  onUnresolve={runUnresolve}
+                  onProcessingChange={handleProcessingChange}
                 />
               ))}
             </div>
@@ -355,19 +374,15 @@ export const OrderPurchaseMatchTab: React.FC = () => {
         )}
       </div>
 
-      {/* 이상 판정 메모 모달 */}
       {exOpen && (
         <ExceptionNoteModal
           open={exOpen}
           onClose={() => { setExOpen(false); setExTargetRow(null); }}
           orderId={exTargetRow?.id ?? null}
           orderNumber={exTargetRow?.order_number ?? null}
-          defaultExceptionType={effectiveExceptionType(exTargetRow)}
+          defaultExceptionType={exTargetRow ? effectiveExceptionType(exTargetRow) : null}
           defaultNote={exTargetRow?.exception_note ?? null}
-          onSaved={async () => {
-            setExTargetRow(null);
-            await loadMatch();
-          }}
+          onSaved={async () => { setExTargetRow(null); await loadMatch(); }}
         />
       )}
     </>
@@ -375,79 +390,52 @@ export const OrderPurchaseMatchTab: React.FC = () => {
 };
 
 // ═════════════════════════════════════════════════════════════════
-// PairedRow · 한 발주 + 매칭 매입 = 2열 grid row
+// 5 · PairedRow · 단일 wide row + expanded 상세표
 // ═════════════════════════════════════════════════════════════════
 interface PairedRowProps {
   order: OrderGroup;
   isOpen: boolean;
   onToggle: () => void;
   busy: boolean;
-  onConfirm: (rows: OrderMatchRow[]) => Promise<void>;
-  onUndo: (rows: OrderMatchRow[]) => Promise<void>;
-  onException: (row: OrderMatchRow | null) => void;
-  onResolve: (rows: OrderMatchRow[]) => Promise<void>;
-  onUnresolve: (rows: OrderMatchRow[]) => Promise<void>;
+  onProcessingChange: (order: OrderGroup, next: ProcessingStatus) => void | Promise<void>;
 }
 
-const PairedRow: React.FC<PairedRowProps> = ({ order, isOpen, onToggle, busy, onConfirm, onUndo, onException, onResolve, onUnresolve }) => {
+const PairedRow: React.FC<PairedRowProps> = ({ order, isOpen, onToggle, busy, onProcessingChange }) => {
   const purchaseGroup = useMemo(() => buildPurchaseGroup(order), [order]);
   const supplierDisplay = displayVendorName(order.supplierRaw ?? "") || order.supplier;
-  const poStatus = order.status;
+  const autoResult = useMemo(() => deriveAutoResult(order), [order]);
+  const procStatus = useMemo(() => deriveProcessingStatus(order), [order]);
+
+  const accentColor = procStatus === "resolved" ? "bg-indigo-400"
+    : procStatus === "matched" ? "bg-emerald-400"
+    : procStatus === "exception" ? "bg-amber-400"
+    : "bg-zinc-300";
+
+  const totalOrderQty = order.rows.reduce((s, r) => s + Number(r.order_qty ?? 0), 0);
   const totalPurchaseQty = purchaseGroup.totalPurchaseQty;
-  const anyPending = order.rows.some(r => !r.match_status && r.auto_status !== "matched");
-  const decidedCount = order.rows.filter(r => r.match_status === "matched" || r.match_status === "exception").length;
+  const totalPurchaseAmount = purchaseGroup.totalPurchaseAmount;
+  const matchedProducts = purchaseGroup.lines.filter(l => l.match !== null).length;
 
-  const accentColor = poStatus === "matched" ? "bg-emerald-400"
-    : poStatus === "exception" ? "bg-amber-400"
-    : poStatus === "unmatched" ? "bg-zinc-300"
-    : "bg-sky-400";
+  const purchaseDates = purchaseGroup.lines.map(l => l.match?.purchase_date).filter((d): d is string => !!d).sort();
+  const purchaseFirst = purchaseDates[0] ?? null;
+  const purchaseLast = purchaseDates[purchaseDates.length - 1] ?? null;
+  const purchaseDateLabel = purchaseFirst
+    ? (purchaseFirst === purchaseLast ? shortDate(purchaseFirst) : `${shortDate(purchaseFirst)}~${shortDate(purchaseLast)}`)
+    : "—";
 
-  void anyPending;
+  const hasQtyDiff = matchedProducts > 0 && totalPurchaseQty !== totalOrderQty;
+  const hasAmountDiff = matchedProducts > 0 && totalPurchaseAmount !== order.totalOrderAmount;
+
   return (
     <div className="hover:bg-zinc-50/40 transition-colors">
-      {/* ═══ 요약 · lg: 2-column · <lg: 세로 스택 ═══ */}
-      <div className="grid lg:grid-cols-2 items-start">
-        <div className="lg:border-r border-zinc-200/60 min-w-0">
-          <OrderCell order={order} supplierDisplay={supplierDisplay} isOpen={isOpen} onToggle={onToggle} accentColor={accentColor} />
-        </div>
-        <div className="min-w-0 border-t lg:border-t-0 border-zinc-200/60">
-          <PurchaseCell order={order} purchaseGroup={purchaseGroup} supplierDisplay={supplierDisplay} totalPurchaseQty={totalPurchaseQty} poStatus={poStatus} />
-        </div>
-      </div>
-      {/* ═══ 상세 · 펼침 시 full-width 통합 비교표 ═══ */}
-      {isOpen && (
-        <UnifiedDetail
-          order={order} purchaseGroup={purchaseGroup} poStatus={poStatus}
-          busy={busy} decidedCount={decidedCount}
-          onConfirm={onConfirm} onUndo={onUndo} onException={onException}
-          onResolve={onResolve} onUnresolve={onUnresolve}
-        />
-      )}
-    </div>
-  );
-};
-
-// ═════════════════════════════════════════════════════════════════
-// OrderCell · 좌측 발주
-// ═════════════════════════════════════════════════════════════════
-interface OrderCellProps {
-  order: OrderGroup;
-  supplierDisplay: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  accentColor: string;
-}
-
-const OrderCell: React.FC<OrderCellProps> = ({ order, supplierDisplay, isOpen, onToggle, accentColor }) => {
-  const totalQty = order.rows.reduce((s, r) => s + Number(r.order_qty ?? 0), 0);
-  return (
-    <>
-      {/* 요약 ROW · 클릭 → one-at-a-time toggle */}
+      {/* lg+ : 단일 wide row */}
       <button
         type="button"
         onClick={onToggle}
-        className="w-full text-left grid lg:grid-cols-[28px_minmax(0,1fr)_76px_72px_84px_52px] grid-cols-[32px_1fr] gap-x-2 px-3 py-3 hover:bg-zinc-50/60 transition-colors cursor-pointer"
+        className="w-full text-left hidden lg:grid items-center cursor-pointer
+          grid-cols-[28px_minmax(0,1.4fr)_72px_minmax(0,1fr)_72px_minmax(0,1fr)_120px_140px] gap-x-2 px-3 py-3 hover:bg-zinc-50/60 transition-colors"
       >
+        {/* accent + chevron */}
         <div className="flex items-stretch">
           <div className={`w-1 self-stretch ${accentColor}`} />
           <span className="flex items-center justify-center w-7 shrink-0">
@@ -456,142 +444,90 @@ const OrderCell: React.FC<OrderCellProps> = ({ order, supplierDisplay, isOpen, o
               : <ChevronRight size={14} className="text-zinc-300" strokeWidth={2.4} />}
           </span>
         </div>
-        {/* 발주번호 + 공급사 */}
+        {/* 발주번호·공급사 */}
         <div className="flex flex-col leading-tight min-w-0">
-          <span className="text-[14px] text-zinc-400 tabular-nums font-medium">#{order.orderNumber ?? "—"}</span>
-          <span className="text-[17px] font-bold text-ink whitespace-normal break-words">{supplierDisplay || "공급사 미지정"}</span>
+          <span className="text-[13px] text-zinc-400 tabular-nums font-medium truncate">#{order.orderNumber ?? "—"}</span>
+          <span className="text-[16px] font-bold text-ink truncate">{supplierDisplay || "공급사 미지정"}</span>
         </div>
-        {/* 발주기간 */}
-        <div className="hidden lg:block text-[15px] text-zinc-500 tabular-nums self-center">
-          {shortDate(order.sentAt ?? order.orderDate) || "—"}
+        {/* 발주일 */}
+        <div className="text-[14px] text-zinc-500 tabular-nums">{shortDate(order.sentAt ?? order.orderDate) || "—"}</div>
+        {/* 발주 (수량·금액) */}
+        <div className="flex flex-col items-end leading-tight tabular-nums">
+          <span className="text-[14px] text-zinc-600">{order.distinctProducts}종 · {totalOrderQty.toLocaleString()}개</span>
+          <span className="text-[15px] font-bold text-emerald-700">{fmtWon(order.totalOrderAmount)}</span>
         </div>
-        {/* 품목·수량 */}
-        <div className="hidden lg:block text-right text-[15px] text-zinc-600 tabular-nums self-center">
-          {order.distinctProducts}종 · {totalQty.toLocaleString()}개
-        </div>
-        {/* 발주금액 */}
-        <div className="hidden lg:block text-right self-center">
-          <span className="text-[16px] font-bold text-emerald-700 tabular-nums">{fmtWon(order.totalOrderAmount)}</span>
-        </div>
-        {/* 문서 (PDF button placeholder · 기존 OrderHistoryTab 핸들러는 별도 · 이 뷰에서는 미제공) */}
-        <div className="hidden lg:block self-center text-center text-[14px] text-zinc-300">—</div>
-      </button>
-
-      {/* 모바일 요약 */}
-      <div className="lg:hidden px-3 pb-2 text-[14px] text-zinc-500 tabular-nums flex flex-wrap gap-x-3 gap-y-0.5">
-        <span>{shortDate(order.sentAt ?? order.orderDate) || "—"}</span>
-        <span>{order.distinctProducts}종 · {totalQty.toLocaleString()}개</span>
-        <span className="font-bold text-emerald-700">{fmtWon(order.totalOrderAmount)}</span>
-      </div>
-      {/* 상세는 PairedRow 하단 UnifiedDetail · full-width */}
-    </>
-  );
-};
-
-// ═════════════════════════════════════════════════════════════════
-// PurchaseCell · 우측 매입
-// ═════════════════════════════════════════════════════════════════
-interface PurchaseCellProps {
-  order: OrderGroup;
-  purchaseGroup: ReturnType<typeof buildPurchaseGroup>;
-  supplierDisplay: string;
-  totalPurchaseQty: number;
-  poStatus: "matched" | "exception" | "unmatched" | "mixed" | "resolved";
-}
-
-const PurchaseCell: React.FC<PurchaseCellProps> = ({
-  order, purchaseGroup, supplierDisplay, totalPurchaseQty, poStatus,
-}) => {
-  // 매입 날짜 범위
-  const purchaseDates = purchaseGroup.lines.map(l => l.match?.purchase_date).filter((d): d is string => !!d).sort();
-  const purchaseFirst = purchaseDates[0] ?? null;
-  const purchaseLast = purchaseDates[purchaseDates.length - 1] ?? null;
-  const purchaseRangeLabel = purchaseFirst
-    ? (purchaseFirst === purchaseLast ? shortDate(purchaseFirst) : `${shortDate(purchaseFirst)}~${shortDate(purchaseLast)}`)
-    : "—";
-  const matchedProducts = purchaseGroup.lines.filter(l => l.match !== null).length;
-  // Diff: 수량·단가·금액 전부 체크 · 차이 시 rose
-  const totalOrderQty = order.rows.reduce((s, r) => s + Number(r.order_qty ?? 0), 0);
-  const totalOrderAmount = order.totalOrderAmount;
-  const totalPurchaseAmount = purchaseGroup.totalPurchaseAmount;
-  const qtyDiff = totalPurchaseQty - totalOrderQty;
-  const amountDiff = totalPurchaseAmount - totalOrderAmount;
-  const hasQtyDiff = qtyDiff !== 0 && matchedProducts > 0;
-  const hasAmountDiff = amountDiff !== 0 && matchedProducts > 0;
-  const anyDiff = hasQtyDiff || hasAmountDiff;
-  // 발주 ≠ 매입 (수량·단가·금액 중 하나라도) → 전부 rose 통일 · "다름" 강조
-  const diffTone = "text-rose-600";
-  const diffLabel = qtyDiff > 0 ? `+${qtyDiff.toLocaleString()}` : qtyDiff.toLocaleString();
-  const amountDiffLabel = amountDiff > 0 ? `+${fmtWon(amountDiff)}` : fmtWon(amountDiff);
-
-  return (
-    <>
-      {/* 요약 ROW */}
-      <div className="grid lg:grid-cols-[28px_minmax(0,1fr)_76px_72px_84px_80px] grid-cols-[32px_1fr] gap-x-2 px-3 py-3">
-        <div /* placeholder accent · 좌측 발주와 수평 align */ />
-        <div className="flex items-center min-w-0 overflow-hidden">
-          <span className="text-[16px] font-semibold text-zinc-700 truncate">{supplierDisplay || "공급사 미지정"}</span>
-        </div>
-        <div className="hidden lg:block text-[15px] text-zinc-500 tabular-nums self-center truncate">{purchaseRangeLabel}</div>
-        <div className="hidden lg:flex flex-col items-end text-[17px] tabular-nums self-center leading-tight">
-          <span className={hasQtyDiff ? "text-rose-600 font-semibold" : "text-zinc-600"}>
+        {/* 매입일 */}
+        <div className="text-[14px] text-zinc-500 tabular-nums truncate">{purchaseDateLabel}</div>
+        {/* 매입 (수량·금액) · diff 중복 제거 */}
+        <div className="flex flex-col items-end leading-tight tabular-nums">
+          <span className={`text-[14px] ${hasQtyDiff ? "text-rose-600 font-semibold" : "text-zinc-600"}`}>
             {matchedProducts > 0 ? `${matchedProducts}종 · ${totalPurchaseQty.toLocaleString()}개` : "—"}
           </span>
-          {hasQtyDiff && (
-            <span className="text-[15px] font-bold text-rose-600" title={`발주 ${totalOrderQty.toLocaleString()}개 vs 매입 ${totalPurchaseQty.toLocaleString()}개`}>
-              {diffLabel}
-            </span>
-          )}
-        </div>
-        <div className="hidden lg:flex flex-col items-end text-right self-center leading-tight">
-          <span className={`text-[18px] font-bold tabular-nums ${hasAmountDiff ? "text-rose-600" : "text-sky-700"}`}>
-            {purchaseGroup.totalPurchaseAmount > 0 ? fmtWon(purchaseGroup.totalPurchaseAmount) : "—"}
+          <span className={`text-[15px] font-bold ${hasAmountDiff ? "text-rose-600" : "text-sky-700"}`}>
+            {totalPurchaseAmount > 0 ? fmtWon(totalPurchaseAmount) : "—"}
           </span>
-          {hasAmountDiff && (
-            <span className="text-[15px] font-bold text-rose-600 tabular-nums" title={`발주 ${fmtWon(totalOrderAmount)} vs 매입 ${fmtWon(totalPurchaseAmount)}`}>
-              {amountDiffLabel}
-            </span>
-          )}
         </div>
-        <div className="hidden lg:flex self-center justify-center items-center min-w-0 overflow-hidden">
-          <StatusPill tone={PO_STATUS_TONE[poStatus]} size="xs" dot>{PO_STATUS_LABEL[poStatus]}</StatusPill>
+        {/* 대조결과 · 자동 · 읽기전용 */}
+        <div className="flex justify-center">
+          <StatusPill tone={autoResult.tone} size="xs" dot>{autoResult.label}</StatusPill>
         </div>
+        {/* 처리 · 수동 selector */}
+        <div className="flex justify-center">
+          <ProcessingSelector current={procStatus} onChange={(next) => onProcessingChange(order, next)} disabled={busy} />
+        </div>
+      </button>
+
+      {/* 모바일 카드 */}
+      <div className="lg:hidden">
+        <button type="button" onClick={onToggle}
+          className="w-full text-left flex items-stretch px-3 py-3 gap-2 hover:bg-zinc-50/60 cursor-pointer">
+          <div className={`w-1 self-stretch rounded ${accentColor}`} />
+          <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-col leading-tight min-w-0">
+                <span className="text-[13px] text-zinc-400 tabular-nums font-medium">#{order.orderNumber ?? "—"}</span>
+                <span className="text-[16px] font-bold text-ink truncate">{supplierDisplay || "공급사 미지정"}</span>
+              </div>
+              {isOpen
+                ? <ChevronDown size={14} className="text-zinc-400 shrink-0 mt-1" />
+                : <ChevronRight size={14} className="text-zinc-300 shrink-0 mt-1" />}
+            </div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[13px] tabular-nums">
+              <div className="flex flex-col">
+                <span className="text-zinc-400 text-[12px]">발주 · {shortDate(order.sentAt ?? order.orderDate) || "—"}</span>
+                <span className="text-zinc-600">{order.distinctProducts}종 · {totalOrderQty.toLocaleString()}개</span>
+                <span className="font-bold text-emerald-700">{fmtWon(order.totalOrderAmount)}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-zinc-400 text-[12px]">매입 · {purchaseDateLabel}</span>
+                <span className={hasQtyDiff ? "text-rose-600 font-semibold" : "text-zinc-600"}>
+                  {matchedProducts > 0 ? `${matchedProducts}종 · ${totalPurchaseQty.toLocaleString()}개` : "매입 없음"}
+                </span>
+                <span className={`font-bold ${hasAmountDiff ? "text-rose-600" : "text-sky-700"}`}>
+                  {totalPurchaseAmount > 0 ? fmtWon(totalPurchaseAmount) : "—"}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <StatusPill tone={autoResult.tone} size="xs" dot>{autoResult.label}</StatusPill>
+              <ProcessingSelector current={procStatus} onChange={(next) => onProcessingChange(order, next)} disabled={busy} />
+            </div>
+          </div>
+        </button>
       </div>
 
-      {/* 모바일 요약 */}
-      <div className="lg:hidden px-3 pb-2 text-[14px] text-zinc-500 tabular-nums flex flex-wrap items-center gap-x-3 gap-y-0.5">
-        <span>{purchaseRangeLabel}</span>
-        <span className={hasQtyDiff ? "font-bold text-rose-600" : ""}>
-          {matchedProducts > 0 ? `${matchedProducts}종 · ${totalPurchaseQty.toLocaleString()}개` : "매입 없음"}
-        </span>
-        <span className={`font-bold ${hasAmountDiff ? "text-rose-600" : "text-sky-700"}`}>
-          {purchaseGroup.totalPurchaseAmount > 0 ? fmtWon(purchaseGroup.totalPurchaseAmount) : "—"}
-        </span>
-        <StatusPill tone={PO_STATUS_TONE[poStatus]} size="xs" dot>{PO_STATUS_LABEL[poStatus]}</StatusPill>
-      </div>
-      {/* 상세는 PairedRow 하단 UnifiedDetail · full-width */}
-    </>
+      {/* 상세 · 펼침 */}
+      {isOpen && <UnifiedDetail order={order} />}
+    </div>
   );
 };
 
-// UnifiedDetail · full-width 통합 비교표
-interface UnifiedDetailProps {
-  order: OrderGroup;
-  purchaseGroup: ReturnType<typeof buildPurchaseGroup>;
-  poStatus: "matched" | "exception" | "unmatched" | "mixed" | "resolved";
-  busy: boolean;
-  decidedCount: number;
-  onConfirm: (rows: OrderMatchRow[]) => Promise<void>;
-  onUndo: (rows: OrderMatchRow[]) => Promise<void>;
-  onException: (row: OrderMatchRow | null) => void;
-  onResolve: (rows: OrderMatchRow[]) => Promise<void>;
-  onUnresolve: (rows: OrderMatchRow[]) => Promise<void>;
-}
+// ═════════════════════════════════════════════════════════════════
+// 6 · UnifiedDetail · 상품별 비교표 (액션바 없음)
+// ═════════════════════════════════════════════════════════════════
+interface UnifiedDetailProps { order: OrderGroup; }
 
-const UnifiedDetail: React.FC<UnifiedDetailProps> = ({
-  order, poStatus, busy, decidedCount,
-  onConfirm, onUndo, onException, onResolve, onUnresolve,
-}) => {
+const UnifiedDetail: React.FC<UnifiedDetailProps> = ({ order }) => {
   const lines = useMemo(() => order.rows.map(r => {
     const matches = r.purchase_matches ?? [];
     const purchaseQty = matches.reduce((s, m) => s + Number(m.quantity ?? 0), 0);
@@ -626,7 +562,7 @@ const UnifiedDetail: React.FC<UnifiedDetailProps> = ({
 
   return (
     <div className="border-t border-zinc-200 bg-zinc-50/40">
-      {/* PC 테이블 · 통합 비교 */}
+      {/* PC 테이블 */}
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-[14px] tabular-nums">
           <thead>
@@ -645,9 +581,7 @@ const UnifiedDetail: React.FC<UnifiedDetailProps> = ({
                   <div className="flex flex-col leading-tight">
                     <span className="text-[15px] font-semibold text-ink">{l.productName || "-"}</span>
                     <span className="text-[12px] text-zinc-400 font-medium">{l.productCode}</span>
-                    {l.resolved && l.resolutionNote && (
-                      <span className="mt-1 text-[12px] text-zinc-500 italic">↳ {l.resolutionNote}</span>
-                    )}
+                    {l.resolved && l.resolutionNote && (<span className="mt-1 text-[12px] text-zinc-500 italic">↳ {l.resolutionNote}</span>)}
                   </div>
                 </td>
                 <td className="text-right px-3 py-2.5">
@@ -686,7 +620,7 @@ const UnifiedDetail: React.FC<UnifiedDetailProps> = ({
         </table>
       </div>
 
-      {/* 모바일 compact card */}
+      {/* 모바일 */}
       <div className="md:hidden divide-y divide-zinc-100">
         {lines.map((l) => (
           <div key={`m-${l.productCode}`} className="p-3 flex flex-col gap-1.5">
@@ -715,40 +649,6 @@ const UnifiedDetail: React.FC<UnifiedDetailProps> = ({
             {l.resolved && l.resolutionNote && (<div className="text-[12px] text-zinc-500 italic">↳ {l.resolutionNote}</div>)}
           </div>
         ))}
-      </div>
-
-      {/* Action bar · 하단 우측 */}
-      <div className="flex items-center justify-end gap-2 flex-wrap px-3 py-3 border-t border-zinc-200 bg-white">
-        {order.unresolvedAbnormalCount > 0 ? (
-          <>
-            <Button variant="primary" size="sm" icon={<CheckCircle2 size={13} strokeWidth={2.4} />}
-              onClick={() => onConfirm(order.rows)} disabled={busy}
-              className="!bg-emerald-600 hover:!bg-emerald-700 !border-emerald-600">매입확인</Button>
-            <Button variant="primary" size="sm" icon={<AlertTriangle size={13} strokeWidth={2.4} />}
-              onClick={() => onException(order.rows[0] ?? null)} disabled={busy}
-              className="!bg-amber-500 hover:!bg-amber-600 !border-amber-500">매입이상</Button>
-            <Button variant="primary" size="sm" icon={<CheckCircle2 size={13} strokeWidth={2.4} />}
-              onClick={() => onResolve(order.rows)} disabled={busy}
-              className="!bg-indigo-600 hover:!bg-indigo-700 !border-indigo-600"
-              title="이상/미매입 라인 전부 업무 처리완료 마킹 (match_status 는 유지)">처리완료</Button>
-          </>
-        ) : (
-          <>
-            <StatusPill tone={PO_STATUS_TONE[poStatus]} size="xs" dot>
-              {PO_STATUS_LABEL[poStatus]}{order.hasUserDecision && " · 사용자 판정"}
-            </StatusPill>
-            {order.resolvedCount > 0 && (
-              <Button variant="secondary" size="sm" icon={<RotateCcw size={12} strokeWidth={2.2} />}
-                onClick={() => onUnresolve(order.rows)} disabled={busy}
-                title="처리완료 취소">처리완료 취소</Button>
-            )}
-            {decidedCount > 0 && order.resolvedCount === 0 && (
-              <Button variant="secondary" size="sm" icon={<RotateCcw size={12} strokeWidth={2.2} />}
-                onClick={() => onUndo(order.rows)} disabled={busy}>Undo</Button>
-            )}
-          </>
-        )}
-        {busy && <Spinner size={12} tone="zinc" />}
       </div>
     </div>
   );
