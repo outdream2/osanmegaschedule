@@ -10,9 +10,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { Modal } from "../common/Modal";
 import { CalendarDays } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from "recharts";
+import { LineChart, Line, Bar, ComposedChart, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from "recharts";
 import { shortDateWithDow } from "../../lib/dateFormat";
-import { RevenueFlowChart } from "./RevenueFlowChart";
 
 type RevenueTab = "hourly" | "monthly";
 type FetchStatus = "idle" | "loading" | "success" | "error";
@@ -157,8 +156,10 @@ interface HourlyApiResponse {
 
 const HourlyReportTab: React.FC = () => {
   // HOURLY 전용 state
-  // 2026-10-06 · 사용자 지시 · 매출 흐름 분석 chart · RevenueFlowChart 로 이관 (date/weekday toggle)
-  //   · 매출/객단가/마진율 Line + 고객수 Bar · 4 synchronized tracks · syncId 로 X축 공유
+  // 2026-10-06 · 사용자 지시 · 시간대별 chart metric 탭 (매출/객단가/고객수·마진율)
+  //   · 같은 dataset 재사용 · tab 변경 시 API 재호출 X · series 만 전환
+  type ChartMetric = "revenue" | "avg-order" | "customer-margin";
+  const [chartMetric, setChartMetric] = useState<ChartMetric>("revenue");
   const [hourlyRows, setHourlyRows] = useState<HourlyRow[] | null>(null);
   const [hourlyStatus, setHourlyStatus] = useState<FetchStatus>("idle");
   const [hourlyError, setHourlyError] = useState<string | null>(null);
@@ -377,12 +378,187 @@ const HourlyReportTab: React.FC = () => {
         <KpiBox label={`${today} 고객수`} value={show ? totalCust.toLocaleString() + "명" : "-"} />
       </div>
 
-      {/* 2026-10-06 · 사용자 지시 · 매출 흐름 분석 chart (date/weekday toggle)
-          · 매출/객단가/마진율 Line + 고객수 Bar · 4 synchronized tracks (각 독립 Y scale · 공유 X축 syncId)
-          · dual/triple Y-axis 금지 · normalization 금지 · tab 변경 시 API 재호출 X */}
-      {show && dateData.length > 0 && (
-        <RevenueFlowChart dateData={dateData} />
-      )}
+      {/* 2026-10-06 · 사용자 지시 · 시간대별 chart · metric 탭 분리 (매출/객단가/고객수·마진율)
+          · 같은 dataset 재사용 · tab 변경 시 API 재호출 X · series 만 전환
+          · 모든 chart · ResponsiveContainer · 100% width · dual Y-axis (customer-margin 탭) */}
+      {show && displayDateData.length > 0 && allSlots.length > 0 && (() => {
+        // 날짜별 색상 · 오늘 날짜는 rose (강조) · 과거 날짜는 다양한 색
+        const PAST_COLORS = ["#2563eb", "#059669", "#d97706", "#7c3aed", "#0891b2", "#db2777", "#0ea5e9"];
+        // metric 별 series data 계산 · 같은 chartData 포맷 ({ time, [dateKey]: value })
+        //   revenue       · SaleTotal
+        //   avg-order     · SaleTotal / CustomerCnt (per slot)
+        //   customer-margin · CustomerCnt + MarginPercent (dual Y-axis)
+        const buildRevenueData = () => allSlots.map((slot) => {
+          const point: Record<string, number | string | null> = { time: slot };
+          for (const d of displayDateData) {
+            const r = d.rowMap.get(slot);
+            point[d.date] = r ? Number(r.SaleTotal ?? 0) : null;
+          }
+          return point;
+        });
+        const buildAvgData = () => allSlots.map((slot) => {
+          const point: Record<string, number | string | null> = { time: slot };
+          for (const d of displayDateData) {
+            const r = d.rowMap.get(slot);
+            const sale = r ? Number(r.SaleTotal ?? 0) : 0;
+            const cust = r ? Number(r.CustomerCnt ?? 0) : 0;
+            point[d.date] = cust > 0 ? Math.round(sale / cust) : null;
+          }
+          return point;
+        });
+        const buildCustMarginData = () => allSlots.map((slot) => {
+          const point: Record<string, number | string | null> = { time: slot };
+          for (const d of displayDateData) {
+            const r = d.rowMap.get(slot);
+            const sale = r ? Number(r.SaleTotal ?? 0) : 0;
+            const cust = r ? Number(r.CustomerCnt ?? 0) : 0;
+            const marg = r ? Number(r.Margin ?? 0) : 0;
+            // mp canonical · Margin / SaleTotal × 100 (기존 marginPercent 식과 동일)
+            const mp = sale > 0 ? Math.round((marg / sale) * 1000) / 10 : null;
+            point[`${d.date}::cust`] = r ? cust : null;
+            point[`${d.date}::marginPct`] = mp;
+          }
+          return point;
+        });
+        const TAB_LABEL: Record<ChartMetric, string> = { "revenue": "매출", "avg-order": "객단가", "customer-margin": "고객수·마진율" };
+        return (
+          <div className="bg-white border border-zinc-200 rounded-lg p-3 md:p-4 w-full min-w-0 max-w-full overflow-hidden">
+            <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+              <div className="text-[15px] md:text-[16px] font-bold text-zinc-800">시간대별 추이</div>
+              {/* metric 탭 */}
+              <div className="inline-flex items-center gap-1 bg-zinc-100 border border-zinc-200 rounded-lg p-0.5">
+                {(["revenue", "avg-order", "customer-margin"] as const).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setChartMetric(k)}
+                    className={`px-2.5 py-1 text-[13px] font-semibold rounded-md transition cursor-pointer whitespace-nowrap ${
+                      chartMetric === k ? "bg-brand-deep text-white shadow-sm" : "text-zinc-600 hover:bg-white"
+                    }`}
+                  >
+                    {TAB_LABEL[k]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="w-full" style={{ height: 280 }}>
+              {chartMetric === "revenue" && (() => {
+                const chartData = buildRevenueData();
+                return (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 10, right: 15, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
+                      <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#52525b" }} tickFormatter={(v) => `${v}시`} />
+                      <YAxis tick={{ fontSize: 11, fill: "#52525b" }} tickFormatter={(v) => fmtWonShort(Number(v))} width={60} />
+                      <Tooltip
+                        formatter={(v, name) => [fmtWon(Number(v)), shortDateWithDow(String(name).replace(" (오늘)", ""))]}
+                        labelFormatter={(v) => `${v}시`}
+                        contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 12 }} iconType="line" formatter={(name) => shortDateWithDow(String(name).replace(" (오늘)", ""))} />
+                      {displayDateData.map((d, i) => {
+                        const isToday = d.date === today;
+                        const color = isToday ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
+                        return (
+                          <Line
+                            key={d.date} type="monotone" dataKey={d.date}
+                            name={isToday ? `${d.date} (오늘)` : d.date}
+                            stroke={color} strokeWidth={isToday ? 2.5 : 1.8}
+                            dot={{ r: isToday ? 4 : 3, strokeWidth: 1 }} activeDot={{ r: 6 }}
+                            connectNulls={false}
+                          />
+                        );
+                      })}
+                    </LineChart>
+                  </ResponsiveContainer>
+                );
+              })()}
+              {chartMetric === "avg-order" && (() => {
+                const chartData = buildAvgData();
+                return (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 10, right: 15, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
+                      <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#52525b" }} tickFormatter={(v) => `${v}시`} />
+                      <YAxis tick={{ fontSize: 11, fill: "#52525b" }} tickFormatter={(v) => fmtWonShort(Number(v))} width={60} />
+                      <Tooltip
+                        formatter={(v, name) => [fmtWon(Number(v)), shortDateWithDow(String(name).replace(" (오늘)", ""))]}
+                        labelFormatter={(v) => `${v}시`}
+                        contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 12 }} iconType="line" formatter={(name) => shortDateWithDow(String(name).replace(" (오늘)", ""))} />
+                      {displayDateData.map((d, i) => {
+                        const isToday = d.date === today;
+                        const color = isToday ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
+                        return (
+                          <Line
+                            key={d.date} type="monotone" dataKey={d.date}
+                            name={isToday ? `${d.date} (오늘)` : d.date}
+                            stroke={color} strokeWidth={isToday ? 2.5 : 1.8}
+                            dot={{ r: isToday ? 4 : 3, strokeWidth: 1 }} activeDot={{ r: 6 }}
+                            connectNulls={false}
+                          />
+                        );
+                      })}
+                    </LineChart>
+                  </ResponsiveContainer>
+                );
+              })()}
+              {chartMetric === "customer-margin" && (() => {
+                const chartData = buildCustMarginData();
+                return (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
+                      <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#52525b" }} tickFormatter={(v) => `${v}시`} />
+                      <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#52525b" }} tickFormatter={(v) => `${v}명`} width={55} />
+                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#52525b" }} tickFormatter={(v) => `${v}%`} width={45} />
+                      <Tooltip
+                        formatter={(v, name) => {
+                          const [dateKey, kind] = String(name).split("::");
+                          const label = `${shortDateWithDow(dateKey.replace(" (오늘)", ""))} · ${kind === "cust" ? "고객수" : "마진율"}`;
+                          const value = kind === "cust" ? `${Number(v).toLocaleString()}명` : `${Number(v).toFixed(1)}%`;
+                          return [value, label];
+                        }}
+                        labelFormatter={(v) => `${v}시`}
+                        contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: 12 }} formatter={(name) => {
+                        const [dateKey, kind] = String(name).split("::");
+                        return `${shortDateWithDow(dateKey.replace(" (오늘)", ""))} ${kind === "cust" ? "고객수" : "마진율"}`;
+                      }} />
+                      {displayDateData.map((d, i) => {
+                        const isToday = d.date === today;
+                        const color = isToday ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
+                        return (
+                          <Bar
+                            key={`${d.date}-cust`} yAxisId="left" dataKey={`${d.date}::cust`}
+                            name={`${isToday ? `${d.date} (오늘)` : d.date}::cust`}
+                            fill={color} fillOpacity={0.75} radius={[2, 2, 0, 0]}
+                          />
+                        );
+                      })}
+                      {displayDateData.map((d, i) => {
+                        const isToday = d.date === today;
+                        const color = isToday ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
+                        return (
+                          <Line
+                            key={`${d.date}-marg`} yAxisId="right" type="monotone" dataKey={`${d.date}::marginPct`}
+                            name={`${isToday ? `${d.date} (오늘)` : d.date}::marginPct`}
+                            stroke={color} strokeDasharray="4 2" strokeWidth={isToday ? 2.5 : 1.8}
+                            dot={{ r: isToday ? 4 : 3, strokeWidth: 1 }} activeDot={{ r: 6 }}
+                            connectNulls={false}
+                          />
+                        );
+                      })}
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                );
+              })()}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 날짜별 column group · PC 전용 */}
       <div className="hidden md:block bg-white border border-zinc-200 rounded-lg overflow-auto">
