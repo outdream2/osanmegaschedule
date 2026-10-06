@@ -76,3 +76,28 @@ export const ShelfPositionValueSchema = z
 /** shelf_positions JSON · key=location code · value=3자리 or null */
 export const ShelfPositionsSchema = z.record(z.string(), ShelfPositionValueSchema);
 export type ShelfPositions = Record<string, string | null | undefined>;
+
+/** 2026-10-06 · 방문예약 설정 · all_settings.visitorReservation
+ *   · assigneeEmployeeIds · employees.id 배열 · "대표/이사" rank 하드코드 제거
+ *   · slotMinutes · 기본 30 (현재 UI 60분이지만 설정으로 변경 가능하도록)
+ *   · bufferMinutes · 예약 간 여유시간
+ *   · useEmployeeSchedule · schedules 테이블 기반 근무시간 연동 여부
+ */
+export const VisitorReservationSettingsSchema = z.object({
+  assigneeEmployeeIds: z.array(z.number().int().positive()).default([]),
+  slotMinutes: z.number().int().min(10).max(240).default(30),
+  bufferMinutes: z.number().int().min(0).max(120).default(10),
+  useEmployeeSchedule: z.boolean().default(true),
+  // P1 (reserved · 미사용 OK)
+  maxConcurrentBookings: z.number().int().min(1).max(10).optional(),
+  allowSameDayBooking: z.boolean().optional(),
+  advanceDays: z.number().int().min(0).max(365).optional(),
+});
+export type VisitorReservationSettings = z.infer<typeof VisitorReservationSettingsSchema>;
+
+export const DEFAULT_VISITOR_RESERVATION_SETTINGS: VisitorReservationSettings = {
+  assigneeEmployeeIds: [],
+  slotMinutes: 30,
+  bufferMinutes: 10,
+  useEmployeeSchedule: true,
+};

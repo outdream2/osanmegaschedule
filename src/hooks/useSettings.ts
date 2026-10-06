@@ -28,6 +28,24 @@ export interface DefaultAnnualLeave {
 
 export const DEFAULT_ANNUAL_LEAVE: DefaultAnnualLeave = { pharmacist: 3, default: 12 };
 
+/** 2026-10-06 · 방문예약 설정 · "대표/이사" 하드코드 제거 · employees.id 배열로 담당자 지정 */
+export interface VisitorReservationSettings {
+  assigneeEmployeeIds: number[];
+  slotMinutes: number;
+  bufferMinutes: number;
+  useEmployeeSchedule: boolean;
+  maxConcurrentBookings?: number;
+  allowSameDayBooking?: boolean;
+  advanceDays?: number;
+}
+
+export const DEFAULT_VISITOR_RESERVATION: VisitorReservationSettings = {
+  assigneeEmployeeIds: [],
+  slotMinutes: 30,
+  bufferMinutes: 10,
+  useEmployeeSchedule: true,
+};
+
 export interface AppSettings {
   positions: string[];
   /** 2026-08-29 · #177 P2 · 직급(rank) 목록 · 자유 텍스트 · 대표·부장·과장·사원 등 · 편집 시 재직 직원 자동 rename · optional (DB migration 없이 자동 default) */
@@ -41,6 +59,8 @@ export interface AppSettings {
   underConstruction?: boolean;
   /** 2026-09-04 · 직군별 기본 연차일수 · 약사=3일, 그 외=12일 */
   defaultAnnualLeave?: DefaultAnnualLeave;
+  /** 2026-10-06 · 방문예약 담당자/슬롯 · "대표/이사" rank 하드코드 제거 · optional (기존 settings 호환) */
+  visitorReservation?: VisitorReservationSettings;
 }
 
 const STORAGE_KEY = "app_settings";
@@ -95,6 +115,37 @@ function sanitizeEmployeeOverrides(input: unknown): Record<number, WageRate> {
     if (isWageRate(v)) out[idNum] = { weekday: v.weekday, weekend: v.weekend };
   }
   return out;
+}
+
+/** 2026-10-06 · visitorReservation 안전 파서 · 알 수 없는 field 제거 · default 보장 */
+function sanitizeVisitorReservation(input: unknown): VisitorReservationSettings {
+  const base = { ...DEFAULT_VISITOR_RESERVATION };
+  if (!input || typeof input !== "object") return base;
+  const raw = input as Record<string, unknown>;
+  if (Array.isArray(raw.assigneeEmployeeIds)) {
+    base.assigneeEmployeeIds = (raw.assigneeEmployeeIds as unknown[])
+      .map(v => Number(v))
+      .filter(v => Number.isInteger(v) && v > 0);
+  }
+  if (typeof raw.slotMinutes === "number" && Number.isFinite(raw.slotMinutes) && raw.slotMinutes >= 10 && raw.slotMinutes <= 240) {
+    base.slotMinutes = Math.round(raw.slotMinutes);
+  }
+  if (typeof raw.bufferMinutes === "number" && Number.isFinite(raw.bufferMinutes) && raw.bufferMinutes >= 0 && raw.bufferMinutes <= 120) {
+    base.bufferMinutes = Math.round(raw.bufferMinutes);
+  }
+  if (typeof raw.useEmployeeSchedule === "boolean") {
+    base.useEmployeeSchedule = raw.useEmployeeSchedule;
+  }
+  if (typeof raw.maxConcurrentBookings === "number" && raw.maxConcurrentBookings >= 1) {
+    base.maxConcurrentBookings = Math.round(raw.maxConcurrentBookings);
+  }
+  if (typeof raw.allowSameDayBooking === "boolean") {
+    base.allowSameDayBooking = raw.allowSameDayBooking;
+  }
+  if (typeof raw.advanceDays === "number" && raw.advanceDays >= 0) {
+    base.advanceDays = Math.round(raw.advanceDays);
+  }
+  return base;
 }
 
 /** 구버전 localStorage 포맷 · scheduleTypes 가 string[] 였을 때 저장된 개별 시간 필드 */
@@ -154,6 +205,7 @@ function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
       pharmacist: (parsed.defaultAnnualLeave?.pharmacist ?? DEFAULT_ANNUAL_LEAVE.pharmacist),
       default: (parsed.defaultAnnualLeave?.default ?? DEFAULT_ANNUAL_LEAVE.default),
     },
+    visitorReservation: sanitizeVisitorReservation((parsed as any).visitorReservation),
   };
 }
 
@@ -262,6 +314,7 @@ export function useSettings() {
     employeeWageOverrides: settings.employeeWageOverrides,
     underConstruction: settings.underConstruction === true,
     defaultAnnualLeave: settings.defaultAnnualLeave ?? DEFAULT_ANNUAL_LEAVE,
+    visitorReservation: settings.visitorReservation ?? DEFAULT_VISITOR_RESERVATION,
     settings,
     update,
     saveNow,

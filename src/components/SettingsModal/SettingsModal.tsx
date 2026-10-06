@@ -7,7 +7,7 @@ import { api, ApiError } from "../../lib/apiClient";
 // 2026-08-29 · framework audit fix · window.confirm → useConfirm
 import { useConfirm } from "../../hooks/useConfirm";
 import { ShieldCheck, ChevronRight } from "lucide-react";
-import { AppSettings, WageRate, ScheduleTypeEntry, defaultWageForPosition } from "../../hooks/useSettings";
+import { AppSettings, WageRate, ScheduleTypeEntry, defaultWageForPosition, VisitorReservationSettings, DEFAULT_VISITOR_RESERVATION } from "../../hooks/useSettings";
 import { COLOR_PRESETS } from "../../constants";
 // #191 · Modal primitive
 import { Modal } from "../common/Modal";
@@ -17,13 +17,16 @@ import { RanksTab } from "./tabs/RanksTab";
 import { WorkplacesTab } from "./tabs/WorkplacesTab";
 import { ScheduleTypesTab } from "./tabs/ScheduleTypesTab";
 import { AccountTab } from "./tabs/AccountTab";
+// 2026-10-06 · #VisitorReservationEmployeeAssignment · 담당자/슬롯 설정
+import { VisitorReservationTab, type SettingsEmployeeOption } from "./tabs/VisitorReservationTab";
 
 interface SettingsModalProps {
   settings: AppSettings;
   onUpdate: (partial: Partial<AppSettings>) => void;
   onApplyShiftHours: () => Promise<void>;
   onClose: () => void;
-  employees: Array<{ id: number; name: string; position: string }>;
+  // 2026-10-06 · retireDate / rank 선택적 전달 · VisitorReservationTab 에서 재직 필터링 · 자유형 (상위에서 넘기지 않아도 OK)
+  employees: Array<{ id: number; name: string; position: string; rank?: string | null; retireDate?: string | null }>;
   editMode?: boolean;
   onEnableEditMode?: () => void;
   sessionEmployeeId?: number | null;
@@ -38,13 +41,15 @@ interface SettingsModalProps {
 // 2026-08-16 · account (비밀번호 변경) 탭 제거 · MyPage 에 이미 존재 · 중복 방지
 // 2026-08-29 · #177 Phase 1 · positions 탭 노출 (편집 로직은 이미 존재 · TABS 노출만)
 // 2026-08-29 · #177 Phase 2 · ranks 탭 신설 · 자유 텍스트 · 편집 시 자동 rename
-type TabId = "positions" | "ranks" | "workplaces" | "scheduleTypes" | "account";
+type TabId = "positions" | "ranks" | "workplaces" | "scheduleTypes" | "visitorReservation" | "account";
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: "positions",    label: "직군" },
-  { id: "ranks",        label: "직급" },
-  { id: "workplaces",   label: "근무지 종류" },
-  { id: "scheduleTypes", label: "근무 유형" },
+  { id: "positions",         label: "직군" },
+  { id: "ranks",             label: "직급" },
+  { id: "workplaces",        label: "근무지 종류" },
+  { id: "scheduleTypes",     label: "근무 유형" },
+  // 2026-10-06 · #VisitorReservationEmployeeAssignment · 방문예약 담당자/슬롯 설정
+  { id: "visitorReservation", label: "방문예약" },
 ];
 
 type ScheduleHourTab = "hours" | "pharmHours" | "logisticsHours" | "partTimeHours";
@@ -113,6 +118,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [applying, setApplying] = useState(false);
   const [scheduleHourTab, setScheduleHourTab] = useState<ScheduleHourTab>("hours");
   const [showEditConfirm, setShowEditConfirm] = useState(false);
+
+  // 2026-10-06 · #VisitorReservationEmployeeAssignment · 방문예약 설정 · 즉시 저장 (debounce 는 useSettings 내부)
+  const [visitorReservation, setVisitorReservation] = useState<VisitorReservationSettings>(
+    settings.visitorReservation ?? DEFAULT_VISITOR_RESERVATION,
+  );
+  const saveVisitorReservation = (next: VisitorReservationSettings) => {
+    setVisitorReservation(next);
+    onUpdate({ visitorReservation: next });
+  };
 
   // Wage settings local drafts (committed immediately)
   const [wageRates, setWageRates] = useState<Record<string, WageRate>>({ ...(settings.wageRates ?? {}) });
@@ -469,6 +483,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             applying={applying}
             editMode={editMode}
             onApplyClick={handleApplyClick}
+          />
+        )}
+
+        {activeTab === "visitorReservation" && (
+          <VisitorReservationTab
+            value={visitorReservation}
+            onChange={saveVisitorReservation}
+            employees={(employees as SettingsEmployeeOption[])}
           />
         )}
 
