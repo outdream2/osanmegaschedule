@@ -349,24 +349,28 @@ export class ScheduleService {
   /**
    * 2026-10-06 · PHASE 1 · 직원 삭제 전 연관 데이터 count 조회
    *   · 호출자는 count>0 이면 삭제 거부 (409) · 비활성화 (retireDate) 안내
-   *   · schedules / leave_requests / employee_contracts / resignation_requests 참조
-   *   · FK 없는 테이블이라도 서비스 레이어에서 사전 검증 (historical data preservation)
+   *   · schedules / leave_requests / employee_contracts / resignation_requests / reservations 참조
+   *   · 2026-10-06 · #VisitorReservationEmployeeAssignment · reservations.assigned_employee_id FK ON DELETE NO ACTION
+   *     → DB-level 거부되기 전 사전 count 로 깔끔한 409 반환 (FK 없는 legacy 환경과도 호환)
+   *   · 미존재 테이블·컬럼 (schema cache 42P01 / 42703) · 0 으로 fallback (migration 이전 환경)
    */
   async countEmployeeRelatedRows(id: number): Promise<{
     schedules: number;
     leaveRequests: number;
     contracts: number;
     resignations: number;
+    reservations: number;
   }> {
-    const [schedRes, leaveRes, contractRes, resignRes] = await Promise.all([
+    const [schedRes, leaveRes, contractRes, resignRes, resvRes] = await Promise.all([
       supabase.from("schedules").select("*", { count: "exact", head: true }).eq("employeeId", id),
       supabase.from("leave_requests").select("*", { count: "exact", head: true }).eq("employee_id", id),
       supabase.from("employee_contracts").select("*", { count: "exact", head: true }).eq("employee_id", id),
       supabase.from("resignation_requests").select("*", { count: "exact", head: true }).eq("employee_id", id),
+      supabase.from("reservations").select("*", { count: "exact", head: true }).eq("assigned_employee_id", id),
     ]);
-    const errs = [schedRes.error, leaveRes.error, contractRes.error, resignRes.error].filter(Boolean);
+    const errs = [schedRes.error, leaveRes.error, contractRes.error, resignRes.error, resvRes.error].filter(Boolean);
     for (const e of errs) {
-      if (e && !/relation .* does not exist|table .* does not exist/i.test(e.message)) {
+      if (e && !/relation .* does not exist|table .* does not exist|column .* does not exist/i.test(e.message)) {
         throw new Error(e.message);
       }
     }
@@ -375,6 +379,7 @@ export class ScheduleService {
       leaveRequests: leaveRes.count ?? 0,
       contracts: contractRes.count ?? 0,
       resignations: resignRes.count ?? 0,
+      reservations: resvRes.count ?? 0,
     };
   }
 

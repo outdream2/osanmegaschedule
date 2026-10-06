@@ -288,11 +288,16 @@ export class ScheduleController {
       }
 
       const counts = await scheduleService.countEmployeeRelatedRows(id);
-      const total = counts.schedules + counts.leaveRequests + counts.contracts + counts.resignations;
+      const total =
+        counts.schedules +
+        counts.leaveRequests +
+        counts.contracts +
+        counts.resignations +
+        counts.reservations;
       if (total > 0) {
         res.status(409).json({
           error:
-            `삭제 불가 · 연관 데이터가 존재합니다 (스케줄 ${counts.schedules}건 · 연차 ${counts.leaveRequests}건 · 계약 ${counts.contracts}건 · 사직 ${counts.resignations}건). ` +
+            `삭제 불가 · 연관 데이터가 존재합니다 (스케줄 ${counts.schedules}건 · 연차 ${counts.leaveRequests}건 · 계약 ${counts.contracts}건 · 사직 ${counts.resignations}건 · 방문예약 ${counts.reservations}건). ` +
             "역사적 데이터 보존을 위해 직원 비활성화(퇴사일 입력)를 사용하세요.",
           code: "EMPLOYEE_HAS_RELATED_ROWS",
           counts,

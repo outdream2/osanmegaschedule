@@ -170,7 +170,14 @@ export async function createEmployee(payload: EmployeeUpdatePayload): Promise<Em
  */
 export class EmployeeDeleteError extends Error {
   code?: string;
-  counts?: { schedules?: number; leaveRequests?: number; contracts?: number; resignations?: number };
+  counts?: {
+    schedules?: number;
+    leaveRequests?: number;
+    contracts?: number;
+    resignations?: number;
+    /** 2026-10-06 · #VisitorReservationEmployeeAssignment · 방문예약 담당자 FK (ON DELETE NO ACTION) */
+    reservations?: number;
+  };
   constructor(message: string, code?: string, counts?: EmployeeDeleteError["counts"]) {
     super(message);
     this.name = "EmployeeDeleteError";
