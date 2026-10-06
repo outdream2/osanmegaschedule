@@ -91,6 +91,8 @@ import resignationsRouter from "./server/routes/staff/resignations";
 import employeeContractsRouter from "./server/routes/staff/employeeContracts";
 import contractClausesRouter from "./server/routes/staff/contractClauses";
 import vatRouter from "./server/routes/purchase/vat";
+// 2026-10-06 · 매입 단가변동 관리 (사용자 지시)
+import priceVarianceRouter from "./server/routes/purchase/priceVariance";
 // 2026-10-03 저녁 · Phase 2 · ERP Initial Data Build DRY-RUN Preview (READ ONLY)
 import initialBuildPreviewRouter from "./server/routes/admin/initialBuildPreview";
 // 2026-08-06 · T-DualStorage-Connect · 5개 도메인 reference 값 조회
@@ -331,6 +333,7 @@ async function startServer() {
   app.use(vendorOrderHistoryRouter);
   app.use(boardRouter);
   app.use(vatRouter);
+  app.use(priceVarianceRouter);
   // 2026-08-31 · #16 · referenceValuesRouter 이중 등록 제거 · public 구역 (line 169) 에서 이미 처리
   // (재고세기 라우터 · 2026-08-05 파일 삭제됨)
   // app.use(inventorySalesRouter);

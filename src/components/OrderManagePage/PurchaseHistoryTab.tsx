@@ -1123,6 +1123,7 @@ export const PurchaseHistoryTab: React.FC = () => {
             periodSeason={periodSeason}
             setPeriodSeason={setPeriodSeason}
             selectedMonths={selectedMonths}
+            monthsListParamStr={monthsListParamStr}
             openVendorInfo={openVendorInfo as (v: VendorRecord) => void}
             loadVendorData={loadVendorData}
             /* 2026-09-18 · #93 · 옵션 C · 하이브리드 배너 */

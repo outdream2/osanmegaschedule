@@ -225,6 +225,8 @@ interface ByVendorPanelProps {
   setPeriodSeason: (v: SeasonKey | null) => void;
   /** 2026-10-05 · 월 멀티선택 · 부모 SSOT · embedded SupplierTab 로 전달 */
   selectedMonths: string[];
+  /** 2026-10-06 · 월 멀티선택 param string ("YYYY-MM,YYYY-MM") · PriceVarianceTab 로 전달 */
+  monthsListParamStr?: string;
   openVendorInfo: (v: VendorRecord) => void;
   loadVendorData: (supplier: string) => void;
   /** 2026-09-18 · #93 · 옵션 C · 하이브리드 배너 · union 모드 여부 */
@@ -244,6 +246,7 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
   detailRows, detailLoading, ledgerRows, ledgerLoading, ledgerError, setLedgerError,
   highlightId, periodMonths, setPeriodMonths, periodSeason, setPeriodSeason,
   selectedMonths,
+  monthsListParamStr,
   openVendorInfo, loadVendorData,
   unionMode = false, onEnableUnion, onDisableUnion,
   similarWithHistoryCount = 0, unionVendorCount = 0,
@@ -406,6 +409,7 @@ export const ByVendorPanel: React.FC<ByVendorPanelProps> = ({
                 setPeriodMonths(months);
                 setPeriodSeason(season);
               }}
+              monthsListParamStr={monthsListParamStr}
             />
           </>
         )}

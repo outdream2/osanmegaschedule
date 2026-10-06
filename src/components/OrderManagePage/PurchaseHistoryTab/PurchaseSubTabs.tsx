@@ -8,7 +8,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDown, BarChart3, ChevronDown, ChevronRight,
-  ListOrdered, Package2,
+  ListOrdered, Package2, TrendingUp,
 } from "lucide-react";
 import { Spinner } from "../../common/Spinner";
 // 2026-08-21 · Framework Phase 3 · Card 프리미티브
@@ -26,7 +26,8 @@ import { fmtWonNoUnit, fmtDateSlice } from "../../../lib/format";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
-export type TabKey = "ledger" | "product" | "trend";
+// 2026-10-06 · 사용자 지시 · 단가변동 탭 추가 (ledger 바로 뒤)
+export type TabKey = "ledger" | "variance" | "product" | "trend";
 
 export interface PurchaseLedgerRow {
   id: string | number;
@@ -74,6 +75,8 @@ interface PurchaseSubTabsProps {
   ledgerPeriodMonths?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   ledgerPeriodSeason?: SeasonKey | null;
   onLedgerPeriodChange?: (months: 0 | 1 | 2 | 3 | 4 | 5 | 6, season: SeasonKey | null) => void;
+  // 2026-10-06 · 사용자 지시 · 단가변동 탭 · months_list 공통 filter 재사용
+  monthsListParamStr?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -89,6 +92,8 @@ const dateLabel = fmtDateSlice;
 // 2026-08-21 · Framework Phase 4 · LedgerTab · ProductAggTab 은 별도 파일로 분리
 import { LedgerTab } from "./LedgerTab";
 import { ProductAggTab } from "./ProductAggTab";
+// 2026-10-06 · 사용자 지시 · 매입 단가변동 관리 (ledger 바로 뒤 신규 탭)
+import { PriceVarianceTab } from "./PriceVarianceTab";
 
 // ─── Tab 3 · 매입 추이 · recharts 3종 파이차트 (2026-08-05) ──────────────────
 // 2026-08-21 · Framework Phase 4 · chart 헬퍼는 ./chart-helpers 로 분리
@@ -591,13 +596,16 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
 // ─── PurchaseSubTabs · Container ──────────────────────────────────────────
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType; hint: string; color: string }[] = [
-  { key: "ledger",  label: "매입이력",   icon: ListOrdered, hint: "선택 기간 · 매입 원장",         color: "emerald" },
-  { key: "product", label: "상품별 집계", icon: Package2,    hint: "선택 기간 · groupBy 상품명",    color: "sky"     },
-  { key: "trend",   label: "매입 추이",   icon: BarChart3,   hint: "선택 기간 · 3종 파이차트",      color: "violet"  },
+  { key: "ledger",   label: "매입이력",   icon: ListOrdered, hint: "선택 기간 · 매입 원장",         color: "emerald" },
+  // 2026-10-06 · 사용자 지시 · 단가변동 탭 · ledger 바로 뒤
+  { key: "variance", label: "단가변동",   icon: TrendingUp,  hint: "직전 매입대비 단가 변동",        color: "rose"    },
+  { key: "product",  label: "상품별 집계", icon: Package2,    hint: "선택 기간 · groupBy 상품명",    color: "sky"     },
+  { key: "trend",    label: "매입 추이",   icon: BarChart3,   hint: "선택 기간 · 3종 파이차트",      color: "violet"  },
 ];
 
 const PURCHASE_SUBTAB_COLORS: Record<string, { text: string; bar: string; hoverText: string }> = {
   emerald: { text: "text-emerald-700", bar: "bg-emerald-500", hoverText: "hover:text-emerald-700" },
+  rose:    { text: "text-rose-700",    bar: "bg-rose-500",    hoverText: "hover:text-rose-700"    },
   sky:     { text: "text-sky-700",     bar: "bg-sky-500",     hoverText: "hover:text-sky-700"     },
   violet:  { text: "text-violet-700",  bar: "bg-violet-500",  hoverText: "hover:text-violet-700"  },
 };
@@ -619,6 +627,8 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
   ledgerPeriodMonths,
   ledgerPeriodSeason,
   onLedgerPeriodChange,
+  // 2026-10-06 · 사용자 지시 · 단가변동 탭 · months_list 공통
+  monthsListParamStr,
 }) => {
   // 신규 prop 우선 · 없으면 하위호환 prop 사용
   const periodMonths = periodMonthsProp ?? ledgerPeriodMonths;
@@ -674,9 +684,10 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
 
       {/* 탭 컨텐츠 */}
       <div className="flex flex-col min-h-0 flex-1">
-        {tab === "ledger"  && <LedgerTab     rows={ledgerRows}  loading={ledgerLoading} highlightId={highlightId} />}
-        {tab === "product" && <ProductAggTab rows={detailRows}  loading={detailLoading} />}
-        {tab === "trend"   && <TrendTab      rows={detailRows}  loading={detailLoading} />}
+        {tab === "ledger"   && <LedgerTab        rows={ledgerRows}  loading={ledgerLoading} highlightId={highlightId} />}
+        {tab === "variance" && <PriceVarianceTab monthsListParamStr={monthsListParamStr} />}
+        {tab === "product"  && <ProductAggTab    rows={detailRows}  loading={detailLoading} />}
+        {tab === "trend"    && <TrendTab         rows={detailRows}  loading={detailLoading} />}
       </div>
     </div>
   );
