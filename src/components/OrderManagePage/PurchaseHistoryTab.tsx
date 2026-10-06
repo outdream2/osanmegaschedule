@@ -293,69 +293,105 @@ export const PurchaseHistoryTab: React.FC = () => {
   //   기존 loadLedger / loadDetail 이 동일 URL 을 두 번 호출하던 N+1 패턴 제거.
   //   한 번 fetch → ledgerRows / detailRows 동시 세팅.
   //   no_cycle=1 → 서버 cycle_days 재귀 쿼리 완전 스킵 (공급사 원장에서 미사용).
+  // 2026-10-06 · 사용자 지시 · loadVendorData 도 pagination (상품별과 동일 패턴)
+  //   · 첫 page 즉시 표시 · 백그라운드 누적 로드 · months_list / days-mode 양쪽 지원
+  //   · runId 로 force 재호출 경쟁 방지 (loadAllDetails 와 동일 안전장치)
+  const PER_PAGE_VENDOR = 200;
+  const loadVendorDataRunIdRef = useRef(0);
   const loadVendorData = useCallback(async (supplier: string) => {
+    const currentRunId = ++loadVendorDataRunIdRef.current;
     setLedgerLoading(true);
     setDetailLoading(true);
     setLedgerError(null);
     try {
       // 2026-10-05 · 사용자 지시 · 월 멀티선택 반영 · months_list 우선 · from fallback
       const useMonthsList = !periodSeason && selectedMonths.length > 0;
-      const params = new URLSearchParams({ supplier, limit: String(API_LIMITS.LARGE), no_cycle: "1" });
-      if (useMonthsList) {
-        params.set("months_list", monthsListParamStr);
-      } else {
-        const isDays10 = periodMonths === 0 && !periodSeason;
-        const days = periodSeason
-          ? 365
-          : isDays10 ? 10 : (periodMonths || 1) * 30;
-        const fromDate = new Date();
-        fromDate.setDate(fromDate.getDate() - days);
-        params.set("from", fromDate.toISOString().slice(0, 10));
-      }
-      const { data: j } = await api.get<any>(`/api/purchase-details?${params}`);
-      const rowsFromApi: any[] = Array.isArray(j.rows) ? j.rows : [];
+      const buildParams = (page: number): URLSearchParams => {
+        const p = new URLSearchParams({ supplier, no_cycle: "1", per_page: String(PER_PAGE_VENDOR), page: String(page) });
+        if (useMonthsList) {
+          p.set("months_list", monthsListParamStr);
+        } else {
+          const isDays10 = periodMonths === 0 && !periodSeason;
+          const days = periodSeason
+            ? 365
+            : isDays10 ? 10 : (periodMonths || 1) * 30;
+          const fromDate = new Date();
+          fromDate.setDate(fromDate.getDate() - days);
+          p.set("from", fromDate.toISOString().slice(0, 10));
+        }
+        return p;
+      };
+
+      const { data: firstJ } = await api.get<any>(`/api/purchase-details?${buildParams(1)}`);
+      if (currentRunId !== loadVendorDataRunIdRef.current) return;
+      const firstRowsRaw: any[] = Array.isArray(firstJ.rows) ? firstJ.rows : [];
+
       // 2026-08-30 · 사용자 지시 · 정제명 매칭 · (주)녹십자 vs 녹십자 · vat 부가정보 무시
       const { displayVendorName: dv } = await import("../../utils/vendorNameNormalize");
       const norm = dv(supplier);
-      const filtered = rowsFromApi.filter(r => {
-        const rn = String(r.supplier_name ?? r.supplier ?? "");
-        return dv(rn) === norm;
-      });
-      // ledgerRows
-      const purchaseRows: PurchaseLedgerRow[] = filtered.map((r: any) => ({
-        id: r.id,
-        invoice_date: r.purchase_date ?? r.invoice_date ?? null,
-        product_name: r.product_name ?? null,
-        product_code: r.product_code ?? null,
-        quantity: r.quantity != null ? Number(r.quantity) : null,
-        unit_price: r.unit_price != null ? Number(r.unit_price) : null,
-        amount: Number(r.amount ?? r.total) || 0,
-      }));
-      setLedgerRows(purchaseRows);
-      // detailRows (동일 데이터 · PurchaseDetailRow 타입 변환)
-      // 2026-10-06 · supplier_name 포함 · 상품별조회 공급사 컬럼용
-      const detRows: PurchaseDetailRow[] = filtered.map((r: any) => ({
-        id: r.id,
-        date: r.purchase_date ?? r.invoice_date ?? "",
-        product_code: r.product_code ?? null,
-        product_name: r.product_name ?? null,
-        supplier_name: r.supplier_name ?? null,
-        quantity: Number(r.quantity) || 0,
-        unit_price: Number(r.unit_price) || 0,
-        amount: Number(r.amount ?? r.total) || 0,
-      }));
-      setDetailRows(detRows);
+      const normalize = (allRaw: any[]): { ledger: PurchaseLedgerRow[]; detail: PurchaseDetailRow[] } => {
+        const filtered = allRaw.filter((r) => dv(String(r.supplier_name ?? r.supplier ?? "")) === norm);
+        const ledger: PurchaseLedgerRow[] = filtered.map((r: any) => ({
+          id: r.id,
+          invoice_date: r.purchase_date ?? r.invoice_date ?? null,
+          product_name: r.product_name ?? null,
+          product_code: r.product_code ?? null,
+          quantity: r.quantity != null ? Number(r.quantity) : null,
+          unit_price: r.unit_price != null ? Number(r.unit_price) : null,
+          amount: Number(r.amount ?? r.total) || 0,
+        }));
+        const detail: PurchaseDetailRow[] = filtered.map((r: any) => ({
+          id: r.id,
+          date: r.purchase_date ?? r.invoice_date ?? "",
+          product_code: r.product_code ?? null,
+          product_name: r.product_name ?? null,
+          supplier_name: r.supplier_name ?? null,
+          quantity: Number(r.quantity) || 0,
+          unit_price: Number(r.unit_price) || 0,
+          amount: Number(r.amount ?? r.total) || 0,
+        }));
+        return { ledger, detail };
+      };
+
+      const firstNorm = normalize(firstRowsRaw);
+      setLedgerRows(firstNorm.ledger);
+      setDetailRows(firstNorm.detail);
       setDetailSource("purchase_details" as DataSource);
+      setLedgerLoading(false);
+      setDetailLoading(false);
+
+      // 백그라운드 누적 로드
+      if (firstJ.has_more) {
+        let page = 2;
+        const accumulated = [...firstRowsRaw];
+        while (true) {
+          if (currentRunId !== loadVendorDataRunIdRef.current) break;
+          let mj: any;
+          try {
+            const { data } = await api.get<any>(`/api/purchase-details?${buildParams(page)}`);
+            mj = data;
+          } catch { break; }
+          const moreRows: any[] = Array.isArray(mj.rows) ? mj.rows : [];
+          if (moreRows.length === 0) break;
+          accumulated.push(...moreRows);
+          const acc = normalize(accumulated);
+          if (currentRunId !== loadVendorDataRunIdRef.current) break;
+          setLedgerRows(acc.ledger);
+          setDetailRows(acc.detail);
+          if (!mj.has_more) break;
+          page++;
+        }
+      }
     } catch (e: any) {
+      if (currentRunId !== loadVendorDataRunIdRef.current) return;
       const msg = e?.message ?? "네트워크 오류";
       setLedgerError(msg);
       setLedgerRows([]);
       setDetailRows([]);
       setDetailSource(null);
-      showError(`매입원장 로드 실패: ${msg}`);
-    } finally {
       setLedgerLoading(false);
       setDetailLoading(false);
+      showError(`매입원장 로드 실패: ${msg}`);
     }
     // 2026-10-05 · 월 멀티선택 · deps 에 monthsListParamStr 추가 (period 변경 시 재조회)
   }, [periodMonths, periodSeason, monthsListParamStr, selectedMonths.length]);
@@ -620,21 +656,22 @@ export const PurchaseHistoryTab: React.FC = () => {
       // 2026-10-05 · 사용자 지시 · 1년 고정 fetch 제거 · selectedMonths 전달 · Supabase 직접 조회
       //   · season 선택 시 · 폴백 (season 전체 범위 사용)
       //   · selectedMonths 비면 · 현재월 default (fallback)
+      // 2026-10-06 · 사용자 지시 · months_list 모드에서도 page/per_page 페이지네이션 적용
+      //   · 데이터 큰 기간에서 UI 블록 방지 · 첫 page 즉시 표시 + 백그라운드 누적
       const useMonthsList = !periodSeason && selectedMonths.length > 0;
       const firstParams = new URLSearchParams({
         no_cycle: "1",
+        per_page: String(PER_PAGE_ALL),
+        page: "1",
       });
       if (useMonthsList) {
         firstParams.set("months_list", monthsListParamStr);
-        // months_list 모드 · 서버가 전체 반환 · pagination X
       } else {
-        // 폴백 · 기존 1년 fetch
+        // 폴백 · 기존 1년 fetch (days-mode)
         const now = new Date();
         const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
         const fromStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}-${String(from.getDate()).padStart(2, "0")}`;
         firstParams.set("from", fromStr);
-        firstParams.set("per_page", String(PER_PAGE_ALL));
-        firstParams.set("page", "1");
       }
       // top-sales · 월 멀티선택 반영
       const salesUrl = useMonthsList
@@ -706,20 +743,28 @@ export const PurchaseHistoryTab: React.FC = () => {
       setAllDetailsLoading(false); // 스피너 off · 나머지는 백그라운드
 
       // has_more=true 이면 나머지 페이지 누적 로드 (백그라운드)
-      // 2026-10-05 · months_list 모드 · 서버가 전체 반환 · pagination skip
+      // 2026-10-06 · 사용자 지시 · months_list 모드에서도 pagination · 조건 통합
+      //   · useMonthsList → months_list 파라미터 유지하며 page 증가
+      //   · 그 외 (days-mode) → from 파라미터 유지하며 page 증가
       const fromStrForPagination = useMonthsList ? null : firstParams.get("from");
-      if (j.has_more && !useMonthsList && fromStrForPagination) {
+      if (j.has_more) {
         let page = 2;
         const accumulated = [...firstRows];
         while (true) {
           // 경쟁 방지 · 이 루프가 최신 호출이 아니면 중단 (force 재호출 시)
           if (currentRunId !== loadAllDetailsRunIdRef.current) break;
           const moreParams = new URLSearchParams({
-            from: fromStrForPagination,
             per_page: String(PER_PAGE_ALL),
             page: String(page),
             no_cycle: "1",
           });
+          if (useMonthsList) {
+            moreParams.set("months_list", monthsListParamStr);
+          } else if (fromStrForPagination) {
+            moreParams.set("from", fromStrForPagination);
+          } else {
+            break; // 어떤 모드도 아니면 안전 종료
+          }
           let mj: any;
           try {
             const { data } = await api.get<any>(`/api/purchase-details?${moreParams}`);

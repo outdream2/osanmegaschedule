@@ -539,8 +539,11 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
   // 2026-08-06 · Supabase 기본 max rows 1000 캡 우회
   //   · 사용자 요구 limit (예: 5000) 만족을 위해 · range(0, N-1) 로 명시적 페이지 loop
   //   · 사용자 제보: "기간별 임포트 다 했는데 데이터 없어" · 원인은 1000행 cap · from 필터 무관
+  // 2026-10-06 · 사용자 지시 · months_list 모드에서도 page/per_page 페이지네이션 허용
+  //   · 상품별·공급사별 뷰 백그라운드 pagination 지원 · 데이터 큰 기간에 UI 블록 방지
+  //   · post-filter (months_list 비연속 월) 는 page 단위로 적용 (page 내 row 수 변동 가능)
   let rows: any[] = [];
-  if (usePagination && !seasonMonths && !useMonthsList) {
+  if (usePagination && !seasonMonths) {
     // 클라이언트 페이지네이션: range(start, end) · 단일 요청
     const start = (pageParam - 1) * perPage;
     const end = start + perPage - 1;
@@ -574,8 +577,10 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
     }
   }
   // 계절 월 필터 (년도 무관) — SQL EXTRACT 미지원이므로 후처리
+  // 2026-10-06 · 사용자 지시 · pagination 모드에선 .slice(0, limit) 금지 (page 자르면 안 됨)
   if (seasonMonths) {
-    rows = rows.filter(r => purchaseDateInSeason(String(r.purchase_date ?? ""), seasonMonths)).slice(0, limit);
+    rows = rows.filter(r => purchaseDateInSeason(String(r.purchase_date ?? ""), seasonMonths));
+    if (!usePagination) rows = rows.slice(0, limit);
   }
   // 2026-10-05 · 사용자 지시 · months_list 비연속 월 선택 · 중간 월 자동 포함 금지
   //   · purchase_date 의 YYYY-MM 매칭만 유지 · 선택 안 된 월 row 제거
@@ -583,11 +588,17 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
     rows = rows.filter((r) => {
       const ym = /^(\d{4}-\d{2})/.exec(String(r.purchase_date ?? ""))?.[1];
       return ym ? monthsListSet.has(ym) : false;
-    }).slice(0, limit);
+    });
+    if (!usePagination) rows = rows.slice(0, limit);
   }
 
   // 조회 시 products 조인: xlsx 에 없는 supplier/name/spec 보강 + min_order (2026-07-15)
+  // 2026-10-06 · 대원칙 · canonical product_name = products.product_name 만 사용
+  //   · codes.length === 0 (매칭 상품 없음) · product_name null 로 명시 strip
   const codes = Array.from(new Set(rows.map(r => String(r.product_code ?? "")).filter(Boolean)));
+  if (codes.length === 0) {
+    rows = rows.map((r: Record<string, unknown>) => ({ ...r, product_name: null }));
+  }
   if (codes.length > 0) {
     try {
       const PCHUNK = 500;
@@ -610,18 +621,25 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
       }
       rows = rows.map((r: any) => {
         const info = pMap.get(String(r.product_code));
-        if (!info) return r;
+        if (!info) {
+          // 2026-10-06 · 대원칙 · products relation 실패 · transaction.product_name 노출 금지
+          //   · product_name null 로 명시 반환 (UI 는 "-" 표시)
+          return { ...r, product_name: null };
+        }
         return {
           ...r,
           supplier_name: r.supplier_name ?? info.supplier,
           supplier_code: r.supplier_code ?? info.supplier_code,
-          product_name: r.product_name ?? info.product_name,
+          // 2026-10-06 · canonical SSOT · products.product_name 만 사용 · transaction snapshot fallback 금지
+          product_name: info.product_name ?? null,
           spec: r.spec ?? info.spec,
           min_order: info.min_order,
         };
       });
     } catch (e: any) {
       logger.warn(`[purchase-details] products 조인 실패 (계속): ${e?.message}`);
+      // 2026-10-06 · 대원칙 · products relation 전체 실패 · transaction snapshot 노출 금지 · product_name null
+      rows = rows.map((r: Record<string, unknown>) => ({ ...r, product_name: null }));
     }
   }
 
@@ -688,8 +706,10 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
   res.json({
     rows,
     // 페이지네이션 메타 (2026-08-05) · per_page 사용 시만 포함
-    //   · months_list 모드 (2026-10-05) · 전체 fetch · has_more=false
-    ...(usePagination && !seasonMonths && !useMonthsList ? {
+    // 2026-10-06 · months_list 모드에서도 pagination 지원 (!useMonthsList 제거)
+    //   · has_more 는 raw page 크기 (post-filter 이전) 기준이 안전하지만
+    //     경량 지표로 응답 rows.length === perPage 유지 (false positive 는 다음 빈 page 로 종결)
+    ...(usePagination && !seasonMonths ? {
       page: pageParam,
       per_page: perPage,
       has_more: rows.length === perPage,
