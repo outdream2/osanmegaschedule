@@ -100,13 +100,15 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   // 2026-09-10 · #71 · 사용자 지시 · 외부에서 관리하면 · 그 값 우선 (자체 상태는 fallback)
   const [aggregateMonthsLocal, setAggregateMonths] = useState<number>(3);
   const aggregateMonths = externalAggregateMonths ?? aggregateMonthsLocal;
-  // 2026-10-06 · 사용자 지시 · 월 멀티선택 (매입이력 STANDARD · externalSelectedMonths 우선)
-  //   · 지정 시 · months_list 로 서버 호출 · 비연속 월 지원
-  //   · 미지정 시 · 기존 aggregateMonths (number) 로 자동 변환 (최근 N개월 연속)
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · 모든 ACTIVE 소비처 months_list)
+  //   · externalSelectedMonths 지정 시 · parent 값 사용
+  //   · 미지정 시 · 자체 localSelectedMonths (default · 현재 월 1개) 사용
+  //   · externalAggregateMonths (레거시 number prop) 지정 시만 · aggregateMonths 로 변환 사용
+  //   · 비연속 월 지원 · 중간 월 자동 포함 금지
   const [localSelectedMonths, setLocalSelectedMonths] = useState<string[]>(() => [currentYm()]);
   const effectiveSelectedMonths = externalSelectedMonths ?? localSelectedMonths;
   const monthsListStr = useMemo(() => toMonthsListParam(effectiveSelectedMonths), [effectiveSelectedMonths]);
-  const useMonthsListMode = externalSelectedMonths != null;
+  const useMonthsListMode = externalSelectedMonths != null || externalAggregateMonths == null;
   const toggleCompactSort = (key: CompactSortKey) => {
     if (compactSortKey === key) {
       setCompactSortDir(d => d === "asc" ? "desc" : "asc");
@@ -276,16 +278,19 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
               </span>
             )}
             {/* 2026-09-10 · #71 · 사용자 지시 · 외부 기간 사용 시 · 자체 기간 UI 숨김 (상단 툴바로 통합) */}
-            {/* 2026-10-06 · externalSelectedMonths 지정 시도 자체 UI 숨김 (월 멀티 모드) */}
+            {/* 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · MonthToggleSelector)
+                · PeriodSelector/PERIOD_MONTHS_PRESET 자체 fallback UI 교체 · 비연속 월 지원
+                · externalSelectedMonths 지정 시도 자체 UI 숨김 */}
             {externalAggregateMonths == null && externalSelectedMonths == null && (
-              <PeriodSelector<number>
-                options={PERIOD_MONTHS_PRESET}
-                value={aggregateMonths}
-                onChange={(v) => setAggregateMonths(v)}
-                accent="teal"
-                className={supplierAggLoading ? "" : "ml-auto"}
-                ariaLabel="재고자산·판매액 집계 기간"
-              />
+              <div className={supplierAggLoading ? "" : "ml-auto"}>
+                <MonthToggleSelector
+                  selectedMonths={localSelectedMonths}
+                  onChange={setLocalSelectedMonths}
+                  maxMonths={6}
+                  minOne
+                  ariaLabel="재고자산·판매액 집계 기간"
+                />
+              </div>
             )}
           </div>
         </div>

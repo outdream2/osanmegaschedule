@@ -9,7 +9,8 @@ import { Package, Calendar, CalendarCheck, ChevronDown, ChevronRight, AlertTrian
 import { Modal } from "../common/Modal";
 import { Spinner } from "../common/Spinner";
 import { StatusPill } from "../common/StatusPill";
-import { PeriodSelector } from "../common/PeriodSelector";
+import { MonthToggleSelector } from "../common/MonthToggleSelector";
+import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { InlineLabel } from "../common/InlineLabel";
 import { EmptyState } from "../common/EmptyState";
 import { Card } from "../common/Card";
@@ -66,7 +67,9 @@ export const OrderHistorySupplierModal: React.FC<Props> = ({ supplier, onClose }
   const { toast, showError } = useToast();
   const [orders, setOrders] = useState<OrderHistoryOrder[]>([]);
   const [loading, setLoading] = useState(false);
-  const [days, setDays] = useState(90);
+  // 2026-10-06 · 사용자 지시 · 월 멀티선택 통일 (STANDARD · useMonthFilter + MonthToggleSelector)
+  //   · default · 현재 월 1개 · 비연속 월 지원 · sent_at 축 (서버 /api/order-history 지원 완료)
+  const { selectedMonths, setSelectedMonths, monthsList } = useMonthFilter();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // 2026-08-23 · #178 Phase F · 공급사 special_notes · 발주 특이사항 경고 배너
   const { vendors: allVendors } = useVendors();
@@ -84,7 +87,10 @@ export const OrderHistorySupplierModal: React.FC<Props> = ({ supplier, onClose }
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    api.get<{ orders?: OrderHistoryOrder[] }>(`/api/order-history?days=${days}`)
+    const url = monthsList
+      ? `/api/order-history?months_list=${encodeURIComponent(monthsList)}`
+      : `/api/order-history`;
+    api.get<{ orders?: OrderHistoryOrder[] }>(url)
       .then(({ data }) => {
         if (!alive) return;
         setOrders(Array.isArray(data?.orders) ? data.orders : []);
@@ -97,7 +103,7 @@ export const OrderHistorySupplierModal: React.FC<Props> = ({ supplier, onClose }
       })
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
-  }, [days, showError]);
+  }, [monthsList, showError]);
 
   // 공급사 필터 · 서버가 필터 안 하므로 클라이언트 filter
   const filtered = useMemo(() => {
@@ -131,20 +137,19 @@ export const OrderHistorySupplierModal: React.FC<Props> = ({ supplier, onClose }
         }
         size="lg"
         headerRight={
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
             <InlineLabel size="sm">기간</InlineLabel>
-            <PeriodSelector
-              options={[
-                { value: 30,  label: "30일",  title: "최근 30일" },
-                { value: 90,  label: "90일",  title: "최근 90일" },
-                { value: 180, label: "180일", title: "최근 180일" },
-                { value: 365, label: "1년",   title: "최근 1년" },
-              ]}
-              value={days}
-              onChange={(v) => setDays(v)}
-              size="sm"
+            {/* 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
+            <MonthToggleSelector
+              selectedMonths={selectedMonths}
+              onChange={setSelectedMonths}
+              maxMonths={6}
+              minOne
               ariaLabel="발주이력 조회기간"
             />
+            {selectedMonths.length > 0 && (
+              <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+            )}
           </div>
         }
       >
@@ -173,7 +178,7 @@ export const OrderHistorySupplierModal: React.FC<Props> = ({ supplier, onClose }
             <Spinner label="불러오는 중..." size={20} tone="brand" />
           </div>
         ) : filtered.length === 0 ? (
-          <EmptyState title="발주 이력 없음" hint={`최근 ${days}일 이내 · ${displayVendorName(supplier) || supplier} 공급사 발주 없음`} />
+          <EmptyState title="발주 이력 없음" hint={`선택 월 · ${displayVendorName(supplier) || supplier} 공급사 발주 없음`} />
         ) : (
           <div className="flex flex-col gap-2">
             <div className="text-[14px] text-ink-soft font-medium tabular-nums">
