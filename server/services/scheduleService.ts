@@ -23,7 +23,7 @@ export class ScheduleService {
     }));
 
     const totalDays = new Date(year, month, 0).getDate();
-    const summaryList = [];
+    const summaryList: Array<{ day: number; date: string; openCount: number; closeCount: number; totalCount: number }> = [];
     for (let day = 1; day <= totalDays; day++) {
       const dayStr = String(day).padStart(2, "0");
       const currentDate = `${year}-${monthStr}-${dayStr}`;
@@ -344,6 +344,38 @@ export class ScheduleService {
       throw new Error(error.message);
     }
     throw new Error("수정 실패: DB 컬럼 불일치");
+  }
+
+  /**
+   * 2026-10-06 · PHASE 1 · 직원 삭제 전 연관 데이터 count 조회
+   *   · 호출자는 count>0 이면 삭제 거부 (409) · 비활성화 (retireDate) 안내
+   *   · schedules / leave_requests / employee_contracts / resignation_requests 참조
+   *   · FK 없는 테이블이라도 서비스 레이어에서 사전 검증 (historical data preservation)
+   */
+  async countEmployeeRelatedRows(id: number): Promise<{
+    schedules: number;
+    leaveRequests: number;
+    contracts: number;
+    resignations: number;
+  }> {
+    const [schedRes, leaveRes, contractRes, resignRes] = await Promise.all([
+      supabase.from("schedules").select("*", { count: "exact", head: true }).eq("employeeId", id),
+      supabase.from("leave_requests").select("*", { count: "exact", head: true }).eq("employee_id", id),
+      supabase.from("employee_contracts").select("*", { count: "exact", head: true }).eq("employee_id", id),
+      supabase.from("resignation_requests").select("*", { count: "exact", head: true }).eq("employee_id", id),
+    ]);
+    const errs = [schedRes.error, leaveRes.error, contractRes.error, resignRes.error].filter(Boolean);
+    for (const e of errs) {
+      if (e && !/relation .* does not exist|table .* does not exist/i.test(e.message)) {
+        throw new Error(e.message);
+      }
+    }
+    return {
+      schedules: schedRes.count ?? 0,
+      leaveRequests: leaveRes.count ?? 0,
+      contracts: contractRes.count ?? 0,
+      resignations: resignRes.count ?? 0,
+    };
   }
 
   async deleteEmployee(id: number) {

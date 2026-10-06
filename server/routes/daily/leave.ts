@@ -15,6 +15,9 @@ import { nextKstYmd, compareYmd, getKstYmd } from "../../lib/kstDate";
 import logger from "../../lib/logger";
 // 2026-09-21 · #328 · iOS 앱 Expo 푸시 알림 · 연차 승인 트리거
 import { sendPushSafe } from "../../services/expoPushService";
+// 2026-10-06 · PHASE 1 · schedule lock bypass fix · 연차 승인/삭제 경로 공통 guard
+import { assertScheduleNotLockedForDates } from "../../lib/scheduleLock";
+import type { AuthedRequest } from "../../types/auth";
 
 const router = Router();
 
@@ -109,6 +112,34 @@ router.post("/api/leave-requests", authorize(1), validateBody(CreateLeaveRequest
 
 router.put("/api/leave-requests/:id", authorize(5), validateBody(ReviewLeaveRequestSchema), asyncHandler(async (req, res) => {
   const { status, reviewer_note } = req.body;
+  const authLevel = (req as AuthedRequest).authUser?.level ?? 0;
+
+  // 2026-10-06 · PHASE 1 · 승인 전 lock 사전 검증 (approved 분기만)
+  //   · pending → approved 시 schedules 자동 반영 · 해당 월(들) lock 상태 미리 확인
+  //   · lv≥9 bypass (기존 semantics 유지) · lock 월에 lv<9 승인 시도 → 403 · leave status 변경 안 함
+  //   · 반려(rejected)·반려→승인 외 상태는 schedules 미반영 → lock 검증 skip
+  if (status === "approved") {
+    // 요청 row read-only 조회 (아직 update 안 함)
+    const { data: pre, error: preErr } = await supabase
+      .from("leave_requests")
+      .select("start_date, end_date, status")
+      .eq("id", req.params.id)
+      .maybeSingle();
+    if (preErr) throw new HttpError(500, preErr.message);
+    if (!pre) throw notFound();
+    const startDate: string = String(pre.start_date).slice(0, 10);
+    const endDate: string = String(pre.end_date).slice(0, 10);
+    // 날짜 범위 전개
+    const dates: string[] = [];
+    let cur = startDate;
+    while (compareYmd(cur, endDate) <= 0) {
+      dates.push(cur);
+      cur = nextKstYmd(cur);
+    }
+    // 공통 guard · 월(들) lock 상태 검증 · lv≥9 bypass
+    await assertScheduleNotLockedForDates(dates, authLevel);
+  }
+
   const { data, error } = await supabase
     .from("leave_requests")
     .update({ status, reviewer_note: reviewer_note ?? "", reviewed_at: new Date().toISOString() })
@@ -130,6 +161,9 @@ router.put("/api/leave-requests/:id", authorize(5), validateBody(ReviewLeaveRequ
     }
     if (dates.length > 0) {
       // 2026-09-11 · #116 · 에러 삼킴 제거 · 스케쥴 반영 실패 원인 표면화 · try/catch + 자세한 로그
+      // 2026-10-06 · PHASE 1 · atomicity · schedule upsert 실패 시 leave_requests 롤백 (app-level compensation)
+      //   · 이상적 (A안) RPC function 적용 전까지는 compensation 패턴으로 부분 불일치 방지
+      //   · 이후 approve_leave_request RPC 적용 시 이 블록 제거 가능 (migrations/schedule_phase_1_approve_leave_rpc_2026-10-06.sql)
       try {
         const result = await scheduleService.batchUpdateSchedules(
           dates.map(date => ({
@@ -144,6 +178,22 @@ router.put("/api/leave-requests/:id", authorize(5), validateBody(ReviewLeaveRequ
         logger.info(`[LEAVE APPROVE] emp=${data.employee_id} type=${scheduleType} dates=[${dates.join(",")}] · ${result.count}건 스케쥴 반영`);
       } catch (schedErr: any) {
         logger.error(`[LEAVE APPROVE FAILED] emp=${data.employee_id} type=${scheduleType} dates=[${dates.join(",")}] · ${schedErr?.message ?? schedErr}`);
+        // 2026-10-06 · PHASE 1 · app-level compensation · leave_requests.status 롤백
+        //   · schedules upsert 실패 → leave status 를 pending 으로 되돌려 부분 불일치 제거
+        //   · rollback 자체 실패 시에도 원 에러를 500 으로 전파 (관리자 수동 복구 로그만 남김)
+        try {
+          const { error: rbErr } = await supabase
+            .from("leave_requests")
+            .update({ status: "pending", reviewer_note: "", reviewed_at: null })
+            .eq("id", req.params.id);
+          if (rbErr) {
+            logger.error(`[LEAVE APPROVE ROLLBACK FAILED] id=${req.params.id} · ${rbErr.message}`);
+          } else {
+            logger.warn(`[LEAVE APPROVE ROLLBACK] id=${req.params.id} · status=approved → pending (schedule upsert 실패로 인한 자동 복구)`);
+          }
+        } catch (rbCatch: any) {
+          logger.error(`[LEAVE APPROVE ROLLBACK EXCEPTION] id=${req.params.id} · ${rbCatch?.message ?? rbCatch}`);
+        }
         // 연차 승인은 완료된 상태에서 · schedule 반영 실패 · 클라이언트에 500 반환
         throw new HttpError(500, `연차는 승인되었으나 스케쥴 반영 실패: ${schedErr?.message ?? String(schedErr)}`);
       }
@@ -267,11 +317,36 @@ router.delete("/api/leave-requests/:id", authorize(5), asyncHandler(async (req, 
   const empId = check.row?.employee_id;
   const startDate = check.row?.start_date;
   const endDate = check.row?.end_date;
+  const authLevel = (req as AuthedRequest).authUser?.level ?? 0;
+
+  // 2026-10-06 · PHASE 1 · schedules cleanup 전 lock 검증
+  //   · 이미 승인된 연차 삭제 시 schedules DELETE 가 발생 → 해당 월(들) lock 상태 미리 확인
+  //   · lv≥9 bypass (기존 semantics 유지) · lock 월에 lv<9 삭제 시도 → 403 · leave_requests 도 변경 안 함
+  //   · pending/rejected 삭제는 schedules 미영향 → lock 검증 skip
+  if (check.isAdmin && wasApproved && empId && startDate && endDate) {
+    const dates: string[] = [];
+    let cur: string = String(startDate).slice(0, 10);
+    const end: string = String(endDate).slice(0, 10);
+    while (compareYmd(cur, end) <= 0) {
+      dates.push(cur);
+      cur = nextKstYmd(cur);
+    }
+    await assertScheduleNotLockedForDates(dates, authLevel);
+  }
+
   let q = supabase.from("leave_requests").delete().eq("id", req.params.id);
   if (!check.isAdmin) q = q.eq("status", "pending");
   const { error } = await q;
   if (error) throw new HttpError(500, error.message);
   // 관리자 · 이미 승인된 연차 · schedules 에서 · 대응 항목 제거
+  //
+  // identity audit (PHASE 1 리포트 참고):
+  //   현재 삭제 조건은 (employeeId, date range, type IN [월차,오전반차,오후반차]) 로만 매칭.
+  //   leave_requests.id 를 schedules 로우에 기록하지 않음 → "이 schedule 이 이 leave 로부터 생성됐다"
+  //   는 역추적 불가능.
+  //   사용자가 승인 후 해당 schedule 을 수동으로 다른 type (예: "오픈") 으로 바꿨다면 자동으로 skip 됨 (SAFE).
+  //   같은 날짜·같은 type 을 다른 사유 (관리자 수동 입력) 로 넣은 뒤 삭제하면 그 schedule 이 함께 삭제될 수 있음
+  //   → identity 불명확 영역 · 자동 수정 금지 · 리포트에 명시.
   if (check.isAdmin && wasApproved && empId && startDate && endDate) {
     const { error: schedErr } = await supabase
       .from("schedules")

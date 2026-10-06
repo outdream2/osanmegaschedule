@@ -271,6 +271,12 @@ export class ScheduleController {
 
   /**
    * DELETE /api/employees/:id
+   *
+   * 2026-10-06 · PHASE 1 · 연관 데이터 보존 정책
+   *   · 사전 검증: schedules / leave_requests / employee_contracts / resignation_requests count
+   *   · count > 0 → 409 Conflict · 비활성화 (retireDate) 안내
+   *   · count = 0 → 실제 DELETE 수행
+   *   · 역사적 데이터 (근무·연차·계약·사직 이력) 유지 · FK 없이도 사전 거부
    */
   async deleteEmployee(req: Request, res: Response): Promise<void> {
     try {
@@ -278,6 +284,19 @@ export class ScheduleController {
 
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid employee ID" });
+        return;
+      }
+
+      const counts = await scheduleService.countEmployeeRelatedRows(id);
+      const total = counts.schedules + counts.leaveRequests + counts.contracts + counts.resignations;
+      if (total > 0) {
+        res.status(409).json({
+          error:
+            `삭제 불가 · 연관 데이터가 존재합니다 (스케줄 ${counts.schedules}건 · 연차 ${counts.leaveRequests}건 · 계약 ${counts.contracts}건 · 사직 ${counts.resignations}건). ` +
+            "역사적 데이터 보존을 위해 직원 비활성화(퇴사일 입력)를 사용하세요.",
+          code: "EMPLOYEE_HAS_RELATED_ROWS",
+          counts,
+        });
         return;
       }
 

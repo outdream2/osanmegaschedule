@@ -16,30 +16,10 @@ import { CreateEmployeeSchema, UpdateEmployeeSchema } from "../../../src/shared/
 import { getKstYmd } from "../../lib/kstDate";
 import logger from "../../lib/logger";
 import type { AuthedRequest } from "../../types/auth";
+// 2026-10-06 · PHASE 1 · schedule lock 공통 guard · 라이브러리 승격
+import { assertScheduleNotLocked } from "../../lib/scheduleLock";
 
 const router = Router();
-
-// ── [R-1] 확정 스케줄 서버 검증 헬퍼 ─────────────────────────────────────────
-// 2026-09-23 · Top5 2위 · DevTools 우회 차단 · lock 상태 DB 직접 검증
-//   · level ≥ 9 관리자 · lock 무시 허용 (긴급 수정 목적)
-//   · 연차 승인 자동 반영(scheduleService.batchUpdateSchedules 직접 호출)은 라우터 미경유 → 자동 예외 처리
-async function assertScheduleNotLocked(yearMonth: string, authLevel: number): Promise<void> {
-  if (authLevel >= 9) return; // 관리자 lv≥9 는 lock 무시
-  const key = `schedule_lock_${yearMonth}`;
-  const { data, error } = await supabase
-    .from("app_settings")
-    .select("value")
-    .eq("key", key)
-    .maybeSingle();
-  if (error) {
-    logger.warn(`[schedule-lock] app_settings 조회 실패 · key=${key} · ${error.message} · lock 검증 skip`);
-    return; // DB 오류 시 fail-open (서비스 중단 방지)
-  }
-  if (data?.value === true) {
-    logger.warn(`[schedule-lock] LOCK 위반 시도 · key=${key} · authLevel=${authLevel}`);
-    throw new HttpError(403, "확정된 달은 수정할 수 없습니다. 관리자(lv≥9)만 수정 가능합니다.", "SCHEDULE_LOCKED");
-  }
-}
 
 router.get("/api/schedules", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
