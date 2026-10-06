@@ -16,8 +16,9 @@ export const ExceptionTypeSchema = z.enum(["qty_short", "qty_over", "price_diff"
 export type ExceptionType = z.infer<typeof ExceptionTypeSchema>;
 
 /** POST /api/order-purchase-match/:order_id/confirm · body */
+// 2026-10-06 · 사용자 지시 · resolve/unresolve 추가 · match 결과(matched/exception/unmatched) 와 분리된 업무 처리완료
 export const MatchConfirmSchema = z.object({
-  action: z.enum(["matched", "exception", "undo"]),
+  action: z.enum(["matched", "exception", "undo", "resolve", "unresolve"]),
   exception_type: ExceptionTypeSchema.nullable().optional(),
   note: z.string().max(500).nullable().optional(),
 });

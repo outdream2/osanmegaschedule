@@ -62,6 +62,11 @@ interface OrderRow {
   matched_by: number | null;
   exception_type: string | null;
   exception_note: string | null;
+  // 2026-10-06 · 업무 처리완료 workflow (match 결과 ≠ resolution 상태)
+  resolution_status: string | null;  // null = open · "resolved" = 처리완료
+  resolved_at: string | null;
+  resolved_by: number | null;
+  resolution_note: string | null;
 }
 
 interface PurchaseRow {
@@ -196,6 +201,28 @@ function judgeMatch(
 }
 
 // ═════════════════════════════════════════════════════════════════
+// 2026-10-06 · 대원칙 · canonical product_name = products.product_name
+//   · order_requests.product_name · purchase_details.product_name 노출 금지
+//   · code 수집 → batch fetch → productsByCode.product_name 로 override
+// ═════════════════════════════════════════════════════════════════
+async function fetchProductNamesByCode(codes: string[]): Promise<Map<string, string | null>> {
+  const map = new Map<string, string | null>();
+  const uniq = Array.from(new Set(codes.filter(Boolean)));
+  if (uniq.length === 0) return map;
+  const CHUNK = 500;
+  for (let i = 0; i < uniq.length; i += CHUNK) {
+    const chunk = uniq.slice(i, i + CHUNK);
+    const { data: pd } = await supabase.from("products").select("product_code, product_name").in("product_code", chunk);
+    for (const p of pd ?? []) {
+      const pc = String((p as any).product_code ?? "").trim();
+      const nm = String((p as any).product_name ?? "").trim();
+      if (pc) map.set(pc, nm || null);
+    }
+  }
+  return map;
+}
+
+// ═════════════════════════════════════════════════════════════════
 // GET /api/order-purchase-match?days=7
 //   대상: order_requests · status IN ('ordered', 'matched') · sent_at 최근 14일
 //   각 발주 라인마다 · purchase_details 후보 조회 (같은 product_code · 공급사 · sent_at ~ sent_at+days)
@@ -234,6 +261,10 @@ router.get(
           "matched_by",
           "exception_type",
           "exception_note",
+          "resolution_status",
+          "resolved_at",
+          "resolved_by",
+          "resolution_note",
         ].join(", "),
       )
       .in("status", ["ordered", "matched"])
@@ -253,7 +284,7 @@ router.get(
       throw new HttpError(500, orderErr.message, "DB_ERROR");
     }
 
-    const orders: OrderRow[] = (orderData ?? []).map((raw: unknown) => {
+    const ordersRaw: OrderRow[] = (orderData ?? []).map((raw: unknown) => {
       const r = raw as Record<string, unknown>;
       return {
         id: (r.id as number | string),
@@ -262,7 +293,8 @@ router.get(
         sent_at: (r.sent_at as string | null) ?? null,
         supplier: (r.supplier as string | null) ?? null,
         product_code: String(r.product_code ?? ""),
-        product_name: (r.product_name as string | null) ?? null,
+        // 2026-10-06 · canonical SSOT · 아래 batch fetch 후 override · transaction snapshot 금지
+        product_name: null,
         order_qty: Number(r.order_qty ?? 0),
         unit_price: r.unit_price != null ? Number(r.unit_price) : null,
         status: (r.status as string | null) ?? null,
@@ -271,12 +303,22 @@ router.get(
         matched_by: r.matched_by != null ? Number(r.matched_by) : null,
         exception_type: (r.exception_type as string | null) ?? null,
         exception_note: (r.exception_note as string | null) ?? null,
+        resolution_status: (r.resolution_status as string | null) ?? null,
+        resolved_at: (r.resolved_at as string | null) ?? null,
+        resolved_by: r.resolved_by != null ? Number(r.resolved_by) : null,
+        resolution_note: (r.resolution_note as string | null) ?? null,
       };
     });
 
     // 후보 매입 조회 · 발주 sent_at 기준 · [sent_at, sent_at+days] 범위
     //   · product_code 기준 IN 조회 (공급사·일자 필터는 클라 후처리)
-    const productCodes = Array.from(new Set(orders.map((o) => o.product_code).filter(Boolean)));
+    const productCodes = Array.from(new Set(ordersRaw.map((o) => o.product_code).filter(Boolean)));
+    // 2026-10-06 · canonical product_name batch fetch (orders + 추후 purchases 공통 Map)
+    const productsByCode = await fetchProductNamesByCode(productCodes);
+    const orders: OrderRow[] = ordersRaw.map((o) => ({
+      ...o,
+      product_name: o.product_code ? (productsByCode.get(o.product_code) ?? null) : null,
+    }));
     const purchasesByCode = new Map<string, PurchaseRow[]>();
 
     if (productCodes.length > 0) {
@@ -316,7 +358,8 @@ router.get(
               supplier_name: (p.supplier_name as string | null) ?? null,
               supplier_code: (p.supplier_code as string | null) ?? null,
               product_code: code,
-              product_name: (p.product_name as string | null) ?? null,
+              // 2026-10-06 · canonical SSOT · products.product_name · transaction snapshot 금지
+              product_name: productsByCode.get(code) ?? null,
               quantity: Number(p.quantity ?? 0),
               unit_price: Number(p.unit_price ?? 0),
               amount: Number(p.amount ?? 0),
@@ -414,20 +457,29 @@ router.get(
       if (unregErr) {
         logger.warn(`[order-purchase-match] unregistered 조회 실패 (계속): ${unregErr.message}`);
       } else {
+        // 2026-10-06 · canonical product_name batch fetch · unregistered code 전용
+        const unregCodes: string[] = Array.from(new Set((unregData ?? [])
+          .map((p) => String((p as any).product_code ?? "").trim())
+          .filter((s): s is string => Boolean(s))));
+        const unregProductsByCode = await fetchProductNamesByCode(unregCodes);
         unregistered = (unregData ?? [])
           .map((raw: unknown) => raw as Record<string, unknown>)
           .filter((p) => !consumedPurchaseIds.has(String(p.id ?? "")))
-          .map((p) => ({
-            id: (p.id as number | string),
-            purchase_date: (p.purchase_date as string | null) ?? null,
-            supplier_name: (p.supplier_name as string | null) ?? null,
-            supplier_code: (p.supplier_code as string | null) ?? null,
-            product_code: (p.product_code as string | null) ?? null,
-            product_name: (p.product_name as string | null) ?? null,
-            quantity: Number(p.quantity ?? 0),
-            unit_price: Number(p.unit_price ?? 0),
-            amount: Number(p.amount ?? 0),
-          }));
+          .map((p) => {
+            const code = String((p.product_code as string | null) ?? "").trim();
+            return {
+              id: (p.id as number | string),
+              purchase_date: (p.purchase_date as string | null) ?? null,
+              supplier_name: (p.supplier_name as string | null) ?? null,
+              supplier_code: (p.supplier_code as string | null) ?? null,
+              product_code: (p.product_code as string | null) ?? null,
+              // 2026-10-06 · canonical SSOT · products.product_name · transaction snapshot 금지
+              product_name: code ? (unregProductsByCode.get(code) ?? null) : null,
+              quantity: Number(p.quantity ?? 0),
+              unit_price: Number(p.unit_price ?? 0),
+              amount: Number(p.amount ?? 0),
+            };
+          });
       }
     }
 
@@ -488,6 +540,10 @@ router.get(
           "matched_by",
           "exception_type",
           "exception_note",
+          "resolution_status",
+          "resolved_at",
+          "resolved_by",
+          "resolution_note",
         ].join(", "),
       )
       .eq("order_number", orderNumber)
@@ -505,7 +561,7 @@ router.get(
       throw new HttpError(500, orderErr.message, "DB_ERROR");
     }
 
-    const orders: OrderRow[] = (orderData ?? []).map((raw: unknown) => {
+    const ordersRaw: OrderRow[] = (orderData ?? []).map((raw: unknown) => {
       const r = raw as Record<string, unknown>;
       return {
         id: (r.id as number | string),
@@ -514,7 +570,8 @@ router.get(
         sent_at: (r.sent_at as string | null) ?? null,
         supplier: (r.supplier as string | null) ?? null,
         product_code: String(r.product_code ?? ""),
-        product_name: (r.product_name as string | null) ?? null,
+        // 2026-10-06 · canonical SSOT · 아래 batch fetch 후 override · transaction snapshot 금지
+        product_name: null,
         order_qty: Number(r.order_qty ?? 0),
         unit_price: r.unit_price != null ? Number(r.unit_price) : null,
         status: (r.status as string | null) ?? null,
@@ -523,8 +580,20 @@ router.get(
         matched_by: r.matched_by != null ? Number(r.matched_by) : null,
         exception_type: (r.exception_type as string | null) ?? null,
         exception_note: (r.exception_note as string | null) ?? null,
+        resolution_status: (r.resolution_status as string | null) ?? null,
+        resolved_at: (r.resolved_at as string | null) ?? null,
+        resolved_by: r.resolved_by != null ? Number(r.resolved_by) : null,
+        resolution_note: (r.resolution_note as string | null) ?? null,
       };
     });
+
+    // 2026-10-06 · canonical product_name batch fetch
+    const productCodesForNames = Array.from(new Set(ordersRaw.map((o) => o.product_code).filter(Boolean)));
+    const productsByCode = await fetchProductNamesByCode(productCodesForNames);
+    const orders: OrderRow[] = ordersRaw.map((o) => ({
+      ...o,
+      product_name: o.product_code ? (productsByCode.get(o.product_code) ?? null) : null,
+    }));
 
     if (orders.length === 0) {
       return res.json({
@@ -570,7 +639,8 @@ router.get(
               supplier_name: (p.supplier_name as string | null) ?? null,
               supplier_code: (p.supplier_code as string | null) ?? null,
               product_code: code,
-              product_name: (p.product_name as string | null) ?? null,
+              // 2026-10-06 · canonical SSOT · products.product_name · transaction snapshot 금지
+              product_name: productsByCode.get(code) ?? null,
               quantity: Number(p.quantity ?? 0),
               unit_price: Number(p.unit_price ?? 0),
               amount: Number(p.amount ?? 0),
@@ -667,7 +737,7 @@ router.post(
     if (!orderId) throw badRequest("order_id 필수");
 
     const { action, exception_type, note } = req.body as {
-      action: "matched" | "exception" | "undo";
+      action: "matched" | "exception" | "undo" | "resolve" | "unresolve";
       exception_type?: string | null;
       note?: string | null;
     };
@@ -692,8 +762,7 @@ router.post(
         exception_type: null,
         exception_note: note ?? null,
       };
-    } else {
-      // exception
+    } else if (action === "exception") {
       if (!exception_type) throw badRequest("exception_type 필수 (qty_short·qty_over·price_diff·no_purchase)");
       patch = {
         match_status: "exception",
@@ -702,13 +771,29 @@ router.post(
         exception_type,
         exception_note: note ?? null,
       };
+    } else if (action === "resolve") {
+      // 2026-10-06 · 사용자 지시 · 처리완료 · match_status 유지 (overwrite 금지) · resolution_* 만 세팅
+      patch = {
+        resolution_status: "resolved",
+        resolved_at: now,
+        resolved_by: userId,
+        resolution_note: note ?? null,
+      };
+    } else {
+      // unresolve · 처리완료 취소 · resolution_* 전부 NULL
+      patch = {
+        resolution_status: null,
+        resolved_at: null,
+        resolved_by: null,
+        resolution_note: null,
+      };
     }
 
     const { data, error } = await supabase
       .from("order_requests")
       .update(patch)
       .eq("id", orderId)
-      .select("id, match_status, matched_at, matched_by, exception_type, exception_note")
+      .select("id, match_status, matched_at, matched_by, exception_type, exception_note, resolution_status, resolved_at, resolved_by, resolution_note")
       .maybeSingle();
 
     if (error) {

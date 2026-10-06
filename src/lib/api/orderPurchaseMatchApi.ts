@@ -38,6 +38,11 @@ export interface OrderMatchRow {
   matched_by: number | null;
   exception_type: string | null;
   exception_note: string | null;
+  // 2026-10-06 · 사용자 지시 · 업무 처리완료 workflow (match 결과와 분리)
+  resolution_status: string | null;  // null = open · "resolved" = 처리완료
+  resolved_at: string | null;
+  resolved_by: number | null;
+  resolution_note: string | null;
   purchase_matches: PurchaseMatchLine[];
   purchase_total_qty: number;
   purchase_avg_price: number | null;

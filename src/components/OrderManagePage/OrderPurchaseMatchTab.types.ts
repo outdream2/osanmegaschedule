@@ -9,7 +9,8 @@ import { displayVendorName } from "../../utils/vendorNameNormalize";
 // ═══════════════════════════════════════════════════════════════
 // 필터 · 상태 라벨
 // ═══════════════════════════════════════════════════════════════
-export type FilterKey = "all" | "pending" | "matched" | "exception";
+// 2026-10-06 · 사용자 지시 · 5-way filter · 정상확인 ↔ 처리완료 분리
+export type FilterKey = "all" | "pending" | "matched" | "exception" | "resolved";
 
 export const STATUS_TONE: Record<"matched" | "exception" | "unmatched", "emerald" | "amber" | "zinc"> = {
   matched: "emerald",
@@ -79,9 +80,12 @@ export interface OrderGroup {
   totalOrderQty: number;
   totalOrderAmount: number;
   distinctProducts: number;
-  status: "matched" | "exception" | "unmatched" | "mixed";
+  // 2026-10-06 · 사용자 지시 · resolved 추가 (업무 처리완료 집계) · match 결과와 분리
+  status: "matched" | "exception" | "unmatched" | "mixed" | "resolved";
   pendingCount: number;
   hasUserDecision: boolean;
+  resolvedCount: number;
+  unresolvedAbnormalCount: number;
 }
 
 export interface SupplierGroup {
@@ -115,39 +119,59 @@ export function groupBySupplierAndOrder(rows: OrderMatchRow[]): SupplierGroup[] 
         status: "unmatched",
         pendingCount: 0,
         hasUserDecision: false,
+        resolvedCount: 0,
+        unresolvedAbnormalCount: 0,
       };
       byOrder.set(orderKey, g);
     }
     g.rows.push(r);
   }
+  // 2026-10-06 · 사용자 지시 · PO status 유도 · resolved 추가
+  //   · CASE 3,5,6: 모든 abnormal line 이 resolved → "resolved" (처리완료)
+  //   · CASE 2: unresolved exception → "exception"
+  //   · CASE 4: matched + unresolved abnormal → "mixed"
+  //   · CASE 1: all matched → "matched"
   for (const g of byOrder.values()) {
     const codes = new Set<string>();
     let matched = 0;
     let exception = 0;
     let unmatched = 0;
     let hasUser = false;
+    let resolvedCount = 0;
+    let unresolvedAbnormalCount = 0;
     for (const r of g.rows) {
       codes.add(r.product_code);
       g.totalOrderQty += Number(r.order_qty ?? 0);
       g.totalOrderAmount += Number(r.order_qty ?? 0) * Number(r.unit_price ?? 0);
       const s = effectiveStatus(r);
+      const resolved = r.resolution_status === "resolved";
       if (s === "matched") matched++;
       else if (s === "exception") exception++;
       else unmatched++;
       if (r.match_status) hasUser = true;
-      if (!r.match_status && (r.auto_status === "unmatched" || r.auto_status === "exception")) {
-        g.pendingCount++;
-      }
+      // 2026-10-06 · 미처리 count 는 abnormal 중 resolved 아닌 것만 (처리완료는 미처리 아님)
+      if (s !== "matched" && !resolved) g.pendingCount++;
+      if (resolved) resolvedCount++;
+      if (s !== "matched" && !resolved) unresolvedAbnormalCount++;
     }
     g.distinctProducts = codes.size;
     g.hasUserDecision = hasUser;
-    if (matched > 0 && exception === 0 && unmatched === 0) g.status = "matched";
-    else if (exception > 0 && matched === 0 && unmatched === 0) g.status = "exception";
-    else if (unmatched > 0 && matched === 0 && exception === 0) g.status = "unmatched";
-    else if (matched + exception + unmatched > 0) {
-      if (unmatched > 0) g.status = "unmatched";
-      else if (exception > 0) g.status = "exception";
-      else g.status = "matched";
+    g.resolvedCount = resolvedCount;
+    g.unresolvedAbnormalCount = unresolvedAbnormalCount;
+    // PO status 유도
+    const hasAbnormal = exception > 0 || unmatched > 0;
+    if (!hasAbnormal) {
+      g.status = "matched"; // CASE 1
+    } else if (unresolvedAbnormalCount === 0) {
+      g.status = "resolved"; // CASE 3,5,6 · 모든 abnormal 처리완료
+    } else if (matched > 0) {
+      g.status = "mixed"; // CASE 4 · 정상 + 미처리 abnormal
+    } else if (exception > 0 && unmatched === 0) {
+      g.status = "exception";
+    } else if (unmatched > 0 && exception === 0) {
+      g.status = "unmatched";
+    } else {
+      g.status = "mixed"; // 다중 abnormal 혼재
     }
   }
   const bySupplier = new Map<string, SupplierGroup>();
