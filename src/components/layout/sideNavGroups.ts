@@ -434,6 +434,24 @@ export interface ActiveNavForBreadcrumb {
   subTab?: string | null;
   nested?: string | null;
 }
+// 2026-10-06 · 사용자 지시 · breadcrumb 4번째 depth · 페이지 내부 active inner tab
+//   · OrderManagePage.tabs.ts (SSOT) 에서 label lookup · 하드코딩 금지 · UI tab label 과 동일 source
+//   · composite key `${itemKey}:${subTab}` → inner tab 배열 매핑
+//   · activeNav.nested = inner tab key · 없으면 4번째 depth 미표시
+import {
+  PURCHASE_ORDER_DEFAULT_TABS,
+  PURCHASE_DEFAULT_TABS,
+  PAYMENT_DEFAULT_TABS,
+  STAT_DEFAULT_TABS,
+} from "../OrderManagePage/OrderManagePage.tabs";
+
+const INNER_TAB_REGISTRY: Record<string, ReadonlyArray<{ key: string; label: string }>> = {
+  "display:purchase-order": PURCHASE_ORDER_DEFAULT_TABS,
+  "display:purchase":       PURCHASE_DEFAULT_TABS,
+  "display:payment":        PAYMENT_DEFAULT_TABS,
+  "display:statistics":     STAT_DEFAULT_TABS,
+};
+
 export function buildBreadcrumbFromNav(activeNav: ActiveNavForBreadcrumb | null): BreadcrumbSegment[] {
   if (!activeNav || activeNav.itemKey === "landing") return [{ label: "홈" }];
   const home: BreadcrumbSegment = { label: "홈", page: "landing" };
@@ -451,11 +469,23 @@ export function buildBreadcrumbFromNav(activeNav: ActiveNavForBreadcrumb | null)
   const groupDefaultSubTab = group.items[0]?.subTab ?? undefined;
   const pageLabel = item?.label ?? String(activeNav.itemKey);
 
-  return [
+  const segments: BreadcrumbSegment[] = [
     home,
     { label: group.label, page: groupPage, subTab: groupDefaultSubTab },
     { label: pageLabel, page: activeNav.itemKey, subTab: item?.subTab ?? activeNav.subTab ?? undefined },
   ];
+
+  // 2026-10-06 · 사용자 지시 · 4번째 depth · active inner tab (매입이력 · 상품정보 등)
+  if (activeNav.nested) {
+    const regKey = `${activeNav.itemKey}:${activeNav.subTab ?? ""}`;
+    const tabs = INNER_TAB_REGISTRY[regKey];
+    const innerTab = tabs?.find(t => t.key === activeNav.nested);
+    if (innerTab) {
+      segments.push({ label: innerTab.label });
+    }
+  }
+
+  return segments;
 }
 
 /** 컬러 → tailwind 클래스 (활성 톤 · 비활성 hover 톤 · phosphor 톤에 맞춤) */

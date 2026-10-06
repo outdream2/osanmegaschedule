@@ -161,6 +161,20 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // 2026-09-01 · 사용자 지시 · dashboard 서브탭 추가 (기본 dashboard · 판매대시보드 우선 노출)
   const [statSubTab, setStatSubTab] = useState<StatKey>("dashboard");
 
+  // 2026-10-06 · 사용자 지시 · breadcrumb 4번째 depth · active inner tab 추적
+  //   · topTab 변경 or inner tab 변경 시 activeNav.nested 동기화
+  //   · buildBreadcrumbFromNav 가 nested 읽어 "홈 > 매장 > 매입 > 매입이력" 생성
+  useEffect(() => {
+    let nested: string | null = null;
+    switch (topTab) {
+      case "purchase-order": nested = purchaseOrderSubTab; break;
+      case "purchase":       nested = purchaseSubTab; break;
+      case "payment":        nested = paymentSubTab; break;
+      case "statistics":     nested = statSubTab; break;
+    }
+    setActiveByPage("display", topTab, nested);
+  }, [topTab, purchaseOrderSubTab, purchaseSubTab, paymentSubTab, statSubTab, setActiveByPage]);
+
   const isAdmin = (ocrTabAuthSession?.level ?? 0) >= 8;
   const [vendorPreselectId, setVendorPreselectId] = useState<number | null>(null);
 
