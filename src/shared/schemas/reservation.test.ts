@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { CreateReservationSchema } from "./reservation";
 
 describe("CreateReservationSchema", () => {
+  // 2026-10-06 · #VisitorReservationEmployeeAssignment · assignedEmployeeId 필수 추가
   const valid = {
     date: "2026-08-20",
     time: "14:00",
@@ -10,6 +11,7 @@ describe("CreateReservationSchema", () => {
     contactName: "김철수",
     phone: "010-1234-5678",
     purpose: "신제품 소개",
+    assignedEmployeeId: 1,
   };
 
   it("정상 · parse 성공", () => {
@@ -90,5 +92,28 @@ describe("CreateReservationSchema", () => {
   it("vendorId · string · 실패", () => {
     const r = CreateReservationSchema.safeParse({ ...valid, vendorId: "42" });
     expect(r.success).toBe(false);
+  });
+
+  // 2026-10-06 · #VisitorReservationEmployeeAssignment · assignedEmployeeId
+  it("assignedEmployeeId · 없음 · 실패", () => {
+    const { assignedEmployeeId: _omit, ...noAssignee } = valid;
+    void _omit;
+    const r = CreateReservationSchema.safeParse(noAssignee);
+    expect(r.success).toBe(false);
+  });
+
+  it("assignedEmployeeId · 0 · 실패 (양의 정수만)", () => {
+    const r = CreateReservationSchema.safeParse({ ...valid, assignedEmployeeId: 0 });
+    expect(r.success).toBe(false);
+  });
+
+  it("assignedEmployeeId · 음수 · 실패", () => {
+    const r = CreateReservationSchema.safeParse({ ...valid, assignedEmployeeId: -3 });
+    expect(r.success).toBe(false);
+  });
+
+  it("assignedEmployeeId · 양의 정수 · 성공", () => {
+    const r = CreateReservationSchema.safeParse({ ...valid, assignedEmployeeId: 42 });
+    expect(r.success).toBe(true);
   });
 });

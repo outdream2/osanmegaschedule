@@ -42,6 +42,8 @@ import clientErrorsRouter from "./server/routes/board/clientErrors";
 import leaveRouter       from "./server/routes/daily/leave";
 import lunchRouter       from "./server/routes/daily/lunch";
 import reservationsRouter from "./server/routes/daily/reservations";
+// 2026-10-06 · #VisitorReservationEmployeeAssignment · 담당자별 가용 slot API
+import reservationAvailabilityRouter from "./server/routes/daily/reservationAvailability";
 import vendorsRouter     from "./server/routes/purchase/vendors";
 // 2026-09-24 · #352 · 거래처 로그인 · 자기 발주이력 확인 (조회 전용 · session.role=vendor 게이트)
 import vendorOrderHistoryRouter from "./server/routes/vendor/orderHistory";
@@ -322,6 +324,8 @@ async function startServer() {
   app.use(leaveRouter);
   app.use(lunchRouter);
   app.use(reservationsRouter);
+  // 2026-10-06 · #VisitorReservationEmployeeAssignment · availability (server canonical)
+  app.use(reservationAvailabilityRouter);
   app.use(vendorsRouter);
   // 2026-09-24 · #352 · 거래처 발주이력 · authorize(0) + role=vendor 내부 게이트
   app.use(vendorOrderHistoryRouter);

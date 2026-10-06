@@ -1,4 +1,5 @@
 // 2026-08-16 · 서버·클라 공유 · 거래처 예약 Zod 스키마
+// 2026-10-06 · #VisitorReservationEmployeeAssignment · assignedEmployeeId 필수화
 import { z } from "zod";
 
 /** POST /api/reservations · 거래처 방문 예약 */
@@ -11,5 +12,7 @@ export const CreateReservationSchema = z.object({
   purpose: z.string().min(1, "방문 목적 필수").max(200),
   note: z.string().max(500).optional().nullable(),
   vendorId: z.number().optional(),
+  /** 2026-10-06 · 담당자 (employees.id) · 신규 예약 필수 · settings.visitorReservation.assigneeEmployeeIds 안이어야 서버 통과 */
+  assignedEmployeeId: z.number().int().positive("담당자 ID (양의 정수) 필수"),
 });
 export type CreateReservationInput = z.infer<typeof CreateReservationSchema>;
