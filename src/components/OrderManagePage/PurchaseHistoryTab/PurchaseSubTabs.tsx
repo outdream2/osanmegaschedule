@@ -43,6 +43,8 @@ export interface PurchaseDetailRow {
   date: string; // YYYY-MM-DD
   product_code: string | null;
   product_name: string | null;
+  // 2026-10-06 · 사용자 지시 · 상품별조회 공급사 컬럼 노출용 · ERP 매입이력 원본 supplier_name
+  supplier_name: string | null;
   quantity: number;
   unit_price: number;
   amount: number;

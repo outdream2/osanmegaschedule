@@ -9,11 +9,13 @@ import { fmtWonNoUnit, fmtDateSlice } from "../../../lib/format";
 import { Spinner } from "../../common/Spinner";
 
 // PurchaseDetailRow · PurchaseSubTabs 에서 export 하지만 순환 방지 위해 local 재정의
+// 2026-10-06 · supplier_name 추가 · 상품별조회 공급사 컬럼 (ERP 매입이력 원본)
 export interface PurchaseDetailRow {
   id: string | number;
   date: string; // YYYY-MM-DD
   product_code: string | null;
   product_name: string | null;
+  supplier_name: string | null;
   quantity: number;
   unit_price: number;
   amount: number;
@@ -28,6 +30,9 @@ const dateLabel = fmtDateSlice;
 
 interface ProductAgg {
   key: string;
+  // 2026-10-06 · 사용자 지시 · 상품명 앞 공급사 컬럼 (ERP 매입이력 정렬 UX 일치)
+  //   · identity 는 product_code 유지 (previous commit 07b59756 원칙) · supplier 는 display only
+  supplier_name: string;
   product_name: string;
   product_code: string | null;
   total_qty: number;
@@ -39,9 +44,10 @@ interface ProductAgg {
   _dates: Set<string>; // 계산 임시
 }
 
-type ProductSortKey = "product_name" | "total_qty" | "avg_unit_price" | "last_date" | "purchase_count" | "total_amount" | "avg_interval";
+type ProductSortKey = "supplier_name" | "product_name" | "total_qty" | "avg_unit_price" | "last_date" | "purchase_count" | "total_amount" | "avg_interval";
 
 const PRODUCT_AGG_CMP: Record<ProductSortKey, Comparator<ProductAgg>> = {
+  supplier_name:  (a, b) => a.supplier_name.localeCompare(b.supplier_name, "ko"),
   product_name:   (a, b) => a.product_name.localeCompare(b.product_name, "ko"),
   total_qty:      (a, b) => a.total_qty - b.total_qty,
   avg_unit_price: (a, b) => a.avg_unit_price - b.avg_unit_price,
@@ -54,17 +60,20 @@ const PRODUCT_AGG_CMP: Record<ProductSortKey, Comparator<ProductAgg>> = {
 export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ rows, loading }) => {
   const aggregated = useMemo<ProductAgg[]>(() => {
     // 2026-10-06 · 사용자 지시 · identity/group key = canonical product_code
-    //   · product_name 은 display only (DB 에서 받은 값 그대로 보존)
+    //   · product_name · supplier_name 은 display only (DB 에서 받은 값 그대로 보존)
+    //   · 상품명 · 공급사 모두 · 첫 non-empty 값으로 display 보강 (상품별 1 row 유지)
     //   · product_code 가 없는 row 는 unmapped · 집계에서 skip (ghost merge 방지)
     const map = new Map<string, ProductAgg>();
     for (const r of rows) {
       const code = String(r.product_code ?? "").trim();
       if (!code) continue; // identity 없음 → skip
       const pname = String(r.product_name ?? "").trim();
+      const sname = String(r.supplier_name ?? "").trim();
       let a = map.get(code);
       if (!a) {
         a = {
           key: code,
+          supplier_name: sname || "-",
           product_name: pname || "-",
           product_code: code,
           total_qty: 0,
@@ -76,9 +85,9 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
           _dates: new Set<string>(),
         };
         map.set(code, a);
-      } else if ((a.product_name === "-" || !a.product_name) && pname) {
-        // 첫 non-empty product_name 으로 display 보강
-        a.product_name = pname;
+      } else {
+        if ((a.product_name === "-" || !a.product_name) && pname) a.product_name = pname;
+        if ((a.supplier_name === "-" || !a.supplier_name) && sname) a.supplier_name = sname;
       }
       a.total_qty += r.quantity;
       a.total_amount += r.amount;
@@ -104,8 +113,11 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
 
   const { sorted, sortKey, sortDir, toggleSort } = useSortableTable<ProductAgg, ProductSortKey>(aggregated, "total_amount", PRODUCT_AGG_CMP, "desc");
   const arrow = (k: ProductSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
+  // 2026-10-06 · 사용자 지시 · 공급사 컬럼 추가 (상품명 앞)
+  //   · storageKey "productAgg" 유지 · 사용자 저장 width 는 기존 컬럼만 적용 (하위호환)
   const { getWidth: aw, resizerProps: ar } = useColumnResize("productAgg", {
     num:      { default: 28,  min: 24, max: 48  },
+    supplier: { default: 140, min: 80, max: 260 },
     name:     { default: 200, min: 100, max: 400 },
     qty:      { default: 80,  min: 56, max: 140 },
     unit:     { default: 80,  min: 56, max: 140 },
@@ -132,6 +144,13 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
             <th className="relative text-left px-2 py-2 text-zinc-300" style={{ width: aw("num"), minWidth: aw("num") }}>
               #
               <span {...ar("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
+            </th>
+            {/* 2026-10-06 · 공급사 컬럼 (상품명 앞) · ERP 매입이력 상품별 조회와 컬럼 일치 */}
+            <th onClick={() => toggleSort("supplier_name")}
+              className="relative text-left px-2 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
+              style={{ width: aw("supplier"), minWidth: aw("supplier") }}>
+              공급사{arrow("supplier_name")}
+              <span {...ar("supplier")} className={RESIZER_CLS} style={{ touchAction: "none" }} onClick={(e: React.MouseEvent) => e.stopPropagation()} />
             </th>
             <th onClick={() => toggleSort("product_name")}
               className="relative text-left px-2 py-2 cursor-pointer select-none hover:bg-zinc-50 transition"
@@ -181,13 +200,17 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
           {sorted.map((a, i) => (
             <tr key={`pa-${a.key}-${i}`} className="hover:bg-zinc-50/60 transition-all duration-100">
               <td className="px-2 py-1.5 text-zinc-300 text-[17px] tabular-nums align-top">{i + 1}</td>
+              {/* 2026-10-06 · 공급사 셀 (상품명 앞) · 상품별 첫 non-empty supplier_name */}
+              <td className="px-2 py-1.5 align-top">
+                <div className="text-[15px] font-semibold text-zinc-600 break-words whitespace-normal leading-snug">
+                  {a.supplier_name}
+                </div>
+              </td>
+              {/* 2026-10-06 · 사용자 지시 · 코드 셀 제거 · 상품명만 표시 */}
               <td className="px-2 py-1.5 align-top">
                 <div className="text-[15px] font-semibold text-zinc-700 break-words whitespace-normal leading-snug">
                   {a.product_name}
                 </div>
-                {a.product_code && (
-                  <div className="text-[16px] text-zinc-400 font-mono tabular-nums">{a.product_code}</div>
-                )}
               </td>
               <td className="px-2 py-1.5 text-right tabular-nums text-[15px] text-zinc-600 align-top">
                 {fmt(a.total_qty)}
@@ -224,7 +247,8 @@ export const ProductAggTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boole
         </tbody>
         <tfoot className="sticky bottom-0 bg-white border-t-2 border-line">
           <tr>
-            <td colSpan={7} className="px-2 py-2 text-right text-[17px] font-bold text-zinc-500">합계</td>
+            {/* 2026-10-06 · 공급사 컬럼 추가로 colSpan 7 → 8 */}
+            <td colSpan={8} className="px-2 py-2 text-right text-[17px] font-bold text-zinc-500">합계</td>
             <td className="px-2 py-2 text-right tabular-nums text-[16px] font-bold text-emerald-700">{fmtWon(totalAmount)}</td>
           </tr>
         </tfoot>

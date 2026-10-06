@@ -333,11 +333,13 @@ export const PurchaseHistoryTab: React.FC = () => {
       }));
       setLedgerRows(purchaseRows);
       // detailRows (동일 데이터 · PurchaseDetailRow 타입 변환)
+      // 2026-10-06 · supplier_name 포함 · 상품별조회 공급사 컬럼용
       const detRows: PurchaseDetailRow[] = filtered.map((r: any) => ({
         id: r.id,
         date: r.purchase_date ?? r.invoice_date ?? "",
         product_code: r.product_code ?? null,
         product_name: r.product_name ?? null,
+        supplier_name: r.supplier_name ?? null,
         quantity: Number(r.quantity) || 0,
         unit_price: Number(r.unit_price) || 0,
         amount: Number(r.amount ?? r.total) || 0,
@@ -532,11 +534,13 @@ export const PurchaseHistoryTab: React.FC = () => {
         unit_price: r.unit_price != null ? Number(r.unit_price) : null,
         amount: Number(r.amount ?? r.total) || 0,
       }));
+      // 2026-10-06 · supplier_name 포함 · 상품별조회 공급사 컬럼용
       const detRows: PurchaseDetailRow[] = uniq.map((r: any) => ({
         id: r.id,
         date: r.purchase_date ?? r.invoice_date ?? "",
         product_code: r.product_code ?? null,
         product_name: r.product_name ?? null,
+        supplier_name: r.supplier_name ?? null,
         quantity: Number(r.quantity) || 0,
         unit_price: Number(r.unit_price) || 0,
         amount: Number(r.amount ?? r.total) || 0,
@@ -677,11 +681,13 @@ export const PurchaseHistoryTab: React.FC = () => {
           const id = r.id;
           const date = String(r.purchase_date ?? "").slice(0, 10);
           if (!id || !date) continue;
+          // 2026-10-06 · supplier_name 포함 · 상품별조회 공급사 컬럼용 (map 과 동기 유지)
           details.push({
             id,
             date,
             product_code: r.product_code ?? null,
             product_name: r.product_name ?? null,
+            supplier_name: r.supplier_name ?? null,
             quantity: Number(r.quantity) || 0,
             unit_price: Number(r.unit_price) || 0,
             amount: Number(r.amount ?? r.total) || 0,
