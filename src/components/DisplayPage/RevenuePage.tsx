@@ -112,8 +112,8 @@ function parseHour(saleTime: string): number {
 export const RevenuePage: React.FC = () => {
   const [tab, setTab] = useState<RevenueTab>("hourly");
   return (
-    // 2026-10-06 · 사용자 지시 · body horizontal scroll 금지 · 전체 min-w-0/max-w-full · 반응형 wrapper
-    <div className="flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full overflow-hidden">
+    // 2026-10-06 · 사용자 지시 · 세로 스크롤 보장 · 가로 overflow 방지 · overflow-hidden 완화
+    <div className="flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full">
       {/* 탭 */}
       <div className="px-4 pt-4 shrink-0 w-full min-w-0 max-w-full">
         <div className="flex items-center gap-1 bg-white border border-zinc-200 rounded-lg p-1 w-fit">
@@ -131,7 +131,11 @@ export const RevenuePage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 w-full min-w-0 max-w-full">
+      {/* 세로 scroll · overscroll touch · 가로 clip · 자식 min-h-0 */}
+      <div
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 w-full min-w-0 max-w-full"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
         <div className="w-full min-w-0 max-w-full">
           {tab === "hourly" ? <HourlyReportTab /> : <MonthlyReportTab />}
         </div>
@@ -156,10 +160,14 @@ interface HourlyApiResponse {
 
 const HourlyReportTab: React.FC = () => {
   // HOURLY 전용 state
-  // 2026-10-06 · 사용자 지시 · 시간대별 chart metric 탭 (매출/객단가/고객수·마진율)
+  // 2026-10-06 · 사용자 지시 · 시간대별 chart metric 탭 (매출/객단가/마진율/고객수)
   //   · 같은 dataset 재사용 · tab 변경 시 API 재호출 X · series 만 전환
-  type ChartMetric = "revenue" | "avg-order" | "customer-margin";
+  //   · 고객수 = Bar · 나머지 = Line (사용자 지시)
+  //   · 날짜 여러개 선택 시 각 slot 평균 1 series (overlay 복잡성 피함)
+  //   · 주말 포함/제외 체크박스 (default: 포함)
+  type ChartMetric = "revenue" | "avg-order" | "margin-rate" | "customers";
   const [chartMetric, setChartMetric] = useState<ChartMetric>("revenue");
+  const [includeWeekend, setIncludeWeekend] = useState<boolean>(true);
   const [hourlyRows, setHourlyRows] = useState<HourlyRow[] | null>(null);
   const [hourlyStatus, setHourlyStatus] = useState<FetchStatus>("idle");
   const [hourlyError, setHourlyError] = useState<string | null>(null);
@@ -378,61 +386,84 @@ const HourlyReportTab: React.FC = () => {
         <KpiBox label={`${today} 고객수`} value={show ? totalCust.toLocaleString() + "명" : "-"} />
       </div>
 
-      {/* 2026-10-06 · 사용자 지시 · 시간대별 chart · metric 탭 분리 (매출/객단가/고객수·마진율)
-          · 같은 dataset 재사용 · tab 변경 시 API 재호출 X · series 만 전환
-          · 모든 chart · ResponsiveContainer · 100% width · dual Y-axis (customer-margin 탭) */}
+      {/* 2026-10-06 · 사용자 지시 · 시간대별 chart · 4 metric 탭 분리 (매출/객단가/고객수/마진율)
+          · 모든 탭 Line (꺾은선 그래프)
+          · 주말 포함/제외 체크박스 (default: 포함)
+          · 날짜별 Line overlay · 각 날짜 1 series (평균 X · 데이터 전부 노출) */}
       {show && displayDateData.length > 0 && allSlots.length > 0 && (() => {
+        // 요일 필터 · 주말(토=6, 일=0) 포함 여부
+        const isWeekend = (dateStr: string): boolean => {
+          const [y, m, d] = dateStr.split("-").map(Number);
+          if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return false;
+          const dow = new Date(y, m - 1, d).getDay();
+          return dow === 0 || dow === 6;
+        };
+        const effDateData = includeWeekend
+          ? displayDateData
+          : displayDateData.filter((d) => !isWeekend(d.date));
+        if (effDateData.length === 0) {
+          return (
+            <div className="bg-white border border-zinc-200 rounded-lg p-3 md:p-4 w-full min-w-0 max-w-full overflow-hidden">
+              <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+                <div className="text-[15px] md:text-[16px] font-bold text-zinc-800">시간대별 추이</div>
+              </div>
+              <div className="py-12 text-center text-zinc-400 text-[14px]">주말 제외 시 표시할 날짜 없음</div>
+            </div>
+          );
+        }
+        // 2026-10-06 · 사용자 지시 · X축 영업시간 고정 (09~22시 · 14 slot) · 화면 폭 responsive
+        //   · 데이터에 등장하는 slot 과 영업시간 union · 양쪽 모두 커버
+        const BUSINESS_HOURS = ["09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22"];
+        const unionSlotsSet = new Set<string>([...BUSINESS_HOURS, ...allSlots]);
+        const fixedSlots = [...unionSlotsSet].sort();
+        // slot 별 각 날짜 series value 계산 · metric 별
+        //   { time, [dateKey]: value, forecast?: number } 형식 · 각 날짜 별도 Line + 예상(평균) 점선
+        const buildSeriesData = (metric: ChartMetric) => fixedSlots.map((slot) => {
+          const point: Record<string, number | string | null> = { time: slot };
+          const todayValues: number[] = [];
+          const pastValues: number[] = [];
+          for (const d of effDateData) {
+            const r = d.rowMap.get(slot);
+            if (!r) { point[d.date] = null; continue; }
+            const sale = Number(r.SaleTotal ?? 0);
+            const cust = Number(r.CustomerCnt ?? 0);
+            const marg = Number(r.Margin ?? 0);
+            let v: number | null = null;
+            if (metric === "revenue") v = sale;
+            else if (metric === "avg-order") v = cust > 0 ? Math.round(sale / cust) : null;
+            else if (metric === "margin-rate") v = sale > 0 ? Math.round((marg / sale) * 1000) / 10 : null;
+            else if (metric === "customers") v = cust;
+            point[d.date] = v;
+            // 2026-10-06 · 예상(forecast) · 과거 날짜 평균 trajectory · 오늘은 제외
+            if (v != null) {
+              if (d.date === today) todayValues.push(v);
+              else pastValues.push(v);
+            }
+          }
+          // 예상 trajectory · 과거 날짜 평균 (오늘 slot 에만 표시 or 전체)
+          //   매출 metric 에서만 노출 · 사용자 지시 "예상매출액"
+          if (metric === "revenue" && pastValues.length > 0) {
+            point.forecast = Math.round(pastValues.reduce((a, b) => a + b, 0) / pastValues.length);
+          }
+          void todayValues;
+          return point;
+        });
+        const TAB_LABEL: Record<ChartMetric, string> = {
+          "revenue": "매출", "avg-order": "객단가", "margin-rate": "마진율", "customers": "고객수",
+        };
         // 날짜별 색상 · 오늘 날짜는 rose (강조) · 과거 날짜는 다양한 색
         const PAST_COLORS = ["#2563eb", "#059669", "#d97706", "#7c3aed", "#0891b2", "#db2777", "#0ea5e9"];
-        // metric 별 series data 계산 · 같은 chartData 포맷 ({ time, [dateKey]: value })
-        //   revenue       · SaleTotal
-        //   avg-order     · SaleTotal / CustomerCnt (per slot)
-        //   customer-margin · CustomerCnt + MarginPercent (dual Y-axis)
-        const buildRevenueData = () => allSlots.map((slot) => {
-          const point: Record<string, number | string | null> = { time: slot };
-          for (const d of displayDateData) {
-            const r = d.rowMap.get(slot);
-            point[d.date] = r ? Number(r.SaleTotal ?? 0) : null;
-          }
-          return point;
-        });
-        const buildAvgData = () => allSlots.map((slot) => {
-          const point: Record<string, number | string | null> = { time: slot };
-          for (const d of displayDateData) {
-            const r = d.rowMap.get(slot);
-            const sale = r ? Number(r.SaleTotal ?? 0) : 0;
-            const cust = r ? Number(r.CustomerCnt ?? 0) : 0;
-            point[d.date] = cust > 0 ? Math.round(sale / cust) : null;
-          }
-          return point;
-        });
-        const buildCustMarginData = () => allSlots.map((slot) => {
-          const point: Record<string, number | string | null> = { time: slot };
-          for (const d of displayDateData) {
-            const r = d.rowMap.get(slot);
-            const sale = r ? Number(r.SaleTotal ?? 0) : 0;
-            const cust = r ? Number(r.CustomerCnt ?? 0) : 0;
-            const marg = r ? Number(r.Margin ?? 0) : 0;
-            // mp canonical · Margin / SaleTotal × 100 (기존 marginPercent 식과 동일)
-            const mp = sale > 0 ? Math.round((marg / sale) * 1000) / 10 : null;
-            point[`${d.date}::cust`] = r ? cust : null;
-            point[`${d.date}::marginPct`] = mp;
-          }
-          return point;
-        });
-        const TAB_LABEL: Record<ChartMetric, string> = { "revenue": "매출", "avg-order": "객단가", "customer-margin": "고객수·마진율" };
         return (
           <div className="bg-white border border-zinc-200 rounded-lg p-3 md:p-4 w-full min-w-0 max-w-full overflow-hidden">
-            <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-              <div className="text-[15px] md:text-[16px] font-bold text-zinc-800">시간대별 추이</div>
-              {/* metric 탭 */}
+            {/* 2026-10-06 · 사용자 지시 · 상단 row · 탭 + 주말 체크박스 (같은 라인) */}
+            <div className="flex items-center justify-start gap-3 mb-2 flex-wrap">
               <div className="inline-flex items-center gap-1 bg-zinc-100 border border-zinc-200 rounded-lg p-0.5">
-                {(["revenue", "avg-order", "customer-margin"] as const).map((k) => (
+                {(["revenue", "avg-order", "margin-rate", "customers"] as const).map((k) => (
                   <button
                     key={k}
                     type="button"
                     onClick={() => setChartMetric(k)}
-                    className={`px-2.5 py-1 text-[13px] font-semibold rounded-md transition cursor-pointer whitespace-nowrap ${
+                    className={`px-3 py-1 text-[13px] font-semibold rounded-md transition cursor-pointer whitespace-nowrap ${
                       chartMetric === k ? "bg-brand-deep text-white shadow-sm" : "text-zinc-600 hover:bg-white"
                     }`}
                   >
@@ -440,118 +471,95 @@ const HourlyReportTab: React.FC = () => {
                   </button>
                 ))}
               </div>
+              <label className="inline-flex items-center gap-1.5 text-[13px] text-zinc-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={includeWeekend}
+                  onChange={(e) => setIncludeWeekend(e.target.checked)}
+                  className="w-4 h-4 accent-brand-deep cursor-pointer"
+                />
+                <span>주말 포함</span>
+              </label>
             </div>
-            <div className="w-full" style={{ height: 280 }}>
-              {chartMetric === "revenue" && (() => {
-                const chartData = buildRevenueData();
+            {/* 제목 + 일수 */}
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <div className="text-[15px] md:text-[16px] font-bold text-zinc-800">시간대별 추이</div>
+              <span className="text-[12px] text-zinc-500">{effDateData.length}일</span>
+            </div>
+            <div className="w-full" style={{ height: 320 }}>
+              {(() => {
+                const chartData = buildSeriesData(chartMetric);
+                const yFormatter = chartMetric === "margin-rate"
+                  ? (v: number) => `${Number(v).toFixed(0)}%`
+                  : chartMetric === "customers"
+                    ? (v: number) => `${Math.round(Number(v)).toLocaleString()}`
+                    : (v: number) => fmtWonShort(Number(v));
+                const tooltipValueFormatter = (v: number | string) => {
+                  const n = Number(v);
+                  if (!Number.isFinite(n)) return "-";
+                  if (chartMetric === "margin-rate") return `${n.toFixed(1)}%`;
+                  if (chartMetric === "customers") return `${Math.round(n).toLocaleString()}명`;
+                  return fmtWon(n);
+                };
+                // 2026-10-06 · 사용자 지시 · 4 탭 모두 Line (꺾은선 그래프) · 날짜별 overlay
+                //   · 오늘 Line 두껍게 (3.5) + ★ 포인트 · Legend 특별 라벨
+                //   · 매출 탭 forecast · 점선 (과거 평균) · 데이터 없는 slot 에만 예측 표시
+                //   · 데이터 있으면 그리지 않음 (null · connectNulls=false)
                 return (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 10, right: 15, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-                      <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#52525b" }} tickFormatter={(v) => `${v}시`} />
-                      <YAxis tick={{ fontSize: 11, fill: "#52525b" }} tickFormatter={(v) => fmtWonShort(Number(v))} width={60} />
-                      <Tooltip
-                        formatter={(v, name) => [fmtWon(Number(v)), shortDateWithDow(String(name).replace(" (오늘)", ""))]}
-                        labelFormatter={(v) => `${v}시`}
-                        contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                      <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#52525b" }} tickFormatter={(v) => `${v}시`} interval={0} />
+                      {/* 2026-10-06 · 사용자 지시 · 축 최대한 활용 · domain=auto · 수치 변화 극명 */}
+                      <YAxis
+                        tick={{ fontSize: 11, fill: "#52525b" }}
+                        tickFormatter={(v) => yFormatter(Number(v))}
+                        width={60}
+                        domain={["auto", "auto"]}
+                        allowDecimals={false}
                       />
-                      <Legend wrapperStyle={{ fontSize: 12 }} iconType="line" formatter={(name) => shortDateWithDow(String(name).replace(" (오늘)", ""))} />
-                      {displayDateData.map((d, i) => {
-                        const isToday = d.date === today;
-                        const color = isToday ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
-                        return (
-                          <Line
-                            key={d.date} type="monotone" dataKey={d.date}
-                            name={isToday ? `${d.date} (오늘)` : d.date}
-                            stroke={color} strokeWidth={isToday ? 2.5 : 1.8}
-                            dot={{ r: isToday ? 4 : 3, strokeWidth: 1 }} activeDot={{ r: 6 }}
-                            connectNulls={false}
-                          />
-                        );
-                      })}
-                    </LineChart>
-                  </ResponsiveContainer>
-                );
-              })()}
-              {chartMetric === "avg-order" && (() => {
-                const chartData = buildAvgData();
-                return (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 10, right: 15, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-                      <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#52525b" }} tickFormatter={(v) => `${v}시`} />
-                      <YAxis tick={{ fontSize: 11, fill: "#52525b" }} tickFormatter={(v) => fmtWonShort(Number(v))} width={60} />
-                      <Tooltip
-                        formatter={(v, name) => [fmtWon(Number(v)), shortDateWithDow(String(name).replace(" (오늘)", ""))]}
-                        labelFormatter={(v) => `${v}시`}
-                        contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                      />
-                      <Legend wrapperStyle={{ fontSize: 12 }} iconType="line" formatter={(name) => shortDateWithDow(String(name).replace(" (오늘)", ""))} />
-                      {displayDateData.map((d, i) => {
-                        const isToday = d.date === today;
-                        const color = isToday ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
-                        return (
-                          <Line
-                            key={d.date} type="monotone" dataKey={d.date}
-                            name={isToday ? `${d.date} (오늘)` : d.date}
-                            stroke={color} strokeWidth={isToday ? 2.5 : 1.8}
-                            dot={{ r: isToday ? 4 : 3, strokeWidth: 1 }} activeDot={{ r: 6 }}
-                            connectNulls={false}
-                          />
-                        );
-                      })}
-                    </LineChart>
-                  </ResponsiveContainer>
-                );
-              })()}
-              {chartMetric === "customer-margin" && (() => {
-                const chartData = buildCustMarginData();
-                return (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-                      <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#52525b" }} tickFormatter={(v) => `${v}시`} />
-                      <YAxis yAxisId="left" tick={{ fontSize: 11, fill: "#52525b" }} tickFormatter={(v) => `${v}명`} width={55} />
-                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: "#52525b" }} tickFormatter={(v) => `${v}%`} width={45} />
                       <Tooltip
                         formatter={(v, name) => {
-                          const [dateKey, kind] = String(name).split("::");
-                          const label = `${shortDateWithDow(dateKey.replace(" (오늘)", ""))} · ${kind === "cust" ? "고객수" : "마진율"}`;
-                          const value = kind === "cust" ? `${Number(v).toLocaleString()}명` : `${Number(v).toFixed(1)}%`;
-                          return [value, label];
+                          const nm = String(name);
+                          if (nm === "forecast") return [tooltipValueFormatter(v as number), "예상"];
+                          return [tooltipValueFormatter(v as number), shortDateWithDow(nm.replace(" ★ 오늘", ""))];
                         }}
                         labelFormatter={(v) => `${v}시`}
                         contentStyle={{ fontSize: 12, borderRadius: 8 }}
                       />
-                      <Legend wrapperStyle={{ fontSize: 12 }} formatter={(name) => {
-                        const [dateKey, kind] = String(name).split("::");
-                        return `${shortDateWithDow(dateKey.replace(" (오늘)", ""))} ${kind === "cust" ? "고객수" : "마진율"}`;
+                      {/* 2026-10-06 · 사용자 지시 · 오늘 라벨 찐하게 (bold red) · forecast 라벨 예상 */}
+                      <Legend wrapperStyle={{ fontSize: 12 }} iconType="line" formatter={(name) => {
+                        const nm = String(name);
+                        if (nm === "forecast") return <span style={{ color: "#71717a", fontStyle: "italic" }}>예상 (평균)</span>;
+                        if (nm.endsWith("★ 오늘")) return <span style={{ color: "#dc2626", fontWeight: 800 }}>{nm}</span>;
+                        return shortDateWithDow(nm);
                       }} />
-                      {displayDateData.map((d, i) => {
+                      {effDateData.map((d, i) => {
                         const isToday = d.date === today;
+                        const isWknd = isWeekend(d.date);
                         const color = isToday ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
-                        return (
-                          <Bar
-                            key={`${d.date}-cust`} yAxisId="left" dataKey={`${d.date}::cust`}
-                            name={`${isToday ? `${d.date} (오늘)` : d.date}::cust`}
-                            fill={color} fillOpacity={0.75} radius={[2, 2, 0, 0]}
-                          />
-                        );
-                      })}
-                      {displayDateData.map((d, i) => {
-                        const isToday = d.date === today;
-                        const color = isToday ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
+                        // 2026-10-06 · 사용자 지시 · 주말 날짜는 다른 선 타입 (dashed) · 오늘이 아닐 때만
+                        const dash = isWknd && !isToday ? "6 3" : undefined;
                         return (
                           <Line
-                            key={`${d.date}-marg`} yAxisId="right" type="monotone" dataKey={`${d.date}::marginPct`}
-                            name={`${isToday ? `${d.date} (오늘)` : d.date}::marginPct`}
-                            stroke={color} strokeDasharray="4 2" strokeWidth={isToday ? 2.5 : 1.8}
-                            dot={{ r: isToday ? 4 : 3, strokeWidth: 1 }} activeDot={{ r: 6 }}
+                            key={d.date} type="monotone" dataKey={d.date}
+                            name={isToday ? `${shortDateWithDow(d.date)} ★ 오늘` : d.date}
+                            stroke={color} strokeWidth={isToday ? 3.5 : 1.8}
+                            strokeDasharray={dash}
+                            dot={{ r: isToday ? 5 : 3, strokeWidth: 1 }} activeDot={{ r: 7 }}
                             connectNulls={false}
                           />
                         );
                       })}
-                    </ComposedChart>
+                      {/* 2026-10-06 · 사용자 지시 · 매출 탭 · 예상 매출 점선 (과거 평균) */}
+                      {chartMetric === "revenue" && (
+                        <Line
+                          type="monotone" dataKey="forecast" name="forecast"
+                          stroke="#71717a" strokeDasharray="5 4" strokeWidth={1.6}
+                          dot={false} activeDot={{ r: 4 }} connectNulls={true}
+                        />
+                      )}
+                    </LineChart>
                   </ResponsiveContainer>
                 );
               })()}
