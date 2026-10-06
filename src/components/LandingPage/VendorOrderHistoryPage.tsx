@@ -36,6 +36,8 @@ import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 import type { AuthSession } from "../../types";
+// 2026-10-06 · 공급사 승인 접근 fix · URL 직접 접근 차단 공통 guard
+import { VendorApprovalGuard } from "./VendorApprovalGuard";
 
 // ─── 타입 · OrderHistoryTab 응답 구조와 동일 ────────────────────────────
 interface OrderHistoryItem {
@@ -249,6 +251,14 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
   const pharmacyPhone = companyInfo?.phone || "";
 
   return (
+    // 2026-10-06 · 공급사 승인 접근 fix · URL 직접 접근 차단 · 미승인 시 안내 화면
+    <VendorApprovalGuard
+      authSession={authSession}
+      activePage="vendor-order-history"
+      onBack={onBack}
+      onNavigate={onNavigate}
+      onLogout={onLogout}
+    >
     <div className="min-h-screen flex flex-col bg-zinc-50">
       <AppNavHeader
         activePage="vendor-order-history"
@@ -561,6 +571,7 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
         </div>
       )}
     </div>
+    </VendorApprovalGuard>
   );
 };
 

@@ -9,9 +9,11 @@ import { formatDisplayLocation } from "../../../src/lib/formatDisplayLocation";
 // 2026-08-23 · 사용자 지시 · 식약처 표준코드 조회 기능 제거 · lookupStandardCode import + 관련 라우터 삭제
 import { COL_KEYS, xlsxToRows, pickBestSheet } from "../../utils/xlsx";
 import { sanitizeOrValue } from "../../utils/sanitize";
-import { authorize } from "../../middleware/requireAuth";
+import { authorize, getSession } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { HttpError, badRequest, forbidden } from "../../middleware/errorHandler";
+// 2026-10-06 · 공급사 승인 접근 fix · 서버 403 guard · vendor 세션 미승인 차단
+import { requireVendorApproved } from "../../lib/vendorApproval";
 // 2026-09-18 · 유통기한 3소스 UNION 집계 유틸 · 순수 함수 (테스트 8건)
 import { mergeMinExpiry, type ExpiryRow } from "../../lib/expiryAggregation";
 import { validateBody } from "../../middleware/zodValidate";
@@ -252,6 +254,10 @@ router.get("/api/products-by-category", asyncHandler(async (req, res) => {
 
 router.get("/api/products-search", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  // 2026-10-06 · 공급사 승인 접근 fix · vendor 세션 · approval_status 체크 (사용자 지시 규칙 [7])
+  //   · admin/manager/staff · 영향 없음 (role 분기 · requireVendorApproved 내부 vendor 가 아니면 통과)
+  //   · 미승인 vendor · 403 · 공급사 재고확인 페이지 데이터 접근 차단
+  await requireVendorApproved(getSession(req));
   const rawQ     = String(req.query.q        ?? "").trim();
   const supplier = String(req.query.supplier ?? "").trim();
   const includeHidden = req.query.include_hidden === "1" || req.query.include_hidden === "true";

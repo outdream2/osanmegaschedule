@@ -16,6 +16,8 @@ import { authorize, getSession } from "../../middleware/requireAuth";
 import { HttpError, forbidden, unauthorized } from "../../middleware/errorHandler";
 import logger from "../../lib/logger";
 import { parseMonthsList, isDateInSelectedMonths } from "../../lib/periodFilter";
+// 2026-10-06 · 공급사 승인 접근 fix · 서버 403 guard · 미승인 vendor API 차단
+import { requireVendorApproved } from "../../lib/vendorApproval";
 
 const router = Router();
 
@@ -30,6 +32,9 @@ router.get("/api/vendor/order-history", authorize(0), asyncHandler(async (req, r
   const session = getSession(req);
   if (!session) throw unauthorized();
   if (session.role !== "vendor") throw forbidden("거래처 세션만 사용 가능합니다");
+  // 2026-10-06 · 공급사 승인 접근 fix · 미승인 vendor 는 403 (사용자 지시 규칙 [7])
+  //   · admin/staff · role 분기로 영향 없음 (위 session.role 체크)
+  await requireVendorApproved(session);
 
   const supplierName = String(session.name ?? "").trim();
   if (!supplierName) {

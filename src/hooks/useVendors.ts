@@ -28,6 +28,15 @@ function _notify() {
   _listeners.forEach(l => l());
 }
 
+// 2026-10-06 · 공급사 승인 접근 fix · 로그인 경계에서 stale cache 로 "승인됨" 미반영 방지
+//   · 로그인 전 다른 세션/익명 상태에서 쌓인 _cache 는 approval_status 가 오래된 값일 수 있음
+//   · 로그아웃은 window.location.replace 로 full reload 되지만 로그인 직후엔 SPA 유지됨
+//   · 호출처 · LoginModals (vendor-login 성공 직후) · 필요 시 다른 로그인 성공 후에도 사용 가능
+export function invalidateVendorsCache(): void {
+  _cache = null;
+  _inflight = null;
+}
+
 async function _fetchVendors(force = false): Promise<Vendor[]> {
   if (!force && _cache && Date.now() - _cache.time < TTL) return _cache.vendors;
   if (_inflight) return _inflight;

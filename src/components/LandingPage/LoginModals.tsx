@@ -12,6 +12,8 @@ import logo2Img from "../../images/logo2.png";
 import type { AuthSession, AuthRole } from "../../types";
 import { Button } from "../common/Button";
 import { Modal } from "../common/Modal";
+// 2026-10-06 · 공급사 승인 접근 fix · 로그인 성공 직후 vendors cache 무효화 (stale approval_status 방지)
+import { invalidateVendorsCache } from "../../hooks/useVendors";
 
 interface LoginModalsProps {
   // 거래처 로그인 모달
@@ -97,6 +99,10 @@ export const LoginModals: React.FC<LoginModalsProps> = ({
       if (!id) { setVendorError("로그인에 실패했습니다."); setVendorLoading(false); return; }
       onVendorLoginClose();
       setVendorPassword("");
+      // 2026-10-06 · 공급사 승인 접근 fix · 로그인 성공 즉시 vendors cache 무효화
+      //   · 이전 세션/익명에서 쌓인 stale approval_status 로 메뉴 비활성 되는 bug 차단
+      //   · 다음 useVendors 는 cold fetch · fresh approval_status 즉시 반영
+      invalidateVendorsCache();
       const auth: AuthSession = { role: "vendor", employeeId: id, employeeName: name ?? "", employeeRank: contactName || undefined, level: level ?? 0 };
       onAuthOnly?.(auth);
     } catch (err: unknown) {

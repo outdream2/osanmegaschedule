@@ -1,5 +1,5 @@
 // src/components/LandingPage.tsx
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 // 2026-08-16 · apiClient 마이그레이션
 import { api, ApiError } from "../../lib/apiClient";
 // 2026-09-27 · 네비게이션 SSOT · useActiveNav Context · setActiveByPage 로 subTab 전달
@@ -47,11 +47,12 @@ import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TIMING } from "../../constants/timing";
 // 2026-08-09 · 거래처 담당자 로그인 시 · 본인 공급사 조회·수정 · 공통 VendorDetailModal 재사용
-import { VendorDetailModal, type Vendor as VendorFull } from "./VendorListEditor";
+import { VendorDetailModal } from "./VendorListEditor";
 // 2026-09-04 · #23 · 공급사 재고확인 · 모달 → 전용 페이지 (VendorStockPage) 이관
 //   · 2026-09-24 · VendorStockModal 파일 삭제 (VendorStockPage 로 완전 대체 · 사용처 없음)
 //   · 랜딩 진입점만 · setShowVendorStock 대신 onNavigate("vendor-stock")
-import { useVendors } from "../../hooks/useVendors";
+// 2026-10-06 · 공급사 승인 접근 fix · 승인 상태 derived hook · SSOT (useVendors 캐시 재사용)
+import { useVendorApproval } from "../../hooks/useVendorApproval";
 import { MenuCard } from "./MenuCard";
 import { StockSearch } from "./StockSearch";
 // 2026-08-25 · Framework Phase 4 · 입고알림 · self-contained 이관
@@ -147,16 +148,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   //   · showVendorStock 상태 제거 · 버튼 클릭 시 onNavigate("vendor-stock") 호출
   // 2026-09-24 · E-013 · 사용자 보고 · 초기 vendor 로그인 시 · vendorSelf null · 버튼 비활성
   //   · useVendors · loading state 활용 · 로딩 중엔 별도 label · 승인 판정 지연 방지
-  const { vendors: _rawVendorsSelf, refresh: refreshVendorsSelf, loading: vendorsLoading } = useVendors();
-  const vendorSelf = useMemo<VendorFull | null>(() => {
-    if (!authSession || authSession.role !== "vendor") return null;
-    const list = _rawVendorsSelf as unknown as VendorFull[];
-    // 우선 id 매칭 · 실패 시 이름 매칭
-    const byId = list.find(v => v.id === authSession.employeeId);
-    if (byId) return byId;
-    const nm = String(authSession.employeeName ?? "").trim();
-    return nm ? (list.find(v => v.company_name === nm) ?? null) : null;
-  }, [_rawVendorsSelf, authSession]);
+  // 2026-10-06 · 공급사 승인 접근 fix · useVendorApproval 훅으로 추출 · SSOT · state/message 공통화
+  const {
+    vendorSelf,
+    vendorsLoading,
+    state: vendorApprovalState,
+    message: vendorApprovalMessage,
+    refresh: refreshVendorsSelf,
+  } = useVendorApproval(authSession);
   const [unauthorizedToast, setUnauthorizedToast] = useState(false);
 
   // 2026-09-03 · fix · 사용자 리포트 · vendor 로그인 후에도 [공급사 정보] 클릭 안 됨
@@ -250,6 +249,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const isLoggedIn = !!authSession;
   const isManagerOrAdmin = !isVendor && userLevel >= 2;
   const isSuperAdminLevel9 = !isVendor && userLevel >= 9;
+
+  // 2026-10-06 · 공급사 승인 접근 fix · 미승인 메뉴 클릭 · 메시지 + VendorInfo 안내
+  //   · SSOT · useVendorApproval (hook) · vendorApprovalState/Message 는 위에서 derive
+  const handleVendorApprovalBlocked = React.useCallback(() => {
+    if (!isVendor) return;
+    showError(vendorApprovalMessage || "공급사 승인이 완료되지 않았습니다.");
+    if (vendorSelf) setShowVendorSelf(true);
+  }, [isVendor, vendorApprovalMessage, showError, vendorSelf]);
 
   // Load pending counts for managers · 2026-08-18 · 즉시 갱신 지원 (useApprovalRefreshListener)
   const reloadPendingCounts = React.useCallback(() => {
@@ -645,18 +652,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     }} />
                 )}
                 {/* 2026-08-26 · #192 · 거래처 승인 gate · approval_status="approved" 만 활성
-                    2026-09-24 · E-013 · 로딩 중 · label "정보 확인 중..." · disabled 로직 개선 */}
+                    2026-09-24 · E-013 · 로딩 중 · label "정보 확인 중..." · disabled 로직 개선
+                    2026-10-06 · SSOT · vendorApprovalState · 미승인 메뉴 hide 금지 · 클릭 시 메시지 + VendorInfo 안내 */}
                 {(isVendor || isSuperAdminLevel9) && (() => {
-                  const vendorApproved = isVendor && vendorSelf && (vendorSelf as any).approval_status === "approved";
-                  const isLoadingVendor = isVendor && vendorsLoading && !vendorSelf;
-                  const approvalStatus = isVendor ? ((vendorSelf as any)?.approval_status ?? "pending") : "approved";
-                  const disabled = isVendor && !vendorApproved;
-                  const label = isLoadingVendor
-                    ? "🔄 정보 확인 중..."
-                    : approvalStatus === "approved" ? "상품별 재고 현황 조회"
-                    : approvalStatus === "pending"  ? "🔒 관리자 승인 대기 중 · 승인 후 사용 가능"
-                    : approvalStatus === "rejected" ? "🚫 승인 거절 · 관리자 문의"
-                    : "🔒 공급사 정보 등록 후 · 승인 요청 필요";
+                  // vendor · state 기반 · admin/staff · 항상 approved 로 취급 (gate 없음)
+                  const state = isVendor ? vendorApprovalState : "approved";
+                  const label =
+                    state === "loading"    ? "🔄 정보 확인 중..."
+                    : state === "approved"   ? "상품별 재고 현황 조회"
+                    : state === "requested"  ? "🔒 공급사 승인 요청 처리 중"
+                    : state === "rejected"   ? "🚫 승인 거절 · 공급사 정보 확인 후 재요청"
+                    :                          "🔒 공급사 정보 입력 후 승인 요청 필요";
+                  const disabled = isVendor && state !== "approved";
                   return (
                     <MenuCard
                       color={disabled ? "zinc" : "amber"}
@@ -665,6 +672,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       description={label}
                       disabled={disabled}
                       onClick={() => {
+                        if (disabled) { handleVendorApprovalBlocked(); return; }
                         // 2026-09-04 · #23 · 모달 → 전용 페이지 (VendorStockPage) 이관
                         if (isVendor && vendorSelf) { onNavigate("vendor-stock", authSession!); return; }
                         if (isSuperAdminLevel9) {
@@ -679,14 +687,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     · vendor 조회 전용 · 자기 회사 발주만 · 매입확인 없음 · PDF 다운
                     · 승인 상태 gate · vendor-stock 과 동일 (승인 후만 활성) */}
                 {(isVendor || isSuperAdminLevel9) && (() => {
-                  const vendorApproved = isVendor && vendorSelf && (vendorSelf as any).approval_status === "approved";
-                  const approvalStatus = isVendor ? ((vendorSelf as any)?.approval_status ?? "pending") : "approved";
-                  const disabled = isVendor && !vendorApproved;
+                  const state = isVendor ? vendorApprovalState : "approved";
                   const label =
-                    approvalStatus === "approved" ? "자기 회사에 온 발주내역 조회"
-                    : approvalStatus === "pending"  ? "🔒 관리자 승인 대기 중 · 승인 후 사용 가능"
-                    : approvalStatus === "rejected" ? "🚫 승인 거절 · 관리자 문의"
-                    : "🔒 공급사 정보 등록 후 · 승인 요청 필요";
+                    state === "loading"    ? "🔄 정보 확인 중..."
+                    : state === "approved"   ? "자기 회사에 온 발주내역 조회"
+                    : state === "requested"  ? "🔒 공급사 승인 요청 처리 중"
+                    : state === "rejected"   ? "🚫 승인 거절 · 공급사 정보 확인 후 재요청"
+                    :                          "🔒 공급사 정보 입력 후 승인 요청 필요";
+                  const disabled = isVendor && state !== "approved";
                   return (
                     <MenuCard
                       color={disabled ? "zinc" : "coral"}
@@ -695,6 +703,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       description={label}
                       disabled={disabled}
                       onClick={() => {
+                        if (disabled) { handleVendorApprovalBlocked(); return; }
                         if (isVendor && vendorSelf) { onNavigate("vendor-order-history", authSession!); return; }
                         if (isSuperAdminLevel9) {
                           // admin/manager 는 매장 > 발주 페이지로 (관리자용 이력)

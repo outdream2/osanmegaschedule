@@ -25,6 +25,8 @@ import { type ProductInfo } from "../../lib/productsCache";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import type { AuthSession } from "../../types";
+// 2026-10-06 · 공급사 승인 접근 fix · URL 직접 접근 차단 · vendor session + approval_status 체크
+import { VendorApprovalGuard } from "./VendorApprovalGuard";
 
 // ─── 타입 ──────────────────────────────────────────────────────────────
 // 2026-09-24 · 사용자 지시 · min_stock 유령 필드 제거 (DB 미존재)
@@ -469,6 +471,15 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
   );
 
   return (
+    // 2026-10-06 · 공급사 승인 접근 fix · URL 직접 접근 차단
+    //   · vendor session + approval_status === "approved" 만 통과 · 미승인 → 안내 화면
+    <VendorApprovalGuard
+      authSession={authSession}
+      activePage="vendor-stock"
+      onBack={onBack}
+      onNavigate={onNavigate}
+      onLogout={onLogout}
+    >
     <div className="min-h-screen flex flex-col bg-zinc-50">
       <AppNavHeader
         activePage="vendor-stock"
@@ -512,6 +523,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
         </div>
       )}
     </div>
+    </VendorApprovalGuard>
   );
 };
 
