@@ -336,7 +336,19 @@ export const VendorDetailModal: React.FC<{
           {/* 2026-08-10 · 사용자 요청 · 분류 위 · 공급사명 아래 · 옆에 사업자·담당·전화 (PC 한줄 · 모바일 2줄) */}
           <div className="min-w-0 flex-1">
             {/* 분류 · 위쪽 별도 라인 */}
-            <div className="mb-1"><VendorCategoryBadge category={vendor.category} /></div>
+            {/* 2026-10-06 · PHASE 8 · 관리자 전용 · ERP ct_code read-only 1 field 노출 (사용자 지시) */}
+            <div className="mb-1 flex items-center gap-2 flex-wrap">
+              <VendorCategoryBadge category={vendor.category} />
+              {!isVendorLogin && (vendor as any).ct_code && (
+                <span
+                  className="inline-flex items-center gap-1 h-[22px] px-2 rounded-md bg-zinc-100 border border-zinc-200 text-[12px] font-mono text-zinc-600 select-all"
+                  title="ERP CtCode · canonical identity (read-only)"
+                >
+                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">ERP</span>
+                  <span className="font-semibold text-zinc-700">{(vendor as any).ct_code}</span>
+                </span>
+              )}
+            </div>
             {/* 공급사명 + 사업자·담당·전화 · PC 한줄 · 모바일 wrap */}
             <div className="flex items-baseline gap-x-4 gap-y-1 flex-wrap text-[17px]">
               <div className="text-[20px] font-bold text-zinc-900 leading-tight break-words shrink-0">{displayVendorName(vendor.company_name) || vendor.company_name}</div>

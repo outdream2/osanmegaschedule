@@ -23,6 +23,9 @@ export interface Vendor {
   special_notes?: string | null;     // 발주 특이사항 (경고 배너 노출)
   // 2026-08-23 · #192 · 승인 flow
   approval_status?: "pending" | "approved" | "rejected" | null;
+  // 2026-10-06 · PHASE 8 · ERP canonical identity · 관리자 UI read-only 노출용 (사용자 지시)
+  //   · 서버 응답 (ERP Stage A dual-field 전환 중) · optional · null 가능
+  ct_code?: string | null;
   created_at?: string | null;
   latestBalance?: { balance: number; invoice_date: string | null; created_at: string } | null;
   balanceConfig?: { balance_field: string; updated_at: string } | null;
