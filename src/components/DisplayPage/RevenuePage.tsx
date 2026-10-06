@@ -10,7 +10,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { Modal } from "../common/Modal";
 import { CalendarDays } from "lucide-react";
-import { LineChart, Line, Bar, ComposedChart, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from "recharts";
+import { LineChart, Line, Bar, ComposedChart, XAxis, YAxis, Tooltip, Legend, CartesianGrid, Brush, ResponsiveContainer } from "recharts";
 import { shortDateWithDow } from "../../lib/dateFormat";
 
 type RevenueTab = "hourly" | "monthly";
@@ -552,32 +552,10 @@ const HourlyReportTab: React.FC = () => {
               <div className="text-[15px] md:text-[16px] font-bold text-zinc-800">시간대별 추이</div>
               <span className="text-[12px] text-zinc-500">{effDateData.length}일</span>
             </div>
-            <div className="w-full" style={{ height: 320 }}>
+            <div className="w-full min-w-0 max-w-full overflow-hidden" style={{ height: 360 }}>
               {(() => {
                 const chartData = buildSeriesData(chartMetric);
-                // 2026-10-06 · 사용자 지시 · outlier 로 축 왜곡 방지 · percentile (5~95) domain 자동 산출
-                //   · allowDataOverflow · outlier 는 축 밖으로 clip · 전체 데이터 변화 극명
-                const allValues: number[] = [];
-                for (const pt of chartData) {
-                  for (const [k, v] of Object.entries(pt)) {
-                    if (k === "time") continue;
-                    const n = typeof v === "number" ? v : Number(v);
-                    if (Number.isFinite(n)) allValues.push(n);
-                  }
-                }
-                let yDomain: [number | string, number | string] = ["auto", "auto"];
-                if (allValues.length >= 4) {
-                  const sorted = [...allValues].sort((a, b) => a - b);
-                  const p5 = sorted[Math.max(0, Math.floor(sorted.length * 0.05))];
-                  const p95 = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))];
-                  const range = p95 - p5;
-                  const buffer = range > 0 ? range * 0.1 : Math.max(1, Math.abs(p95) * 0.05);
-                  const yMin = Math.max(chartMetric === "margin-rate" ? -100 : 0, p5 - buffer);
-                  const yMax = p95 + buffer;
-                  if (Number.isFinite(yMin) && Number.isFinite(yMax) && yMax > yMin) {
-                    yDomain = [Math.floor(yMin), Math.ceil(yMax)];
-                  }
-                }
+                // 2026-10-06 · 사용자 지시 · percentile 축 자르기 취소 · domain=auto · Brush 로 range 선택
                 const yFormatter = chartMetric === "margin-rate"
                   ? (v: number) => `${Number(v).toFixed(0)}%`
                   : chartMetric === "customers"
@@ -599,14 +577,12 @@ const HourlyReportTab: React.FC = () => {
                     <LineChart data={chartData} margin={{ top: 10, right: 15, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
                       <XAxis dataKey="time" tick={{ fontSize: 12, fill: "#52525b" }} tickFormatter={(v) => `${v}시`} interval={0} />
-                      {/* 2026-10-06 · 사용자 지시 · outlier 축 왜곡 방지 · percentile domain · 전체 변화 극명
-                          · allowDataOverflow=true · outlier 는 축 밖으로 clip */}
+                      {/* 2026-10-06 · 사용자 지시 · domain=auto · Brush 로 X range 선택 시 Y 자동 재계산 */}
                       <YAxis
                         tick={{ fontSize: 11, fill: "#52525b" }}
                         tickFormatter={(v) => yFormatter(Number(v))}
                         width={60}
-                        domain={yDomain}
-                        allowDataOverflow={true}
+                        domain={["auto", "auto"]}
                         allowDecimals={false}
                       />
                       <Tooltip
@@ -653,6 +629,10 @@ const HourlyReportTab: React.FC = () => {
                           activeDot={{ r: 5 }} connectNulls={false}
                         />
                       )}
+                      {/* 2026-10-06 · 사용자 지시 · 가로축 range 이동 가능 · Brush
+                          · Brush 범위에 따라 X scope + Y scale 자동 재계산 */}
+                      <Brush dataKey="time" height={22} stroke="#8884d8" travellerWidth={8}
+                        tickFormatter={(v) => `${v}시`} />
                     </LineChart>
                   </ResponsiveContainer>
                 );
