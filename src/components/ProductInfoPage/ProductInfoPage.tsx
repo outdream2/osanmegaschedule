@@ -9,6 +9,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { devLog, devWarn } from "../../lib/devLog";
+import { formatDisplayLocation } from "../../lib/formatDisplayLocation";
 import {
   Package, PencilSimple, FloppyDisk, X, ArrowSquareOut,
 } from "@phosphor-icons/react";
@@ -364,13 +365,14 @@ export const ProductDetailView: React.FC<DetailProps> = ({ product, loading, err
         </div>
       </div>
 
-      {/* ══════════════ 본문 · 상품정보 우선 · 클린 텍스트 리스트 (Shopify/Notion 톤) ══════════════ */}
-      {/* 사용자 지시 · 재고보다 가격·공급사 우선 · 텍스트 형식으로 한눈에 · 라벨 +3 크게 */}
-      <div className="px-6 py-5 space-y-5">
+      {/* ══════════════ 본문 · 2026-10-06 · 사용자 지시 · 진열위치 최상단 필수 정보 ══════════════ */}
+      {/* flex order 로 섹션 재배치 · 진열위치(1) → 가격(2) → 공급사(3) → 재고(4) */}
+      <div className="px-6 py-5 flex flex-col gap-5">
 
-        {/* ─── SECTION 1 · 가격 정보 · 2026-09-20 · 배지 → 텍스트 라벨 (Linear/Notion 톤) ─── */}
-        <section className="space-y-0">
-          <h3 className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 uppercase tracking-wider pb-2 border-b border-zinc-100">
+        {/* ─── SECTION 1 · 가격 정보 · 2026-10-06 · 컬러 포인트 (rose · 돈 관련) ─── */}
+        <section className="space-y-0 order-2">
+          <h3 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider pb-2 border-b-2 border-rose-200/60 text-rose-700">
+            <span className="w-1 h-4 rounded-full bg-gradient-to-b from-rose-500 to-rose-400" aria-hidden />
             가격 정보
           </h3>
           <div className="grid grid-cols-2 gap-x-4">
@@ -399,9 +401,10 @@ export const ProductDetailView: React.FC<DetailProps> = ({ product, loading, err
           </div>
         </section>
 
-        {/* ─── SECTION 2 · 공급사·기본 정보 · 2026-09-20 · 텍스트 라벨 ─── */}
-        <section className="space-y-0">
-          <h3 className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 uppercase tracking-wider pb-2 border-b border-zinc-100">
+        {/* ─── SECTION 2 · 공급사·기본 정보 · 2026-10-06 · 컬러 포인트 (emerald · 공급 관련) ─── */}
+        <section className="space-y-0 order-3">
+          <h3 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider pb-2 border-b-2 border-emerald-200/60 text-emerald-700">
+            <span className="w-1 h-4 rounded-full bg-gradient-to-b from-emerald-500 to-emerald-400" aria-hidden />
             공급사 · 기본 정보
           </h3>
           <div className="space-y-0">
@@ -462,9 +465,10 @@ export const ProductDetailView: React.FC<DetailProps> = ({ product, loading, err
           </div>
         </section>
 
-        {/* ─── SECTION 3 · 재고 · 2026-09-20 · 텍스트 라벨 ─── */}
-        <section className="space-y-0">
-          <h3 className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 uppercase tracking-wider pb-2 border-b border-zinc-100">
+        {/* ─── SECTION 3 · 재고 · 2026-10-06 · 컬러 포인트 (amber · 수량 관련) ─── */}
+        <section className="space-y-0 order-4">
+          <h3 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider pb-2 border-b-2 border-amber-200/60 text-amber-700">
+            <span className="w-1 h-4 rounded-full bg-gradient-to-b from-amber-500 to-amber-400" aria-hidden />
             재고
           </h3>
           <div className="grid grid-cols-2 gap-x-4">
@@ -502,9 +506,10 @@ export const ProductDetailView: React.FC<DetailProps> = ({ product, loading, err
           </div>
         </section>
 
-        {/* ─── SECTION 4 · 진열위치 · 2026-09-20 · 텍스트 라벨 · 색상 계층으로 창고/매장 구분 ─── */}
-        <section className="space-y-0">
-          <h3 className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 uppercase tracking-wider pb-2 border-b border-zinc-100">
+        {/* ─── SECTION 4 · 진열위치 · 2026-10-06 · 사용자 지시 · 필수정보 → order-1 최상단 ─── */}
+        <section className="space-y-0 order-1 rounded-xl bg-violet-50/40 ring-1 ring-violet-200/50 p-3 -mx-3">
+          <h3 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider pb-2 border-b-2 border-violet-300/70 text-violet-700">
+            <span className="w-1 h-4 rounded-full bg-gradient-to-b from-violet-500 to-violet-400" aria-hidden />
             진열위치
           </h3>
           {editing ? (
@@ -573,12 +578,12 @@ export const ProductDetailView: React.FC<DetailProps> = ({ product, loading, err
 
               return (
                 <div className="space-y-0">
-                  {/* 구역 · 텍스트 라벨 */}
+                  {/* 구역 · 2026-10-06 · formatDisplayLocation 공용 포매터 적용 (예 "6A 1열 벽22") */}
                   {hasLocation && (
                     <div className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
                       <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">구역</span>
                       <span className="text-[18px] font-extrabold text-ink tabular-nums tracking-tight leading-tight mt-0.5">
-                        {String(p.location)}
+                        {formatDisplayLocation(p.location) || String(p.location)}
                       </span>
                     </div>
                   )}
@@ -1017,7 +1022,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           left={
             <SplitListPanel
               topAccent
-              title="상품정보"
+              title="목록"
               count={filtered.length}
               loading={listLoading}
               empty={!listLoading && filtered.length === 0}

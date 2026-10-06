@@ -507,6 +507,44 @@ export const ProductCreateModal: React.FC<Props> = ({
                     />
                   </Field>
                 </div>
+                {/* 행 1.5 · 진열구역 + 상세구역 · 2026-10-06 · 사용자 지시 · 필수정보로 이동 */}
+                <div className="relative min-w-0 mt-4">
+                  <Field icon={<MapPin size={14} />} required label={
+                    <span className="flex items-center gap-2">
+                      진열구역
+                      {warehouseTag && (
+                        <span className={`text-[13px] font-bold px-1.5 py-0.5 rounded-md border tracking-tight ${warehouseTag.cls}`}>
+                          → {warehouseTag.label}
+                        </span>
+                      )}
+                    </span>
+                  }>
+                    <ZoneCategoryPicker
+                      value={form.location}
+                      onChange={(loc) => {
+                        set("location", loc ?? "");
+                        setForm(prev => ({
+                          ...prev,
+                          location: loc ?? "",
+                          shelf_positions: { ...EMPTY_SHELF },
+                        }));
+                      }}
+                    />
+                  </Field>
+                </div>
+                {form.location.trim() && (
+                  <ShelfPositionPicker
+                    value={form.shelf_positions}
+                    onChange={(next) =>
+                      setForm(prev => ({
+                        ...prev,
+                        shelf_positions: { ...prev.shelf_positions, ...next },
+                      }))
+                    }
+                    productLocation={form.location.trim()}
+                    productCode={isEdit ? form.product_code : undefined}
+                  />
+                )}
                 {/* 행 2 · 공급사 + 판매 상태 · 2026-09-20 · 사용자 지시 · 나란히 (2-col) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div ref={supplierWrapRef} className="relative min-w-0">
@@ -588,49 +626,10 @@ export const ProductCreateModal: React.FC<Props> = ({
                 </div>
               </Section>
 
-              {/* 2026-09-20 · 사용자 지시 · 분류·기타 재구성 · 진열구역(맨위) → 규격·단위 → 브랜드·제조사 → 메모 */}
+              {/* 2026-10-06 · 사용자 지시 · 진열구역은 필수정보로 이동 · 분류·기타는 규격/브랜드/메모만 */}
               <Section title="분류 · 기타">
-                {/* 1. 진열구역 + 상세구역 · 맨 위 · full-width */}
-                <div className="relative min-w-0">
-                  <Field icon={<MapPin size={14} />} label={
-                    <span className="flex items-center gap-2">
-                      진열구역
-                      {warehouseTag && (
-                        <span className={`text-[13px] font-bold px-1.5 py-0.5 rounded-md border tracking-tight ${warehouseTag.cls}`}>
-                          → {warehouseTag.label}
-                        </span>
-                      )}
-                    </span>
-                  }>
-                    <ZoneCategoryPicker
-                      value={form.location}
-                      onChange={(loc) => {
-                        set("location", loc ?? "");
-                        // 진열위치 변경 시 상세구역 초기화 (이전 값 버림)
-                        setForm(prev => ({
-                          ...prev,
-                          location: loc ?? "",
-                          shelf_positions: { ...EMPTY_SHELF },
-                        }));
-                      }}
-                    />
-                  </Field>
-                </div>
-                {form.location.trim() && (
-                  <ShelfPositionPicker
-                    value={form.shelf_positions}
-                    onChange={(next) =>
-                      setForm(prev => ({
-                        ...prev,
-                        shelf_positions: { ...prev.shelf_positions, ...next },
-                      }))
-                    }
-                    productLocation={form.location.trim()}
-                    productCode={isEdit ? form.product_code : undefined}
-                  />
-                )}
-                {/* 2. 규격 + 단위 · 나란히 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {/* 규격 + 단위 · 나란히 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Field icon={<Ruler size={14} />} label="규격">
                     <input type="text" {...KO_INPUT_PROPS} value={form.spec} onChange={(e) => set("spec", e.target.value)} className={inputCls} placeholder="예: 10정" maxLength={100} />
                   </Field>

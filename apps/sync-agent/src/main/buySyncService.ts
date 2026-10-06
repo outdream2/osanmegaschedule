@@ -124,6 +124,13 @@ async function fetchDbByIdentity(
   // 2026-10-04 fix · Supabase 기본 limit=1000 · chunk 안 매칭 row 수가 1000 초과시
   //   앞 1000 만 반환 → 미매칭 row 가 NEW 로 오분류 됨
   //   → range pagination 로 chunk 안 전체 가져오기
+  // 2026-10-06 fix · ORDER BY 추가 · range offset pagination 결정론 보장
+  //   ROOT CAUSE: ORDER BY 없는 Postgres offset pagination 은 순서 비결정적 →
+  //     1차/2차 range 가 같은 row 를 중복 반환하고 다른 row 를 누락 →
+  //     누락 row 가 "DB 에 없다" 오분류 → NEW 로 INSERT 시도 →
+  //     unique constraint "idx_purchase_details_bm_rownum" violation → 1071 failed
+  //   큰 bm_code (예: 12260928000009 · row_num 619+) 가 slice 안에 있을 때 발동.
+  //   (bm_code, row_num) 은 unique index 이므로 결정론적 정렬 보장.
   for (const slice of chunk(bmCodes, 200)) {
     let from = 0;
     while (true) {
@@ -131,6 +138,8 @@ async function fetchDbByIdentity(
         .from("purchase_details")
         .select(DB_SELECT_COLS)
         .in("bm_code", slice)
+        .order("bm_code", { ascending: true })
+        .order("row_num", { ascending: true })
         .range(from, from + 999);
       if (error) throw new Error(`purchase_details fetch 실패 · ${error.message}`);
       if (!data || data.length === 0) break;
@@ -488,6 +497,13 @@ export async function applyBuySync(
       readbackMismatch,
       erpCacheFetchedAt: null,
       erpCacheRowCount: diff.stats.erpTotal,
+      // 2026-10-06 · 사용자 승인 · 실패 디버깅용 샘플 저장 (최대 20건)
+      errors: errors.length > 0
+        ? errors.slice(0, 20).map((e) => ({
+            identity: `${e.identity.bm_code}#${e.identity.row_num}`,
+            message: e.message,
+          }))
+        : undefined,
     });
   } catch (err) {
     console.warn(`[buySyncService] 이력 기록 실패 · ${(err as Error).message}`);
