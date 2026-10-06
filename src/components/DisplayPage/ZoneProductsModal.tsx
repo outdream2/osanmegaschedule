@@ -20,16 +20,15 @@ export interface ZoneProductsModalState {
   category: string;
 }
 
-type SortKey = "name" | "spec" | "current_stock" | "warehouse_stock" | "store_stock" | "real_total" | "loss" | "optimal_stock" | "status" | "mismatch";
+// 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · "mismatch" sort key / filter prop 삭제
+type SortKey = "name" | "spec" | "current_stock" | "warehouse_stock" | "store_stock" | "real_total" | "loss" | "optimal_stock" | "status";
 
 interface ZoneProductsModalProps {
   modal: ZoneProductsModalState;
   productsMap: Record<string, ProductInfo>;
-  filter: "all" | "mismatch";
   search: string;
   sort: { key: SortKey; dir: "asc" | "desc" };
   onClose: () => void;
-  onSetFilter: (f: "all" | "mismatch") => void;
   onSetSearch: (s: string) => void;
   onSetSort: (s: { key: SortKey; dir: "asc" | "desc" }) => void;
   onProductClick: (p: ProductInfo) => void;
@@ -38,11 +37,9 @@ interface ZoneProductsModalProps {
 export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
   modal,
   productsMap,
-  filter,
   search,
   sort,
   onClose,
-  onSetFilter,
   onSetSearch,
   onSetSort,
   onProductClick,
@@ -76,14 +73,10 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
     matchesZone(p.spec) || matchesZone(resolveProductLocation(p))
   );
 
+  // 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · 전산/실제 비교 filter 삭제 · 검색만 유지
   const q = search.trim().toLowerCase();
   const filteredRaw = matched.filter((p: ProductInfo) => {
     if (q && !(String(p.name ?? "").toLowerCase().includes(q))) return false;
-    if (filter === "mismatch") {
-      const specStr = String(p.spec ?? "").trim();
-      const realStr = String(resolveProductLocation(p) ?? "").trim();
-      if (specStr === realStr) return false;
-    }
     return true;
   });
 
@@ -135,11 +128,7 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
         return dir * cmpNum(Number.isFinite(aS) ? aS : -Infinity, Number.isFinite(bS) ? bS : -Infinity);
       }
       case "status": return dir * cmpNum(statusRank(a), statusRank(b));
-      case "mismatch": {
-        const aMis = (String(a.spec ?? "").trim() !== String(resolveProductLocation(a) ?? "").trim()) ? 1 : 0;
-        const bMis = (String(b.spec ?? "").trim() !== String(resolveProductLocation(b) ?? "").trim()) ? 1 : 0;
-        return dir * cmpNum(aMis, bMis);
-      }
+      // 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · "mismatch" sort case 삭제
       default: return 0;
     }
   });
@@ -176,13 +165,10 @@ export const ZoneProductsModal: React.FC<ZoneProductsModalProps> = ({
       }
     >
       {/* Filters · 폰트 +2 · rounded-lg 프레임워크 톤 */}
+      {/* 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · "불일치" 필터 chip 삭제 · 검색만 유지 */}
       <div className="-mx-5 px-5 py-3 bg-zinc-50/60 border-b border-line flex items-center gap-2 flex-wrap mb-3">
         <input type="text" {...KO_INPUT_PROPS} value={search} onChange={e => onSetSearch(e.target.value)} placeholder="상품명 검색"
           className="flex-1 min-w-[160px] h-9 text-[14px] border border-line rounded-lg px-3 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition placeholder:text-zinc-400" />
-        <Card padding="none" rounded="lg" className="inline-flex p-0.5">
-          <button onClick={() => onSetFilter("all")}      className={`h-8 px-3 text-[15px] font-bold rounded-md cursor-pointer transition ${filter === "all" ? "bg-brand-deep text-white shadow-sm" : "text-ink-soft hover:text-brand-deep"}`}>전체</button>
-          <button onClick={() => onSetFilter("mismatch")} className={`h-8 px-3 text-[15px] font-bold rounded-md cursor-pointer transition ${filter === "mismatch" ? "bg-rose-500 text-white shadow-sm" : "text-rose-500 hover:bg-rose-50"}`}>불일치</button>
-        </Card>
         <span className="text-[15px] font-bold text-ink-soft ml-auto tabular-nums">{filtered.length}<span className="text-zinc-400 font-medium">/{matched.length}건</span></span>
       </div>
       {/* List */}

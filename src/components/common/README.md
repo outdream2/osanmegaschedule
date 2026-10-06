@@ -785,7 +785,7 @@ import { useApprovalRefreshListener } from "@/lib/approvalEvents";
 useApprovalRefreshListener(reloadCounts);
 ```
 
-**Scope**: `leave · display · order · return · lunch · mismatch · notification · all`
+**Scope**: `leave · display · order · return · lunch · notification · all`
 
 ---
 

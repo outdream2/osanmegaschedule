@@ -37,7 +37,7 @@ const READ_ENDPOINTS = [
   ["/api/inventory-latest?limit=10", "실재고 최근"],
   ["/api/zone-defs", "매장구역"],
   ["/api/zone-labels", "구역라벨"],
-  ["/api/zone-mismatches", "구역불일치"],
+  // 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · /api/zone-mismatches 엔드포인트 삭제
   ["/api/zone-day/2026-09-01", "일별구역"],
   ["/api/leave-requests?scope=all", "연차"],
   ["/api/lunch-requests?date=2026-09-03", "점심"],

@@ -68,8 +68,7 @@ import { VendorManageSplit } from "./VendorManageSplit";
 // 2026-10-05 · 매출 (ERP Sales_Days_TimeReport 기반 · 시간대/월별 탭)
 const RevenuePage = React.lazy(() => import("./RevenuePage").then((m) => ({ default: m.RevenuePage })));
 import { useDisplayData } from "./useDisplayData";
-// 2026-08-25 · 사용자 지시 · 매장구역 안 배치구역 불일치 탭
-// 2026-09-24 · #333 · 사용자 지시 · MismatchPage 완전 제거 · 파일 삭제 (`6dbd4334` 후속)
+// 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거
 // 2026-08-26 · 사용자 지시 · 실재고 테이블 페이지 · 창고2 옆 신규 탭
 import { RealStockTablePage } from "./RealStockTablePage";
 // 2026-08-26 · 사용자 지시 · 매장구역도 편집 · 신규 탭 · KV DB 저장
@@ -174,11 +173,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   }, [activeNav?.itemKey, activeNav?.subTab]);
 
   // 2026-08-30 · 사용자 지시 · 접기/펼치기 제거 · 그냥 보이게 (mapCollapsed prop 유지 안 함)
-  // 2026-08-25 · 사용자 지시 · 매장구역 subtab 안 · 매장구역도 vs 배치구역 불일치 탭
   // 2026-09-20 · #325 · 창고1·창고2 → 매장구역도 안 서브탭으로 nesting
-  // 2026-09-24 · #333 · 사용자 지시 · 'mismatch' key 제거
+  // 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · dpStoreInnerTab 세션 cleanup 유지 (legacy flag 흡수)
   const [storeInnerTab, setStoreInnerTab] = useState<"map" | "stockTable" | "zoneEdit">(() => {
-    // 2026-09-24 · #333 · mismatch 세션 stash · 흡수 후 map 으로 fallback
     try { sessionStorage.removeItem("dpStoreInnerTab"); } catch { /* SSR */ }
     return "map";
   });
@@ -237,8 +234,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const [productInfoModal, setProductInfoModal] = useState<ProductInfo | null>(null);
   const [zoneProductsModal, setZoneProductsModal] = useState<ZoneProductsModalState | null>(null);
   const [fullMapOpen, setFullMapOpen] = useState(false);
-  const [zoneProductsFilter, setZoneProductsFilter] = useState<"all" | "mismatch">("all");
-  const [zoneProductsSort, setZoneProductsSort] = useState<{ key: "name" | "spec" | "current_stock" | "warehouse_stock" | "store_stock" | "real_total" | "loss" | "optimal_stock" | "status" | "mismatch"; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
+  // 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · zoneProductsFilter state 삭제 · sort "mismatch" key 삭제
+  const [zoneProductsSort, setZoneProductsSort] = useState<{ key: "name" | "spec" | "current_stock" | "warehouse_stock" | "store_stock" | "real_total" | "loss" | "optimal_stock" | "status"; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
   const [zoneProductsSearch, setZoneProductsSearch] = useState("");
   const [reqFilter, setReqFilter] = useState<"all" | "pending" | "done">("all");
   const [zoneConfigOpen, setZoneConfigOpen] = useState(false);
@@ -524,7 +521,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   };
 
   const openZoneProducts = (args: { zoneId: string; zoneNum: number; zoneLabel: string; category: string }) => {
-    setZoneProductsModal(args); setZoneProductsFilter("all"); setZoneProductsSearch("");
+    setZoneProductsModal(args); setZoneProductsSearch("");
   };
 
   // ── Render helpers ──────────────────────────────────────────────────────────
@@ -647,7 +644,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           <div className="bg-white rounded-xl border border-line overflow-hidden">
             {/* 2026-09-03 · #64 · 진열요청목록 서브탭 삭제 · 상품 스캔 시 진열요청 (RequestsPage 통합) */}
             {/* 2026-09-20 · #325 · 창고1·창고2 → 매장구역도 내부 서브탭으로 nesting */}
-            {/* 2026-09-24 · #333 · 사용자 지시 · 구역불일치 페이지 완전 제거 · '배치구역 불일치' 탭 삭제 */}
+            {/* 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · 관련 탭 영구 삭제 */}
             <SplitRightTabs
               tabs={[
                 { key: "map",        label: "매장구역도" },
@@ -763,8 +760,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         handleSave={handleSave} setScannerMode={setScannerMode} toggleZoneDow={toggleZoneDow}
         activeStaffInfo={activeStaffInfo} zones={zones} setZones={setZones}
         zoneProductsModal={zoneProductsModal} productsMap={productsMap}
-        zoneProductsFilter={zoneProductsFilter} zoneProductsSearch={zoneProductsSearch} zoneProductsSort={zoneProductsSort}
-        setZoneProductsModal={setZoneProductsModal} setZoneProductsFilter={setZoneProductsFilter}
+        zoneProductsSearch={zoneProductsSearch} zoneProductsSort={zoneProductsSort}
+        setZoneProductsModal={setZoneProductsModal}
         setZoneProductsSearch={setZoneProductsSearch} setZoneProductsSort={setZoneProductsSort}
         productInfoModal={productInfoModal} setProductInfoModal={setProductInfoModal} setProductsMap={setProductsMap}
       />

@@ -34,7 +34,7 @@ import holidaysRouter    from "./server/routes/settings/holidays";
 import eventCategoryRulesRouter from "./server/routes/settings/eventCategoryRules";
 import productsRouter, { stockCheckPublicRouter } from "./server/routes/stock/products";
 import requestsRouter    from "./server/routes/display/requests";
-import mismatchesRouter  from "./server/routes/display/mismatches";
+// 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · mismatchesRouter import 삭제
 import authRouter        from "./server/routes/auth/auth";
 import notificationsRouter from "./server/routes/board/notifications";
 // 2026-08-16 · 프레임워크 · 클라이언트 에러 수집 (audit 통합)
@@ -318,7 +318,7 @@ async function startServer() {
   // 기타 (로그인 사용자 대상)
   app.use(productsRouter);
   app.use(requestsRouter);
-  app.use(mismatchesRouter);
+  // 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · mismatchesRouter 마운트 삭제
   app.use(leaveRouter);
   app.use(lunchRouter);
   app.use(reservationsRouter);

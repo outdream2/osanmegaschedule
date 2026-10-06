@@ -53,14 +53,12 @@ interface DisplayModalsProps {
   zones: DisplayZone[];
   setZones: React.Dispatch<React.SetStateAction<DisplayZone[]>>;
 
-  // Zone Products
+  // Zone Products · 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · filter prop 삭제
   zoneProductsModal: ZoneProductsModalState | null;
   productsMap: Record<string, ProductInfo>;
-  zoneProductsFilter: "all" | "mismatch";
   zoneProductsSearch: string;
   zoneProductsSort: { key: any; dir: "asc" | "desc" };
   setZoneProductsModal: (v: ZoneProductsModalState | null) => void;
-  setZoneProductsFilter: (v: "all" | "mismatch") => void;
   setZoneProductsSearch: (v: string) => void;
   setZoneProductsSort: (v: any) => void;
 
@@ -129,12 +127,12 @@ export const DisplayModals: React.FC<DisplayModalsProps> = (p) => (
       />
     )}
 
-    {/* Zone Products Modal */}
+    {/* Zone Products Modal · 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · filter prop 삭제 */}
     {p.zoneProductsModal && (
       <ZoneProductsModal
-        modal={p.zoneProductsModal} productsMap={p.productsMap} filter={p.zoneProductsFilter}
+        modal={p.zoneProductsModal} productsMap={p.productsMap}
         search={p.zoneProductsSearch} sort={p.zoneProductsSort}
-        onClose={() => p.setZoneProductsModal(null)} onSetFilter={p.setZoneProductsFilter}
+        onClose={() => p.setZoneProductsModal(null)}
         onSetSearch={p.setZoneProductsSearch} onSetSort={p.setZoneProductsSort}
         onProductClick={(prod) => { p.setProductInfoModal(prod); p.setZoneProductsModal(null); }}
       />

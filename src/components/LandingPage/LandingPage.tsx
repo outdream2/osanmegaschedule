@@ -109,8 +109,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | "requests" | "ocr" | "upload" | "leave" | null>(null);
   const [leavePendingCount, setLeavePendingCount] = useState(0);
   // 2026-08-21 · #171 Phase 2 · 관리자 오늘 현황 · 모든 알림/요청 노출 · inventory·return·resignation 추가
+  // 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · mismatch 필드 삭제
   const [requestsCounts, setRequestsCounts] = useState({
-    display: 0, order: 0, mismatch: 0, lunch: 0,
+    display: 0, order: 0, lunch: 0,
     inventory: 0, return: 0, resignation: 0,
     // 2026-09-02 · 사용자 지시 · 거래처 승인 요청 · 오늘의 현황 표시
     vendor: 0,
@@ -254,13 +255,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const reloadPendingCounts = React.useCallback(() => {
     if (!isManagerOrAdmin) return;
     // 2026-08-21 · Framework Phase 3 · fetch → apiClient
-    api.get<{ leave?: number; display?: number; order?: number; mismatch?: number; lunch?: number; inventory?: number; return?: number; resignation?: number; vendor?: number }>("/api/requests/pending-counts")
+    // 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · mismatch 응답 필드 삭제
+    api.get<{ leave?: number; display?: number; order?: number; lunch?: number; inventory?: number; return?: number; resignation?: number; vendor?: number }>("/api/requests/pending-counts")
       .then(({ data: d }) => {
         setLeavePendingCount(d?.leave ?? 0);
         setRequestsCounts({
           display: d?.display ?? 0,
           order: d?.order ?? 0,
-          mismatch: d?.mismatch ?? 0,
           lunch: d?.lunch ?? 0,
           inventory: d?.inventory ?? 0,
           return: d?.return ?? 0,
@@ -271,7 +272,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       .catch(() => { });
   }, [isManagerOrAdmin]);
   useEffect(() => { reloadPendingCounts(); }, [reloadPendingCounts]);
-  // 2026-08-18 · 승인 요청/승인/반려/취소 시 즉시 재로드 (leave/display/order/return/lunch/mismatch)
+  // 2026-08-18 · 승인 요청/승인/반려/취소 시 즉시 재로드 (leave/display/order/return/lunch)
   useApprovalRefreshListener(reloadPendingCounts);
 
   // 2026-08-23 · #171 잔여 · 결제요청 (admin only · 미결제·부분결제 매입건 count)
@@ -409,7 +410,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             const pendingParts: string[] = [];
             if (isManagerOrAdmin) {
               if (leavePendingCount > 0) pendingParts.push(`연차 승인 ${leavePendingCount}건`);
-              const displayTotal = requestsCounts.display + requestsCounts.order + requestsCounts.mismatch;
+              // 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · mismatch 합산 삭제
+              const displayTotal = requestsCounts.display + requestsCounts.order;
               if (displayTotal > 0) pendingParts.push(`진열·발주 ${displayTotal}건`);
             }
             const desc = isManagerOrAdmin

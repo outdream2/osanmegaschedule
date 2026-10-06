@@ -16,7 +16,8 @@
 
 import { useEffect } from "react";
 
-export type ApprovalScope = "leave" | "display" | "order" | "return" | "lunch" | "mismatch" | "notification" | "all";
+// 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · "mismatch" scope 삭제
+export type ApprovalScope = "leave" | "display" | "order" | "return" | "lunch" | "notification" | "all";
 
 const EVENT_NAME = "mt-approval-change";
 

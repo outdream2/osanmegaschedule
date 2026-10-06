@@ -46,12 +46,10 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   // 2026-09-01 · fix · Promise.all → Promise.allSettled · 개별 쿼리 실패 · 전체 endpoint 죽지 않게
   //   · Supabase 는 대체로 { data, error } · 하지만 네트워크·서버 예외 시 throw 가능
   //   · allSettled · 각 fulfilled/rejected 개별 처리 · resilient
+  // 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · mismatch placeholder 삭제
   const results = await Promise.allSettled([
     supabase.from("display_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("order_requests").select("id", { count: "exact", head: true }).eq("status", "requested"),
-    // 2026-09-20 · 구역불일치 → 실재고 vs ERP 차이 자동 계산 · pending-counts 는 placeholder 0 반환
-    //   (정확한 카운트는 /api/zone-mismatches 에서 계산 · 여기선 초기 배지용 근사값)
-    Promise.resolve({ data: [], count: 0, error: null, status: 200, statusText: "OK" }),
     supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("lunch_requests").select("id", { count: "exact", head: true }).eq("date", today).eq("eating", false),
     supabase.from("inventory_checks").select("id", { count: "exact", head: true }).eq("status", "pending"),
@@ -66,10 +64,7 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
     logger.warn("[pending-counts] query rejected: " + r.reason);
     return { count: 0, data: [], error: r.reason };
   };
-  const [display, order, _mismatchPlaceholder, leave, lunch, inventory, ret, resignation, vendor] = results.map(unwrap) as any[];
-  // 2026-09-20 · 실재고 vs ERP 차이 자동 계산 · 정확한 카운트는 /api/zone-mismatches 에서 반환
-  //   pending-counts 는 초기 배지용 · 로딩 완료 후 mismatches.length 로 덮어씌워짐
-  const mismatchCount = 0;
+  const [display, order, leave, lunch, inventory, ret, resignation, vendor] = results.map(unwrap) as any[];
   const lunchCount = lunch.count ?? 0;
   const inventoryCount = inventory.count ?? 0;
   const returnCount = ret.error ? 0 : (ret.count ?? 0);
@@ -78,14 +73,13 @@ router.get("/api/requests/pending-counts", asyncHandler(async (_req, res) => {
   res.json({
     display:     display.count ?? 0,
     order:       order.count   ?? 0,
-    mismatch:    mismatchCount,
     leave:       leave.count   ?? 0,
     lunch:       lunchCount,
     inventory:   inventoryCount,
     return:      returnCount,
     resignation: resignationCount,
     vendor:      vendorCount,
-    total: (display.count ?? 0) + (order.count ?? 0) + mismatchCount
+    total: (display.count ?? 0) + (order.count ?? 0)
          + (leave.count ?? 0) + inventoryCount + returnCount + resignationCount + vendorCount,
   });
 }));

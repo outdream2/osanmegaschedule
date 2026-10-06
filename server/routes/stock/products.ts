@@ -4,6 +4,8 @@ import express from "express";
 import XLSX from "xlsx";
 import { supabase } from "../../../src/supabase/client";
 import { getProductMap, getPublicProductMap, resetProductCache } from "../../productCache";
+// 2026-10-05 · PROJECT RULE Section 7·10 · /api/products-map DB 직접 조회 전환 · UI location 변환 유지
+import { formatDisplayLocation } from "../../../src/lib/formatDisplayLocation";
 // 2026-08-23 · 사용자 지시 · 식약처 표준코드 조회 기능 제거 · lookupStandardCode import + 관련 라우터 삭제
 import { COL_KEYS, xlsxToRows, pickBestSheet } from "../../utils/xlsx";
 import { sanitizeOrValue } from "../../utils/sanitize";
@@ -94,17 +96,47 @@ router.get("/api/products/shelf-positions-map", asyncHandler(async (_req, res) =
 
 router.get("/api/products-map", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
-  // 2026-08-26 · 사용자 지시 · 전역 판매중 설정 반영 · getPublicProductMap 사용
-  // 2026-08-27 · 사용자 지시 · 로딩 속도 개선 · ?fields=slim 요청 시 필수 필드만 반환 (~50% 응답 감소)
-  // 2026-08-30 · 사용자 지시 · 관리 페이지 (ProductInfoPage) · 판매중지·숨김 포함 조회
-  //   · ?include_inactive=1 · 판매중지도 포함
-  //   · ?include_hidden=1 · 숨김도 포함
+  // 2026-10-05 · PROJECT RULE Section 2·7·10 · DB 직접 조회 · cache 사용 X
+  //   · "cache 가 상품 목록인 척하지 못하게" · getProductMap/getPublicProductMap 미사용
+  //   · 1 DB row = 1 API item = 1 UI row · canonical product_code only
+  //   · include_inactive · include_hidden · fields=slim 등 기존 query 파라미터 호환
   const includeInactive = req.query.include_inactive === "1" || req.query.include_inactive === "true";
   const includeHidden = req.query.include_hidden === "1" || req.query.include_hidden === "true";
-  const map = (includeInactive || includeHidden)
-    ? await getProductMap()  // 필터 없는 원본 (모든 상품)
-    : await getPublicProductMap();
   const isSlim = String(req.query.fields ?? "") === "slim";
+
+  // 전역 판매중 설정 (include_inactive 안 쓰는 경우만 적용 · 기존 getPublicProductMap 과 동일 규칙)
+  let saleActiveFilter = false;
+  if (!includeInactive) {
+    const { data: setting } = await supabase.from("app_settings").select("value").eq("key", "stats.sale_active_only").maybeSingle();
+    saleActiveFilter = setting?.value !== false; // default true (명시적 false 만 전체)
+  }
+
+  // DB scan · Supabase 1000-row cap 우회 · 매 page 마다 query 신규 build
+  type ProductRow = Record<string, unknown>;
+  const rows: ProductRow[] = [];
+  const PAGE = 1000;
+  let fromRow = 0;
+  while (true) {
+    let q = supabase.from("products").select("*");
+    if (!includeHidden) q = q.eq("hidden", false);
+    if (saleActiveFilter) q = q.eq("sale_status", "판매중");
+    const { data, error } = await q.range(fromRow, fromRow + PAGE - 1);
+    if (error) throw new HttpError(500, error.message);
+    if (!data || data.length === 0) break;
+    rows.push(...(data as ProductRow[]));
+    if (data.length < PAGE) break;
+    fromRow += PAGE;
+  }
+
+  // canonical object · key = products.product_code (DB 값 그대로 · 변형 X · alias X)
+  const map: Record<string, ProductRow> = {};
+  for (const row of rows) {
+    const code = String(row.product_code ?? "").trim();
+    if (!code) continue;
+    const rawLoc = String(row.location ?? row.display_location ?? "").trim();
+    const locationVal = rawLoc ? (formatDisplayLocation(rawLoc) || rawLoc) : null;
+    map[code] = { code, name: row.product_name ?? "", spec: row.spec ?? "", ...row, location: locationVal, display_location: locationVal };
+  }
   // 2026-09-03 · #101 · slim mode · profit_rate · purchase_price · sale_price 추가 통일
   //   · products-search 응답과 필드 정렬 · 페이지별 상품 카드 필수정보 편차 제거
   const payload = isSlim
@@ -825,16 +857,13 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const code = (req.params.code ?? "").trim();
   if (!code) throw badRequest("code required");
-  let { data, error } = await supabase.from("products").select("*").eq("product_code", code).maybeSingle();
+  // 2026-10-05 · PROJECT RULE Section 4·6 · DB exact match only · alias 변형 fallback 금지
+  //   · UI/내부 navigation 은 canonical product_code 만 넘기도록 보장 (RULE 참조)
+  //   · OCR/Scanner 가 alias code 로 입력받은 경우 · lookupProductByAnyCode() 로 canonical 변환 후 전달
+  const { data, error } = await supabase.from("products").select("*").eq("product_code", code).maybeSingle();
   if (error) throw new HttpError(500, error.message);
-  if (!data && /^0+/.test(code)) {
-    const stripped = code.replace(/^0+/, "");
-    const r2 = await supabase.from("products").select("*").eq("product_code", stripped).maybeSingle();
-    if (r2.error) throw new HttpError(500, r2.error.message);
-    data = r2.data;
-  }
   if (!data) throw new HttpError(404, "상품을 찾을 수 없습니다");
-  const productCode = data.product_code ?? code;
+  const productCode = data.product_code; // 반드시 DB canonical
 
   // inventory_checks 병합 (창고1/2 · 매장1/2/3 실재고 · #58 통합 응답)
   let warehouseStock:  number | null = null;   // 창고1 (구 warehouse_stock)
@@ -923,7 +952,7 @@ const ALLOWED_INLINE_EDIT = new Set([
   "memo",
   // 2026-08-25 · products 테이블에 없는 컬럼 · note 제거 (스키마 캐시 에러)
   "hidden",
-  // 2026-08-25 · 배치구역 불일치 · 상품명 인라인 편집 허용
+  // 2026-08-25 · 상품명 인라인 편집 허용 (2026-10-06 · 배치구역 불일치 feature 삭제 · 편집 허용 유지)
   "product_name",
   "category",
   // 2026-08-28 · 사용자 지시 · 진열위치·판매상태 인라인 편집 (13컬럼 통일)
