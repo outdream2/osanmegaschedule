@@ -139,7 +139,18 @@
 | POST | `/api/vendors/:id/approve` | 9 | – | 관리자 승인 |
 | POST | `/api/vendors/:id/reject` | 9 | – | 관리자 반려 |
 
-**로그인 규칙:** ID=담당자 핸드폰(`manager_phone`) · PW=핸드폰+ENV VENDOR_PW_SUFFIX (DB 저장 X · 서버 파생)
+**로그인 규칙 (2026-10-06 업데이트):**
+- ID = 담당자 핸드폰 (`manager_phone` 우선 · `phone` fallback)
+- PW = `vendors.password_hash` (bcrypt · DB 저장)
+- 신규 vendor 생성 (`POST /api/vendors`) 시: 서버가 **임시 비밀번호 16자 (영숫자 · 혼동문자 제외)** 를 생성 → bcrypt hash 로 DB 저장 → 평문은 응답 `temporaryPassword` 로 **1회만** 반환 (관리자가 SMS/문자 전달 책임)
+- 기존 vendor (migration bcrypt('1234')) 는 유지 · bulk reset 금지 (사용자 지시)
+- 관리자 재설정: `POST /api/vendors/:id/set-password` (authorize 9) · 평문 → bcrypt hash
+
+**필드 역할:**
+- `vendors.phone` : (레거시) 대표 전화 · 담당자 핸드폰 fallback
+- `vendors.manager_phone` : 담당자 핸드폰 · 로그인 ID (우선)
+- `vendors.ct_code` : ERP CtCode (canonical identity · read-only · 관리자 UI 노출 · PHASE 8)
+
 **사용처:** `src/apis/vendorApi.ts`, `src/pages/VendorPage.tsx`
 
 ---
