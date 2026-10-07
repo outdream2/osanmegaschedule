@@ -18,20 +18,21 @@ import type { AppNavPage } from "../layout/AppNavHeader";
 // ─────────────────────────────────────────────────────────────
 // Typography scale (STRICT per spec)
 // ─────────────────────────────────────────────────────────────
+// 2026-10-07 · 사용자 지시 · 큰 숫자 축소 + 작은 글씨 bump up (밸런스 완화)
 const T = {
-  eyebrow:      "text-[13px] text-slate-500 font-medium",
-  heroTitle:    "text-[26px] md:text-[28px] font-bold text-ink leading-[1.2] tracking-tight",
-  heroDesc:     "text-[13px] md:text-[14px] text-slate-500",
+  eyebrow:      "text-[13px] md:text-[14px] text-slate-500 font-medium",
+  heroTitle:    "text-[24px] md:text-[26px] font-bold text-ink leading-[1.2] tracking-tight",
+  heroDesc:     "text-[14px] md:text-[15px] text-slate-500",
   sectionTitle: "text-[15px] md:text-[16px] font-semibold text-ink tracking-tight",
-  kpiLabel:     "text-[12px] md:text-[13px] text-slate-500 font-medium",
-  kpiValue:     { fontSize: "clamp(20px, 2.2vw, 24px)" } as React.CSSProperties,
-  salesAmount:  { fontSize: "clamp(22px, 2.4vw, 28px)" } as React.CSSProperties,
-  taskLabel:    "text-[13px] md:text-[14px] text-ink font-medium",
-  taskCount:    "text-[13px] md:text-[14px] font-semibold tabular-nums",
-  tableHeader:  "text-[11px] md:text-[12px] text-slate-500 font-medium",
-  tableBody:    "text-[12px] md:text-[13px] text-ink",
-  qaLabel:      "text-[13px] text-ink font-medium",
-  meta:         "text-[11px] md:text-[12px] text-slate-500",
+  kpiLabel:     "text-[13px] md:text-[14px] text-slate-500 font-medium",
+  kpiValue:     { fontSize: "clamp(18px, 2.0vw, 22px)" } as React.CSSProperties,
+  salesAmount:  { fontSize: "clamp(20px, 2.2vw, 24px)" } as React.CSSProperties,
+  taskLabel:    "text-[14px] md:text-[15px] text-ink font-medium",
+  taskCount:    "text-[14px] md:text-[15px] font-semibold tabular-nums",
+  tableHeader:  "text-[12px] md:text-[13px] text-slate-500 font-medium",
+  tableBody:    "text-[13px] md:text-[14px] text-ink",
+  qaLabel:      "text-[14px] text-ink font-medium",
+  meta:         "text-[12px] md:text-[13px] text-slate-500",
 } as const;
 
 const CARD = "bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]";
@@ -159,43 +160,55 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         <p className={`mt-1 ${T.heroDesc}`}>{greetingDesc}</p>
       </header>
 
-      {/* ═ KPI 4 · height 100-112 · radius 12 · pastel icon · value <=24px ═ */}
+      {/* ═ KPI 2 그룹 · 왼쪽: 오늘의 판매현황 (3-cell 통합) · 오른쪽: 오늘의 승인요청현황 (1-cell) ═ */}
       {isManagerOrAdmin && (
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard
-            icon={<Wallet size={18} className="text-emerald-600" strokeWidth={2.2} />}
-            iconBg="bg-emerald-50"
-            label="오늘 매출"
-            value={todayRows.length === 0 ? "-" : fmtWon(todaySale)}
-            loading={salesLoading && hourlyRows === null}
-            error={!!salesError && hourlyRows === null}
-            onClick={goTo("display", "revenue")}
-          />
-          <KpiCard
-            icon={<Users size={18} className="text-sky-600" strokeWidth={2.2} />}
-            iconBg="bg-sky-50"
-            label="방문객"
-            value={todayRows.length === 0 ? "-" : `${todayCust.toLocaleString("ko-KR")}명`}
-            loading={salesLoading && hourlyRows === null}
-            error={!!salesError && hourlyRows === null}
-            onClick={goTo("display", "revenue")}
-          />
-          <KpiCard
-            icon={<Receipt size={18} className="text-violet-600" strokeWidth={2.2} />}
-            iconBg="bg-violet-50"
-            label="객단가"
-            value={todayCust === 0 ? "-" : fmtWon(avgOrder)}
-            loading={salesLoading && hourlyRows === null}
-            error={!!salesError && hourlyRows === null}
-            onClick={goTo("display", "revenue")}
-          />
-          <KpiCard
-            icon={<ClipboardCheck size={18} className="text-amber-600" strokeWidth={2.2} />}
-            iconBg="bg-amber-50"
-            label="승인 대기"
-            value={`${totalApprovals.toLocaleString("ko-KR")}건`}
-            onClick={() => { setActiveByPage("requests", "leave"); onNavigate("requests", authSession); }}
-          />
+        <section className="grid grid-cols-1 lg:grid-cols-4 gap-3 md:gap-4">
+          {/* 오늘의 판매현황 · 3-cell 통합 카드 · col-span-3 */}
+          <div className="lg:col-span-3">
+            <SectionLabel>오늘의 판매현황</SectionLabel>
+            <div className={`${CARD} grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 overflow-hidden`}>
+              <KpiCell
+                icon={<Wallet size={18} className="text-emerald-600" strokeWidth={2.2} />}
+                iconBg="bg-emerald-50"
+                label="오늘 매출"
+                value={todayRows.length === 0 ? "-" : fmtWon(todaySale)}
+                loading={salesLoading && hourlyRows === null}
+                error={!!salesError && hourlyRows === null}
+                onClick={goTo("display", "revenue")}
+              />
+              <KpiCell
+                icon={<Users size={18} className="text-sky-600" strokeWidth={2.2} />}
+                iconBg="bg-sky-50"
+                label="방문객"
+                value={todayRows.length === 0 ? "-" : `${todayCust.toLocaleString("ko-KR")}명`}
+                loading={salesLoading && hourlyRows === null}
+                error={!!salesError && hourlyRows === null}
+                onClick={goTo("display", "revenue")}
+              />
+              <KpiCell
+                icon={<Receipt size={18} className="text-violet-600" strokeWidth={2.2} />}
+                iconBg="bg-violet-50"
+                label="객단가"
+                value={todayCust === 0 ? "-" : fmtWon(avgOrder)}
+                loading={salesLoading && hourlyRows === null}
+                error={!!salesError && hourlyRows === null}
+                onClick={goTo("display", "revenue")}
+              />
+            </div>
+          </div>
+          {/* 오늘의 승인요청현황 · 1-cell · col-span-1 */}
+          <div className="lg:col-span-1">
+            <SectionLabel>오늘의 승인요청현황</SectionLabel>
+            <div className={CARD + " overflow-hidden"}>
+              <KpiCell
+                icon={<ClipboardCheck size={18} className="text-amber-600" strokeWidth={2.2} />}
+                iconBg="bg-amber-50"
+                label="승인 대기"
+                value={`${totalApprovals.toLocaleString("ko-KR")}건`}
+                onClick={() => { setActiveByPage("requests", "leave"); onNavigate("requests", authSession); }}
+              />
+            </div>
+          </div>
         </section>
       )}
 
@@ -261,9 +274,19 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 };
 
 // ─────────────────────────────────────────────────────────────
-// KpiCard · white card · 1px border · pastel icon · value <=24
+// SectionLabel · accent bar + title (above section)
 // ─────────────────────────────────────────────────────────────
-interface KpiCardProps {
+const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="flex items-center gap-2 mb-2">
+    <span className="w-[3px] h-[14px] bg-slate-400 rounded-full" />
+    <span className="text-[13px] md:text-[14px] font-semibold text-slate-600 tracking-tight">{children}</span>
+  </div>
+);
+
+// ─────────────────────────────────────────────────────────────
+// KpiCell · 통합 card 내부 1 cell (no border · divide-x로 구분)
+// ─────────────────────────────────────────────────────────────
+interface KpiCellProps {
   icon: React.ReactNode;
   iconBg: string;
   label: string;
@@ -273,11 +296,11 @@ interface KpiCardProps {
   onClick: () => void;
 }
 
-const KpiCard: React.FC<KpiCardProps> = ({ icon, iconBg, label, value, loading, error, onClick }) => (
+const KpiCell: React.FC<KpiCellProps> = ({ icon, iconBg, label, value, loading, error, onClick }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`${CARD} text-left cursor-pointer min-w-0 p-4 min-h-[100px] flex items-center gap-3 hover:border-slate-300 transition-colors`}
+    className="text-left cursor-pointer min-w-0 p-4 min-h-[96px] flex items-center gap-3 hover:bg-slate-50/60 transition-colors"
   >
     <span className={`inline-flex items-center justify-center w-10 h-10 rounded-[10px] shrink-0 ${iconBg}`}>{icon}</span>
     <div className="flex flex-col min-w-0 gap-0.5">
