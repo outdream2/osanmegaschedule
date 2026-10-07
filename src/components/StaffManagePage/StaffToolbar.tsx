@@ -1,7 +1,6 @@
 // src/components/StaffManagePage/StaffToolbar.tsx
 // 2026-08-23 · Framework Phase 4 · StaffManagePage 분리 · 상단 필터바
 import React from "react";
-import { CARD_BASE } from "../../styles/tokens";
 import { RefreshCw, Search, UserPlus, Users } from "lucide-react";
 import { StatusPill } from "../common/StatusPill";
 import { InlineLabel } from "../common/InlineLabel";
@@ -39,7 +38,13 @@ export const StaffToolbar: React.FC<StaffToolbarProps> = ({
   onSearchChange, onFilterStatusChange, onFilterPositionChange,
   onRefresh, onCreateOpen, onBackToSchedule,
 }) => (
-  <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2`}>
+  // 2026-10-07 · Global UI Batch 2 (PRESENTATION ONLY) · CARD_BASE 의 shadow-sm 제거 ·
+  //   PageToolbar / TodayRevenueKpiPanel 와 동일 Attio inset light + 2-layer modern shadow 로 톤 통일 ·
+  //   state / handler / 검색 · 상태 · 포지션 · 새로고침 · 신규 · 뒤로 button 모두 unchanged
+  <div
+    className="bg-white rounded-xl border border-line px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2"
+    style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60), 0 1px 2px rgba(10,46,74,0.05), 0 2px 8px -2px rgba(10,46,74,0.06)" }}
+  >
     {/* 페이지 아이콘 + 타이틀 */}
     <div className="flex items-center gap-2">
       <div className="w-7 h-7 rounded-lg bg-brand-deep flex items-center justify-center shadow-sm shrink-0">
