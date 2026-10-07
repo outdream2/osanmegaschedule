@@ -7,9 +7,8 @@ import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { useConfirm } from "../../hooks/useConfirm";
 import { UploadDataModal } from "./UploadDataModal";
 import { LoginModals } from "./LoginModals";
-import { TodayStatusPanel } from "./TodayStatusPanel";
-// 2026-10-05 · 사용자 지시 · 오늘의 현황에 현재매출금액 + 방문자수 추가 · 클릭시 매장>매출 이동
-import { TodayRevenueKpiPanel } from "./TodayRevenueKpiPanel";
+// 2026-10-07 · 2026 Operations Dashboard 리뉴얼 · Hero/TodayStatusPanel/TodayRevenueKpiPanel/MenuCard grid 통합
+import { HomeDashboard } from "./HomeDashboard";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useApprovalRefreshListener } from "../../lib/approvalEvents";
@@ -408,126 +407,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
-          {/* ── Hero · 2026-08-17 · 사용자 지시 · 로그인한 모든 사용자에게 웰컴카드 노출 ── */}
-          {isLoggedIn && authSession && (() => {
-            const now = new Date();
-            const w = ["일","월","화","수","목","금","토"][now.getDay()];
-            const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 ${w}요일`;
-            // 관리자만 · pending 요약 노출 · 직원은 일반 인사말
-            const pendingParts: string[] = [];
-            if (isManagerOrAdmin) {
-              if (leavePendingCount > 0) pendingParts.push(`연차 승인 ${leavePendingCount}건`);
-              // 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거 · mismatch 합산 삭제
-              const displayTotal = requestsCounts.display + requestsCounts.order;
-              if (displayTotal > 0) pendingParts.push(`진열·발주 ${displayTotal}건`);
-            }
-            const desc = isManagerOrAdmin
-              ? (pendingParts.length > 0
-                  ? `오늘 처리할 ${pendingParts.join(", ")}이 있어요.`
-                  : "오늘 대기 중인 승인/요청이 없습니다.")
-              : "오늘도 좋은 하루 되세요.";
-            return (
-              <Hero
-                eyebrow={dateStr}
-                title={<>안녕하세요, {authSession.employeeName}{authSession.employeeRank ? ` ${authSession.employeeRank}` : ""}님 👋</>}
-                description={desc}
-              />
-            );
-          })()}
-
-          {/* ── 오늘의 현황 · TodayStatusPanel.tsx 로 분리 · 2026-08-22 ── */}
-          {authSession && !isVendor && (
-            <TodayStatusPanel
+          {/* ═══ 2026-10-07 · 2026 Operations Dashboard (Phase 2) ═══
+                · Hero + TodayStatusPanel + TodayRevenueKpiPanel + "직원용 바로가기" MenuCard grid 통합
+                · 기존 API 재사용 (중복 fetch 0) · route/permission 유지
+                · Schedule V1 FROZEN */}
+          {isLoggedIn && authSession && !isVendor && (
+            <HomeDashboard
               authSession={authSession}
               leavePendingCount={leavePendingCount}
               requestsCounts={requestsCounts}
-              statusDetailOpen={statusDetailOpen}
-              setStatusDetailOpen={setStatusDetailOpen}
-              onNavigate={onNavigate}
               paymentPendingCount={paymentPendingCount}
               isAdmin={isSuperAdminLevel9}
+              isManagerOrAdmin={isManagerOrAdmin}
+              onNavigate={onNavigate}
+              setActiveByPage={setActiveByPage}
             />
           )}
 
-          {/* 2026-10-05 · 사용자 지시 · 관리자 도구 바로가기 자리에 "오늘 매출현황" (TodayRevenueKpiPanel) 교체 */}
-          {/*   · 현재매출금액 / 방문자수 (ERP Sales_Days_TimeReport 실시간 집계) · 클릭시 매장 > 매출 페이지 */}
-          {isManagerOrAdmin && (
-            <div className="w-full mb-7">
-              <SectionLabel tone="teal">오늘의 판매현황</SectionLabel>
-              <TodayRevenueKpiPanel onOpenRevenue={() => {
-                // 2026-10-05 · 사용자 지시 · 네비게이션 SSOT · setActiveByPage 로 subTab 지정 후 이동
-                setActiveByPage("display", "revenue");
-                onNavigate("display", authSession!);
-              }} />
-            </div>
-          )}
-
-          {/* ── 직원용 · 2026-08-17 · SectionLabel + 반응형 grid ── */}
-          {isLoggedIn && !isVendor && (
-            <div className="w-full mb-7">
-              <SectionLabel tone="sky">직원용 바로가기</SectionLabel>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
-
-                {/* 약사 전용 — sky · level ≥ 3 만 노출 · 2026-08-27 · 메뉴 설정 gate */}
-                {(authSession?.level ?? 0) >= 3 && (
-                  <MenuCard color="teal" icon={FirstAid} title="약사 전용" description="교육자료 · 복약지도 · 참고 문서"
-                    orderClass="order-1" pageKey="pharmacist"
-                    onClick={() => onNavigate("pharmacist", authSession!)} />
-                )}
-
-                {/* 스케줄표 조회 — amber · 2026-08-27 · 메뉴 설정 gate */}
-                <MenuCard color="amber" icon={Calendar} title="스케줄표 조회" description="직원 월간 근무 스케줄 확인 및 관리"
-                  orderClass="order-2" pageKey="schedule"
-                  onClick={() => onNavigate("schedule", authSession!)} />
-
-                {/* 실재고 확인 — red · Scan · 2026-08-27 · 메뉴 설정 gate */}
-                <MenuCard color="amber" icon={Scan} title="실재고 확인" description="바코드 스캔 · 실재고·진열보충 요청"
-                  orderClass="order-3" pageKey="scan"
-                  onClick={() => onNavigate("scan", authSession!)} />
-
-                {/* 상품입고 — red · Package · 2026-08-27 · 메뉴 설정 gate */}
-                <MenuCard color="coral" icon={Package} title="상품입고" description="바코드 스캔으로 입고 상품 등록"
-                  orderClass="order-4" pageKey="productarrival"
-                  onClick={() => onNavigate("productarrival", authSession!)} />
-
-                {/* 연차 신청 — indigo · 사이드바 [승인요청]>[연차신청] 로 연결 (subTab=leave) · 2026-08-27 · 메뉴 설정 gate */}
-                <MenuCard color="sky" icon={CalendarDots} title="연차 신청" description="휴가·연차 신청 및 내역 조회"
-                  orderClass="order-5" pageKey="approval-request"
-                  onClick={() => {
-                    setActiveByPage("approval-request", "leave");
-                    onNavigate("approval-request", authSession!);
-                  }} />
-
-                {/* 점심 불참 — indigo · ForkKnife · 2026-08-27 · 메뉴 설정 gate */}
-                <MenuCard color="amber" icon={ForkKnife} title="점심 불참" description="오늘의 점심 불참 신청"
-                  orderClass="order-6" pageKey="lunch"
-                  onClick={() => onNavigate("lunch", authSession!)} />
-
-                {/* 내 요청목록 · rose · MenuCard 통일 (2026-08-17 · #130 · 무지개 gradient 정리) */}
-                {isEmployee && (
-                  <MenuCard color="rose" icon={Chat} title="내 요청목록"
-                    description={authSession?.employeeName
-                      ? `${authSession.employeeName}${authSession.employeeRank ? " " + authSession.employeeRank : ""} 님 · 배정된 요청 확인`
-                      : "나에게 배정된 진열 보충 요청"}
-                    orderClass="order-1"
-                    onClick={() => onNavigate("requests", authSession!)}
-                    badge={myPendingCount > 0 ? (
-                      <div className="absolute top-2 right-2 z-10">
-                        <span className="min-w-[24px] h-[24px] px-1.5 rounded-full flex items-center justify-center text-[15px] font-bold text-white bg-rose-500 shadow-lg ring-2 ring-white animate-pulse">
-                          {myPendingCount > 99 ? "99+" : myPendingCount}
-                        </span>
-                      </div>
-                    ) : undefined} />
-                )}
-
-                {/* 이슈공유 게시판 (전체 직원) — amber · 2026-08-27 · 메뉴 설정 gate */}
-                <MenuCard color="amber" icon={ChatCircle} title="이슈공유" description="질문·이슈·메모 · 사진 첨부 · 담당자 지정"
-                  orderClass="order-4" pageKey="board"
-                  onClick={() => onNavigate("board" as any, authSession!)} />
-
-              </div>
-            </div>
-          )}
+          {/* ── 2026-10-07 · 직원용 "바로가기" MenuCard grid 제거 (HomeDashboard 로 통합)
+                · 기존 route/permission 모두 HomeDashboard QuickActions + Sidebar 로 접근 가능
+                · 약사 전용/점심 불참/내 요청목록 등 role-specific 는 Sidebar 로 접근 ── */}
 
           {/* ── 비로그인: 인라인 재고검색 + 로그인 버튼 (보조) ── */}
           {!isLoggedIn && (
