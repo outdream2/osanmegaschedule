@@ -19,21 +19,21 @@ import type { AppNavPage } from "../layout/AppNavHeader";
 // Typography scale (STRICT per spec)
 // ─────────────────────────────────────────────────────────────
 // 2026-10-07 · 사용자 지시 · 큰 숫자 축소 + 작은 글씨 bump up (밸런스 완화)
-// 2026-10-07 · spec section 33 · DESKTOP / TABLET / MOBILE 분리 사이즈
+// 2026-10-07 · 사용자 지시 · 가장 큰 글씨 -2 (hero/salesAmount) · 나머지 전부 +1
 const T = {
-  eyebrow:      "text-[11px] md:text-[13px] text-slate-500 font-medium",
-  heroTitle:    "text-[20px] md:text-[26px] font-bold text-ink leading-[1.2] tracking-tight",
-  heroDesc:     "text-[12px] md:text-[14px] text-slate-500",
-  sectionTitle: "text-[14px] md:text-[16px] font-semibold text-ink tracking-tight",
-  kpiLabel:     "text-[11px] md:text-[13px] text-slate-500 font-medium",
-  kpiValue:     { fontSize: "clamp(16px, 1.8vw, 22px)" } as React.CSSProperties,
-  salesAmount:  { fontSize: "clamp(20px, 2.2vw, 26px)" } as React.CSSProperties,
-  taskLabel:    "text-[13px] md:text-[15px] text-ink font-medium",
-  taskCount:    "text-[13px] md:text-[15px] font-semibold tabular-nums",
-  tableHeader:  "text-[11px] md:text-[12px] text-slate-500 font-medium",
-  tableBody:    "text-[12px] md:text-[13px] text-ink",
-  qaLabel:      "text-[12px] md:text-[14px] text-ink font-medium",
-  meta:         "text-[11px] md:text-[12px] text-slate-500",
+  eyebrow:      "text-[12px] md:text-[14px] text-slate-500 font-medium",
+  heroTitle:    "text-[18px] md:text-[24px] font-bold text-ink leading-[1.2] tracking-tight",
+  heroDesc:     "text-[13px] md:text-[15px] text-slate-500",
+  sectionTitle: "text-[15px] md:text-[17px] font-semibold text-ink tracking-tight",
+  kpiLabel:     "text-[12px] md:text-[14px] text-slate-500 font-medium",
+  kpiValue:     { fontSize: "clamp(17px, 1.9vw, 23px)" } as React.CSSProperties,
+  salesAmount:  { fontSize: "clamp(18px, 2.0vw, 24px)" } as React.CSSProperties,
+  taskLabel:    "text-[14px] md:text-[16px] text-ink font-medium",
+  taskCount:    "text-[14px] md:text-[16px] font-semibold tabular-nums",
+  tableHeader:  "text-[12px] md:text-[13px] text-slate-500 font-medium",
+  tableBody:    "text-[13px] md:text-[14px] text-ink",
+  qaLabel:      "text-[13px] md:text-[15px] text-ink font-medium",
+  meta:         "text-[12px] md:text-[13px] text-slate-500",
 } as const;
 
 const CARD = "bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]";
