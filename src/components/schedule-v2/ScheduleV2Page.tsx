@@ -12,6 +12,8 @@ import type { AuthSession } from "../../types";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { MonthScheduleViewV2 } from "./views/MonthScheduleViewV2";
 import { WeekScheduleViewV2 } from "./views/WeekScheduleViewV2";
+import { DayScheduleViewV2 } from "./views/DayScheduleViewV2";
+import { toYmd } from "./helpers/week";
 
 export type ScheduleV2View = "month" | "week" | "day" | "employee";
 
@@ -68,6 +70,22 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
     setMonth(d.getMonth() + 1);
   }, [anchorDate]);
   const goThisWeek = useCallback(() => {
+    const t = new Date();
+    setAnchorDate(t);
+    setYear(t.getFullYear());
+    setMonth(t.getMonth() + 1);
+  }, []);
+
+  // Day view 는 anchorDate 를 YYYY-MM-DD 로 직접 사용
+  const dayDate = useMemo(() => toYmd(anchorDate), [anchorDate]);
+  const goDayDelta = useCallback((daysDelta: number) => {
+    const d = new Date(anchorDate);
+    d.setDate(d.getDate() + daysDelta);
+    setAnchorDate(d);
+    setYear(d.getFullYear());
+    setMonth(d.getMonth() + 1);
+  }, [anchorDate]);
+  const goTodayDate = useCallback(() => {
     const t = new Date();
     setAnchorDate(t);
     setYear(t.getFullYear());
@@ -135,7 +153,15 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
               authSession={authSession}
             />
           )}
-          {(view === "day" || view === "employee") && (
+          {view === "day" && (
+            <DayScheduleViewV2
+              date={dayDate}
+              onDateDelta={goDayDelta}
+              onToday={goTodayDate}
+              authSession={authSession}
+            />
+          )}
+          {view === "employee" && (
             <PlaceholderView view={view} />
           )}
         </div>
