@@ -3,7 +3,7 @@
 //   · V1 DayTimelineModal 의 data/helper 재사용 (parseRange · pct · widthPct · SKIP_TYPES · buildTypeTones)
 //     · modal 띄우지 않고 · full page workspace 로 승격
 //     · V1 modal 은 그대로 유지 (삭제 안 함) · V2 는 기존 helper 만 재사용
-//   · subview · 현황 (overview + timeline) · 배치 (zone assignment · V2-E 로 defer · placeholder)
+//   · subview · 현황 (overview + timeline) · 배치 (zone assignment · V2-C2 완료 · shared/schedule/dayAssignment)
 //   · canonical 재사용 · useScheduleData · useSettings · getTypeHoursMap · isOffType
 //   · V1↔V2 Day parity · 동일 helper 사용 · schedule row 는 동일 소스
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";

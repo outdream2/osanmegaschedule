@@ -183,18 +183,5 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
   );
 };
 
-const PlaceholderView: React.FC<{ view: ScheduleV2View }> = ({ view }) => {
-  const label = view === "week" ? "주간" : view === "day" ? "일간" : "직원별";
-  return (
-    <div className="flex-1 flex items-center justify-center py-16">
-      <div className="text-center">
-        <div className="text-[16px] font-semibold text-ink mb-2">{label} 뷰 준비 중</div>
-        <div className="text-[13px] text-ink-soft">
-          Phase V2-{view === "week" ? "B" : view === "day" ? "C" : "D"} 에서 구현 예정입니다.
-        </div>
-      </div>
-    </div>
-  );
-};
-
+// 2026-10-07 · V2-E · PlaceholderView 제거 · 네 뷰 모두 실제 구현 완료
 export default ScheduleV2Page;
