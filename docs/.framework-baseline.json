@@ -1,7 +1,7 @@
 {
-  "created": "2026-10-06",
+  "created": "2026-10-07",
   "version": 1,
-  "totalViolations": 527,
+  "totalViolations": 526,
   "files": {
     "server/ocr/pipeline/stages/03-vendor-match.ts": {
       "lines": 684,
@@ -82,6 +82,16 @@
         }
       ],
       "totalWeight": 25
+    },
+    "src/components/DisplayPage/RevenuePage.tsx": {
+      "lines": 2041,
+      "violations": [
+        {
+          "ruleId": "large-file-critical",
+          "count": 1
+        }
+      ],
+      "totalWeight": 24
     },
     "server/routes/display/requests.ts": {
       "lines": 1645,
@@ -281,16 +291,6 @@
       ],
       "totalWeight": 7
     },
-    "src/components/DisplayPage/RevenuePage.tsx": {
-      "lines": 1965,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 6
-    },
     "src/components/LeavePage/LeavePage.tsx": {
       "lines": 1397,
       "violations": [
@@ -312,7 +312,7 @@
       "totalWeight": 6
     },
     "src/components/OrderManagePage/PurchaseHistoryTab.tsx": {
-      "lines": 1162,
+      "lines": 1163,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -426,7 +426,7 @@
       "totalWeight": 5
     },
     "server/routes/payment/borrowings.ts": {
-      "lines": 328,
+      "lines": 329,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -476,7 +476,7 @@
       "totalWeight": 4
     },
     "server/routes/settings/settings.ts": {
-      "lines": 483,
+      "lines": 532,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -606,7 +606,7 @@
       "totalWeight": 3
     },
     "server/controllers/scheduleController.ts": {
-      "lines": 313,
+      "lines": 318,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -636,7 +636,7 @@
       "totalWeight": 3
     },
     "server/services/scheduleService.ts": {
-      "lines": 388,
+      "lines": 393,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -736,7 +736,7 @@
       "totalWeight": 2
     },
     "server/routes/daily/leave.ts": {
-      "lines": 369,
+      "lines": 450,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -885,16 +885,6 @@
       ],
       "totalWeight": 1
     },
-    "server/routes/daily/reservations.ts": {
-      "lines": 54,
-      "violations": [
-        {
-          "ruleId": "no-any-server",
-          "count": 1
-        }
-      ],
-      "totalWeight": 1
-    },
     "server/routes/purchase/creditCards.ts": {
       "lines": 178,
       "violations": [
@@ -956,7 +946,7 @@
       "totalWeight": 1
     },
     "server/routes/staff/staff.ts": {
-      "lines": 90,
+      "lines": 116,
       "violations": [
         {
           "ruleId": "no-any-server",
