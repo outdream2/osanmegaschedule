@@ -307,18 +307,20 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     }
   };
 
-  // ── 슬림 헤더 (사이드바 데스크탑) ─────────────────────────
+  // ── 슬림 헤더 (사이드바 데스크탑) · 2026-10-07 Batch 3 ─────────────────────────
+  //   - height 52~56px (spec 56~60px · breadcrumb 포함 compact)
+  //   - SidebarTrigger · 명확한 chip 제거 · 플랫 icon 버튼 (spec 11)
+  //   - shadow 거의 없음 · border-b 중립 · zero behavior delta
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
-      <div className="flex items-center justify-between gap-3 px-3 py-1 shrink-0 bg-white border-b border-line/50 sticky top-0 z-40">
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          {/* 2026-09-01 · 사이드바 토글 · 시각 개선 · 명확한 chip 버튼 (기존 60% 투명 → 명확한 bg+border+icon) */}
+      <div className="flex items-center justify-between gap-3 px-4 h-14 shrink-0 bg-white border-b border-line sticky top-0 z-40">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <SidebarTrigger
-            className="h-9 w-9 rounded-lg text-brand-deep bg-white border border-line hover:bg-brand-tint hover:border-brand-deep/30 hover:shadow-sm active:scale-95 transition-all cursor-pointer shrink-0 [&_svg]:h-4 [&_svg]:w-4"
+            className="h-9 w-9 rounded-lg text-ink-soft hover:bg-zinc-100 hover:text-ink transition-colors cursor-pointer shrink-0 [&_svg]:h-4 [&_svg]:w-4"
             aria-label="사이드바 열기/접기"
             title="사이드바 열기·접기 (Cmd/Ctrl+B)"
           />
-          <span className="w-px h-5 bg-line/70 shrink-0" aria-hidden />
+          <span className="w-px h-4 bg-zinc-200 shrink-0" aria-hidden />
           <Breadcrumb items={breadcrumbItems} onNavigate={handleBreadcrumbNav} className="min-w-0" />
         </div>
         <div className="flex items-center gap-2 shrink-0">{rightSlot}</div>
@@ -326,28 +328,15 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     );
   }
 
-  // ── 풀 헤더 (모바일 / 사이드바 미사용) ─────────────────────────
+  // ── 풀 헤더 (모바일 / 사이드바 미사용) · 2026-10-07 Batch 3 ─────────────────────────
+  //   - aurora radial glow + noise + triple shadow + hairline gradients 제거
+  //   - 단일 solid deep-navy bg + 얇은 bottom border 만 유지
+  //   - zero behavior delta (nav/breadcrumb/overflow/handlers unchanged)
   return (
     <header
-      className="sticky top-0 z-40 border-b border-white/[0.08] shrink-0 shadow-[0_1px_3px_rgba(10,46,74,0.15),0_4px_20px_-4px_rgba(10,46,74,0.20),0_12px_40px_-16px_rgba(10,46,74,0.25)]"
-      style={{ background: "linear-gradient(180deg, #0A2E4A 0%, #0D3350 50%, #0F3855 100%)" }}
+      className="sticky top-0 z-40 border-b border-white/[0.08] shrink-0"
+      style={{ background: "#0A2E4A" }}
     >
-      {/* aurora radial glow */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-24 -left-16 w-[420px] h-[240px] rounded-full opacity-[0.18] blur-3xl" style={{ background: "radial-gradient(closest-side, #5EA9E8, transparent)" }} />
-        <div className="absolute -top-24 -right-20 w-[380px] h-[220px] rounded-full opacity-[0.12] blur-3xl" style={{ background: "radial-gradient(closest-side, #6FE3C2, transparent)" }} />
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[160px] rounded-full opacity-[0.08] blur-3xl" style={{ background: "radial-gradient(closest-side, #A5B4FC, transparent)" }} />
-      </div>
-      {/* noise 패턴 */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay"
-        style={{ backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")` }}
-        aria-hidden
-      />
-      {/* top hairline */}
-      <div className="absolute top-0 left-0 right-0 h-px pointer-events-none" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.10) 30%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.10) 70%, transparent 100%)" }} />
-      {/* bottom hairline */}
-      <div className="absolute bottom-0 left-0 right-0 h-[1px] pointer-events-none" style={{ background: "linear-gradient(90deg, transparent 0%, rgba(94,169,232,0.3) 20%, rgba(94,169,232,0.5) 50%, rgba(94,169,232,0.3) 80%, transparent 100%)" }} />
 
       {/* ── Row 1 · 로고 + 이름 + 알림 + 로그아웃 ── */}
       <div className="relative px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
@@ -362,18 +351,18 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             <img
               src={logoImg}
               alt={`${hdrBrand.shortName || "OSAN MEGATOWN"} 로고`}
-              className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-full ring-2 ring-white/25 shadow-[0_0_20px_rgba(94,169,232,0.25)] shrink-0 transition-all duration-200 group-hover:ring-white/40"
+              className="w-8 h-8 sm:w-9 sm:h-9 object-cover rounded-full ring-1 ring-white/15 shrink-0 transition-all duration-200 group-hover:ring-white/30"
               draggable={false}
               onError={(e) => {
                 const el = e.currentTarget;
                 if (!el.dataset.retried) { el.dataset.retried = "1"; el.src = "/src/images/logo.png"; }
               }}
             />
-            <div className="hidden md:flex items-center gap-3">
-              <span className="w-px h-7 bg-gradient-to-b from-transparent via-white/25 to-transparent" aria-hidden />
-              <div className="flex flex-col gap-0.5 font-bold leading-none select-none">
-                <span className="text-white text-[17px] leading-none tracking-[0.05em]">OSAN</span>
-                <span className="text-[#93B4D0] text-[15px] leading-none tracking-[0.20em] mt-0.5">MEGATOWN</span>
+            <div className="hidden md:flex items-center gap-2.5">
+              <span className="w-px h-5 bg-white/15" aria-hidden />
+              <div className="flex flex-col gap-0.5 font-semibold leading-none select-none">
+                <span className="text-white text-[14px] leading-none tracking-[0.03em]">OSAN</span>
+                <span className="text-[#93B4D0] text-[12px] leading-none tracking-[0.15em] mt-0.5">MEGATOWN</span>
               </div>
             </div>
           </button>
@@ -384,7 +373,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             <button
               type="button"
               onClick={() => onNavigate?.("mypage" as AppNavPage)}
-              className="inline-flex items-center justify-center h-9 sm:h-auto sm:min-h-[36px] text-[15px] sm:text-[14px] font-bold text-white whitespace-nowrap px-2 sm:px-2.5 py-1.5 rounded-lg ring-1 ring-white/10 hover:ring-white/25 hover:bg-white/[0.10] hover:shadow-[0_0_16px_rgba(94,169,232,0.25)] active:scale-95 transition-all duration-150 cursor-pointer max-w-[42vw] sm:max-w-none"
+              className="inline-flex items-center justify-center h-9 sm:h-auto sm:min-h-[36px] text-[13px] font-semibold text-white whitespace-nowrap px-2 sm:px-2.5 py-1.5 rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer max-w-[42vw] sm:max-w-none"
               title="마이페이지"
             >
               <span className="break-words whitespace-normal leading-tight">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
@@ -396,15 +385,15 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           {authSession && onLogout ? (
             <button
               onClick={onLogout}
-              className="flex items-center gap-1.5 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[15px] font-semibold text-white bg-white/[0.10] hover:bg-white/[0.18] border border-white/15 hover:border-white/30 rounded-lg transition-all shadow-sm active:scale-95 cursor-pointer shrink-0"
+              className="flex items-center gap-1.5 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[13px] font-medium text-white/85 hover:bg-white/[0.08] hover:text-white rounded-lg transition-colors cursor-pointer shrink-0"
               title="로그아웃"
             >
-              <LogOut size={14} strokeWidth={2.2} />
+              <LogOut size={14} strokeWidth={2} />
               <span className="hidden sm:inline">로그아웃</span>
             </button>
           ) : (
-            <div className="flex items-center gap-1 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[14px] font-semibold bg-white/[0.05] text-white/50 border border-white/10 rounded-lg shrink-0" title="비로그인">
-              <Lock size={13} strokeWidth={2.2} />
+            <div className="flex items-center gap-1 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[13px] font-medium bg-white/[0.04] text-white/50 rounded-lg shrink-0" title="비로그인">
+              <Lock size={13} strokeWidth={2} />
             </div>
           )}
         </div>
