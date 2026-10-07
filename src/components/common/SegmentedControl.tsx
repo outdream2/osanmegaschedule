@@ -78,7 +78,8 @@ export function SegmentedControl<V extends string>({
   wrap = false, className = "", ariaLabel,
 }: SegmentedControlProps<V>) {
   if (variant === "pills") {
-    const btnH = size === "md" ? "min-h-[34px] h-9 text-[15px]" : "min-h-[32px] h-8 text-[14px]";
+    // 2026-10-07 · Batch 4 · spec SEGMENTED font 12-13 · compact (presentation-only)
+    const btnH = size === "md" ? "min-h-[34px] h-9 text-[13px]" : "min-h-[32px] h-8 text-[13px]";
     return (
       <div
         role="radiogroup"
@@ -111,7 +112,8 @@ export function SegmentedControl<V extends string>({
     );
   }
   // flat (기존 동작)
-  const hCls = size === "md" ? "h-9 text-[15px]" : "h-8 text-[15px]";
+  // 2026-10-07 · Batch 4 · spec SEGMENTED font 12-13 · compact (presentation-only)
+  const hCls = size === "md" ? "h-9 text-[13px]" : "h-8 text-[13px]";
   return (
     <div
       role="radiogroup"
