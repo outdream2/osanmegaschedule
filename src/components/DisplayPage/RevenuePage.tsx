@@ -553,38 +553,11 @@ const HourlyReportTab: React.FC = () => {
         const unionSlotsSet = new Set<string>([...BUSINESS_HOURS, ...allSlots]);
         const fixedSlots = [...unionSlotsSet].sort();
         // 2026-10-06 · 사용자 지시 · 현재 시간 이후 slot = 데이터 없음 (null) · 0 으로 처리 X
-        //   · 예측 Line (오늘 미래) · 주중/주말 가중 평균 · 형광색 점선
         const nowHour = new Date().getHours();
-        // 2026-10-06 · 사용자 지시 · 예상평균 = 다른날과 비교해서 계산 (주중/주말 구분 제거)
-        //   · 오늘 제외한 모든 다른 날 평균 · 조회 기간 전체 pool
-        const forecastPool = effDateData.filter((d) => d.date !== today);
-        // slot 별 예측값 (주중/주말 가중 평균) · metric 별
-        const buildForecastBySlot = (metric: ChartMetric): Map<string, number | null> => {
-          const out = new Map<string, number | null>();
-          for (const slot of fixedSlots) {
-            const vals: number[] = [];
-            for (const d of forecastPool) {
-              const r = d.rowMap.get(slot);
-              if (!r) continue;
-              const sale = Number(r.SaleTotal ?? 0);
-              const cust = Number(r.CustomerCnt ?? 0);
-              const marg = Number(r.Margin ?? 0);
-              let v: number | null = null;
-              if (metric === "revenue") v = sale;
-              else if (metric === "avg-order") v = cust > 0 ? sale / cust : null;
-              else if (metric === "margin-rate") v = sale > 0 ? (marg / sale) * 100 : null;
-              else if (metric === "customers") v = cust;
-              if (v != null && Number.isFinite(v)) vals.push(v);
-            }
-            out.set(slot, vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null);
-          }
-          return out;
-        };
         // slot 별 각 날짜 series value 계산 · metric 별
-        //   오늘 Line · 현재 시간 이후 null (끊김) · 예측 Line · 현재 시간 이후 만 값
+        //   오늘 Line · 현재 시간 이후 null (끊김)
         const todayInEffData = effDateData.some((d) => d.date === today);
         const buildSeriesData = (metric: ChartMetric) => {
-          const forecastBySlot = buildForecastBySlot(metric);
           return fixedSlots.map((slot) => {
             const point: Record<string, number | string | null> = { time: slot };
             const slotHour = parseInt(slot, 10);
@@ -606,44 +579,6 @@ const HourlyReportTab: React.FC = () => {
               } else {
                 point[d.date] = v;
               }
-            }
-            // 2026-10-06 · 사용자 지시 · 예측 Line 이 오늘 Line 과 자연 연결 되도록
-            //   · 현재 시간 slot = 오늘 실제값 (bridge · 두 Line 연결점)
-            //   · 미래 slot = 예측값 (주중/주말 pool 평균)
-            //   · 과거 slot = null (예측 Line 그리지 않음)
-            //   · 오늘 날짜가 선택 안 됐으면 forecast 전체 null
-            if (todayInEffData && Number.isFinite(slotHour)) {
-              if (slotHour === nowHour) {
-                // 현재 slot · 오늘 실제값으로 bridging
-                const todayBlock = effDateData.find((d) => d.date === today);
-                const r = todayBlock?.rowMap.get(slot);
-                if (r) {
-                  const sale = Number(r.SaleTotal ?? 0);
-                  const cust = Number(r.CustomerCnt ?? 0);
-                  const marg = Number(r.Margin ?? 0);
-                  let v: number | null = null;
-                  if (metric === "revenue") v = sale;
-                  else if (metric === "avg-order") v = cust > 0 ? Math.round(sale / cust) : null;
-                  else if (metric === "margin-rate") v = sale > 0 ? Math.round((marg / sale) * 1000) / 10 : null;
-                  else if (metric === "customers") v = cust;
-                  point.forecast = v;
-                } else {
-                  // 현재 slot 실제 데이터 없으면 예측으로
-                  const f = forecastBySlot.get(slot);
-                  point.forecast = f != null && Number.isFinite(f)
-                    ? (metric === "margin-rate" ? Math.round(f * 10) / 10 : Math.round(f))
-                    : null;
-                }
-              } else if (slotHour > nowHour) {
-                const f = forecastBySlot.get(slot);
-                point.forecast = f != null && Number.isFinite(f)
-                  ? (metric === "margin-rate" ? Math.round(f * 10) / 10 : Math.round(f))
-                  : null;
-              } else {
-                point.forecast = null;
-              }
-            } else {
-              point.forecast = null;
             }
             return point;
           });
@@ -770,7 +705,6 @@ const HourlyReportTab: React.FC = () => {
                 };
                 // 2026-10-06 · 사용자 지시 · 4 탭 모두 Line (꺾은선 그래프) · 날짜별 overlay
                 //   · 오늘 Line 두껍게 (3.5) + ★ 포인트 · Legend 특별 라벨
-                //   · 매출 탭 forecast · 점선 (과거 평균) · 데이터 없는 slot 에만 예측 표시
                 //   · 데이터 있으면 그리지 않음 (null · connectNulls=false)
                 // 2026-10-06 · 사용자 지시 · Y축 왼쪽 단위 라벨
                 const yUnit = chartMetric === "margin-rate" ? "%" : chartMetric === "customers" ? "명" : "원";
@@ -988,7 +922,6 @@ const HourlyReportTab: React.FC = () => {
                       <Tooltip
                         formatter={(v, name) => {
                           const nm = String(name);
-                          if (nm === "forecast") return [tooltipValueFormatter(v as number), "예상"];
                           // weekday 축 때 name 이 "W1 MM/DD(요일)" 형태 · 그대로 사용
                           if (nm.includes(" ")) return [tooltipValueFormatter(v as number), nm.replace(" ★ 오늘", "")];
                           return [tooltipValueFormatter(v as number), shortDateWithDow(nm.replace(" ★ 오늘", ""))];
@@ -996,10 +929,9 @@ const HourlyReportTab: React.FC = () => {
                         labelFormatter={(v) => `${v}시`}
                         contentStyle={{ fontSize: 13, borderRadius: 8 }}
                       />
-                      {/* 2026-10-06 · 사용자 지시 · 오늘 라벨 찐하게 (bold red) · forecast 라벨 예상 */}
+                      {/* 2026-10-06 · 사용자 지시 · 오늘 라벨 찐하게 (bold red) */}
                       <Legend wrapperStyle={{ fontSize: 13 }} iconType="line" formatter={(name) => {
                         const nm = String(name);
-                        if (nm === "forecast") return <span style={{ color: "#71717a", fontStyle: "italic" }}>예상 (평균)</span>;
                         if (nm.endsWith("★ 오늘")) return <span style={{ color: "#dc2626", fontWeight: 800 }}>{nm}</span>;
                         // weekday 축 "W1 MM/DD(요일)" 형태 · 그대로 사용
                         if (nm.includes(" ")) return nm;
@@ -1027,17 +959,6 @@ const HourlyReportTab: React.FC = () => {
                           />
                         );
                       })}
-                      {/* 2026-10-06 · 사용자 지시 · 예측 Line · 오늘 미래 slot 만 · 형광색 점선
-                          · 주중/주말 가중 평균 (오늘 요일 종류의 과거 날짜 pool 평균)
-                          · connectNulls=false · 과거 slot 은 null → 그려지지 않음 · 오늘 Line 과 자연 연결 */}
-                      {todayInEffData && (
-                        <Line
-                          type="monotone" dataKey="forecast" name="forecast"
-                          stroke="#a3e635" strokeDasharray="5 4" strokeWidth={2.4}
-                          dot={{ r: 3, fill: "#a3e635", strokeWidth: 1, stroke: "#65a30d" }}
-                          activeDot={{ r: 5 }} connectNulls={false}
-                        />
-                      )}
                     </LineChart>
                   </ResponsiveContainer>
                 );
