@@ -7,6 +7,8 @@ import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
 import type { ShelfPositions } from "../../lib/shelfPositions";
 import type { Row } from "./RealStockTablePage.types";
+// 2026-10-07 · 사용자 지시 · OPTION C · 진열위치 summary · compact 포매터
+import { formatCompactDisplayLocation } from "../../lib/formatDisplayLocation";
 
 type ShelfMap = Record<string, ShelfPositions>;
 
@@ -37,7 +39,7 @@ export const RealStockDetailModal: React.FC<Props> = ({ row, shelfMap, onClose }
         <Field label="공급사"  value={row.supplier ? (displayVendorName(row.supplier) || row.supplier) : "-"} />
         <Field label="진열위치" value={
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span>{row.location ?? "미지정"}</span>
+            <span>{row.location ? formatCompactDisplayLocation(row.location) : "미지정"}</span>
             <ShelfPositionsBadge positions={shelfMap[row.product_code]} size="sm" />
           </div>
         } />

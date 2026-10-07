@@ -4,6 +4,8 @@ import React from "react";
 import { MapPin, Pill, Info, X } from "lucide-react";
 import type { ProductInfo } from "../../lib/productsCache";
 import type { DisplayZone } from "../../utils/zoneUtils";
+// 2026-10-07 · 사용자 지시 · OPTION C · 검색 결과 location 뱃지 · compact 포매터
+import { formatCompactDisplayLocation } from "../../lib/formatDisplayLocation";
 
 interface ProductResult {
   code: string;
@@ -49,7 +51,7 @@ export const DisplayProductPanel: React.FC<DisplayProductPanelProps> = ({
                     {p.spec && <div className="text-[15px] text-zinc-400 break-words whitespace-normal leading-tight mt-0.5">{p.spec}</div>}
                   </button>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    {p.location && <button type="button" onClick={() => onProductResultClick(p.location)} className="flex items-center gap-0.5 text-[14px] font-semibold text-emerald-700 whitespace-nowrap hover:text-emerald-900 transition cursor-pointer"><MapPin size={9} />{p.location}</button>}
+                    {p.location && <button type="button" onClick={() => onProductResultClick(p.location)} className="flex items-center gap-0.5 text-[14px] font-semibold text-emerald-700 whitespace-nowrap hover:text-emerald-900 transition cursor-pointer"><MapPin size={9} />{formatCompactDisplayLocation(p.location)}</button>}
                     <button type="button" onClick={(e) => { e.stopPropagation(); const full = productsMap[p.code] ?? productsMap[p.code.replace(/^0+/, "")] ?? p as unknown as ProductInfo; onProductInfoClick(full); }} className="flex items-center gap-0.5 text-[14px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-indigo-100 transition cursor-pointer"><Info size={9} />상품정보</button>
                   </div>
                 </div>

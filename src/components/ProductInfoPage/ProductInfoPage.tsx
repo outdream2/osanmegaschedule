@@ -9,7 +9,8 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { devLog, devWarn } from "../../lib/devLog";
-import { formatDisplayLocation } from "../../lib/formatDisplayLocation";
+// 2026-10-07 · 사용자 지시 · OPTION C · 현재 진열위치 summary 는 compact 포매터 사용
+import { formatCompactDisplayLocation } from "../../lib/formatDisplayLocation";
 import {
   Package, PencilSimple, FloppyDisk, X, ArrowSquareOut,
 } from "@phosphor-icons/react";
@@ -578,12 +579,12 @@ export const ProductDetailView: React.FC<DetailProps> = ({ product, loading, err
 
               return (
                 <div className="space-y-0">
-                  {/* 구역 · 2026-10-06 · formatDisplayLocation 공용 포매터 적용 (예 "6A 1열 벽22") */}
+                  {/* 구역 · 2026-10-07 · OPTION C · formatCompactDisplayLocation (현재 진열위치 summary · 1열/2열/3단 제외) */}
                   {hasLocation && (
                     <div className="flex flex-col gap-0.5 py-3 border-b border-zinc-100">
                       <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">구역</span>
                       <span className="text-[18px] font-extrabold text-ink tabular-nums tracking-tight leading-tight mt-0.5">
-                        {formatDisplayLocation(p.location) || String(p.location)}
+                        {formatCompactDisplayLocation(p.location)}
                       </span>
                     </div>
                   )}
@@ -838,7 +839,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
                   <span className="text-[13px] font-medium text-zinc-500">{r.supplier}</span>
                 )}
                 {r.location && (
-                  <span className="text-[13px] font-medium text-zinc-400">{r.location}</span>
+                  <span className="text-[13px] font-medium text-zinc-400" title={String(r.location)}>{formatCompactDisplayLocation(r.location)}</span>
                 )}
               </div>
               {/* Row 3: 판매가 + 현재고 */}
@@ -907,8 +908,8 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
                     ? <span className={stock <= 0 ? "text-rose-600" : "text-ink"}>{stock}</span>
                     : <span className="text-zinc-300">-</span>}
                 </td>
-                <td className="px-2 py-2.5 align-top text-[15px] font-medium text-ink-soft whitespace-normal break-words break-keep">
-                  {r.location || <span className="text-zinc-300">-</span>}
+                <td className="px-2 py-2.5 align-top text-[15px] font-medium text-ink-soft whitespace-normal break-words break-keep" title={r.location ? String(r.location) : undefined}>
+                  {r.location ? formatCompactDisplayLocation(r.location) : <span className="text-zinc-300">-</span>}
                 </td>
               </tr>
             );

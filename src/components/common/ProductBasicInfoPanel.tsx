@@ -22,6 +22,8 @@ import type { ShelfPositions } from "../../lib/shelfPositions";
 import { ExpiryBadge } from "./ExpiryBadge";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
+// 2026-10-07 · 사용자 지시 · OPTION C · 진열위치 pill summary · compact 포매터
+import { formatCompactDisplayLocation } from "../../lib/formatDisplayLocation";
 
 export interface ProductBasic {
   product_code: string;
@@ -227,9 +229,12 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
                · 매장·창고 판별 · location 첫 글자 · '창'·'W' → 창고 · 나머지 → 매장 */
             <div className="flex items-center gap-1.5 flex-wrap">
               {(() => {
+                // 2026-10-07 · OPTION C · summary 표시용 compact label (편집 원본은 location 유지)
                 const loc = String(location ?? "").trim();
+                const compact = formatCompactDisplayLocation(loc);
+                const hasLoc = !!loc;
                 const isWarehouse = /^(창|W|w)/.test(loc);
-                const pillCls = !loc
+                const pillCls = !hasLoc
                   ? "bg-zinc-100 text-zinc-400 border-zinc-200"
                   : isWarehouse
                   ? "bg-cyan-50 text-cyan-700 border-cyan-200"
@@ -243,10 +248,10 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
                     disabled={!inEditMode}
                     onClick={() => { if (inEditMode) { setLocDraft(loc); setEditingLoc(true); } }}
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[14px] font-bold tabular-nums transition-all ${pillCls} ${editCls}`}
-                    title={inEditMode ? "클릭하여 편집" : undefined}
+                    title={inEditMode ? `클릭하여 편집 · 원본: ${loc}` : loc || undefined}
                   >
-                    {loc ? (isWarehouse ? <Warehouse size={11} /> : <Store size={11} />) : null}
-                    {loc || <span className="opacity-60">-</span>}
+                    {hasLoc ? (isWarehouse ? <Warehouse size={11} /> : <Store size={11} />) : null}
+                    {hasLoc ? compact : <span className="opacity-60">-</span>}
                   </button>
                 );
               })()}

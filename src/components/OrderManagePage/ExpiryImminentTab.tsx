@@ -26,6 +26,8 @@ import { matchesProductQuery } from "../../lib/productMatch";
 // 2026-08-31 · #11 · 공급사명 검색 통합
 import { matchesSupplierQuery } from "../../lib/supplierMatch";
 import { resolveProductLocation } from "../../lib/productLocation";
+// 2026-10-07 · 사용자 지시 · OPTION C · 진열위치 리스트 · compact 포매터 (SSOT)
+import { formatCompactDisplayLocation } from "../../lib/formatDisplayLocation";
 // 2026-09-15 · T-SP-9-REST · 진열위치 뱃지 확산 · 유통기한 임박 상품 · 상세위치 확인 · 실무 임팩트 (매장 어느 슬롯인지)
 import { ShelfPositionsBadge } from "../common/ShelfPositionsBadge";
 import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
@@ -227,7 +229,7 @@ export const ExpiryImminentTab: React.FC = () => {
                       <td className={tableTdCls("left", "text-zinc-600")}>{p.supplier ?? <span className="text-zinc-400">-</span>}</td>
                       <td className={tableTdCls("left", "text-zinc-600")}>
                         <div className="flex flex-col gap-0.5">
-                          <span>{resolveProductLocation(p) ?? <span className="text-zinc-400">-</span>}</span>
+                          <span>{formatCompactDisplayLocation(resolveProductLocation(p))}</span>
                           {/* 2026-09-15 · T-SP-9-REST · 상세 진열위치 뱃지 · 매장 슬롯별 (3자리) · 유통기한 임박 대응 시 · 정확한 위치 확인 */}
                           {shelfPositionsMap[p.product_code] && (
                             <ShelfPositionsBadge positions={shelfPositionsMap[p.product_code]} size="sm" variant="text" />

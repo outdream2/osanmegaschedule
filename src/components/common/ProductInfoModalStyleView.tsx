@@ -10,6 +10,8 @@ import { Hash, Type, Building2, Tags, ShoppingCart, Coins, MapPin, Ruler, Layers
 import { Spinner } from "./Spinner";
 import { StatusPill } from "./StatusPill";
 import type { ProductDetail } from "../ProductInfoPage/ProductInfoPage";
+// 2026-10-07 · 사용자 지시 · OPTION C · 진열구역 summary · compact 포매터
+import { formatCompactDisplayLocation } from "../../lib/formatDisplayLocation";
 
 const readCls = "text-[17px] font-medium text-ink";
 const emptyCls = "text-[15px] text-zinc-300";
@@ -139,7 +141,7 @@ export const ProductInfoModalStyleView: React.FC<Props> = ({ product, loading, e
         <Row accent="brand" icon={<Coins size={13} strokeWidth={2.4} />} label="매입가" value={fmt(p.purchase_price, "원")} />
         {/* 2026-10-06 · 진열구역 · 필수 정보로 이동 (사용자 지시) · 2026-10-05 · 왼쪽 목록과 동일 소스 (p.location) */}
         <FullRow>
-          <Row accent="brand" icon={<MapPin size={13} strokeWidth={2.4} />} label="진열구역" value={fmt(p.location)} />
+          <Row accent="brand" icon={<MapPin size={13} strokeWidth={2.4} />} label="진열구역" value={p.location ? <span className={readCls + " tabular-nums"} title={String(p.location)}>{formatCompactDisplayLocation(p.location)}</span> : <span className={emptyCls}>-</span>} />
         </FullRow>
         {shelfEntries.length > 0 && (
           <FullRow>

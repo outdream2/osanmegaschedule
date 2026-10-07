@@ -5,6 +5,8 @@ import { Info, MapPin, Pill, ScanLine, Search, X } from "lucide-react";
 import type { ProductInfo } from "../../lib/productsCache";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
+// 2026-10-07 · 사용자 지시 · OPTION C · 검색 드롭다운 location 뱃지 · compact 포매터
+import { formatCompactDisplayLocation } from "../../lib/formatDisplayLocation";
 
 interface ProductResult {
   code: string;
@@ -66,7 +68,7 @@ export const DisplaySearchBar: React.FC<DisplaySearchBarProps> = ({
                 <div className="flex items-center gap-1.5 shrink-0">
                   {p.location && (
                     <button type="button" onClick={() => onProductResultClick(p.location)} className="flex items-center gap-0.5 text-[14px] font-semibold text-emerald-700 whitespace-nowrap hover:text-emerald-900 transition cursor-pointer">
-                      <MapPin size={9} />{p.location}
+                      <MapPin size={9} />{formatCompactDisplayLocation(p.location)}
                     </button>
                   )}
                   <button type="button" onClick={(e) => { e.stopPropagation(); const full = productsMap[p.code] ?? productsMap[p.code.replace(/^0+/, "")] ?? p as unknown as ProductInfo; onProductInfoClick(full); }} className="flex items-center gap-0.5 text-[14px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-indigo-100 transition cursor-pointer">

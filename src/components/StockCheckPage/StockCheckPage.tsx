@@ -11,6 +11,8 @@ import { useSortableTable, type Comparator } from "../../hooks/useSortableTable"
 import { StatusPill } from "../common/StatusPill";
 import { Card } from "../common/Card";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
+// 2026-10-07 · 사용자 지시 · OPTION C · 배치구역/진열위치 summary · compact 포매터
+import { formatCompactDisplayLocation } from "../../lib/formatDisplayLocation";
 
 interface StockItem {
   product_name: string;
@@ -287,12 +289,12 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                           <div className="flex items-center gap-2 flex-wrap mt-1">
                             {item.location && (
                               <span className="text-[14px] font-semibold text-emerald-700 whitespace-nowrap" title="배치구역">
-                                위치 {item.location}
+                                위치 {formatCompactDisplayLocation(item.location)}
                               </span>
                             )}
                             {item.display_location && (
                               <span className="text-[14px] font-semibold text-amber-700 whitespace-nowrap" title="진열위치">
-                                진열 {item.display_location}
+                                진열 {formatCompactDisplayLocation(item.display_location)}
                               </span>
                             )}
                             {item.supplier && (
