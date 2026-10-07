@@ -22,6 +22,8 @@ import { useSaleStatusFilter } from "../../hooks/useSaleStatusFilter";
 import { Modal } from "../common/Modal";
 import { Card } from "../common/Card";
 import { SplitPanel } from "../common/SplitPanel";
+// 2026-10-08 · GLOBAL UI reference-tone application · MasterDetail template wrapper
+import { MasterDetailPageTemplate } from "../common/MasterDetailPageTemplate";
 import { ProductCreateModal } from "./ProductCreateModal";
 import { StatusPill } from "../common/StatusPill";
 import { Spinner } from "../common/Spinner";
@@ -921,40 +923,40 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
 
   return (
     <div className="flex-1 flex flex-col bg-[#F4F7FA] min-h-0">
-      {/* ── 상단 FilterBar · 2026-10-07 · Batch 2 (PRESENTATION ONLY) · CARD_BASE 의 shadow-sm 제거 ·
-             PageToolbar 와 동일 Attio inset light + 2-layer shadow 로 톤 통일 (visual-reference-lock) ·
-             state / handler / SearchBar historyKey / SaleStatusFilter / Button onClick 모두 unchanged ── */}
-      <div className={`${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 py-3 shrink-0`}>
-        <div
-          className="bg-white rounded-xl border border-line px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2"
-          style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60), 0 1px 2px rgba(10,46,74,0.05), 0 2px 8px -2px rgba(10,46,74,0.06)" }}
-        >
-          <div className="flex items-center gap-2.5 shrink-0">
-            <AccentBar size="lg" />
-            <Package size={16} className="text-brand-deep shrink-0" />
-            <span className="text-[18px] font-bold text-ink tracking-tight">상품정보</span>
-          </div>
-          <StatusPill tone="brand" size="md">{filtered.length}건</StatusPill>
-          {/* 검색창 */}
-          <SearchBar
-            value={search}
-            onChange={setSearch}
-            placeholder="상품명·코드·공급사 검색"
-            historyKey="megatown_productInfo_search"
-            accent="sky"
-            widthClass="flex-1 min-w-[160px] max-w-[260px]"
-          />
-          {/* 판매상태 필터 */}
-          <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
-          {canManage && (
-            <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)} className="ml-auto">
-              + 상품 등록
-            </Button>
-          )}
-          {canManage && selectedCode && (
-            <Button
-              variant="secondary"
-              size="sm"
+      {/* 2026-10-08 · GLOBAL UI reference-tone · MasterDetailPageTemplate 적용
+             · 이전 · 상단 bg-white rounded-xl inset-shadow card wrapper 안에 title+count-pill+search+filter+actions
+             · 이후 · flat page title (text) · count 를 StatusPill 배지 → 플레인 텍스트
+                     · compact toolbar row · card wrapper 제거
+             · state / handler / SearchBar historyKey / SaleStatusFilter / Button onClick · SplitPanel storageKey 전부 보존 */}
+      <MasterDetailPageTemplate
+        title={
+          <span className="inline-flex items-baseline gap-2">
+            <Package size={20} className="text-brand-deep self-center" strokeWidth={2.2} />
+            <span>상품정보</span>
+            <span className="text-[15px] font-semibold text-ink-soft/70 tabular-nums">{filtered.length}건</span>
+          </span>
+        }
+        description="상품 마스터 · 공급사·판매상태·실재고 포함"
+        toolbar={
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <SearchBar
+              value={search}
+              onChange={setSearch}
+              placeholder="상품명·코드·공급사 검색"
+              historyKey="megatown_productInfo_search"
+              accent="sky"
+              widthClass="flex-1 min-w-[160px] max-w-[260px]"
+            />
+            <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
+            {canManage && (
+              <Button variant="primary" size="sm" onClick={() => setCreateOpen(true)} className="ml-auto">
+                + 상품 등록
+              </Button>
+            )}
+            {canManage && selectedCode && (
+              <Button
+                variant="secondary"
+                size="sm"
               onClick={async () => {
                 const target = filtered.find(p => p.product_code === selectedCode);
                 if (!target) return;
@@ -1008,11 +1010,12 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
               삭제
             </Button>
           )}
-        </div>
-      </div>
+          </div>
+        }
+      >
 
-      {/* ── 좌우 분할 패널 · SplitPanel 프레임워크 ── */}
-      <div className={`flex-1 min-h-0 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 pb-3 flex flex-col`}>
+      {/* ── 좌우 분할 패널 · SplitPanel 프레임워크 (template children · chrome만 template, split 로직은 그대로) ── */}
+      <div className="flex-1 min-h-0 flex flex-col">
         <SplitPanel
           storageKey="productInfo.leftWidth.v2"
           defaultWidth={420}
@@ -1054,6 +1057,7 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
           }
         />
       </div>
+      </MasterDetailPageTemplate>
 
       {/* Phase C · 상품 등록 모달 · 2026-08-23 · #197 · pending code 있으면 자동 채움+lock */}
       <ProductCreateModal
