@@ -10,7 +10,7 @@ import {
   Package, Scan, Calendar, Store, MessageSquare,
   ChevronRight, FileWarning, RotateCcw,
 } from "lucide-react";
-import { XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
+import { XAxis, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from "recharts";
 import { api } from "../../lib/apiClient";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
@@ -18,19 +18,19 @@ import type { AppNavPage } from "../layout/AppNavHeader";
 // ─────────────────────────────────────────────────────────────
 // Typography scale (DESKTOP + MOBILE) · spec 기반 고정
 // ─────────────────────────────────────────────────────────────
+// 2026-10-07 · 사용자 지시 · 전체 라벨/글씨 +1 bump · 큰 여유있는 사이즈
 const T = {
-  eyebrow:    "text-[12px] sm:text-[13px] text-slate-500 font-medium tracking-wide",
-  heroTitle:  "text-[24px] sm:text-[28px] md:text-[30px] font-bold text-ink tracking-tight leading-[1.2]",
-  heroDesc:   "text-[13px] sm:text-[14px] text-slate-500 leading-[1.5]",
-  sectionTitle: "text-[16px] sm:text-[17px] font-semibold text-ink tracking-tight",
-  cardLabel:  "text-[12px] sm:text-[13px] text-slate-500 font-medium",
-  // spec: desktop 26-28 · mobile 18-21 · tabular-nums tracking-tight
-  kpiValue:   { fontSize: "clamp(19px, 2.6vw, 28px)" } as React.CSSProperties,
-  taskLabel:  "text-[13px] sm:text-[14px] text-ink font-medium",
-  taskCount:  "text-[13px] sm:text-[14px] font-semibold tabular-nums",
-  qaTitle:    "text-[14px] sm:text-[15px] font-semibold text-ink",
-  qaDesc:     "text-[12px] sm:text-[13px] text-slate-500 leading-[1.45]",
-  meta:       "text-[12px] sm:text-[13px] text-slate-500",
+  eyebrow:    "text-[13px] sm:text-[14px] text-slate-500 font-medium tracking-wide",
+  heroTitle:  "text-[25px] sm:text-[29px] md:text-[31px] font-bold text-ink tracking-tight leading-[1.2]",
+  heroDesc:   "text-[14px] sm:text-[15px] text-slate-500 leading-[1.5]",
+  sectionTitle: "text-[17px] sm:text-[18px] font-semibold text-ink tracking-tight",
+  cardLabel:  "text-[13px] sm:text-[14px] text-slate-500 font-medium",
+  kpiValue:   { fontSize: "clamp(17px, 2.1vw, 21px)" } as React.CSSProperties,
+  taskLabel:  "text-[14px] sm:text-[15px] text-ink font-medium",
+  taskCount:  "text-[14px] sm:text-[15px] font-semibold tabular-nums",
+  qaTitle:    "text-[15px] sm:text-[16px] font-semibold text-ink",
+  qaDesc:     "text-[13px] sm:text-[14px] text-slate-500 leading-[1.45]",
+  meta:       "text-[13px] sm:text-[14px] text-slate-500",
 } as const;
 
 interface HourlyRow { SaleDate: string; SaleTime: string; CustomerCnt: number; SaleTotal: number; }
@@ -45,10 +45,19 @@ interface DaySaleProductItem {
   saleTotal: number | null;
   margin: number | null;
 }
+// 2026-10-07 · 매출 구성 비율 · byClass (상비약/일반/뷰티/미분류)
+interface DayClassStats { quantity: number | null; saleTotal: number | null; count: number; }
+interface DayByClass {
+  stationery: DayClassStats;  // 상비약
+  general: DayClassStats;     // 일반
+  cosmetics: DayClassStats;   // 뷰티
+  unknown: DayClassStats;     // 미분류
+}
 interface DayProductApiResponse {
   ok: boolean;
   items?: DaySaleProductItem[];
   totals?: { quantity?: number | null; saleTotal?: number | null };
+  byClass?: DayByClass;
   error?: string;
 }
 
@@ -84,8 +93,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const [salesLoading, setSalesLoading] = useState(false);
   const [salesError, setSalesError] = useState<string | null>(null);
 
-  // 2026-10-07 · 오늘의 판매현황 상품 · RevenuePage DayDetailModal 과 동일 endpoint 재사용 (SSOT)
+  // 2026-10-07 · 오늘의 판매현황 상품 + byClass 매출 구성 · RevenuePage DayDetailModal 과 동일 endpoint (SSOT)
   const [dayProducts, setDayProducts] = useState<DaySaleProductItem[] | null>(null);
+  const [dayByClass, setDayByClass] = useState<DayByClass | null>(null);
   const [productsLoading, setProductsLoading] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
 
@@ -110,8 +120,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       const r = await api.get<DayProductApiResponse>(`/api/erp/sale-day-products?date=${y}`);
       if (!r.data.ok) throw new Error(r.data.error ?? "판매현황 조회 실패");
       setDayProducts(r.data.items ?? []);
+      setDayByClass(r.data.byClass ?? null);
     } catch (e) {
-      setProductsError((e as Error).message); setDayProducts(null);
+      setProductsError((e as Error).message); setDayProducts(null); setDayByClass(null);
     } finally { setProductsLoading(false); }
   }, [isManagerOrAdmin]);
 
@@ -223,6 +234,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             rows={todayRows}
             todaySale={todaySale}
             curHour={curHour}
+            byClass={dayByClass}
             onOpen={goTo("display", "revenue")}
             onRetry={() => void loadSales()}
           />
@@ -298,12 +310,13 @@ const CARD_HOVER = "transition hover:border-slate-300 hover:shadow-[0_2px_6px_rg
 //   · Icon container · pastel bg · smooth tint 변화
 //   · No multi-color 카드 bg (화려함 제거)
 // ─────────────────────────────────────────────────────────────
+// 2026-10-07 · 사용자 지시 · 컬러 포인트 · 약간 화려 · 2026 trend (gradient icon · colored shadow · subtle depth)
 type MetricTone = "emerald" | "sky" | "violet" | "amber";
-const METRIC_TONE: Record<MetricTone, { iconBg: string; iconText: string; hoverBg: string }> = {
-  emerald: { iconBg: "bg-emerald-50", iconText: "text-emerald-600", hoverBg: "hover:bg-emerald-50/30" },
-  sky:     { iconBg: "bg-sky-50",     iconText: "text-sky-600",     hoverBg: "hover:bg-sky-50/30" },
-  violet:  { iconBg: "bg-violet-50",  iconText: "text-violet-600",  hoverBg: "hover:bg-violet-50/30" },
-  amber:   { iconBg: "bg-amber-50",   iconText: "text-amber-600",   hoverBg: "hover:bg-amber-50/30" },
+const METRIC_TONE: Record<MetricTone, { iconBg: string; iconText: string; hoverBg: string; valueText: string }> = {
+  emerald: { iconBg: "bg-gradient-to-br from-emerald-100 to-emerald-50", iconText: "text-emerald-600", hoverBg: "hover:bg-emerald-50/50", valueText: "text-emerald-700" },
+  sky:     { iconBg: "bg-gradient-to-br from-sky-100 to-sky-50",         iconText: "text-sky-600",     hoverBg: "hover:bg-sky-50/50",     valueText: "text-sky-700" },
+  violet:  { iconBg: "bg-gradient-to-br from-violet-100 to-violet-50",   iconText: "text-violet-600",  hoverBg: "hover:bg-violet-50/50",  valueText: "text-violet-700" },
+  amber:   { iconBg: "bg-gradient-to-br from-amber-100 to-amber-50",     iconText: "text-amber-600",   hoverBg: "hover:bg-amber-50/50",   valueText: "text-amber-700" },
 };
 
 interface MetricItem {
@@ -320,9 +333,9 @@ interface UnifiedMetricsCardProps {
   error?: boolean;
 }
 
-// 2026-10-07 · 사용자 지시 · 심플하게 · label/value 글씨 밸런스 가깝게 · sparkline 제거
+// 2026-10-07 · 사용자 지시 · 컬러 포인트 · gradient icon · tone-adaptive value color · 2026 trend
 const UnifiedMetricsCard: React.FC<UnifiedMetricsCardProps> = ({ metrics, loading, error }) => (
-  <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_1px_2px_rgba(10,20,40,0.04)] overflow-hidden h-full">
+  <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_1px_3px_rgba(10,20,40,0.04),0_6px_16px_-10px_rgba(10,20,40,0.08)] overflow-hidden h-full">
     <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 h-full">
       {metrics.map((m, i) => {
         const t = METRIC_TONE[m.tone];
@@ -331,21 +344,23 @@ const UnifiedMetricsCard: React.FC<UnifiedMetricsCardProps> = ({ metrics, loadin
             key={i}
             type="button"
             onClick={m.onClick}
-            className={`text-left px-4 sm:px-5 py-4 min-h-[96px] flex items-center gap-3 min-w-0 ${t.hoverBg} transition cursor-pointer`}
+            className={`text-left px-5 py-4 min-h-[100px] flex items-center gap-3 min-w-0 ${t.hoverBg} transition-all duration-200 cursor-pointer group relative overflow-hidden`}
           >
-            <span className={`inline-flex items-center justify-center w-10 h-10 rounded-[10px] shrink-0 ${t.iconBg} ${t.iconText}`}>
+            {/* subtle color accent on hover · bottom gradient line */}
+            <span aria-hidden className={`absolute left-0 right-0 bottom-0 h-[2px] ${t.iconText.replace("text-", "bg-")} opacity-0 group-hover:opacity-80 transition-opacity`} />
+            <span className={`inline-flex items-center justify-center w-11 h-11 rounded-[12px] shrink-0 ${t.iconBg} ${t.iconText} shadow-[inset_0_0_0_1px_rgba(255,255,255,0.4)] transition-transform group-hover:scale-105`}>
               {m.icon}
             </span>
             <div className="flex flex-col min-w-0 gap-0.5">
-              <span className="text-[13px] sm:text-[14px] text-slate-500 font-medium break-keep">{m.label}</span>
+              <span className={T.cardLabel + " break-keep"}>{m.label}</span>
               {loading ? (
-                <SkeletonBar className="h-5 w-28" />
+                <SkeletonBar className="h-6 w-28" />
               ) : error ? (
                 <div className="text-[14px] text-rose-500 font-semibold">조회 실패</div>
               ) : (
                 <div
-                  className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap tracking-tight"
-                  style={{ fontSize: "clamp(16px, 2.0vw, 20px)" }}
+                  className={`font-bold tabular-nums ${t.valueText} leading-tight whitespace-nowrap tracking-tight`}
+                  style={T.kpiValue}
                   title={m.value}
                 >
                   {m.value}
@@ -369,31 +384,31 @@ interface ApprovalCountCardProps {
   onClick: () => void;
 }
 
+// 2026 trend · gradient card bg · colored shadow · hover lift
 const ApprovalCountCard: React.FC<ApprovalCountCardProps> = ({ count, breakdown, onClick }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`${CARD_BASE} ${CARD_HOVER} cursor-pointer min-w-0 w-full flex flex-col justify-between p-4 sm:p-5 min-h-[112px] relative overflow-hidden`}
+    className="cursor-pointer min-w-0 w-full flex flex-col justify-between p-5 min-h-[100px] relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50 via-white to-orange-50/40 shadow-[0_1px_3px_rgba(217,119,6,0.08),0_6px_16px_-10px_rgba(217,119,6,0.25)] hover:shadow-[0_4px_12px_rgba(217,119,6,0.12),0_12px_24px_-10px_rgba(217,119,6,0.35)] transition-all duration-200 group text-left"
   >
-    {/* subtle orange gradient background · right side */}
-    <div aria-hidden className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-amber-100/40 blur-2xl pointer-events-none" />
-    <div className="relative flex items-center gap-2.5">
-      <span className="inline-flex items-center justify-center w-9 h-9 rounded-[10px] shrink-0 bg-amber-50 text-amber-600">
-        <ClipboardCheck size={18} strokeWidth={2.2} />
+    <div aria-hidden className="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-amber-200/30 blur-2xl pointer-events-none" />
+    <div className="relative flex items-center gap-3">
+      <span className="inline-flex items-center justify-center w-11 h-11 rounded-[12px] shrink-0 bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-[0_2px_6px_rgba(217,119,6,0.3)] transition-transform group-hover:scale-105">
+        <ClipboardCheck size={20} strokeWidth={2.2} />
       </span>
-      <span className="text-[12px] sm:text-[13px] text-slate-500 font-medium tracking-wide break-keep">오늘 처리할 업무</span>
+      <span className="text-[14px] sm:text-[15px] text-amber-900 font-semibold tracking-tight break-keep">오늘 처리할 업무</span>
     </div>
     <div className="relative mt-2 flex items-baseline gap-1.5">
       <div
         className="font-bold tabular-nums text-amber-700 leading-[1.1] tracking-tight"
-        style={{ fontSize: "clamp(26px, 3.4vw, 34px)" }}
+        style={{ fontSize: "clamp(28px, 3.6vw, 36px)" }}
       >
         {count}
       </div>
-      <div className="text-[13px] text-slate-500 font-medium">건</div>
+      <div className="text-[14px] text-amber-700/70 font-semibold">건</div>
     </div>
     {breakdown && (
-      <div className="relative mt-0.5 text-[11px] sm:text-[12px] text-slate-500 break-keep leading-snug">{breakdown}</div>
+      <div className="relative mt-0.5 text-[12px] sm:text-[13px] text-amber-700/70 break-keep leading-snug font-medium">{breakdown}</div>
     )}
   </button>
 );
@@ -412,7 +427,7 @@ const SectionHeader: React.FC<{ children: React.ReactNode; right?: React.ReactNo
   </div>
 );
 
-interface TaskItem { label: string; count: number; onClick: () => void; }
+interface TaskItem { label: string; count: number; onClick: () => void; dotColor?: string; }
 interface TaskQueueCardProps { title: string; totalBadge: number; items: TaskItem[]; }
 
 const TaskQueueCard: React.FC<TaskQueueCardProps> = ({ title, totalBadge, items }) => {
@@ -457,11 +472,20 @@ interface SalesCardProps {
   rows: HourlyRow[];
   todaySale: number;
   curHour: number;
+  byClass: DayByClass | null;
   onOpen: () => void;
   onRetry: () => void;
 }
 
-const SalesCard: React.FC<SalesCardProps> = ({ loading, error, rows, todaySale, curHour, onOpen, onRetry }) => {
+// 매출 구성 비율 · byClass → donut data · 상비약/일반/뷰티
+const CLASS_LABEL: Record<keyof DayByClass, string> = {
+  general: "일반", stationery: "상비약", cosmetics: "뷰티", unknown: "미분류",
+};
+const CLASS_COLOR: Record<keyof DayByClass, string> = {
+  general: "#0ea5e9", stationery: "#10b981", cosmetics: "#ec4899", unknown: "#94a3b8",
+};
+
+const SalesCard: React.FC<SalesCardProps> = ({ loading, error, rows, todaySale, curHour, byClass, onOpen, onRetry }) => {
   const chartData = useMemo(() =>
     rows
       .map(r => ({ hour: parseHour(r.SaleTime), sale: Number(r.SaleTotal ?? 0) }))
@@ -489,60 +513,108 @@ const SalesCard: React.FC<SalesCardProps> = ({ loading, error, rows, todaySale, 
           {loading && rows.length === 0 ? (
             <SkeletonBar className="h-8 w-44" />
           ) : (
-            <div className="font-bold tabular-nums text-emerald-700 leading-tight tracking-tight" style={{ fontSize: "clamp(22px, 3.2vw, 30px)" }}>
+            <div className="font-bold tabular-nums text-emerald-700 leading-tight tracking-tight" style={{ fontSize: "clamp(23px, 3.3vw, 31px)" }}>
               {error ? "-" : rows.length === 0 ? "-" : fmtWon(todaySale)}
             </div>
           )}
           <div className={`${T.meta} mb-1`}>누적 매출</div>
         </div>
       </div>
-      <div className="flex-1 min-h-[170px] px-2 pb-3">
-        {error ? (
-          <div className="h-full flex flex-col items-center justify-center gap-2 text-[14px] text-rose-500">
-            <div>ERP 조회 실패</div>
-            <button
-              type="button"
-              onClick={onRetry}
-              className="inline-flex items-center gap-1 px-3 py-1 border border-rose-300 text-rose-600 rounded-md text-[13px] font-semibold hover:bg-rose-50 cursor-pointer"
-            >
-              <RotateCcw size={13} /> 다시 시도
-            </button>
-          </div>
-        ) : loading && rows.length === 0 ? (
-          <div className="h-full px-2 flex items-end gap-1.5">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <SkeletonBar key={i} className="flex-1" style={{ height: `${30 + Math.sin(i * 1.3) * 30 + 60}%` }} />
-            ))}
-          </div>
-        ) : chartData.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-[14px] text-slate-400">데이터 없음</div>
-        ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 12, bottom: 8, left: 12 }}>
-              <defs>
-                <linearGradient id="sales-area" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
-              <Tooltip
-                formatter={(v: number) => fmtWon(v)}
-                contentStyle={{ fontSize: 12, borderRadius: 8, padding: "6px 10px", border: "1px solid #e2e8f0" }}
-                cursor={{ stroke: "#10b981", strokeOpacity: 0.3, strokeDasharray: "3 3" }}
-              />
-              <Area
-                dataKey="sale"
-                type="monotone"
-                stroke="#059669"
-                strokeWidth={2}
-                fill="url(#sales-area)"
-                isAnimationActive={false}
-                activeDot={{ r: 4, fill: "#059669", stroke: "#fff", strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
+      {/* 좌 area chart (매출 추이) + 우 donut (매출 구성 비율 · 상비약/일반/뷰티) */}
+      <div className="flex-1 min-h-[180px] grid grid-cols-1 md:grid-cols-5 gap-2 px-2 pb-3">
+        <div className="md:col-span-3 min-h-[180px]">
+          {error ? (
+            <div className="h-full flex flex-col items-center justify-center gap-2 text-[14px] text-rose-500">
+              <div>ERP 조회 실패</div>
+              <button
+                type="button"
+                onClick={onRetry}
+                className="inline-flex items-center gap-1 px-3 py-1 border border-rose-300 text-rose-600 rounded-md text-[13px] font-semibold hover:bg-rose-50 cursor-pointer"
+              >
+                <RotateCcw size={13} /> 다시 시도
+              </button>
+            </div>
+          ) : loading && rows.length === 0 ? (
+            <div className="h-full px-2 flex items-end gap-1.5">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <SkeletonBar key={i} className="flex-1" style={{ height: `${30 + Math.sin(i * 1.3) * 30 + 60}%` }} />
+              ))}
+            </div>
+          ) : chartData.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-[14px] text-slate-400">데이터 없음</div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 12, bottom: 8, left: 12 }}>
+                <defs>
+                  <linearGradient id="sales-area" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  formatter={(v: number) => fmtWon(v)}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, padding: "6px 10px", border: "1px solid #e2e8f0" }}
+                  cursor={{ stroke: "#10b981", strokeOpacity: 0.3, strokeDasharray: "3 3" }}
+                />
+                <Area
+                  dataKey="sale" type="monotone" stroke="#059669" strokeWidth={2}
+                  fill="url(#sales-area)" isAnimationActive={false}
+                  activeDot={{ r: 4, fill: "#059669", stroke: "#fff", strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+        {/* 매출 구성 비율 donut · 상비약/일반/뷰티 */}
+        <div className="md:col-span-2 min-h-[180px] flex flex-col">
+          <div className="text-[13px] sm:text-[14px] text-slate-500 font-medium px-2 pt-1">매출 구성 비율</div>
+          <SalesClassDonut byClass={byClass} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 매출 구성 donut · 상비약/일반/뷰티/(미분류)
+const SalesClassDonut: React.FC<{ byClass: DayByClass | null }> = ({ byClass }) => {
+  const data = useMemo(() => {
+    if (!byClass) return [];
+    const keys: Array<keyof DayByClass> = ["general", "stationery", "cosmetics", "unknown"];
+    return keys
+      .map(k => ({ key: k, name: CLASS_LABEL[k], value: Number(byClass[k]?.saleTotal ?? 0), color: CLASS_COLOR[k] }))
+      .filter(d => d.value > 0);
+  }, [byClass]);
+  const total = data.reduce((a, d) => a + d.value, 0);
+  if (!byClass || total === 0) {
+    return <div className="flex-1 flex items-center justify-center text-[13px] text-slate-400">데이터 없음</div>;
+  }
+  return (
+    <div className="flex-1 grid grid-cols-5 gap-1 min-h-0">
+      <div className="col-span-3 min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={data} dataKey="value" innerRadius="55%" outerRadius="85%" paddingAngle={2} isAnimationActive={false} stroke="none">
+              {data.map((d, i) => <Cell key={i} fill={d.color} />)}
+            </Pie>
+            <Tooltip
+              formatter={(v: number, name) => [fmtWon(v), name]}
+              contentStyle={{ fontSize: 12, borderRadius: 8, padding: "6px 10px", border: "1px solid #e2e8f0" }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="col-span-2 flex flex-col justify-center gap-1.5 pr-2 min-w-0">
+        {data.map((d) => {
+          const pct = total > 0 ? (d.value / total * 100) : 0;
+          return (
+            <div key={d.key} className="flex items-center gap-1.5 min-w-0">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.color }} />
+              <span className="text-[13px] sm:text-[14px] text-slate-600 font-medium break-keep">{d.name}</span>
+              <span className="ml-auto text-[13px] sm:text-[14px] text-slate-500 tabular-nums shrink-0">{pct.toFixed(0)}%</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -675,12 +747,13 @@ interface QuickActionCardProps {
   tone: "coral" | "amber" | "sky" | "emerald" | "violet";
 }
 
-const QA_TONE: Record<QuickActionCardProps["tone"], { bg: string; icon: string }> = {
-  coral:   { bg: "bg-rose-50",     icon: "text-rose-600" },
-  amber:   { bg: "bg-amber-50",    icon: "text-amber-600" },
-  sky:     { bg: "bg-sky-50",      icon: "text-sky-600" },
-  emerald: { bg: "bg-emerald-50",  icon: "text-emerald-600" },
-  violet:  { bg: "bg-violet-50",   icon: "text-violet-600" },
+// 2026 trend · gradient icon · colored shadow · hover border accent
+const QA_TONE: Record<QuickActionCardProps["tone"], { bg: string; icon: string; shadow: string; hoverBorder: string }> = {
+  coral:   { bg: "bg-gradient-to-br from-rose-100 to-rose-50",       icon: "text-rose-600",    shadow: "shadow-[0_2px_6px_rgba(244,63,94,0.12)]",    hoverBorder: "hover:border-rose-200" },
+  amber:   { bg: "bg-gradient-to-br from-amber-100 to-amber-50",     icon: "text-amber-600",   shadow: "shadow-[0_2px_6px_rgba(217,119,6,0.12)]",   hoverBorder: "hover:border-amber-200" },
+  sky:     { bg: "bg-gradient-to-br from-sky-100 to-sky-50",         icon: "text-sky-600",     shadow: "shadow-[0_2px_6px_rgba(14,165,233,0.12)]",  hoverBorder: "hover:border-sky-200" },
+  emerald: { bg: "bg-gradient-to-br from-emerald-100 to-emerald-50", icon: "text-emerald-600", shadow: "shadow-[0_2px_6px_rgba(16,185,129,0.12)]",  hoverBorder: "hover:border-emerald-200" },
+  violet:  { bg: "bg-gradient-to-br from-violet-100 to-violet-50",   icon: "text-violet-600",  shadow: "shadow-[0_2px_6px_rgba(139,92,246,0.12)]",  hoverBorder: "hover:border-violet-200" },
 };
 
 const QuickActionCard: React.FC<QuickActionCardProps> = ({ icon, title, desc, onClick, tone }) => {
@@ -689,9 +762,9 @@ const QuickActionCard: React.FC<QuickActionCardProps> = ({ icon, title, desc, on
     <button
       type="button"
       onClick={onClick}
-      className={`${CARD_BASE} ${CARD_HOVER} cursor-pointer text-left flex flex-col gap-2.5 min-w-0 p-4 sm:p-[18px] min-h-[140px]`}
+      className={`bg-white border border-slate-200 rounded-[14px] shadow-[0_1px_2px_rgba(10,20,40,0.04)] transition-all duration-200 cursor-pointer text-left flex flex-col gap-2.5 min-w-0 p-[18px] min-h-[140px] group hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(10,20,40,0.08)] ${t.hoverBorder}`}
     >
-      <span className={`inline-flex items-center justify-center w-10 h-10 rounded-[10px] shrink-0 ${t.bg} ${t.icon}`}>
+      <span className={`inline-flex items-center justify-center w-11 h-11 rounded-[12px] shrink-0 ${t.bg} ${t.icon} ${t.shadow} transition-transform group-hover:scale-105`}>
         {icon}
       </span>
       <div className="flex flex-col gap-0.5 min-w-0">
