@@ -192,15 +192,17 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
   const hasUnread = unreadCount > 0;
   return (
     <div className="relative">
-      {/* 2026-08-23 · #199 · Bell 16→22 · compact 13→18 */}
+      {/* 2026-10-07 · Batch 3 (PRESENTATION ONLY) · 비-unread 버튼 chrome 축소
+             · shadow-sm 제거 · border-white/15 → border-white/10 · hover ghost
+             · unread 는 semantic status 유지 (rose solid) */}
       <button
         onClick={() => { setOpen((v) => !v); if (!open) fetchNotifications(); }}
         className={`relative flex items-center justify-center rounded-md border transition-colors cursor-pointer ${
-          compact ? "w-7 h-7" : "w-9 h-9 rounded-lg shadow-sm"
+          compact ? "w-7 h-7" : "w-9 h-9 rounded-lg"
         } ${
           hasUnread
             ? "bg-rose-500/95 hover:bg-rose-600 border-rose-400 text-white"
-            : "bg-white/[0.10] hover:bg-white/[0.18] border-white/15 hover:border-white/30 text-white"
+            : "bg-transparent hover:bg-white/[0.08] border-white/10 hover:border-white/20 text-white/85 hover:text-white"
         } ${justArrived ? "notif-bell-shake" : ""}`}
         title={hasUnread ? `미확인 알림 ${unreadCount}건` : "알림"}
       >
