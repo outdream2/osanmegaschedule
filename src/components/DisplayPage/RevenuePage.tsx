@@ -1897,12 +1897,19 @@ const MonthlyReportTab: React.FC = () => {
                       {cell.day}{isToday && <span className="ml-1 text-[12px] md:text-[14px] text-amber-700">● 오늘</span>}
                     </div>
                     <div className="mt-1 space-y-1 text-[12px] md:text-[14px]">
-                      {cell.sale && (
-                        <div className="flex flex-col min-w-0">
-                          <span className="text-rose-600 font-semibold leading-tight">매출</span>
-                          <span className="tabular-nums font-bold text-rose-700 leading-tight break-all">{fmtNum(Number(cell.sale.SaleTotal ?? 0))}</span>
-                        </div>
-                      )}
+                      {cell.sale && (() => {
+                        // 2026-10-07 · 사용자 지시 · 매출 기본 파랑 · 5천만원 초과 붉은색 highlight
+                        const saleAmount = Number(cell.sale.SaleTotal ?? 0);
+                        const isSaleHigh = saleAmount >= 50_000_000;
+                        const labelColor = isSaleHigh ? "text-rose-600" : "text-sky-600";
+                        const valueColor = isSaleHigh ? "text-rose-700" : "text-sky-700";
+                        return (
+                          <div className="flex flex-col min-w-0">
+                            <span className={`${labelColor} font-semibold leading-tight`}>매출</span>
+                            <span className={`tabular-nums font-bold ${valueColor} leading-tight break-all`}>{fmtNum(saleAmount)}</span>
+                          </div>
+                        );
+                      })()}
                       {cell.buy && (
                         <div className="flex flex-col min-w-0">
                           <span className="text-brand-deep font-semibold leading-tight">매입</span>
