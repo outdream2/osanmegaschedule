@@ -63,6 +63,8 @@ import stockArrivalsRouter from "./server/routes/stock/stockArrivals";
 import productArrivalsRouter from "./server/routes/stock/productArrivals";
 // 2026-10-05 · #128 · 매장>매출 ERP route (Sales_Days_TimeReport + Statistics_Month_DashBoard)
 import salesStatsRouter from "./server/routes/erp/salesStatsRouter";
+// 2026-10-07 · 매장>매출 월달력 날짜 click → 날짜별 상품 ERP 실시간 조회
+import salesDayProductRouter from "./server/routes/erp/salesDayProductRouter";
 import returnRequestsRouter from "./server/routes/purchase/returnRequests";
 import zoneLabelsRouter from "./server/routes/display/zoneLabels";
 // 2026-08-30 · 사용자 지시 · zone_defs KV → 정식 DB 테이블 이관
@@ -314,6 +316,8 @@ async function startServer() {
   app.use(productArrivalsRouter);
   // 2026-10-05 · #128 · 매장>매출 ERP route (iregen-decoder spawn · Windows dev 전용)
   app.use(salesStatsRouter);
+  // 2026-10-07 · 매장>매출 월달력 날짜 click → 날짜별 상품 ERP 실시간 조회
+  app.use(salesDayProductRouter);
   app.use(returnRequestsRouter);
   app.use(zoneLabelsRouter);
   app.use(zoneDefsRouter);

@@ -15,6 +15,8 @@ import { shortDateWithDow } from "../../lib/dateFormat";
 // 2026-10-07 · HourlyReportTab 조회기간 월 멀티선택 (STANDARD)
 import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { MonthToggleSelector, dateRangesFromMonths } from "../common/MonthToggleSelector";
+// 2026-10-07 · DayDetailModal · 날짜별 상품 ERP 실시간 조회 · 상비약/일반약 분류 필터
+import { CLASS_FILTER_LABEL, type ClassFilter, type ProductClass } from "../../utils/productClassify";
 
 type RevenueTab = "hourly" | "monthly";
 type FetchStatus = "idle" | "loading" | "success" | "error";
@@ -1980,6 +1982,40 @@ const MetricCard: React.FC<{ color: AccentColor; label: string; value: string; b
   );
 };
 
+// 2026-10-07 · 날짜별 상품 ERP 실시간 조회 응답 타입 (서버 salesDayProductRouter 와 1:1)
+interface DaySaleProductItem {
+  pcode: string | null;
+  productName: string | null;
+  buyerCorpName: string | null;
+  unitCost: number | null;
+  unitSale: number | null;
+  totalStock: number | null;    // 수량
+  saleTotal: number | null;
+  margin: number | null;
+  marginPct: number | null;
+  location: string | null;
+  class: ProductClass;
+}
+interface DayProductClassStats {
+  quantity: number | null;
+  saleTotal: number | null;
+  margin: number | null;
+  marginPct: number | null;
+  count: number;
+}
+interface DayProductApiResponse {
+  ok: boolean;
+  date?: string;
+  totals?: DayProductClassStats;
+  byClass?: {
+    stationery: DayProductClassStats;
+    general: DayProductClassStats;
+    unknown: DayProductClassStats;
+  };
+  items?: DaySaleProductItem[];
+  error?: string;
+}
+
 const DayDetailModal: React.FC<{
   day: { day: number; dateStr: string; buy?: MonthlyBuyDaily; sale?: MonthlySaleDaily };
   year: number;
@@ -1998,11 +2034,54 @@ const DayDetailModal: React.FC<{
   const isToday = day.dateStr === todayStr;
   const dowColor = dow === "일" ? "text-rose-600" : dow === "토" ? "text-sky-600" : "text-zinc-600";
 
+  // 2026-10-07 · 날짜별 상품 ERP 실시간 조회
+  const [prodStatus, setProdStatus] = useState<FetchStatus>("idle");
+  const [prodErr, setProdErr] = useState<string>("");
+  const [prodResp, setProdResp] = useState<DayProductApiResponse | null>(null);
+  const [classFilter, setClassFilter] = useState<ClassFilter>("all");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setProdStatus("loading");
+      setProdErr("");
+      try {
+        const r = await api.get<DayProductApiResponse>(`/api/erp/sale-day-products?date=${day.dateStr}`);
+        if (cancelled) return;
+        if (!r.data.ok) {
+          setProdErr(r.data.error ?? "ERP 조회 실패");
+          setProdStatus("error");
+          return;
+        }
+        setProdResp(r.data);
+        setProdStatus("success");
+      } catch (e) {
+        if (cancelled) return;
+        setProdErr((e as Error).message || "ERP 조회 실패");
+        setProdStatus("error");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [day.dateStr]);
+
+  const items: DaySaleProductItem[] = prodResp?.items ?? [];
+  const filteredItems = useMemo(
+    () => (classFilter === "all" ? items : items.filter((i) => i.class === classFilter)),
+    [items, classFilter],
+  );
+  // 선택 그룹 집계 badge · unknown 은 전체(all) 에만 포함 (CLASS_FILTER_LABEL 과 정합)
+  const groupStats: DayProductClassStats | null = useMemo(() => {
+    if (!prodResp?.byClass || !prodResp?.totals) return null;
+    if (classFilter === "all") return prodResp.totals;
+    if (classFilter === "stationery") return prodResp.byClass.stationery;
+    return prodResp.byClass.general;
+  }, [classFilter, prodResp]);
+
   return (
     <Modal
       open
       onClose={onClose}
-      size="sm"
+      size="lg"
       icon={<CalendarDays size={18} />}
       title={
         <span className="flex items-baseline gap-2 flex-wrap">
@@ -2024,8 +2103,165 @@ const DayDetailModal: React.FC<{
           <MetricCard color="sky"     label="방문객"   value={cust > 0 ? cust.toLocaleString() + "명" : "-"} />
           <MetricCard color="rose"    label="객단가"   value={avg > 0 ? fmtWon(avg) : "-"} full />
         </div>
+
+        {/* 2026-10-07 · 날짜별 판매 상품 · ERP 실시간 (Sale_Status · SvcSaleBiz) */}
+        <div className="pt-2 border-t border-zinc-200/70">
+          <DayProductSection
+            status={prodStatus}
+            error={prodErr}
+            classFilter={classFilter}
+            setClassFilter={setClassFilter}
+            groupStats={groupStats}
+            byClass={prodResp?.byClass ?? null}
+            items={filteredItems}
+            totalCount={items.length}
+          />
+        </div>
       </div>
     </Modal>
+  );
+};
+
+// 2026-10-07 · DayDetailModal 하단 상품 섹션
+//   · ClassFilter 탭 (전체/상비약/일반약) · 선택 그룹 합계 badge · 상품 테이블
+//   · 로딩/에러/빈 상태 분리
+const DayProductSection: React.FC<{
+  status: FetchStatus;
+  error: string;
+  classFilter: ClassFilter;
+  setClassFilter: (f: ClassFilter) => void;
+  groupStats: DayProductClassStats | null;
+  byClass: { stationery: DayProductClassStats; general: DayProductClassStats; unknown: DayProductClassStats } | null;
+  items: DaySaleProductItem[];
+  totalCount: number;
+}> = ({ status, error, classFilter, setClassFilter, groupStats, byClass, items, totalCount }) => {
+  const tabs: Array<{ key: ClassFilter; label: string; count: number | null }> = [
+    { key: "all",        label: CLASS_FILTER_LABEL.all,        count: totalCount || null },
+    { key: "stationery", label: CLASS_FILTER_LABEL.stationery, count: byClass?.stationery.count ?? null },
+    { key: "general",    label: CLASS_FILTER_LABEL.general,    count: byClass?.general.count ?? null },
+  ];
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="text-[13px] md:text-[14px] font-bold text-zinc-700">판매 상품</div>
+        <div className="text-[11px] text-zinc-500">ERP 실시간 조회</div>
+      </div>
+
+      {/* ClassFilter 탭 */}
+      <div className="flex flex-wrap gap-1">
+        {tabs.map((tab) => {
+          const active = tab.key === classFilter;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setClassFilter(tab.key)}
+              className={`px-3 py-1.5 rounded-md text-[12px] md:text-[13px] font-semibold border transition-colors ${
+                active
+                  ? "bg-brand-deep text-white border-brand-deep"
+                  : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50"
+              }`}
+            >
+              {tab.label}
+              {tab.count !== null && (
+                <span className={`ml-1.5 text-[11px] ${active ? "text-white/80" : "text-zinc-500"}`}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 선택 그룹 합계 badge · 2×2 compact */}
+      {groupStats && status === "success" && (
+        <div className="grid grid-cols-4 gap-2 text-[11px] md:text-[12px] bg-zinc-50 rounded-lg p-2 border border-zinc-200">
+          <div>
+            <div className="text-zinc-500">수량</div>
+            <div className="font-bold tabular-nums text-zinc-800">
+              {groupStats.quantity !== null ? fmtNum(groupStats.quantity) : "-"}
+            </div>
+          </div>
+          <div>
+            <div className="text-zinc-500">매출</div>
+            <div className="font-bold tabular-nums text-brand-deep">
+              {groupStats.saleTotal !== null ? fmtWon(groupStats.saleTotal) : "-"}
+            </div>
+          </div>
+          <div>
+            <div className="text-zinc-500">이익</div>
+            <div className="font-bold tabular-nums text-emerald-700">
+              {groupStats.margin !== null ? fmtWon(groupStats.margin) : "-"}
+            </div>
+          </div>
+          <div>
+            <div className="text-zinc-500">마진율</div>
+            <div className="font-bold tabular-nums text-indigo-700">
+              {groupStats.marginPct !== null ? `${groupStats.marginPct.toFixed(1)}%` : "-"}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 상품 테이블 · Loading / Error / Empty / Success */}
+      {status === "loading" && (
+        <div className="py-6 text-center text-[13px] text-zinc-500">ERP 조회 중…</div>
+      )}
+      {status === "error" && (
+        <div className="py-4 px-3 rounded-md bg-rose-50 border border-rose-200 text-[12px] text-rose-700">
+          ERP 조회 실패 · {error}
+        </div>
+      )}
+      {status === "success" && items.length === 0 && (
+        <div className="py-6 text-center text-[13px] text-zinc-500">해당 조건의 판매 상품이 없습니다.</div>
+      )}
+      {status === "success" && items.length > 0 && (
+        <div className="max-h-[320px] md:max-h-[400px] overflow-auto rounded-md border border-zinc-200">
+          <table className="w-full text-[12px] md:text-[13px]">
+            <thead className="bg-zinc-50 text-zinc-600 sticky top-0 z-10">
+              <tr>
+                <th className="px-2 py-1.5 text-left font-semibold">상품명</th>
+                <th className="px-2 py-1.5 text-right font-semibold">수량</th>
+                <th className="px-2 py-1.5 text-right font-semibold">매출</th>
+                <th className="px-2 py-1.5 text-right font-semibold">이익</th>
+                <th className="px-2 py-1.5 text-right font-semibold">마진율</th>
+                <th className="px-2 py-1.5 text-center font-semibold">분류</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100">
+              {items.map((it, idx) => (
+                <tr key={`${it.pcode ?? "noPcode"}-${idx}`} className="hover:bg-zinc-50/50">
+                  <td className="px-2 py-1.5 text-zinc-800 truncate max-w-[220px]" title={it.productName ?? ""}>
+                    {it.productName ?? "-"}
+                  </td>
+                  <td className="px-2 py-1.5 text-right tabular-nums text-zinc-700">
+                    {it.totalStock !== null ? fmtNum(it.totalStock) : "-"}
+                  </td>
+                  <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-brand-deep">
+                    {it.saleTotal !== null ? fmtNum(it.saleTotal) : "-"}
+                  </td>
+                  <td className="px-2 py-1.5 text-right tabular-nums text-emerald-700">
+                    {it.margin !== null ? fmtNum(it.margin) : "-"}
+                  </td>
+                  <td className="px-2 py-1.5 text-right tabular-nums text-indigo-700">
+                    {it.marginPct !== null ? `${it.marginPct.toFixed(1)}%` : "-"}
+                  </td>
+                  <td className="px-2 py-1.5 text-center">
+                    <span className={`inline-block px-1.5 py-[1px] rounded text-[11px] font-semibold ${
+                      it.class === "stationery" ? "bg-amber-100 text-amber-800"
+                      : it.class === "general"  ? "bg-indigo-100 text-indigo-800"
+                                                : "bg-zinc-100 text-zinc-600"
+                    }`}>
+                      {it.class === "stationery" ? "상비약" : it.class === "general" ? "일반약" : "미분류"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 };
 
