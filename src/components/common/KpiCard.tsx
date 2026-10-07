@@ -131,7 +131,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     }
     // ComponentType · 렌더
     const Icon = icon as IconLike;
-    return <Icon size={14} className={`${useNewStyle ? "text-brand-deep" : c.icon} shrink-0`} strokeWidth={2.2} />;
+    // 2026-10-08 · Batch 5 · icon 14→13 · spec compact
+    return <Icon size={13} className={`${useNewStyle ? "text-brand-deep" : c.icon} shrink-0`} strokeWidth={2.2} />;
   }, [icon, useNewStyle, c.icon]);
 
   return (
@@ -156,7 +157,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({
         <span className="kpi-card-label">{label}</span>
         {useNewStyle && delta !== undefined && delta !== 0 && (
           <span
-            className={`ml-auto inline-flex items-center gap-0.5 text-[14px] font-bold tabular-nums ${
+            // 2026-10-08 · Batch 5 · delta font 14→12 · spec meta/trend 11-12
+            className={`ml-auto inline-flex items-center gap-0.5 text-[12px] font-bold tabular-nums ${
               delta > 0 ? "text-emerald-600" : "text-rose-600"
             }`}
           >
@@ -169,12 +171,14 @@ export const KpiCard: React.FC<KpiCardProps> = ({
       {/* 값 · 큰 숫자 */}
       <div className="flex items-baseline gap-1.5">
         <span className={`kpi-card-value ${valueCls}`}>{value}</span>
-        {unit && <span className="text-[14px] font-semibold text-ink-soft">{unit}</span>}
+        {/* 2026-10-08 · Batch 5 · unit font 14→13 · spec label range */}
+        {unit && <span className="text-[13px] font-semibold text-ink-soft">{unit}</span>}
       </div>
 
       {/* subtitle (backward compat) or hint (신규) */}
       {(subtitle != null || hint != null) && (
-        <div className="text-[14px] font-medium text-ink-soft tracking-tight">
+        // 2026-10-08 · Batch 5 · subtitle/hint font 14→12 · spec meta/trend 11-12
+        <div className="text-[12px] font-medium text-ink-soft tracking-tight">
           {hint ?? subtitle}
         </div>
       )}

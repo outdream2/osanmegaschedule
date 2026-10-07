@@ -564,27 +564,27 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
   @apply flex items-center gap-2 px-4 h-10 border-b border-line shrink-0;
 }
 
-/* ── KPI 카드 (상단 요약 통계) · 2026-08-17 v2 · Attio/Linear 세련 · 2-layer shadow ── */
+/* ── KPI 카드 · 2026-10-08 Batch 5 (presentation-only) · analytics spec align ──
+ *   · spec label 12-13 · value 22-26 · meta 11-12 · low shadow · 10-12px radius · neutral border
+ *   · 이전 (17.5 라벨 · 26 value · 3-layer shadow · hover translate) → compact dashboard tone
+ *   · hover 미세한 shadow bump만 (translate-y 제거)
+ */
 .kpi-card {
-  @apply bg-white border border-line rounded-[16px] px-5 py-4 flex flex-col gap-2 transition-all duration-200 hover:-translate-y-0.5;
-  /* Attio · subtle inset light + 즉시 shadow (딥네이비 tint) */
+  @apply bg-white border border-line rounded-[12px] px-4 py-3 flex flex-col gap-1.5 transition-shadow duration-200;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.60),
-    0 1px 2px rgba(10, 46, 74, 0.05),
-    0 2px 8px -2px rgba(10, 46, 74, 0.06);
+    0 1px 2px rgba(10, 46, 74, 0.04);
 }
 .kpi-card:hover {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.60),
-    0 2px 4px rgba(10, 46, 74, 0.06),
-    0 8px 20px -4px rgba(10, 46, 74, 0.12);
+    0 2px 6px rgba(10, 46, 74, 0.08);
 }
 .kpi-card-value {
-  @apply text-[26px] font-extrabold text-ink tabular-nums tracking-[-0.02em];
+  @apply text-[24px] font-extrabold text-ink tabular-nums tracking-[-0.02em] leading-tight;
 }
-/* 2026-09-08 · 사용자 지시 · KPI 라벨 폰트 +3 · 14.5 → 17.5 */
 .kpi-card-label {
-  @apply text-[17.5px] font-semibold text-ink-soft;
+  @apply text-[13px] font-semibold text-ink-soft tracking-tight;
 }
 
 /* ── 필터바 · 2026-08-17 v2 · Attio 세련 · inset light + subtle shadow ── */

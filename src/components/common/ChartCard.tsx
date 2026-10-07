@@ -62,18 +62,20 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   children,
   className = "",
 }) => {
-  const iconEl = icon ?? <BarChart3 size={14} className="text-brand-deep" />;
+  // 2026-10-08 · Batch 5 · ChartCard analytics spec align (presentation-only)
+  //   · title 17→15 · description 16→12 · icon 14→13 · header mb 3→2.5
+  const iconEl = icon ?? <BarChart3 size={13} className="text-brand-deep" />;
   return (
     <Card padding={padding} rounded="lg" className={className}>
       {/* 헤더 · title + description + actions */}
-      <div className="flex items-start gap-2 mb-3">
+      <div className="flex items-start gap-2 mb-2.5">
         <span className="shrink-0 mt-0.5">{iconEl}</span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-[17px] font-bold text-ink tracking-tight leading-tight">
+          <h3 className="text-[15px] font-bold text-ink tracking-tight leading-tight">
             {title}
           </h3>
           {description && (
-            <p className="text-[16px] font-medium text-ink-soft mt-0.5 leading-snug">
+            <p className="text-[12px] font-medium text-ink-soft mt-0.5 leading-snug">
               {description}
             </p>
           )}
