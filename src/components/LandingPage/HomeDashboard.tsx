@@ -24,7 +24,8 @@ const T = {
   heroDesc:   "text-[13px] sm:text-[14px] text-slate-500 leading-[1.5]",
   sectionTitle: "text-[16px] sm:text-[17px] font-semibold text-ink tracking-tight",
   cardLabel:  "text-[12px] sm:text-[13px] text-slate-500 font-medium",
-  kpiValue:   { fontSize: "clamp(22px, 3.2vw, 30px)" } as React.CSSProperties,
+  // spec: desktop 26-28 · mobile 18-21 · tabular-nums tracking-tight
+  kpiValue:   { fontSize: "clamp(19px, 2.6vw, 28px)" } as React.CSSProperties,
   taskLabel:  "text-[13px] sm:text-[14px] text-ink font-medium",
   taskCount:  "text-[13px] sm:text-[14px] font-semibold tabular-nums",
   qaTitle:    "text-[14px] sm:text-[15px] font-semibold text-ink",
@@ -113,12 +114,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   };
 
   return (
-    // Content max-width 1240 · tighter density · spacing scale per reference
-    <div className="w-full mx-auto max-w-[1240px] flex flex-col gap-5 sm:gap-6">
+    // Content max-width 1240 · spec 31: section gap 32px desktop (gap-8 lg+)
+    <div className="w-full mx-auto max-w-[1240px] flex flex-col gap-5 sm:gap-6 lg:gap-8">
       {/* ═══ Hero · compact · soft blue-gray abstract bg (pharmacy asset 없음 → spec fallback) ═══ */}
       <header className="w-full relative rounded-2xl overflow-hidden border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-sky-50/40 px-5 sm:px-6 py-4 sm:py-5">
-        <div aria-hidden className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-sky-100/30 blur-3xl pointer-events-none" />
-        <div aria-hidden className="absolute -left-20 -bottom-24 w-64 h-64 rounded-full bg-indigo-100/20 blur-3xl pointer-events-none" />
+        {/* subtle depth · very low opacity · readability 우선 · no giant blob (spec 7) */}
+        <div aria-hidden className="absolute -right-10 -top-10 w-32 h-32 rounded-full bg-sky-100/20 blur-2xl pointer-events-none" />
         <div className="relative">
           <div className={T.eyebrow}>{dateStr}</div>
           <h1 className={`mt-1 ${T.heroTitle}`}>
@@ -128,57 +129,72 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </div>
       </header>
 
-      {/* ═══ KPI 4 · height 116-126px · padding 18-20 · radius 14 ═══ */}
+      {/* ═══ 통합 Metrics Bar · 매출/방문객/객단가/승인대기 하나의 카드로 통합
+            · 2026 trend · divide-x subtle · soft hover · smooth transition
+            · 최신 깔끔·고급·세련 톤 (화려함 제거) ═══ */}
       {isManagerOrAdmin && (
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KpiCard
-            icon={<Wallet size={20} className="text-emerald-600" strokeWidth={2.2} />}
-            iconBg="bg-emerald-50"
-            label="오늘 매출"
-            value={todayRows.length === 0 ? "-" : fmtWon(todaySale)}
+        <section>
+          <UnifiedMetricsCard
             loading={salesLoading && hourlyRows === null}
             error={!!salesError && hourlyRows === null}
-            onClick={goTo("display", "revenue")}
-          />
-          <KpiCard
-            icon={<Users size={20} className="text-sky-600" strokeWidth={2.2} />}
-            iconBg="bg-sky-50"
-            label="방문객"
-            value={todayRows.length === 0 ? "-" : `${todayCust.toLocaleString("ko-KR")}명`}
-            loading={salesLoading && hourlyRows === null}
-            error={!!salesError && hourlyRows === null}
-            onClick={goTo("display", "revenue")}
-          />
-          <KpiCard
-            icon={<Receipt size={20} className="text-violet-600" strokeWidth={2.2} />}
-            iconBg="bg-violet-50"
-            label="객단가"
-            value={todayCust === 0 ? "-" : fmtWon(avgOrder)}
-            loading={salesLoading && hourlyRows === null}
-            error={!!salesError && hourlyRows === null}
-            onClick={goTo("display", "revenue")}
-          />
-          <KpiCard
-            icon={<ClipboardCheck size={20} className="text-amber-600" strokeWidth={2.2} />}
-            iconBg="bg-amber-50"
-            label="승인 대기"
-            value={`${totalApprovals.toLocaleString("ko-KR")}건`}
-            sub={totalApprovals > 0
-              ? [
-                  leavePendingCount > 0 ? `연차 ${leavePendingCount}` : null,
-                  requestsCounts.resignation > 0 ? `사직서 ${requestsCounts.resignation}` : null,
-                  (isAdmin && requestsCounts.vendor > 0) ? `거래처 ${requestsCounts.vendor}` : null,
-                ].filter(Boolean).join(" · ")
-              : undefined}
-            onClick={() => { setActiveByPage("requests", "leave"); onNavigate("requests", authSession); }}
+            metrics={[
+              {
+                icon: <Wallet size={18} strokeWidth={2.2} />,
+                tone: "emerald",
+                label: "오늘 매출",
+                value: todayRows.length === 0 ? "-" : fmtWon(todaySale),
+                onClick: goTo("display", "revenue"),
+              },
+              {
+                icon: <Users size={18} strokeWidth={2.2} />,
+                tone: "sky",
+                label: "방문객",
+                value: todayRows.length === 0 ? "-" : `${todayCust.toLocaleString("ko-KR")}명`,
+                onClick: goTo("display", "revenue"),
+              },
+              {
+                icon: <Receipt size={18} strokeWidth={2.2} />,
+                tone: "violet",
+                label: "객단가",
+                value: todayCust === 0 ? "-" : fmtWon(avgOrder),
+                onClick: goTo("display", "revenue"),
+              },
+              {
+                icon: <ClipboardCheck size={18} strokeWidth={2.2} />,
+                tone: "amber",
+                label: "승인 대기",
+                value: `${totalApprovals.toLocaleString("ko-KR")}건`,
+                sub: totalApprovals > 0
+                  ? [
+                      leavePendingCount > 0 ? `연차 ${leavePendingCount}` : null,
+                      requestsCounts.resignation > 0 ? `사직서 ${requestsCounts.resignation}` : null,
+                      (isAdmin && requestsCounts.vendor > 0) ? `거래처 ${requestsCounts.vendor}` : null,
+                    ].filter(Boolean).join(" · ")
+                  : undefined,
+                onClick: () => { setActiveByPage("requests", "leave"); onNavigate("requests", authSession); },
+              },
+            ]}
           />
         </section>
       )}
 
-      {/* ═══ Main 3/6/3 · min-height 300-320px for equal baseline ═══ */}
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        {/* 1. Tasks (col 1-3) */}
-        <div className="min-w-0 lg:col-span-3 lg:col-start-1 lg:row-start-1 flex">
+      {/* ═══ Row 2 · 레퍼런스 신규 · Sales (2/3 wide) + Tasks (1/3) 가로 split ═══ */}
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Sales · 중앙 · 가장 prominent · col-span-2 */}
+        <div className="min-w-0 lg:col-span-2 flex">
+          <SalesCard
+            loading={salesLoading}
+            error={salesError}
+            rows={todayRows}
+            todaySale={todaySale}
+            curHour={curHour}
+            onOpen={goTo("display", "revenue")}
+            onRetry={() => void loadSales()}
+          />
+        </div>
+
+        {/* Tasks · 우측 1/3 */}
+        <div className="min-w-0 lg:col-span-1 flex">
           <TaskQueueCard
             title="오늘 처리할 업무"
             totalBadge={totalPending}
@@ -192,42 +208,29 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             ]}
           />
         </div>
+      </section>
 
-        {/* 2. Sales (col 4-9) · 중앙 · 가장 prominent */}
-        <div className="min-w-0 lg:col-span-6 lg:col-start-4 lg:row-start-1 flex">
-          <SalesCard
-            loading={salesLoading}
-            error={salesError}
-            rows={todayRows}
-            todaySale={todaySale}
-            curHour={curHour}
-            onOpen={goTo("display", "revenue")}
-            onRetry={() => void loadSales()}
-          />
-        </div>
+      {/* ═══ Row 3 · Alerts (full-width list) ═══ */}
+      <section>
+        <StockAlertsCard
+          items={[
+            { label: "실재고 확인 요청", count: requestsCounts.inventory, onClick: goTo("scan") },
+            { label: "입고 예정 상품", count: 0, onClick: goTo("productarrival"), dim: true },
+            { label: "유통기한 임박", count: 0, onClick: goTo("stockcheck"), dim: true },
+            { label: "반품 요청", count: requestsCounts.return, onClick: goTo("requests") },
+          ]}
+        />
+      </section>
 
-        {/* 3. Alerts (col 10-12) */}
-        <div className="min-w-0 lg:col-span-3 lg:col-start-10 lg:row-start-1 flex">
-          <StockAlertsCard
-            items={[
-              { label: "실재고 확인 요청", count: requestsCounts.inventory, onClick: goTo("scan") },
-              { label: "입고 예정 상품", count: 0, onClick: goTo("productarrival"), dim: true },
-              { label: "유통기한 임박", count: 0, onClick: goTo("stockcheck"), dim: true },
-              { label: "반품 요청", count: requestsCounts.return, onClick: goTo("requests") },
-            ]}
-          />
-        </div>
-
-        {/* 4. Quick Actions (full width row 2) · mobile 에서는 자연스럽게 Alerts 아래 */}
-        <div className="min-w-0 lg:col-span-12 lg:col-start-1 lg:row-start-2">
-          <SectionHeader>빠른 실행</SectionHeader>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            <QuickActionCard icon={<Package size={20} strokeWidth={2.2} />} title="상품입고" desc="바코드 스캔으로 입고 상품 등록" onClick={goTo("productarrival")} tone="coral" />
-            <QuickActionCard icon={<Scan size={20} strokeWidth={2.2} />} title="실재고 확인" desc="바코드 스캔 · 실재고·진열보충 요청" onClick={goTo("scan")} tone="amber" />
-            <QuickActionCard icon={<Calendar size={20} strokeWidth={2.2} />} title="스케줄표" desc="직원 월간 근무 스케줄 확인 및 관리" onClick={goTo("schedule")} tone="sky" />
-            <QuickActionCard icon={<Store size={20} strokeWidth={2.2} />} title="매장진열" desc="매장 진열 상태 관리 · 보충 요청" onClick={goTo("display")} tone="emerald" />
-            <QuickActionCard icon={<MessageSquare size={20} strokeWidth={2.2} />} title="이슈 공유" desc="질문·이슈·메모 공유 게시판" onClick={goTo("board")} tone="violet" />
-          </div>
+      {/* ═══ Row 4 · Quick Actions · 5 cards full width ═══ */}
+      <section>
+        <SectionHeader>빠른 실행</SectionHeader>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          <QuickActionCard icon={<Package size={20} strokeWidth={2.2} />} title="상품입고" desc="바코드 스캔으로 입고 상품 등록" onClick={goTo("productarrival")} tone="coral" />
+          <QuickActionCard icon={<Scan size={20} strokeWidth={2.2} />} title="실재고 확인" desc="바코드 스캔 · 실재고·진열보충 요청" onClick={goTo("scan")} tone="amber" />
+          <QuickActionCard icon={<Calendar size={20} strokeWidth={2.2} />} title="스케줄표" desc="직원 월간 근무 스케줄 확인 및 관리" onClick={goTo("schedule")} tone="sky" />
+          <QuickActionCard icon={<Store size={20} strokeWidth={2.2} />} title="매장진열" desc="매장 진열 상태 관리 · 보충 요청" onClick={goTo("display")} tone="emerald" />
+          <QuickActionCard icon={<MessageSquare size={20} strokeWidth={2.2} />} title="이슈 공유" desc="질문·이슈·메모 공유 게시판" onClick={goTo("board")} tone="violet" />
         </div>
       </section>
     </div>
@@ -241,42 +244,78 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 const CARD_BASE = "bg-white border border-slate-200 rounded-[14px] shadow-[0_1px_2px_rgba(10,20,40,0.04)]";
 const CARD_HOVER = "transition hover:border-slate-300 hover:shadow-[0_2px_6px_rgba(10,20,40,0.06)]";
 
-interface KpiCardProps {
+// ─────────────────────────────────────────────────────────────
+// UnifiedMetricsCard · 통합 metrics bar (단일 카드 · 내부 divider · 2026 trend)
+// 최신 트렌드 핵심:
+//   · 하나의 큰 흰 카드 · 내부 subtle divide-x/divide-y
+//   · 각 cell · icon + label + value (vertical stack)
+//   · Soft hover · 각 cell 개별 highlight
+//   · Icon container · pastel bg · smooth tint 변화
+//   · No multi-color 카드 bg (화려함 제거)
+// ─────────────────────────────────────────────────────────────
+type MetricTone = "emerald" | "sky" | "violet" | "amber";
+const METRIC_TONE: Record<MetricTone, { iconBg: string; iconText: string; hoverBg: string }> = {
+  emerald: { iconBg: "bg-emerald-50", iconText: "text-emerald-600", hoverBg: "hover:bg-emerald-50/30" },
+  sky:     { iconBg: "bg-sky-50",     iconText: "text-sky-600",     hoverBg: "hover:bg-sky-50/30" },
+  violet:  { iconBg: "bg-violet-50",  iconText: "text-violet-600",  hoverBg: "hover:bg-violet-50/30" },
+  amber:   { iconBg: "bg-amber-50",   iconText: "text-amber-600",   hoverBg: "hover:bg-amber-50/30" },
+};
+
+interface MetricItem {
   icon: React.ReactNode;
-  iconBg: string;
+  tone: MetricTone;
   label: string;
   value: string;
   sub?: string;
-  loading?: boolean;
-  error?: boolean;
   onClick: () => void;
 }
+interface UnifiedMetricsCardProps {
+  metrics: MetricItem[];
+  loading?: boolean;
+  error?: boolean;
+}
 
-const KpiCard: React.FC<KpiCardProps> = ({ icon, iconBg, label, value, sub, loading, error, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`text-left ${CARD_BASE} ${CARD_HOVER} cursor-pointer min-w-0 p-4 sm:p-5 min-h-[112px] flex flex-col justify-between`}
-  >
-    <div className="flex items-center gap-3 min-w-0">
-      <span className={`inline-flex items-center justify-center w-10 h-10 rounded-[12px] shrink-0 ${iconBg}`}>{icon}</span>
-      <span className={`${T.cardLabel} break-keep`}>{label}</span>
+const UnifiedMetricsCard: React.FC<UnifiedMetricsCardProps> = ({ metrics, loading, error }) => (
+  <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_1px_2px_rgba(10,20,40,0.04)] overflow-hidden">
+    <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 divide-x divide-slate-100">
+      {metrics.map((m, i) => {
+        const t = METRIC_TONE[m.tone];
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={m.onClick}
+            className={`text-left px-4 sm:px-5 py-4 sm:py-5 min-h-[112px] flex flex-col justify-between min-w-0 ${t.hoverBg} transition cursor-pointer group`}
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className={`inline-flex items-center justify-center w-9 h-9 rounded-[10px] shrink-0 ${t.iconBg} ${t.iconText} transition-transform group-hover:scale-105`}>
+                {m.icon}
+              </span>
+              <span className="text-[12px] sm:text-[13px] text-slate-500 font-medium tracking-wide break-keep">{m.label}</span>
+            </div>
+            <div className="mt-2">
+              {loading ? (
+                <SkeletonBar className="h-7 w-28" />
+              ) : error ? (
+                <div className="text-[13px] text-rose-500 font-semibold">조회 실패</div>
+              ) : (
+                <div
+                  className="font-bold tabular-nums text-ink leading-[1.15] whitespace-nowrap tracking-tight"
+                  style={{ fontSize: "clamp(19px, 2.6vw, 26px)" }}
+                  title={m.value}
+                >
+                  {m.value}
+                </div>
+              )}
+              {m.sub && !loading && !error && (
+                <div className="mt-1 text-[11px] sm:text-[12px] text-slate-500 break-keep leading-snug">{m.sub}</div>
+              )}
+            </div>
+          </button>
+        );
+      })}
     </div>
-    <div className="mt-2">
-      {loading ? (
-        <SkeletonBar className="h-7 w-28" />
-      ) : error ? (
-        <div className="text-[14px] text-rose-500 font-semibold">조회 실패</div>
-      ) : (
-        <div className="font-bold tabular-nums text-ink leading-[1.1] whitespace-nowrap tracking-tight" style={T.kpiValue} title={value}>
-          {value}
-        </div>
-      )}
-      {sub && !loading && !error && (
-        <div className={`mt-1 ${T.meta} break-keep leading-snug`}>{sub}</div>
-      )}
-    </div>
-  </button>
+  </div>
 );
 
 const SkeletonBar: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className = "", style }) => (
