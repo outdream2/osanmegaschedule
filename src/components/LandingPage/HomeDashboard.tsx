@@ -10,7 +10,7 @@ import {
   Package, Scan, Calendar, Store, MessageSquare,
   ChevronRight, FileWarning, RotateCcw,
 } from "lucide-react";
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { XAxis, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
 import { api } from "../../lib/apiClient";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
@@ -129,52 +129,58 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </div>
       </header>
 
-      {/* ═══ 통합 Metrics Bar · 매출/방문객/객단가/승인대기 하나의 카드로 통합
-            · 2026 trend · divide-x subtle · soft hover · smooth transition
-            · 최신 깔끔·고급·세련 톤 (화려함 제거) ═══ */}
+      {/* ═══ Row 2 · 레퍼런스 매칭 · 3 metrics (sparkline 포함) + 승인업무 count card 분리 ═══ */}
       {isManagerOrAdmin && (
-        <section>
-          <UnifiedMetricsCard
-            loading={salesLoading && hourlyRows === null}
-            error={!!salesError && hourlyRows === null}
-            metrics={[
-              {
-                icon: <Wallet size={18} strokeWidth={2.2} />,
-                tone: "emerald",
-                label: "오늘 매출",
-                value: todayRows.length === 0 ? "-" : fmtWon(todaySale),
-                onClick: goTo("display", "revenue"),
-              },
-              {
-                icon: <Users size={18} strokeWidth={2.2} />,
-                tone: "sky",
-                label: "방문객",
-                value: todayRows.length === 0 ? "-" : `${todayCust.toLocaleString("ko-KR")}명`,
-                onClick: goTo("display", "revenue"),
-              },
-              {
-                icon: <Receipt size={18} strokeWidth={2.2} />,
-                tone: "violet",
-                label: "객단가",
-                value: todayCust === 0 ? "-" : fmtWon(avgOrder),
-                onClick: goTo("display", "revenue"),
-              },
-              {
-                icon: <ClipboardCheck size={18} strokeWidth={2.2} />,
-                tone: "amber",
-                label: "승인 대기",
-                value: `${totalApprovals.toLocaleString("ko-KR")}건`,
-                sub: totalApprovals > 0
-                  ? [
-                      leavePendingCount > 0 ? `연차 ${leavePendingCount}` : null,
-                      requestsCounts.resignation > 0 ? `사직서 ${requestsCounts.resignation}` : null,
-                      (isAdmin && requestsCounts.vendor > 0) ? `거래처 ${requestsCounts.vendor}` : null,
-                    ].filter(Boolean).join(" · ")
-                  : undefined,
-                onClick: () => { setActiveByPage("requests", "leave"); onNavigate("requests", authSession); },
-              },
-            ]}
-          />
+        <section className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* 3 metrics 통합 바 (col-span-3) */}
+          <div className="lg:col-span-3 min-w-0">
+            <UnifiedMetricsCard
+              loading={salesLoading && hourlyRows === null}
+              error={!!salesError && hourlyRows === null}
+              metrics={[
+                {
+                  icon: <Wallet size={18} strokeWidth={2.2} />,
+                  tone: "emerald",
+                  label: "오늘 매출",
+                  value: todayRows.length === 0 ? "-" : fmtWon(todaySale),
+                  sparkline: todayRows.map(r => Number(r.SaleTotal ?? 0)),
+                  onClick: goTo("display", "revenue"),
+                },
+                {
+                  icon: <Users size={18} strokeWidth={2.2} />,
+                  tone: "sky",
+                  label: "방문객",
+                  value: todayRows.length === 0 ? "-" : `${todayCust.toLocaleString("ko-KR")}명`,
+                  sparkline: todayRows.map(r => Number(r.CustomerCnt ?? 0)),
+                  onClick: goTo("display", "revenue"),
+                },
+                {
+                  icon: <Receipt size={18} strokeWidth={2.2} />,
+                  tone: "violet",
+                  label: "객단가",
+                  value: todayCust === 0 ? "-" : fmtWon(avgOrder),
+                  sparkline: todayRows.map(r => {
+                    const s = Number(r.SaleTotal ?? 0), c = Number(r.CustomerCnt ?? 0);
+                    return c > 0 ? s / c : 0;
+                  }),
+                  onClick: goTo("display", "revenue"),
+                },
+              ]}
+            />
+          </div>
+
+          {/* 승인업무 big count card (col-span-1) · orange highlight · 레퍼런스 매칭 */}
+          <div className="lg:col-span-1 min-w-0 flex">
+            <ApprovalCountCard
+              count={totalApprovals}
+              breakdown={[
+                leavePendingCount > 0 ? `연차 ${leavePendingCount}` : null,
+                requestsCounts.resignation > 0 ? `사직서 ${requestsCounts.resignation}` : null,
+                (isAdmin && requestsCounts.vendor > 0) ? `거래처 ${requestsCounts.vendor}` : null,
+              ].filter(Boolean).join(" · ")}
+              onClick={() => { setActiveByPage("requests", "leave"); onNavigate("requests", authSession); }}
+            />
+          </div>
         </section>
       )}
 
@@ -267,6 +273,7 @@ interface MetricItem {
   label: string;
   value: string;
   sub?: string;
+  sparkline?: number[];  // 2026-10-07 · 레퍼런스 매칭 · 각 metric 뒤 mini area sparkline
   onClick: () => void;
 }
 interface UnifiedMetricsCardProps {
@@ -275,11 +282,16 @@ interface UnifiedMetricsCardProps {
   error?: boolean;
 }
 
+const SPARK_STROKE: Record<MetricTone, string> = {
+  emerald: "#10b981", sky: "#0ea5e9", violet: "#8b5cf6", amber: "#f59e0b",
+};
+
 const UnifiedMetricsCard: React.FC<UnifiedMetricsCardProps> = ({ metrics, loading, error }) => (
-  <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_1px_2px_rgba(10,20,40,0.04)] overflow-hidden">
-    <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 divide-x divide-slate-100">
+  <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_1px_2px_rgba(10,20,40,0.04)] overflow-hidden h-full">
+    <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 h-full">
       {metrics.map((m, i) => {
         const t = METRIC_TONE[m.tone];
+        const sparkData = (m.sparkline ?? []).map((v, idx) => ({ i: idx, v }));
         return (
           <button
             key={i}
@@ -293,22 +305,40 @@ const UnifiedMetricsCard: React.FC<UnifiedMetricsCardProps> = ({ metrics, loadin
               </span>
               <span className="text-[12px] sm:text-[13px] text-slate-500 font-medium tracking-wide break-keep">{m.label}</span>
             </div>
-            <div className="mt-2">
-              {loading ? (
-                <SkeletonBar className="h-7 w-28" />
-              ) : error ? (
-                <div className="text-[13px] text-rose-500 font-semibold">조회 실패</div>
-              ) : (
-                <div
-                  className="font-bold tabular-nums text-ink leading-[1.15] whitespace-nowrap tracking-tight"
-                  style={{ fontSize: "clamp(19px, 2.6vw, 26px)" }}
-                  title={m.value}
-                >
-                  {m.value}
+            <div className="mt-2 flex items-end justify-between gap-2 min-w-0">
+              <div className="min-w-0 flex-1">
+                {loading ? (
+                  <SkeletonBar className="h-7 w-28" />
+                ) : error ? (
+                  <div className="text-[13px] text-rose-500 font-semibold">조회 실패</div>
+                ) : (
+                  <div
+                    className="font-bold tabular-nums text-ink leading-[1.15] whitespace-nowrap tracking-tight"
+                    style={{ fontSize: "clamp(19px, 2.6vw, 26px)" }}
+                    title={m.value}
+                  >
+                    {m.value}
+                  </div>
+                )}
+                {m.sub && !loading && !error && (
+                  <div className="mt-1 text-[11px] sm:text-[12px] text-slate-500 break-keep leading-snug">{m.sub}</div>
+                )}
+              </div>
+              {/* mini sparkline · 레퍼런스 트렌드 매칭 · 1D 데이터 가변 */}
+              {!loading && !error && sparkData.length >= 2 && (
+                <div className="w-16 h-8 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={sparkData}>
+                      <defs>
+                        <linearGradient id={`spark-${i}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={SPARK_STROKE[m.tone]} stopOpacity={0.35} />
+                          <stop offset="100%" stopColor={SPARK_STROKE[m.tone]} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <Area dataKey="v" type="monotone" stroke={SPARK_STROKE[m.tone]} strokeWidth={1.5} fill={`url(#spark-${i})`} isAnimationActive={false} />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
-              )}
-              {m.sub && !loading && !error && (
-                <div className="mt-1 text-[11px] sm:text-[12px] text-slate-500 break-keep leading-snug">{m.sub}</div>
               )}
             </div>
           </button>
@@ -316,6 +346,45 @@ const UnifiedMetricsCard: React.FC<UnifiedMetricsCardProps> = ({ metrics, loadin
       })}
     </div>
   </div>
+);
+
+// ─────────────────────────────────────────────────────────────
+// ApprovalCountCard · 승인업무 count card (orange highlight · big number)
+// 레퍼런스 Row 2 우측 분리 카드 매칭
+// ─────────────────────────────────────────────────────────────
+interface ApprovalCountCardProps {
+  count: number;
+  breakdown?: string;
+  onClick: () => void;
+}
+
+const ApprovalCountCard: React.FC<ApprovalCountCardProps> = ({ count, breakdown, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`${CARD_BASE} ${CARD_HOVER} cursor-pointer min-w-0 w-full flex flex-col justify-between p-4 sm:p-5 min-h-[112px] relative overflow-hidden`}
+  >
+    {/* subtle orange gradient background · right side */}
+    <div aria-hidden className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-amber-100/40 blur-2xl pointer-events-none" />
+    <div className="relative flex items-center gap-2.5">
+      <span className="inline-flex items-center justify-center w-9 h-9 rounded-[10px] shrink-0 bg-amber-50 text-amber-600">
+        <ClipboardCheck size={18} strokeWidth={2.2} />
+      </span>
+      <span className="text-[12px] sm:text-[13px] text-slate-500 font-medium tracking-wide break-keep">오늘 처리할 업무</span>
+    </div>
+    <div className="relative mt-2 flex items-baseline gap-1.5">
+      <div
+        className="font-bold tabular-nums text-amber-700 leading-[1.1] tracking-tight"
+        style={{ fontSize: "clamp(26px, 3.4vw, 34px)" }}
+      >
+        {count}
+      </div>
+      <div className="text-[13px] text-slate-500 font-medium">건</div>
+    </div>
+    {breakdown && (
+      <div className="relative mt-0.5 text-[11px] sm:text-[12px] text-slate-500 break-keep leading-snug">{breakdown}</div>
+    )}
+  </button>
 );
 
 const SkeletonBar: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className = "", style }) => (
@@ -438,19 +507,29 @@ const SalesCard: React.FC<SalesCardProps> = ({ loading, error, rows, todaySale, 
           <div className="h-full flex items-center justify-center text-[14px] text-slate-400">데이터 없음</div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 4, right: 8, bottom: 8, left: 8 }}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 12, bottom: 8, left: 12 }}>
+              <defs>
+                <linearGradient id="sales-area" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
               <Tooltip
                 formatter={(v: number) => fmtWon(v)}
                 contentStyle={{ fontSize: 12, borderRadius: 8, padding: "6px 10px", border: "1px solid #e2e8f0" }}
-                cursor={{ fill: "rgba(16,185,129,0.04)" }}
+                cursor={{ stroke: "#10b981", strokeOpacity: 0.3, strokeDasharray: "3 3" }}
               />
-              <Bar dataKey="sale" radius={[4, 4, 0, 0]}>
-                {chartData.map((d, i) => (
-                  <Cell key={i} fill={d.isNow ? "#059669" : "#10b981"} fillOpacity={d.isNow ? 1 : 0.5} />
-                ))}
-              </Bar>
-            </BarChart>
+              <Area
+                dataKey="sale"
+                type="monotone"
+                stroke="#059669"
+                strokeWidth={2}
+                fill="url(#sales-area)"
+                isAnimationActive={false}
+                activeDot={{ r: 4, fill: "#059669", stroke: "#fff", strokeWidth: 2 }}
+              />
+            </AreaChart>
           </ResponsiveContainer>
         )}
       </div>
