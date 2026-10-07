@@ -1,0 +1,226 @@
+// src/components/schedule-v2/views/employee/EmployeeBulkPanel.tsx
+// 2026-10-07 · 스케줄 V2 · 직원별 일괄등록 panel (Phase V2-D)
+//   · 캐노니컬 write · POST /api/schedules/batch (V1 SchedulePage · BulkTab 과 동일 endpoint)
+//   · 날짜 선택 (해당 월 · 요일 단축선택) · schedule type · workingHours · memo
+//   · lock · canEdit=false 일 때 저장 비활성 · server guard 가 최종 authority
+//   · V2 전용 bulk API 생성 X · V1 과 동일 contract
+import React, { useMemo, useState } from "react";
+import { Check, X as XIcon } from "@phosphor-icons/react";
+import { api } from "../../../../lib/apiClient";
+import type { Employee } from "../../../../types";
+import type { ScheduleTypeEntry } from "../../../../hooks/useSettings";
+import { getTypeHoursMap, buildDateList, weekdays } from "../../../SchedulePage/scheduleHelpers";
+import { Card } from "../../../common/Card";
+
+interface Props {
+  employee: Employee;
+  year: number;
+  month: number;
+  scheduleTypes: ScheduleTypeEntry[];
+  isLocked: boolean;
+  canEdit: boolean;
+  showNotification: (msg: string, type?: "success" | "error") => void;
+  onApplied: () => void;
+}
+
+export const EmployeeBulkPanel: React.FC<Props> = ({
+  employee, year, month, scheduleTypes, isLocked, canEdit, showNotification, onApplied,
+}) => {
+  const dateList = useMemo(() => buildDateList(year, month), [year, month]);
+  const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
+  const [type, setType] = useState<string>("");
+  const [workingHours, setWorkingHours] = useState<string>("");
+  const [memo, setMemo] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+
+  const typeHoursMap = useMemo(
+    () => getTypeHoursMap(employee.position ?? "", employee.employmentType ?? "", scheduleTypes),
+    [employee, scheduleTypes],
+  );
+
+  const toggleDate = (d: string) => {
+    setSelectedDates(prev => {
+      const next = new Set(prev);
+      if (next.has(d)) next.delete(d); else next.add(d);
+      return next;
+    });
+  };
+  const selectWeekdaysOnly = () => {
+    const s = new Set<string>();
+    for (const d of dateList) {
+      const dow = new Date(d).getDay();
+      if (dow >= 1 && dow <= 5) s.add(d);
+    }
+    setSelectedDates(s);
+  };
+  const selectWeekendsOnly = () => {
+    const s = new Set<string>();
+    for (const d of dateList) {
+      const dow = new Date(d).getDay();
+      if (dow === 0 || dow === 6) s.add(d);
+    }
+    setSelectedDates(s);
+  };
+  const selectAll = () => setSelectedDates(new Set(dateList));
+  const clearAll = () => setSelectedDates(new Set());
+
+  const onTypeChange = (t: string) => {
+    setType(t);
+    // 기본 workingHours 자동 매핑 · 사용자가 수동 수정 가능
+    setWorkingHours(typeHoursMap[t] ?? "");
+  };
+
+  const handleSave = async () => {
+    if (!canEdit) {
+      showNotification("확정된 월은 수정할 수 없습니다.", "error");
+      return;
+    }
+    if (selectedDates.size === 0 || !type) {
+      showNotification("날짜와 근무유형을 선택하세요.", "error");
+      return;
+    }
+    setSaving(true);
+    try {
+      const items = Array.from(selectedDates).map(date => ({
+        employeeId: employee.id,
+        date,
+        type,
+        workingHours,
+        actualHours: workingHours,
+        memo,
+      }));
+      // 캐노니컬 · POST /api/schedules/batch (V1 과 동일)
+      await api.post("/api/schedules/batch", { items });
+      showNotification(`${items.length}건 일괄 등록 완료`);
+      setSelectedDates(new Set());
+      setMemo("");
+      onApplied();
+    } catch (err: unknown) {
+      const msg = (err as { message?: string })?.message ?? "네트워크 오류";
+      showNotification(`일괄 등록 실패 · ${msg}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card variant="sm" padding="md" rounded="xl" className="flex-1 min-h-0 overflow-auto">
+      {isLocked && (
+        <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[13px] font-semibold">
+          <span>이 월({month}월)은 확정됨 · 편집 불가</span>
+        </div>
+      )}
+      <div className="flex flex-col gap-4">
+        {/* 섹션 1 · 날짜 선택 */}
+        <section>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-[14px] font-bold text-ink">① 날짜 선택</h3>
+            <div className="flex items-center gap-1.5 text-[12px]">
+              <button type="button" onClick={selectWeekdaysOnly} className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-sky-50 text-ink cursor-pointer">평일</button>
+              <button type="button" onClick={selectWeekendsOnly} className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-sky-50 text-ink cursor-pointer">주말</button>
+              <button type="button" onClick={selectAll} className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-sky-50 text-ink cursor-pointer">전체</button>
+              <button type="button" onClick={clearAll} className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-zinc-100 text-ink cursor-pointer">해제</button>
+            </div>
+          </div>
+          <div className="grid grid-cols-7 gap-1.5">
+            {dateList.map(d => {
+              const dateObj = new Date(d);
+              const dayNum = dateObj.getDate();
+              const dow = weekdays[dateObj.getDay()];
+              const selected = selectedDates.has(d);
+              const isSun = dateObj.getDay() === 0;
+              const isSat = dateObj.getDay() === 6;
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => toggleDate(d)}
+                  disabled={!canEdit}
+                  className={`h-10 rounded-md border text-[12px] font-semibold tabular-nums transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                    selected
+                      ? "bg-brand-deep text-white border-brand-deep"
+                      : isSun ? "bg-rose-50/40 border-rose-100 text-rose-700 hover:bg-rose-100/60"
+                      : isSat ? "bg-sky-50/40 border-sky-100 text-sky-700 hover:bg-sky-100/60"
+                      : "bg-white border-zinc-200 text-ink hover:bg-zinc-50"
+                  }`}
+                >
+                  <div className="leading-tight">
+                    <div>{dayNum}</div>
+                    <div className="text-[10px] opacity-70">{dow}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-1.5 text-[12px] text-ink-soft tabular-nums">선택 {selectedDates.size}일</div>
+        </section>
+
+        {/* 섹션 2 · 근무 조건 */}
+        <section>
+          <h3 className="text-[14px] font-bold text-ink mb-2">② 근무 조건</h3>
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 text-[13px]">
+              <span className="w-20 shrink-0 text-ink-soft">근무유형</span>
+              <select
+                value={type}
+                onChange={e => onTypeChange(e.target.value)}
+                className="flex-1 h-9 px-2 rounded-md border border-zinc-200 bg-white text-[13px] cursor-pointer"
+                disabled={!canEdit || scheduleTypes.length === 0}
+              >
+                <option value="">선택</option>
+                {scheduleTypes.map(entry => (
+                  <option key={entry.type} value={entry.type}>
+                    {entry.type} {typeHoursMap[entry.type] ? `(${typeHoursMap[entry.type]})` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-[13px]">
+              <span className="w-20 shrink-0 text-ink-soft">근무시간</span>
+              <input
+                type="text"
+                value={workingHours}
+                onChange={e => setWorkingHours(e.target.value)}
+                placeholder="예: 09:30-18:30"
+                className="flex-1 h-9 px-2 rounded-md border border-zinc-200 bg-white text-[13px]"
+                disabled={!canEdit}
+              />
+            </label>
+            <label className="flex items-start gap-2 text-[13px]">
+              <span className="w-20 shrink-0 text-ink-soft mt-2">메모</span>
+              <textarea
+                value={memo}
+                onChange={e => setMemo(e.target.value)}
+                rows={2}
+                className="flex-1 px-2 py-1.5 rounded-md border border-zinc-200 bg-white text-[13px]"
+                disabled={!canEdit}
+              />
+            </label>
+          </div>
+        </section>
+
+        {/* 섹션 3 · 저장 */}
+        <section className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canEdit || saving || selectedDates.size === 0 || !type}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-brand-deep text-white text-[13px] font-semibold hover:bg-[#0d3a5c] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <Check size={14} weight="bold" /> {saving ? "저장 중..." : `${selectedDates.size}건 저장`}
+          </button>
+          <button
+            type="button"
+            onClick={clearAll}
+            disabled={saving || selectedDates.size === 0}
+            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-white text-ink border border-zinc-200 text-[13px] font-semibold hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <XIcon size={14} weight="bold" /> 선택 해제
+          </button>
+        </section>
+      </div>
+    </Card>
+  );
+};
+
+export default EmployeeBulkPanel;

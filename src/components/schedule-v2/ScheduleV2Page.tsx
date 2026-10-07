@@ -13,6 +13,7 @@ import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { MonthScheduleViewV2 } from "./views/MonthScheduleViewV2";
 import { WeekScheduleViewV2 } from "./views/WeekScheduleViewV2";
 import { DayScheduleViewV2 } from "./views/DayScheduleViewV2";
+import { EmployeeScheduleViewV2 } from "./views/EmployeeScheduleViewV2";
 import { toYmd } from "./helpers/week";
 
 export type ScheduleV2View = "month" | "week" | "day" | "employee";
@@ -162,7 +163,19 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
             />
           )}
           {view === "employee" && (
-            <PlaceholderView view={view} />
+            <EmployeeScheduleViewV2
+              year={year}
+              month={month}
+              onMonthDelta={goMonthDelta}
+              onToday={goToday}
+              authSession={authSession}
+              onEmployeeManagement={() => {
+                // 2026-10-07 · V2-D · employee master 수정은 기존 Employee Management 로 이동
+                //   · empId 전달은 App.tsx 의 navigateInnerWithOptions 가 필요 · 추후 통합
+                //   · 지금은 단순 네비게이션
+                onNavigate?.("business-manage" as AppNavPage);
+              }}
+            />
           )}
         </div>
       </main>
