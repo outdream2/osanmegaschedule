@@ -452,13 +452,18 @@ const VatPreparePage: React.FC = () => {
         </div>
       </Card>
 
-      {/* ── 메인 탭 (매출 / 매입 / 신고서 미리보기) ── */}
-      <div className="bg-white rounded-xl border border-line shadow-sm">
-        <div className="flex border-b border-line">
+      {/* ── 메인 탭 · 2026-10-08 Visual effectiveness fix (presentation-only · state 미변경) ──
+             · 이전 · bg-white rounded-xl border shadow-sm wrapper + rainbow per-tab color (rose/emerald/sky)
+               + h-[3px] rainbow underline + text-[15] font-bold px-5 py-3 → "card-in-card + 무지개 pill tab" 위반
+             · 이후 · Batch 4 canonical Line Tabs (transparent · slate-200 baseline · 2px bg-ink underline
+               · text-[14] font-semibold · gap · flex-nowrap)
+             · state(mainTab) · setMainTab · onClick 서명 변경 없음 */}
+      <div className="border-b border-slate-200">
+        <div className="flex flex-nowrap items-stretch gap-5 sm:gap-7 md:gap-8 overflow-x-auto scrollbar-hide">
           {([
-            { key: "sales" as const,    label: "월별 부가세",       icon: Receipt,    color: "text-rose-600",    activeBar: "bg-rose-500" },
-            { key: "purchase" as const, label: "매입",             icon: PackageCheck, color: "text-emerald-600", activeBar: "bg-emerald-500" },
-            { key: "preview" as const,  label: "신고서 미리보기",   icon: FileCheck2, color: "text-sky-600",     activeBar: "bg-sky-500" },
+            { key: "sales" as const,    label: "월별 부가세",     icon: Receipt },
+            { key: "purchase" as const, label: "매입",           icon: PackageCheck },
+            { key: "preview" as const,  label: "신고서 미리보기", icon: FileCheck2 },
           ]).map(t => {
             const active = mainTab === t.key;
             const Icon = t.icon;
@@ -467,14 +472,16 @@ const VatPreparePage: React.FC = () => {
                 key={t.key}
                 type="button"
                 onClick={() => setMainTab(t.key)}
-                className={`relative flex items-center gap-2 px-5 py-3 text-[15px] font-bold transition cursor-pointer ${
-                  active ? t.color : "text-zinc-500 hover:text-zinc-700"
+                className={`relative inline-flex items-center justify-center shrink-0 h-11 px-1 text-[13px] sm:text-[14px] whitespace-nowrap tracking-tight bg-transparent border-0 rounded-none shadow-none transition-colors duration-150 cursor-pointer ${
+                  active
+                    ? "text-ink font-semibold"
+                    : "text-ink-soft/80 font-medium hover:text-ink"
                 }`}
               >
-                <Icon size={15} strokeWidth={active ? 2.4 : 2} />
+                <Icon size={14} strokeWidth={active ? 2.2 : 1.8} className={`shrink-0 mr-1.5 ${active ? "text-ink" : "text-ink-soft/70"}`} />
                 <span>{t.label}</span>
                 {active && (
-                  <span className={`absolute left-0 right-0 -bottom-px h-[3px] ${t.activeBar}`} />
+                  <span aria-hidden className="absolute left-0 right-0 -bottom-px h-[2px] bg-ink" />
                 )}
               </button>
             );
