@@ -498,93 +498,76 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
-          {/* ── 거래처용 · 2026-08-17 · #145 · SectionLabel + MenuCard 통일 (인라인 button 3개 제거) ── */}
-          {isLoggedIn && (isVendor || isSuperAdminLevel9) && (
-            <div className="w-full">
-              <SectionLabel tone="teal">거래처용 바로가기</SectionLabel>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3.5">
-                <MenuCard color="teal" icon={CalendarCheck} title="방문예약" description="상담 및 방문 일정을 간편하게 예약"
-                  onClick={() => onNavigate("reservation", authSession!)} />
-                {(isVendor || isSuperAdminLevel9) && (
-                  <MenuCard color="sky" icon={Building2} title="공급사 정보"
-                    description={isVendor && !vendorSelf ? "정보를 불러올 수 없습니다" : "본인 공급사 정보 조회·수정"}
-                    onClick={() => {
-                      if (isVendor && vendorSelf) { setShowVendorSelf(true); return; }
-                      if (isSuperAdminLevel9) {
-                        setActiveByPage("display", "vendor-manage");
-                        onNavigate("display", authSession!);
-                      }
-                    }} />
-                )}
-                {/* 2026-08-26 · #192 · 거래처 승인 gate · approval_status="approved" 만 활성
-                    2026-09-24 · E-013 · 로딩 중 · label "정보 확인 중..." · disabled 로직 개선
-                    2026-10-06 · SSOT · vendorApprovalState · 미승인 메뉴 hide 금지 · 클릭 시 메시지 + VendorInfo 안내 */}
-                {(isVendor || isSuperAdminLevel9) && (() => {
-                  // vendor · state 기반 · admin/staff · 항상 approved 로 취급 (gate 없음)
-                  const state = isVendor ? vendorApprovalState : "approved";
-                  const label =
-                    state === "loading"    ? "🔄 정보 확인 중..."
-                    : state === "approved"   ? "상품별 재고 현황 조회"
-                    : state === "requested"  ? "🔒 공급사 승인 요청 처리 중"
-                    : state === "rejected"   ? "🚫 승인 거절 · 공급사 정보 확인 후 재요청"
-                    :                          "🔒 공급사 정보 입력 후 승인 요청 필요";
-                  const disabled = isVendor && state !== "approved";
-                  return (
-                    <MenuCard
-                      color={disabled ? "zinc" : "amber"}
-                      icon={Package}
-                      title="공급사 재고확인"
-                      description={label}
-                      disabled={disabled}
-                      onClick={() => {
-                        if (disabled) { handleVendorApprovalBlocked(); return; }
-                        // 2026-09-04 · #23 · 모달 → 전용 페이지 (VendorStockPage) 이관
-                        if (isVendor && vendorSelf) { onNavigate("vendor-stock", authSession!); return; }
-                        if (isSuperAdminLevel9) {
-                          setActiveByPage("display", "vendor-manage");
-                          onNavigate("display", authSession!);
-                        }
-                      }}
-                    />
-                  );
-                })()}
-                {/* 2026-09-24 · #352 · 사용자 지시 · 거래처 로그인 · 자기 발주이력 확인 (신규)
-                    · vendor 조회 전용 · 자기 회사 발주만 · 매입확인 없음 · PDF 다운
-                    · 승인 상태 gate · vendor-stock 과 동일 (승인 후만 활성) */}
-                {(isVendor || isSuperAdminLevel9) && (() => {
-                  const state = isVendor ? vendorApprovalState : "approved";
-                  const label =
-                    state === "loading"    ? "🔄 정보 확인 중..."
-                    : state === "approved"   ? "자기 회사에 온 발주내역 조회"
-                    : state === "requested"  ? "🔒 공급사 승인 요청 처리 중"
-                    : state === "rejected"   ? "🚫 승인 거절 · 공급사 정보 확인 후 재요청"
-                    :                          "🔒 공급사 정보 입력 후 승인 요청 필요";
-                  const disabled = isVendor && state !== "approved";
-                  return (
-                    <MenuCard
-                      color={disabled ? "zinc" : "coral"}
-                      icon={Truck}
-                      title="발주이력 확인"
-                      description={label}
-                      disabled={disabled}
-                      onClick={() => {
-                        if (disabled) { handleVendorApprovalBlocked(); return; }
-                        if (isVendor && vendorSelf) { onNavigate("vendor-order-history", authSession!); return; }
-                        if (isSuperAdminLevel9) {
-                          // admin/manager 는 매장 > 발주 페이지로 (관리자용 이력)
-                          setActiveByPage("display", "purchase-order");
-                          onNavigate("display", authSession!);
-                        }
-                      }}
-                    />
-                  );
-                })()}
-              </div>
-            </div>
-          )}
+          {/* ── 거래처용 · 2026-10-07 · 레퍼런스 대시보드 톤 restyle · vendor 전용 ── */}
+          {isLoggedIn && isVendor && (() => {
+            const state = vendorApprovalState;
+            const stockLabel =
+              state === "loading"    ? "🔄 정보 확인 중..."
+              : state === "approved"   ? "상품별 재고 현황 조회"
+              : state === "requested"  ? "🔒 공급사 승인 요청 처리 중"
+              : state === "rejected"   ? "🚫 승인 거절 · 공급사 정보 확인 후 재요청"
+              :                          "🔒 공급사 정보 입력 후 승인 요청 필요";
+            const orderLabel =
+              state === "loading"    ? "🔄 정보 확인 중..."
+              : state === "approved"   ? "자기 회사에 온 발주내역 조회"
+              : state === "requested"  ? "🔒 공급사 승인 요청 처리 중"
+              : state === "rejected"   ? "🚫 승인 거절 · 공급사 정보 확인 후 재요청"
+              :                          "🔒 공급사 정보 입력 후 승인 요청 필요";
+            const disabled = state !== "approved";
 
-          {/* ── 입고 알림 · 2026-08-25 · Framework Phase 4 · StockArrivalList 로 이관 ── */}
-          <StockArrivalList isVendor={isVendor} />
+            const vendorItems: Array<{ icon: typeof CalendarCheck; title: string; desc: string; onClick: () => void; disabled?: boolean; tone: "teal" | "sky" | "amber" | "coral" }> = [
+              { icon: CalendarCheck, title: "방문예약", desc: "상담 및 방문 일정 예약", tone: "teal",
+                onClick: () => onNavigate("reservation", authSession!) },
+              { icon: Building2, title: "공급사 정보", desc: vendorSelf ? "본인 공급사 정보 조회·수정" : "정보를 불러올 수 없습니다", tone: "sky",
+                onClick: () => { if (vendorSelf) setShowVendorSelf(true); } },
+              { icon: Package, title: "공급사 재고확인", desc: stockLabel, tone: "amber", disabled,
+                onClick: () => { if (disabled) { handleVendorApprovalBlocked(); return; } if (vendorSelf) onNavigate("vendor-stock", authSession!); } },
+              { icon: Truck, title: "발주이력 확인", desc: orderLabel, tone: "coral", disabled,
+                onClick: () => { if (disabled) { handleVendorApprovalBlocked(); return; } if (vendorSelf) onNavigate("vendor-order-history", authSession!); } },
+            ];
+            const toneMap: Record<"teal" | "sky" | "amber" | "coral", { bg: string; text: string; border: string }> = {
+              teal:   { bg: "bg-emerald-50", text: "text-emerald-600", border: "hover:border-emerald-200" },
+              sky:    { bg: "bg-sky-50",     text: "text-sky-600",     border: "hover:border-sky-200" },
+              amber:  { bg: "bg-amber-50",   text: "text-amber-600",   border: "hover:border-amber-200" },
+              coral:  { bg: "bg-rose-50",    text: "text-rose-600",    border: "hover:border-rose-200" },
+            };
+            return (
+              <div className="w-full max-w-[1240px] mx-auto flex flex-col gap-3 md:gap-4">
+                {/* Dashboard-style section label */}
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-[3px] h-[14px] bg-slate-400 rounded-full" />
+                  <span className="text-[14px] md:text-[16px] font-semibold text-slate-700 tracking-tight">거래처용 바로가기</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {vendorItems.map((it) => {
+                    const t = toneMap[it.tone];
+                    const Icon = it.icon;
+                    const isDisabled = !!it.disabled;
+                    return (
+                      <button
+                        key={it.title}
+                        type="button"
+                        onClick={it.onClick}
+                        disabled={isDisabled && !handleVendorApprovalBlocked}
+                        className={`text-left bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-colors p-4 cursor-pointer flex flex-col gap-2 ${isDisabled ? "opacity-70" : t.border}`}
+                      >
+                        <span className={`inline-flex items-center justify-center w-10 h-10 rounded-[10px] ${t.bg} ${t.text}`}>
+                          <Icon size={20} weight="regular" />
+                        </span>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className="text-[14px] md:text-[15px] font-semibold text-ink break-keep">{it.title}</span>
+                          <span className="text-[12px] md:text-[13px] text-slate-500 break-keep leading-snug">{it.desc}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── 입고 알림 · 2026-10-07 · admin/manager 홈 clean (레퍼런스 매칭) · vendor/employee만 표시 ── */}
+          {!isManagerOrAdmin && <StockArrivalList isVendor={isVendor} />}
 
         </div>
       </div>
