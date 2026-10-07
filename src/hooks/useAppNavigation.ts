@@ -20,7 +20,9 @@ export type Page =
   // 2026-09-24 · #352 · 거래처 발주이력 확인 페이지
   | "vendor-order-history"
   // 2026-10-03 저녁 · Phase 2 · ERP 초기 데이터 구축 (관리자 lv9 · DRY-RUN 전용)
-  | "admin-initial-build";
+  | "admin-initial-build"
+  // 2026-10-07 · 스케줄 V2 평가용 workspace (기존 "schedule" 과 병행)
+  | "schedule-v2";
 
 interface UseAppNavigationOpts {
   authSession: AuthSession | null;

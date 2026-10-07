@@ -1,7 +1,7 @@
 {
   "created": "2026-10-07",
   "version": 1,
-  "totalViolations": 526,
+  "totalViolations": 527,
   "files": {
     "server/ocr/pipeline/stages/03-vendor-match.ts": {
       "lines": 684,
@@ -84,7 +84,7 @@
       "totalWeight": 25
     },
     "src/components/DisplayPage/RevenuePage.tsx": {
-      "lines": 2041,
+      "lines": 2073,
       "violations": [
         {
           "ruleId": "large-file-critical",
@@ -660,6 +660,16 @@
       "violations": [
         {
           "ruleId": "prefer-modal-primitive",
+          "count": 1
+        }
+      ],
+      "totalWeight": 2
+    },
+    "src/components/schedule-v2/views/MonthScheduleViewV2.tsx": {
+      "lines": 263,
+      "violations": [
+        {
+          "ruleId": "raw-card-wrapper",
           "count": 1
         }
       ],

@@ -78,6 +78,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     topTab: { key: "schedule" },
     items: [
       { key: "schedule", label: "스케줄", icon: Calendar, color: "amber" },
+      // 2026-10-07 · 사용자 지시 · 스케줄 V2 평가용 · 기존 스케줄과 병행 · 승격 전까지 2개 공존
+      { key: "schedule-v2", label: "새 스케줄", icon: Calendar, color: "amber" },
       // 2026-09-20 · 사용자 지시 · 연차신청 · 승인요청에서 독립 · 스케줄 그룹으로 이동
       //   · 이유 · 직원 신청 성격 · 관리 메뉴 아래 부적합
       { key: "approval-request", label: "연차신청", icon: CalendarDots, color: "amber", subTab: "leave" },

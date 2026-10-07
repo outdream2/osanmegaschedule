@@ -90,6 +90,8 @@ const ScheduleSettingsPage = React.lazy(() => import("./components/ScheduleSetti
 const OrderSettingsPage = React.lazy(() => import("./components/OrderSettingsPage/OrderSettingsPage"));
 // 2026-09-07 · 설정 허브 (모든 설정 통합 진입)
 const SettingsHubPage = React.lazy(() => import("./components/SettingsHubPage/SettingsHubPage"));
+// 2026-10-07 · 스케줄 V2 평가용 · 기존 SchedulePage 와 병행 workspace
+const ScheduleV2Page = React.lazy(() => import("./components/schedule-v2/ScheduleV2Page").then(m => ({ default: m.ScheduleV2Page })));
 // 2026-08-23 · #181 · ZoneSettingsPage 제거 · StoreZoneMap 인라인 편집만 유지
 // 2026-09-02 · #74 · 창고 구역 설정 페이지 제거 (규칙 고정 · 수동 편집 불필요)
 
@@ -389,6 +391,8 @@ export default function App() {
     "schedule-settings": () => <Lazy Component={ScheduleSettingsPage} />,
     "order-settings": () => <Lazy Component={OrderSettingsPage} />,
     "settings-hub": () => <Lazy Component={SettingsHubPage} />,
+    // 2026-10-07 · 스케줄 V2 평가용 (사이드바 "새 스케줄")
+    "schedule-v2": () => <Lazy Component={ScheduleV2Page} />,
   };
 
   const landingEl = (

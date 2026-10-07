@@ -31,6 +31,8 @@ import { NavMobileTab } from "./NavMobileTab";
 export type AppNavPage =
   | "landing"
   | "schedule"
+  // 2026-10-07 · 스케줄 V2 · 신규 workspace (기존 schedule 과 병행 · 평가용)
+  | "schedule-v2"
   | "display"
   | "requests"
   | "leave"
