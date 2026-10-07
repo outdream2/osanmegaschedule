@@ -21,7 +21,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
 } from "../ui/sidebar";
 import type { AppNavPage } from "./AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -148,74 +147,70 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
           type="button"
           aria-label={`${group.label} 그룹 ${open ? "접기" : "펼치기"}`}
           className={[
+            // 2026-10-07 · Batch 3 · 그룹 헤더 compact · spec: nav font 13~14px · group gap 14~18px
             "flex w-full items-center justify-between",
-            "px-2.5 py-1.5 mt-1.5 mb-0",
+            "px-2.5 py-1.5 mt-3 mb-0",
             "rounded-lg",
-            "text-[19px] leading-none",
-            "transition-all duration-200 ease-out",
+            "text-[14px] leading-none",
+            "transition-colors duration-150 ease-out",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
             hasActiveItem
               ? [
-                  "bg-white/[0.10]",
+                  "bg-white/[0.06]",
                   groupTone.activeText,    // text-white
-                  "font-bold",
-                  "shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]",
+                  "font-semibold",
                 ].join(" ")
               : [
-                  "text-[#C4DAEE]",
-                  "hover:bg-white/[0.06] hover:text-white hover:translate-x-[1px]",
-                  "font-semibold",
+                  "text-[#9FBAD4]",
+                  "hover:bg-white/[0.04] hover:text-white",
+                  "font-medium",
                 ].join(" "),
             "group-data-[collapsible=icon]:hidden",
           ].join(" ")}
         >
           <span className="flex items-center gap-2 relative">
-            {/* 2026-08-18 v5 · 활성 stripe · 두께 4px + 강력한 glow (사용자 피드백 · 컬러 액센트 강화) */}
+            {/* 2026-10-07 · Batch 3 · 활성 accent · slim 2px · 3-layer glow 제거 · subtle visual signal 만 */}
             {hasActiveItem && (
               <span
-                className="absolute -left-2 top-1/2 -translate-y-1/2 w-[4px] h-[85%] rounded-r-full pointer-events-none group-data-[collapsible=icon]:hidden"
-                style={{
-                  background: NAV_ACCENT[group.color].hex,
-                  boxShadow: `0 0 12px ${NAV_ACCENT[group.color].hex}, 0 0 24px ${NAV_ACCENT[group.color].hex}80`,
-                }}
+                className="absolute -left-2 top-1/2 -translate-y-1/2 w-[2px] h-[70%] rounded-r-full pointer-events-none group-data-[collapsible=icon]:hidden"
+                style={{ background: NAV_ACCENT[group.color].hex }}
               />
             )}
-            {/* 2026-08-18 v5 · 아이콘 · 활성/비활성 모두 그룹 accent color (사용자 피드백 · 항상 컬러 유지) */}
+            {/* 2026-10-07 · Batch 3 · 아이콘 · 활성=white · 비활성=muted blue-gray · drop-shadow glow 제거 */}
             {group.icon && (() => {
               const GroupIcon = group.icon;
               return (
                 <GroupIcon
-                  size={20}
-                  weight={hasActiveItem ? "fill" : "duotone"}
+                  size={16}
+                  weight={hasActiveItem ? "fill" : "regular"}
                   className={[
-                    "shrink-0 transition-all duration-200 ease-out",
-                    NAV_ACCENT[group.color].iconText,   // 항상 그룹 accent color (액센트 유지)
-                    hasActiveItem ? "scale-110" : "opacity-80 group-hover:opacity-100 group-hover:scale-[1.05]",
+                    "shrink-0 transition-colors duration-150 ease-out",
+                    hasActiveItem ? "text-white" : "text-[#8FA5BF]",
                   ].join(" ")}
-                  style={hasActiveItem ? { filter: `drop-shadow(0 0 8px ${NAV_ACCENT[group.color].hex}90) drop-shadow(0 0 16px ${NAV_ACCENT[group.color].hex}40)` } : undefined}
                 />
               );
             })()}
-            <span className="tracking-wide">{group.label}</span>
+            <span className="tracking-tight">{group.label}</span>
           </span>
 
           {/* CaretDown · 닫힘 = -90도 (좌) · 열림 = 0도 (아래) · 부드러운 화살표 · 2026-08-17 · deep teal 톤 */}
           {/* 2026-08-17 v3 · chevron · 더 세련 · 부드러운 회전 + subtle hover */}
           <span
             className={[
+              // 2026-10-07 · Batch 3 · chevron compact · scale hover 제거
               "flex items-center justify-center",
-              "w-7 h-7 rounded-md",
-              "transition-all duration-200 ease-out",
-              hasActiveItem ? "bg-transparent" : "hover:bg-white/[0.08] hover:scale-110",
+              "w-6 h-6 rounded-md",
+              "transition-colors duration-150 ease-out",
+              hasActiveItem ? "" : "hover:bg-white/[0.06]",
             ].join(" ")}
             aria-hidden="true"
           >
             <CaretDown
-              size={16}
+              size={12}
               weight="bold"
               className={[
-                "shrink-0 transition-transform duration-300 ease-out",
-                hasActiveItem ? "text-white" : "text-white/70",
+                "shrink-0 transition-transform duration-200 ease-out",
+                hasActiveItem ? "text-white/85" : "text-white/55",
                 open ? "rotate-0" : "-rotate-90",
               ].join(" ")}
             />
@@ -235,34 +230,19 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
       >
         <SidebarMenu className="gap-0 px-1 pt-0.5 pb-1">
           {group.items.map((item, itemIdx) => {
-            // 2026-08-12 · 사용자 지시 · 하위 메뉴 아이콘 = 그룹 아이콘 (공통헤더 탭 아이콘) 통일
+            // 2026-08-12 · 하위 메뉴 아이콘 = 그룹 아이콘 (공통헤더 탭 아이콘) 통일
             const Icon = group.icon || item.icon;
             const active = isItemActive(item, activePage, activeSubTab);
-            // 2026-08-17 · deep teal · DARK_COLOR_TONES
-            const tone = DARK_COLOR_TONES[item.color];
+            // 2026-10-07 · Batch 3 · DARK_COLOR_TONES per-item 사용 제거 (icon 색 통일) · NAV_ACCENT.hex 는 slim left bar 에만 사용
 
             return (
               <SidebarMenuItem key={`${item.key}-${item.subTab ?? "_"}-${itemIdx}`} className="relative">
-                {/* 2026-08-31 · 사용자 지시 · 선택 표시 강화 · Linear/Vercel/Attio 2026 톤
-                   · 좌측 accent bar · 5px · glow 3-layer · 확대 (h 95%)
-                   · 우측 accent dot · 항상 표시 · 위치 명확화 */}
+                {/* 2026-10-07 · Batch 3 · 활성 표시 · slim 2px left accent 만 · 3-layer glow + 우측 dot 제거 */}
                 {active && (
-                  <>
-                    <span
-                      className="absolute left-0 top-1/2 -translate-y-1/2 w-[5px] h-[95%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
-                      style={{
-                        background: NAV_ACCENT[item.color].hex,
-                        boxShadow: `0 0 8px ${NAV_ACCENT[item.color].hex}, 0 0 16px ${NAV_ACCENT[item.color].hex}CC, 0 0 32px ${NAV_ACCENT[item.color].hex}66`,
-                      }}
-                    />
-                    <span
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
-                      style={{
-                        background: NAV_ACCENT[item.color].hex,
-                        boxShadow: `0 0 6px ${NAV_ACCENT[item.color].hex}`,
-                      }}
-                    />
-                  </>
+                  <span
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[70%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
+                    style={{ background: NAV_ACCENT[item.color].hex }}
+                  />
                 )}
 
                 <SidebarMenuButton
@@ -272,37 +252,31 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   aria-current={active ? "page" : undefined}
                   aria-label={item.label}
                   className={[
-                    // 2026-09-01 · 사용자 지시 · 좌우 여백 감축 · pl-4 → pl-2.5 (16→10px)
+                    // 2026-10-07 · Batch 3 · nav row h-10 (40px · spec 40~42) · font 13px · active bg subtle
                     "group-data-[collapsible=icon]:pl-2 pl-2.5 pr-2",
-                    "h-8 rounded-lg",
-                    "text-[18px]",
-                    // 2026-08-31 · 강한 대비 · bg 강도 up (10% → 22%) · text 강도 up · font-extrabold
+                    "h-10 rounded-lg",
+                    "text-[13px]",
                     active
                       ? [
-                          "bg-white/[0.22]",
+                          "bg-white/[0.08]",
                           "text-white",
-                          "font-extrabold tracking-tight",
-                          "shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(0,0,0,0.10)]",
-                          "ring-1 ring-white/15",
+                          "font-semibold tracking-tight",
                         ].join(" ")
                       : [
-                          "font-semibold text-[#C4DAEE]/85",
-                          "hover:bg-white/[0.08] hover:text-white",
-                          "hover:translate-x-px",
+                          "font-medium text-[#9FBAD4]",
+                          "hover:bg-white/[0.05] hover:text-white",
                         ].join(" "),
-                    "transition-all duration-200 ease-out",
+                    "transition-colors duration-150 ease-out",
                   ].join(" ")}
                 >
-                  {/* 아이콘 · 활성 시 · scale 125 + 강한 glow */}
+                  {/* 2026-10-07 · Batch 3 · 아이콘 · 활성=white · 비활성=muted · drop-shadow glow 제거 */}
                   <Icon
                     size={16}
-                    weight={active ? "fill" : "duotone"}
+                    weight={active ? "fill" : "regular"}
                     className={[
-                      "shrink-0 transition-all duration-200 ease-out",
-                      NAV_ACCENT[item.color].iconText,
-                      active ? "scale-125" : "opacity-70 group-hover:opacity-100 group-hover:scale-[1.05]",
+                      "shrink-0 transition-colors duration-150 ease-out",
+                      active ? "text-white" : "text-[#8FA5BF]",
                     ].join(" ")}
-                    style={active ? { filter: `drop-shadow(0 0 8px ${NAV_ACCENT[item.color].hex}) drop-shadow(0 0 16px ${NAV_ACCENT[item.color].hex}80)` } : undefined}
                   />
                   <span className="inline-flex items-center gap-1.5">
                     {item.label}
@@ -336,24 +310,12 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, ac
   const Icon = item.icon;
   return (
     <div className="relative">
-      {/* 2026-08-31 · 사용자 지시 · SingleItemGroup 활성 표시 강화 (SubItem 과 통일) */}
+      {/* 2026-10-07 · Batch 3 · SingleItemGroup 활성 표시 · slim 2px left accent 만 */}
       {active && (
-        <>
-          <span
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-[5px] h-[85%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
-            style={{
-              background: NAV_ACCENT[group.color].hex,
-              boxShadow: `0 0 8px ${NAV_ACCENT[group.color].hex}, 0 0 16px ${NAV_ACCENT[group.color].hex}CC, 0 0 32px ${NAV_ACCENT[group.color].hex}66`,
-            }}
-          />
-          <span
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
-            style={{
-              background: NAV_ACCENT[group.color].hex,
-              boxShadow: `0 0 6px ${NAV_ACCENT[group.color].hex}`,
-            }}
-          />
-        </>
+        <span
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[70%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
+          style={{ background: NAV_ACCENT[group.color].hex }}
+        />
       )}
     <button
       type="button"
@@ -361,41 +323,37 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, ac
       aria-current={active ? "page" : undefined}
       aria-label={group.label}
       className={[
+        // 2026-10-07 · Batch 3 · Single item 그룹 header-like · spec: nav font 13~14px · 40px row
         "flex w-full items-center gap-2",
-        "px-2.5 py-1.5 mt-1.5 mb-0",
+        "px-2.5 h-10 mt-3 mb-0",
         "rounded-lg",
-        "text-[19px] leading-none",
-        "transition-all duration-200 ease-out",
+        "text-[14px] leading-none",
+        "transition-colors duration-150 ease-out",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
-        // 2026-08-31 · 강한 대비 · SubItem 과 동일 톤
         active
           ? [
-              "bg-white/[0.22]",
+              "bg-white/[0.08]",
               "text-white",
-              "font-extrabold tracking-tight",
-              "shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-1px_0_rgba(0,0,0,0.10)]",
-              "ring-1 ring-white/15",
+              "font-semibold tracking-tight",
             ].join(" ")
           : [
-              "text-[#C4DAEE]",
-              "hover:bg-white/[0.08] hover:text-white hover:translate-x-[1px]",
-              "font-semibold",
+              "text-[#9FBAD4]",
+              "hover:bg-white/[0.05] hover:text-white",
+              "font-medium",
             ].join(" "),
         "group-data-[collapsible=icon]:justify-center",
       ].join(" ")}
     >
-      {/* 아이콘 · 활성 시 · scale 125 + 강한 glow · SubItem 과 통일 */}
+      {/* 2026-10-07 · Batch 3 · 아이콘 · 활성=white · 비활성=muted · drop-shadow glow 제거 */}
       <Icon
-        size={18}
-        weight={active ? "fill" : "duotone"}
+        size={16}
+        weight={active ? "fill" : "regular"}
         className={[
-          "shrink-0 transition-all duration-200 ease-out",
-          NAV_ACCENT[group.color].iconText,
-          active ? "scale-125" : "opacity-80 group-hover:opacity-100 group-hover:scale-[1.05]",
+          "shrink-0 transition-colors duration-150 ease-out",
+          active ? "text-white" : "text-[#8FA5BF]",
         ].join(" ")}
-        style={active ? { filter: `drop-shadow(0 0 6px ${NAV_ACCENT[group.color].hex}90) drop-shadow(0 0 14px ${NAV_ACCENT[group.color].hex}40)` } : undefined}
       />
-      <span className="group-data-[collapsible=icon]:hidden tracking-wide">{group.label}</span>
+      <span className="group-data-[collapsible=icon]:hidden tracking-tight">{group.label}</span>
     </button>
     </div>
   );
@@ -483,27 +441,18 @@ export const SideNav: React.FC<SideNavProps> = ({
     <Sidebar
       collapsible="icon"
       data-sb-v2=""
-      // 2026-08-17 v3 · 세련 · border 강화 (white/8 → white/[0.10]) + shadow (헤더 통일)
-      className="border-r border-white/[0.10] shadow-[4px_0_20px_-8px_rgba(10,46,74,0.20),12px_0_40px_-16px_rgba(10,46,74,0.25)]"
+      // 2026-10-07 · Batch 3 (PRESENTATION ONLY) · sidebar shadow 제거 · border 만 유지 (spec: shadow none)
+      className="border-r border-white/[0.08]"
       style={!isMobile
         ? { ...teal, "--sidebar-width": `${width}px` } as React.CSSProperties
         : teal}
     >
 
-      {/* ── 로고 영역 · 2026-08-17 v3 · aurora + noise + hairline · 초고해상도 세련 ── */}
-      {/* aurora radial glow · 사이드바 상단 · brand identity signature */}
-      <div className="absolute inset-x-0 top-0 h-40 pointer-events-none overflow-hidden">
-        <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[340px] h-[220px] rounded-full opacity-[0.16] blur-3xl" style={{ background: "radial-gradient(closest-side, #5EA9E8, transparent)" }} />
-        <div className="absolute -bottom-20 -left-16 w-[280px] h-[240px] rounded-full opacity-[0.08] blur-3xl" style={{ background: "radial-gradient(closest-side, #6FE3C2, transparent)" }} />
-      </div>
-      {/* 미세 noise 패턴 · 프리미엄 종이 질감 (Vercel/Linear signature) */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.025] mix-blend-overlay"
-        style={{ backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")` }}
-        aria-hidden
-      />
-      {/* top hairline · inner light · glass 세련 */}
-      <div className="absolute top-0 left-0 right-0 h-px pointer-events-none z-10" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.14) 50%, transparent)" }} />
+      {/* 2026-10-07 · Batch 3 (PRESENTATION ONLY) · aurora glow + noise + heavy hairline 제거
+             - 큰 decorative gradient 금지 · 큰 shadow 금지 · 2026 Operations SaaS calm density
+             - 상단 얇은 hairline 하나만 유지 (brand 경계 신호 · pure visual)
+             - 모든 handler / state / sideNavGroups / permission 미수정 */}
+      <div className="absolute top-0 left-0 right-0 h-px pointer-events-none z-10" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.10) 50%, transparent)" }} aria-hidden />
 
       <SidebarHeader className="relative px-2 py-2 pb-1.5 border-b border-white/10 z-10">
         <div className="flex items-center gap-1 w-full">
@@ -520,20 +469,20 @@ export const SideNav: React.FC<SideNavProps> = ({
               "cursor-pointer",
             ].join(" ")}
           >
-            {/* 2026-08-17 v3 · 로고 · ring-2 + brand glow · 세련 (헤더와 통일) */}
+            {/* 2026-10-07 · Batch 3 · 로고 brand glow 제거 · subtle ring 유지 (28px · spec 32~36 아래 range 유지) */}
             <img
               src={brand.logoUrl || logoImg}
               alt={`${brand.region ? brand.region + " " : ""}${brand.shortName} 로고`}
-              className="w-7 h-7 rounded-full object-cover shrink-0 ring-2 ring-white/25 shadow-[0_0_16px_rgba(94,169,232,0.30)] transition-all duration-200 hover:ring-white/40"
+              className="w-7 h-7 rounded-full object-cover shrink-0 ring-1 ring-white/15 transition-all duration-200 hover:ring-white/30"
             />
-            {/* icon-only 모드에서 숨김 · 2026-08-17 · 흰색 텍스트 (deep teal bg 대비) */}
+            {/* icon-only 모드에서 숨김 · 2026-10-07 · brand/region 폰트 축소 (14px/13px → spec 13~14px) */}
             <div className="flex flex-col gap-0 leading-none group-data-[collapsible=icon]:hidden min-w-0">
               {brand.region && (
-                <span className="text-[15px] font-bold text-white tracking-tight leading-tight break-words whitespace-normal">
+                <span className="text-[14px] font-semibold text-white tracking-tight leading-tight break-words whitespace-normal">
                   {brand.region}
                 </span>
               )}
-              <span className="text-[13px] font-semibold text-[#93B4D0] tracking-tight leading-tight break-words whitespace-normal mt-0.5">
+              <span className="text-[12px] font-medium text-[#93B4D0] tracking-tight leading-tight break-words whitespace-normal mt-0.5">
                 {brand.shortName}
               </span>
             </div>
@@ -573,10 +522,10 @@ export const SideNav: React.FC<SideNavProps> = ({
       <div className="relative h-px shrink-0" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 50%, transparent)" }} aria-hidden />
 
       <SidebarFooter className="relative px-2 py-1.5 gap-0.5 z-10">
-        {/* 2026-08-17 v3 · 사용자 이름 · 성씨 initial 제거 · 이름만 표시 (사용자 요청) */}
+        {/* 2026-10-07 · Batch 3 · footer user compact · spec: name 13~14px */}
         {authSession && authSession.employeeName && (
           <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
-            <span className="text-[15px] font-bold text-white break-words whitespace-normal leading-tight">
+            <span className="text-[13px] font-semibold text-white break-words whitespace-normal leading-tight">
               {authSession.employeeName}
             </span>
           </div>
@@ -598,14 +547,14 @@ export const SideNav: React.FC<SideNavProps> = ({
                 tooltip="로그아웃"
                 aria-label="로그아웃"
                 className={[
-                  "h-7 rounded-md pl-2",
-                  "text-[16px] font-semibold",
-                  // 2026-08-17 v2 · frosted hover · translate-x · 세련
-                  "text-white hover:bg-white/[0.08] hover:translate-x-[1px]",
-                  "transition-all duration-200 ease-out",
+                  // 2026-10-07 · Batch 3 · logout compact · spec: nav font 13px · translate hover 제거
+                  "h-9 rounded-md pl-2",
+                  "text-[13px] font-medium",
+                  "text-[#9FBAD4] hover:bg-white/[0.05] hover:text-white",
+                  "transition-colors duration-150 ease-out",
                 ].join(" ")}
               >
-                <LogOut size={13} strokeWidth={2} className="shrink-0" />
+                <LogOut size={14} strokeWidth={2} className="shrink-0" />
                 <span>로그아웃</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
