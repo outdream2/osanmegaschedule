@@ -15,35 +15,8 @@ export const REST_SLOTS = ["16:00", "16:30", "17:00", "17:30", "18:00"];
 export { isOtherEmp, isPharmEmp, isStaffEmp } from "../../lib/employeeCategory";
 
 // LocalStorage · tl_*_YYYY-MM-DD · 30일 만료 정리 + Quota 대응
-const TL_KEY_PREFIX = "tl_";
-const TL_KEY_DATE_RE = /_(\d{4}-\d{2}-\d{2})$/;
-
-export function cleanupStaleTimelineKeys(now: Date = new Date()): number {
-  let removed = 0;
-  try {
-    const cutoff = now.getTime() - 30 * 86400_000;
-    const stale: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key?.startsWith(TL_KEY_PREFIX)) continue;
-      const m = key.match(TL_KEY_DATE_RE);
-      if (!m) continue;
-      const ts = Date.parse(m[1] + "T00:00:00");
-      if (Number.isFinite(ts) && ts < cutoff) stale.push(key);
-    }
-    for (const k of stale) { try { localStorage.removeItem(k); removed++; } catch { /**/ } }
-  } catch { /**/ }
-  return removed;
-}
-
-export function safeSetTimelineItem(key: string, value: string): void {
-  try { localStorage.setItem(key, value); }
-  catch (e: any) {
-    if (!(e?.name === "QuotaExceededError" || e?.code === 22 || e?.code === 1014)) return;
-    if (cleanupStaleTimelineKeys() === 0) return;
-    try { localStorage.setItem(key, value); } catch { /**/ }
-  }
-}
+// 2026-10-07 · V2-C2 · 단일 소스 shared/schedule/dayAssignment 로 이관 · 여기서는 re-export (BC 유지)
+export { cleanupStaleTimelineKeys, safeSetTimelineItem } from "../../shared/schedule/dayAssignment";
 
 // 시간 계산
 export function parseRange(wh: string): { start: number; end: number } | null {

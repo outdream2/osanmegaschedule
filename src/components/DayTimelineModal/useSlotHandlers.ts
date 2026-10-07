@@ -5,7 +5,7 @@ import { useCallback } from "react";
 import type { Employee } from "../../types";
 import type { SlotMap, ZoneMap, ZoneRow, BreakInterval, BreakCount } from "./types";
 import { ZONE_ROWS } from "./types";
-import { safeSetTimelineItem } from "./utils";
+import { saveLunchSlots, saveRestSlots, saveZoneSlots } from "../../shared/schedule/dayAssignment";
 
 type Source = { type: "zone" | "lunch" | "rest"; zone?: ZoneRow; slot: string };
 
@@ -91,7 +91,7 @@ export function useSlotHandlers(deps: UseSlotHandlersDeps) {
     }
     setLunchSlots(prev => {
       const next = { ...prev, [slot]: [...(prev[slot] ?? []).filter(id => id !== empId), empId] };
-      safeSetTimelineItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
+      saveLunchSlots(date, next);
       scheduleAutoSave(zoneSlots, next, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -100,7 +100,7 @@ export function useSlotHandlers(deps: UseSlotHandlersDeps) {
   const removeFromLunchSlot = useCallback((slot: string, empId: number) => {
     setLunchSlots(prev => {
       const next = { ...prev, [slot]: (prev[slot] ?? []).filter(id => id !== empId) };
-      safeSetTimelineItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
+      saveLunchSlots(date, next);
       scheduleAutoSave(zoneSlots, next, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -141,7 +141,7 @@ export function useSlotHandlers(deps: UseSlotHandlersDeps) {
     }
     setRestSlots(prev => {
       const next = { ...prev, [slot]: [...(prev[slot] ?? []).filter(id => id !== empId), empId] };
-      safeSetTimelineItem(`tl_rest_slots_${date}`, JSON.stringify(next));
+      saveRestSlots(date, next);
       scheduleAutoSave(zoneSlots, lunchSlots, next, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -150,7 +150,7 @@ export function useSlotHandlers(deps: UseSlotHandlersDeps) {
   const removeFromRestSlot = useCallback((slot: string, empId: number) => {
     setRestSlots(prev => {
       const next = { ...prev, [slot]: (prev[slot] ?? []).filter(id => id !== empId) };
-      safeSetTimelineItem(`tl_rest_slots_${date}`, JSON.stringify(next));
+      saveRestSlots(date, next);
       scheduleAutoSave(zoneSlots, lunchSlots, next, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -173,7 +173,7 @@ export function useSlotHandlers(deps: UseSlotHandlersDeps) {
       const z = { ...(base[zone] ?? {}) };
       z[slot] = [...(z[slot] ?? []).filter(id => id !== empId), empId];
       const next = { ...base, [zone]: z };
-      safeSetTimelineItem(`tl_zone_slots_${date}`, JSON.stringify(next));
+      saveZoneSlots(date, next);
       scheduleAutoSave(next, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
@@ -184,7 +184,7 @@ export function useSlotHandlers(deps: UseSlotHandlersDeps) {
       const z = { ...(prev[zone] ?? {}) };
       z[slot] = (z[slot] ?? []).filter(id => id !== empId);
       const next = { ...prev, [zone]: z };
-      safeSetTimelineItem(`tl_zone_slots_${date}`, JSON.stringify(next));
+      saveZoneSlots(date, next);
       scheduleAutoSave(next, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
       return next;
     });
