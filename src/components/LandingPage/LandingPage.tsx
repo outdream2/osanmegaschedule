@@ -21,7 +21,6 @@ import {
   Lock,
   X,
   Bell,
-  Search,
   Building2,
 } from "lucide-react";
 import {
@@ -123,17 +122,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   // 직원용: 나에게 배정된 진열 보충 요청 중 pending 개수
   const [myPendingCount, setMyPendingCount] = useState(0);
 
-  // 2026-08-03 · 메뉴 검색 · 관리자·직원 카드 이름·부제 매칭 · [data-menu-card] 요소를 조회하여 필터링
-  const [menuSearch, setMenuSearch] = useState<string>("");
-  useEffect(() => {
-    const q = menuSearch.trim().toLowerCase();
-    const nodes = document.querySelectorAll<HTMLElement>("[data-menu-card]");
-    nodes.forEach(el => {
-      if (!q) { el.style.display = ""; return; }
-      const text = (el.textContent ?? "").toLowerCase();
-      el.style.display = text.includes(q) ? "" : "none";
-    });
-  });
+  // 2026-10-07 · HomeDashboard 리뉴얼 · 메뉴 검색 bar 제거 (giant search 금지) · state orphan 제거
 
   // 2026-08-03 · 경영관리 팝오버 제거 · business-manage 통합 페이지로 단순 라우팅
 
@@ -380,32 +369,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {/* Hero brand area · 로그인 사용자 표시는 헤더 탭 아래 [이름 직급] 로 통일 */}
           <div className="w-full mb-3 px-1" />
 
-          {/* 2026-08-03 · 메뉴 검색 · 관리자·직원 카드 이름·부제 텍스트 매칭 (거래처는 검색 제외) */}
-          {isLoggedIn && !isVendor && (
-            <div className="w-full mb-5 px-1">
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-                <input
-                  lang="ko" type="search"
-                  value={menuSearch}
-                  onChange={e => setMenuSearch(e.target.value)}
-                  placeholder="메뉴 검색"
-                  className="w-full h-10 pl-9 pr-9 text-[15px] font-semibold text-zinc-800 bg-white border border-line rounded-xl shadow-sm placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-2 focus:ring-brand-tint transition"
-                />
-                {menuSearch && (
-                  <button
-                    type="button"
-                    onClick={() => setMenuSearch("")}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-zinc-400 hover:text-zinc-600 rounded-md hover:bg-zinc-100 transition cursor-pointer"
-                    aria-label="검색어 지우기"
-                    title="지우기"
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+          {/* 2026-10-07 · HomeDashboard VISUAL POLISH · Home 영역 안 giant search 제거
+                · Global search 는 AppShell 영역 (deferred to Global UI agent)
+                · MenuCard grid 가 제거됐으므로 메뉴 검색도 더 이상 필요 X */}
 
           {/* ═══ 2026-10-07 · 2026 Operations Dashboard (Phase 2) ═══
                 · Hero + TodayStatusPanel + TodayRevenueKpiPanel + "직원용 바로가기" MenuCard grid 통합
