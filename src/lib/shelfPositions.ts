@@ -3,9 +3,14 @@
 //   · isValidZoneCode · WAREHOUSE_1_CODES 내부 복사 제거
 //   · 나머지 UI 헬퍼 (mergeShelfPositionsWithFallback · formatShelfPositions 등) 유지
 //   · 기존 import 경로 하위호환
+// 2026-10-07 · 사용자 지시 · 현재 진열위치 compact label (structured position 입력용)
+//   · formatShelfZoneLabel(position)
+//   · summarizeShelfZoneLabels(positions)
+//   · 공유 normalization = formatDisplayLocation.ts/normalizeShelfZoneLabel
 
 import type { StorageLocation } from "@/shared/schemas/settings";
 import { buildInitialShelfPositions as _buildInitialShelfPositions } from "@/shared/warehouseZones";
+import { normalizeShelfZoneLabel } from "./formatDisplayLocation";
 
 export type ShelfPositions = Record<string, string | null | undefined>;
 
@@ -79,4 +84,97 @@ export function summarizeShelfPositions(list: FormattedShelfPosition[]): string 
   return list
     .map(p => (p.detail ? `${p.name}:${formatShelfDetail(p.detail)}` : p.isMissing ? `${p.name}:미입력` : p.name))
     .join(" · ");
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// 2026-10-07 · 사용자 지시 · 현재 진열위치 compact label (structured input SSOT)
+// ───────────────────────────────────────────────────────────────────────────
+//
+// 입력: 한 position (대분류 + 중분류 가진 object)
+// 출력: compact label ("9A" "21" "뷰티1")
+//
+// 공유 normalization = formatDisplayLocation.ts/normalizeShelfZoneLabel
+// 상세 (3자리 shelf detail) 는 별개 · formatShelfDetail 유지.
+
+/**
+ * structured position 의 field 를 유연하게 읽기.
+ * 실측 schema (zone_defs: {zone, category}, legacy: {major, middle}, raw: ERP string 등) 모두 허용.
+ */
+export interface ZoneLabelInput {
+  major?: string | null;
+  middle?: string | null;
+  // 호환 · zone_defs/legacy 필드명 매칭 (실제 schema 와 다를 수 있어 전부 optional)
+  zone?: string | null;
+  category?: string | null;
+  large_category?: string | null;
+  section?: string | null;
+}
+
+function readMajor(p: ZoneLabelInput): string | null {
+  return p.major ?? p.zone ?? p.large_category ?? p.section ?? null;
+}
+function readMiddle(p: ZoneLabelInput): string | null {
+  return p.middle ?? p.category ?? null;
+}
+
+/**
+ * 한 structured position → compact zone label.
+ *
+ * @example
+ *   formatShelfZoneLabel({ major: "9매대", middle: "A" })   // "9A"
+ *   formatShelfZoneLabel({ major: "벽", middle: "21" })      // "21"
+ *   formatShelfZoneLabel({ major: "뷰티", middle: "1" })     // "뷰티1"
+ *   formatShelfZoneLabel({ major: "뷰티1" })                 // "뷰티1"
+ *   formatShelfZoneLabel({})                                 // ""
+ */
+export function formatShelfZoneLabel(position: ZoneLabelInput | null | undefined): string {
+  if (!position) return "";
+  const major = readMajor(position);
+  const middle = readMiddle(position);
+  return normalizeShelfZoneLabel(major, middle);
+}
+
+/**
+ * 여러 position → " · " join compact label.
+ *
+ * 처리:
+ *   1. 각 position → formatShelfZoneLabel
+ *   2. 빈 결과 drop
+ *   3. 중복 제거
+ *   4. canonical sort (숫자 접두 사전식, 이름형 뒤로)
+ *   5. " · " join
+ *   6. 결과 비어있으면 "-"
+ *
+ * @example
+ *   summarizeShelfZoneLabels([
+ *     { major: "9매대", middle: "A" },
+ *     { major: "벽", middle: "21" },
+ *     { major: "뷰티", middle: "1" },
+ *   ])
+ *   // "9A · 21 · 뷰티1"
+ */
+export function summarizeShelfZoneLabels(
+  positions: ReadonlyArray<ZoneLabelInput | null | undefined> | null | undefined,
+): string {
+  if (!positions || positions.length === 0) return "-";
+  const labels: string[] = [];
+  for (const p of positions) {
+    const l = formatShelfZoneLabel(p);
+    if (l) labels.push(l);
+  }
+  if (labels.length === 0) return "-";
+  const uniq = Array.from(new Set(labels));
+  uniq.sort((a, b) => {
+    const na = a.match(/^(\d+)/)?.[1];
+    const nb = b.match(/^(\d+)/)?.[1];
+    if (na && nb) {
+      const diff = parseInt(na, 10) - parseInt(nb, 10);
+      if (diff !== 0) return diff;
+      return a.localeCompare(b, "ko");
+    }
+    if (na && !nb) return -1;
+    if (!na && nb) return 1;
+    return a.localeCompare(b, "ko");
+  });
+  return uniq.join(" · ");
 }

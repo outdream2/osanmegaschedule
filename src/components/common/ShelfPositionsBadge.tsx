@@ -4,9 +4,13 @@
 //   · 미입력 매장 · 빨간 텍스트 강조 유지 (기능적 시각 신호)
 //   · 있는 위치 · brand-deep 텍스트 · 구분자 " · "
 //   · 이름은 하위호환 유지 · 실제 렌더는 배지 아님
+// 2026-10-07 · 사용자 지시 · variant="zone" 추가 · 현재 진열위치 compact label 표시
+//   · 입력 · zonePositions · structured position 배열 (대분류+중분류)
+//   · 출력 · "9A · 21 · 뷰티1"
+//   · 상세 (3자리 shelf detail) 미사용 · summarizeShelfZoneLabels SSOT 재사용
 
 import React from "react";
-import { formatShelfPositions, formatShelfDetail, type ShelfPositions } from "../../lib/shelfPositions";
+import { formatShelfPositions, formatShelfDetail, summarizeShelfZoneLabels, type ShelfPositions, type ZoneLabelInput } from "../../lib/shelfPositions";
 import { useStorageLocations } from "../../hooks/useStorageLocations";
 
 export interface ShelfPositionsBadgeProps {
@@ -14,12 +18,30 @@ export interface ShelfPositionsBadgeProps {
   size?: "sm" | "md";       // sm · 리스트 · md · 상세 패널
   /** 2026-09-09 · 매장구역 UI 스타일 상속 · 사용자 지시 · 색만 다르게
    *  · "text" · 매장구역이 텍스트인 곳 (기본)
-   *  · "badge" · 매장구역이 배지인 곳 · 같은 pill 스타일 · 색만 rose 계열 */
-  variant?: "text" | "badge";
+   *  · "badge" · 매장구역이 배지인 곳 · 같은 pill 스타일 · 색만 rose 계열
+   *  · "zone" · 2026-10-07 · 현재 진열위치 compact label ("9A · 21 · 뷰티1")
+   *    · zonePositions prop 사용 · positions (상세) 무시 */
+  variant?: "text" | "badge" | "zone";
+  /** 2026-10-07 · variant="zone" 전용 · structured position 배열
+   *  · 각 position 은 { major, middle } (또는 호환 필드명)
+   *  · summarizeShelfZoneLabels SSOT 로 요약 */
+  zonePositions?: ReadonlyArray<ZoneLabelInput | null | undefined> | null;
   className?: string;
 }
 
-export const ShelfPositionsBadge: React.FC<ShelfPositionsBadgeProps> = ({ positions, size = "sm", variant = "text", className = "" }) => {
+export const ShelfPositionsBadge: React.FC<ShelfPositionsBadgeProps> = ({ positions, size = "sm", variant = "text", zonePositions, className = "" }) => {
+  // 2026-10-07 · variant="zone" · compact zone label 표시 (상세 X · structured position 사용)
+  if (variant === "zone") {
+    const summary = summarizeShelfZoneLabels(zonePositions);
+    const sizeCls = size === "md" ? "text-[14px]" : "text-[13px]";
+    const toneCls = summary === "-" ? "text-zinc-400 font-medium" : "text-ink-soft font-semibold tabular-nums";
+    return (
+      <span className={`inline-flex items-baseline ${sizeCls} ${toneCls} ${className}`}>
+        {summary}
+      </span>
+    );
+  }
+
   const locations = useStorageLocations();
   if (!locations.length) return null;
   const list = formatShelfPositions(positions, locations);

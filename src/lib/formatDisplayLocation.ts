@@ -23,6 +23,11 @@
 //   · 상세 (1열/2열/3단/전체) 제외 · summary/badge/list 전용
 //   · 기존 formatDisplayLocation 은 상세 유지 (edit/detail/tooltip)
 //   · DB 값·편집 값·상세 위치 값 절대 변경 X
+//
+// 2026-10-07 · 사용자 지시 · structured position 쪽 포맷터와 공유 normalization 추출
+//   · normalizeShelfZoneLabel(major, middle) → "9A" "21" "뷰티1" 같은 compact label 생성
+//   · compactOne 내부에서도 이 공유 함수를 호출 (ERP raw parse 후)
+//   · shelfPositions.ts 의 formatShelfZoneLabel(position) 도 동일 함수 재사용
 
 // 전각 영문 → 반각 영문
 function toHalfWidthAlpha(s: string): string {
@@ -99,13 +104,98 @@ function stripDetailParts(parts: string[]): string[] {
   });
 }
 
+/**
+ * 2026-10-07 · 사용자 지시 · 공유 normalization (SSOT)
+ *
+ * 대분류 (major) + 중분류 (middle) 두 값을 받아서 compact label 생성.
+ * ERP raw 측 compactOne 과 structured position 측 formatShelfZoneLabel 양쪽에서 재사용.
+ *
+ * 입력은 raw string 그대로 (전각 영문 포함 가능). 내부에서 반각 정규화.
+ *
+ * 규칙:
+ *   · "N매대" + "A" → "NA"
+ *   · "N매대" alone → "N"
+ *   · "벽" + "N"    → "N"
+ *   · "벽" alone    → ""
+ *   · 이름형 (뷰티/건기식 등) + "N" → "이름N"
+ *   · 이름형 alone → "이름"
+ *   · 중분류 "전체" or 비어있으면 → middle 무시 (대분류만)
+ *   · 모두 비어있으면 → ""
+ *
+ * @example
+ *   normalizeShelfZoneLabel("9매대", "A")    // "9A"
+ *   normalizeShelfZoneLabel("9매대", "Ａ")   // "9A"
+ *   normalizeShelfZoneLabel("벽", "21")      // "21"
+ *   normalizeShelfZoneLabel("벽21", null)    // "21"
+ *   normalizeShelfZoneLabel("뷰티", "1")     // "뷰티1"
+ *   normalizeShelfZoneLabel("뷰티1", null)   // "뷰티1"
+ *   normalizeShelfZoneLabel(null, "A")       // "A"
+ *   normalizeShelfZoneLabel(null, null)      // ""
+ */
+export function normalizeShelfZoneLabel(
+  major: string | null | undefined,
+  middle: string | null | undefined,
+): string {
+  const majRaw = (major == null ? "" : String(major)).trim();
+  let midRaw = (middle == null ? "" : String(middle)).trim();
+
+  // "전체" 중분류 무시 · "N열/N단" 상세도 무시
+  if (midRaw === "전체" || DETAIL_SUFFIX_RE.test(midRaw)) midRaw = "";
+
+  if (!majRaw && !midRaw) return "";
+
+  // 전각 영문 정규화
+  const maj = toHalfWidthAlpha(majRaw);
+  const mid = toHalfWidthAlpha(midRaw);
+
+  // major alone (middle 없음)
+  if (!mid) {
+    // 대분류가 이미 "9매대", "벽21", "뷰티1" 같은 결합형이면 compactOne 로 재분석
+    const joined = maj;
+    const mMadaeWithLetter = joined.match(/^(\d+)\s*매대\s*([A-Za-z])\b/);
+    if (mMadaeWithLetter) return `${mMadaeWithLetter[1]}${mMadaeWithLetter[2].toUpperCase()}`;
+    const mMadaeAlone = joined.match(/^(\d+)\s*매대\s*$/);
+    if (mMadaeAlone) return mMadaeAlone[1];
+    const mWallWithNum = joined.match(/^벽\s*(\d+)\b/);
+    if (mWallWithNum) return mWallWithNum[1];
+    const mWallAlone = joined.match(/^벽\s*$/);
+    if (mWallAlone) return "";
+    // 이름형 or 숫자만 or 알파벳만 등 · 공백 제거 후 반환
+    return joined.replace(/\s+/g, "");
+  }
+
+  // middle alone (major 없음)
+  if (!maj) {
+    return mid.replace(/\s+/g, "");
+  }
+
+  // 둘 다 있음 · major + middle 조합
+  //   N매대 + X → NX   (X 가 알파벳 1자) · 그 외 → N + mid
+  const mMadae = maj.match(/^(\d+)\s*매대$/);
+  if (mMadae) {
+    const n = mMadae[1];
+    // middle 이 알파벳 1자 → 결합, 그 외 → N 뒤에 그대로
+    if (/^[A-Za-z]$/.test(mid)) return `${n}${mid.toUpperCase()}`;
+    return `${n}${mid}`;
+  }
+
+  // 벽 + N → N
+  if (maj === "벽") {
+    return mid;
+  }
+
+  // 이름형 + N → 이름N (공백 제거 join)
+  return `${maj}${mid}`.replace(/\s+/g, "");
+}
+
 // 단일 raw 값 → compact label (empty → "")
+// 2026-10-07 · 공유 normalization 사용 · normalizeShelfZoneLabel 로 SSOT 통일
 function compactOne(raw: unknown): string {
   if (raw == null) return "";
   const s = String(raw).trim();
   if (!s) return "";
 
-  // 1. 전각 영문 → 반각 (전체 문자열 선적용 · 공백 분리 전에)
+  // 1. 전각 영문 → 반각 (전체 문자열 선적용)
   const half = toHalfWidthAlpha(s);
 
   // 2. ">" `/` `|` 로 1차 분리 (공백은 안 자름 · "뷰티 1" 같은 공백 포함 이름 보호)
@@ -115,34 +205,12 @@ function compactOne(raw: unknown): string {
   const majorParts = stripDetailParts(rawParts);
   if (majorParts.length === 0) return "";
 
-  // 4. parts 를 하나로 합친 "normalized" 문자열 생성 후 접두어 매칭
-  //    여러 part 가 있으면 공백으로 join 하여 재분석
-  //    (ex: ["5매대", "A"] → "5매대 A")
-  const joined = majorParts.join(" ").trim();
-
-  // 5. 접두어 패턴 매칭 (우선순위 순)
-  //    (a) "N매대 X" or "N매대X" or "N매대>X" → "NX" (X 는 알파벳 1자)
-  //    (b) "N매대" 단독 → "N"
-  //    (c) "벽 N" or "벽N" or "벽>N" → "N"
-  //    (d) "벽" 단독 → ""
-  //    (e) 그 외 (이름형 zone) → 공백·구분자 제거 후 join
-
-  // (a) (b) 매대
-  const mMadaeWithLetter = joined.match(/^(\d+)\s*매대\s*([A-Za-z])\b/);
-  if (mMadaeWithLetter) return `${mMadaeWithLetter[1]}${mMadaeWithLetter[2].toUpperCase()}`;
-  const mMadaeAlone = joined.match(/^(\d+)\s*매대\s*$/);
-  if (mMadaeAlone) return mMadaeAlone[1];
-
-  // (c) (d) 벽
-  const mWallWithNum = joined.match(/^벽\s*(\d+)\b/);
-  if (mWallWithNum) return mWallWithNum[1];
-  const mWallAlone = joined.match(/^벽\s*$/);
-  if (mWallAlone) return "";
-
-  // (e) 이름형 zone (뷰티1, 건기식1 등)
-  //    공백·구분자 전부 제거 후 반환
-  const cleaned = joined.replace(/\s+/g, "");
-  return cleaned;
+  // 4. 공유 normalization 호출
+  //    · parts[0] = 대분류, parts[1] = 중분류 (있으면)
+  //    · parts.length >= 3 인 경우 (ex: ["이름", "N", "뭔가"]) 는 2개까지만 사용
+  const major = majorParts[0] ?? "";
+  const middle = majorParts[1] ?? "";
+  return normalizeShelfZoneLabel(major, middle);
 }
 
 /**
