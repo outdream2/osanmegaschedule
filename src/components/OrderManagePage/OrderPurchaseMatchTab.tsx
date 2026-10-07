@@ -360,7 +360,7 @@ export const OrderPurchaseMatchTab: React.FC = () => {
         ) : (
           <Card clip padding="none" className="overflow-hidden">
             {/* sticky COLUMN HEADER · lg+ 단일 7-column */}
-            <div className="hidden lg:grid sticky top-0 z-20 bg-white border-b border-zinc-200/80 shadow-[0_1px_0_rgba(0,0,0,0.03)] text-[13px] font-semibold text-zinc-500 uppercase tracking-wide
+            <div className="hidden lg:grid sticky top-0 z-20 bg-white border-b border-zinc-200/80 shadow-[0_1px_0_rgba(0,0,0,0.03)] text-[15px] font-semibold text-zinc-500 uppercase tracking-wide
               grid-cols-[28px_minmax(0,1.4fr)_72px_minmax(0,1fr)_72px_minmax(0,1fr)_120px_140px] gap-x-2 px-3 py-2.5">
               <span />
               <span>발주번호 · 공급사</span>
@@ -371,8 +371,8 @@ export const OrderPurchaseMatchTab: React.FC = () => {
               <span className="text-center">대조결과</span>
               <span className="text-center">처리</span>
             </div>
-            {/* 모바일 */}
-            <div className="lg:hidden px-3 py-2 bg-zinc-50 border-b border-zinc-200/80 text-[14px] text-zinc-500">
+            {/* 모바일 · 2026-10-07 · 비굵은 글씨 +2 */}
+            <div className="lg:hidden px-3 py-2 bg-zinc-50 border-b border-zinc-200/80 text-[16px] text-zinc-500">
               발주 ↔ 매입 매칭 (좁은 화면: 카드)
             </div>
 
@@ -460,23 +460,23 @@ const PairedRow: React.FC<PairedRowProps> = ({ order, isOpen, onToggle, busy, on
               : <ChevronRight size={14} className="text-zinc-300" strokeWidth={2.4} />}
           </span>
         </div>
-        {/* 발주번호·공급사 */}
+        {/* 발주번호·공급사 · 2026-10-07 · 비굵은 글씨 +2 */}
         <div className="flex flex-col leading-tight min-w-0">
-          <span className="text-[13px] text-zinc-400 tabular-nums font-medium truncate">#{order.orderNumber ?? "—"}</span>
+          <span className="text-[15px] text-zinc-400 tabular-nums font-medium truncate">#{order.orderNumber ?? "—"}</span>
           <span className="text-[16px] font-bold text-ink truncate">{supplierDisplay || "공급사 미지정"}</span>
         </div>
         {/* 발주일 */}
-        <div className="text-[14px] text-zinc-500 tabular-nums">{shortDate(order.sentAt ?? order.orderDate) || "—"}</div>
+        <div className="text-[16px] text-zinc-500 tabular-nums">{shortDate(order.sentAt ?? order.orderDate) || "—"}</div>
         {/* 발주 (수량·금액) */}
         <div className="flex flex-col items-end leading-tight tabular-nums">
-          <span className="text-[14px] text-zinc-600">{order.distinctProducts}종 · {totalOrderQty.toLocaleString()}개</span>
+          <span className="text-[16px] text-zinc-600">{order.distinctProducts}종 · {totalOrderQty.toLocaleString()}개</span>
           <span className="text-[15px] font-bold text-emerald-700">{fmtWon(order.totalOrderAmount)}</span>
         </div>
         {/* 매입일 */}
-        <div className="text-[14px] text-zinc-500 tabular-nums truncate">{purchaseDateLabel}</div>
+        <div className="text-[16px] text-zinc-500 tabular-nums truncate">{purchaseDateLabel}</div>
         {/* 매입 (수량·금액) · diff 중복 제거 */}
         <div className="flex flex-col items-end leading-tight tabular-nums">
-          <span className={`text-[14px] ${hasQtyDiff ? "text-rose-600 font-semibold" : "text-zinc-600"}`}>
+          <span className={`text-[16px] ${hasQtyDiff ? "text-rose-600 font-semibold" : "text-zinc-600"}`}>
             {matchedProducts > 0 ? `${matchedProducts}종 · ${totalPurchaseQty.toLocaleString()}개` : "—"}
           </span>
           <span className={`text-[15px] font-bold ${hasAmountDiff ? "text-rose-600" : "text-sky-700"}`}>
@@ -501,21 +501,22 @@ const PairedRow: React.FC<PairedRowProps> = ({ order, isOpen, onToggle, busy, on
           <div className="flex-1 min-w-0 flex flex-col gap-1.5">
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-col leading-tight min-w-0">
-                <span className="text-[13px] text-zinc-400 tabular-nums font-medium">#{order.orderNumber ?? "—"}</span>
+                <span className="text-[15px] text-zinc-400 tabular-nums font-medium">#{order.orderNumber ?? "—"}</span>
                 <span className="text-[16px] font-bold text-ink truncate">{supplierDisplay || "공급사 미지정"}</span>
               </div>
               {isOpen
                 ? <ChevronDown size={14} className="text-zinc-400 shrink-0 mt-1" />
                 : <ChevronRight size={14} className="text-zinc-300 shrink-0 mt-1" />}
             </div>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[13px] tabular-nums">
+            {/* 2026-10-07 · 비굵은 글씨 +2 (사용자 지시) */}
+            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[15px] tabular-nums">
               <div className="flex flex-col">
-                <span className="text-zinc-400 text-[12px]">발주 · {shortDate(order.sentAt ?? order.orderDate) || "—"}</span>
+                <span className="text-zinc-400 text-[14px]">발주 · {shortDate(order.sentAt ?? order.orderDate) || "—"}</span>
                 <span className="text-zinc-600">{order.distinctProducts}종 · {totalOrderQty.toLocaleString()}개</span>
                 <span className="font-bold text-emerald-700">{fmtWon(order.totalOrderAmount)}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-zinc-400 text-[12px]">매입 · {purchaseDateLabel}</span>
+                <span className="text-zinc-400 text-[14px]">매입 · {purchaseDateLabel}</span>
                 <span className={hasQtyDiff ? "text-rose-600 font-semibold" : "text-zinc-600"}>
                   {matchedProducts > 0 ? `${matchedProducts}종 · ${totalPurchaseQty.toLocaleString()}개` : "매입 없음"}
                 </span>
