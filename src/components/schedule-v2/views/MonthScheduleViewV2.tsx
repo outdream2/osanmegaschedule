@@ -6,7 +6,7 @@
 //     · handleCellUpdate (기존 PUT /api/schedules) 재사용 · V1 ↔ V2 parity
 //     · lock month 는 server guard 가 차단 · frontend 는 chip + popover 비활성
 //   · 공통 OFF semantics: src/shared/schedule/offTypes.ts (isOffType)
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { CaretLeft, CaretRight, Lock, PencilSimple, Check, X } from "@phosphor-icons/react";
 import { useScheduleData, type CellUpdateData } from "../../SchedulePage/useScheduleData";
 import { useSettings } from "../../../hooks/useSettings";
@@ -40,12 +40,24 @@ export const MonthScheduleViewV2: React.FC<Props> = ({ year, month, onMonthDelta
     error,
     isMonthLocked,
     handleCellUpdate,
+    fetchScheduleData,
+    isInitialFetchRef,
   } = useScheduleData(year, month, showNotification);
 
   const { scheduleTypes } = useSettings();
 
   const todayStr = getTodayStr();
   const dateList = useMemo(() => buildDateList(year, month), [year, month]);
+
+  // 2026-10-08 · E-HOTFIX · V1 SchedulePage 와 동일한 caller-driven fetch trigger
+  //   · useScheduleData 는 자동 fetch 하지 않음 (caller-driven) · 누락 시 isLoading 영구 true
+  //   · 최초 진입 silent=false → spinner · 월 이동 시 silent=true (loaded month skip 로직은 hook 안)
+  useEffect(() => {
+    const silent = !isInitialFetchRef.current;
+    isInitialFetchRef.current = false;
+    fetchScheduleData(dateList, silent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, month]);
   const level = authSession?.level ?? 0;
 
   // 편집 모드 · lock 이면 강제 off

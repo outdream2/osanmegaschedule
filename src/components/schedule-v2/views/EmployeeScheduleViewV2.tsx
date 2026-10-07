@@ -5,7 +5,7 @@
 //   · 캐노니컬 재사용 · useScheduleData · useSettings · getTypeHoursMap
 //     · MonthGridV2 는 single-employee array 로 projection (N+1 없음 · 월 1회 fetch)
 //   · 쓰기 · handleCellUpdate (셀) + POST /api/schedules/batch (일괄 · 기존 V1 과 동일 endpoint)
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useScheduleData, type CellUpdateData } from "../../SchedulePage/useScheduleData";
 import { useSettings } from "../../../hooks/useSettings";
@@ -45,11 +45,21 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
     isMonthLocked,
     handleCellUpdate,
     fetchScheduleData,
+    isInitialFetchRef,
   } = useScheduleData(year, month, showNotification);
 
   const { scheduleTypes } = useSettings();
   const dateList = useMemo(() => buildDateList(year, month), [year, month]);
   const todayStr = getTodayStr();
+
+  // 2026-10-08 · E-HOTFIX · V1 SchedulePage 와 동일한 caller-driven fetch trigger
+  //   · useScheduleData 는 자동 fetch 하지 않음 (caller-driven) · 누락 시 isLoading 영구 true
+  useEffect(() => {
+    const silent = !isInitialFetchRef.current;
+    isInitialFetchRef.current = false;
+    fetchScheduleData(dateList, silent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, month]);
   const level = authSession?.level ?? 0;
   const canEdit = !isMonthLocked || level >= 9;
 

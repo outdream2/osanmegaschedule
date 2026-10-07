@@ -10,7 +10,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { CaretLeft, CaretRight, X } from "@phosphor-icons/react";
 import { useScheduleData } from "../../SchedulePage/useScheduleData";
 import { useSettings } from "../../../hooks/useSettings";
-import { getTodayStr } from "../../SchedulePage/scheduleHelpers";
+import { buildDateList, getTodayStr } from "../../SchedulePage/scheduleHelpers";
 import { parseRange, pct, widthPct, buildTypeTones, DISPLAY_START, DISPLAY_END, HOUR_SLOTS, LUNCH_SLOTS, REST_SLOTS, shiftSlot } from "../../DayTimelineModal/utils";
 import { SKIP_TYPES, ZONE_ROWS, type ZoneRow, type TypeTone } from "../../DayTimelineModal/types";
 import { Spinner } from "../../common/Spinner";
@@ -47,9 +47,23 @@ export const DayScheduleViewV2: React.FC<Props> = ({ date, onDateDelta, onToday,
   const year = dateObj.getFullYear();
   const month = dateObj.getMonth() + 1;
 
-  const { employees, isLoading, error } = useScheduleData(year, month, showNotification);
+  const {
+    employees, isLoading, error,
+    fetchScheduleData, isInitialFetchRef,
+  } = useScheduleData(year, month, showNotification);
   const { scheduleTypes, positions } = useSettings();
   const todayStr = getTodayStr();
+
+  // 2026-10-08 · E-HOTFIX · V1 SchedulePage 와 동일한 caller-driven fetch trigger
+  //   · useScheduleData 는 자동 fetch 하지 않음 (caller-driven) · 누락 시 isLoading 영구 true
+  //   · DayView 는 date 가 속한 month 단위 fetch (hook 내부 월 단위 캐싱 · 같은 월 안 날짜 변경은 skip)
+  const dateList = useMemo(() => buildDateList(year, month), [year, month]);
+  useEffect(() => {
+    const silent = !isInitialFetchRef.current;
+    isInitialFetchRef.current = false;
+    fetchScheduleData(dateList, silent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year, month]);
 
   // subview
   const [subview, setSubview] = useState<DaySubView>("overview");

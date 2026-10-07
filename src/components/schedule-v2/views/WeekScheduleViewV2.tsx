@@ -5,11 +5,11 @@
 //   · anchor month = 주의 목요일 (ISO) 가 속한 month · 월 경계 주 (예: 9/28~10/4) 안전
 //   · 월 경계 날짜 (anchor month 가 아닌 날) · 편집 비활성 (lock 혼동 방지 · Phase V2-E 보완 예정)
 //   · 쓰기 경로 · 월간과 동일 handleCellUpdate (PUT /api/schedules) → V1↔V2 parity 자동
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { CaretLeft, CaretRight, Lock, PencilSimple, Check } from "@phosphor-icons/react";
 import { useScheduleData, type CellUpdateData } from "../../SchedulePage/useScheduleData";
 import { useSettings } from "../../../hooks/useSettings";
-import { getTodayStr } from "../../SchedulePage/scheduleHelpers";
+import { buildDateList, getTodayStr } from "../../SchedulePage/scheduleHelpers";
 import { Spinner } from "../../common/Spinner";
 import type { AuthSession } from "../../../types";
 import { MonthGridV2 } from "./month-grid/MonthGridV2";
@@ -39,11 +39,24 @@ export const WeekScheduleViewV2: React.FC<Props> = ({ anchorDate, onAnchorDelta,
     error,
     isMonthLocked,
     handleCellUpdate,
+    fetchScheduleData,
+    isInitialFetchRef,
   } = useScheduleData(anchor.year, anchor.month, showNotification);
 
   const { scheduleTypes } = useSettings();
   const todayStr = getTodayStr();
   const level = authSession?.level ?? 0;
+
+  // 2026-10-08 · E-HOTFIX · V1 SchedulePage 와 동일한 caller-driven fetch trigger
+  //   · useScheduleData 는 자동 fetch 하지 않음 (caller-driven) · 누락 시 isLoading 영구 true
+  //   · WeekView 는 anchor month 를 월 단위 fetch (hook 내부 월 단위 캐싱)
+  const dateList = useMemo(() => buildDateList(anchor.year, anchor.month), [anchor.year, anchor.month]);
+  useEffect(() => {
+    const silent = !isInitialFetchRef.current;
+    isInitialFetchRef.current = false;
+    fetchScheduleData(dateList, silent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anchor.year, anchor.month]);
 
   const [editMode, setEditMode] = useState(false);
   const effectiveEditMode = editMode && (!isMonthLocked || level >= 9);
