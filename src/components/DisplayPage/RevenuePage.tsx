@@ -186,8 +186,8 @@ const HourlyReportTab: React.FC = () => {
   const [includeWeekend, setIncludeWeekend] = useState<boolean>(true);
   // 2026-10-06 · 사용자 지시 · 주말만 체크박스 · 체크 시 주말 날짜만 표시 (주말 포함과 상호 배타)
   const [weekendOnly, setWeekendOnly] = useState<boolean>(false);
-  // 2026-10-07 · 공휴일 제외 체크 (session only · GET /api/holidays?year, is_holiday=true 만)
-  const [excludeHoliday, setExcludeHoliday] = useState<boolean>(false);
+  // 2026-10-07 · 공휴일 포함 체크 (session only · default=포함 · GET /api/holidays?year, is_holiday=true 만)
+  const [includeHoliday, setIncludeHoliday] = useState<boolean>(true);
   const [holidaySet, setHolidaySet] = useState<Set<string>>(() => new Set());
   const [hourlyRows, setHourlyRows] = useState<HourlyRow[] | null>(null);
   const [hourlyStatus, setHourlyStatus] = useState<FetchStatus>("idle");
@@ -513,7 +513,7 @@ const HourlyReportTab: React.FC = () => {
           : weekendOnly
             ? displayDateData.filter((d) => isWeekend(d.date))
             : (includeWeekend ? displayDateData : displayDateData.filter((d) => !isWeekend(d.date)));
-        const effDateData = excludeHoliday ? effDateDataBase.filter((d) => !holidaySet.has(d.date)) : effDateDataBase;
+        const effDateData = !includeHoliday ? effDateDataBase.filter((d) => !holidaySet.has(d.date)) : effDateDataBase;
         // 2026-10-06 · effDateData 빈 경우 chart 영역만 메시지 (상단 탭/메트릭 탭 유지)
         const DOW_KO = ["일", "월", "화", "수", "목", "금", "토"];
         const emptyChartMsg = chartAxis === "weekday"
@@ -522,8 +522,8 @@ const HourlyReportTab: React.FC = () => {
             ? "주말만 선택 시 조회 기간 내 주말 날짜 없음"
             : !includeWeekend
               ? "주말 제외 시 조회 기간 내 평일 날짜 없음"
-              : excludeHoliday
-                ? "공휴일 제외 시 조회 기간 내 평일 날짜 없음"
+              : !includeHoliday
+                ? "공휴일 제외 시 조회 기간 내 날짜 없음"
                 : "표시할 날짜 없음";
         const isEffEmpty = effDateData.length === 0;
         // 2026-10-06 · 사용자 지시 · 요일별 추이 · 각 날짜 W1/W2/.. 주 번호 라벨 (같은 요일 내 오름차순 index+1)
@@ -679,6 +679,16 @@ const HourlyReportTab: React.FC = () => {
                   </button>
                 ))}
               </div>
+              {/* 2026-10-07 · 사용자 지시 · 공휴일 포함 체크박스 · 주말 포함 앞 · default 체크 (첫 로딩 포함) */}
+              <label className="inline-flex items-center gap-1.5 text-[13px] text-zinc-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={includeHoliday}
+                  onChange={(e) => setIncludeHoliday(e.target.checked)}
+                  className="w-4 h-4 accent-amber-500 cursor-pointer"
+                />
+                <span>공휴일 포함{holidaySet.size > 0 ? ` (${holidaySet.size}일)` : ""}</span>
+              </label>
               {chartAxis !== "weekday" ? (
                 <>
                   <label className={`inline-flex items-center gap-1.5 text-[13px] cursor-pointer select-none ${weekendOnly ? "text-zinc-400" : "text-zinc-700"}`}>
@@ -722,16 +732,6 @@ const HourlyReportTab: React.FC = () => {
                   })}
                 </div>
               )}
-              {/* 2026-10-07 · 공휴일 제외 체크 (모든 축) · /api/holidays 재사용 */}
-              <label className="inline-flex items-center gap-1.5 text-[13px] text-zinc-700 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={excludeHoliday}
-                  onChange={(e) => setExcludeHoliday(e.target.checked)}
-                  className="w-4 h-4 accent-amber-500 cursor-pointer"
-                />
-                <span>공휴일 제외{holidaySet.size > 0 ? ` (${holidaySet.size}일)` : ""}</span>
-              </label>
             </div>
             {/* 제목 + 일수 */}
             <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -857,6 +857,9 @@ const HourlyReportTab: React.FC = () => {
                     monthMap.get(monthKey)!.set(day, { sale: d.totalSale, cust: d.totalCust, marg: d.totalMargin });
                   }
                   const months = [...monthMap.keys()].sort();
+                  // 2026-10-07 · 사용자 지시 · 일별 추이 x축 날짜 아래 요일 (단일 월 조회 시만 표시)
+                  const singleMonthKey = months.length === 1 ? months[0] : null;
+                  const DOW_KO_X = ["일", "월", "화", "수", "목", "금", "토"];
                   const dayChartData: Record<string, number | string | null>[] = [];
                   for (let day = 1; day <= 31; day++) {
                     const point: Record<string, number | string | null> = { day };
@@ -875,9 +878,38 @@ const HourlyReportTab: React.FC = () => {
                   }
                   return (
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={dayChartData} margin={{ top: 18, right: 15, left: 0, bottom: 5 }}>
+                      <LineChart data={dayChartData} margin={{ top: 18, right: 15, left: 0, bottom: singleMonthKey ? 18 : 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
-                        <XAxis dataKey="day" tick={{ fontSize: 13, fill: "#52525b" }} tickFormatter={(v) => `${v}일`} interval={1} />
+                        <XAxis
+                          dataKey="day"
+                          interval={1}
+                          tick={(props: any) => {
+                            const x = Number(props?.x ?? 0);
+                            const y = Number(props?.y ?? 0);
+                            const day = Number(props?.payload?.value);
+                            if (!Number.isFinite(day)) return <g />;
+                            if (!singleMonthKey) {
+                              return (
+                                <text x={x} y={y + 14} textAnchor="middle" fontSize={13} fill="#52525b">{`${day}일`}</text>
+                              );
+                            }
+                            const [yr, mo] = singleMonthKey.split("-").map(Number);
+                            const dt = new Date(yr, mo - 1, day);
+                            if (dt.getMonth() !== mo - 1) {
+                              return (
+                                <text x={x} y={y + 14} textAnchor="middle" fontSize={13} fill="#52525b">{`${day}일`}</text>
+                              );
+                            }
+                            const dow = DOW_KO_X[dt.getDay()];
+                            const color = dt.getDay() === 0 ? "#dc2626" : dt.getDay() === 6 ? "#2563eb" : "#71717a";
+                            return (
+                              <g>
+                                <text x={x} y={y + 12} textAnchor="middle" fontSize={13} fill="#52525b">{`${day}일`}</text>
+                                <text x={x} y={y + 26} textAnchor="middle" fontSize={11} fill={color}>{dow}</text>
+                              </g>
+                            );
+                          }}
+                        />
                         <YAxis
                           tick={{ fontSize: 12, fill: "#52525b" }}
                           tickFormatter={(v) => yFormatter(Number(v))}
@@ -1026,7 +1058,7 @@ const HourlyReportTab: React.FC = () => {
             const dayFilteredBase = weekendOnly
               ? displayDateData.filter((d) => isWeekendDate(d.date))
               : (includeWeekend ? displayDateData : displayDateData.filter((d) => !isWeekendDate(d.date)));
-            const dayFiltered = excludeHoliday ? dayFilteredBase.filter((d) => !holidaySet.has(d.date)) : dayFilteredBase;
+            const dayFiltered = !includeHoliday ? dayFilteredBase.filter((d) => !holidaySet.has(d.date)) : dayFilteredBase;
             const weekMap = new Map<string, DayData[]>(); // key = "YYYY-MM/W"
             for (const d of dayFiltered) {
               const monthKey = d.date.slice(0, 7);
@@ -1146,7 +1178,7 @@ const HourlyReportTab: React.FC = () => {
             for (const d of displayDateData) {
               const w = dowOf(d.date);
               if (!selectedWeekdays.has(w)) continue;
-              if (excludeHoliday && holidaySet.has(d.date)) continue; // 2026-10-07
+              if (!includeHoliday && holidaySet.has(d.date)) continue; // 2026-10-07
               if (!dowMap.has(w)) dowMap.set(w, []);
               dowMap.get(w)!.push({ date: d.date, totalSale: d.totalSale, totalMargin: d.totalMargin, totalCust: d.totalCust });
             }
@@ -1256,7 +1288,7 @@ const HourlyReportTab: React.FC = () => {
             const dayFilteredBase = weekendOnly
               ? displayDateData.filter((d) => isWeekendDate(d.date))
               : (includeWeekend ? displayDateData : displayDateData.filter((d) => !isWeekendDate(d.date)));
-            const dayFiltered = excludeHoliday ? dayFilteredBase.filter((d) => !holidaySet.has(d.date)) : dayFilteredBase;
+            const dayFiltered = !includeHoliday ? dayFilteredBase.filter((d) => !holidaySet.has(d.date)) : dayFilteredBase;
             const monthMap = new Map<string, DayData[]>();
             for (const d of dayFiltered) {
               const monthKey = d.date.slice(0, 7);
@@ -1361,7 +1393,7 @@ const HourlyReportTab: React.FC = () => {
             };
             // 2026-10-07 · 공휴일 제외 반영
             const base = weekendOnly ? displayDateData.filter((d) => isWknd(d.date)) : (!includeWeekend ? displayDateData.filter((d) => !isWknd(d.date)) : displayDateData);
-            return excludeHoliday ? base.filter((d) => !holidaySet.has(d.date)) : base;
+            return !includeHoliday ? base.filter((d) => !holidaySet.has(d.date)) : base;
           })().map((d) => {
             const isExp = expandedDates.has(d.date);
             const isToday = d.date === today;
