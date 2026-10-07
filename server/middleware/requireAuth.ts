@@ -68,17 +68,24 @@ export function consumeSsoJti(jti: string): boolean {
   return false;
 }
 
-// 2026-08-16 · #112-S10 · Access + Refresh 분리
-// 2026-09-24 · 앱 세션 유지 · Option A (RTR) · 회전 (rolling)
-// 2026-10-06 · 사용자 지시 · 세션 TTL 조정
-//   Access · 15분 (짧게 · 탈취 시 노출 최소 · 공통)
-//   Refresh (web) · 1일 · 회전 (rolling)
-//   Refresh (mobile-app) · 7일 · 회전 (rolling · X-Client-Type: mobile-app 헤더 감지)
-//   WEB · 체감 24시간 로그인 유지 (매 15분 silent refresh · 미사용 24시간 만료)
-//   APP · 체감 1주일 로그인 유지 (매 15분 silent refresh · 미사용 7일 만료)
-const ACCESS_MAX_AGE = 15 * 60;              // 15분 (seconds)
-const REFRESH_MAX_AGE_WEB = 1 * 24 * 60 * 60;       // 1일 (웹 · 사용자 지시 2026-10-06)
-const REFRESH_MAX_AGE_MOBILE = 7 * 24 * 60 * 60;    // 7일 (앱 · 사용자 지시 2026-10-06)
+// 2026-08-16 · #112-S10 · Access + Refresh 분리 · 2026-09-24 Option A (RTR) rolling
+// 2026-10-07 · 사용자 지시 · 세션 TTL ENV 로 분리 · WEB/APP 따로
+//   ENV (missing/invalid 시 default 사용):
+//     JWT_ACCESS_TTL         default "15m"  · 공통
+//     JWT_REFRESH_TTL_WEB    default "1d"   · 웹
+//     JWT_REFRESH_TTL_MOBILE default "7d"   · 모바일 앱 (X-Client-Type: mobile-app)
+//   포맷: <숫자><단위>  단위 = s|m|h|d
+function parseDurationToSec(s: string | undefined, defaultSec: number): number {
+  if (!s) return defaultSec;
+  const m = /^(\d+)\s*(s|m|h|d)$/i.exec(s.trim());
+  if (!m) return defaultSec;
+  const n = Number(m[1]);
+  const u = m[2].toLowerCase();
+  return u === "s" ? n : u === "m" ? n * 60 : u === "h" ? n * 3600 : n * 86400;
+}
+const ACCESS_MAX_AGE = parseDurationToSec(process.env.JWT_ACCESS_TTL, 15 * 60);
+const REFRESH_MAX_AGE_WEB = parseDurationToSec(process.env.JWT_REFRESH_TTL_WEB, 1 * 24 * 60 * 60);
+const REFRESH_MAX_AGE_MOBILE = parseDurationToSec(process.env.JWT_REFRESH_TTL_MOBILE, 7 * 24 * 60 * 60);
 const REFRESH_MAX_AGE = REFRESH_MAX_AGE_WEB;        // default (기존 export 호환)
 const DEFAULT_MAX_AGE = ACCESS_MAX_AGE;      // 하위호환 export
 const REMEMBER_MAX_AGE = REFRESH_MAX_AGE;
@@ -124,15 +131,13 @@ export function issueToken(
   req?: Request,
 ): string {
   if (!JWT_SECRET) throw new Error("JWT_SECRET not configured");
-  // 2026-09-24 · Option A · 클라 유형별 refresh 수명 결정
-  // 2026-10-06 · 사용자 지시 · WEB 1일 · APP 7일
+  // 2026-10-07 · ENV 기반 수명 · 클라 유형별 refresh TTL (web/app 분리)
   const clientType = req ? detectClientType(req) : "web";
   const refreshMaxAge = clientType === "mobile-app" ? REFRESH_MAX_AGE_MOBILE : REFRESH_MAX_AGE_WEB;
-  const refreshExpiresIn = clientType === "mobile-app" ? "7d" : "1d";
   const accessPayload: JwtPayload = { ...payload, typ: "access" };
   const refreshPayload: JwtPayload = { ...payload, typ: "refresh" };
-  const accessToken = jwt.sign(accessPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: "15m" });
-  const refreshToken = jwt.sign(refreshPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: refreshExpiresIn });
+  const accessToken = jwt.sign(accessPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: ACCESS_MAX_AGE });
+  const refreshToken = jwt.sign(refreshPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: refreshMaxAge });
   const secure = process.env.NODE_ENV === "production";
   res.cookie(COOKIE_NAME, accessToken, {
     httpOnly: true, secure, sameSite: "lax",
@@ -176,16 +181,14 @@ export function refreshAccessToken(req: Request, res: Response): JwtPayload | nu
     logger.warn(`[AUTH REFRESH FAILED] reason=wrong-typ clientType=${clientType} typ=${decoded.typ}`);
     return null;
   }
-  // 2026-09-24 · 클라 유형별 refresh 수명 · rolling window 재계산
-  // 2026-10-06 · 사용자 지시 · WEB 1일 · APP 7일
+  // 2026-10-07 · ENV 기반 수명 · 클라 유형별 refresh TTL · rolling 재계산
   const refreshMaxAge = clientType === "mobile-app" ? REFRESH_MAX_AGE_MOBILE : REFRESH_MAX_AGE_WEB;
-  const refreshExpiresIn = clientType === "mobile-app" ? "7d" : "1d";
   // 새 access token 발급
   const accessPayload: JwtPayload = { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level, typ: "access" };
-  const accessToken = jwt.sign(accessPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: "15m" });
-  // 2026-09-24 · 회전 · 새 refresh token 발급 · 매 사용 시 rolling 갱신
+  const accessToken = jwt.sign(accessPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: ACCESS_MAX_AGE });
+  // 회전 · 새 refresh token · 매 사용 시 rolling 갱신
   const refreshPayload: JwtPayload = { sub: decoded.sub, name: decoded.name, role: decoded.role, level: decoded.level, typ: "refresh" };
-  const newRefreshToken = jwt.sign(refreshPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: refreshExpiresIn });
+  const newRefreshToken = jwt.sign(refreshPayload, JWT_SECRET, { algorithm: "HS256", expiresIn: refreshMaxAge });
   const secure = process.env.NODE_ENV === "production";
   res.cookie(COOKIE_NAME, accessToken, {
     httpOnly: true, secure, sameSite: "lax",
@@ -195,7 +198,7 @@ export function refreshAccessToken(req: Request, res: Response): JwtPayload | nu
     httpOnly: true, secure, sameSite: "lax",
     maxAge: refreshMaxAge * 1000, path: "/api/auth",
   });
-  logger.info(`[AUTH REFRESH] clientType=${clientType} rotation=success refreshMaxAge=${refreshExpiresIn} sub=${decoded.sub}`);
+  logger.info(`[AUTH REFRESH] clientType=${clientType} rotation=success refreshMaxAge=${refreshMaxAge}s sub=${decoded.sub}`);
   return accessPayload;
 }
 
