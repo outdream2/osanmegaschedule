@@ -346,18 +346,20 @@ router.get("/api/erp/sale-day-products", asyncHandler(async (req, res) => {
     });
 
     // 전체 totals · class group 집계
+    // 2026-10-07 · 사용자 지시 · cosmetics (화장품 · 뷰티 포함) 그룹 추가
     const totals = aggregateGroup(items);
     const stationery = aggregateGroup(items.filter((i) => i.class === "stationery"));
     const general = aggregateGroup(items.filter((i) => i.class === "general"));
+    const cosmetics = aggregateGroup(items.filter((i) => i.class === "cosmetics"));
     const unknown = aggregateGroup(items.filter((i) => i.class === "unknown"));
 
-    logger.info(`[sale-day-products] date=${date} · items=${items.length} · stationery=${stationery.count} general=${general.count} unknown=${unknown.count}`);
+    logger.info(`[sale-day-products] date=${date} · items=${items.length} · stationery=${stationery.count} general=${general.count} cosmetics=${cosmetics.count} unknown=${unknown.count}`);
 
     return res.json({
       ok: true,
       date,
       totals,
-      byClass: { stationery, general, unknown },
+      byClass: { stationery, general, cosmetics, unknown },
       items,
     });
   } catch (e) {

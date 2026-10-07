@@ -82,11 +82,13 @@ export const DiffTab: React.FC = () => {
   });
   const [lowStock, setLowStock] = useState<ProductLite[]>([]);
   const [loading, setLoading] = useState(false);
-  // 상비약/일반약/전체 3-way 필터 (localStorage 저장)
+  // 상비약/일반약/화장품/미분류/전체 5-way 필터 (localStorage 저장)
+  // 2026-10-07 · 사용자 지시 · cosmetics (화장품 · 뷰티 포함) 추가
+  // 2026-10-07 v2 · 사용자 지시 · unknown (미분류) 추가 · 5-way
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
     try {
       const v = localStorage.getItem(SK_DIFF_CLASSFILTER);
-      return v === "stationery" || v === "general" || v === "all" ? v : "all";
+      return v === "stationery" || v === "general" || v === "cosmetics" || v === "unknown" || v === "all" ? v : "all";
     } catch { return "all"; }
   });
   useEffect(() => { try { localStorage.setItem(SK_DIFF_CLASSFILTER, classFilter); } catch { /**/ } }, [classFilter]);
@@ -170,9 +172,11 @@ export const DiffTab: React.FC = () => {
     })
     .filter(Boolean) as Array<any>, [lowStock]);
 
-  // 3-way tab 카운트
+  // 5-way tab 카운트 · 2026-10-07 · 사용자 지시 · 화장품 (뷰티 포함) + 미분류 추가
   const essentialCount = useMemo(() => diffBase.filter(p => matchClassFilter(p.location,"stationery")).length, [diffBase]);
   const generalCount = useMemo(() => diffBase.filter(p => matchClassFilter(p.location,"general")).length, [diffBase]);
+  const cosmeticsCount = useMemo(() => diffBase.filter(p => matchClassFilter(p.location,"cosmetics")).length, [diffBase]);
+  const unknownCount = useMemo(() => diffBase.filter(p => matchClassFilter(p.location,"unknown")).length, [diffBase]);
   const allCount = diffBase.length;
 
   // 차이 리스트 (classFilter 적용)
@@ -224,8 +228,8 @@ export const DiffTab: React.FC = () => {
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? diffPanelWidth : undefined }}
         >
           <div className={`${CARD_BASE} flex-1 min-h-0 flex flex-col overflow-hidden`}>
-            {/* 상비약/일반약/전체 3-way 필터 */}
-            <div className="flex items-center gap-1 border-b-2 border-line bg-white px-2 pt-1 shrink-0">
+            {/* 상비약/일반약/화장품/미분류/전체 5-way 필터 · 2026-10-07 v2 · 사용자 지시 · 미분류 탭 추가 */}
+            <div className="flex items-center gap-1 border-b-2 border-line bg-white px-2 pt-1 shrink-0 flex-wrap">
               <button type="button" onClick={() => setClassFilter("stationery")}
                 className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
                 상비약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialCount})</span>
@@ -235,6 +239,16 @@ export const DiffTab: React.FC = () => {
                 className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"}`}>
                 일반약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({generalCount})</span>
                 {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-brand-deep" />}
+              </button>
+              <button type="button" onClick={() => setClassFilter("cosmetics")}
+                className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "cosmetics" ? "text-pink-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                뷰티 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({cosmeticsCount})</span>
+                {classFilter === "cosmetics" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-pink-500" />}
+              </button>
+              <button type="button" onClick={() => setClassFilter("unknown")}
+                className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "unknown" ? "text-amber-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                미분류 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({unknownCount})</span>
+                {classFilter === "unknown" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-amber-500" />}
               </button>
               <button type="button" onClick={() => setClassFilter("all")}
                 className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}>

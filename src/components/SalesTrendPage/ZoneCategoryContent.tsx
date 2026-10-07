@@ -22,6 +22,8 @@ import { CARD_BASE, TEXT } from "../../styles/tokens";
 import { API_LIMITS } from "../../constants/apiLimits";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { zoneCategoryLabel } from "./SalesTrendPage.helpers";
+// 2026-10-07 v2 · 사용자 지시 · 공용 classifyProduct · 자체 isEssential 산출식 제거
+import { classifyProduct } from "../../utils/productClassify";
 
 type ZoneItemSortKey = "name" | "sale" | "current" | "amount";
 type ZoneListSortKey = "amount" | "qty" | "count";
@@ -62,7 +64,10 @@ const ZoneCategoryContent: React.FC = () => {
   });
   const [essentialSort, setEssentialSort] = useState<ZoneListSortKey>("amount");
   const [generalSort, setGeneralSort] = useState<ZoneListSortKey>("amount");
-  const [groupTab, setGroupTab] = useState<"essential" | "general">("essential");
+  const [cosmeticsSort, setCosmeticsSort] = useState<ZoneListSortKey>("amount");
+  const [unknownSort, setUnknownSort] = useState<ZoneListSortKey>("amount");
+  // 2026-10-07 v2 · 사용자 지시 · 4-way (상비약/일반약/화장품/미분류)
+  const [groupTab, setGroupTab] = useState<"essential" | "general" | "cosmetics" | "unknown">("essential");
 
   useEffect(() => { try { localStorage.setItem(SK_SALESTREND_CATEGORY_W, String(categoryPanelWidth)); } catch { /**/ } }, [categoryPanelWidth]);
   const categoryPanelWidthRef = React.useRef(categoryPanelWidth);
@@ -181,16 +186,17 @@ const ZoneCategoryContent: React.FC = () => {
   const colorForZone = (zone: string) => ZONE_COLORS[Math.abs(zone.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % ZONE_COLORS.length];
   const selectedGroup = grouped.find(g => g.zone === selectedZone) ?? null;
 
-  const zoneNum = (zone: string): number => { const m = zone.match(/^(\d+)/); return m ? parseInt(m[1], 10) : 999; };
-  const isEssential = (zone: string) => zoneNum(zone) <= 9 && zoneNum(zone) > 0;
+  // 2026-10-07 v2 · 사용자 지시 · 자체 산출식 (zoneNum / isEssential) 제거 · 공용 classifyProduct 사용
   const sortGroupList = (list: typeof grouped, key: ZoneListSortKey) =>
     [...list].sort((a, b) =>
       key === "qty" ? b.saleQty - a.saleQty :
       key === "count" ? b.items.length - a.items.length :
       b.totalAmount - a.totalAmount
     );
-  const essentialGroups = useMemo(() => sortGroupList(grouped.filter(g => isEssential(g.zone)), essentialSort), [grouped, essentialSort]);
-  const generalGroups = useMemo(() => sortGroupList(grouped.filter(g => !isEssential(g.zone)), generalSort), [grouped, generalSort]);
+  const essentialGroups = useMemo(() => sortGroupList(grouped.filter(g => classifyProduct(g.zone) === "stationery"), essentialSort), [grouped, essentialSort]);
+  const generalGroups   = useMemo(() => sortGroupList(grouped.filter(g => classifyProduct(g.zone) === "general"),    generalSort),   [grouped, generalSort]);
+  const cosmeticsGroups = useMemo(() => sortGroupList(grouped.filter(g => classifyProduct(g.zone) === "cosmetics"),  cosmeticsSort), [grouped, cosmeticsSort]);
+  const unknownGroups   = useMemo(() => sortGroupList(grouped.filter(g => classifyProduct(g.zone) === "unknown"),    unknownSort),   [grouped, unknownSort]);
 
   const renderZoneCard = (g: typeof grouped[number], rank: number) => {
     const pct = total > 0 ? (g.totalAmount / total) * 100 : 0;
@@ -463,7 +469,7 @@ const ZoneCategoryContent: React.FC = () => {
             />
           ) : (
             <div className={`overflow-y-auto max-h-[65vh] pr-1 flex flex-col gap-2 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-              <div className="flex items-center gap-1 border-b-2 border-line sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
+              <div className="flex items-center gap-1 border-b-2 border-line sticky top-0 bg-white z-10 -mx-1 px-1 pt-1 flex-wrap">
                 <button type="button" onClick={() => setGroupTab("essential")}
                   className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${groupTab === "essential" ? "text-rose-700" : "text-zinc-400 hover:text-zinc-600"}`}>
                   상비약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialGroups.length})</span>
@@ -474,10 +480,24 @@ const ZoneCategoryContent: React.FC = () => {
                   일반약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({generalGroups.length})</span>
                   {groupTab === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
                 </button>
+                <button type="button" onClick={() => setGroupTab("cosmetics")}
+                  className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${groupTab === "cosmetics" ? "text-pink-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                  뷰티 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({cosmeticsGroups.length})</span>
+                  {groupTab === "cosmetics" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-pink-500" />}
+                </button>
+                <button type="button" onClick={() => setGroupTab("unknown")}
+                  className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${groupTab === "unknown" ? "text-amber-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                  미분류 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({unknownGroups.length})</span>
+                  {groupTab === "unknown" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-amber-500" />}
+                </button>
               </div>
               {groupTab === "essential"
-                ? renderGroupSection("상비약 (1~9구역)", "상비약", "bg-rose-50 text-rose-700 border-rose-300", essentialGroups, essentialSort, setEssentialSort)
-                : renderGroupSection("일반약 (10구역 이후)", "일반약", "bg-sky-50 text-sky-700 border-sky-300", generalGroups, generalSort, setGeneralSort)
+                ? renderGroupSection("상비약 (1~9매대 A/B)", "상비약", "bg-rose-50 text-rose-700 border-rose-300", essentialGroups, essentialSort, setEssentialSort)
+                : groupTab === "general"
+                ? renderGroupSection("일반약 (벽 · 10+매대)", "일반약", "bg-sky-50 text-sky-700 border-sky-300", generalGroups, generalSort, setGeneralSort)
+                : groupTab === "cosmetics"
+                ? renderGroupSection("뷰티", "뷰티", "bg-pink-50 text-pink-700 border-pink-300", cosmeticsGroups, cosmeticsSort, setCosmeticsSort)
+                : renderGroupSection("미분류", "미분류", "bg-amber-50 text-amber-700 border-amber-300", unknownGroups, unknownSort, setUnknownSort)
               }
             </div>
           )}

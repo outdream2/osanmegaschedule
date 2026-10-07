@@ -2190,12 +2190,14 @@ const DayProductSection: React.FC<{
     { key: "unknown",    label: CLASS_FILTER_LABEL.unknown,    count: byClass?.unknown.count ?? null,         accent: "bg-zinc-400" },
   ];
 
-  // 2026-10-07 · 사용자 지시 · default = 매출 desc · column 헤더 클릭 토글 (asc/desc)
+  // 2026-10-07 · 사용자 지시 · 컬럼 재정렬: 상품명/분류/마진률/매출/매입단가/수량
+  //   · 이익 column 제거 (사용자 요청 미포함)
+  //   · 매입단가 추가 (unitCost 필드)
+  //   · default = 마진률 desc · column 헤더 클릭 토글 (asc/desc)
   //   · null 값 뒤로 (asc/desc 상관없이)
-  //   · column: name / class / qty / sale / margin / marginPct
-  type SortKey = "name" | "class" | "qty" | "sale" | "margin" | "marginPct";
+  type SortKey = "name" | "class" | "marginPct" | "sale" | "unitCost" | "qty";
   type SortDir = "asc" | "desc";
-  const [sortKey, setSortKey] = useState<SortKey>("sale");
+  const [sortKey, setSortKey] = useState<SortKey>("marginPct");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const onHeaderClick = (key: SortKey) => {
@@ -2229,7 +2231,10 @@ const DayProductSection: React.FC<{
       if (sortKey === "class") {
         return sign * (classOrder[a.class] - classOrder[b.class]);
       }
-      const key = sortKey === "qty" ? "totalStock" : sortKey === "sale" ? "saleTotal" : sortKey === "margin" ? "margin" : "marginPct";
+      const key = sortKey === "qty" ? "totalStock"
+        : sortKey === "sale" ? "saleTotal"
+        : sortKey === "unitCost" ? "unitCost"
+        : "marginPct";
       const av = (a as unknown as Record<string, number | null>)[key];
       const bv = (b as unknown as Record<string, number | null>)[key];
       const no = nullOrder(av, bv);
@@ -2249,7 +2254,7 @@ const DayProductSection: React.FC<{
     const map: Record<ProductClass, { bg: string; text: string; label: string }> = {
       stationery: { bg: "bg-emerald-50", text: "text-emerald-700", label: "상비약" },
       general:    { bg: "bg-amber-50",   text: "text-amber-700",   label: "일반약" },
-      cosmetics:  { bg: "bg-pink-50",    text: "text-pink-700",    label: "화장품" },
+      cosmetics:  { bg: "bg-pink-50",    text: "text-pink-700",    label: "뷰티" },
       unknown:    { bg: "bg-zinc-100",   text: "text-zinc-500",    label: "미분류" },
     };
     const s = map[cls];

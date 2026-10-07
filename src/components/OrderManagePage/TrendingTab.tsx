@@ -294,11 +294,13 @@ export const TrendingTab: React.FC = () => {
     [selectedMonths],
   );
   const [meta, setMeta] = useState<{ recent_months: string[]; prior_months: string[]; recent_from: string; prior_from: string; total: number } | null>(null);
-  // 상비약/일반약/전체 3-way 필터 (localStorage 저장) · 기본값: 상비약
+  // 상비약/일반약/화장품/미분류/전체 5-way 필터 (localStorage 저장) · 기본값: 상비약
+  // 2026-10-07 · 사용자 지시 · cosmetics (화장품 · 뷰티 포함) 추가
+  // 2026-10-07 v2 · 사용자 지시 · unknown (미분류) 추가 · 5-way
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
     try {
       const v = localStorage.getItem(SK_TRENDING_CLASSFILTER);
-      return v === "stationery" || v === "general" || v === "all" ? v : "stationery";
+      return v === "stationery" || v === "general" || v === "cosmetics" || v === "unknown" || v === "all" ? v : "stationery";
     } catch { return "stationery"; }
   });
   useEffect(() => { try { localStorage.setItem(SK_TRENDING_CLASSFILTER, classFilter); } catch { /**/ } }, [classFilter]);
@@ -337,12 +339,18 @@ export const TrendingTab: React.FC = () => {
   // classFilter 를 제외한 기타 조건이 적용된 base list (탭 카운트 계산용)
   const baseFiltered = rows;
 
-  // 3-way tab 카운트 (상비약/일반약/전체)
+  // 5-way tab 카운트 (상비약/일반약/화장품/미분류/전체) · 2026-10-07 v2 · 사용자 지시
   const essentialCount = useMemo(() =>
     baseFiltered.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, "stationery")).length,
     [baseFiltered, productRealMapById]);
   const generalCount = useMemo(() =>
     baseFiltered.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, "general")).length,
+    [baseFiltered, productRealMapById]);
+  const cosmeticsCount = useMemo(() =>
+    baseFiltered.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, "cosmetics")).length,
+    [baseFiltered, productRealMapById]);
+  const unknownCount = useMemo(() =>
+    baseFiltered.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, "unknown")).length,
     [baseFiltered, productRealMapById]);
   const allCount = rows.length;
 
@@ -457,8 +465,8 @@ export const TrendingTab: React.FC = () => {
 
       {/* ── 테이블 카드 ── */}
       <div className={`${CARD_BASE} overflow-hidden`}>
-        {/* 상비약/일반약/전체 3-way 필터 (좌측 리스트 상단) */}
-        <div className="flex items-center gap-1 border-b-2 border-line bg-white px-2 pt-1">
+        {/* 상비약/일반약/화장품/미분류/전체 5-way 필터 (좌측 리스트 상단) · 2026-10-07 v2 · 사용자 지시 · 미분류 추가 */}
+        <div className="flex items-center gap-1 border-b-2 border-line bg-white px-2 pt-1 flex-wrap">
           <button type="button" onClick={() => setClassFilter("stationery")}
             className={`relative px-4 py-2 ${TEXT.body} font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
             상비약 <span className={`${TEXT.caption} text-zinc-400 ml-1 tabular-nums`}>({essentialCount})</span>
@@ -468,6 +476,16 @@ export const TrendingTab: React.FC = () => {
             className={`relative px-4 py-2 ${TEXT.body} font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-zinc-400 hover:text-zinc-600"}`}>
             일반약 <span className={`${TEXT.caption} text-zinc-400 ml-1 tabular-nums`}>({generalCount})</span>
             {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
+          </button>
+          <button type="button" onClick={() => setClassFilter("cosmetics")}
+            className={`relative px-4 py-2 ${TEXT.body} font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "cosmetics" ? "text-pink-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+            뷰티 <span className={`${TEXT.caption} text-zinc-400 ml-1 tabular-nums`}>({cosmeticsCount})</span>
+            {classFilter === "cosmetics" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-pink-500" />}
+          </button>
+          <button type="button" onClick={() => setClassFilter("unknown")}
+            className={`relative px-4 py-2 ${TEXT.body} font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "unknown" ? "text-amber-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+            미분류 <span className={`${TEXT.caption} text-zinc-400 ml-1 tabular-nums`}>({unknownCount})</span>
+            {classFilter === "unknown" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-amber-500" />}
           </button>
           <button type="button" onClick={() => setClassFilter("all")}
             className={`relative px-4 py-2 ${TEXT.body} font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}>

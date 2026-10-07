@@ -1,32 +1,81 @@
 // src/utils/productClassify.ts
-// 상비약(1~9구역) / 일반약(10구역이상) / 미분류 · 공용 분류 유틸
+// 상비약 / 일반약 / 뷰티 / 미분류 · 공용 분류 유틸
 // 2026-08-03 · 통계 메뉴 상비약/일반약/전체 필터 도입
+// 2026-10-07 v3 · 사용자 지시 · includes 기반 유연 매칭 + 라벨 "뷰티" 로 변경
 //
-// 규칙 (location 앞자리 숫자 기준):
-//   · 1~9   → 상비약 (stationery)
-//   · 10~   → 일반약 (general)
-//   · 없음/파싱실패 → 미분류 (unknown)  ※ "전체" 필터에만 포함
+// 규칙 (2026-10-07 v3):
+//   · "뷰티" 포함 (어디든)          → 뷰티 (cosmetics)
+//     예: "뷰티>2번>전체>전체" · "뷰티1" · "프리미엄뷰티"
+//   · "벽" 포함 (어디든)            → 일반약 (general)
+//     사용자 지시 "위치에 벽 들어가면 일반약"
+//     예: "벽" · "벽>21>전체>전체" · "A매대/벽7"
+//   · N매대 (N=1~9, 섹터 무관)       → 상비약 (stationery)
+//     사용자 지시 "조건 추가" · A/B 제한 완화
+//     예: "1매대>C>...", "9매대>뒤>...", "5매대"
+//     Transformed "1A", "9B" 등도 포함 (전각 Ａ/Ｂ 정규화 후)
+//   · N매대 (N≥10, 섹터 무관)        → 일반약 (general)
+//     예: "10매대>...", "22매대>..."
+//   · Transformed 숫자단독           → N≥10 일반약 · 1-9 상비약
+//   · 그 외 (냉장고 / 물약 / null)    → 미분류 (unknown)
 //
-// 다중 구역 (예 "1A/10B") 의 경우 첫 구역 앞자리만 사용 (1A → 상비약)
-//   슬래시·하이픈·언더스코어·공백 중 첫 구분자로 자름 (CategoryTab 관행과 정합)
+// 우선순위: 뷰티 > 벽 > 매대 > 숫자단독 (사용자 지시 "위치에 OO 들어가면" includes 매칭)
 
-export type ProductClass = "stationery" | "general" | "unknown";
-// 2026-10-07 · 사용자 지시 · DayDetailModal ClassFilter 에 "unknown" 추가 · 전체·상비약·일반약·미분류 4-tab
-//   · 기존 "all" "stationery" "general" 외부 사용처 전부 하위 호환
-export type ClassFilter = "all" | "stationery" | "general" | "unknown";
+export type ProductClass = "stationery" | "general" | "cosmetics" | "unknown";
+// 2026-10-07 · "cosmetics" 추가 · 전체·상비약·일반약·뷰티·미분류 5-tab
+export type ClassFilter = "all" | "stationery" | "general" | "cosmetics" | "unknown";
 
 export const REAL_MAP_ZONE_REGEX = /^(\d+)/;
 const PRIMARY_SPLIT_REGEX = /[\/\-_\s]/;
 
+/** 전각 Ａ/Ｂ/Ｃ/Ｄ → 반각 A/B/C/D 정규화 */
+function normalizeFullWidthLetters(s: string): string {
+  return s
+    .replace(/Ａ/g, "A")
+    .replace(/Ｂ/g, "B")
+    .replace(/Ｃ/g, "C")
+    .replace(/Ｄ/g, "D");
+}
+
 export function classifyProduct(location: string | null | undefined): ProductClass {
   if (!location) return "unknown";
-  const first = String(location).split(PRIMARY_SPLIT_REGEX)[0]?.trim() ?? "";
-  if (!first) return "unknown";
-  const m = first.match(REAL_MAP_ZONE_REGEX);
-  if (!m) return "unknown";
-  const num = parseInt(m[1], 10);
-  if (!Number.isFinite(num) || num <= 0) return "unknown";
-  return num <= 9 ? "stationery" : "general";
+  const s = String(location).trim();
+  if (!s) return "unknown";
+
+  // 1) "뷰티" 포함 → 뷰티 (어디에 나와도 최우선)
+  if (s.includes("뷰티")) return "cosmetics";
+
+  // 2) "벽" 포함 → 일반약 (사용자 지시 "위치에 벽 들어가면 일반약")
+  if (s.includes("벽")) return "general";
+
+  // 3) 10+매대 먼저 체크 (double-digit 매대가 single-digit 매칭 전에 처리되어야 함)
+  //    예: "10매대" 가 "1매대" 패턴보다 우선 매칭
+  const madae10 = s.match(/(\d{2,})매대/);
+  if (madae10) {
+    const n = parseInt(madae10[1], 10);
+    if (Number.isFinite(n) && n >= 10) return "general";
+  }
+
+  // 4) 1-9매대 포함 (어디든 · 섹터 무관 · A/B 제한 완화)
+  //    word boundary · 앞 글자가 숫자 아님 (10매대 등 제외)
+  if (/(?:^|[^0-9])[1-9]매대/.test(s)) return "stationery";
+
+  // 5) Transformed 숫자단독 (예: "21", "9") · 전각 letter 정규화
+  const normalized = normalizeFullWidthLetters(s);
+  const first = normalized.split(PRIMARY_SPLIT_REGEX)[0]?.trim() ?? normalized;
+
+  //    "NA" / "NB" / "NC" 등 N=1~9 → 상비약 (섹터 무관)
+  if (/^[1-9][A-Z]/.test(first)) return "stationery";
+
+  //    숫자단독
+  if (/^\d+$/.test(first)) {
+    const n = parseInt(first, 10);
+    if (Number.isFinite(n)) {
+      if (n >= 10) return "general";
+      if (n >= 1) return "stationery";
+    }
+  }
+
+  return "unknown";
 }
 
 export function matchClassFilter(location: string | null | undefined, filter: ClassFilter): boolean {
@@ -35,31 +84,34 @@ export function matchClassFilter(location: string | null | undefined, filter: Cl
 }
 
 // 라벨/색상 매핑 (UI 공용)
+// 2026-10-07 v3 · 사용자 지시 · "화장품" → "뷰티" 라벨 변경 (타입 ID cosmetics 유지)
 export const CLASS_FILTER_LABEL: Record<ClassFilter, string> = {
   all: "전체",
   stationery: "상비약",
   general: "일반약",
+  cosmetics: "뷰티",
   unknown: "미분류",
 };
 
-// 라벨 옆 구역 범위 표시 (2026-08-04 · 사용자 요청 · "(1-9)" · "(10-45)" 형식)
-// 상비약 · 고정 1-9 · 일반약 · 10 ~ 매핑된 최대 번호 (동적 · getZoneMappings 사용)
+// 라벨 옆 구역 범위 표시 (2026-08-04 · 사용자 요청)
 import { getZoneMappings } from "../constants/zoneLabels";
 export function getClassFilterRange(cls: ClassFilter): string {
   if (cls === "all") return "";
-  if (cls === "stationery") return "(1-9)";
+  if (cls === "stationery") return "(1-9매대)";
+  if (cls === "cosmetics") return "";
   if (cls === "unknown") return "";
-  // general · 10~마지막
+  // general · 벽/10+매대
   const maps = getZoneMappings();
   const nums = maps.map(m => Number(m.number)).filter(n => Number.isFinite(n) && n >= 10);
-  if (nums.length === 0) return "(10-)";
+  if (nums.length === 0) return "(벽/10+)";
   const max = Math.max(...nums);
-  return `(10-${max})`;
+  return `(벽/10-${max})`;
 }
-// 하위 호환 (기존 정적 라벨 · deprecated · getClassFilterRange 사용 권장)
+// 하위 호환
 export const CLASS_FILTER_RANGE: Record<ClassFilter, string> = {
   all: "",
-  stationery: "(1-9)",
-  general: "(10-)",
+  stationery: "(1-9매대)",
+  general: "(벽/10+)",
+  cosmetics: "",
   unknown: "",
 };

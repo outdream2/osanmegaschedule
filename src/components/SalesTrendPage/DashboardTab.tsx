@@ -163,10 +163,12 @@ export const DashboardTab: React.FC = () => {
   const { value: saleFilter, setValue: setSaleFilter, matches: saleMatches } = useSaleStatusFilter({ storageKey: "dashboard.saleFilter" });
 
   // 2026-09-07 · 사용자 지시 · 일반약/상비약/전체 분류 필터
+  // 2026-10-07 · 사용자 지시 · cosmetics (화장품 · 뷰티 포함) 추가
+  // 2026-10-07 v2 · 사용자 지시 · unknown (미분류) 추가 · 5-way
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
     try {
       const v = localStorage.getItem("dashboard.classFilter");
-      if (v === "stationery" || v === "general" || v === "all") return v;
+      if (v === "stationery" || v === "general" || v === "cosmetics" || v === "unknown" || v === "all") return v;
     } catch { /* ignore */ }
     return "all";
   });
@@ -237,16 +239,20 @@ export const DashboardTab: React.FC = () => {
   }, [sort, dir, limit, monthsList, season]);
 
   // 2026-09-07 · 사용자 지시 · classFilter 별 카운트 (판매중 필터 반영 · location 기반 분류)
+  // 2026-10-07 · 사용자 지시 · 화장품 (뷰티 포함) count 추가
+  // 2026-10-07 v2 · 사용자 지시 · 미분류 (unknown) count 추가 · reconciliation = all
   const classCounts = useMemo(() => {
-    let essential = 0, general = 0, all = 0;
+    let essential = 0, general = 0, cosmetics = 0, unknown = 0, all = 0;
     for (const p of rows) {
       if (!saleMatches((p as any).sale_status)) continue;
       all++;
       const cls = classifyProduct((p as any).location ?? (p as any).display_location ?? null);
       if (cls === "stationery") essential++;
       else if (cls === "general") general++;
+      else if (cls === "cosmetics") cosmetics++;
+      else unknown++;
     }
-    return { essential, general, all };
+    return { essential, general, cosmetics, unknown, all };
   }, [rows, saleMatches]);
 
   // 2026-09-07 · 사용자 지시 · classFilter 적용된 rows (KPI · 차트 · 리스트 공용)
@@ -399,6 +405,8 @@ export const DashboardTab: React.FC = () => {
           filteredCount={displayRows.length}
           essentialCount={classCounts.essential}
           generalCount={classCounts.general}
+          cosmeticsCount={classCounts.cosmetics}
+          unknownCount={classCounts.unknown}
           allCount={classCounts.all}
           selectedCount={0}
           onSetFilter={setClassFilter}

@@ -92,11 +92,13 @@ export const FlowTab: React.FC = () => {
   // 분류 필터
   type FlowCategoryFilter = "전체" | "위탁" | "선결제" | "60회전" | "90회전" | "기타";
   const [flowCategoryFilter, setFlowCategoryFilter] = useState<FlowCategoryFilter>("전체");
-  // 상비약/일반약/전체 3-way 필터 (localStorage 저장)
+  // 상비약/일반약/화장품/미분류/전체 5-way 필터 (localStorage 저장)
+  // 2026-10-07 · 사용자 지시 · cosmetics (화장품 · 뷰티 포함) 추가
+  // 2026-10-07 v2 · 사용자 지시 · unknown (미분류) 추가 · 5-way
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
     try {
       const v = localStorage.getItem(SK_FLOW_CLASSFILTER);
-      return v === "stationery" || v === "general" || v === "all" ? v : "all";
+      return v === "stationery" || v === "general" || v === "cosmetics" || v === "unknown" || v === "all" ? v : "all";
     } catch { return "all"; }
   });
   useEffect(() => { try { localStorage.setItem(SK_FLOW_CLASSFILTER, classFilter); } catch { /**/ } }, [classFilter]);
@@ -399,10 +401,12 @@ export const FlowTab: React.FC = () => {
     return filtered;
   }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSelectedMonths, flowCategoryFilter, vendorCategoryMap, infoSearchQuery]);
 
-  // 3-way tab 카운트
+  // 5-way tab 카운트 · 2026-10-07 v2 · 사용자 지시 · 화장품/미분류 추가
   const getRealMap = useCallback((p: any) => resolveProductLocation(p) ?? productRealMapById[String(p.product_code)] ?? null, [productRealMapById]);
   const essentialCount = useMemo(() => baseFlow.filter(p => matchClassFilter(getRealMap(p), "stationery")).length, [baseFlow, getRealMap]);
   const generalCount = useMemo(() => baseFlow.filter(p => matchClassFilter(getRealMap(p), "general")).length, [baseFlow, getRealMap]);
+  const cosmeticsCount = useMemo(() => baseFlow.filter(p => matchClassFilter(getRealMap(p), "cosmetics")).length, [baseFlow, getRealMap]);
+  const unknownCount = useMemo(() => baseFlow.filter(p => matchClassFilter(getRealMap(p), "unknown")).length, [baseFlow, getRealMap]);
   const allCount = baseFlow.length;
 
   // 최종 리스트 (classFilter 적용)
@@ -489,6 +493,8 @@ export const FlowTab: React.FC = () => {
                 filteredCount={filteredFlow.length}
                 essentialCount={essentialCount}
                 generalCount={generalCount}
+                cosmeticsCount={cosmeticsCount}
+                unknownCount={unknownCount}
                 allCount={allCount}
                 selectedCount={selectedFlowCodes.size}
                 onSetFilter={setClassFilter}

@@ -13,7 +13,7 @@ import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { StoreZoneMap } from "../common/StoreZoneMap";
 import { ZONE_DEFS, formatZoneDisplayCode, formatZoneCategoryCombined } from "../../constants/displayZones";
-import { type ClassFilter } from "../../utils/productClassify";
+import { classifyProduct, type ClassFilter } from "../../utils/productClassify";
 // T-CSS Phase 2 · 2026-08-06
 import { CARD_BASE } from "../../styles/tokens";
 import { fmtWonCompact } from "../../lib/format";
@@ -150,24 +150,21 @@ const ZoneCategoryContent: React.FC = () => {
 
   const selectedGroup = grouped.find(g => g.zone === selectedZone) ?? null;
 
-  // 상비약 / 일반약 / 전체 3-way 필터 (localStorage 저장)
+  // 상비약 / 일반약 / 화장품 / 미분류 / 전체 5-way 필터 (localStorage 저장)
+  // 2026-10-07 v2 · 사용자 지시 · 자체 산출식 (isEssential) 제거 · classifyProduct 공용 helper 사용
   type ZoneListSortKey = "amount" | "qty" | "count";
   const [essentialSort, setEssentialSort] = useState<ZoneListSortKey>("amount");
   const [generalSort, setGeneralSort] = useState<ZoneListSortKey>("amount");
+  const [cosmeticsSort, setCosmeticsSort] = useState<ZoneListSortKey>("amount");
+  const [unknownSort, setUnknownSort] = useState<ZoneListSortKey>("amount");
   const [allSort, setAllSort] = useState<ZoneListSortKey>("amount");
   const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
     try {
       const v = localStorage.getItem(SK_CATEGORY_CLASSFILTER);
-      return v === "stationery" || v === "general" || v === "all" ? v : "stationery";
+      return v === "stationery" || v === "general" || v === "cosmetics" || v === "unknown" || v === "all" ? v : "stationery";
     } catch { return "stationery"; }
   });
   useEffect(() => { try { localStorage.setItem(SK_CATEGORY_CLASSFILTER, classFilter); } catch { /**/ } }, [classFilter]);
-
-  const zoneNum = (zone: string): number => {
-    const m = zone.match(/^(\d+)/);
-    return m ? parseInt(m[1], 10) : 999;
-  };
-  const isEssential = (zone: string) => zoneNum(zone) <= 9 && zoneNum(zone) > 0;
 
   const sortGroupList = (list: typeof grouped, key: ZoneListSortKey) =>
     [...list].sort((a, b) =>
@@ -176,9 +173,12 @@ const ZoneCategoryContent: React.FC = () => {
           b.totalAmount - a.totalAmount
     );
 
-  const essentialGroups = useMemo(() => sortGroupList(grouped.filter(g => isEssential(g.zone)), essentialSort), [grouped, essentialSort]);
-  const generalGroups = useMemo(() => sortGroupList(grouped.filter(g => !isEssential(g.zone)), generalSort), [grouped, generalSort]);
-  const allGroups = useMemo(() => sortGroupList(grouped, allSort), [grouped, allSort]);
+  // 2026-10-07 v2 · 사용자 지시 · 공용 classifyProduct(zone) 로 통일 (zone 은 parsePrimaryZone 결과)
+  const essentialGroups  = useMemo(() => sortGroupList(grouped.filter(g => classifyProduct(g.zone) === "stationery"), essentialSort),  [grouped, essentialSort]);
+  const generalGroups    = useMemo(() => sortGroupList(grouped.filter(g => classifyProduct(g.zone) === "general"),    generalSort),    [grouped, generalSort]);
+  const cosmeticsGroups  = useMemo(() => sortGroupList(grouped.filter(g => classifyProduct(g.zone) === "cosmetics"),  cosmeticsSort),  [grouped, cosmeticsSort]);
+  const unknownGroups    = useMemo(() => sortGroupList(grouped.filter(g => classifyProduct(g.zone) === "unknown"),    unknownSort),    [grouped, unknownSort]);
+  const allGroups        = useMemo(() => sortGroupList(grouped, allSort), [grouped, allSort]);
 
   const renderZoneCard = (g: typeof grouped[number], rank: number) => {
     const pct = total > 0 ? (g.totalAmount / total) * 100 : 0;
@@ -523,7 +523,7 @@ const ZoneCategoryContent: React.FC = () => {
             <EmptyState title="카테고리 데이터 없음" size="compact" />
           ) : (
             <div className={`overflow-y-auto max-h-[65vh] pr-1 flex flex-col gap-2 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-              <div className="flex items-center gap-1 border-b-2 border-line sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
+              <div className="flex items-center gap-1 border-b-2 border-line sticky top-0 bg-white z-10 -mx-1 px-1 pt-1 flex-wrap">
                 <button type="button" onClick={() => setClassFilter("stationery")}
                   className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-zinc-400 hover:text-zinc-600"}`}>
                   상비약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({essentialGroups.length})</span>
@@ -534,6 +534,16 @@ const ZoneCategoryContent: React.FC = () => {
                   일반약 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({generalGroups.length})</span>
                   {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
                 </button>
+                <button type="button" onClick={() => setClassFilter("cosmetics")}
+                  className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "cosmetics" ? "text-pink-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                  뷰티 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({cosmeticsGroups.length})</span>
+                  {classFilter === "cosmetics" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-pink-500" />}
+                </button>
+                <button type="button" onClick={() => setClassFilter("unknown")}
+                  className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "unknown" ? "text-amber-700" : "text-zinc-400 hover:text-zinc-600"}`}>
+                  미분류 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({unknownGroups.length})</span>
+                  {classFilter === "unknown" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-amber-500" />}
+                </button>
                 <button type="button" onClick={() => setClassFilter("all")}
                   className={`relative px-4 py-2 text-[15px] font-bold leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-zinc-800" : "text-zinc-400 hover:text-zinc-600"}`}>
                   전체 <span className="text-[15px] font-semibold text-zinc-400 ml-1 tabular-nums">({allGroups.length})</span>
@@ -542,15 +552,27 @@ const ZoneCategoryContent: React.FC = () => {
               </div>
               {classFilter === "stationery"
                 ? renderGroupSection(
-                  "상비약 (1~9구역)", "상비약",
+                  "상비약 (1~9매대 A/B)", "상비약",
                   "bg-violet-50 text-violet-700 border-violet-300",
                   essentialGroups, essentialSort, setEssentialSort,
                 )
                 : classFilter === "general"
                 ? renderGroupSection(
-                  "일반약 (10구역 이후)", "일반약",
+                  "일반약 (벽 · 10+매대)", "일반약",
                   "bg-sky-50 text-sky-700 border-sky-300",
                   generalGroups, generalSort, setGeneralSort,
+                )
+                : classFilter === "cosmetics"
+                ? renderGroupSection(
+                  "뷰티", "뷰티",
+                  "bg-pink-50 text-pink-700 border-pink-300",
+                  cosmeticsGroups, cosmeticsSort, setCosmeticsSort,
+                )
+                : classFilter === "unknown"
+                ? renderGroupSection(
+                  "미분류", "미분류",
+                  "bg-amber-50 text-amber-700 border-amber-300",
+                  unknownGroups, unknownSort, setUnknownSort,
                 )
                 : renderGroupSection(
                   "전체 구역", "전체",
