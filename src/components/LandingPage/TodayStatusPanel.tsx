@@ -85,21 +85,21 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
       {/* 2026-10-07 · 사용자 지시 · 판매현황(teal)과 색상 분리 · 승인요청=amber (주의/처리 필요) */}
       <SectionLabel tone="amber">오늘의 승인 요청</SectionLabel>
       <div
-        className="w-full bg-white border border-zinc-200 rounded-2xl shadow-[0_1px_3px_rgba(10,46,74,0.06),0_8px_28px_-16px_rgba(10,46,74,0.18)] hover:shadow-[0_2px_8px_rgba(10,46,74,0.10),0_12px_36px_-16px_rgba(10,46,74,0.25)] hover:border-brand-deep/30 cursor-pointer transition-all overflow-hidden relative group"
+        className="w-full bg-white border border-zinc-200 rounded-2xl shadow-[0_1px_3px_rgba(10,46,74,0.06),0_8px_28px_-16px_rgba(10,46,74,0.18)] hover:shadow-[0_2px_8px_rgba(10,46,74,0.10),0_12px_36px_-16px_rgba(10,46,74,0.25)] hover:border-brand-amber/40 cursor-pointer transition-all overflow-hidden relative group"
         onClick={openApprovalWork}
         role="button"
         title="승인업무로 이동"
       >
-        {/* 상단 brand accent glow 띠 */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-deep/50 to-transparent pointer-events-none" aria-hidden />
+        {/* 2026-10-07 · 사용자 지시 · 승인요청 카드 내부 accent 전부 amber (제목 tone 과 매칭) */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-amber/50 to-transparent pointer-events-none" aria-hidden />
         <div className="flex items-stretch divide-x divide-zinc-100">
-          {/* 승인대기 (메인) · 좌측 brand gradient bar · 미묘 brand tint background */}
+          {/* 승인대기 (메인) · 좌측 amber gradient bar · amber tint background */}
           <div
-            className="flex-[2] px-4 sm:px-6 py-3 sm:py-4 min-w-0 relative bg-gradient-to-br from-brand-deep/[0.045] via-sky-50/40 to-transparent cursor-pointer"
+            className="flex-[2] px-4 sm:px-6 py-3 sm:py-4 min-w-0 relative bg-gradient-to-br from-brand-amber/[0.06] via-brand-amber-tint/40 to-transparent cursor-pointer"
             onClick={stop(() => { setActiveByPage("requests", "leave"); onNavigate("requests", authSession); })}
             title="서류 승인 · 승인업무로 이동"
           >
-            <span className="absolute left-0 top-3 bottom-3 w-[3px] bg-gradient-to-b from-brand-deep via-sky-500 to-indigo-500 rounded-r-full shadow-[0_0_10px_rgba(10,46,74,0.25)]" aria-hidden />
+            <span className="absolute left-0 top-3 bottom-3 w-[3px] bg-gradient-to-b from-brand-amber-ink via-brand-amber to-brand-amber/70 rounded-r-full shadow-[0_0_10px_rgba(232,138,61,0.25)]" aria-hidden />
             <div className="pl-2">
               <div className="flex items-center gap-1.5 mb-1">
                 <span className="relative flex w-2 h-2 shrink-0" aria-hidden title={docCount > 0 ? "대기" : "없음"}>
@@ -110,7 +110,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
               </div>
               {/* 2026-10-06 · 사용자 지시 반응형 폰트 clamp · 숫자 whitespace-nowrap */}
               <div
-                className="font-bold tabular-nums leading-tight text-brand-deep whitespace-nowrap"
+                className="font-bold tabular-nums leading-tight text-brand-amber-ink whitespace-nowrap"
                 style={{ fontSize: "clamp(17px, 3.2vw, 26px)" }}
                 title={`${docCount}건`}
               >
@@ -154,16 +154,16 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
               {orderCount.toLocaleString("ko-KR")}건
             </div>
           </div>
-          {/* 승인 상세 → (PC) · subtle brand tint + arrow hover */}
-          <div className="hidden sm:flex items-center px-4 bg-gradient-to-br from-brand-deep/[0.06] to-indigo-50/60 group-hover:from-brand-deep/[0.10] group-hover:to-indigo-100/80 transition">
-            <div className="text-[15px] text-brand-deep font-bold whitespace-nowrap tracking-tight flex items-center gap-1.5">
+          {/* 승인 상세 → (PC) · amber tint + arrow hover */}
+          <div className="hidden sm:flex items-center px-4 bg-gradient-to-br from-brand-amber/[0.08] to-brand-amber-tint/60 group-hover:from-brand-amber/[0.14] group-hover:to-brand-amber-tint transition">
+            <div className="text-[15px] text-brand-amber-ink font-bold whitespace-nowrap tracking-tight flex items-center gap-1.5">
               승인 상세
               <span className="transition-transform group-hover:translate-x-0.5">›</span>
             </div>
           </div>
         </div>
-        {/* 모바일 하단 바 · 점심/거래처 세부 + 상세 arrow */}
-        <div className="sm:hidden flex items-center justify-between px-3 py-2 bg-gradient-to-r from-brand-deep/[0.05] via-sky-50 to-indigo-50/60 text-[14px] border-t border-zinc-100 flex-wrap gap-y-1">
+        {/* 모바일 하단 바 · 점심/거래처 세부 + 상세 arrow · amber tone */}
+        <div className="sm:hidden flex items-center justify-between px-3 py-2 bg-gradient-to-r from-brand-amber/[0.06] via-brand-amber-tint/60 to-brand-amber/[0.06] text-[14px] border-t border-zinc-100 flex-wrap gap-y-1">
           <div className="flex items-center gap-3 flex-wrap">
             {lunchMenuVisible && (
               <button
@@ -190,7 +190,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
               </button>
             )}
           </div>
-          <span className="text-brand-deep font-bold flex items-center gap-1">
+          <span className="text-brand-amber-ink font-bold flex items-center gap-1">
             승인 상세 <span>›</span>
           </span>
         </div>
