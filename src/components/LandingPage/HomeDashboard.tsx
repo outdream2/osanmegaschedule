@@ -160,11 +160,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         <p className={`mt-1 ${T.heroDesc}`}>{greetingDesc}</p>
       </header>
 
-      {/* ═ KPI 2 그룹 · 왼쪽: 오늘의 판매현황 (3-cell 통합) · 오른쪽: 오늘의 승인요청현황 (1-cell) ═ */}
+      {/* ═ KPI 2 그룹 · 반반 (50:50) · 왼쪽: 오늘의 판매현황 (3-cell) · 오른쪽: 오늘의 승인요청현황 (3-cell 분해) ═ */}
       {isManagerOrAdmin && (
-        <section className="grid grid-cols-1 lg:grid-cols-4 gap-3 md:gap-4">
-          {/* 오늘의 판매현황 · 3-cell 통합 카드 · col-span-3 */}
-          <div className="lg:col-span-3">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
+          {/* 오늘의 판매현황 · 매출 + 방문객 + 객단가 */}
+          <div>
             <SectionLabel>오늘의 판매현황</SectionLabel>
             <div className={`${CARD} grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 overflow-hidden`}>
               <KpiCell
@@ -196,16 +196,33 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               />
             </div>
           </div>
-          {/* 오늘의 승인요청현황 · 1-cell · col-span-1 */}
-          <div className="lg:col-span-1">
+          {/* 오늘의 승인요청현황 · 연차 + 사직서 + 거래처 (admin) 또는 통합 승인 대기 */}
+          <div>
             <SectionLabel>오늘의 승인요청현황</SectionLabel>
-            <div className={CARD + " overflow-hidden"}>
+            <div className={`${CARD} grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 overflow-hidden`}>
               <KpiCell
                 icon={<ClipboardCheck size={18} className="text-amber-600" strokeWidth={2.2} />}
                 iconBg="bg-amber-50"
-                label="승인 대기"
-                value={`${totalApprovals.toLocaleString("ko-KR")}건`}
+                label="연차 승인"
+                value={`${leavePendingCount.toLocaleString("ko-KR")}건`}
                 onClick={() => { setActiveByPage("requests", "leave"); onNavigate("requests", authSession); }}
+              />
+              <KpiCell
+                icon={<ClipboardCheck size={18} className="text-rose-600" strokeWidth={2.2} />}
+                iconBg="bg-rose-50"
+                label="사직서 승인"
+                value={`${requestsCounts.resignation.toLocaleString("ko-KR")}건`}
+                onClick={() => { setActiveByPage("requests", "resignation"); onNavigate("requests", authSession); }}
+              />
+              <KpiCell
+                icon={<ClipboardCheck size={18} className="text-indigo-600" strokeWidth={2.2} />}
+                iconBg="bg-indigo-50"
+                label={isAdmin ? "거래처 승인" : "결제 대기"}
+                value={isAdmin ? `${requestsCounts.vendor.toLocaleString("ko-KR")}건` : `${paymentPendingCount.toLocaleString("ko-KR")}건`}
+                onClick={() => {
+                  if (isAdmin) { setActiveByPage("requests", "vendor"); onNavigate("requests", authSession); }
+                  else { onNavigate("business-manage", authSession); }
+                }}
               />
             </div>
           </div>
