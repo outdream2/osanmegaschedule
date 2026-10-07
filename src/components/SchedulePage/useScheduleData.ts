@@ -44,7 +44,9 @@ export function useScheduleData(
   // 2026-10-07 · PHASE 3B · B-F2 · fetchScheduleData merge 시 최신 employees 참조 (deps 폭발 방지)
   const employeesRef = useRef<Employee[]>([]);
   useEffect(() => { employeesRef.current = employees; }, [employees]);
-  const [summary, setSummary] = useState<any[]>([]);
+  // 2026-10-07 · PHASE 3B · F-1 · 서버 summary payload 는 소비처 0 (SchedulePage currentSummaryList 가 getCalculatedSummary 로 재산출)
+  //   · state/setter 제거 · fetchScheduleData/handleCellUpdate 의 setSummary 호출 삭제
+  //   · handleCellUpdate 의 두번째 /api/schedules?year=&month= 전체 재조회도 함께 제거 (dead write 였음)
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
@@ -137,13 +139,6 @@ export function useScheduleData(
 
       setEmployees(merged);
 
-      const primaryIdx = months.findIndex(m => m.year === currentYear && m.month === currentMonth);
-      if (primaryIdx !== -1) {
-        setSummary(responses[primaryIdx].data.summary || []);
-      } else if (responses.length > 0) {
-        setSummary(responses[0].data.summary || []);
-      }
-
       api.get<any>(`/api/leave-stats?year=${currentYear}`)
         .then(res => setYearLeaveStats(res.data ?? {}))
         .catch(() => {});
@@ -153,7 +148,7 @@ export function useScheduleData(
     } finally {
       setIsLoading(false);
     }
-  }, [currentYear, currentMonth]);
+  }, [currentYear]);
 
   // ── Cell Update ───────────────────────────────────────────────────────────
   const handleCellUpdate = useCallback(async (data: CellUpdateData) => {
@@ -181,15 +176,12 @@ export function useScheduleData(
         return { ...emp, schedules: existing };
       }));
 
-      const summaryRes = await api.get<any>(`/api/schedules?year=${currentYear}&month=${currentMonth}`);
-      setSummary(summaryRes.data.summary || []);
-
       showNotification(`${data.date.split("-").slice(1).join("/")} 스케줄이 성공적으로 변경되었습니다.`);
     } catch (err) {
       console.error("Failed to update cell schedule:", err);
       showNotification("스케줄 정보 저장에 실패했습니다.", "error");
     }
-  }, [employees, showNotification, currentYear, currentMonth]);
+  }, [employees, showNotification]);
 
   // ── Undo ──────────────────────────────────────────────────────────────────
   const handleUndo = useCallback(async () => {
@@ -488,7 +480,6 @@ export function useScheduleData(
 
   return {
     employees, setEmployees,
-    summary, setSummary,
     isLoading, error,
     undoStack,
     yearLeaveStats, setYearLeaveStats,

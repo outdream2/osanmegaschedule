@@ -59,26 +59,64 @@ export async function assertEmployeeActiveForWrite(
 /**
  * 복수 직원 · 복수 날짜 일괄 검증 (batch upsert · leave 신청 날짜범위용).
  * 하나라도 EMPLOYEE_RETIRED 면 즉시 throw.
+ *
+ * 2026-10-07 · PHASE 3B · F-2 · N 사원 batch 를 1건 IN(...) 쿼리로 통합
+ *   · 기존: 사원 수만큼 순차 DB round-trip (19명 batch → 19 × ~90ms = ~1.7s)
+ *   · 개선: 단일 SELECT ... IN (id1,id2,...) · 메모리 검사 (~90ms + O(n) check)
+ *   · semantics 유지: 사원별 최대 날짜 기준 · retireDate 과거이고 maxDate>retire → 409
+ *   · 미존재 사원 → 404 (기존과 동일 · 첫 missing emp 로 throw)
+ *   · DB 오류 → fail-open (기존 lock guard semantics 유지)
+ *   · 입력 pairs 가 비어 있으면 즉시 리턴
  */
 export async function assertEmployeesActiveForWrite(
   pairs: Array<{ employeeId: number; date: string }>,
 ): Promise<void> {
-  // 중복 (employeeId, date) 제거
-  const seen = new Set<string>();
-  const dedupPairs = pairs.filter(p => {
-    const k = `${p.employeeId}|${String(p.date ?? "").slice(0, 10)}`;
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
-  // 직원별 최대 target date 만 사용 (더 큰 날짜가 통과하면 작은 날짜도 자동 통과)
+  if (!Array.isArray(pairs) || pairs.length === 0) return;
+  // 사원별 최대 target date 집계 (중복 자동 제거)
   const maxByEmp = new Map<number, string>();
-  for (const p of dedupPairs) {
+  for (const p of pairs) {
+    const empId = Number(p.employeeId);
     const d = String(p.date ?? "").slice(0, 10);
-    const cur = maxByEmp.get(p.employeeId);
-    if (!cur || d > cur) maxByEmp.set(p.employeeId, d);
+    if (!Number.isFinite(empId) || empId <= 0) {
+      throw new HttpError(400, "유효하지 않은 직원 ID", "INVALID_EMPLOYEE_ID");
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue; // 날짜 형식 이상은 skip (상위 Zod 가 검증)
+    const cur = maxByEmp.get(empId);
+    if (!cur || d > cur) maxByEmp.set(empId, d);
   }
+  if (maxByEmp.size === 0) return;
+
+  const ids = Array.from(maxByEmp.keys());
+  const { data, error } = await supabase
+    .from("employees")
+    .select('id, name, "retireDate"')
+    .in("id", ids);
+  if (error) {
+    logger.warn(`[employee-active] batch 조회 실패 · ids=${ids.join(",")} · ${error.message} · 검증 skip`);
+    return; // fail-open · 단일 버전과 동일 semantics
+  }
+
+  const retireMap = new Map<number, { name: string | null; retire: string }>();
+  for (const row of (data ?? [])) {
+    const r = row as { id: number; name: string | null; retireDate: string | null };
+    retireMap.set(Number(r.id), {
+      name: r.name,
+      retire: String(r.retireDate ?? "").slice(0, 10),
+    });
+  }
+
   for (const [empId, maxDate] of maxByEmp) {
-    await assertEmployeeActiveForWrite(empId, maxDate);
+    const found = retireMap.get(empId);
+    if (!found) {
+      throw new HttpError(404, `직원을 찾을 수 없습니다 (id=${empId})`, "EMPLOYEE_NOT_FOUND");
+    }
+    const retire = found.retire;
+    if (retire && /^\d{4}-\d{2}-\d{2}$/.test(retire) && maxDate > retire) {
+      throw new HttpError(
+        409,
+        `퇴직한 직원의 ${maxDate} 스케줄은 생성/수정할 수 없습니다 · ${found.name ?? ""} · 퇴직일 ${retire}`,
+        "EMPLOYEE_RETIRED",
+      );
+    }
   }
 }

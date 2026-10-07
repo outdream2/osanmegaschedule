@@ -95,16 +95,18 @@ router.get("/api/leave-balance", authorize(1), asyncHandler(async (req, res) => 
     throw new HttpError(403, "본인 또는 관리자만 조회 가능합니다", "FORBIDDEN");
   }
   const empIdNum = Number(employeeId);
-  const { data: emp, error: empErr } = await supabase
-    .from("employees").select("annual_leave_days").eq("id", empIdNum).maybeSingle();
-  if (empErr) throw new HttpError(500, empErr.message);
-  const total = Number(emp?.annual_leave_days ?? 15);
-
-  const { data: rows, error: reqErr } = await supabase
-    .from("leave_requests")
-    .select("leave_type, start_date, end_date")
-    .eq("employee_id", empIdNum).eq("status", "approved");
-  if (reqErr) throw new HttpError(500, reqErr.message);
+  // 2026-10-07 · PHASE 3B · F-3 · employees + leave_requests 병렬 조회 (round-trip 2 → 1 wall-clock)
+  //   · 두 쿼리는 서로 독립 · 기존 순차 호출은 ~90ms 낭비
+  const [empRes, reqRes] = await Promise.all([
+    supabase.from("employees").select("annual_leave_days").eq("id", empIdNum).maybeSingle(),
+    supabase.from("leave_requests")
+      .select("leave_type, start_date, end_date")
+      .eq("employee_id", empIdNum).eq("status", "approved"),
+  ]);
+  if (empRes.error) throw new HttpError(500, empRes.error.message);
+  if (reqRes.error) throw new HttpError(500, reqRes.error.message);
+  const total = Number(empRes.data?.annual_leave_days ?? 15);
+  const rows = reqRes.data;
 
   let used = 0;
   for (const r of (rows ?? [])) {
