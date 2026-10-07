@@ -5,6 +5,13 @@ import { supabase } from "../../src/supabase/client";
 //   · 이후: 스케줄 UI 가 실제 소비하는 필드만 SELECT · 약 ~15 KB (추정)
 //   · 매 월이동 3개 fetch × 3개월 fallback 혜택
 //   · StaffDetailPanel/EmployeeCalendarModal 상세 (급여·경력·보험) 는 별도 GET /api/employees/:id 로 로드 (기존 분리 흐름 유지)
+//
+// 2026-10-07 · PHASE 3-0 CLOSEOUT · M-1 · live schema alignment
+//   · 발견: live employees 테이블에 `email` 컬럼 없음 (`information_schema.columns` 확인 완료)
+//   · 결과: narrowed SELECT 가 매 요청 실패 → fallback (SELECT *) 로 돌아 narrowing 효과 0
+//   · 수정: `email` 제거 · narrowed SELECT 를 정상 경로로 복원 · fallback 은 레거시 환경 compat 로만 유지
+//   · SchedulePage 는 employees.email 소비 안 함 · EmployeeCalendarModal 은 (address || email || birth_date)
+//     조건부로 EmployeeInfoForm 노출 — email 없으면 address 또는 birth_date 로만 판정 (현재 거동과 동일)
 const SCHEDULE_EMPLOYEE_FIELDS = [
   "id",
   "name",
@@ -24,7 +31,6 @@ const SCHEDULE_EMPLOYEE_FIELDS = [
   "contract_file_url",
   "break_time_minutes",
   "break_apply_paid",
-  "email",
 ].join(", ");
 
 export class ScheduleService {
@@ -33,7 +39,9 @@ export class ScheduleService {
     const datePrefix = `${year}-${monthStr}-`;
 
     // 2026-10-07 · PHASE 3B · F1 · 스케줄 UI 필드만 SELECT (헤비 jsonb 제외)
-    //   · 미존재 컬럼 (email 등) · fallback: * 로 재시도 (하위 호환)
+    // 2026-10-07 · PHASE 3-0 CLOSEOUT · M-1 · live schema 와 정렬 (email 제거) → narrowed=정상 경로
+    //   · fallback (SELECT *) 는 **레거시 환경 호환용 defensive branch** 로만 남김 (매 요청 hit=0 목표)
+    //   · 컬럼이 더 사라져 narrow 전체가 실패하는 환경에서만 fallback 실행
     type EmployeeRow = Record<string, unknown>;
     let employees: EmployeeRow[] | null = null;
     let empErr: { message: string } | null = null;
@@ -42,7 +50,8 @@ export class ScheduleService {
       .select(SCHEDULE_EMPLOYEE_FIELDS)
       .order("id");
     if (narrowed.error) {
-      // 컬럼 누락 (email 등) · 레거시 환경 · SELECT * 로 폴백
+      // defensive · 레거시/스테이징 환경에서 narrow 컬럼 누락 시 SELECT * 로 폴백
+      // (정상 production 환경에서는 fallback 이 작동하지 않아야 함)
       if (/column|does not exist/i.test(narrowed.error.message)) {
         const fallback = await supabase.from("employees").select("*").order("id");
         employees = fallback.data as EmployeeRow[] | null;
