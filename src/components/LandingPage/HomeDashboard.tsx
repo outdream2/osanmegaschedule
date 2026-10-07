@@ -36,6 +36,22 @@ const T = {
 interface HourlyRow { SaleDate: string; SaleTime: string; CustomerCnt: number; SaleTotal: number; }
 interface HourlyApiResponse { ok: boolean; schemaMismatch?: boolean; rows?: HourlyRow[]; error?: string; }
 
+// 2026-10-07 · 오늘의 판매현황 상품 · RevenuePage 월달력 모달 endpoint 재사용 (SSOT)
+interface DaySaleProductItem {
+  pcode: string | null;
+  productName: string | null;
+  unitSale: number | null;
+  totalStock: number | null;  // 수량
+  saleTotal: number | null;
+  margin: number | null;
+}
+interface DayProductApiResponse {
+  ok: boolean;
+  items?: DaySaleProductItem[];
+  totals?: { quantity?: number | null; saleTotal?: number | null };
+  error?: string;
+}
+
 export interface HomeDashboardProps {
   authSession: AuthSession;
   leavePendingCount: number;
@@ -68,6 +84,11 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const [salesLoading, setSalesLoading] = useState(false);
   const [salesError, setSalesError] = useState<string | null>(null);
 
+  // 2026-10-07 · 오늘의 판매현황 상품 · RevenuePage DayDetailModal 과 동일 endpoint 재사용 (SSOT)
+  const [dayProducts, setDayProducts] = useState<DaySaleProductItem[] | null>(null);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState<string | null>(null);
+
   const loadSales = useCallback(async () => {
     if (!isManagerOrAdmin) return;
     setSalesLoading(true); setSalesError(null);
@@ -81,7 +102,21 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     } finally { setSalesLoading(false); }
   }, [isManagerOrAdmin]);
 
+  const loadDayProducts = useCallback(async () => {
+    if (!isManagerOrAdmin) return;
+    setProductsLoading(true); setProductsError(null);
+    try {
+      const y = todayYmd();
+      const r = await api.get<DayProductApiResponse>(`/api/erp/sale-day-products?date=${y}`);
+      if (!r.data.ok) throw new Error(r.data.error ?? "판매현황 조회 실패");
+      setDayProducts(r.data.items ?? []);
+    } catch (e) {
+      setProductsError((e as Error).message); setDayProducts(null);
+    } finally { setProductsLoading(false); }
+  }, [isManagerOrAdmin]);
+
   useEffect(() => { void loadSales(); }, [loadSales]);
+  useEffect(() => { void loadDayProducts(); }, [loadDayProducts]);
 
   const now = new Date();
   const today = todayYmd();
@@ -143,7 +178,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   tone: "emerald",
                   label: "오늘 매출",
                   value: todayRows.length === 0 ? "-" : fmtWon(todaySale),
-                  sparkline: todayRows.map(r => Number(r.SaleTotal ?? 0)),
                   onClick: goTo("display", "revenue"),
                 },
                 {
@@ -151,7 +185,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   tone: "sky",
                   label: "방문객",
                   value: todayRows.length === 0 ? "-" : `${todayCust.toLocaleString("ko-KR")}명`,
-                  sparkline: todayRows.map(r => Number(r.CustomerCnt ?? 0)),
                   onClick: goTo("display", "revenue"),
                 },
                 {
@@ -159,10 +192,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   tone: "violet",
                   label: "객단가",
                   value: todayCust === 0 ? "-" : fmtWon(avgOrder),
-                  sparkline: todayRows.map(r => {
-                    const s = Number(r.SaleTotal ?? 0), c = Number(r.CustomerCnt ?? 0);
-                    return c > 0 ? s / c : 0;
-                  }),
                   onClick: goTo("display", "revenue"),
                 },
               ]}
@@ -216,16 +245,26 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </div>
       </section>
 
-      {/* ═══ Row 3 · Alerts (full-width list) ═══ */}
-      <section>
-        <StockAlertsCard
-          items={[
-            { label: "실재고 확인 요청", count: requestsCounts.inventory, onClick: goTo("scan") },
-            { label: "입고 예정 상품", count: 0, onClick: goTo("productarrival"), dim: true },
-            { label: "유통기한 임박", count: 0, onClick: goTo("stockcheck"), dim: true },
-            { label: "반품 요청", count: requestsCounts.return, onClick: goTo("requests") },
-          ]}
-        />
+      {/* ═══ Row 4 · 오늘의 판매현황 (2/3) + 입고·재고 알림 (1/3) · 레퍼머 매칭 ═══ */}
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="min-w-0 lg:col-span-2 flex">
+          <TodaySalesCard
+            loading={productsLoading}
+            error={productsError}
+            items={dayProducts ?? []}
+            onOpen={goTo("display", "revenue")}
+          />
+        </div>
+        <div className="min-w-0 lg:col-span-1 flex">
+          <StockAlertsCard
+            items={[
+              { label: "실재고 확인 요청", count: requestsCounts.inventory, onClick: goTo("scan") },
+              { label: "입고 예정 상품", count: 0, onClick: goTo("productarrival"), dim: true },
+              { label: "유통기한 임박", count: 0, onClick: goTo("stockcheck"), dim: true },
+              { label: "반품 요청", count: requestsCounts.return, onClick: goTo("requests") },
+            ]}
+          />
+        </div>
       </section>
 
       {/* ═══ Row 4 · Quick Actions · 5 cards full width ═══ */}
@@ -273,7 +312,6 @@ interface MetricItem {
   label: string;
   value: string;
   sub?: string;
-  sparkline?: number[];  // 2026-10-07 · 레퍼런스 매칭 · 각 metric 뒤 mini area sparkline
   onClick: () => void;
 }
 interface UnifiedMetricsCardProps {
@@ -282,62 +320,35 @@ interface UnifiedMetricsCardProps {
   error?: boolean;
 }
 
-const SPARK_STROKE: Record<MetricTone, string> = {
-  emerald: "#10b981", sky: "#0ea5e9", violet: "#8b5cf6", amber: "#f59e0b",
-};
-
+// 2026-10-07 · 사용자 지시 · 심플하게 · label/value 글씨 밸런스 가깝게 · sparkline 제거
 const UnifiedMetricsCard: React.FC<UnifiedMetricsCardProps> = ({ metrics, loading, error }) => (
   <div className="bg-white border border-slate-200 rounded-2xl shadow-[0_1px_2px_rgba(10,20,40,0.04)] overflow-hidden h-full">
     <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 h-full">
       {metrics.map((m, i) => {
         const t = METRIC_TONE[m.tone];
-        const sparkData = (m.sparkline ?? []).map((v, idx) => ({ i: idx, v }));
         return (
           <button
             key={i}
             type="button"
             onClick={m.onClick}
-            className={`text-left px-4 sm:px-5 py-4 sm:py-5 min-h-[112px] flex flex-col justify-between min-w-0 ${t.hoverBg} transition cursor-pointer group`}
+            className={`text-left px-4 sm:px-5 py-4 min-h-[96px] flex items-center gap-3 min-w-0 ${t.hoverBg} transition cursor-pointer`}
           >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <span className={`inline-flex items-center justify-center w-9 h-9 rounded-[10px] shrink-0 ${t.iconBg} ${t.iconText} transition-transform group-hover:scale-105`}>
-                {m.icon}
-              </span>
-              <span className="text-[12px] sm:text-[13px] text-slate-500 font-medium tracking-wide break-keep">{m.label}</span>
-            </div>
-            <div className="mt-2 flex items-end justify-between gap-2 min-w-0">
-              <div className="min-w-0 flex-1">
-                {loading ? (
-                  <SkeletonBar className="h-7 w-28" />
-                ) : error ? (
-                  <div className="text-[13px] text-rose-500 font-semibold">조회 실패</div>
-                ) : (
-                  <div
-                    className="font-bold tabular-nums text-ink leading-[1.15] whitespace-nowrap tracking-tight"
-                    style={{ fontSize: "clamp(19px, 2.6vw, 26px)" }}
-                    title={m.value}
-                  >
-                    {m.value}
-                  </div>
-                )}
-                {m.sub && !loading && !error && (
-                  <div className="mt-1 text-[11px] sm:text-[12px] text-slate-500 break-keep leading-snug">{m.sub}</div>
-                )}
-              </div>
-              {/* mini sparkline · 레퍼런스 트렌드 매칭 · 1D 데이터 가변 */}
-              {!loading && !error && sparkData.length >= 2 && (
-                <div className="w-16 h-8 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={sparkData}>
-                      <defs>
-                        <linearGradient id={`spark-${i}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={SPARK_STROKE[m.tone]} stopOpacity={0.35} />
-                          <stop offset="100%" stopColor={SPARK_STROKE[m.tone]} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <Area dataKey="v" type="monotone" stroke={SPARK_STROKE[m.tone]} strokeWidth={1.5} fill={`url(#spark-${i})`} isAnimationActive={false} />
-                    </AreaChart>
-                  </ResponsiveContainer>
+            <span className={`inline-flex items-center justify-center w-10 h-10 rounded-[10px] shrink-0 ${t.iconBg} ${t.iconText}`}>
+              {m.icon}
+            </span>
+            <div className="flex flex-col min-w-0 gap-0.5">
+              <span className="text-[13px] sm:text-[14px] text-slate-500 font-medium break-keep">{m.label}</span>
+              {loading ? (
+                <SkeletonBar className="h-5 w-28" />
+              ) : error ? (
+                <div className="text-[14px] text-rose-500 font-semibold">조회 실패</div>
+              ) : (
+                <div
+                  className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap tracking-tight"
+                  style={{ fontSize: "clamp(16px, 2.0vw, 20px)" }}
+                  title={m.value}
+                >
+                  {m.value}
                 </div>
               )}
             </div>
@@ -539,6 +550,86 @@ const SalesCard: React.FC<SalesCardProps> = ({ loading, error, rows, todaySale, 
 
 interface StockAlertItem { label: string; count: number; onClick: () => void; dim?: boolean; }
 interface StockAlertsCardProps { items: StockAlertItem[]; }
+
+// ─────────────────────────────────────────────────────────────
+// TodaySalesCard · 오늘의 판매현황 · /api/erp/sale-day-products
+// RevenuePage 월달력 일자 클릭 모달과 동일 endpoint 재사용 (SSOT · 계산 복제 X)
+// ─────────────────────────────────────────────────────────────
+interface TodaySalesCardProps {
+  loading: boolean;
+  error: string | null;
+  items: DaySaleProductItem[];
+  onOpen: () => void;
+}
+
+const TodaySalesCard: React.FC<TodaySalesCardProps> = ({ loading, error, items, onOpen }) => {
+  // 상위 매출 TOP · 매출액 내림차순 · 7건
+  const topItems = useMemo(() =>
+    [...items]
+      .filter(it => Number(it.saleTotal ?? 0) > 0)
+      .sort((a, b) => Number(b.saleTotal ?? 0) - Number(a.saleTotal ?? 0))
+      .slice(0, 7),
+    [items]);
+
+  return (
+    <div className={`${CARD_BASE} overflow-hidden w-full flex flex-col`}>
+      <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100">
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className={T.sectionTitle}>오늘의 판매현황</h3>
+          <span className="text-[12px] text-slate-400 font-medium">실시간 ERP · TOP {topItems.length}</span>
+        </div>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="text-[13px] text-brand-deep font-semibold hover:underline cursor-pointer flex items-center gap-0.5 shrink-0"
+        >
+          전체보기 <ChevronRight size={13} />
+        </button>
+      </div>
+      {loading && items.length === 0 ? (
+        <div className="divide-y divide-slate-100 flex-1">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="px-5 py-3 flex items-center justify-between">
+              <SkeletonBar className="h-4 w-40" />
+              <SkeletonBar className="h-4 w-20" />
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="flex-1 flex items-center justify-center text-[14px] text-rose-500 py-10">
+          ERP 조회 실패
+        </div>
+      ) : topItems.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center text-[14px] text-slate-400 py-10">
+          오늘 판매된 상품이 없습니다
+        </div>
+      ) : (
+        <div className="divide-y divide-slate-100 flex-1">
+          {topItems.map((it, i) => {
+            const sale = Number(it.saleTotal ?? 0);
+            const qty = Number(it.totalStock ?? 0);
+            return (
+              <div key={`${it.pcode ?? i}`} className="px-5 py-3 flex items-center gap-3 min-w-0">
+                <span className="w-5 text-[12px] font-bold tabular-nums text-slate-400 shrink-0">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] sm:text-[14px] font-medium text-ink break-keep leading-snug">
+                    {it.productName ?? "(상품명 없음)"}
+                  </div>
+                  <div className="text-[11px] sm:text-[12px] text-slate-500 tabular-nums mt-0.5">
+                    {qty > 0 && `${qty}개`}{qty > 0 && it.unitSale ? " · " : ""}{it.unitSale ? fmtWon(it.unitSale) : ""}
+                  </div>
+                </div>
+                <div className="text-[13px] sm:text-[14px] font-bold tabular-nums text-emerald-700 whitespace-nowrap shrink-0">
+                  {fmtWon(sale)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const StockAlertsCard: React.FC<StockAlertsCardProps> = ({ items }) => {
   const hasAny = items.some(it => it.count > 0 && !it.dim);
