@@ -264,25 +264,25 @@ const KpiCard: React.FC<KpiCardProps> = ({ icon, iconBg, label, value, sub, load
     onClick={onClick}
     className={`text-left bg-white border border-zinc-200 rounded-xl p-3.5 sm:p-4 transition shadow-sm hover:shadow-md cursor-pointer min-w-0 ${ACCENT_BORDER[accentColor]}`}
   >
-    <div className="flex items-center gap-2 mb-2">
+    <div className="flex items-center gap-2 mb-2 min-w-0">
       <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg shrink-0 ${iconBg}`}>{icon}</span>
-      <span className="text-[13px] sm:text-[14px] text-zinc-500 font-semibold tracking-wide truncate">{label}</span>
+      <span className="text-[14px] sm:text-[15px] text-zinc-500 font-semibold tracking-wide break-keep">{label}</span>
     </div>
     {loading ? (
-      <SkeletonBar className="h-6 w-24 mt-1" />
+      <SkeletonBar className="h-7 w-28 mt-1" />
     ) : error ? (
       <div className="text-[14px] text-rose-500 font-semibold">조회 실패</div>
     ) : (
       <div
-        className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap truncate"
-        style={{ fontSize: "clamp(20px, 3.0vw, 26px)" }}
+        className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap"
+        style={{ fontSize: "clamp(22px, 3.4vw, 30px)" }}
         title={value}
       >
         {value}
       </div>
     )}
     {sub && !loading && !error && (
-      <div className="mt-1 text-[12px] sm:text-[13px] text-zinc-500 truncate" title={sub}>{sub}</div>
+      <div className="mt-1 text-[12px] sm:text-[13px] text-zinc-500 break-keep leading-snug">{sub}</div>
     )}
   </button>
 );
@@ -300,7 +300,7 @@ const TaskQueueCard: React.FC<TaskQueueCardProps> = ({ title, totalBadge, items 
   return (
     <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
-        <h3 className="text-[16px] sm:text-[17px] font-bold text-ink tracking-tight">{title}</h3>
+        <h3 className="text-[17px] sm:text-[18px] font-bold text-ink tracking-tight">{title}</h3>
         <span className={`text-[13px] font-bold tabular-nums px-2.5 py-0.5 rounded-full ${totalBadge > 0 ? "bg-brand-amber/15 text-brand-amber-ink" : "bg-zinc-100 text-zinc-500"}`}>
           {totalBadge}
         </span>
@@ -352,7 +352,7 @@ const SalesCard: React.FC<SalesCardProps> = ({ loading, error, rows, todaySale, 
     <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-4 pt-4 pb-2.5">
         <div className="flex items-center gap-2 min-w-0">
-          <h3 className="text-[16px] sm:text-[17px] font-bold text-ink truncate tracking-tight">오늘의 판매현황</h3>
+          <h3 className="text-[17px] sm:text-[18px] font-bold text-ink tracking-tight break-keep">오늘의 판매현황</h3>
           <span className="text-[12px] text-zinc-400 shrink-0">실시간 ERP</span>
         </div>
         <button
@@ -368,11 +368,11 @@ const SalesCard: React.FC<SalesCardProps> = ({ loading, error, rows, todaySale, 
           {loading && rows.length === 0 ? (
             <SkeletonBar className="h-8 w-40" />
           ) : (
-            <div className="font-bold tabular-nums text-emerald-700 leading-tight" style={{ fontSize: "clamp(22px, 3.4vw, 30px)" }}>
+            <div className="font-bold tabular-nums text-emerald-700 leading-tight" style={{ fontSize: "clamp(24px, 3.6vw, 32px)" }}>
               {error ? "-" : rows.length === 0 ? "-" : fmtWon(todaySale)}
             </div>
           )}
-          <div className="text-[13px] text-zinc-500 mb-1">누적 매출</div>
+          <div className="text-[13px] sm:text-[14px] text-zinc-500 mb-1">누적 매출</div>
         </div>
       </div>
       <div className="h-[180px] px-2 pb-3">
@@ -427,7 +427,7 @@ const StockAlertsCard: React.FC<StockAlertsCardProps> = ({ items }) => {
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div className="flex items-center gap-2 min-w-0">
           <FileWarning size={16} className="text-amber-600 shrink-0" strokeWidth={2.2} />
-          <h3 className="text-[16px] sm:text-[17px] font-bold text-ink truncate tracking-tight">재고 · 입고 알림</h3>
+          <h3 className="text-[17px] sm:text-[18px] font-bold text-ink tracking-tight break-keep">재고 · 입고 알림</h3>
         </div>
       </div>
       {!hasAny ? (
@@ -480,15 +480,15 @@ const QuickActionCard: React.FC<QuickActionCardProps> = ({ icon, title, onClick,
       <span className={`inline-flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${t.bg} ${t.icon}`}>
         {icon}
       </span>
-      <span className="text-[14px] sm:text-[15px] font-semibold text-ink truncate">{title}</span>
+      <span className="text-[14px] sm:text-[15px] font-semibold text-ink break-keep">{title}</span>
     </button>
   );
 };
 
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="flex items-center gap-2.5 mb-3">
-    <span className="w-[3px] h-[18px] rounded-full bg-zinc-400" />
-    <span className="text-[16px] sm:text-[18px] font-bold text-ink tracking-tight">{children}</span>
+    <span className="w-[3px] h-[20px] rounded-full bg-zinc-400" />
+    <span className="text-[17px] sm:text-[19px] font-bold text-ink tracking-tight">{children}</span>
   </div>
 );
 
