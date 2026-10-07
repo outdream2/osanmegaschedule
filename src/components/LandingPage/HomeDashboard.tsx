@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Wallet, Users, Receipt, ClipboardCheck,
   Package, Scan, Calendar, Store, MessageSquare,
-  ChevronRight, FileWarning, TrendingUp, Clock,
+  ChevronRight, FileWarning, TrendingUp, Clock, RotateCcw,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { api } from "../../lib/apiClient";
@@ -114,23 +114,25 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-5">
-      {/* ═══ Header · compact (큰 gradient card 제거) ═══ */}
+      {/* ═══ Header · compact (큰 gradient card 제거) · 2026-10-07 글씨 bump up ═══ */}
       <header className="w-full">
-        <div className="text-[13px] text-zinc-500 font-medium tracking-wide">{dateStr}</div>
-        <h1 className="mt-1 text-[22px] sm:text-[26px] md:text-[28px] font-bold text-ink tracking-tight leading-snug">
+        <div className="text-[14px] sm:text-[15px] text-zinc-500 font-medium tracking-wide">{dateStr}</div>
+        <h1 className="mt-1 text-[24px] sm:text-[28px] md:text-[32px] font-bold text-ink tracking-tight leading-snug">
           안녕하세요, {name}{rank ? ` ${rank}` : ""}님 <span className="inline-block">👋</span>
         </h1>
-        <p className="mt-1 text-[14px] sm:text-[15px] text-zinc-600">{greetingDesc}</p>
+        <p className="mt-1.5 text-[15px] sm:text-[16px] text-zinc-600">{greetingDesc}</p>
       </header>
 
-      {/* ═══ KPI 4개 · 매출/방문객/객단가/승인대기 ═══ */}
+      {/* ═══ KPI 4개 · 매출/방문객/객단가/승인대기 · section-level loading/error ═══ */}
       {isManagerOrAdmin && (
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <KpiCard
             icon={<Wallet size={16} className="text-emerald-600" strokeWidth={2.2} />}
             iconBg="bg-emerald-50"
             label="오늘 매출"
-            value={salesLoading ? "조회 중..." : salesError ? "-" : todayRows.length === 0 ? "-" : fmtWon(todaySale)}
+            value={todayRows.length === 0 ? "-" : fmtWon(todaySale)}
+            loading={salesLoading && hourlyRows === null}
+            error={!!salesError && hourlyRows === null}
             onClick={goTo("display", "revenue")}
             accentColor="emerald"
           />
@@ -138,7 +140,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             icon={<Users size={16} className="text-sky-600" strokeWidth={2.2} />}
             iconBg="bg-sky-50"
             label="방문객"
-            value={salesLoading ? "..." : salesError ? "-" : todayRows.length === 0 ? "-" : `${todayCust.toLocaleString("ko-KR")}명`}
+            value={todayRows.length === 0 ? "-" : `${todayCust.toLocaleString("ko-KR")}명`}
+            loading={salesLoading && hourlyRows === null}
+            error={!!salesError && hourlyRows === null}
             onClick={goTo("display", "revenue")}
             accentColor="sky"
           />
@@ -146,7 +150,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             icon={<Receipt size={16} className="text-violet-600" strokeWidth={2.2} />}
             iconBg="bg-violet-50"
             label="객단가"
-            value={salesLoading ? "..." : salesError ? "-" : todayCust === 0 ? "-" : fmtWon(avgOrder)}
+            value={todayCust === 0 ? "-" : fmtWon(avgOrder)}
+            loading={salesLoading && hourlyRows === null}
+            error={!!salesError && hourlyRows === null}
             onClick={goTo("display", "revenue")}
             accentColor="violet"
           />
@@ -221,6 +227,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             todaySale={todaySale}
             curHour={curHour}
             onOpen={goTo("display", "revenue")}
+            onRetry={() => void loadSales()}
           />
         </div>
       </section>
@@ -245,62 +252,82 @@ interface KpiCardProps {
   label: string;
   value: string;
   sub?: string;
+  loading?: boolean;
+  error?: boolean;
   onClick: () => void;
   accentColor: "emerald" | "sky" | "violet" | "amber";
 }
 
-const KpiCard: React.FC<KpiCardProps> = ({ icon, iconBg, label, value, sub, onClick, accentColor }) => (
+const KpiCard: React.FC<KpiCardProps> = ({ icon, iconBg, label, value, sub, loading, error, onClick, accentColor }) => (
   <button
     type="button"
     onClick={onClick}
-    className={`text-left bg-white border border-zinc-200 rounded-xl p-3 sm:p-4 transition shadow-sm hover:shadow-md cursor-pointer min-w-0 ${ACCENT_BORDER[accentColor]}`}
+    className={`text-left bg-white border border-zinc-200 rounded-xl p-3.5 sm:p-4 transition shadow-sm hover:shadow-md cursor-pointer min-w-0 ${ACCENT_BORDER[accentColor]}`}
   >
-    <div className="flex items-center gap-2 mb-1.5">
-      <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg shrink-0 ${iconBg}`}>{icon}</span>
-      <span className="text-[12px] sm:text-[13px] text-zinc-500 font-medium tracking-wide truncate">{label}</span>
+    <div className="flex items-center gap-2 mb-2">
+      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg shrink-0 ${iconBg}`}>{icon}</span>
+      <span className="text-[13px] sm:text-[14px] text-zinc-500 font-semibold tracking-wide truncate">{label}</span>
     </div>
-    <div
-      className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap truncate"
-      style={{ fontSize: "clamp(17px, 2.6vw, 22px)" }}
-      title={value}
-    >
-      {value}
-    </div>
-    {sub && (
-      <div className="mt-0.5 text-[11px] sm:text-[12px] text-zinc-500 truncate" title={sub}>{sub}</div>
+    {loading ? (
+      <SkeletonBar className="h-6 w-24 mt-1" />
+    ) : error ? (
+      <div className="text-[14px] text-rose-500 font-semibold">조회 실패</div>
+    ) : (
+      <div
+        className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap truncate"
+        style={{ fontSize: "clamp(20px, 3.0vw, 26px)" }}
+        title={value}
+      >
+        {value}
+      </div>
+    )}
+    {sub && !loading && !error && (
+      <div className="mt-1 text-[12px] sm:text-[13px] text-zinc-500 truncate" title={sub}>{sub}</div>
     )}
   </button>
+);
+
+// 2026-10-07 · Phase 5 · Skeleton primitive (shimmer · 가벼운 inline)
+const SkeletonBar: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className = "", style }) => (
+  <div className={`bg-zinc-200/70 rounded animate-pulse ${className}`} style={style} />
 );
 
 interface TaskItem { label: string; count: number; onClick: () => void; }
 interface TaskQueueCardProps { title: string; totalBadge: number; items: TaskItem[]; }
 
-const TaskQueueCard: React.FC<TaskQueueCardProps> = ({ title, totalBadge, items }) => (
-  <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
-    <div className="flex items-center justify-between px-4 pt-3.5 pb-2.5">
-      <h3 className="text-[14px] sm:text-[15px] font-bold text-ink">{title}</h3>
-      <span className={`text-[12px] font-bold tabular-nums px-2 py-0.5 rounded-full ${totalBadge > 0 ? "bg-brand-amber/15 text-brand-amber-ink" : "bg-zinc-100 text-zinc-500"}`}>
-        {totalBadge}
-      </span>
+const TaskQueueCard: React.FC<TaskQueueCardProps> = ({ title, totalBadge, items }) => {
+  const allZero = items.every(it => it.count === 0);
+  return (
+    <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <h3 className="text-[16px] sm:text-[17px] font-bold text-ink tracking-tight">{title}</h3>
+        <span className={`text-[13px] font-bold tabular-nums px-2.5 py-0.5 rounded-full ${totalBadge > 0 ? "bg-brand-amber/15 text-brand-amber-ink" : "bg-zinc-100 text-zinc-500"}`}>
+          {totalBadge}
+        </span>
+      </div>
+      {allZero ? (
+        <div className="px-4 py-6 text-center text-[14px] text-zinc-400">처리할 업무가 없습니다</div>
+      ) : (
+        <div className="divide-y divide-zinc-100">
+          {items.map((it, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={it.onClick}
+              className={`w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-50/60 transition cursor-pointer ${it.count === 0 ? "text-zinc-400" : "text-ink"}`}
+            >
+              <span className="text-[14px] sm:text-[15px] font-medium">{it.label}</span>
+              <span className="flex items-center gap-1.5">
+                <span className={`text-[15px] sm:text-[16px] font-bold tabular-nums ${it.count === 0 ? "text-zinc-400" : "text-brand-amber-ink"}`}>{it.count}</span>
+                <ChevronRight size={14} className="text-zinc-300" />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
-    <div className="divide-y divide-zinc-100">
-      {items.map((it, i) => (
-        <button
-          key={i}
-          type="button"
-          onClick={it.onClick}
-          className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-50/60 transition cursor-pointer ${it.count === 0 ? "text-zinc-400" : "text-ink"}`}
-        >
-          <span className="text-[13px] sm:text-[14px] font-medium">{it.label}</span>
-          <span className="flex items-center gap-1.5">
-            <span className={`text-[13px] sm:text-[14px] font-bold tabular-nums ${it.count === 0 ? "text-zinc-400" : "text-brand-amber-ink"}`}>{it.count}</span>
-            <ChevronRight size={13} className="text-zinc-300" />
-          </span>
-        </button>
-      ))}
-    </div>
-  </div>
-);
+  );
+};
 
 interface SalesCardProps {
   loading: boolean;
@@ -309,9 +336,10 @@ interface SalesCardProps {
   todaySale: number;
   curHour: number;
   onOpen: () => void;
+  onRetry: () => void;
 }
 
-const SalesCard: React.FC<SalesCardProps> = ({ loading, error, rows, todaySale, curHour, onOpen }) => {
+const SalesCard: React.FC<SalesCardProps> = ({ loading, error, rows, todaySale, curHour, onOpen, onRetry }) => {
   // 시간별 bar · 매출 (최대 15 slots)
   const chartData = useMemo(() =>
     rows
@@ -322,41 +350,58 @@ const SalesCard: React.FC<SalesCardProps> = ({ loading, error, rows, todaySale, 
 
   return (
     <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 pt-3.5 pb-2">
+      <div className="flex items-center justify-between px-4 pt-4 pb-2.5">
         <div className="flex items-center gap-2 min-w-0">
-          <h3 className="text-[14px] sm:text-[15px] font-bold text-ink truncate">오늘의 판매현황</h3>
-          <span className="text-[11px] text-zinc-400 shrink-0">실시간 ERP</span>
+          <h3 className="text-[16px] sm:text-[17px] font-bold text-ink truncate tracking-tight">오늘의 판매현황</h3>
+          <span className="text-[12px] text-zinc-400 shrink-0">실시간 ERP</span>
         </div>
         <button
           type="button"
           onClick={onOpen}
-          className="text-[12px] text-brand-deep font-semibold hover:underline cursor-pointer flex items-center gap-0.5 shrink-0"
+          className="text-[13px] text-brand-deep font-semibold hover:underline cursor-pointer flex items-center gap-0.5 shrink-0"
         >
-          매출 상세 <ChevronRight size={12} />
+          매출 상세 <ChevronRight size={13} />
         </button>
       </div>
       <div className="px-4 pb-3">
         <div className="flex items-end gap-2">
-          <div className="font-bold tabular-nums text-emerald-700 leading-tight" style={{ fontSize: "clamp(20px, 3.2vw, 28px)" }}>
-            {loading ? "..." : error ? "-" : rows.length === 0 ? "-" : fmtWon(todaySale)}
-          </div>
-          <div className="text-[12px] text-zinc-500 mb-1">누적 매출</div>
+          {loading && rows.length === 0 ? (
+            <SkeletonBar className="h-8 w-40" />
+          ) : (
+            <div className="font-bold tabular-nums text-emerald-700 leading-tight" style={{ fontSize: "clamp(22px, 3.4vw, 30px)" }}>
+              {error ? "-" : rows.length === 0 ? "-" : fmtWon(todaySale)}
+            </div>
+          )}
+          <div className="text-[13px] text-zinc-500 mb-1">누적 매출</div>
         </div>
       </div>
       <div className="h-[180px] px-2 pb-3">
         {error ? (
-          <div className="h-full flex items-center justify-center text-[13px] text-rose-500">ERP 조회 실패 · 다시 시도해 주세요</div>
+          <div className="h-full flex flex-col items-center justify-center gap-2 text-[14px] text-rose-500">
+            <div>ERP 조회 실패</div>
+            <button
+              type="button"
+              onClick={onRetry}
+              className="inline-flex items-center gap-1 px-3 py-1 border border-rose-300 text-rose-600 rounded-md text-[13px] font-semibold hover:bg-rose-50 cursor-pointer"
+            >
+              <RotateCcw size={13} /> 다시 시도
+            </button>
+          </div>
         ) : loading && rows.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-[13px] text-zinc-400">조회 중...</div>
+          <div className="h-full px-2 flex items-end gap-1.5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <SkeletonBar key={i} className="flex-1" style={{ height: `${30 + Math.sin(i * 1.3) * 30 + 60}%` } as React.CSSProperties} />
+            ))}
+          </div>
         ) : chartData.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-[13px] text-zinc-400">데이터 없음</div>
+          <div className="h-full flex items-center justify-center text-[14px] text-zinc-400">데이터 없음</div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 4, right: 8, bottom: 8, left: 8 }}>
-              <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#71717a" }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#71717a" }} axisLine={false} tickLine={false} />
               <Tooltip
                 formatter={(v: number) => fmtWon(v)}
-                contentStyle={{ fontSize: 12, borderRadius: 6, padding: "4px 8px" }}
+                contentStyle={{ fontSize: 13, borderRadius: 6, padding: "4px 8px" }}
                 cursor={{ fill: "rgba(16,185,129,0.04)" }}
               />
               <Bar dataKey="sale" radius={[4, 4, 0, 0]}>
@@ -379,14 +424,14 @@ const StockAlertsCard: React.FC<StockAlertsCardProps> = ({ items }) => {
   const hasAny = items.some(it => it.count > 0 && !it.dim);
   return (
     <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 pt-3.5 pb-2.5">
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div className="flex items-center gap-2 min-w-0">
-          <FileWarning size={14} className="text-amber-600 shrink-0" strokeWidth={2.2} />
-          <h3 className="text-[14px] sm:text-[15px] font-bold text-ink truncate">재고 · 입고 알림</h3>
+          <FileWarning size={16} className="text-amber-600 shrink-0" strokeWidth={2.2} />
+          <h3 className="text-[16px] sm:text-[17px] font-bold text-ink truncate tracking-tight">재고 · 입고 알림</h3>
         </div>
       </div>
-      {!hasAny && items.every(it => it.count === 0) ? (
-        <div className="px-4 py-6 text-center text-[13px] text-zinc-400">현재 긴급 재고 알림이 없습니다</div>
+      {!hasAny ? (
+        <div className="px-4 py-6 text-center text-[14px] text-zinc-400">현재 확인할 알림이 없습니다</div>
       ) : (
         <div className="divide-y divide-zinc-100">
           {items.map((it, i) => (
@@ -394,12 +439,12 @@ const StockAlertsCard: React.FC<StockAlertsCardProps> = ({ items }) => {
               key={i}
               type="button"
               onClick={it.onClick}
-              className={`w-full flex items-center justify-between px-4 py-2.5 hover:bg-zinc-50/60 transition cursor-pointer ${it.count === 0 || it.dim ? "text-zinc-400" : "text-ink"}`}
+              className={`w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-50/60 transition cursor-pointer ${it.count === 0 || it.dim ? "text-zinc-400" : "text-ink"}`}
             >
-              <span className="text-[13px] sm:text-[14px] font-medium">{it.label}</span>
+              <span className="text-[14px] sm:text-[15px] font-medium">{it.label}</span>
               <span className="flex items-center gap-1.5">
-                <span className={`text-[13px] sm:text-[14px] font-bold tabular-nums ${it.count === 0 || it.dim ? "text-zinc-400" : "text-amber-600"}`}>{it.count}</span>
-                <ChevronRight size={13} className="text-zinc-300" />
+                <span className={`text-[15px] sm:text-[16px] font-bold tabular-nums ${it.count === 0 || it.dim ? "text-zinc-400" : "text-amber-600"}`}>{it.count}</span>
+                <ChevronRight size={14} className="text-zinc-300" />
               </span>
             </button>
           ))}
@@ -430,20 +475,20 @@ const QuickActionCard: React.FC<QuickActionCardProps> = ({ icon, title, onClick,
     <button
       type="button"
       onClick={onClick}
-      className={`bg-white border border-zinc-200 rounded-xl p-3 sm:p-4 transition shadow-sm hover:shadow-md cursor-pointer text-left flex items-center gap-2.5 min-w-0 ${t.border}`}
+      className={`bg-white border border-zinc-200 rounded-xl p-3.5 sm:p-4 transition shadow-sm hover:shadow-md cursor-pointer text-left flex items-center gap-3 min-w-0 ${t.border}`}
     >
-      <span className={`inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0 ${t.bg} ${t.icon}`}>
+      <span className={`inline-flex items-center justify-center w-10 h-10 rounded-lg shrink-0 ${t.bg} ${t.icon}`}>
         {icon}
       </span>
-      <span className="text-[13px] sm:text-[14px] font-semibold text-ink truncate">{title}</span>
+      <span className="text-[14px] sm:text-[15px] font-semibold text-ink truncate">{title}</span>
     </button>
   );
 };
 
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="flex items-center gap-2.5 mb-3">
-    <span className="w-[3px] h-[16px] rounded-full bg-zinc-400" />
-    <span className="text-[15px] sm:text-[16px] font-bold text-ink tracking-tight">{children}</span>
+    <span className="w-[3px] h-[18px] rounded-full bg-zinc-400" />
+    <span className="text-[16px] sm:text-[18px] font-bold text-ink tracking-tight">{children}</span>
   </div>
 );
 
