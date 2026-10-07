@@ -168,10 +168,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </section>
       )}
 
-      {/* ═══ 3-column · Tasks | Sales | Alerts ═══ */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-        {/* Tasks · 오늘 처리할 업무 */}
-        <div className="lg:col-span-3 min-w-0">
+      {/* 2026-10-07 · Phase 4 · 모바일 섹션 순서 (Tasks → QuickActions → Alerts → Sales)
+          desktop 은 single 3-column grid + QuickActions row (아래)
+          mobile 은 DOM 순서 그대로 스택 · DOM 순서를 모바일 우선 순서로 배치 */}
+      <section className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+        {/* 1. Tasks · 오늘 처리할 업무 */}
+        <div className="min-w-0 lg:col-span-3 lg:col-start-1 lg:row-start-1">
           <TaskQueueCard
             title="오늘 처리할 업무"
             totalBadge={totalApprovals + requestsCounts.display + requestsCounts.order + (isAdmin ? paymentPendingCount : 0)}
@@ -186,20 +188,20 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           />
         </div>
 
-        {/* Sales · 오늘의 판매현황 (chart) */}
-        <div className="lg:col-span-6 min-w-0">
-          <SalesCard
-            loading={salesLoading}
-            error={salesError}
-            rows={todayRows}
-            todaySale={todaySale}
-            curHour={curHour}
-            onOpen={goTo("display", "revenue")}
-          />
+        {/* 2. Quick Actions · 모바일 두 번째 · desktop 은 아래 row 2 로 이동 */}
+        <div className="min-w-0 lg:col-span-12 lg:col-start-1 lg:row-start-2">
+          <SectionTitle>빠른 실행</SectionTitle>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <QuickActionCard icon={<Package size={18} strokeWidth={2.2} />} title="상품입고" onClick={goTo("productarrival")} tone="coral" />
+            <QuickActionCard icon={<Scan size={18} strokeWidth={2.2} />} title="실재고 확인" onClick={goTo("scan")} tone="amber" />
+            <QuickActionCard icon={<Calendar size={18} strokeWidth={2.2} />} title="스케줄표" onClick={goTo("schedule")} tone="sky" />
+            <QuickActionCard icon={<Store size={18} strokeWidth={2.2} />} title="매장진열" onClick={goTo("display")} tone="emerald" />
+            <QuickActionCard icon={<MessageSquare size={18} strokeWidth={2.2} />} title="이슈 공유" onClick={goTo("board")} tone="violet" />
+          </div>
         </div>
 
-        {/* Stock Alerts · 재고·입고 알림 */}
-        <div className="lg:col-span-3 min-w-0">
+        {/* 3. Stock Alerts · 모바일 세 번째 · desktop 은 row 1 우측 */}
+        <div className="min-w-0 lg:col-span-3 lg:col-start-10 lg:row-start-1">
           <StockAlertsCard
             items={[
               { label: "실재고 확인 요청", count: requestsCounts.inventory, onClick: goTo("scan") },
@@ -209,17 +211,17 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             ]}
           />
         </div>
-      </section>
 
-      {/* ═══ Quick Actions · 5 compact cards ═══ */}
-      <section>
-        <SectionTitle>빠른 실행</SectionTitle>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <QuickActionCard icon={<Package size={18} strokeWidth={2.2} />} title="상품입고" onClick={goTo("productarrival")} tone="coral" />
-          <QuickActionCard icon={<Scan size={18} strokeWidth={2.2} />} title="실재고 확인" onClick={goTo("scan")} tone="amber" />
-          <QuickActionCard icon={<Calendar size={18} strokeWidth={2.2} />} title="스케줄표" onClick={goTo("schedule")} tone="sky" />
-          <QuickActionCard icon={<Store size={18} strokeWidth={2.2} />} title="매장진열" onClick={goTo("display")} tone="emerald" />
-          <QuickActionCard icon={<MessageSquare size={18} strokeWidth={2.2} />} title="이슈 공유" onClick={goTo("board")} tone="violet" />
+        {/* 4. Sales · 오늘의 판매현황 (chart) · 모바일 마지막 · desktop 은 row 1 중앙 */}
+        <div className="min-w-0 lg:col-span-6 lg:col-start-4 lg:row-start-1">
+          <SalesCard
+            loading={salesLoading}
+            error={salesError}
+            rows={todayRows}
+            todaySale={todaySale}
+            curHour={curHour}
+            onOpen={goTo("display", "revenue")}
+          />
         </div>
       </section>
     </div>
