@@ -223,8 +223,11 @@ const HourlyReportTab: React.FC = () => {
     if (ranges.length === 0) return;
     setHourlyStatus("loading"); setHourlyError(null); setHourlySchemaMismatch(false);
     try {
+      // 2026-10-07 hotfix · ERP working condition END=START+1 (Fiddler 확정 · TodayRevenueKpiPanel 와 동일 contract)
+      //   · from===to (same-day) 요청 시 ERP SOAP 가 HTTP 500 반환
+      //   · dead-code 였던 addOneDay helper 를 요청 송신 시점에만 적용 · client 측 dataRows 필터는 rng.endDate 그대로 사용 (visible 날짜 shift 없음)
       const results = await Promise.all(
-        ranges.map(rng => api.get<HourlyApiResponse>(`/api/erp/sale-hourly-report?from=${rng.startDate}&to=${rng.endDate}`))
+        ranges.map(rng => api.get<HourlyApiResponse>(`/api/erp/sale-hourly-report?from=${rng.startDate}&to=${addOneDay(rng.endDate)}`))
       );
       const merged: HourlyRow[] = [];
       for (const r of results) {
