@@ -292,26 +292,32 @@ router.get("/api/erp/sale-day-products", asyncHandler(async (req, res) => {
       });
     }
 
-    // products JOIN · pcode → location (batch select)
+    // products JOIN · pcode → 진열위치 (real_map / display_location / location fallback chain)
     //   · 2026-10-05 PCode primary identity · products.pcode 1:1
-    //   · 매칭 안되는 row 는 location=null · class="unknown"
+    //   · 2026-10-07 사용자 지시 · 진열위치 정보로 분류 · 상비약(1-9)/일반약(10+) 구분 필수
+    //   · 우선순위: real_map (실제배정구역 · 메모 project_product_columns.md) → display_location → location
+    //   · 셋 다 NULL 이면 class="unknown"
     const pcodes = Array.from(new Set(normalizedRows.map((r) => r.pcode).filter((p): p is string => !!p)));
     const locationMap = new Map<string, string | null>();
     if (pcodes.length > 0) {
-      // Supabase .in() batch size 안전 상한 (1000) · 하루 상품 수 < 1000 가정 · 초과 대비 chunk
       const CHUNK = 1000;
       for (let i = 0; i < pcodes.length; i += CHUNK) {
         const chunk = pcodes.slice(i, i + CHUNK);
         const { data, error } = await supabase
           .from("products")
-          .select("pcode, location")
+          .select("pcode, location, display_location, real_map")
           .in("pcode", chunk);
         if (error) {
           logger.warn(`[sale-day-products] products JOIN 실패 (chunk ${i}) · ${error.message}`);
           continue;
         }
         for (const row of data ?? []) {
-          if (row.pcode) locationMap.set(String(row.pcode), (row.location ?? null) as string | null);
+          if (!row.pcode) continue;
+          const r1 = (row.real_map ?? null) as string | null;
+          const r2 = (row.display_location ?? null) as string | null;
+          const r3 = (row.location ?? null) as string | null;
+          const resolved = (r1 && String(r1).trim()) || (r2 && String(r2).trim()) || (r3 && String(r3).trim()) || null;
+          locationMap.set(String(row.pcode), resolved);
         }
       }
     }
@@ -326,11 +332,14 @@ router.get("/api/erp/sale-day-products", asyncHandler(async (req, res) => {
       };
     });
 
-    // 매출 desc 정렬 · null 은 뒤로
+    // 2026-10-07 사용자 지시 · 조회 default = 마진율 desc · 매출 보조 · null 은 뒤로
     items.sort((a, b) => {
-      const av = a.saleTotal ?? -Infinity;
-      const bv = b.saleTotal ?? -Infinity;
-      return bv - av;
+      const amPct = a.marginPct ?? -Infinity;
+      const bmPct = b.marginPct ?? -Infinity;
+      if (amPct !== bmPct) return bmPct - amPct;
+      const asVal = a.saleTotal ?? -Infinity;
+      const bsVal = b.saleTotal ?? -Infinity;
+      return bsVal - asVal;
     });
 
     // 전체 totals · class group 집계

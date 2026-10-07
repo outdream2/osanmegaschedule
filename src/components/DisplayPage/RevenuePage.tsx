@@ -766,7 +766,7 @@ const HourlyReportTab: React.FC = () => {
                           labelFormatter={(v) => `W${v} (${Number(v) === 1 ? "1~7" : Number(v) === 2 ? "8~14" : Number(v) === 3 ? "15~21" : Number(v) === 4 ? "22~28" : "29~31"}일)`}
                           contentStyle={{ fontSize: 13, borderRadius: 8 }}
                         />
-                        <Legend wrapperStyle={{ fontSize: 13 }} iconType="line" formatter={(name) => {
+                        <Legend wrapperStyle={{ fontSize: 13 }} iconType="rect" formatter={(name) => {
                           const nm = String(name);
                           const raw = nm.replace(" ★ 이번달", "");
                           const [yy, mm] = raw.split("-");
@@ -880,7 +880,7 @@ const HourlyReportTab: React.FC = () => {
                           contentStyle={{ fontSize: 13, borderRadius: 8 }}
                         />
                         {/* 2026-10-06 · 사용자 지시 · 현재월 Legend 라벨 굵게 (red bold) · 시간대별 "★ 오늘" 패턴과 통일 */}
-                        <Legend wrapperStyle={{ fontSize: 13 }} iconType="line" formatter={(name) => {
+                        <Legend wrapperStyle={{ fontSize: 13 }} iconType="rect" formatter={(name) => {
                           const nm = String(name);
                           const raw = nm.replace(" ★ 이번달", "");
                           const [yy, mm] = raw.split("-");
@@ -932,7 +932,7 @@ const HourlyReportTab: React.FC = () => {
                         contentStyle={{ fontSize: 13, borderRadius: 8 }}
                       />
                       {/* 2026-10-06 · 사용자 지시 · 오늘 라벨 찐하게 (bold red) */}
-                      <Legend wrapperStyle={{ fontSize: 13 }} iconType="line" formatter={(name) => {
+                      <Legend wrapperStyle={{ fontSize: 13 }} iconType="rect" formatter={(name) => {
                         const nm = String(name);
                         if (nm.endsWith("★ 오늘")) return <span style={{ color: "#dc2626", fontWeight: 800 }}>{nm}</span>;
                         // weekday 축 "W1 MM/DD(요일)" 형태 · 그대로 사용
@@ -2093,15 +2093,32 @@ const DayDetailModal: React.FC<{
       titleAccent
     >
       <div className="space-y-3">
-        {/* 매출 · brand gradient · 메인 포인트 */}
-        <MetricCard color="brand" label="매출" value={fmtWon(saleTotal)} big full />
-        {/* 2 column grid · 각 metric 별 컬러 엑센트 */}
-        <div className="grid grid-cols-2 gap-3">
-          <MetricCard color="amber"   label="매입"     value={fmtWon(buyTotal)} />
-          <MetricCard color="emerald" label="매출이익" value={fmtWon(margin)} />
-          <MetricCard color="indigo"  label="마진율"   value={saleTotal > 0 ? `${marginPct.toFixed(1)}%` : "-"} />
-          <MetricCard color="sky"     label="방문객"   value={cust > 0 ? cust.toLocaleString() + "명" : "-"} />
-          <MetricCard color="rose"    label="객단가"   value={avg > 0 ? fmtWon(avg) : "-"} full />
+        {/* 2026-10-07 · 사용자 지시 · 상단 KPI 6개 → 한 카드 텍스트 정리 */}
+        <div className="rounded-lg border border-zinc-200 bg-zinc-50/60 px-4 py-3 text-[13px] md:text-[14px] text-zinc-700 space-y-1 tabular-nums">
+          <div className="flex justify-between gap-3">
+            <span className="text-zinc-500">매출</span>
+            <span className="font-semibold text-zinc-900">{fmtWon(saleTotal)}</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-zinc-500">매입</span>
+            <span className="font-semibold text-zinc-900">{fmtWon(buyTotal)}</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-zinc-500">매출이익</span>
+            <span className="font-semibold text-zinc-900">{fmtWon(margin)}</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-zinc-500">마진율</span>
+            <span className="font-semibold text-zinc-900">{saleTotal > 0 ? `${marginPct.toFixed(1)}%` : "-"}</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-zinc-500">방문객</span>
+            <span className="font-semibold text-zinc-900">{cust > 0 ? cust.toLocaleString() + "명" : "-"}</span>
+          </div>
+          <div className="flex justify-between gap-3">
+            <span className="text-zinc-500">객단가</span>
+            <span className="font-semibold text-zinc-900">{avg > 0 ? fmtWon(avg) : "-"}</span>
+          </div>
         </div>
 
         {/* 2026-10-07 · 날짜별 판매 상품 · ERP 실시간 (Sale_Status · SvcSaleBiz) */}
@@ -2218,14 +2235,13 @@ const DayProductSection: React.FC<{
       {status === "success" && items.length > 0 && (
         <div className="max-h-[320px] md:max-h-[400px] overflow-auto rounded-md border border-zinc-200">
           <table className="w-full text-[12px] md:text-[13px]">
+            {/* 2026-10-07 · 사용자 지시 · column 간소화 (수량·매출·마진율만) · 분류 column 제거 (ClassFilter 탭으로 처리) */}
             <thead className="bg-zinc-50 text-zinc-600 sticky top-0 z-10">
               <tr>
                 <th className="px-2 py-1.5 text-left font-semibold">상품명</th>
                 <th className="px-2 py-1.5 text-right font-semibold">수량</th>
                 <th className="px-2 py-1.5 text-right font-semibold">매출</th>
-                <th className="px-2 py-1.5 text-right font-semibold">이익</th>
                 <th className="px-2 py-1.5 text-right font-semibold">마진율</th>
-                <th className="px-2 py-1.5 text-center font-semibold">분류</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
@@ -2240,20 +2256,8 @@ const DayProductSection: React.FC<{
                   <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-brand-deep">
                     {it.saleTotal !== null ? fmtNum(it.saleTotal) : "-"}
                   </td>
-                  <td className="px-2 py-1.5 text-right tabular-nums text-emerald-700">
-                    {it.margin !== null ? fmtNum(it.margin) : "-"}
-                  </td>
                   <td className="px-2 py-1.5 text-right tabular-nums text-indigo-700">
                     {it.marginPct !== null ? `${it.marginPct.toFixed(1)}%` : "-"}
-                  </td>
-                  <td className="px-2 py-1.5 text-center">
-                    <span className={`inline-block px-1.5 py-[1px] rounded text-[11px] font-semibold ${
-                      it.class === "stationery" ? "bg-amber-100 text-amber-800"
-                      : it.class === "general"  ? "bg-indigo-100 text-indigo-800"
-                                                : "bg-zinc-100 text-zinc-600"
-                    }`}>
-                      {it.class === "stationery" ? "상비약" : it.class === "general" ? "일반약" : "미분류"}
-                    </span>
                   </td>
                 </tr>
               ))}
