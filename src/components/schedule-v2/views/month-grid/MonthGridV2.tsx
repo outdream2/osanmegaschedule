@@ -8,7 +8,8 @@ import type { Employee, Schedule } from "../../../../types";
 import type { ScheduleTypeEntry } from "../../../../hooks/useSettings";
 import { Card } from "../../../common/Card";
 import { getTypeHoursMap, weekdays } from "../../../SchedulePage/scheduleHelpers";
-import { scheduleCellContent } from "../MonthScheduleViewV2";
+// 2026-10-07 · 순환 import 제거 · scheduleCellContent 는 별도 모듈로 이관 (../MonthScheduleViewV2 → ./scheduleCellContent)
+import { scheduleCellContent } from "./scheduleCellContent";
 import { ScheduleTypePopover } from "./ScheduleTypePopover";
 
 interface GridProps {

@@ -11,13 +11,13 @@ import { CaretLeft, CaretRight, Lock, PencilSimple, Check, X } from "@phosphor-i
 import { useScheduleData, type CellUpdateData } from "../../SchedulePage/useScheduleData";
 import { useSettings } from "../../../hooks/useSettings";
 import {
-  buildDateList, getTodayStr, getTypeHoursMap, weekdays,
+  buildDateList, getTodayStr, getTypeHoursMap,
 } from "../../SchedulePage/scheduleHelpers";
-import type { AuthSession, Employee, Schedule } from "../../../types";
+import type { AuthSession } from "../../../types";
 import { Spinner } from "../../common/Spinner";
-import { Card } from "../../common/Card";
-import { isOffType } from "../../../shared/schedule/offTypes";
 import { MonthGridV2 } from "./month-grid/MonthGridV2";
+// 2026-10-07 · 순환 import 해소 · scheduleCellContent 를 별도 모듈로 분리 · 아래에서 re-export (BC)
+import { scheduleCellContent as _scheduleCellContent } from "./month-grid/scheduleCellContent";
 
 interface Props {
   year: number;
@@ -203,23 +203,9 @@ export const MonthScheduleViewV2: React.FC<Props> = ({ year, month, onMonthDelta
 };
 
 // ─── Cell render helper (shared with grid) ─────────────────────────────
-export const scheduleCellContent = (
-  schedule: Schedule | undefined,
-  typeHoursMap: Record<string, string>,
-): React.ReactElement => {
-  if (!schedule || !schedule.type) {
-    return <span className="inline-block w-full text-[11px] text-zinc-200">·</span>;
-  }
-  const t = schedule.type.trim();
-  const off = isOffType(t);
-  const hours = (schedule.workingHours ?? "").trim() || typeHoursMap[t] || "";
-  return (
-    <div className="text-[12px] leading-tight">
-      <div className={`font-semibold ${off ? "text-rose-600" : "text-ink"}`}>{t}</div>
-      {hours && !off && <div className="text-[10px] text-ink-soft tabular-nums">{hours}</div>}
-    </div>
-  );
-};
+// 2026-10-07 · 순환 import 제거 · 실제 선언은 ./month-grid/scheduleCellContent 로 이동
+//   · 기존 사용자는 이 모듈에서 export 하는 scheduleCellContent 를 그대로 import 가능 (BC)
+export const scheduleCellContent = _scheduleCellContent;
 
 // re-export · 외부에서 individually import 하지 않도록 · 내부에서만 사용
 export { getTypeHoursMap };
