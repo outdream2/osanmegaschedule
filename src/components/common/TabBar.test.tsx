@@ -23,19 +23,23 @@ describe("TabBar · 렌더 · 공통", () => {
     expect(Array.from(btns).map(b => b.querySelector("span")?.textContent).slice(0, 3)).toEqual(["발주", "매입", "반품"]);
   });
 
-  it("L2 · pill container 렌더", () => {
+  it("L2 · line tabs 렌더 · 활성 underline", () => {
+    // 2026-10-07 · Batch 4 · L2 default = Line Tabs (not Attio pill) · 활성 탭에 2px underline
     const { container } = render(
       <TabBar level={2} tabs={TABS} activeKey="a" onSelect={() => {}} />
     );
-    const pill = container.querySelector(".rounded-2xl");
-    expect(pill).not.toBeNull();
+    const btns = container.querySelectorAll("button[role='tab']");
+    expect(btns.length).toBe(TABS.length);
+    const activeUnderline = container.querySelector("button[aria-selected='true'] span[aria-hidden]");
+    expect(activeUnderline).not.toBeNull();
   });
 
-  it("L3 · filter chip 렌더", () => {
+  it("L3 · compact filter chip 렌더", () => {
+    // 2026-10-07 · Batch 4 · L3 = neutral compact chip (not pine green pill) · rounded-lg
     const { container } = render(
       <TabBar level={3} tabs={TABS} activeKey="a" onSelect={() => {}} />
     );
-    const chips = container.querySelectorAll(".rounded-full");
+    const chips = container.querySelectorAll(".rounded-lg");
     expect(chips.length).toBeGreaterThan(0);
   });
 });

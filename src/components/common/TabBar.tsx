@@ -136,19 +136,25 @@ export function TabBar<K extends string = string>({
     ? `bg-zinc-50/50 border-b border-line w-full shrink-0 ${className}`
     : `${barCls} ${className}`;
 
-  // L2 · Attio "carved" segmented container (rounded-2xl pill wrap · 세련 · 부드러운 그림자)
+  // 2026-10-07 · Batch 4 · L2 default = LINE TABS (presentation-only)
+  //   · spec · transparent bg · 2px bottom border active · h 40-44 · text 13-14 · no pill/dot/gradient
+  //   · 기존 Attio-carved pill 폐지 · information-dense operations tab
+  //   · icon · 유지 (semantic) · size 14 · muted 색상
+  //   · nowrap · mobile 가로 스크롤 · scrollbar hidden
   if (level === 2 && variant !== "nested") {
     return (
-      <div className={`bg-gradient-to-b from-white to-zinc-50/30 border-b border-line w-full shrink-0 ${className}`}>
+      <div className={`bg-white border-b border-line w-full shrink-0 ${className}`}>
         <div
-          className="tab-bar-inner py-2.5"
+          className="tab-bar-inner"
           style={maxWidth == null ? undefined : (typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth })}
         >
-          <div role="tablist" className={`inline-flex items-center bg-zinc-100/80 backdrop-blur-sm border border-line rounded-2xl p-1 gap-0.5 flex-wrap shadow-[inset_0_1px_2px_rgba(10,46,74,0.04)] ${sortable?.isDragging ? "select-none" : ""}`}>
+          <div
+            role="tablist"
+            className={`flex items-stretch gap-0 flex-wrap overflow-x-auto scrollbar-none ${sortable?.isDragging ? "select-none" : ""}`}
+          >
             {visibleTabs.map(t => {
               const active = activeKey === t.key;
               const Icon = t.icon;
-              const c = COLOR_MAP[t.color ?? "slate"] ?? COLOR_MAP.slate;
               const dnd = sortable?.getTabProps(t.key);
 
               const dragCls = dnd
@@ -182,29 +188,38 @@ export function TabBar<K extends string = string>({
                   onTouchEnd={dnd?.onTouchEnd}
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
-                    "inline-flex items-center gap-1.5 sm:gap-2 h-11 px-3.5 sm:px-4.5 rounded-xl text-[16px] sm:text-[17px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight",
+                    "relative inline-flex items-center gap-1.5 h-11 px-3.5 sm:px-4",
+                    "text-[14px] font-semibold whitespace-nowrap tracking-tight",
+                    "transition-colors duration-150 cursor-pointer outline-none",
+                    "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-tint",
                     active
-                      ? "bg-white text-ink font-bold shadow-[0_2px_8px_rgba(10,46,74,0.08),0_1px_2px_rgba(10,46,74,0.04)] ring-1 ring-line/80"
-                      : "text-ink-soft hover:text-ink hover:bg-white/80",
+                      ? "text-brand-deep"
+                      : "text-ink-soft hover:text-ink",
                     dragCls,
                   ].join(" ")}
                 >
                   {Icon && (
                     <Icon
-                      size={17}
-                      strokeWidth={active ? 2.4 : 2}
-                      weight={active ? "fill" : "duotone"}
-                      className={`shrink-0 transition-colors duration-200 ${active ? c.iconActive : "text-zinc-400"}`}
+                      size={14}
+                      strokeWidth={active ? 2.2 : 1.8}
+                      weight={active ? "fill" : "regular"}
+                      className={`shrink-0 transition-colors duration-150 ${active ? "text-brand-deep" : "text-ink-soft/70"}`}
                     />
                   )}
                   <span>{t.label}</span>
                   {t.badge != null && t.badge > 0 && (
                     <span
-                      className={`inline-flex items-center justify-center min-w-[20px] h-[20px] px-1 rounded-full text-[13px] font-bold leading-none tabular-nums transition-colors ${active ? `${badgeBg} text-white shadow-sm` : "bg-zinc-200/80 text-zinc-600"}`}
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-bold leading-none tabular-nums transition-colors ${active ? `${badgeBg} text-white` : "bg-zinc-200/80 text-zinc-700"}`}
                       title={`${t.label} · ${t.badge}건`}
                     >
                       {t.badge}
                     </span>
+                  )}
+                  {active && (
+                    <span
+                      aria-hidden
+                      className="absolute left-0 right-0 -bottom-px h-[2px] bg-brand-deep rounded-t-sm"
+                    />
                   )}
                 </button>
               );
@@ -215,21 +230,22 @@ export function TabBar<K extends string = string>({
     );
   }
 
-  // L3 · Filter Chip Row · Attio/Vercel 2026 · 탭 대신 필터 chip 스타일 (L2 tabs 와 완전히 다른 UX)
-  //   · 사용자 선택 · L3 제거 · filter chip row 로 흡수 (research-strategist 1순위)
-  //   · 탭처럼 콘텐츠 전환 · 시각은 filter chip · pill 스타일
+  // 2026-10-07 · Batch 4 · L3 = COMPACT FILTER CHIP (presentation-only)
+  //   · spec · small chip · h 32-36 · text 12-13 · radius 8-10 · neutral surface
+  //   · 기존 Pine Green deep pill (#01796F) 폐지 · subtle brand-tint active surface
+  //   · dot marker 제거 · colored rainbow 제거 (slate base)
+  //   · icon · 유지 가능 · size 13 · 활성=brand-deep · 비활성=muted
   if (level === 3) {
     return (
       <div className={`bg-white border-b border-line w-full shrink-0 ${className}`}>
         <div
-          className="tab-bar-inner py-2.5"
+          className="tab-bar-inner py-1.5"
           style={maxWidth == null ? undefined : (typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth })}
         >
-          <div role="tablist" className={`inline-flex items-center gap-1.5 flex-wrap ${sortable?.isDragging ? "select-none" : ""}`}>
+          <div role="tablist" className={`inline-flex items-center gap-1 flex-wrap ${sortable?.isDragging ? "select-none" : ""}`}>
             {visibleTabs.map(t => {
               const active = activeKey === t.key;
               const Icon = t.icon;
-              const c = COLOR_MAP[t.color ?? "slate"] ?? COLOR_MAP.slate;
               const dnd = sortable?.getTabProps(t.key);
 
               const dragCls = dnd
@@ -242,7 +258,6 @@ export function TabBar<K extends string = string>({
                 : "";
 
               return (
-                /* 2026-08-17 · L3 · Linear docs 텍스트 탭 + underline 2px · L2 pill 과 완전 구분 (컨테이너 없음) */
                 <button
                   key={t.key}
                   type="button"
@@ -264,30 +279,29 @@ export function TabBar<K extends string = string>({
                   onTouchEnd={dnd?.onTouchEnd}
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
-                    "group inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[17px] sm:text-[18px] font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer tracking-tight border",
-                    // Filter Chip · 활성 = Pine Green 청록톤 (#01796F · Hermès Pine Green · 딥네이비 페어링)
+                    "inline-flex items-center gap-1 h-8 px-3 rounded-lg",
+                    "text-[13px] font-medium whitespace-nowrap tracking-tight",
+                    "transition-colors duration-150 cursor-pointer outline-none",
+                    "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-tint",
+                    "border",
                     active
-                      ? "bg-[#01796F] text-white border-[#014A44] font-bold shadow-[0_1px_2px_rgba(1,121,111,0.25)]"
-                      : "bg-zinc-50 text-ink-soft border-line hover:bg-white hover:text-ink hover:border-[#01796F]/40",
+                      ? "bg-brand-tint/60 text-brand-deep border-brand-deep/15 font-semibold"
+                      : "bg-transparent text-ink-soft border-transparent hover:bg-zinc-50 hover:text-ink",
                     dragCls,
                   ].join(" ")}
                 >
-                  {/* dot marker · 활성 시 · white (deep green solid pill) · 비활성 · 카테고리 톤 */}
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${active ? "bg-white/80" : c.iconActive.replace("text-", "bg-")}`}
-                  />
                   {Icon && (
                     <Icon
-                      size={14}
-                      strokeWidth={active ? 2.4 : 2}
-                      weight={active ? "fill" : "duotone"}
-                      className={`shrink-0 transition-colors duration-200 ${active ? "text-white" : c.iconActive}`}
+                      size={13}
+                      strokeWidth={active ? 2.2 : 1.8}
+                      weight={active ? "fill" : "regular"}
+                      className={`shrink-0 transition-colors duration-150 ${active ? "text-brand-deep" : "text-ink-soft/70"}`}
                     />
                   )}
                   <span>{t.label}</span>
                   {t.badge != null && t.badge > 0 && (
                     <span
-                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[12px] font-bold leading-none tabular-nums transition-colors ${active ? "bg-white/25 text-white" : "bg-zinc-200 text-zinc-700"}`}
+                      className={`inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full text-[11px] font-bold leading-none tabular-nums transition-colors ${active ? "bg-brand-deep text-white" : "bg-zinc-200 text-zinc-700"}`}
                       title={`${t.label} · ${t.badge}건`}
                     >
                       {t.badge}
