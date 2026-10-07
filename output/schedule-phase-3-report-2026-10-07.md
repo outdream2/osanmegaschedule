@@ -277,15 +277,19 @@
 
 ## GIT
 
-**Commits (논리별 분리 · push=NO · 로컬 commit stack 그대로)**:
+**Commit stack (로컬 only · push=NO)**:
 
-1. `fix(schedule): enforce server-side authorization + employee-active guard` — Phase 3A F1~F9
-2. `perf(schedule): narrow employees payload + skip redundant month fetches` — Phase 3B B-F1 + B-F2
-3. `fix(schedule): tighten lock guards for batch + ui indicator polish` — Phase 3C
-4. `feat(schedule): canonical schedule conflict detector` — Phase 3D
-5. `feat(schedule): minor productivity polish` — Phase 3E
+| hash | subject | Phase |
+|---|---|---|
+| `fd33e1d0` | feat(schedule-v2): enable canonical month schedule editing (phase V2-A closeout) *(병렬 agent commit race — payload = Phase 3A 6 files · 코드는 정확)* | 3A |
+| `517ff51c` | perf(schedule): narrow employees payload + skip redundant month fetches | 3B |
+| `1a44a315` | fix(schedule): confirm-lock UX + minor productivity polish | 3C + 3E (UI) |
+| `279a6816` | feat(schedule): canonical schedule conflict detector | 3D |
+| `60663238` | docs(schedule): Phase 3 production-core hardening report | docs |
 
-각 commit 전 TS/build/test PASS 확인 · 선택적 `git add` 로 schedule/staff/settings/common/hooks/lib/migrations/scripts 관련 파일만.
+**중요 note**: `fd33e1d0` 의 commit subject 는 병렬 agent (schedule-v2 WIP) 가 동시에 수행한 commit 에 의해 override 됨 (git write race). 그러나 payload 는 Phase 3A 6 files 전부 정확히 포함 — code change 는 정상 landing. subject rewrite 는 history rewrite (`git commit --amend` or rebase) 가 필요하여 사용자 명시 승인 없이 **DO NOT MODIFY**.
+
+각 commit 전 TS clean / 54/54 test PASS / framework-audit 526=526 (신규 증가 없음) 확인 후 commit · 선택적 `git add` 로 schedule/common 관련 파일만.
 
 ---
 
