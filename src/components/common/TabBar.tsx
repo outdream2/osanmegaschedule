@@ -136,31 +136,32 @@ export function TabBar<K extends string = string>({
     ? `bg-zinc-50/50 border-b border-line w-full shrink-0 ${className}`
     : `${barCls} ${className}`;
 
-  // 2026-10-07 · Batch 4 · L2 default = LINE TABS (presentation-only)
-  //   · spec · transparent bg · 2px bottom border active · h 40-44 · text 13-14 · no pill/dot/gradient
-  //   · 기존 Attio-carved pill 폐지 · information-dense operations tab
-  //   · icon · 유지 (semantic) · size 14 · muted 색상
-  //   · nowrap · mobile 가로 스크롤 · scrollbar hidden
+  // 2026-10-08 · Batch 4 CLOSEOUT · L2 default = FLAT LINE TABS (presentation-only · FROZEN)
+  //   · reference image lock · "얇고 정돈된 상단 업무 navigation"
+  //   · transparent bg · no pill · no icon · no card wrapper
+  //   · tab row baseline 1px slate-200 · active tab 아래 2px deep ink underline
+  //   · tab gap 20~32px · flex-nowrap · mobile 가로 스크롤
+  //   · active=text-ink font-semibold · inactive=text-ink-soft/80 font-medium
+  //   · 아이콘 prop 무시 (PAGE TAB = TEXT FIRST)
   if (level === 2 && variant !== "nested") {
     return (
-      <div className={`bg-white border-b border-line w-full shrink-0 ${className}`}>
+      <div className={`bg-transparent border-b border-slate-200 w-full shrink-0 ${className}`}>
         <div
           className="tab-bar-inner"
           style={maxWidth == null ? undefined : (typeof maxWidth === "number" ? { maxWidth: `${maxWidth}px` } : { maxWidth })}
         >
           <div
             role="tablist"
-            className={`flex items-stretch gap-0 flex-wrap overflow-x-auto scrollbar-none ${sortable?.isDragging ? "select-none" : ""}`}
+            className={`flex items-stretch flex-nowrap gap-5 sm:gap-7 md:gap-8 overflow-x-auto scrollbar-hide ${sortable?.isDragging ? "select-none" : ""}`}
           >
             {visibleTabs.map(t => {
               const active = activeKey === t.key;
-              const Icon = t.icon;
               const dnd = sortable?.getTabProps(t.key);
 
               const dragCls = dnd
                 ? [
                     dnd.isBeingDragged ? "opacity-50" : "",
-                    dnd.isDropTarget ? "ring-2 ring-brand-deep ring-inset" : "",
+                    dnd.isDropTarget ? "ring-2 ring-ink ring-inset" : "",
                     dnd.isArmed && !dnd.isBeingDragged ? "tab-shake cursor-grab" : "",
                     dnd.isBeingDragged ? "cursor-grabbing" : "",
                   ].filter(Boolean).join(" ")
@@ -188,28 +189,22 @@ export function TabBar<K extends string = string>({
                   onTouchEnd={dnd?.onTouchEnd}
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
-                    "relative inline-flex items-center gap-1.5 h-11 px-3.5 sm:px-4",
-                    "text-[14px] font-semibold whitespace-nowrap tracking-tight",
+                    "relative inline-flex items-center justify-center shrink-0",
+                    "h-11 px-1",
+                    "text-[13px] sm:text-[14px] whitespace-nowrap tracking-tight",
+                    "bg-transparent border-0 rounded-none shadow-none",
                     "transition-colors duration-150 cursor-pointer outline-none",
                     "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-tint",
                     active
-                      ? "text-brand-deep"
-                      : "text-ink-soft hover:text-ink",
+                      ? "text-ink font-semibold"
+                      : "text-ink-soft/80 font-medium hover:text-ink",
                     dragCls,
                   ].join(" ")}
                 >
-                  {Icon && (
-                    <Icon
-                      size={14}
-                      strokeWidth={active ? 2.2 : 1.8}
-                      weight={active ? "fill" : "regular"}
-                      className={`shrink-0 transition-colors duration-150 ${active ? "text-brand-deep" : "text-ink-soft/70"}`}
-                    />
-                  )}
                   <span>{t.label}</span>
                   {t.badge != null && t.badge > 0 && (
                     <span
-                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-bold leading-none tabular-nums transition-colors ${active ? `${badgeBg} text-white` : "bg-zinc-200/80 text-zinc-700"}`}
+                      className={`ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-bold leading-none tabular-nums transition-colors ${active ? `${badgeBg} text-white` : "bg-zinc-100 text-ink-soft"}`}
                       title={`${t.label} · ${t.badge}건`}
                     >
                       {t.badge}
@@ -218,7 +213,7 @@ export function TabBar<K extends string = string>({
                   {active && (
                     <span
                       aria-hidden
-                      className="absolute left-0 right-0 -bottom-px h-[2px] bg-brand-deep rounded-t-sm"
+                      className="absolute left-0 right-0 -bottom-px h-[2px] bg-ink"
                     />
                   )}
                 </button>

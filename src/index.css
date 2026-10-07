@@ -437,6 +437,17 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
  *   feedback_ui_principles B-3 (공통 CSS 아키텍처) 원칙 준수
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/* ── 2026-10-08 · Batch 4 closeout · 가로 스크롤바 숨김 유틸 (Line Tabs mobile scroll 전용) ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* ── 탭 계층 · Level 1 · 2026-08-17 · 폰트 +2 (18/19 → 20/21) · 2026-09-20 · 폰트 +1 (20/21 → 21/22) · Linear/Vercel · font-bold 통일 ── */
 .tab-l1 {
   @apply relative flex items-center gap-2 sm:gap-2.5
