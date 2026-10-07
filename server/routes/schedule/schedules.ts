@@ -17,27 +17,44 @@ import { getKstYmd } from "../../lib/kstDate";
 import logger from "../../lib/logger";
 import type { AuthedRequest } from "../../types/auth";
 // 2026-10-06 · PHASE 1 · schedule lock 공통 guard · 라이브러리 승격
-import { assertScheduleNotLocked } from "../../lib/scheduleLock";
+// 2026-10-07 · PHASE 3C · batch lock 전 date 검사로 통일
+import { assertScheduleNotLocked, assertScheduleNotLockedForDates } from "../../lib/scheduleLock";
+// 2026-10-07 · PHASE 3A · F9 · 퇴직 직원 신규 write 차단
+import { assertEmployeeActiveForWrite, assertEmployeesActiveForWrite } from "../../lib/employeeActive";
 
 const router = Router();
 
-router.get("/api/schedules", asyncHandler(async (req, res) => {
+// 2026-10-07 · PHASE 3A · F1 · HR 데이터 보호
+//   · 이전: 익명(lv0) 호출 가능 · employees SELECT * 반환 (phone/wage/insurance/jsonb 포함)
+//   · 이후: authorize(1) 필수 · lv1(직원) 요청 시 scheduleController 가 민감 필드 narrowing
+router.get("/api/schedules", authorize(1), asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   return scheduleController.getSchedules(req, res);
 }));
 // 2026-08-29 · 보안 S0 N4 fix · 스케줄 write · 매니저(lv5)+ 만
 // 2026-09-23 · [R-1] · 확정 달 서버 lock 검증 추가 · lv≥9 예외
+// 2026-10-07 · PHASE 3A · F9 · 퇴직 직원 신규 write 차단
 router.put("/api/schedules", authorize(5), validateBody(UpsertScheduleSchema), asyncHandler(async (req, res) => {
   const authLevel = (req as AuthedRequest).authUser?.level ?? 0;
-  const yearMonth = String(req.body.date ?? "").slice(0, 7); // YYYY-MM
+  const dateFull = String(req.body.date ?? "").slice(0, 10);
+  const yearMonth = dateFull.slice(0, 7); // YYYY-MM
   await assertScheduleNotLocked(yearMonth, authLevel);
+  await assertEmployeeActiveForWrite(Number(req.body.employeeId), dateFull);
   return scheduleController.updateSchedule(req, res);
 }));
+// 2026-10-07 · PHASE 3C · batch lock · 전체 date 집합 검증 (이전: firstDate 만 검사 → 다른 월 섞여 들어오면 bypass 가능)
 router.post("/api/schedules/batch", authorize(5), validateBody(BatchScheduleSchema), asyncHandler(async (req, res) => {
   const authLevel = (req as AuthedRequest).authUser?.level ?? 0;
-  // 배치: 첫 번째 item의 date 기준으로 yearMonth 추출 (같은 월 내 배치 전제)
-  const firstDate = String(req.body.items?.[0]?.date ?? "").slice(0, 7);
-  await assertScheduleNotLocked(firstDate, authLevel);
+  const items = Array.isArray(req.body.items) ? req.body.items : [];
+  const dates = items.map((it: { date?: string }) => String(it?.date ?? "").slice(0, 10));
+  await assertScheduleNotLockedForDates(dates, authLevel);
+  // 2026-10-07 · PHASE 3A · F9 · 퇴직 직원 신규 write 차단 (batch 전체)
+  await assertEmployeesActiveForWrite(
+    items.map((it: { employeeId?: number; date?: string }) => ({
+      employeeId: Number(it?.employeeId),
+      date: String(it?.date ?? ""),
+    })),
+  );
   return scheduleController.batchUpdateSchedules(req, res);
 }));
 // 2026-10-06 · PHASE 1.5 · copy 라우트도 schedule lock 검증 추가

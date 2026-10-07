@@ -565,7 +565,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
       <div className={`flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-zinc-100 gap-0 ${PAGE_CONTAINER_CLS} min-w-0`}>
         <ScheduleToolbar
           currentYear={currentYear} currentMonth={currentMonth}
-          isAdmin={isAdmin} editMode={editMode}
+          isAdmin={isAdmin}
+          canLockMonth={isSuperAdmin}
+          editMode={editMode}
           isMonthLocked={isMonthLocked} isLockLoading={isLockLoading}
           isCopying={isCopying} showSummary={showSummary}
           currentSummaryList={currentSummaryList}

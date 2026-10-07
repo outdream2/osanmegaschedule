@@ -8,6 +8,8 @@ interface ScheduleToolbarProps {
   currentYear: number;
   currentMonth: number;
   isAdmin: boolean;
+  /** 2026-10-07 · PHASE 3A · F8 · 월 확정 토글은 lv≥9 (서버 POST /api/settings authorize(9) 와 일치) */
+  canLockMonth?: boolean;
   editMode: boolean;
   isMonthLocked: boolean;
   isLockLoading: boolean;
@@ -31,7 +33,7 @@ interface ScheduleToolbarProps {
 
 export const ScheduleToolbar: React.FC<ScheduleToolbarProps> = ({
   currentYear, currentMonth,
-  isAdmin, editMode, isMonthLocked, isLockLoading, isCopying,
+  isAdmin, canLockMonth = false, editMode, isMonthLocked, isLockLoading, isCopying,
   showSummary, currentSummaryList, typeHoursMap,
   pendingScrollDateRef, scrollTableRef, nameThRef, suppressScrollRef,
   onPrevMonth, onNextMonth, onToggleEditMode, onToggleMonthLock,
@@ -121,15 +123,18 @@ export const ScheduleToolbar: React.FC<ScheduleToolbarProps> = ({
                 }
               </button>
             )}
-            <button onClick={onToggleMonthLock} disabled={isLockLoading}
-              title={isMonthLocked ? `${currentMonth}월 확정 해제` : `${currentMonth}월 스케줄 확정 (이후 수정 불가)`}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-[14px] sm:text-[15px] font-semibold rounded-lg border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${isMonthLocked ? "border-amber-500 bg-amber-500 text-white shadow-sm" : "border-line bg-white text-ink hover:border-brand-deep hover:text-brand-deep"}`}>
-              {isLockLoading
-                ? <div className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                : <Lock size={13} strokeWidth={2.2} />
-              }
-              <span>{isMonthLocked ? "확정해제" : "확정"}</span>
-            </button>
+            {/* 2026-10-07 · PHASE 3A · F8 · 서버 POST /api/settings authorize(9) 와 일치 · lv≥9 만 노출 (lv2~5 silent-fail 방지) */}
+            {canLockMonth && (
+              <button onClick={onToggleMonthLock} disabled={isLockLoading}
+                title={isMonthLocked ? `${currentMonth}월 확정 해제` : `${currentMonth}월 스케줄 확정 (이후 수정 불가)`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-[14px] sm:text-[15px] font-semibold rounded-lg border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${isMonthLocked ? "border-amber-500 bg-amber-500 text-white shadow-sm" : "border-line bg-white text-ink hover:border-brand-deep hover:text-brand-deep"}`}>
+                {isLockLoading
+                  ? <div className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  : <Lock size={13} strokeWidth={2.2} />
+                }
+                <span>{isMonthLocked ? "확정해제" : "확정"}</span>
+              </button>
+            )}
             {!isMonthLocked && (
               <button onClick={onCopyFromPreviousMonth} disabled={isCopying}
                 title={`${currentMonth === 1 ? 12 : currentMonth - 1}월 스케줄을 ${currentMonth}월로 복사`}

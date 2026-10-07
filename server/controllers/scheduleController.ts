@@ -1,6 +1,69 @@
 import { Request, Response } from "express";
 import { scheduleService } from "../services/scheduleService";
 import logger from "../lib/logger";
+import type { AuthedRequest } from "../types/auth";
+
+// 2026-10-07 · PHASE 3A · F1 · lv1(직원) 응답에서 민감 HR 필드 제거
+//   · lv≥2 (매니저+) 는 기존 그대로 (StaffDetailPanel · 급여/계약 정보 필요)
+//   · lv1 (직원) 은 스케줄 표시에 필요한 최소 필드만 반환
+//   · phone/level/wage_*/insurance_*/bank_*/bankbook_image_url/pharmacist_license_no 등 제거
+const SENSITIVE_EMPLOYEE_FIELDS = new Set<string>([
+  "phone",
+  "level",
+  "address",
+  "birth_date",
+  "emergency_contact_name",
+  "emergency_contact_phone",
+  "emergency_contact_rel",
+  "wage_calc_type",
+  "wage_amount",
+  "wage_pay_day",
+  "wage_pay_method",
+  "bank_name",
+  "bank_account_no",
+  "bankbook_image_url",
+  "insurance_nps_date",
+  "insurance_nhis_date",
+  "insurance_ei_date",
+  "insurance_wcia_date",
+  "insurance_excluded",
+  "pharmacist_license_no",
+  "health_check_expiry",
+  "performance_rating",
+  "careers",
+  "educations",
+  "certifications",
+  "contract_file_url",
+  "resume_url",
+  "resignation_file_url",
+  "contract_start",
+  "contract_end",
+  "probation_end_date",
+  "contract_type",
+  "wage_rate_override",
+  "push_subscription",
+]);
+
+interface EmployeeRecord {
+  id?: number;
+  name?: string;
+  schedules?: unknown[];
+  [key: string]: unknown;
+}
+
+function narrowEmployeesForLv1(
+  result: { employees: EmployeeRecord[]; summary: unknown[] },
+): { employees: EmployeeRecord[]; summary: unknown[] } {
+  const narrowed = (result.employees ?? []).map(emp => {
+    const copy: EmployeeRecord = {};
+    for (const [k, v] of Object.entries(emp)) {
+      if (SENSITIVE_EMPLOYEE_FIELDS.has(k)) continue;
+      copy[k] = v;
+    }
+    return copy;
+  });
+  return { employees: narrowed, summary: result.summary };
+}
 
 export class ScheduleController {
   /**
@@ -18,6 +81,15 @@ export class ScheduleController {
       }
 
       const result = await scheduleService.getMonthlySchedule(year, month);
+
+      // 2026-10-07 · PHASE 3A · F1 · lv1 민감 HR 필드 narrowing
+      const authUser = (req as AuthedRequest).authUser;
+      const level = authUser?.level ?? 0;
+      if (level < 2) {
+        res.json(narrowEmployeesForLv1(result as unknown as { employees: EmployeeRecord[]; summary: unknown[] }));
+        return;
+      }
+
       res.json(result);
     } catch (error: any) {
       logger.error(`[scheduleController] getSchedules: ${error?.message ?? error}`);

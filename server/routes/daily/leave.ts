@@ -18,11 +18,14 @@ import logger from "../../lib/logger";
 import { sendPushSafe } from "../../services/expoPushService";
 // 2026-10-06 · PHASE 1 · schedule lock bypass fix · 연차 승인/삭제 경로 공통 guard
 import { assertScheduleNotLockedForDates } from "../../lib/scheduleLock";
+// 2026-10-07 · PHASE 3A · F9 · 퇴직 직원 신규 leave 신청 차단
+import { assertEmployeeActiveForWrite } from "../../lib/employeeActive";
 import type { AuthedRequest } from "../../types/auth";
 
 const router = Router();
 
-router.get("/api/leave-stats", asyncHandler(async (req, res) => {
+// 2026-10-07 · PHASE 3A · F5 · 로그인 사용자만 열람 가능 (조직 전체 월차 익명 노출 차단)
+router.get("/api/leave-stats", authorize(1), asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { year } = req.query;
   if (!year || typeof year !== "string") throw badRequest("year required");
@@ -38,23 +41,59 @@ router.get("/api/leave-stats", asyncHandler(async (req, res) => {
 }));
 
 // T-SLIM E · List endpoint · 현재 array 반환 · v2 { rows, count } 예정
-router.get("/api/leave-requests", asyncHandler(async (req, res) => {
+// 2026-10-07 · PHASE 3A · F3 · 로그인 필수 + ownership gate
+//   · all=true → 전체 직원 열람 → lv≥5 (매니저+) 만 허용
+//   · employeeId=N → 본인 (session.sub===N) 또는 lv≥5
+router.get("/api/leave-requests", authorize(1), asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { employeeId, all } = req.query;
+  const auth = (req as AuthedRequest).authUser;
+  const level = auth?.level ?? 0;
+  const selfId = Number(auth?.sub ?? 0);
+  const isAllRequest = all === "true";
+  if (isAllRequest) {
+    if (level < 5) throw new HttpError(403, "전체 조회는 매니저(lv≥5)만 가능합니다", "FORBIDDEN");
+  } else if (employeeId) {
+    const requested = Number(employeeId);
+    if (level < 5 && requested !== selfId) {
+      throw new HttpError(403, "본인 또는 관리자만 조회 가능합니다", "FORBIDDEN");
+    }
+  } else {
+    // employeeId 미지정 + all=false → 본인 범위로 강제
+    // query 로 명시 안 하면 전체가 반환되던 기존 거동 유지 X → 안전하게 본인 범위 적용
+    if (level < 5) {
+      // 본인 범위 묵시 적용
+      if (!Number.isFinite(selfId) || selfId <= 0) {
+        throw new HttpError(403, "본인 식별 불가 · 다시 로그인해주세요", "FORBIDDEN");
+      }
+    }
+  }
+
   let q = supabase.from("leave_requests")
     .select("id, employee_id, employee_name, leave_type, start_date, end_date, reason, status, reviewer_note, created_at, reviewed_at")
     .order("created_at", { ascending: false });
-  if (all !== "true" && employeeId) q = q.eq("employee_id", Number(employeeId));
+  if (!isAllRequest) {
+    const targetId = employeeId ? Number(employeeId) : selfId;
+    q = q.eq("employee_id", targetId);
+  }
   const { data, error } = await q;
   if (error) throw new HttpError(500, error.message);
   res.json(data ?? []);
 }));
 
 // 남은 연차 잔여 계산
-router.get("/api/leave-balance", asyncHandler(async (req, res) => {
+// 2026-10-07 · PHASE 3A · F4 · 로그인 필수 + 본인 or lv≥5
+router.get("/api/leave-balance", authorize(1), asyncHandler(async (req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { employeeId } = req.query;
   if (!employeeId) throw badRequest("employeeId required");
+  const auth = (req as AuthedRequest).authUser;
+  const level = auth?.level ?? 0;
+  const selfId = Number(auth?.sub ?? 0);
+  const requested = Number(employeeId);
+  if (level < 5 && requested !== selfId) {
+    throw new HttpError(403, "본인 또는 관리자만 조회 가능합니다", "FORBIDDEN");
+  }
   const empIdNum = Number(employeeId);
   const { data: emp, error: empErr } = await supabase
     .from("employees").select("annual_leave_days").eq("id", empIdNum).maybeSingle();
@@ -81,7 +120,8 @@ router.get("/api/leave-balance", asyncHandler(async (req, res) => {
   res.json(body);
 }));
 
-router.get("/api/leave-requests/pending-count", asyncHandler(async (_req, res) => {
+// 2026-10-07 · PHASE 3A · F6 · 관리자 대시보드 카운트 · lv≥2 로 상향
+router.get("/api/leave-requests/pending-count", authorize(2), asyncHandler(async (_req, res) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const { count, error } = await supabase
     .from("leave_requests").select("*", { count: "exact", head: true }).eq("status", "pending");
@@ -89,10 +129,22 @@ router.get("/api/leave-requests/pending-count", asyncHandler(async (_req, res) =
   res.json({ count: count ?? 0 });
 }));
 
+// 2026-10-07 · PHASE 3A · F7 · 임의 employee_id 로 타직원 명의 신청 차단
+//   · body.employee_id === session.sub (본인 신청) 또는 lv≥5 (대리 신청) 만 허용
 router.post("/api/leave-requests", authorize(1), validateBody(CreateLeaveRequestSchema), asyncHandler(async (req, res) => {
   const { employee_id, employee_name, leave_type, start_date, end_date, reason } = req.body;
+  const auth = (req as AuthedRequest).authUser;
+  const level = auth?.level ?? 0;
+  const selfId = Number(auth?.sub ?? 0);
+  const targetId = Number(employee_id);
+  if (level < 5 && targetId !== selfId) {
+    throw new HttpError(403, "본인 명의로만 신청할 수 있습니다", "FORBIDDEN");
+  }
+  // 2026-10-07 · PHASE 3A · F9 · 퇴직 직원 신규 신청 차단 (end_date 기준)
+  await assertEmployeeActiveForWrite(targetId, String(end_date ?? ""));
+
   const { data, error } = await supabase.from("leave_requests").insert([{
-    employee_id: Number(employee_id),
+    employee_id: targetId,
     employee_name,
     leave_type,
     start_date,
