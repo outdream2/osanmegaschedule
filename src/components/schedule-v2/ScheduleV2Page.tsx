@@ -198,6 +198,7 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
               onDateDelta={goDayDelta}
               onToday={goTodayDate}
               authSession={authSession}
+              onJumpToDate={handleOpenDay}
             />
           )}
           {view === "employee" && (
