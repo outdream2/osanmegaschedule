@@ -1,7 +1,7 @@
 // src/components/SchedulePage/useScheduleData.ts
 // 2026-08-22 · #framework-4 · SchedulePage 분리 · 데이터 fetch/mutate 훅
 import { useState, useRef, useCallback, useEffect } from "react";
-import { api } from "../../lib/apiClient";
+import { api, ApiError } from "../../lib/apiClient";
 // 2026-09-14 · settingsApi 프리미티브
 import { saveSetting } from "../../lib/settingsApi";
 import { SK_EMPLOYEE_ORDER } from "../../lib/storageKeys";
@@ -14,6 +14,25 @@ import {
 } from "../../lib/employeeApi";
 import { Employee, Schedule } from "../../types";
 import { useConfirm } from "../../hooks/useConfirm";
+
+// 2026-10-07 · PHASE 3E · 서버가 돌려준 code/message 를 사용자 메시지로 복원
+//   · 서버 contract (server/lib/scheduleLock.ts · employeeActive.ts · requireAuth.ts 등):
+//     · SCHEDULE_LOCKED  → 403 · "확정된 달은 수정할 수 없습니다. 관리자(lv≥9)만 수정 가능합니다."
+//     · EMPLOYEE_RETIRED → 409 · "퇴직한 직원의 YYYY-MM-DD ..."
+//     · FORBIDDEN        → 403 · "본인 또는 관리자만 ..."
+//     · validation       → 400 · Zod 메시지
+//   · ApiError.message 는 서버의 error 필드 그대로 → 그대로 보여주되
+//   · fallback 은 호출 측에서 전달하는 generic 레이블
+function formatWriteError(err: unknown, fallback: string): string {
+  if (err instanceof ApiError) {
+    if (err.code === "SCHEDULE_LOCKED") return err.message;
+    if (err.code === "EMPLOYEE_RETIRED") return err.message;
+    if (err.code === "FORBIDDEN") return err.message;
+    if (err.status === 400) return err.message; // validation
+    if (err.message && err.status !== 500) return err.message;
+  }
+  return fallback;
+}
 
 export interface UndoEntry {
   employeeId: number;
@@ -179,7 +198,7 @@ export function useScheduleData(
       showNotification(`${data.date.split("-").slice(1).join("/")} 스케줄이 성공적으로 변경되었습니다.`);
     } catch (err) {
       console.error("Failed to update cell schedule:", err);
-      showNotification("스케줄 정보 저장에 실패했습니다.", "error");
+      showNotification(formatWriteError(err, "스케줄 정보 저장에 실패했습니다."), "error");
     }
   }, [employees, showNotification]);
 
@@ -195,8 +214,8 @@ export function useScheduleData(
         return { ...emp, schedules: emp.schedules.map(s => s.date === prev.date ? { ...s, ...prev } : s) };
       }));
       showNotification("마지막 변경을 되돌렸습니다.", "success");
-    } catch {
-      showNotification("되돌리기에 실패했습니다.", "error");
+    } catch (err) {
+      showNotification(formatWriteError(err, "되돌리기에 실패했습니다."), "error");
     }
   }, [undoStack, showNotification]);
 
@@ -254,7 +273,7 @@ export function useScheduleData(
       onClose();
     } catch (err) {
       console.error("Failed to save break/lunch:", err);
-      showNotification("점심/휴게 시간 저장에 실패했습니다.", "error");
+      showNotification(formatWriteError(err, "점심/휴게 시간 저장에 실패했습니다."), "error");
     } finally {
       setIsSaving(false);
     }
