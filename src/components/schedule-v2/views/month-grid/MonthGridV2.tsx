@@ -21,11 +21,14 @@ interface GridProps {
   onOpenEdit: (employeeId: number, date: string) => void;
   onCloseEdit: () => void;
   onTypeSelect: (type: string, workingHours: string) => Promise<void> | void;
+  /** 2026-10-07 · V2-B · 월 경계 등 "데이터 소스 밖" 날짜 · 편집 비활성 · 시각적 dim */
+  dimmedDates?: Set<string>;
 }
 
 export const MonthGridV2: React.FC<GridProps> = ({
   employees, dateList, todayStr, scheduleTypes,
   editMode, editTarget, onOpenEdit, onCloseEdit, onTypeSelect,
+  dimmedDates,
 }) => {
   // 날짜별 schedule lookup · O(1)
   const scheduleIndex = useMemo(() => {
@@ -102,7 +105,8 @@ export const MonthGridV2: React.FC<GridProps> = ({
                   const s = empMap?.get(d);
                   const isToday = d === todayStr;
                   const isEditing = editTarget?.employeeId === emp.id && editTarget.date === d;
-                  const clickable = editMode;
+                  const isDimmed = dimmedDates?.has(d) ?? false;
+                  const clickable = editMode && !isDimmed;
                   return (
                     <td
                       key={`c-${emp.id}-${d}`}
@@ -113,7 +117,10 @@ export const MonthGridV2: React.FC<GridProps> = ({
                         clickable
                           ? "cursor-pointer hover:bg-sky-50/60 outline outline-1 outline-transparent hover:outline-sky-300"
                           : ""
-                      } ${isEditing ? "bg-sky-100 outline-2 outline-sky-500" : ""}`}
+                      } ${isEditing ? "bg-sky-100 outline-2 outline-sky-500" : ""} ${
+                        isDimmed ? "bg-zinc-50/60 opacity-50" : ""
+                      }`}
+                      title={isDimmed ? "다른 월 날짜 · 월간 뷰에서 수정" : undefined}
                     >
                       {scheduleCellContent(s, typeHoursMap)}
                       {isEditing && (

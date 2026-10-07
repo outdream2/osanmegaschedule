@@ -11,6 +11,7 @@ import { useActiveNav } from "../../contexts/ActiveNavContext";
 import type { AuthSession } from "../../types";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { MonthScheduleViewV2 } from "./views/MonthScheduleViewV2";
+import { WeekScheduleViewV2 } from "./views/WeekScheduleViewV2";
 
 export type ScheduleV2View = "month" | "week" | "day" | "employee";
 
@@ -36,18 +37,39 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
   // 월간/주간/일간/직원별 전환
   const [view, setView] = useState<ScheduleV2View>("month");
 
-  // 월간/주간이 공유하는 선택월
+  // 월간/주간/일간이 공유하는 anchor
+  //   · 월간 · 년/월
+  //   · 주간 · anchor date (해당 주의 아무 날)
+  //   · 전환 시 서로 호환되도록 변경 시 양쪽 동기화
   const now = useMemo(() => new Date(), []);
   const [year, setYear]   = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number>(now.getMonth() + 1);
+  const [anchorDate, setAnchorDate] = useState<Date>(now);
 
   const goMonthDelta = useCallback((delta: number) => {
     const d = new Date(year, month - 1 + delta, 1);
     setYear(d.getFullYear());
     setMonth(d.getMonth() + 1);
+    setAnchorDate(d);
   }, [year, month]);
   const goToday = useCallback(() => {
     const t = new Date();
+    setYear(t.getFullYear());
+    setMonth(t.getMonth() + 1);
+    setAnchorDate(t);
+  }, []);
+
+  const goWeekDelta = useCallback((daysDelta: number) => {
+    const d = new Date(anchorDate);
+    d.setDate(d.getDate() + daysDelta);
+    setAnchorDate(d);
+    // 월간/일간 state 와도 동기 · 뷰 전환 시 자연스럽게 유지
+    setYear(d.getFullYear());
+    setMonth(d.getMonth() + 1);
+  }, [anchorDate]);
+  const goThisWeek = useCallback(() => {
+    const t = new Date();
+    setAnchorDate(t);
     setYear(t.getFullYear());
     setMonth(t.getMonth() + 1);
   }, []);
@@ -105,7 +127,15 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
               authSession={authSession}
             />
           )}
-          {view !== "month" && (
+          {view === "week" && (
+            <WeekScheduleViewV2
+              anchorDate={anchorDate}
+              onAnchorDelta={goWeekDelta}
+              onThisWeek={goThisWeek}
+              authSession={authSession}
+            />
+          )}
+          {(view === "day" || view === "employee") && (
             <PlaceholderView view={view} />
           )}
         </div>
