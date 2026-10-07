@@ -1883,9 +1883,6 @@ const MonthlyReportTab: React.FC = () => {
               }
               const isToday = cell.dateStr === todayStr;
               const hasData = !!(cell.buy || cell.sale);
-              // 2026-10-07 · 사용자 지시 · 매월 말일 셀 하단 월간 합계 표시
-              const isLastDay = cell.day === daysInMonth;
-              const hasMonthTotal = isLastDay && show && (sel.saleTotal + sel.buyTotal > 0);
               // 2026-10-07 · 사용자 지시 · 공휴일/주말 배경 붉은계열 · 오늘은 노란계열 유지 · 주말/공휴일 살짝 톤 차이
               //   · 우선순위: 오늘(amber-50/60) > 공휴일(rose-100/60) > 주말(rose-50/60) > 평일(white)
               //   · 날짜 숫자: 요일 기준 색만 유지 (일=rose, 토=sky, 평일=zinc-800)
@@ -1953,21 +1950,6 @@ const MonthlyReportTab: React.FC = () => {
                   </button>
                   {/* 일요일 셀 안 주간 subtotal */}
                   {hasWeek && ws && <div className="px-1 md:px-2 pb-1 md:pb-2"><WeekSubtotalBlock ws={ws} /></div>}
-                  {/* 2026-10-07 · 매월 말일 셀 하단 월간 합계 */}
-                  {hasMonthTotal && (
-                    <div className="px-1 md:px-2 pb-1 md:pb-2">
-                      <MonthSubtotalBlock
-                        ms={{
-                          buyTotal: sel.buyTotal,
-                          saleTotal: sel.saleTotal,
-                          cust: sel.customerCnt,
-                          avg: sel.customerCnt > 0 ? Math.round(sel.saleTotal / sel.customerCnt) : 0,
-                          margin: sel.margin,
-                          marginPct: sel.marginPercent,
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -2032,9 +2014,11 @@ interface DayProductApiResponse {
   ok: boolean;
   date?: string;
   totals?: DayProductClassStats;
+  // 2026-10-07 · 사용자 지시 · cosmetics (화장품 · 뷰티 포함) 그룹 추가
   byClass?: {
     stationery: DayProductClassStats;
     general: DayProductClassStats;
+    cosmetics: DayProductClassStats;
     unknown: DayProductClassStats;
   };
   items?: DaySaleProductItem[];
@@ -2189,19 +2173,20 @@ const DayProductSection: React.FC<{
   error: string;
   classFilter: ClassFilter;
   setClassFilter: (f: ClassFilter) => void;
-  byClass: { stationery: DayProductClassStats; general: DayProductClassStats; unknown: DayProductClassStats } | null;
+  byClass: { stationery: DayProductClassStats; general: DayProductClassStats; cosmetics: DayProductClassStats; unknown: DayProductClassStats } | null;
   totals: DayProductClassStats | null;
   items: DaySaleProductItem[];
   totalCount: number;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
 }> = ({ status, error, classFilter, setClassFilter, byClass, totals, items, totalCount, searchQuery, setSearchQuery }) => {
-  // 2026-10-07 · 사용자 지시 · 4-tab (미분류 추가) · count reconciliation
-  //   전체 count = 상비약 + 일반약 + 미분류 (서버 byClass.*.count 합산 보장)
+  // 2026-10-07 · 사용자 지시 · 5-tab (화장품 추가) · count reconciliation
+  //   전체 count = 상비약 + 일반약 + 화장품 + 미분류 (서버 byClass.*.count 합산 보장)
   const tabs: Array<{ key: ClassFilter; label: string; count: number | null; accent: string }> = [
     { key: "all",        label: CLASS_FILTER_LABEL.all,        count: totals?.count ?? (totalCount || null), accent: "bg-zinc-900" },
     { key: "stationery", label: CLASS_FILTER_LABEL.stationery, count: byClass?.stationery.count ?? null,     accent: "bg-emerald-500" },
     { key: "general",    label: CLASS_FILTER_LABEL.general,    count: byClass?.general.count ?? null,         accent: "bg-amber-500" },
+    { key: "cosmetics",  label: CLASS_FILTER_LABEL.cosmetics,  count: byClass?.cosmetics.count ?? null,       accent: "bg-pink-500" },
     { key: "unknown",    label: CLASS_FILTER_LABEL.unknown,    count: byClass?.unknown.count ?? null,         accent: "bg-zinc-400" },
   ];
 
@@ -2226,7 +2211,7 @@ const DayProductSection: React.FC<{
   const sortedItems = useMemo(() => {
     const copy = [...items];
     const sign = sortDir === "asc" ? 1 : -1;
-    const classOrder: Record<ProductClass, number> = { stationery: 1, general: 2, unknown: 3 };
+    const classOrder: Record<ProductClass, number> = { stationery: 1, general: 2, cosmetics: 3, unknown: 4 };
     copy.sort((a, b) => {
       const nullOrder = (x: unknown, y: unknown): number | null => {
         const xn = x === null || x === undefined || x === "";
@@ -2259,11 +2244,12 @@ const DayProductSection: React.FC<{
       ? <span className="ml-0.5 text-[10px] text-zinc-500">{sortDir === "asc" ? "▲" : "▼"}</span>
       : <span className="ml-0.5 text-[10px] text-zinc-300">▲</span>;
 
-  // 2026-10-07 · 분류 pill (상비약 emerald / 일반약 amber / 미분류 zinc)
+  // 2026-10-07 · 분류 pill (상비약 emerald / 일반약 amber / 화장품 pink / 미분류 zinc)
   const classPill = (cls: ProductClass) => {
     const map: Record<ProductClass, { bg: string; text: string; label: string }> = {
       stationery: { bg: "bg-emerald-50", text: "text-emerald-700", label: "상비약" },
       general:    { bg: "bg-amber-50",   text: "text-amber-700",   label: "일반약" },
+      cosmetics:  { bg: "bg-pink-50",    text: "text-pink-700",    label: "화장품" },
       unknown:    { bg: "bg-zinc-100",   text: "text-zinc-500",    label: "미분류" },
     };
     const s = map[cls];
@@ -2452,29 +2438,6 @@ const WeekSubtotalBlock: React.FC<{ ws: { buyTotal: number; saleTotal: number; c
     <div className="flex flex-col min-w-0">
       <span className="text-emerald-600 font-semibold leading-tight">객/단가</span>
       <span className="tabular-nums text-emerald-800 leading-tight break-all">{ws.cust.toLocaleString()} / {fmtNum(ws.avg)}</span>
-    </div>
-  </div>
-);
-
-// 2026-10-07 · 사용자 지시 · 매월 말일 셀 하단 월간 합계 블록 (주간 합계와 시각적 차별 · indigo-rose 그라디언트)
-const MonthSubtotalBlock: React.FC<{ ms: { buyTotal: number; saleTotal: number; cust: number; avg: number; margin: number; marginPct: number } }> = ({ ms }) => (
-  <div className="mt-2 pt-2 border-t-2 border-indigo-400/30 space-y-1 text-[12px] md:text-[14px] bg-gradient-to-br from-indigo-50 to-rose-50 rounded px-1.5 py-1.5 min-w-0">
-    <div className="text-indigo-700 font-bold leading-tight tracking-tight">[월간 합계]</div>
-    <div className="flex flex-col min-w-0">
-      <span className="text-rose-600 font-semibold leading-tight">매출</span>
-      <span className="tabular-nums font-bold text-rose-700 leading-tight break-all">{fmtNum(ms.saleTotal)}</span>
-    </div>
-    <div className="flex flex-col min-w-0">
-      <span className="text-brand-deep font-semibold leading-tight">매입</span>
-      <span className="tabular-nums text-brand-deep leading-tight break-all">{fmtNum(ms.buyTotal)}</span>
-    </div>
-    <div className="flex flex-col min-w-0">
-      <span className="text-indigo-600 font-semibold leading-tight">이익/마진</span>
-      <span className="tabular-nums text-indigo-800 leading-tight break-all">{fmtNum(ms.margin)} / {ms.marginPct.toFixed(1)}%</span>
-    </div>
-    <div className="flex flex-col min-w-0">
-      <span className="text-emerald-600 font-semibold leading-tight">객/단가</span>
-      <span className="tabular-nums text-emerald-800 leading-tight break-all">{ms.cust.toLocaleString()} / {fmtNum(ms.avg)}</span>
     </div>
   </div>
 );
