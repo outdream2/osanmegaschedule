@@ -8,6 +8,22 @@ export const UpsertSettingSchema = z.object({
 });
 export type UpsertSettingInput = z.infer<typeof UpsertSettingSchema>;
 
+/** 2026-10-07 · Phase 2 · P0-5 OPTION A · atomic jsonb_set patch
+ *   · POST /api/settings/patch · path-level partial update (lost-update 방지)
+ *   · patch.path : non-empty string[] (예: ["wageRates","약사"]) · jsonb path 로 전달
+ *   · patch.value : any JSON · null 명시 허용
+ */
+export const SettingsPatchItemSchema = z.object({
+  path: z.array(z.string().min(1).max(100)).min(1, "path required").max(10),
+  value: z.unknown(),
+});
+export const SettingsPatchRequestSchema = z.object({
+  key: z.string().min(1, "key required").max(200),
+  patches: z.array(SettingsPatchItemSchema).min(1, "patches must not be empty").max(50),
+});
+export type SettingsPatchItem = z.infer<typeof SettingsPatchItemSchema>;
+export type SettingsPatchRequestInput = z.infer<typeof SettingsPatchRequestSchema>;
+
 /** POST /api/settings/season-ranges */
 export const UpsertSeasonRangesSchema = z.object({
   ranges: z.unknown(),

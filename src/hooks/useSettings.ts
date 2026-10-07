@@ -4,7 +4,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { DEFAULT_SCHEDULE_TYPES } from "../constants";
 import { api } from "../lib/apiClient";
 // 2026-09-14 · settingsApi 프리미티브
-import { saveSetting } from "../lib/settingsApi";
+// 2026-10-07 · Phase 2 · P0-5 OPTION A · patchSettings (atomic jsonb_set · lost-update 방지)
+import { patchSettings, type SettingsPatchItem } from "../lib/settingsApi";
 
 export interface ScheduleTypeEntry {
   type: string;
@@ -249,8 +250,27 @@ async function fetchAllSettings(): Promise<FetchResult> {
 
 const SETTINGS_UPDATED_EVENT = "settings-updated";
 
-async function saveAllSettings(s: AppSettings): Promise<void> {
-  await saveSetting(DB_KEY, s);
+/** 2026-10-07 · Phase 2 · P0-5 OPTION A
+ *  partial AppSettings → path patch 배열 변환
+ *  · 각 top-level key 가 하나의 patch · path = [key]
+ *  · DB atomic jsonb_set 으로 다른 top-level key 간 lost update 방지
+ */
+function partialToPatches(partial: Partial<AppSettings>): SettingsPatchItem[] {
+  const patches: SettingsPatchItem[] = [];
+  for (const [key, value] of Object.entries(partial)) {
+    if (value === undefined) continue; // undefined 는 patch 대상 아님 (명시적 null 은 허용)
+    patches.push({ path: [key], value });
+  }
+  return patches;
+}
+
+/** 2026-10-07 · Phase 2 · partial path patch 저장 (atomic · lost-update 방지)
+ *  · patches 가 비어 있으면 네트워크 호출 skip
+ */
+async function savePartialSettings(partial: Partial<AppSettings>): Promise<void> {
+  const patches = partialToPatches(partial);
+  if (patches.length === 0) return;
+  await patchSettings(DB_KEY, patches);
 }
 
 /** 모든 useSettings 인스턴스에 변경을 알리는 이벤트 */
@@ -274,6 +294,10 @@ export function useSettings() {
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 2026-10-07 · Phase 2 · P0-5 · 축적된 pending partial (debounce flush 전까지)
+  //   · 서로 다른 top-level key 만 저장 · 같은 key 는 last-write-wins (명시적)
+  //   · flush 성공 시 clear · 실패 시 보존 (재시도 자료 유지)
+  const pendingPartial = useRef<Partial<AppSettings>>({});
 
   // On mount: load from DB and override localStorage
   useEffect(() => {
@@ -329,27 +353,41 @@ export function useSettings() {
       return next;
     });
 
+    // 2026-10-07 · P0-5 · 변경된 top-level key 만 누적 (atomic path patch 전용)
+    pendingPartial.current = { ...pendingPartial.current, ...partial };
+
     // 같은 세션의 다른 useSettings 인스턴스에 즉시 전파
     // (setTimeout 0 으로 setSettings 완료 후 dispatch)
     setTimeout(() => dispatchSettingsUpdated(nextSnapshot), 0);
 
-    // Debounced save to DB
+    // Debounced save to DB (path patch · 변경 key 만 전송)
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      const next = { ...settingsRef.current, ...partial };
-      saveAllSettings(next).catch(console.error);
-      // DB 저장 완료 후 다시 dispatch (최신 DB 값 반영)
-      dispatchSettingsUpdated(next);
+      const toSave = pendingPartial.current;
+      pendingPartial.current = {};
+      savePartialSettings(toSave).then(() => {
+        // DB 저장 완료 후 다시 dispatch (최신 서버 반영 state 로 브로드캐스트)
+        dispatchSettingsUpdated(settingsRef.current);
+      }).catch((err) => {
+        // 실패 시 pending 복구 (사용자 재편집으로 overwrite 가능 · last-write-wins)
+        pendingPartial.current = { ...toSave, ...pendingPartial.current };
+        console.error("[useSettings] savePartial failed", err);
+      });
     }, 800);
   }, []);
 
-  /** debounce 취소 후 현재 settings 즉시 서버 저장 */
+  /** debounce 취소 후 pending partial 즉시 서버 저장 */
   const saveNow = useCallback(async (): Promise<boolean> => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
+    const toSave = pendingPartial.current;
+    pendingPartial.current = {};
     try {
-      await saveAllSettings(settingsRef.current);
+      await savePartialSettings(toSave);
       return true;
-    } catch {
+    } catch (err) {
+      // 실패 시 pending 복구
+      pendingPartial.current = { ...toSave, ...pendingPartial.current };
+      console.error("[useSettings] saveNow failed", err);
       return false;
     }
   }, []);

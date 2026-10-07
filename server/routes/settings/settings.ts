@@ -20,6 +20,7 @@ import {
   UpsertBlockedSlotSchema,
   UpsertZonesSchema,
   UpsertStorageLocationsSchema,
+  SettingsPatchRequestSchema,
   DEFAULT_STORAGE_LOCATIONS,
   type StorageLocation,
 } from "../../../src/shared/schemas/settings";
@@ -196,6 +197,31 @@ router.post("/api/settings", authorize(9), validateBody(UpsertSettingSchema), as
     resetProductCache();
   }
   res.json({ ok: true });
+}));
+
+// 2026-10-07 · Phase 2 · P0-5 OPTION A · atomic jsonb_set path patch (lost-update 방지)
+//   · 서로 다른 top-level path 를 동시 쓰기해도 lost update 발생 X (DB atomic)
+//   · 같은 path 동시 쓰기 → last-write-wins (명시적 trade-off)
+//   · 선행 migration · migrations/schedule_phase_2_p0_5_settings_patch_rpc_2026-10-07.sql
+//   · 호출 형태 · { key: "all_settings", patches: [{ path: ["wageRates","약사"], value: {...} }, ...] }
+//   · 반환 · 최종 app_settings.value (jsonb)
+router.post("/api/settings/patch", authorize(9), validateBody(SettingsPatchRequestSchema), asyncHandler(async (req, res) => {
+  const { key, patches } = req.body;
+  // Supabase RPC · settings_patch_jsonb(p_key text, p_patches jsonb) → jsonb
+  const { data, error } = await supabase.rpc("settings_patch_jsonb", {
+    p_key: key,
+    p_patches: patches,
+  });
+  if (error) {
+    logger.error(`[settings/patch] RPC error · key=${key} · ${error.message}`);
+    throw new HttpError(500, error.message);
+  }
+  // 캐시 무효화 (POST /api/settings 와 동일 정책)
+  if (String(key) === "stats.sale_active_only") {
+    invalidateSaleActiveOnlyCache();
+    resetProductCache();
+  }
+  res.json({ ok: true, value: data ?? null });
 }));
 
 router.get("/api/permissions", asyncHandler(async (_req, res) => {

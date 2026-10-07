@@ -130,6 +130,79 @@ describe("useSettings · settings-updated 이벤트", () => {
   });
 });
 
+// 2026-10-07 · Phase 2 · P0-5 OPTION A · atomic path patch save
+describe("useSettings · Phase 2 · P0-5 · atomic path patch", () => {
+  it("update → debounce flush → POST /api/settings/patch 호출 (path patch)", async () => {
+    vi.useFakeTimers();
+    mockGet.mockResolvedValue({ data: { value: null } });
+    mockPost.mockResolvedValue({ data: { ok: true, value: {} } });
+    const { result } = renderHook(() => useSettings());
+    act(() => result.current.update({ positions: ["약사"] }));
+    // 800ms debounce
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900);
+    });
+    // POST 호출 검증
+    expect(mockPost).toHaveBeenCalled();
+    const lastCall = mockPost.mock.calls[mockPost.mock.calls.length - 1];
+    expect(lastCall[0]).toBe("/api/settings/patch");
+    expect(lastCall[1]).toMatchObject({ key: "all_settings" });
+    const patches = (lastCall[1] as any).patches;
+    expect(Array.isArray(patches)).toBe(true);
+    // positions 만 patch · path=["positions"]
+    const positionsPatch = patches.find((p: any) => Array.isArray(p.path) && p.path[0] === "positions");
+    expect(positionsPatch).toBeDefined();
+    expect(positionsPatch.value).toEqual(["약사"]);
+  });
+
+  it("연속 update · 다른 top-level key · patch 에 둘 다 포함", async () => {
+    vi.useFakeTimers();
+    mockGet.mockResolvedValue({ data: { value: null } });
+    mockPost.mockResolvedValue({ data: { ok: true, value: {} } });
+    const { result } = renderHook(() => useSettings());
+    act(() => result.current.update({ positions: ["약사"] }));
+    act(() => result.current.update({ wageRates: { "약사": { weekday: 35000, weekend: 40000 } } }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900);
+    });
+    const lastCall = mockPost.mock.calls[mockPost.mock.calls.length - 1];
+    const patches = (lastCall[1] as any).patches;
+    const paths = patches.map((p: any) => p.path);
+    expect(paths).toContainEqual(["positions"]);
+    expect(paths).toContainEqual(["wageRates"]);
+  });
+
+  it("saveNow · pending partial 즉시 flush", async () => {
+    vi.useFakeTimers();
+    mockGet.mockResolvedValue({ data: { value: null } });
+    mockPost.mockResolvedValue({ data: { ok: true, value: {} } });
+    const { result } = renderHook(() => useSettings());
+    act(() => result.current.update({ underConstruction: true }));
+    // 즉시 saveNow · debounce 대기 없이
+    let ok: boolean = false;
+    await act(async () => {
+      ok = await result.current.saveNow();
+    });
+    expect(ok).toBe(true);
+    const lastCall = mockPost.mock.calls[mockPost.mock.calls.length - 1];
+    expect(lastCall[0]).toBe("/api/settings/patch");
+    const patches = (lastCall[1] as any).patches;
+    expect(patches).toHaveLength(1);
+    expect(patches[0]).toEqual({ path: ["underConstruction"], value: true });
+  });
+
+  it("pending 비어있으면 saveNow · POST 호출 없음", async () => {
+    mockGet.mockResolvedValue({ data: { value: { positions: ["약사"] } } });
+    mockPost.mockResolvedValue({ data: { ok: true, value: {} } });
+    const { result } = renderHook(() => useSettings());
+    await waitFor(() => expect(result.current.status).toBe("ready"));
+    mockPost.mockClear();
+    const ok = await result.current.saveNow();
+    expect(ok).toBe(true);
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+});
+
 // 2026-10-07 · Phase 2 · DB AUTHORITY · status flag · DB fetch 실패 시 business 계산 금지
 describe("useSettings · Phase 2 · status flag", () => {
   it("mount 직후 · status=loading", () => {

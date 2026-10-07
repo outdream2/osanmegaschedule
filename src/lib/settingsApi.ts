@@ -11,7 +11,32 @@ export async function getSetting<T = unknown>(key: string): Promise<T | null> {
   return (data?.value ?? null) as T | null;
 }
 
-/** POST /api/settings · KV 설정 값 저장 (관리자 · 서버 authorize) */
+/** POST /api/settings · KV 설정 값 저장 (관리자 · 서버 authorize)
+ *  · WHOLE-OBJECT upsert · 전체 치환이 명시적으로 필요한 경우만 사용
+ *  · 하위 호환 유지 (storage_locations · season_ranges · page_permissions 등 whole-object 저장 route)
+ *  · business settings (all_settings) 는 `patchSettings` 사용 권장 (lost-update 방지)
+ */
 export async function saveSetting<T = unknown>(key: string, value: T): Promise<void> {
   await api.post("/api/settings", { key, value });
+}
+
+/** 2026-10-07 · Phase 2 · P0-5 OPTION A · atomic jsonb_set patch (lost-update 방지)
+ *  · POST /api/settings/patch · path-level partial update
+ *  · 서로 다른 top-level path 동시 쓰기 → 둘 다 반영 (DB atomic)
+ *  · 같은 path 동시 쓰기 → last-write-wins (명시적)
+ *  · 반환 · 서버 측 최종 settings value (patch 적용 후)
+ */
+export interface SettingsPatchItem {
+  path: string[];
+  value: unknown;
+}
+export async function patchSettings<T = unknown>(
+  key: string,
+  patches: SettingsPatchItem[],
+): Promise<T | null> {
+  const { data } = await api.post<{ ok: boolean; value: T | null }>(
+    "/api/settings/patch",
+    { key, patches },
+  );
+  return (data?.value ?? null) as T | null;
 }
