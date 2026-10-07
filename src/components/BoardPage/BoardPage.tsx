@@ -16,11 +16,14 @@ import {
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
-import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
+// 2026-10-08 · PAGE_CONTAINER_CLS 제거 · OperationsPageTemplate이 container 책임
+// import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { CategoryChips, type ChipTone } from "../common/CategoryChips";
 import { Button } from "../common/Button";
 import { Spinner } from "../common/Spinner";
-import { PageToolbar } from "../common/PageToolbar";
+// 2026-10-08 · PageToolbar 제거 · OperationsPageTemplate.title/toolbar slot이 책임
+// 2026-10-08 · GLOBAL UI reference-tone application · Operations template wrapper
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 import { uploadImagesToCloudinary, type UploadedImage } from "../../lib/cloudinaryUpload";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -94,67 +97,73 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
     <div className="min-h-screen flex flex-col bg-[#F4F7FA]">
       <AppNavHeader activePage="board" authSession={authSession} onBack={onBack} onNavigate={onNavigate} onLogout={onLogout} />
 
-      {/* 2026-10-07 · Global UI Batch 2 · PageToolbar + compact filter row + dense list
-                     (card-in-card 제거 · 3-row filter stack 제거 · visual-reference-lock 준수) */}
-      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-2 min-h-0`}>
-        {/* Page header · 통일 PageToolbar · 제목 + count + search + 새 글 */}
-        <PageToolbar
-          icon={<StickyNote size={16} />}
-          title="이슈공유"
-          count={filtered.length}
-          search={{
-            value: search,
-            onChange: setSearch,
-            placeholder: "제목·본문 검색",
-            className: "text-[15px] border border-line rounded-lg px-3 h-10 flex-1 min-w-[180px] max-w-[360px] focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors bg-white text-ink placeholder-ink-soft",
-          }}
-          right={
-            <Button
-              variant="primary"
-              size="md"
-              icon={<Plus size={14} strokeWidth={3} />}
-              onClick={() => setShowComposer(true)}
-              disabled={!authSession?.employeeId}
-            >
-              새 글
-            </Button>
-          }
-        />
-
-        {/* Secondary filter row · 상태 + 카테고리 · 한 줄 · chip 그룹 compact */}
-        <div className="flex items-center gap-x-4 gap-y-2 flex-wrap pl-1">
-          <CategoryChips
-            label="상태"
-            value={filterStatus}
-            onChange={(v) => setFilterStatus(v as Status | "")}
-            size="sm"
-            ariaLabel="이슈 상태 필터"
-            options={[
-              { value: "" as Status | "", label: "전체", tone: "zinc" },
-              { value: "open"        as Status | "", label: "미해결", tone: "rose"    },
-              { value: "in_progress" as Status | "", label: "진행중", tone: "amber"   },
-              { value: "resolved"    as Status | "", label: "해결",   tone: "emerald" },
-            ]}
-          />
-          <span className="h-5 w-px bg-line" aria-hidden />
-          <CategoryChips
-            label="카테고리"
-            value={filterCategory}
-            onChange={(v) => setFilterCategory(v as typeof filterCategory)}
-            size="sm"
-            ariaLabel="이슈 카테고리 필터"
-            options={[
-              { value: "" as typeof filterCategory, label: "전체", tone: "zinc" },
-              ...CATEGORIES.map(c => ({
-                value: c as typeof filterCategory,
-                label: c,
-                tone: (c === "결제" ? "sky" : c === "상품" ? "emerald" : c === "주문" ? "violet" : c === "손님" ? "amber" : "zinc") as ChipTone,
-              })),
-              { value: "__none__" as typeof filterCategory, label: "미분류", tone: "zinc" },
-            ]}
-          />
-        </div>
-
+      {/* 2026-10-08 · GLOBAL UI reference-tone application · OperationsPageTemplate wrapper
+                     (presentation-only · state/handlers 전부 보존 · PageToolbar는 compact toolbar slot 안으로 이동) */}
+      <OperationsPageTemplate
+        title={
+          <span className="inline-flex items-center gap-2">
+            <StickyNote size={22} className="text-brand-deep" strokeWidth={2.2} />
+            <span>이슈공유</span>
+            <span className="text-[16px] font-semibold text-ink-soft/70 tabular-nums">{filtered.length}</span>
+          </span>
+        }
+        description="팀 전체가 함께 보는 질문·이슈·메모 보드 · @멘션으로 알림이 전달됩니다"
+        actions={
+          <Button
+            variant="primary"
+            size="md"
+            icon={<Plus size={14} strokeWidth={3} />}
+            onClick={() => setShowComposer(true)}
+            disabled={!authSession?.employeeId}
+          >
+            새 글
+          </Button>
+        }
+        toolbar={
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {/* Compact search · 기존 className 스타일 유지 (focus ring, placeholder color) */}
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="제목·본문 검색"
+              aria-label="게시물 검색"
+              className="text-[14px] border border-line rounded-lg px-3 h-9 min-w-[180px] max-w-[320px] flex-1 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors bg-white text-ink placeholder-ink-soft"
+            />
+            <span className="h-5 w-px bg-line" aria-hidden />
+            <CategoryChips
+              label="상태"
+              value={filterStatus}
+              onChange={(v) => setFilterStatus(v as Status | "")}
+              size="sm"
+              ariaLabel="이슈 상태 필터"
+              options={[
+                { value: "" as Status | "", label: "전체", tone: "zinc" },
+                { value: "open"        as Status | "", label: "미해결", tone: "rose"    },
+                { value: "in_progress" as Status | "", label: "진행중", tone: "amber"   },
+                { value: "resolved"    as Status | "", label: "해결",   tone: "emerald" },
+              ]}
+            />
+            <span className="h-5 w-px bg-line" aria-hidden />
+            <CategoryChips
+              label="카테고리"
+              value={filterCategory}
+              onChange={(v) => setFilterCategory(v as typeof filterCategory)}
+              size="sm"
+              ariaLabel="이슈 카테고리 필터"
+              options={[
+                { value: "" as typeof filterCategory, label: "전체", tone: "zinc" },
+                ...CATEGORIES.map(c => ({
+                  value: c as typeof filterCategory,
+                  label: c,
+                  tone: (c === "결제" ? "sky" : c === "상품" ? "emerald" : c === "주문" ? "violet" : c === "손님" ? "amber" : "zinc") as ChipTone,
+                })),
+                { value: "__none__" as typeof filterCategory, label: "미분류", tone: "zinc" },
+              ]}
+            />
+          </div>
+        }
+      >
         {/* Dense list · card wrapper 제거 · divide-y 로 row 구분 · reload overlay 는 inline spinner */}
         {loading && filtered.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 py-1.5 bg-brand-tint/40 border border-brand/15 rounded-md">
@@ -197,7 +206,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
             })}
           </div>
         )}
-      </main>
+      </OperationsPageTemplate>
 
       {showComposer && authSession?.employeeId && (
         <ComposerModal
