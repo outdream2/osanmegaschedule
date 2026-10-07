@@ -683,7 +683,7 @@ const HourlyReportTab: React.FC = () => {
               <div className="text-[15px] md:text-[16px] font-bold text-zinc-800">{chartAxis === "hour" ? "시간대별 추이" : "일별 추이"}</div>
               <span className="text-[12px] text-zinc-500">{effDateData.length}일</span>
             </div>
-            <div className="w-full min-w-0 max-w-full overflow-hidden" style={{ height: 320 }}>
+            <div className="w-full min-w-0 max-w-full overflow-hidden" style={{ height: 360 }}>
               {(() => {
                 // 2026-10-06 · 사용자 지시 · chart 영역에서만 empty 메시지 (상단 탭/메트릭 탭 유지)
                 if (isEffEmpty) {
@@ -766,14 +766,23 @@ const HourlyReportTab: React.FC = () => {
                           labelFormatter={(v) => `W${v} (${Number(v) === 1 ? "1~7" : Number(v) === 2 ? "8~14" : Number(v) === 3 ? "15~21" : Number(v) === 4 ? "22~28" : "29~31"}일)`}
                           contentStyle={{ fontSize: 13, borderRadius: 8 }}
                         />
-                        <Legend wrapperStyle={{ fontSize: 13 }} iconType="rect" formatter={(name) => {
-                          const nm = String(name);
-                          const raw = nm.replace(" ★ 이번달", "");
-                          const [yy, mm] = raw.split("-");
-                          const monthLbl = yy && mm ? `${yy}년 ${Number(mm)}월` : raw;
-                          if (nm.endsWith("★ 이번달")) return <span style={{ color: "#dc2626", fontWeight: 800 }}>{monthLbl} ★ 이번달</span>;
-                          return monthLbl;
-                        }} />
+                        {/* 2026-10-07 · 사용자 지시 · Legend 간단·확실하게 노출 · 하단 고정 · 네모 아이콘 */}
+                        <Legend
+                          verticalAlign="bottom"
+                          align="center"
+                          height={32}
+                          iconType="rect"
+                          iconSize={10}
+                          wrapperStyle={{ fontSize: 13, paddingTop: 6, lineHeight: "16px" }}
+                          formatter={(name) => {
+                            const nm = String(name);
+                            const raw = nm.replace(" ★ 이번달", "");
+                            const [yy, mm] = raw.split("-");
+                            const monthLbl = yy && mm ? `${yy}년 ${Number(mm)}월` : raw;
+                            if (nm.endsWith("★ 이번달")) return <span style={{ color: "#dc2626", fontWeight: 800 }}>{monthLbl} ★ 이번달</span>;
+                            return <span style={{ color: "#52525b" }}>{monthLbl}</span>;
+                          }}
+                        />
                         {months.map((monthKey, i) => {
                           const isCurMonth = monthKey === today.slice(0, 7);
                           const color = isCurMonth ? "#dc2626" : PAST_COLORS[i % PAST_COLORS.length];
@@ -879,15 +888,23 @@ const HourlyReportTab: React.FC = () => {
                           labelFormatter={(v) => `${v}일`}
                           contentStyle={{ fontSize: 13, borderRadius: 8 }}
                         />
-                        {/* 2026-10-06 · 사용자 지시 · 현재월 Legend 라벨 굵게 (red bold) · 시간대별 "★ 오늘" 패턴과 통일 */}
-                        <Legend wrapperStyle={{ fontSize: 13 }} iconType="rect" formatter={(name) => {
-                          const nm = String(name);
-                          const raw = nm.replace(" ★ 이번달", "");
-                          const [yy, mm] = raw.split("-");
-                          const monthLbl = yy && mm ? `${yy}년 ${Number(mm)}월` : raw;
-                          if (nm.endsWith("★ 이번달")) return <span style={{ color: "#dc2626", fontWeight: 800 }}>{monthLbl} ★ 이번달</span>;
-                          return monthLbl;
-                        }} />
+                        {/* 2026-10-07 · 사용자 지시 · Legend 간단·확실하게 노출 · 하단 고정 · 네모 아이콘 */}
+                        <Legend
+                          verticalAlign="bottom"
+                          align="center"
+                          height={32}
+                          iconType="rect"
+                          iconSize={10}
+                          wrapperStyle={{ fontSize: 13, paddingTop: 6, lineHeight: "16px" }}
+                          formatter={(name) => {
+                            const nm = String(name);
+                            const raw = nm.replace(" ★ 이번달", "");
+                            const [yy, mm] = raw.split("-");
+                            const monthLbl = yy && mm ? `${yy}년 ${Number(mm)}월` : raw;
+                            if (nm.endsWith("★ 이번달")) return <span style={{ color: "#dc2626", fontWeight: 800 }}>{monthLbl} ★ 이번달</span>;
+                            return <span style={{ color: "#52525b" }}>{monthLbl}</span>;
+                          }}
+                        />
                         {months.map((monthKey, i) => {
                           // 2026-10-06 · 사용자 지시 · 일별 추이 · 현재월 붉은색 + 두껍게 (시간대별 추이 "오늘" 패턴과 동일)
                           const isCurMonth = monthKey === today.slice(0, 7);
@@ -931,14 +948,22 @@ const HourlyReportTab: React.FC = () => {
                         labelFormatter={(v) => `${v}시`}
                         contentStyle={{ fontSize: 13, borderRadius: 8 }}
                       />
-                      {/* 2026-10-06 · 사용자 지시 · 오늘 라벨 찐하게 (bold red) */}
-                      <Legend wrapperStyle={{ fontSize: 13 }} iconType="rect" formatter={(name) => {
-                        const nm = String(name);
-                        if (nm.endsWith("★ 오늘")) return <span style={{ color: "#dc2626", fontWeight: 800 }}>{nm}</span>;
-                        // weekday 축 "W1 MM/DD(요일)" 형태 · 그대로 사용
-                        if (nm.includes(" ")) return nm;
-                        return shortDateWithDow(nm);
-                      }} />
+                      {/* 2026-10-07 · 사용자 지시 · Legend 간단·확실하게 노출 · 하단 고정 · 네모 아이콘 */}
+                      <Legend
+                        verticalAlign="bottom"
+                        align="center"
+                        height={32}
+                        iconType="rect"
+                        iconSize={10}
+                        wrapperStyle={{ fontSize: 13, paddingTop: 6, lineHeight: "16px" }}
+                        formatter={(name) => {
+                          const nm = String(name);
+                          if (nm.endsWith("★ 오늘")) return <span style={{ color: "#dc2626", fontWeight: 800 }}>{nm}</span>;
+                          // weekday 축 "W1 MM/DD(요일)" 형태 · 그대로 사용
+                          if (nm.includes(" ")) return <span style={{ color: "#52525b" }}>{nm}</span>;
+                          return <span style={{ color: "#52525b" }}>{shortDateWithDow(nm)}</span>;
+                        }}
+                      />
                       {effDateData.map((d, i) => {
                         const isToday = d.date === today;
                         const isWknd = isWeekend(d.date);
@@ -2016,6 +2041,12 @@ interface DayProductApiResponse {
   error?: string;
 }
 
+// 2026-10-07 · 사용자 지시 · DayDetailModal UI 전면 재구성
+//   · 상단 compact KPI 영역 (120~150px · 7-metric 균일 grid · 들쭉날쭉 X)
+//   · 레이블 12px / 값 15px · 각 metric 별 컬러 포인트 (Linear/Vercel/Notion 2026 톤)
+//   · ClassFilter 4-tab (전체/상비약/일반약/미분류) + 검색창 sticky
+//   · 상품 테이블 65-70% body · 분류/이익 column 재추가 · default sort = 매출 desc · 폰트 +1
+//   · 중복 badge 제거 (상단 KPI 와 중복) · "ERP 실시간" status subdued text
 const DayDetailModal: React.FC<{
   day: { day: number; dateStr: string; buy?: MonthlyBuyDaily; sale?: MonthlySaleDaily };
   year: number;
@@ -2039,6 +2070,7 @@ const DayDetailModal: React.FC<{
   const [prodErr, setProdErr] = useState<string>("");
   const [prodResp, setProdResp] = useState<DayProductApiResponse | null>(null);
   const [classFilter, setClassFilter] = useState<ClassFilter>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -2065,17 +2097,22 @@ const DayDetailModal: React.FC<{
   }, [day.dateStr]);
 
   const items: DaySaleProductItem[] = prodResp?.items ?? [];
-  const filteredItems = useMemo(
-    () => (classFilter === "all" ? items : items.filter((i) => i.class === classFilter)),
-    [items, classFilter],
-  );
-  // 선택 그룹 집계 badge · unknown 은 전체(all) 에만 포함 (CLASS_FILTER_LABEL 과 정합)
-  const groupStats: DayProductClassStats | null = useMemo(() => {
-    if (!prodResp?.byClass || !prodResp?.totals) return null;
-    if (classFilter === "all") return prodResp.totals;
-    if (classFilter === "stationery") return prodResp.byClass.stationery;
-    return prodResp.byClass.general;
-  }, [classFilter, prodResp]);
+  // 2026-10-07 · 사용자 지시 · ClassFilter + 검색 쿼리 적용 (분류 → 검색)
+  const filteredItems = useMemo(() => {
+    let xs = classFilter === "all" ? items : items.filter((i) => i.class === classFilter);
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      xs = xs.filter((i) => {
+        const name = (i.productName ?? "").toLowerCase();
+        const pcode = (i.pcode ?? "").toLowerCase();
+        return name.includes(q) || pcode.includes(q);
+      });
+    }
+    return xs;
+  }, [items, classFilter, searchQuery]);
+
+  // 2026-10-07 · 사용자 지시 · 수량/판매수량 상단 KPI 집계 (ERP totals 기반)
+  const totalQty = prodResp?.totals?.quantity ?? null;
 
   return (
     <Modal
@@ -2088,37 +2125,31 @@ const DayDetailModal: React.FC<{
           <span>{year}년 {month}월 {day.day}일</span>
           <span className={`text-[14px] font-bold ${dowColor}`}>({dow})</span>
           {isToday && <span className="text-[12px] text-amber-700 font-bold">● 오늘</span>}
+          <span className="text-[11px] text-zinc-400 font-normal ml-1">· ERP 실시간</span>
         </span>
       }
       titleAccent
     >
-      <div className="space-y-3">
-        {/* 2026-10-07 · 사용자 지시 · 깔끔/고급/세련 · 텍스트 위주 (Linear/Vercel/Notion 톤)
-            Hero (매출) + divider + secondary 5개 compact grid */}
-        <div className="rounded-xl border border-zinc-200/70 bg-white shadow-sm px-5 md:px-6 py-5 md:py-6">
-          {/* Hero · 매출 */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] md:text-[12px] font-medium text-zinc-400 uppercase tracking-[0.08em]">매출</span>
-            <span className="text-[26px] md:text-[32px] font-bold text-zinc-900 tabular-nums tracking-tight leading-none">
-              {fmtWon(saleTotal)}
-            </span>
-          </div>
-
-          {/* Divider */}
-          <div className="my-4 h-px bg-zinc-100" />
-
-          {/* Secondary · 5 metric compact grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-5 gap-y-3">
+      <div className="flex flex-col gap-3">
+        {/* 2026-10-07 · 사용자 지시 · Compact KPI 영역 (7-metric · 균일 grid · 들쭉날쭉 X · 레이블 12/값 15)
+            · 매출(zinc-900 bold) · 매출이익(emerald) · 마진율(amber) · 방문객(sky) · 객단가(brand) · 매입(indigo) · 판매수량(rose) */}
+        <div className="rounded-xl border border-zinc-200/70 bg-white shadow-sm px-4 md:px-5 py-3 md:py-3.5">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-x-3 md:gap-x-4 gap-y-2.5">
             {([
-              { label: "매입",     value: fmtWon(buyTotal) },
-              { label: "매출이익", value: fmtWon(margin) },
-              { label: "마진율",   value: saleTotal > 0 ? `${marginPct.toFixed(1)}%` : "-" },
-              { label: "방문객",   value: cust > 0 ? cust.toLocaleString() + "명" : "-" },
-              { label: "객단가",   value: avg > 0 ? fmtWon(avg) : "-" },
+              { label: "매출",     value: fmtWon(saleTotal), labelColor: "text-zinc-500",     valueColor: "text-zinc-900", dot: "bg-zinc-900" },
+              { label: "매출이익", value: fmtWon(margin),    labelColor: "text-emerald-600",  valueColor: "text-emerald-700", dot: "bg-emerald-500" },
+              { label: "마진율",   value: saleTotal > 0 ? `${marginPct.toFixed(1)}%` : "-", labelColor: "text-amber-600", valueColor: "text-amber-700", dot: "bg-amber-500" },
+              { label: "방문객",   value: cust > 0 ? cust.toLocaleString() + "명" : "-",     labelColor: "text-sky-600",   valueColor: "text-sky-700",   dot: "bg-sky-500" },
+              { label: "객단가",   value: avg > 0 ? fmtWon(avg) : "-",                      labelColor: "text-brand-deep", valueColor: "text-brand-deep", dot: "bg-brand-deep" },
+              { label: "매입",     value: fmtWon(buyTotal),                                 labelColor: "text-indigo-600", valueColor: "text-indigo-700", dot: "bg-indigo-500" },
+              { label: "판매수량", value: totalQty !== null ? fmtNum(totalQty) : "-",       labelColor: "text-rose-600",  valueColor: "text-rose-700",  dot: "bg-rose-500" },
             ] as const).map((m) => (
               <div key={m.label} className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-[11px] md:text-[12px] font-medium text-zinc-400 uppercase tracking-[0.08em]">{m.label}</span>
-                <span className="text-[14px] md:text-[16px] font-semibold text-zinc-800 tabular-nums tracking-tight truncate">
+                <span className={`flex items-center gap-1 text-[12px] font-medium tracking-tight ${m.labelColor}`}>
+                  <span className={`inline-block w-1.5 h-1.5 rounded-full ${m.dot}`} aria-hidden />
+                  {m.label}
+                </span>
+                <span className={`text-[15px] md:text-[16px] font-bold tabular-nums leading-tight truncate ${m.valueColor}`} title={m.value}>
                   {m.value}
                 </span>
               </div>
@@ -2126,50 +2157,60 @@ const DayDetailModal: React.FC<{
           </div>
         </div>
 
-        {/* 2026-10-07 · 날짜별 판매 상품 · ERP 실시간 (Sale_Status · SvcSaleBiz) */}
-        <div className="pt-2 border-t border-zinc-200/70">
-          <DayProductSection
-            status={prodStatus}
-            error={prodErr}
-            classFilter={classFilter}
-            setClassFilter={setClassFilter}
-            groupStats={groupStats}
-            byClass={prodResp?.byClass ?? null}
-            items={filteredItems}
-            totalCount={items.length}
-          />
-        </div>
+        {/* 2026-10-07 · 날짜별 판매 상품 · ERP 실시간 (Sale_Status · SvcSaleBiz)
+            · ClassFilter 4-tab + 검색 sticky · 상품 테이블 body 65-70% */}
+        <DayProductSection
+          status={prodStatus}
+          error={prodErr}
+          classFilter={classFilter}
+          setClassFilter={setClassFilter}
+          byClass={prodResp?.byClass ?? null}
+          totals={prodResp?.totals ?? null}
+          items={filteredItems}
+          totalCount={items.length}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+        />
       </div>
     </Modal>
   );
 };
 
-// 2026-10-07 · DayDetailModal 하단 상품 섹션
-//   · ClassFilter 탭 (전체/상비약/일반약) · 선택 그룹 합계 badge · 상품 테이블
-//   · 로딩/에러/빈 상태 분리
+// 2026-10-07 · 사용자 지시 · DayProductSection 전면 재구성
+//   · ClassFilter 4-tab (전체/상비약/일반약/미분류) · reconciliation 보장 (전체 = 상비약+일반약+미분류)
+//   · 검색 input (상품명/pcode · 실시간) · 탭+검색 영역 sticky top-0
+//   · 상품 테이블 columns · 상품명 / 분류 / 수량 / 매출 / 이익 / 마진율 (분류·이익 column 재추가)
+//   · default sort = 매출 desc · column sort toggle (4 numeric + name)
+//   · compact density (py-0.5) · 폰트 +1 (base 14 / md 15)
+//   · 중복 badge 제거 (상단 KPI 와 중복)
+//   · body 65-70% of modal → max-h 적극 활용 (lg modal 기준 60vh)
 const DayProductSection: React.FC<{
   status: FetchStatus;
   error: string;
   classFilter: ClassFilter;
   setClassFilter: (f: ClassFilter) => void;
-  groupStats: DayProductClassStats | null;
   byClass: { stationery: DayProductClassStats; general: DayProductClassStats; unknown: DayProductClassStats } | null;
+  totals: DayProductClassStats | null;
   items: DaySaleProductItem[];
   totalCount: number;
-}> = ({ status, error, classFilter, setClassFilter, groupStats, byClass, items, totalCount }) => {
-  const tabs: Array<{ key: ClassFilter; label: string; count: number | null }> = [
-    { key: "all",        label: CLASS_FILTER_LABEL.all,        count: totalCount || null },
-    { key: "stationery", label: CLASS_FILTER_LABEL.stationery, count: byClass?.stationery.count ?? null },
-    { key: "general",    label: CLASS_FILTER_LABEL.general,    count: byClass?.general.count ?? null },
+  searchQuery: string;
+  setSearchQuery: (q: string) => void;
+}> = ({ status, error, classFilter, setClassFilter, byClass, totals, items, totalCount, searchQuery, setSearchQuery }) => {
+  // 2026-10-07 · 사용자 지시 · 4-tab (미분류 추가) · count reconciliation
+  //   전체 count = 상비약 + 일반약 + 미분류 (서버 byClass.*.count 합산 보장)
+  const tabs: Array<{ key: ClassFilter; label: string; count: number | null; accent: string }> = [
+    { key: "all",        label: CLASS_FILTER_LABEL.all,        count: totals?.count ?? (totalCount || null), accent: "bg-zinc-900" },
+    { key: "stationery", label: CLASS_FILTER_LABEL.stationery, count: byClass?.stationery.count ?? null,     accent: "bg-emerald-500" },
+    { key: "general",    label: CLASS_FILTER_LABEL.general,    count: byClass?.general.count ?? null,         accent: "bg-amber-500" },
+    { key: "unknown",    label: CLASS_FILTER_LABEL.unknown,    count: byClass?.unknown.count ?? null,         accent: "bg-zinc-400" },
   ];
 
-  // 2026-10-07 · 사용자 지시 · 헤더 클릭 → asc/desc 토글 정렬
-  //   · default = 마진율 desc (서버 1차 정렬과 일치)
-  //   · 같은 key 재클릭 시 dir 토글 · 다른 key 는 desc 로 리셋 (상품명만 asc default)
-  //   · null 값은 asc/desc 상관없이 항상 뒤로
-  type SortKey = "name" | "qty" | "sale" | "marginPct";
+  // 2026-10-07 · 사용자 지시 · default = 매출 desc · column 헤더 클릭 토글 (asc/desc)
+  //   · null 값 뒤로 (asc/desc 상관없이)
+  //   · column: name / class / qty / sale / margin / marginPct
+  type SortKey = "name" | "class" | "qty" | "sale" | "margin" | "marginPct";
   type SortDir = "asc" | "desc";
-  const [sortKey, setSortKey] = useState<SortKey>("marginPct");
+  const [sortKey, setSortKey] = useState<SortKey>("sale");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   const onHeaderClick = (key: SortKey) => {
@@ -2177,20 +2218,21 @@ const DayProductSection: React.FC<{
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      setSortDir(key === "name" ? "asc" : "desc");
+      // 숫자 column default desc · name/class default asc
+      setSortDir(key === "name" || key === "class" ? "asc" : "desc");
     }
   };
 
   const sortedItems = useMemo(() => {
     const copy = [...items];
     const sign = sortDir === "asc" ? 1 : -1;
+    const classOrder: Record<ProductClass, number> = { stationery: 1, general: 2, unknown: 3 };
     copy.sort((a, b) => {
-      // null-last 공통 처리
       const nullOrder = (x: unknown, y: unknown): number | null => {
         const xn = x === null || x === undefined || x === "";
         const yn = y === null || y === undefined || y === "";
         if (xn && yn) return 0;
-        if (xn) return 1;  // null → always last
+        if (xn) return 1;
         if (yn) return -1;
         return null;
       };
@@ -2199,9 +2241,12 @@ const DayProductSection: React.FC<{
         if (no !== null) return no;
         return sign * (a.productName ?? "").localeCompare(b.productName ?? "", "ko");
       }
-      const key = sortKey === "qty" ? "totalStock" : sortKey === "sale" ? "saleTotal" : "marginPct";
-      const av = (a as any)[key] as number | null;
-      const bv = (b as any)[key] as number | null;
+      if (sortKey === "class") {
+        return sign * (classOrder[a.class] - classOrder[b.class]);
+      }
+      const key = sortKey === "qty" ? "totalStock" : sortKey === "sale" ? "saleTotal" : sortKey === "margin" ? "margin" : "marginPct";
+      const av = (a as unknown as Record<string, number | null>)[key];
+      const bv = (b as unknown as Record<string, number | null>)[key];
       const no = nullOrder(av, bv);
       if (no !== null) return no;
       return sign * ((av as number) - (bv as number));
@@ -2213,111 +2258,142 @@ const DayProductSection: React.FC<{
     k === sortKey
       ? <span className="ml-0.5 text-[10px] text-zinc-500">{sortDir === "asc" ? "▲" : "▼"}</span>
       : <span className="ml-0.5 text-[10px] text-zinc-300">▲</span>;
+
+  // 2026-10-07 · 분류 pill (상비약 emerald / 일반약 amber / 미분류 zinc)
+  const classPill = (cls: ProductClass) => {
+    const map: Record<ProductClass, { bg: string; text: string; label: string }> = {
+      stationery: { bg: "bg-emerald-50", text: "text-emerald-700", label: "상비약" },
+      general:    { bg: "bg-amber-50",   text: "text-amber-700",   label: "일반약" },
+      unknown:    { bg: "bg-zinc-100",   text: "text-zinc-500",    label: "미분류" },
+    };
+    const s = map[cls];
+    return (
+      <span className={`inline-block px-1.5 py-[1px] rounded text-[11px] md:text-[12px] font-semibold ${s.bg} ${s.text}`}>
+        {s.label}
+      </span>
+    );
+  };
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="text-[13px] md:text-[14px] font-bold text-zinc-700">판매 상품</div>
-        <div className="text-[11px] text-zinc-500">ERP 실시간 조회</div>
-      </div>
-
-      {/* ClassFilter 탭 */}
-      <div className="flex flex-wrap gap-1">
-        {tabs.map((tab) => {
-          const active = tab.key === classFilter;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setClassFilter(tab.key)}
-              className={`px-3 py-1.5 rounded-md text-[12px] md:text-[13px] font-semibold border transition-colors ${
-                active
-                  ? "bg-brand-deep text-white border-brand-deep"
-                  : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50"
-              }`}
-            >
-              {tab.label}
-              {tab.count !== null && (
-                <span className={`ml-1.5 text-[11px] ${active ? "text-white/80" : "text-zinc-500"}`}>
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 선택 그룹 합계 badge · 2×2 compact */}
-      {groupStats && status === "success" && (
-        <div className="grid grid-cols-4 gap-2 text-[11px] md:text-[12px] bg-zinc-50 rounded-lg p-2 border border-zinc-200">
-          <div>
-            <div className="text-zinc-500">수량</div>
-            <div className="font-bold tabular-nums text-zinc-800">
-              {groupStats.quantity !== null ? fmtNum(groupStats.quantity) : "-"}
+    <div className="flex flex-col gap-2">
+      {/* Sticky area · 탭 + 검색 */}
+      <div className="sticky top-[-20px] z-20 bg-white -mx-1 px-1 pb-1 pt-1 flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="text-[14px] md:text-[15px] font-bold text-zinc-800">판매 상품</div>
+          {status === "success" && (
+            <div className="text-[11px] text-zinc-400 tabular-nums">
+              {filteredCountLabel(sortedItems.length, totalCount, searchQuery, classFilter)}
             </div>
-          </div>
-          <div>
-            <div className="text-zinc-500">매출</div>
-            <div className="font-bold tabular-nums text-brand-deep">
-              {groupStats.saleTotal !== null ? fmtWon(groupStats.saleTotal) : "-"}
-            </div>
-          </div>
-          <div>
-            <div className="text-zinc-500">이익</div>
-            <div className="font-bold tabular-nums text-emerald-700">
-              {groupStats.margin !== null ? fmtWon(groupStats.margin) : "-"}
-            </div>
-          </div>
-          <div>
-            <div className="text-zinc-500">마진율</div>
-            <div className="font-bold tabular-nums text-indigo-700">
-              {groupStats.marginPct !== null ? `${groupStats.marginPct.toFixed(1)}%` : "-"}
-            </div>
-          </div>
+          )}
         </div>
-      )}
+
+        {/* ClassFilter 4-tab */}
+        <div className="flex flex-wrap gap-1.5">
+          {tabs.map((tab) => {
+            const active = tab.key === classFilter;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setClassFilter(tab.key)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] md:text-[14px] font-semibold border transition-colors ${
+                  active
+                    ? "bg-brand-deep text-white border-brand-deep shadow-sm"
+                    : "bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50"
+                }`}
+              >
+                <span className={`inline-block w-1.5 h-1.5 rounded-full ${active ? "bg-white/80" : tab.accent}`} aria-hidden />
+                {tab.label}
+                {tab.count !== null && (
+                  <span className={`ml-0.5 text-[12px] tabular-nums ${active ? "text-white/85" : "text-zinc-500"}`}>
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 검색 input */}
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="상품명 또는 PCode 검색"
+            className="w-full border border-zinc-200 rounded-md px-3 py-1.5 text-[14px] md:text-[15px] placeholder:text-zinc-400 focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-deep/20 bg-white"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 text-[14px] px-1"
+              aria-label="검색어 지우기"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* 상품 테이블 · Loading / Error / Empty / Success */}
       {status === "loading" && (
-        <div className="py-6 text-center text-[13px] text-zinc-500">ERP 조회 중…</div>
+        <div className="py-6 text-center text-[14px] text-zinc-500">ERP 조회 중…</div>
       )}
       {status === "error" && (
-        <div className="py-4 px-3 rounded-md bg-rose-50 border border-rose-200 text-[12px] text-rose-700">
+        <div className="py-4 px-3 rounded-md bg-rose-50 border border-rose-200 text-[13px] text-rose-700">
           ERP 조회 실패 · {error}
         </div>
       )}
       {status === "success" && items.length === 0 && (
-        <div className="py-6 text-center text-[13px] text-zinc-500">해당 조건의 판매 상품이 없습니다.</div>
+        <div className="py-6 text-center text-[14px] text-zinc-500">해당 조건의 판매 상품이 없습니다.</div>
       )}
       {status === "success" && items.length > 0 && (
-        <div className="max-h-[320px] md:max-h-[400px] overflow-auto rounded-md border border-zinc-200">
-          <table className="w-full text-[12px] md:text-[13px]">
-            {/* 2026-10-07 · 사용자 지시 · column 간소화 (수량·매출·마진율만) · 분류 column 제거 (ClassFilter 탭으로 처리)
-                2026-10-07 · 사용자 지시 · 헤더 클릭 → asc/desc 토글 정렬 · default 마진율 desc */}
+        <div
+          className="overflow-auto rounded-md border border-zinc-200"
+          style={{ maxHeight: "min(60vh, 560px)", minHeight: 320 }}
+        >
+          <table className="w-full text-[14px] md:text-[15px]">
+            {/* 2026-10-07 · 사용자 지시 · 분류/이익 column 재추가 · default sort 매출 desc · compact density */}
             <thead className="bg-zinc-50 text-zinc-600 sticky top-0 z-10 select-none">
               <tr>
                 <th
-                  className="px-2 py-1.5 text-left font-semibold cursor-pointer hover:bg-zinc-100 transition-colors"
+                  className="px-2 py-1 text-left font-semibold cursor-pointer hover:bg-zinc-100 transition-colors"
                   onClick={() => onHeaderClick("name")}
                   aria-sort={sortKey === "name" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
                 >
                   상품명<SortArrow k="name" />
                 </th>
                 <th
-                  className="px-2 py-1.5 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors"
+                  className="px-2 py-1 text-left font-semibold cursor-pointer hover:bg-zinc-100 transition-colors whitespace-nowrap"
+                  onClick={() => onHeaderClick("class")}
+                  aria-sort={sortKey === "class" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                >
+                  분류<SortArrow k="class" />
+                </th>
+                <th
+                  className="px-2 py-1 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors whitespace-nowrap"
                   onClick={() => onHeaderClick("qty")}
                   aria-sort={sortKey === "qty" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
                 >
                   수량<SortArrow k="qty" />
                 </th>
                 <th
-                  className="px-2 py-1.5 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors"
+                  className="px-2 py-1 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors whitespace-nowrap"
                   onClick={() => onHeaderClick("sale")}
                   aria-sort={sortKey === "sale" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
                 >
                   매출<SortArrow k="sale" />
                 </th>
                 <th
-                  className="px-2 py-1.5 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors"
+                  className="px-2 py-1 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors whitespace-nowrap"
+                  onClick={() => onHeaderClick("margin")}
+                  aria-sort={sortKey === "margin" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                >
+                  이익<SortArrow k="margin" />
+                </th>
+                <th
+                  className="px-2 py-1 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors whitespace-nowrap"
                   onClick={() => onHeaderClick("marginPct")}
                   aria-sort={sortKey === "marginPct" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
                 >
@@ -2328,16 +2404,22 @@ const DayProductSection: React.FC<{
             <tbody className="divide-y divide-zinc-100">
               {sortedItems.map((it, idx) => (
                 <tr key={`${it.pcode ?? "noPcode"}-${idx}`} className="hover:bg-zinc-50/50">
-                  <td className="px-2 py-1.5 text-zinc-800 truncate max-w-[220px]" title={it.productName ?? ""}>
+                  <td className="px-2 py-0.5 text-zinc-800 truncate max-w-[260px]" title={it.productName ?? ""}>
                     {it.productName ?? "-"}
                   </td>
-                  <td className="px-2 py-1.5 text-right tabular-nums text-zinc-700">
+                  <td className="px-2 py-0.5">
+                    {classPill(it.class)}
+                  </td>
+                  <td className="px-2 py-0.5 text-right tabular-nums text-zinc-700">
                     {it.totalStock !== null ? fmtNum(it.totalStock) : "-"}
                   </td>
-                  <td className="px-2 py-1.5 text-right tabular-nums font-semibold text-brand-deep">
+                  <td className="px-2 py-0.5 text-right tabular-nums font-semibold text-zinc-900">
                     {it.saleTotal !== null ? fmtNum(it.saleTotal) : "-"}
                   </td>
-                  <td className="px-2 py-1.5 text-right tabular-nums text-indigo-700">
+                  <td className="px-2 py-0.5 text-right tabular-nums text-emerald-700">
+                    {it.margin !== null ? fmtNum(it.margin) : "-"}
+                  </td>
+                  <td className="px-2 py-0.5 text-right tabular-nums text-amber-700">
                     {it.marginPct !== null ? `${it.marginPct.toFixed(1)}%` : "-"}
                   </td>
                 </tr>
@@ -2349,6 +2431,12 @@ const DayProductSection: React.FC<{
     </div>
   );
 };
+
+// 2026-10-07 · 사용자 지시 · 필터·검색 적용 count 라벨 helper
+function filteredCountLabel(shown: number, total: number, q: string, cf: ClassFilter): string {
+  if (!q && cf === "all") return `${shown}건`;
+  return `${shown}건 / 전체 ${total}건`;
+}
 
 const WeekSubtotalBlock: React.FC<{ ws: { buyTotal: number; saleTotal: number; cust: number; avg: number; margin: number; marginPct: number } }> = ({ ws }) => (
   <div className="mt-2 pt-2 border-t border-brand-deep/15 space-y-1 text-[12px] md:text-[14px] bg-gradient-to-br from-brand-tint/40 to-sky-50/50 rounded px-1.5 py-1.5 min-w-0">

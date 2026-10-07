@@ -11,7 +11,9 @@
 //   슬래시·하이픈·언더스코어·공백 중 첫 구분자로 자름 (CategoryTab 관행과 정합)
 
 export type ProductClass = "stationery" | "general" | "unknown";
-export type ClassFilter = "all" | "stationery" | "general";
+// 2026-10-07 · 사용자 지시 · DayDetailModal ClassFilter 에 "unknown" 추가 · 전체·상비약·일반약·미분류 4-tab
+//   · 기존 "all" "stationery" "general" 외부 사용처 전부 하위 호환
+export type ClassFilter = "all" | "stationery" | "general" | "unknown";
 
 export const REAL_MAP_ZONE_REGEX = /^(\d+)/;
 const PRIMARY_SPLIT_REGEX = /[\/\-_\s]/;
@@ -37,6 +39,7 @@ export const CLASS_FILTER_LABEL: Record<ClassFilter, string> = {
   all: "전체",
   stationery: "상비약",
   general: "일반약",
+  unknown: "미분류",
 };
 
 // 라벨 옆 구역 범위 표시 (2026-08-04 · 사용자 요청 · "(1-9)" · "(10-45)" 형식)
@@ -45,6 +48,7 @@ import { getZoneMappings } from "../constants/zoneLabels";
 export function getClassFilterRange(cls: ClassFilter): string {
   if (cls === "all") return "";
   if (cls === "stationery") return "(1-9)";
+  if (cls === "unknown") return "";
   // general · 10~마지막
   const maps = getZoneMappings();
   const nums = maps.map(m => Number(m.number)).filter(n => Number.isFinite(n) && n >= 10);
@@ -57,4 +61,5 @@ export const CLASS_FILTER_RANGE: Record<ClassFilter, string> = {
   all: "",
   stationery: "(1-9)",
   general: "(10-)",
+  unknown: "",
 };
