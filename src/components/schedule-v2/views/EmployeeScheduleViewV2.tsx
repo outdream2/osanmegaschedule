@@ -26,10 +26,13 @@ interface Props {
   onToday: () => void;
   authSession: AuthSession | null;
   onEmployeeManagement?: (employeeId: number) => void;
+  /** 2026-10-08 · V1 parity · Month/Week 직원명 click 으로 진입 시 초기 선택 */
+  initialEmployeeId?: number | null;
 }
 
 export const EmployeeScheduleViewV2: React.FC<Props> = ({
   year, month, onMonthDelta, onToday, authSession, onEmployeeManagement,
+  initialEmployeeId,
 }) => {
   void onMonthDelta; void onToday;
   const [notification, setNotification] = useState<{ msg: string; tone: "ok" | "err" } | null>(null);
@@ -65,7 +68,11 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
 
   // 좌측 리스트 · search + selection
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(initialEmployeeId ?? null);
+  // 2026-10-08 · V1 parity · 외부 (Month/Week → 직원명 click) 로부터 initialEmployeeId 변경 시 선택 반영
+  useEffect(() => {
+    if (initialEmployeeId != null) setSelectedId(initialEmployeeId);
+  }, [initialEmployeeId]);
   const filteredEmployees = useMemo(() => {
     const q = search.trim();
     if (!q) return employees;

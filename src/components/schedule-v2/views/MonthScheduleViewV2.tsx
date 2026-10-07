@@ -12,7 +12,9 @@ import { useScheduleData, type CellUpdateData } from "../../SchedulePage/useSche
 import { useSettings } from "../../../hooks/useSettings";
 import {
   buildDateList, getTodayStr, getTypeHoursMap,
+  buildFilteredEmployees,
 } from "../../SchedulePage/scheduleHelpers";
+import { ScheduleFilterBar } from "../../SchedulePage/ScheduleFilterBar";
 import type { AuthSession } from "../../../types";
 import { Spinner } from "../../common/Spinner";
 import { MonthGridV2 } from "./month-grid/MonthGridV2";
@@ -25,9 +27,21 @@ interface Props {
   onMonthDelta: (delta: number) => void;
   onToday: () => void;
   authSession: AuthSession | null;
+  /** 2026-10-08 · V1 parity · 공유 필터 state (positionTab + searchQuery) */
+  positionTab: string;
+  setPositionTab: (tab: string) => void;
+  searchQuery: string;
+  setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+  /** 2026-10-08 · V1 parity · 날짜 click → Day · 직원명 click → Employee */
+  onOpenDay?: (date: string) => void;
+  onOpenEmployee?: (employeeId: number) => void;
 }
 
-export const MonthScheduleViewV2: React.FC<Props> = ({ year, month, onMonthDelta, onToday, authSession }) => {
+export const MonthScheduleViewV2: React.FC<Props> = ({
+  year, month, onMonthDelta, onToday, authSession,
+  positionTab, setPositionTab, searchQuery, setSearchQuery,
+  onOpenDay, onOpenEmployee,
+}) => {
   const [notification, setNotification] = useState<{ msg: string; tone: "ok" | "err" } | null>(null);
   const showNotification = useCallback((msg: string, type?: "success" | "error") => {
     setNotification({ msg, tone: type === "error" ? "err" : "ok" });
@@ -44,10 +58,19 @@ export const MonthScheduleViewV2: React.FC<Props> = ({ year, month, onMonthDelta
     isInitialFetchRef,
   } = useScheduleData(year, month, showNotification);
 
-  const { scheduleTypes } = useSettings();
+  const { scheduleTypes, wageRates } = useSettings();
 
   const todayStr = getTodayStr();
   const dateList = useMemo(() => buildDateList(year, month), [year, month]);
+
+  // 2026-10-08 · V1 parity · V1 buildFilteredEmployees 그대로 재사용
+  //   · positionTab (settings.wageRates 동적) + searchQuery AND 조합
+  //   · sortBy="none" · sortOrder="asc" · todayFirst=false (P1 scope · 정렬은 P2 backlog)
+  const wageRateKeys = useMemo(() => Object.keys(wageRates ?? {}), [wageRates]);
+  const visibleEmployees = useMemo(
+    () => buildFilteredEmployees(employees, positionTab, searchQuery, "none", "asc", false, todayStr, wageRateKeys),
+    [employees, positionTab, searchQuery, todayStr, wageRateKeys],
+  );
 
   // 2026-10-08 · E-HOTFIX · V1 SchedulePage 와 동일한 caller-driven fetch trigger
   //   · useScheduleData 는 자동 fetch 하지 않음 (caller-driven) · 누락 시 isLoading 영구 true
@@ -66,7 +89,7 @@ export const MonthScheduleViewV2: React.FC<Props> = ({ year, month, onMonthDelta
 
   const summaryCounts = useMemo(() => {
     const totals = { total: 0, pharm: 0, store: 0, logi: 0, etc: 0 };
-    for (const emp of employees) {
+    for (const emp of visibleEmployees) {
       totals.total += 1;
       const pos = String(emp.position ?? "").trim();
       if (pos.includes("약사")) totals.pharm += 1;
@@ -75,7 +98,7 @@ export const MonthScheduleViewV2: React.FC<Props> = ({ year, month, onMonthDelta
       else totals.etc += 1;
     }
     return totals;
-  }, [employees]);
+  }, [visibleEmployees]);
 
   const canEdit = !isMonthLocked || level >= 9;
 
@@ -184,6 +207,21 @@ export const MonthScheduleViewV2: React.FC<Props> = ({ year, month, onMonthDelta
         </div>
       )}
 
+      {/* 2026-10-08 · V1 parity · Filter bar (positionTab + searchQuery) · V1 ScheduleFilterBar 그대로 재사용 */}
+      <ScheduleFilterBar
+        employees={employees}
+        positionTab={positionTab}
+        setPositionTab={setPositionTab}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        sortBy="none"
+        setSortBy={() => { /* P2 backlog */ }}
+        sortOrder="asc"
+        setSortOrder={() => { /* P2 backlog */ }}
+        onResetCustomOrder={() => { /* P2 backlog */ }}
+        wageRates={wageRates}
+      />
+
       {/* Grid */}
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center py-16">
@@ -193,13 +231,13 @@ export const MonthScheduleViewV2: React.FC<Props> = ({ year, month, onMonthDelta
         <div className="flex-1 flex items-center justify-center py-16 text-[13px] text-rose-600">
           로드 실패 · {error}
         </div>
-      ) : employees.length === 0 ? (
+      ) : visibleEmployees.length === 0 ? (
         <div className="flex-1 flex items-center justify-center py-16 text-[13px] text-ink-soft">
-          재직 직원이 없습니다.
+          {employees.length === 0 ? "재직 직원이 없습니다." : "필터 결과 직원 없음"}
         </div>
       ) : (
         <MonthGridV2
-          employees={employees}
+          employees={visibleEmployees}
           dateList={dateList}
           todayStr={todayStr}
           scheduleTypes={scheduleTypes}
@@ -208,6 +246,8 @@ export const MonthScheduleViewV2: React.FC<Props> = ({ year, month, onMonthDelta
           onOpenEdit={openEdit}
           onCloseEdit={closeEdit}
           onTypeSelect={handleTypeSelect}
+          onDateHeaderClick={onOpenDay}
+          onEmployeeNameClick={onOpenEmployee}
         />
       )}
     </div>

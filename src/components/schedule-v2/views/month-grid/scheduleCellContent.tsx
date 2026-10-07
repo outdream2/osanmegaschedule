@@ -7,10 +7,13 @@
 import React from "react";
 import type { Schedule } from "../../../../types";
 import { isOffType } from "../../../../shared/schedule/offTypes";
+// 2026-10-08 · V1 parity · settings scheduleTypes 기반 색상 적용 (V1 ScheduleCell:128,164 패턴)
+import { getTypeHex, isLightHex, type ScheduleTypeEntry } from "../../../../constants";
 
 export const scheduleCellContent = (
   schedule: Schedule | undefined,
   typeHoursMap: Record<string, string>,
+  scheduleTypes?: ScheduleTypeEntry[],
 ): React.ReactElement => {
   if (!schedule || !schedule.type) {
     return <span className="inline-block w-full text-[11px] text-zinc-200">·</span>;
@@ -18,10 +21,23 @@ export const scheduleCellContent = (
   const t = schedule.type.trim();
   const off = isOffType(t);
   const hours = (schedule.workingHours ?? "").trim() || typeHoursMap[t] || "";
+  // V1 ScheduleCell 과 동일 · settings 등록 color 없으면 bg 미적용 (text 만)
+  const bgHex = scheduleTypes ? getTypeHex(t, scheduleTypes) : null;
+  const hasBg = !!bgHex && bgHex !== "#f1f5f9"; // "#f1f5f9" = constants fallback · 색 없음 취급
+  const isLight = hasBg ? isLightHex(bgHex!) : true;
+  const textCls = hasBg
+    ? (isLight ? "text-zinc-900" : "text-white")
+    : (off ? "text-rose-600" : "text-ink");
+  const hoursCls = hasBg
+    ? (isLight ? "text-zinc-700" : "text-white/85")
+    : "text-ink-soft";
   return (
-    <div className="text-[12px] leading-tight">
-      <div className={`font-semibold ${off ? "text-rose-600" : "text-ink"}`}>{t}</div>
-      {hours && !off && <div className="text-[10px] text-ink-soft tabular-nums">{hours}</div>}
+    <div
+      className={`text-[12px] leading-tight rounded-sm px-1 py-0.5 ${textCls}`}
+      style={hasBg ? { backgroundColor: bgHex! } : undefined}
+    >
+      <div className="font-bold">{t}</div>
+      {hours && !off && <div className={`text-[10px] tabular-nums ${hoursCls}`}>{hours}</div>}
     </div>
   );
 };

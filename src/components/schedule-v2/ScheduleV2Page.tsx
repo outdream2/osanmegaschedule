@@ -49,6 +49,17 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
   const [month, setMonth] = useState<number>(now.getMonth() + 1);
   const [anchorDate, setAnchorDate] = useState<Date>(now);
 
+  // 2026-10-08 · V1 parity · navigation state
+  //   · Month/Week 날짜 click → Day · 직원 click → Employee
+  //   · V1 ScheduleGrid.tsx:143 (onSetTimelineDate) + SchedulePage.tsx:669 (setCalendarEmployee) 와 동일 흐름
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
+
+  // 2026-10-08 · V1 parity · filter state (positionTab + searchQuery)
+  //   · V1 SchedulePage.tsx:226-227 상동 · buildFilteredEmployees 재사용
+  //   · P1 범위 · sortBy/sortOrder/todayFirst/drag reorder/reset 는 P2 backlog
+  const [positionTab, setPositionTab] = useState<string>("전체");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
   const goMonthDelta = useCallback((delta: number) => {
     const d = new Date(year, month - 1 + delta, 1);
     setYear(d.getFullYear());
@@ -79,6 +90,21 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
 
   // Day view 는 anchorDate 를 YYYY-MM-DD 로 직접 사용
   const dayDate = useMemo(() => toYmd(anchorDate), [anchorDate]);
+
+  // 2026-10-08 · V1 parity · 날짜 click → Day view · anchor sync
+  const handleOpenDay = useCallback((date: string) => {
+    const d = new Date(date);
+    setAnchorDate(d);
+    setYear(d.getFullYear());
+    setMonth(d.getMonth() + 1);
+    setView("day");
+  }, []);
+
+  // 2026-10-08 · V1 parity · 직원 click → Employee view · selected id 유지
+  const handleOpenEmployee = useCallback((empId: number) => {
+    setSelectedEmployeeId(empId);
+    setView("employee");
+  }, []);
   const goDayDelta = useCallback((daysDelta: number) => {
     const d = new Date(anchorDate);
     d.setDate(d.getDate() + daysDelta);
@@ -144,6 +170,12 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
               onMonthDelta={goMonthDelta}
               onToday={goToday}
               authSession={authSession}
+              positionTab={positionTab}
+              setPositionTab={setPositionTab}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onOpenDay={handleOpenDay}
+              onOpenEmployee={handleOpenEmployee}
             />
           )}
           {view === "week" && (
@@ -152,6 +184,12 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
               onAnchorDelta={goWeekDelta}
               onThisWeek={goThisWeek}
               authSession={authSession}
+              positionTab={positionTab}
+              setPositionTab={setPositionTab}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onOpenDay={handleOpenDay}
+              onOpenEmployee={handleOpenEmployee}
             />
           )}
           {view === "day" && (
@@ -169,6 +207,7 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
               onMonthDelta={goMonthDelta}
               onToday={goToday}
               authSession={authSession}
+              initialEmployeeId={selectedEmployeeId}
               onEmployeeManagement={() => {
                 // 2026-10-07 · V2-D · employee master 수정은 기존 Employee Management 로 이동
                 //   · empId 전달은 App.tsx 의 navigateInnerWithOptions 가 필요 · 추후 통합

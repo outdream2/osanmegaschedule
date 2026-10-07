@@ -24,12 +24,17 @@ interface GridProps {
   onTypeSelect: (type: string, workingHours: string) => Promise<void> | void;
   /** 2026-10-07 · V2-B · 월 경계 등 "데이터 소스 밖" 날짜 · 편집 비활성 · 시각적 dim */
   dimmedDates?: Set<string>;
+  /** 2026-10-08 · V1 parity · 날짜 헤더 click → Day view (V1 DayTimelineModal 대응) */
+  onDateHeaderClick?: (date: string) => void;
+  /** 2026-10-08 · V1 parity · 직원명 click → Employee view (V1 EmployeeCalendarModal 대응) */
+  onEmployeeNameClick?: (employeeId: number) => void;
 }
 
 export const MonthGridV2: React.FC<GridProps> = ({
   employees, dateList, todayStr, scheduleTypes,
   editMode, editTarget, onOpenEdit, onCloseEdit, onTypeSelect,
   dimmedDates,
+  onDateHeaderClick, onEmployeeNameClick,
 }) => {
   // 날짜별 schedule lookup · O(1)
   const scheduleIndex = useMemo(() => {
@@ -73,12 +78,15 @@ export const MonthGridV2: React.FC<GridProps> = ({
               const isToday = d === todayStr;
               const isSun = dateObj.getDay() === 0;
               const isSat = dateObj.getDay() === 6;
+              const dateClickable = !!onDateHeaderClick;
               return (
                 <th
                   key={`h-${d}`}
+                  onClick={dateClickable ? () => onDateHeaderClick!(d) : undefined}
                   className={`sticky top-0 z-20 border-r border-b border-line px-1 py-1.5 text-center text-[12px] font-semibold tabular-nums ${
                     isToday ? "bg-brand-tint/60 text-brand-deep" : isSun ? "bg-rose-50/60 text-rose-700" : isSat ? "bg-sky-50/60 text-sky-700" : "bg-zinc-50 text-ink"
-                  }`}
+                  } ${dateClickable ? "cursor-pointer hover:bg-brand-tint/40" : ""}`}
+                  title={dateClickable ? "일간 보기" : undefined}
                 >
                   <div className="leading-tight">
                     <div className="text-[14px] font-bold">{dayNum}</div>
@@ -97,7 +105,11 @@ export const MonthGridV2: React.FC<GridProps> = ({
               <tr key={`r-${emp.id}`} className="hover:bg-brand-tint/10">
                 <th
                   scope="row"
-                  className="sticky left-0 z-10 bg-white border-r border-b border-line text-left px-3 py-1.5 font-semibold text-ink"
+                  onClick={onEmployeeNameClick ? () => onEmployeeNameClick(emp.id) : undefined}
+                  className={`sticky left-0 z-10 bg-white border-r border-b border-line text-left px-3 py-1.5 font-semibold text-ink ${
+                    onEmployeeNameClick ? "cursor-pointer hover:bg-brand-tint/30" : ""
+                  }`}
+                  title={onEmployeeNameClick ? `${emp.name} · 개인 일정` : undefined}
                 >
                   <div className="text-[13px] leading-tight">{emp.name}</div>
                   <div className="text-[11px] text-ink-soft">{emp.position}</div>
@@ -123,7 +135,7 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       }`}
                       title={isDimmed ? "다른 월 날짜 · 월간 뷰에서 수정" : undefined}
                     >
-                      {scheduleCellContent(s, typeHoursMap)}
+                      {scheduleCellContent(s, typeHoursMap, scheduleTypes)}
                       {isEditing && (
                         <ScheduleTypePopover
                           scheduleTypes={scheduleTypes}
