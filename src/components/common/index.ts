@@ -34,6 +34,13 @@ export { EmptyState } from "./EmptyState";
 export { ErrorBoundary } from "./ErrorBoundary";
 export { ChartCard } from "./ChartCard";
 export type { ChartCardProps } from "./ChartCard";
+// 2026-10-08 · GLOBAL UI · reference-tone application · 3 page templates (presentation-only wrappers)
+export { OperationsPageTemplate } from "./OperationsPageTemplate";
+export type { OperationsPageTemplateProps } from "./OperationsPageTemplate";
+export { MasterDetailPageTemplate } from "./MasterDetailPageTemplate";
+export type { MasterDetailPageTemplateProps } from "./MasterDetailPageTemplate";
+export { AnalyticsPageTemplate } from "./AnalyticsPageTemplate";
+export type { AnalyticsPageTemplateProps } from "./AnalyticsPageTemplate";
 export { FieldLabel } from "./FieldLabel";
 export { FilterBar } from "./FilterBar";
 export { FormRow } from "./FormRow";
