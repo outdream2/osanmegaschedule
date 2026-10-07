@@ -199,19 +199,21 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </section>
       )}
 
-      {/* ═ Main 9/3 grid · Sales (col-span-9) + Today Tasks (col-span-3) ═ */}
+      {/* ═ Main grid · 관리자: 9/3 (Sales + Tasks) · 직원: Tasks full-width (매출 데이터 숨김) ═ */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-4">
-        <div className="min-w-0 lg:col-span-9 flex">
-          <SalesOverviewCard
-            loading={salesLoading}
-            error={salesError}
-            rows={todayRows}
-            todaySale={todaySale}
-            curHour={curHour}
-            onOpen={goTo("display", "revenue")}
-          />
-        </div>
-        <div className="min-w-0 lg:col-span-3 flex">
+        {isManagerOrAdmin && (
+          <div className="min-w-0 lg:col-span-9 flex">
+            <SalesOverviewCard
+              loading={salesLoading}
+              error={salesError}
+              rows={todayRows}
+              todaySale={todaySale}
+              curHour={curHour}
+              onOpen={goTo("display", "revenue")}
+            />
+          </div>
+        )}
+        <div className={`min-w-0 flex ${isManagerOrAdmin ? "lg:col-span-3" : "lg:col-span-12"}`}>
           <TodayTasksCard
             totalBadge={totalPending}
             items={taskItems}
@@ -231,17 +233,19 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         <QuickBtn icon={<MessageSquare size={16} />} label="이슈 공유" onClick={goTo("board")} />
       </section>
 
-      {/* ═ Bottom · 2:1 inside left · Today Sales (col-span-8) + Alerts (col-span-4) ═ */}
+      {/* ═ Bottom · 관리자: Today Sales 8 + Alerts 4 · 직원: Alerts만 full-width ═ */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-4">
-        <div className="min-w-0 lg:col-span-8 flex">
-          <TodaySalesTable
-            loading={productsLoading}
-            error={productsError}
-            items={dayProducts ?? []}
-            onOpen={goTo("display", "revenue")}
-          />
-        </div>
-        <div className="min-w-0 lg:col-span-4 flex">
+        {isManagerOrAdmin && (
+          <div className="min-w-0 lg:col-span-8 flex">
+            <TodaySalesTable
+              loading={productsLoading}
+              error={productsError}
+              items={dayProducts ?? []}
+              onOpen={goTo("display", "revenue")}
+            />
+          </div>
+        )}
+        <div className={`min-w-0 flex ${isManagerOrAdmin ? "lg:col-span-4" : "lg:col-span-12"}`}>
           <InventoryAlertsCard
             items={[
               { label: "실재고 확인 요청", count: requestsCounts.inventory, onClick: goTo("scan") },
