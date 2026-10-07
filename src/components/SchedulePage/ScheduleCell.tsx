@@ -11,6 +11,15 @@ import { usePopoverPosition } from "./usePopoverPosition";
 // 2026-10-07 · Phase 2 · OFF/WORK SSOT · shared helper 사용
 import { OFF_TYPES as SHARED_OFF_TYPES, WORK_TYPES as SHARED_WORK_TYPES, HALF_DAY_TYPES as SHARED_HALF_TYPES } from "../../shared/schedule/offTypes";
 
+// 2026-10-07 · PHASE 3E · 최근 사용 schedule type · 세션 스코프 (모듈 변수)
+//   · 셀 상세 편집 저장 시 기록 · 다음 셀 popover 열림 시 "최근 사용" 힌트 노출
+//   · 저장 X · 페이지 reload 시 사라짐 (운영 편의 only · DB 상태 영향 없음)
+let recentUsedType: string | null = null;
+export function _markRecentScheduleType(v: string | null): void {
+  if (!v) return;
+  recentUsedType = String(v);
+}
+
 interface ScheduleCellProps {
   schedule?: Schedule;
   dateStr: string;
@@ -30,6 +39,8 @@ interface ScheduleCellProps {
   scheduleTypes?: { value: string; label: string }[];
   /** Full schedule type entries for dynamic color resolution. */
   scheduleTypeEntries?: ScheduleTypeEntry[];
+  /** 2026-10-07 · PHASE 3E · 확정된 달 셀 안내 tooltip (관리자가 편집 모드 켜도 수정 불가) */
+  isMonthLocked?: boolean;
 }
 
 export const ScheduleCell: React.FC<ScheduleCellProps> = ({
@@ -42,6 +53,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   typeHoursMap,
   scheduleTypes: scheduleTypesProp,
   scheduleTypeEntries,
+  isMonthLocked = false,
 }) => {
   const activeScheduleTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
   const [isOpen, setIsOpen] = useState(false);
@@ -74,6 +86,8 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
           actualHours: formValues.actualHours,
           memo: formValues.memo,
         });
+        // 2026-10-07 · PHASE 3E · 최근 사용 schedule type 기록 (저장 성공 시만)
+        _markRecentScheduleType(formValues.type || null);
         setIsOpen(false);
       } catch {
         // popover 열림 유지 · 사용자 재시도 가능
@@ -149,7 +163,11 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
         }`}
         style={cellBgHex ? { backgroundColor: cellBgHex } : undefined}
         onClick={handleQuickCycle}
-        title={isAdmin ? `클릭: 오픈→미들→마감→휴무 순환 변경\n⚙️ 상세 편집은 호버 후 톱니바퀴 클릭` : undefined}
+        title={
+          isMonthLocked
+            ? "확정된 달 · 수정 불가 (확정해제 후 편집 가능)"
+            : isAdmin ? `클릭: 오픈→미들→마감→휴무 순환 변경\n⚙️ 상세 편집은 호버 후 톱니바퀴 클릭` : undefined
+        }
       >
         {/* Detail edit button — 셀 최상단 별도 행 · 아래 콘텐츠와 완전 분리 (겹침 방지) */}
         {isAdmin && (
@@ -236,6 +254,21 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
           </div>
 
           <form onSubmit={handleSave} className="space-y-3">
+            {/* 2026-10-07 · PHASE 3E · 최근 사용 schedule type 재사용 (세션 scope · 1-클릭 적용) */}
+            {recentUsedType && recentUsedType !== type && activeScheduleTypes.some(t => t.value === recentUsedType) && (
+              <div className="flex items-center gap-1.5 text-[12px] text-zinc-500">
+                <span>최근 사용:</span>
+                <button
+                  type="button"
+                  onClick={() => applyPreset(recentUsedType!)}
+                  className="px-1.5 py-0.5 rounded border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-[12px] cursor-pointer transition-colors"
+                  title={`최근 사용한 "${recentUsedType}" 로 적용`}
+                >
+                  {recentUsedType}
+                </button>
+              </div>
+            )}
+
             {/* Quick One-click Attendance (⚡ 원클릭 근태 빠른 지정) - MOVED TO TOP */}
             <div className="p-2 border border-blue-200 bg-blue-50/50 rounded-xl space-y-1">
               <label className="block text-[15px] font-bold text-blue-850 uppercase tracking-wider flex items-center justify-between">

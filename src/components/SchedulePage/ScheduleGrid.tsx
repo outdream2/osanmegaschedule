@@ -239,6 +239,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                       typeHoursMap={getTypeHoursMap(emp.position, emp.employmentType)}
                       scheduleTypes={settingsScheduleTypes.map(e => ({ value: e.type, label: e.type }))}
                       scheduleTypeEntries={settingsScheduleTypes}
+                      isMonthLocked={isMonthLocked}
                     />
                   )}
                 </td>

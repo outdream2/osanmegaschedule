@@ -105,16 +105,28 @@ export const BulkTab: React.FC<BulkTabProps> = ({
             { label: "목", val: 4 }, { label: "금", val: 5 },
             { label: "토", val: 6 },
             { label: "일", val: 0 },
-          ].map((w) => (
-            <button
-              key={w.val}
-              type="button"
-              onClick={() => toggleWeekday(w.val)}
-              className="min-w-[36px] px-2.5 py-1.5 text-[16px] font-semibold text-ink border border-line rounded-lg hover:border-brand-deep hover:bg-brand-tint transition-colors cursor-pointer"
-            >
-              {w.label}
-            </button>
-          ))}
+          ].map((w) => {
+            // 2026-10-07 · PHASE 3E · 접근성 · aria-pressed (해당 요일 전체 선택 상태 반영)
+            const weekdayDates = daysList
+              .filter(d => getDayDetails(d).dayIndex === w.val)
+              .map(d => getDayDetails(d).fullDate);
+            const allSelected = weekdayDates.length > 0 && weekdayDates.every(d => bulkSelectedDates.includes(d));
+            return (
+              <button
+                key={w.val}
+                type="button"
+                onClick={() => toggleWeekday(w.val)}
+                aria-pressed={allSelected}
+                className={`min-w-[36px] px-2.5 py-1.5 text-[16px] font-semibold border rounded-lg transition-colors cursor-pointer ${
+                  allSelected
+                    ? "border-brand-deep bg-brand-tint text-brand-deep"
+                    : "border-line bg-white text-ink hover:border-brand-deep hover:bg-brand-tint"
+                }`}
+              >
+                {w.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* 2026-09-23 · #340 · CalendarGrid · 기존 스케쥴 색상 표시 + 선택 토글 */}
