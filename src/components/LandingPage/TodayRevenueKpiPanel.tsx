@@ -132,37 +132,12 @@ export const TodayRevenueKpiPanel: React.FC<Props> = ({ onOpenRevenue }) => {
             {showValue ? fmt(txn) + "명" : "-"}
           </div>
         </div>
-        {/* 매출 상세 → (PC) · subtle brand tint + arrow hover */}
-        <div className="hidden sm:flex items-center px-4 bg-gradient-to-br from-brand-deep/[0.06] to-indigo-50/60 group-hover:from-brand-deep/[0.10] group-hover:to-indigo-100/80 transition">
-          <div className="text-[15px] text-brand-deep font-bold whitespace-nowrap tracking-tight flex items-center gap-1.5">
-            매출 상세
-            <span className="transition-transform group-hover:translate-x-0.5">›</span>
-          </div>
-        </div>
       </div>
-      {/* 모바일 하단 바 (상태 + 매출 상세) · brand tint gradient */}
-      <div className="sm:hidden flex items-center justify-between px-3 py-2 bg-gradient-to-r from-brand-deep/[0.05] via-sky-50 to-indigo-50/60 text-[14px] border-t border-zinc-100">
-        <span className="flex items-center gap-1.5 text-zinc-600">
-          {status === "error" ? (
-            <span className="text-rose-600 font-semibold">⚠ 조회 실패</span>
-          ) : status === "loading" ? (
-            <span>조회 중...</span>
-          ) : (
-            <>
-              <span className="relative flex w-1.5 h-1.5 shrink-0" aria-hidden>
-                <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
-                <span className="relative w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              </span>
-              <span>실시간 ERP</span>
-            </>
-          )}
-        </span>
-        <span className="text-brand-deep font-bold flex items-center gap-1">
-          매출 상세 <span>›</span>
-        </span>
-      </div>
+      {/* 2026-10-07 · 사용자 지시 · "매출 상세" · "실시간 ERP" 라벨 제거
+          · 패널 자체는 여전히 클릭 가능 (onClick → onOpenRevenue · title 로 안내 유지)
+          · 에러 상태 표시만 모든 viewport 에서 보이도록 유지 */}
       {status === "error" && (
-        <span className="hidden sm:block absolute top-2 right-2 text-[11px] text-rose-600 font-semibold" title={errMsg}>⚠ 조회 실패</span>
+        <span className="block absolute top-2 right-2 text-[11px] text-rose-600 font-semibold" title={errMsg}>⚠ 조회 실패</span>
       )}
     </div>
   );
