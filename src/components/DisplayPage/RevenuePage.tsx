@@ -1859,33 +1859,43 @@ const MonthlyReportTab: React.FC = () => {
               // 2026-10-07 · 사용자 지시 · 매월 말일 셀 하단 월간 합계 표시
               const isLastDay = cell.day === daysInMonth;
               const hasMonthTotal = isLastDay && show && (sel.saleTotal + sel.buyTotal > 0);
-              // 2026-10-07 · 사용자 지시 · 공휴일 표현 변경 (붉은색 X · 데이터와 날짜 숫자 구분)
-              //   · 날짜 숫자: zinc-800 bold (dark · 평일과 통일 · 요일 색만 유지)
-              //   · 공휴일 표시: 왼쪽 상단 amber dot + 하단 공휴일명 (amber-700 · 작은 글씨)
-              //   · 셀 배경: 공휴일 subtle amber tint (bg-amber-50/50) · 오늘은 amber-50/60 우선
+              // 2026-10-07 · 사용자 지시 · 공휴일/주말 배경 붉은계열 · 오늘은 노란계열 유지 · 주말/공휴일 살짝 톤 차이
+              //   · 우선순위: 오늘(amber-50/60) > 공휴일(rose-100/60) > 주말(rose-50/60) > 평일(white)
+              //   · 날짜 숫자: 요일 기준 색만 유지 (일=rose, 토=sky, 평일=zinc-800)
+              //   · 공휴일 표시: 좌상단 amber dot + 하단 공휴일명 (amber-700)
               const holidayName = holidayMap.get(cell.dateStr);
               const isHoliday = !!holidayName;
-              // 날짜 숫자 색상: 요일 기준만 (일=rose, 토=sky, 평일=zinc-800) · 공휴일 자체는 색 아닌 dot/label 로 표현
-              const dayColor = isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-800";
+              const isSaturday = ci === 6;
+              const isWeekendCell = isSunday || isSaturday;
+              const bgClass = isToday
+                ? "bg-amber-50/60"
+                : isHoliday
+                  ? "bg-rose-100/60"
+                  : isWeekendCell
+                    ? "bg-rose-50/60"
+                    : "bg-white";
+              const dayColor = isSunday ? "text-rose-600" : isSaturday ? "text-sky-600" : "text-zinc-800";
               return (
-                <div key={ci} className={`min-h-[90px] md:min-h-[140px] border-r border-zinc-100 last:border-r-0 min-w-0 flex flex-col ${isToday ? "bg-amber-50/60" : isHoliday ? "bg-amber-50/40" : "bg-white"}`}>
+                <div key={ci} className={`min-h-[90px] md:min-h-[140px] border-r border-zinc-100 last:border-r-0 min-w-0 flex flex-col ${bgClass}`}>
                   <button
                     type="button"
                     onClick={() => hasData && setModalDay(cell)}
                     disabled={!hasData}
-                    className={`flex-1 w-full text-left p-1 md:p-2 min-w-0 transition relative ${hasData ? "cursor-pointer hover:bg-brand-tint/30" : "cursor-default"}`}
+                    className={`flex-1 flex flex-col justify-start items-stretch w-full text-left p-1 md:p-2 min-w-0 transition relative ${hasData ? "cursor-pointer hover:bg-brand-tint/30" : "cursor-default"}`}
                     title={hasData ? `${cell.dateStr} 상세 보기${isHoliday ? ` · ${holidayName}` : ""}` : (isHoliday ? holidayName : undefined)}
                   >
-                    {/* 2026-10-07 · 공휴일 dot · 좌측 상단 amber · 날짜 숫자와 분리 */}
+                    {/* 2026-10-07 · 공휴일명 bar · 셀 상단 full-width · amber bg + 흰 글씨 */}
                     {isHoliday && (
-                      <span className="absolute left-0.5 top-0.5 md:left-1 md:top-1 w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-amber-500" aria-hidden />
+                      <div
+                        className="mb-0.5 md:mb-1 bg-amber-500 text-white text-[10px] md:text-[11px] font-semibold px-1 md:px-1.5 py-0.5 rounded leading-tight truncate tracking-tight"
+                        title={holidayName}
+                      >
+                        {holidayName}
+                      </div>
                     )}
-                    <div className={`text-[14px] md:text-[16px] font-bold ${dayColor} ${isToday ? "text-amber-700" : ""} leading-tight ${isHoliday ? "pl-2.5 md:pl-3" : ""}`}>
+                    <div className={`text-[14px] md:text-[16px] font-bold ${dayColor} ${isToday ? "text-amber-700" : ""} leading-tight`}>
                       {cell.day}{isToday && <span className="ml-1 text-[12px] md:text-[14px] text-amber-700">● 오늘</span>}
                     </div>
-                    {isHoliday && (
-                      <div className="text-[10px] md:text-[11px] text-amber-700 font-semibold leading-tight truncate tracking-tight" title={holidayName}>{holidayName}</div>
-                    )}
                     <div className="mt-1 space-y-1 text-[12px] md:text-[14px]">
                       {cell.sale && (
                         <div className="flex flex-col min-w-0">
