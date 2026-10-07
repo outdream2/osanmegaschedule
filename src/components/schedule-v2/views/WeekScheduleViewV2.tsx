@@ -74,13 +74,15 @@ export const WeekScheduleViewV2: React.FC<Props> = ({ anchorDate, onAnchorDelta,
   }, [weekDates, anchorMonthKey]);
 
   // 셀 편집 target
+  //   · 2026-10-07 (V2-B micro fix) · 월 경계 날짜 edit block 제거
+  //   · dim 은 시각 표현만 유지 · 실제 edit 가능 여부는 그 날짜 month 의 lock 상태
+  //   · 다른 month 의 lock 상태는 frontend 가 모름 → server guard
+  //     (assertScheduleNotLocked) 에 맡김 · 실패 시 showNotification 에러
   const [editTarget, setEditTarget] = useState<{ employeeId: number; date: string } | null>(null);
   const openEdit = useCallback((employeeId: number, date: string) => {
     if (!effectiveEditMode) return;
-    // 월 경계 날짜 · 데이터 소스 미보장 → 편집 비활성
-    if (offAnchorDates.has(date)) return;
     setEditTarget({ employeeId, date });
-  }, [effectiveEditMode, offAnchorDates]);
+  }, [effectiveEditMode]);
   const closeEdit = useCallback(() => setEditTarget(null), []);
 
   const handleTypeSelect = useCallback(async (type: string, workingHours: string) => {
