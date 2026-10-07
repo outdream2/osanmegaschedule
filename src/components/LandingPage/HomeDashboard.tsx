@@ -19,20 +19,21 @@ import type { AppNavPage } from "../layout/AppNavHeader";
 // Typography scale (STRICT per spec)
 // ─────────────────────────────────────────────────────────────
 // 2026-10-07 · 사용자 지시 · 큰 숫자 축소 + 작은 글씨 bump up (밸런스 완화)
+// 2026-10-07 · spec section 33 · DESKTOP / TABLET / MOBILE 분리 사이즈
 const T = {
-  eyebrow:      "text-[13px] md:text-[14px] text-slate-500 font-medium",
-  heroTitle:    "text-[24px] md:text-[26px] font-bold text-ink leading-[1.2] tracking-tight",
-  heroDesc:     "text-[14px] md:text-[15px] text-slate-500",
-  sectionTitle: "text-[15px] md:text-[16px] font-semibold text-ink tracking-tight",
-  kpiLabel:     "text-[13px] md:text-[14px] text-slate-500 font-medium",
-  kpiValue:     { fontSize: "clamp(18px, 2.0vw, 22px)" } as React.CSSProperties,
-  salesAmount:  { fontSize: "clamp(20px, 2.2vw, 24px)" } as React.CSSProperties,
-  taskLabel:    "text-[14px] md:text-[15px] text-ink font-medium",
-  taskCount:    "text-[14px] md:text-[15px] font-semibold tabular-nums",
-  tableHeader:  "text-[12px] md:text-[13px] text-slate-500 font-medium",
-  tableBody:    "text-[13px] md:text-[14px] text-ink",
-  qaLabel:      "text-[14px] text-ink font-medium",
-  meta:         "text-[12px] md:text-[13px] text-slate-500",
+  eyebrow:      "text-[11px] md:text-[13px] text-slate-500 font-medium",
+  heroTitle:    "text-[20px] md:text-[26px] font-bold text-ink leading-[1.2] tracking-tight",
+  heroDesc:     "text-[12px] md:text-[14px] text-slate-500",
+  sectionTitle: "text-[14px] md:text-[16px] font-semibold text-ink tracking-tight",
+  kpiLabel:     "text-[11px] md:text-[13px] text-slate-500 font-medium",
+  kpiValue:     { fontSize: "clamp(16px, 1.8vw, 22px)" } as React.CSSProperties,
+  salesAmount:  { fontSize: "clamp(20px, 2.2vw, 26px)" } as React.CSSProperties,
+  taskLabel:    "text-[13px] md:text-[15px] text-ink font-medium",
+  taskCount:    "text-[13px] md:text-[15px] font-semibold tabular-nums",
+  tableHeader:  "text-[11px] md:text-[12px] text-slate-500 font-medium",
+  tableBody:    "text-[12px] md:text-[13px] text-ink",
+  qaLabel:      "text-[12px] md:text-[14px] text-ink font-medium",
+  meta:         "text-[11px] md:text-[12px] text-slate-500",
 } as const;
 
 const CARD = "bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]";
@@ -150,7 +151,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
   return (
     // Page content container · max-w per spec · padding 24
-    <div className="w-full max-w-[1240px] mx-auto flex flex-col gap-4 md:gap-5">
+    <div className="w-full max-w-[1240px] mx-auto flex flex-col gap-3 md:gap-4">
       {/* ═ Greeting · compact (hero image 없음 · gradient 없음 · 78-92px) ═ */}
       <header className="pt-1 pb-1">
         <div className={T.eyebrow}>{dateStr}</div>
@@ -166,7 +167,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           {/* 오늘의 판매현황 · 매출 + 방문객 + 객단가 */}
           <div>
             <SectionLabel>오늘의 판매현황</SectionLabel>
-            <div className={`${CARD} grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 overflow-hidden`}>
+            <div className={`${CARD} grid grid grid-cols-3 divide-x divide-slate-100 overflow-hidden`}>
               <KpiCell
                 icon={<Wallet size={18} className="text-emerald-600" strokeWidth={2.2} />}
                 iconBg="bg-emerald-50"
@@ -199,7 +200,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           {/* 오늘의 승인요청현황 · 연차 + 사직서 + 거래처 (admin) 또는 통합 승인 대기 */}
           <div>
             <SectionLabel>오늘의 승인요청현황</SectionLabel>
-            <div className={`${CARD} grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 overflow-hidden`}>
+            <div className={`${CARD} grid grid grid-cols-3 divide-x divide-slate-100 overflow-hidden`}>
               <KpiCell
                 icon={<ClipboardCheck size={18} className="text-amber-600" strokeWidth={2.2} />}
                 iconBg="bg-amber-50"
@@ -229,10 +230,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </section>
       )}
 
-      {/* ═ Main grid · 관리자: 9/3 (Sales + Tasks) · 직원: Tasks full-width (매출 데이터 숨김) ═ */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-4">
+      {/* ═ Main grid · 모바일: Tasks 먼저 (spec section 13) · 데스크톱: Sales (9) + Tasks (3) ═ */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 md:gap-4">
         {isManagerOrAdmin && (
-          <div className="min-w-0 lg:col-span-9 flex">
+          <div className="min-w-0 lg:col-span-9 flex order-2 lg:order-1">
             <SalesOverviewCard
               loading={salesLoading}
               error={salesError}
@@ -243,7 +244,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             />
           </div>
         )}
-        <div className={`min-w-0 flex ${isManagerOrAdmin ? "lg:col-span-3" : "lg:col-span-12"}`}>
+        <div className={`min-w-0 flex order-1 lg:order-2 ${isManagerOrAdmin ? "lg:col-span-3" : "lg:col-span-12"}`}>
           <TodayTasksCard
             totalBadge={totalPending}
             items={taskItems}
@@ -252,21 +253,32 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </div>
       </section>
 
-      {/* ═ Quick Actions · compact horizontal buttons · 74-86px row · no card decoration ═ */}
-      <section className={`${CARD} px-4 py-3 flex items-center flex-wrap gap-x-5 gap-y-2`}>
-        <div className={`${T.sectionTitle} shrink-0 pr-2 border-r border-slate-200`}>빠른 실행</div>
-        <QuickBtn icon={<Package size={16} />} label="상품입고" onClick={goTo("productarrival")} />
-        <QuickBtn icon={<Scan size={16} />} label="실재고 확인" onClick={goTo("scan")} />
-        <QuickBtn icon={<Calendar size={16} />} label="스케줄표" onClick={goTo("schedule")} />
-        <QuickBtn icon={<Store size={16} />} label="매장진열" onClick={goTo("display")} />
-        <QuickBtn icon={<PlusCircle size={16} />} label="발주등록" onClick={goTo("display")} />
-        <QuickBtn icon={<MessageSquare size={16} />} label="이슈 공유" onClick={goTo("board")} />
+      {/* ═ Quick Actions · 모바일: 3×2 grid · 데스크톱: horizontal strip (spec 7/21) ═ */}
+      <section className={`${CARD} px-3 py-2 md:px-4 md:py-3`}>
+        <div className="hidden md:flex items-center flex-wrap gap-x-5 gap-y-2">
+          <div className={`${T.sectionTitle} shrink-0 pr-2 border-r border-slate-200`}>빠른 실행</div>
+          <QuickBtn icon={<Package size={16} />} label="상품입고" onClick={goTo("productarrival")} />
+          <QuickBtn icon={<Scan size={16} />} label="실재고 확인" onClick={goTo("scan")} />
+          <QuickBtn icon={<Calendar size={16} />} label="스케줄표" onClick={goTo("schedule")} />
+          <QuickBtn icon={<Store size={16} />} label="매장진열" onClick={goTo("display")} />
+          <QuickBtn icon={<PlusCircle size={16} />} label="발주등록" onClick={goTo("display")} />
+          <QuickBtn icon={<MessageSquare size={16} />} label="이슈 공유" onClick={goTo("board")} />
+        </div>
+        {/* 모바일 · 3×2 compact grid · 항목 44-48px (spec 21) */}
+        <div className="md:hidden grid grid-cols-3 gap-1">
+          <QuickBtn icon={<Package size={16} />} label="상품입고" onClick={goTo("productarrival")} />
+          <QuickBtn icon={<Scan size={16} />} label="실재고" onClick={goTo("scan")} />
+          <QuickBtn icon={<Calendar size={16} />} label="스케줄" onClick={goTo("schedule")} />
+          <QuickBtn icon={<Store size={16} />} label="매장진열" onClick={goTo("display")} />
+          <QuickBtn icon={<PlusCircle size={16} />} label="발주등록" onClick={goTo("display")} />
+          <QuickBtn icon={<MessageSquare size={16} />} label="이슈" onClick={goTo("board")} />
+        </div>
       </section>
 
-      {/* ═ Bottom · 관리자: Today Sales 8 + Alerts 4 · 직원: Alerts만 full-width ═ */}
-      <section className="grid grid-cols-1 lg:grid-cols-12 gap-3 md:gap-4">
+      {/* ═ Bottom · 모바일: Alerts 먼저 (spec section 13) · 데스크톱: Today Sales (8) + Alerts (4) ═ */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 md:gap-4">
         {isManagerOrAdmin && (
-          <div className="min-w-0 lg:col-span-8 flex">
+          <div className="min-w-0 lg:col-span-8 flex order-2 lg:order-1">
             <TodaySalesTable
               loading={productsLoading}
               error={productsError}
@@ -275,7 +287,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             />
           </div>
         )}
-        <div className={`min-w-0 flex ${isManagerOrAdmin ? "lg:col-span-4" : "lg:col-span-12"}`}>
+        <div className={`min-w-0 flex order-1 lg:order-2 ${isManagerOrAdmin ? "lg:col-span-4" : "lg:col-span-12"}`}>
           <InventoryAlertsCard
             items={[
               { label: "실재고 확인 요청", count: requestsCounts.inventory, onClick: goTo("scan") },
@@ -294,9 +306,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 // SectionLabel · accent bar + title (above section)
 // ─────────────────────────────────────────────────────────────
 const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="flex items-center gap-2 mb-2">
-    <span className="w-[3px] h-[14px] bg-slate-400 rounded-full" />
-    <span className="text-[13px] md:text-[14px] font-semibold text-slate-600 tracking-tight">{children}</span>
+  <div className="flex items-center gap-2 mb-1.5 md:mb-2">
+    <span className="w-[3px] h-[12px] md:h-[14px] bg-slate-400 rounded-full" />
+    <span className="text-[12px] md:text-[14px] font-semibold text-slate-600 tracking-tight">{children}</span>
   </div>
 );
 
@@ -317,19 +329,19 @@ const KpiCell: React.FC<KpiCellProps> = ({ icon, iconBg, label, value, loading, 
   <button
     type="button"
     onClick={onClick}
-    className="text-left cursor-pointer min-w-0 p-4 min-h-[96px] flex items-center gap-3 hover:bg-slate-50/60 transition-colors"
+    className="text-left cursor-pointer min-w-0 p-2.5 sm:p-4 min-h-[72px] sm:min-h-[88px] flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:gap-3 hover:bg-slate-50/60 transition-colors"
   >
-    <span className={`inline-flex items-center justify-center w-10 h-10 rounded-[10px] shrink-0 ${iconBg}`}>{icon}</span>
+    <span className={`inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-[10px] shrink-0 ${iconBg}`}>{icon}</span>
     <div className="flex flex-col min-w-0 gap-0.5">
-      <span className={`${T.kpiLabel} break-keep`}>{label}</span>
+      <span className={`${T.kpiLabel} break-keep leading-tight`}>{label}</span>
       {loading ? (
-        <SkeletonBar className="h-6 w-28" />
+        <SkeletonBar className="h-5 w-20 sm:h-6 sm:w-28" />
       ) : error ? (
-        <div className="text-[14px] text-rose-500 font-semibold">조회 실패</div>
+        <div className="text-[12px] sm:text-[14px] text-rose-500 font-semibold">조회 실패</div>
       ) : (
         <div
           className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap tracking-tight"
-          style={T.kpiValue}
+          style={{ fontSize: "clamp(14px, 1.8vw, 20px)" }}
           title={value}
         >
           {value}
@@ -365,7 +377,7 @@ const SalesOverviewCard: React.FC<SalesOverviewProps> = ({ loading, error, rows,
 
   // 전일 매출 데이터 없음 → 섹션 숨김 (fake 금지)
   return (
-    <div className={`${CARD} w-full flex flex-col min-h-[280px]`}>
+    <div className={`${CARD} w-full flex flex-col min-h-[200px] md:min-h-[280px]`}>
       {/* Header · accent bar + title + metric selector right */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100">
         <div className="flex items-center gap-2.5">
@@ -408,7 +420,7 @@ const SalesOverviewCard: React.FC<SalesOverviewProps> = ({ loading, error, rows,
         </div>
 
         {/* Chart */}
-        <div className="md:col-span-7 min-h-[200px] px-3 py-3">
+        <div className="md:col-span-7 min-h-[140px] md:min-h-[200px] px-3 py-3">
           {error ? (
             <div className="h-full flex items-center justify-center text-[13px] text-rose-500">ERP 조회 실패</div>
           ) : loading && rows.length === 0 ? (
@@ -457,7 +469,7 @@ interface TodayTasksCardProps {
 const TodayTasksCard: React.FC<TodayTasksCardProps> = ({ totalBadge, items, onOpenAll }) => {
   const allZero = items.every(it => it.count === 0);
   return (
-    <div className={`${CARD} w-full flex flex-col min-h-[280px]`}>
+    <div className={`${CARD} w-full flex flex-col min-h-[200px] md:min-h-[280px]`}>
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-slate-100">
         <div className="flex items-center gap-2">
           <h3 className={T.sectionTitle}>오늘 처리할 업무</h3>
@@ -502,12 +514,12 @@ const QuickBtn: React.FC<{ icon: React.ReactNode; label: string; onClick: () => 
   <button
     type="button"
     onClick={onClick}
-    className="inline-flex items-center gap-2 h-10 px-3 rounded-[8px] text-slate-700 hover:bg-slate-50 hover:text-ink transition-colors cursor-pointer"
+    className="inline-flex items-center gap-1.5 md:gap-2 h-9 md:h-10 px-2 md:px-3 rounded-[8px] text-slate-700 hover:bg-slate-50 hover:text-ink transition-colors cursor-pointer min-w-0"
   >
-    <span className="inline-flex items-center justify-center w-8 h-8 rounded-[8px] bg-slate-100 text-slate-600 shrink-0">
+    <span className="inline-flex items-center justify-center w-7 h-7 md:w-8 md:h-8 rounded-[8px] bg-slate-100 text-slate-600 shrink-0">
       {icon}
     </span>
-    <span className={T.qaLabel}>{label}</span>
+    <span className={`${T.qaLabel} break-keep`}>{label}</span>
   </button>
 );
 
@@ -530,7 +542,7 @@ const TodaySalesTable: React.FC<TodaySalesTableProps> = ({ loading, error, items
     [items]);
 
   return (
-    <div className={`${CARD} w-full flex flex-col min-h-[300px]`}>
+    <div className={`${CARD} w-full flex flex-col min-h-[200px] md:min-h-[300px]`}>
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-slate-100">
         <div className="flex items-center gap-2">
           <h3 className={T.sectionTitle}>오늘의 판매현황</h3>
@@ -596,7 +608,7 @@ interface AlertsProps { items: AlertItem[]; }
 const InventoryAlertsCard: React.FC<AlertsProps> = ({ items }) => {
   const hasAny = items.some(it => it.count > 0 && !it.dim);
   return (
-    <div className={`${CARD} w-full flex flex-col min-h-[300px]`}>
+    <div className={`${CARD} w-full flex flex-col min-h-[200px] md:min-h-[300px]`}>
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-slate-100">
         <h3 className={T.sectionTitle}>입고 · 재고 알림</h3>
       </div>
