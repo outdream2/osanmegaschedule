@@ -1,14 +1,58 @@
 import { supabase } from "../../src/supabase/client";
 
+// 2026-10-07 · PHASE 3B · F1 · GET /api/schedules employees payload narrowing
+//   · 이전: SELECT *  → employees 19명 × ~45 columns · ~80 KB · jsonb careers/educations/certifications 포함
+//   · 이후: 스케줄 UI 가 실제 소비하는 필드만 SELECT · 약 ~15 KB (추정)
+//   · 매 월이동 3개 fetch × 3개월 fallback 혜택
+//   · StaffDetailPanel/EmployeeCalendarModal 상세 (급여·경력·보험) 는 별도 GET /api/employees/:id 로 로드 (기존 분리 흐름 유지)
+const SCHEDULE_EMPLOYEE_FIELDS = [
+  "id",
+  "name",
+  "position",
+  "rank",
+  "employmentType",
+  "hireDate",
+  "retireDate",
+  "description",
+  "workplace",
+  "gender",
+  "phone",
+  "address",
+  "annual_leave_days",
+  "level",
+  "employee_number",
+  "contract_file_url",
+  "break_time_minutes",
+  "break_apply_paid",
+  "email",
+].join(", ");
+
 export class ScheduleService {
   async getMonthlySchedule(year: number, month: number) {
     const monthStr = String(month).padStart(2, "0");
     const datePrefix = `${year}-${monthStr}-`;
 
-    const { data: employees, error: empErr } = await supabase
+    // 2026-10-07 · PHASE 3B · F1 · 스케줄 UI 필드만 SELECT (헤비 jsonb 제외)
+    //   · 미존재 컬럼 (email 등) · fallback: * 로 재시도 (하위 호환)
+    type EmployeeRow = Record<string, unknown>;
+    let employees: EmployeeRow[] | null = null;
+    let empErr: { message: string } | null = null;
+    const narrowed = await supabase
       .from("employees")
-      .select("*")
+      .select(SCHEDULE_EMPLOYEE_FIELDS)
       .order("id");
+    if (narrowed.error) {
+      // 컬럼 누락 (email 등) · 레거시 환경 · SELECT * 로 폴백
+      if (/column|does not exist/i.test(narrowed.error.message)) {
+        const fallback = await supabase.from("employees").select("*").order("id");
+        employees = fallback.data as EmployeeRow[] | null;
+        empErr = fallback.error ? { message: fallback.error.message } : null;
+      } else {
+        empErr = { message: narrowed.error.message };
+      }
+    } else {
+      employees = narrowed.data as EmployeeRow[] | null;
+    }
     if (empErr) throw new Error(empErr.message);
 
     const { data: schedules, error: schedErr } = await supabase

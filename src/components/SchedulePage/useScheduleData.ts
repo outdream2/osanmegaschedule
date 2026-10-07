@@ -1,6 +1,6 @@
 // src/components/SchedulePage/useScheduleData.ts
 // 2026-08-22 · #framework-4 · SchedulePage 분리 · 데이터 fetch/mutate 훅
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { api } from "../../lib/apiClient";
 // 2026-09-14 · settingsApi 프리미티브
 import { saveSetting } from "../../lib/settingsApi";
@@ -41,6 +41,9 @@ export function useScheduleData(
   const confirm = useConfirm();
 
   const [employees, setEmployees] = useState<Employee[]>([]);
+  // 2026-10-07 · PHASE 3B · B-F2 · fetchScheduleData merge 시 최신 employees 참조 (deps 폭발 방지)
+  const employeesRef = useRef<Employee[]>([]);
+  useEffect(() => { employeesRef.current = employees; }, [employees]);
   const [summary, setSummary] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +53,10 @@ export function useScheduleData(
   const [isLockLoading, setIsLockLoading] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
   const isInitialFetchRef = useRef(true);
+  // 2026-10-07 · PHASE 3B · B-F2 · 이미 fetch 한 월 skip · 월 이동 중복 fetch 감소
+  //   · silent=true (수정 후 재조회) 는 항상 refetch (최신 데이터 필요)
+  //   · silent=false (월 이동) 는 이미 로드된 월 skip
+  const loadedMonthsRef = useRef<Set<string>>(new Set());
 
   // ── Data Fetching ─────────────────────────────────────────────────────────
   const fetchScheduleData = useCallback(async (dates?: string[], silent = false) => {
@@ -58,7 +65,17 @@ export function useScheduleData(
     setError(null);
     try {
       const monthKeys = Array.from(new Set(targetDates.map(d => d.substring(0, 7))));
-      const months = monthKeys.map(k => ({
+      // 2026-10-07 · PHASE 3B · B-F2 · silent=false (월 이동) 이면 이미 로드된 월 skip
+      //   · silent=true (수정 후 재조회) 는 전부 재fetch
+      const toFetchKeys = silent
+        ? monthKeys
+        : monthKeys.filter(k => !loadedMonthsRef.current.has(k));
+      // 신규 fetch 할 월이 없고 silent=false 면 skip (이미 로드된 월 UI 는 state 그대로)
+      if (toFetchKeys.length === 0 && !silent) {
+        setIsLoading(false);
+        return;
+      }
+      const months = toFetchKeys.map(k => ({
         year: parseInt(k.substring(0, 4)),
         month: parseInt(k.substring(5, 7)),
       }));
@@ -69,7 +86,14 @@ export function useScheduleData(
         )
       );
 
+      // 2026-10-07 · PHASE 3B · B-F2 · 기존 employees state 를 base 로 merge (이미 로드된 월 schedules 보존)
+      //   · employeesRef · deps 폭발 방지 · setEmployees 호출이 fetchScheduleData 재생성 유발하지 않게
       const empMap = new Map<number, Employee>();
+      if (!silent) {
+        for (const existingEmp of employeesRef.current) {
+          empMap.set(existingEmp.id, { ...existingEmp, schedules: [...existingEmp.schedules] });
+        }
+      }
       for (const res of responses) {
         const empList: Employee[] = res.data.employees || [];
         for (const emp of empList) {
@@ -78,10 +102,19 @@ export function useScheduleData(
             const existingDates = new Set(existing.schedules.map(s => s.date));
             const newSchedules = emp.schedules.filter(s => !existingDates.has(s.date));
             existing.schedules = [...existing.schedules, ...newSchedules];
+            // 2026-10-07 · PHASE 3B · 가장 최신 fetched employee meta 로 교체 (payload-narrowing 반영 유지)
+            //   · schedules 는 보존 · 다른 필드는 신규 응답 값 우선 (name/retireDate 등 최신화)
+            const prevSchedules = existing.schedules;
+            empMap.set(emp.id, { ...emp, schedules: prevSchedules });
           } else {
             empMap.set(emp.id, { ...emp, schedules: [...emp.schedules] });
           }
         }
+      }
+
+      // 2026-10-07 · PHASE 3B · 로드 완료 월 기록 (silent/non-silent 모두)
+      for (const k of toFetchKeys) {
+        loadedMonthsRef.current.add(k);
       }
 
       let merged = Array.from(empMap.values());
@@ -401,24 +434,32 @@ export function useScheduleData(
 
     setIsCopying(true);
     onDone(); // close modal
+    // 2026-10-07 · PHASE 3E · 각 단계 라벨 명시 (복사 실패 시 어느 쪽인지 사용자에게 전달)
+    let currentStep: "월별 스케쥴" | "일별 근무설정" | null = null;
     try {
       const msgs: string[] = [];
       if (copySchedules) {
+        currentStep = "월별 스케쥴";
         const response = await api.post<any>("/api/schedules/copy", { targetYear: currentYear, targetMonth: currentMonth });
         msgs.push(`월별 스케쥴 ${response.data.count || 0}건`);
       }
       if (copyDayAssignments) {
+        currentStep = "일별 근무설정";
         const r = await api.post<any>("/api/zone-day/copy-month", {
           // 2026-09-23 · 기능 검증 BUG #1 fix · `|| true` 제거 · needsDayOverwrite 실제 값 전달
           targetYear: currentYear, targetMonth: currentMonth, overwrite: needsDayOverwrite,
         });
         msgs.push(`일별 근무설정 ${r.data.count || 0}건`);
       }
+      currentStep = null;
       showNotification(`복사 완료 — ${msgs.join(" · ")}`);
       await fetchScheduleData(dateList, true);
     } catch (err: any) {
       console.error("Failed to copy:", err);
-      showNotification("전월 복사 도중 오류가 발생했습니다.", "error");
+      // 2026-10-07 · PHASE 3E · 서버 에러 메시지 포함 + 어느 단계 실패인지 명시
+      const serverMsg = err?.response?.data?.error || err?.message || "네트워크 오류";
+      const stepLabel = currentStep ? `${currentStep} 복사 실패` : "전월 복사 도중 오류 발생";
+      showNotification(`${stepLabel} · ${serverMsg}`, "error");
     } finally {
       setIsCopying(false);
     }
