@@ -292,20 +292,23 @@ router.get("/api/erp/sale-day-products", asyncHandler(async (req, res) => {
       });
     }
 
-    // products JOIN · pcode → 진열위치 (real_map / display_location / location fallback chain)
+    // products JOIN · pcode → 진열위치
     //   · 2026-10-05 PCode primary identity · products.pcode 1:1
-    //   · 2026-10-07 사용자 지시 · 진열위치 정보로 분류 · 상비약(1-9)/일반약(10+) 구분 필수
-    //   · 우선순위: real_map (실제배정구역 · 메모 project_product_columns.md) → display_location → location
-    //   · 셋 다 NULL 이면 class="unknown"
+    //   · 2026-10-07 (fix) · Supabase products 테이블 실측 결과 location/real_map 컬럼 **존재하지 않음**
+    //     · 유일한 진열위치 컬럼 = display_location (82.7% populated · 포맷 예: "6매대>Ａ>3열>전체")
+    //     · 이전 코드 (location/real_map fallback) 는 .select() 에러로 전체 JOIN 실패 → 분류 미동작
+    //     · 아래로 수정 · display_location 만 조회 · classifyProduct() 가 첫 segment 숫자 파싱
+    //   · 매치 안 되는 pcode (서버-ERP 불일치) 는 location=null → class="unknown" (fallback 생성 금지)
     const pcodes = Array.from(new Set(normalizedRows.map((r) => r.pcode).filter((p): p is string => !!p)));
     const locationMap = new Map<string, string | null>();
+    let joinMatched = 0;
     if (pcodes.length > 0) {
       const CHUNK = 1000;
       for (let i = 0; i < pcodes.length; i += CHUNK) {
         const chunk = pcodes.slice(i, i + CHUNK);
         const { data, error } = await supabase
           .from("products")
-          .select("pcode, location, display_location, real_map")
+          .select("pcode, display_location")
           .in("pcode", chunk);
         if (error) {
           logger.warn(`[sale-day-products] products JOIN 실패 (chunk ${i}) · ${error.message}`);
@@ -313,14 +316,14 @@ router.get("/api/erp/sale-day-products", asyncHandler(async (req, res) => {
         }
         for (const row of data ?? []) {
           if (!row.pcode) continue;
-          const r1 = (row.real_map ?? null) as string | null;
-          const r2 = (row.display_location ?? null) as string | null;
-          const r3 = (row.location ?? null) as string | null;
-          const resolved = (r1 && String(r1).trim()) || (r2 && String(r2).trim()) || (r3 && String(r3).trim()) || null;
+          const d = (row.display_location ?? null) as string | null;
+          const resolved = d && String(d).trim() ? String(d).trim() : null;
           locationMap.set(String(row.pcode), resolved);
+          joinMatched++;
         }
       }
     }
+    logger.info(`[sale-day-products] products JOIN · requested=${pcodes.length} matched=${joinMatched}`);
 
     const items: DaySaleProductItem[] = normalizedRows.map((r) => {
       const location = r.pcode ? (locationMap.get(r.pcode) ?? null) : null;

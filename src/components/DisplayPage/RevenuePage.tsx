@@ -2093,31 +2093,36 @@ const DayDetailModal: React.FC<{
       titleAccent
     >
       <div className="space-y-3">
-        {/* 2026-10-07 · 사용자 지시 · 상단 KPI 6개 → 한 카드 텍스트 정리 */}
-        <div className="rounded-lg border border-zinc-200 bg-zinc-50/60 px-4 py-3 text-[13px] md:text-[14px] text-zinc-700 space-y-1 tabular-nums">
-          <div className="flex justify-between gap-3">
-            <span className="text-zinc-500">매출</span>
-            <span className="font-semibold text-zinc-900">{fmtWon(saleTotal)}</span>
+        {/* 2026-10-07 · 사용자 지시 · 깔끔/고급/세련 · 텍스트 위주 (Linear/Vercel/Notion 톤)
+            Hero (매출) + divider + secondary 5개 compact grid */}
+        <div className="rounded-xl border border-zinc-200/70 bg-white shadow-sm px-5 md:px-6 py-5 md:py-6">
+          {/* Hero · 매출 */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] md:text-[12px] font-medium text-zinc-400 uppercase tracking-[0.08em]">매출</span>
+            <span className="text-[26px] md:text-[32px] font-bold text-zinc-900 tabular-nums tracking-tight leading-none">
+              {fmtWon(saleTotal)}
+            </span>
           </div>
-          <div className="flex justify-between gap-3">
-            <span className="text-zinc-500">매입</span>
-            <span className="font-semibold text-zinc-900">{fmtWon(buyTotal)}</span>
-          </div>
-          <div className="flex justify-between gap-3">
-            <span className="text-zinc-500">매출이익</span>
-            <span className="font-semibold text-zinc-900">{fmtWon(margin)}</span>
-          </div>
-          <div className="flex justify-between gap-3">
-            <span className="text-zinc-500">마진율</span>
-            <span className="font-semibold text-zinc-900">{saleTotal > 0 ? `${marginPct.toFixed(1)}%` : "-"}</span>
-          </div>
-          <div className="flex justify-between gap-3">
-            <span className="text-zinc-500">방문객</span>
-            <span className="font-semibold text-zinc-900">{cust > 0 ? cust.toLocaleString() + "명" : "-"}</span>
-          </div>
-          <div className="flex justify-between gap-3">
-            <span className="text-zinc-500">객단가</span>
-            <span className="font-semibold text-zinc-900">{avg > 0 ? fmtWon(avg) : "-"}</span>
+
+          {/* Divider */}
+          <div className="my-4 h-px bg-zinc-100" />
+
+          {/* Secondary · 5 metric compact grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-x-5 gap-y-3">
+            {([
+              { label: "매입",     value: fmtWon(buyTotal) },
+              { label: "매출이익", value: fmtWon(margin) },
+              { label: "마진율",   value: saleTotal > 0 ? `${marginPct.toFixed(1)}%` : "-" },
+              { label: "방문객",   value: cust > 0 ? cust.toLocaleString() + "명" : "-" },
+              { label: "객단가",   value: avg > 0 ? fmtWon(avg) : "-" },
+            ] as const).map((m) => (
+              <div key={m.label} className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-[11px] md:text-[12px] font-medium text-zinc-400 uppercase tracking-[0.08em]">{m.label}</span>
+                <span className="text-[14px] md:text-[16px] font-semibold text-zinc-800 tabular-nums tracking-tight truncate">
+                  {m.value}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -2157,6 +2162,57 @@ const DayProductSection: React.FC<{
     { key: "stationery", label: CLASS_FILTER_LABEL.stationery, count: byClass?.stationery.count ?? null },
     { key: "general",    label: CLASS_FILTER_LABEL.general,    count: byClass?.general.count ?? null },
   ];
+
+  // 2026-10-07 · 사용자 지시 · 헤더 클릭 → asc/desc 토글 정렬
+  //   · default = 마진율 desc (서버 1차 정렬과 일치)
+  //   · 같은 key 재클릭 시 dir 토글 · 다른 key 는 desc 로 리셋 (상품명만 asc default)
+  //   · null 값은 asc/desc 상관없이 항상 뒤로
+  type SortKey = "name" | "qty" | "sale" | "marginPct";
+  type SortDir = "asc" | "desc";
+  const [sortKey, setSortKey] = useState<SortKey>("marginPct");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  const onHeaderClick = (key: SortKey) => {
+    if (key === sortKey) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "name" ? "asc" : "desc");
+    }
+  };
+
+  const sortedItems = useMemo(() => {
+    const copy = [...items];
+    const sign = sortDir === "asc" ? 1 : -1;
+    copy.sort((a, b) => {
+      // null-last 공통 처리
+      const nullOrder = (x: unknown, y: unknown): number | null => {
+        const xn = x === null || x === undefined || x === "";
+        const yn = y === null || y === undefined || y === "";
+        if (xn && yn) return 0;
+        if (xn) return 1;  // null → always last
+        if (yn) return -1;
+        return null;
+      };
+      if (sortKey === "name") {
+        const no = nullOrder(a.productName, b.productName);
+        if (no !== null) return no;
+        return sign * (a.productName ?? "").localeCompare(b.productName ?? "", "ko");
+      }
+      const key = sortKey === "qty" ? "totalStock" : sortKey === "sale" ? "saleTotal" : "marginPct";
+      const av = (a as any)[key] as number | null;
+      const bv = (b as any)[key] as number | null;
+      const no = nullOrder(av, bv);
+      if (no !== null) return no;
+      return sign * ((av as number) - (bv as number));
+    });
+    return copy;
+  }, [items, sortKey, sortDir]);
+
+  const SortArrow: React.FC<{ k: SortKey }> = ({ k }) =>
+    k === sortKey
+      ? <span className="ml-0.5 text-[10px] text-zinc-500">{sortDir === "asc" ? "▲" : "▼"}</span>
+      : <span className="ml-0.5 text-[10px] text-zinc-300">▲</span>;
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -2235,17 +2291,42 @@ const DayProductSection: React.FC<{
       {status === "success" && items.length > 0 && (
         <div className="max-h-[320px] md:max-h-[400px] overflow-auto rounded-md border border-zinc-200">
           <table className="w-full text-[12px] md:text-[13px]">
-            {/* 2026-10-07 · 사용자 지시 · column 간소화 (수량·매출·마진율만) · 분류 column 제거 (ClassFilter 탭으로 처리) */}
-            <thead className="bg-zinc-50 text-zinc-600 sticky top-0 z-10">
+            {/* 2026-10-07 · 사용자 지시 · column 간소화 (수량·매출·마진율만) · 분류 column 제거 (ClassFilter 탭으로 처리)
+                2026-10-07 · 사용자 지시 · 헤더 클릭 → asc/desc 토글 정렬 · default 마진율 desc */}
+            <thead className="bg-zinc-50 text-zinc-600 sticky top-0 z-10 select-none">
               <tr>
-                <th className="px-2 py-1.5 text-left font-semibold">상품명</th>
-                <th className="px-2 py-1.5 text-right font-semibold">수량</th>
-                <th className="px-2 py-1.5 text-right font-semibold">매출</th>
-                <th className="px-2 py-1.5 text-right font-semibold">마진율</th>
+                <th
+                  className="px-2 py-1.5 text-left font-semibold cursor-pointer hover:bg-zinc-100 transition-colors"
+                  onClick={() => onHeaderClick("name")}
+                  aria-sort={sortKey === "name" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                >
+                  상품명<SortArrow k="name" />
+                </th>
+                <th
+                  className="px-2 py-1.5 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors"
+                  onClick={() => onHeaderClick("qty")}
+                  aria-sort={sortKey === "qty" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                >
+                  수량<SortArrow k="qty" />
+                </th>
+                <th
+                  className="px-2 py-1.5 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors"
+                  onClick={() => onHeaderClick("sale")}
+                  aria-sort={sortKey === "sale" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                >
+                  매출<SortArrow k="sale" />
+                </th>
+                <th
+                  className="px-2 py-1.5 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors"
+                  onClick={() => onHeaderClick("marginPct")}
+                  aria-sort={sortKey === "marginPct" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                >
+                  마진율<SortArrow k="marginPct" />
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {items.map((it, idx) => (
+              {sortedItems.map((it, idx) => (
                 <tr key={`${it.pcode ?? "noPcode"}-${idx}`} className="hover:bg-zinc-50/50">
                   <td className="px-2 py-1.5 text-zinc-800 truncate max-w-[220px]" title={it.productName ?? ""}>
                     {it.productName ?? "-"}
