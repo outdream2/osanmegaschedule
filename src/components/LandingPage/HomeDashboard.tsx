@@ -24,7 +24,7 @@ const T = {
   heroDesc:   "text-[13px] sm:text-[14px] text-slate-500 leading-[1.5]",
   sectionTitle: "text-[16px] sm:text-[17px] font-semibold text-ink tracking-tight",
   cardLabel:  "text-[12px] sm:text-[13px] text-slate-500 font-medium",
-  kpiValue:   { fontSize: "clamp(18px, 2.6vw, 28px)" } as React.CSSProperties,
+  kpiValue:   { fontSize: "clamp(22px, 3.2vw, 30px)" } as React.CSSProperties,
   taskLabel:  "text-[13px] sm:text-[14px] text-ink font-medium",
   taskCount:  "text-[13px] sm:text-[14px] font-semibold tabular-nums",
   qaTitle:    "text-[14px] sm:text-[15px] font-semibold text-ink",
@@ -113,11 +113,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   };
 
   return (
-    // Content max-width 1240 · 좌우 breathing room 유지 · spacing scale 32px between sections
-    <div className="w-full mx-auto max-w-[1240px] flex flex-col gap-6 sm:gap-8">
-      {/* ═══ Hero · 140-170px desktop · 120-150px mobile · subtle gradient background ═══ */}
-      <header className="w-full relative rounded-2xl overflow-hidden border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-sky-50/40 px-5 sm:px-7 py-5 sm:py-6">
-        {/* subtle decorative blobs · very low opacity · readability 우선 */}
+    // Content max-width 1240 · tighter density · spacing scale per reference
+    <div className="w-full mx-auto max-w-[1240px] flex flex-col gap-5 sm:gap-6">
+      {/* ═══ Hero · compact · soft blue-gray abstract bg (pharmacy asset 없음 → spec fallback) ═══ */}
+      <header className="w-full relative rounded-2xl overflow-hidden border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-sky-50/40 px-5 sm:px-6 py-4 sm:py-5">
         <div aria-hidden className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-sky-100/30 blur-3xl pointer-events-none" />
         <div aria-hidden className="absolute -left-20 -bottom-24 w-64 h-64 rounded-full bg-indigo-100/20 blur-3xl pointer-events-none" />
         <div className="relative">
@@ -133,7 +132,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       {isManagerOrAdmin && (
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <KpiCard
-            icon={<Wallet size={18} className="text-emerald-600" strokeWidth={2.2} />}
+            icon={<Wallet size={20} className="text-emerald-600" strokeWidth={2.2} />}
             iconBg="bg-emerald-50"
             label="오늘 매출"
             value={todayRows.length === 0 ? "-" : fmtWon(todaySale)}
@@ -142,7 +141,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             onClick={goTo("display", "revenue")}
           />
           <KpiCard
-            icon={<Users size={18} className="text-sky-600" strokeWidth={2.2} />}
+            icon={<Users size={20} className="text-sky-600" strokeWidth={2.2} />}
             iconBg="bg-sky-50"
             label="방문객"
             value={todayRows.length === 0 ? "-" : `${todayCust.toLocaleString("ko-KR")}명`}
@@ -151,7 +150,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             onClick={goTo("display", "revenue")}
           />
           <KpiCard
-            icon={<Receipt size={18} className="text-violet-600" strokeWidth={2.2} />}
+            icon={<Receipt size={20} className="text-violet-600" strokeWidth={2.2} />}
             iconBg="bg-violet-50"
             label="객단가"
             value={todayCust === 0 ? "-" : fmtWon(avgOrder)}
@@ -160,7 +159,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             onClick={goTo("display", "revenue")}
           />
           <KpiCard
-            icon={<ClipboardCheck size={18} className="text-amber-600" strokeWidth={2.2} />}
+            icon={<ClipboardCheck size={20} className="text-amber-600" strokeWidth={2.2} />}
             iconBg="bg-amber-50"
             label="승인 대기"
             value={`${totalApprovals.toLocaleString("ko-KR")}건`}
@@ -257,10 +256,10 @@ const KpiCard: React.FC<KpiCardProps> = ({ icon, iconBg, label, value, sub, load
   <button
     type="button"
     onClick={onClick}
-    className={`text-left ${CARD_BASE} ${CARD_HOVER} cursor-pointer min-w-0 p-4 sm:p-5 min-h-[116px] flex flex-col justify-between`}
+    className={`text-left ${CARD_BASE} ${CARD_HOVER} cursor-pointer min-w-0 p-4 sm:p-5 min-h-[112px] flex flex-col justify-between`}
   >
-    <div className="flex items-center gap-2.5 min-w-0">
-      <span className={`inline-flex items-center justify-center w-9 h-9 rounded-[10px] shrink-0 ${iconBg}`}>{icon}</span>
+    <div className="flex items-center gap-3 min-w-0">
+      <span className={`inline-flex items-center justify-center w-10 h-10 rounded-[12px] shrink-0 ${iconBg}`}>{icon}</span>
       <span className={`${T.cardLabel} break-keep`}>{label}</span>
     </div>
     <div className="mt-2">
@@ -269,7 +268,7 @@ const KpiCard: React.FC<KpiCardProps> = ({ icon, iconBg, label, value, sub, load
       ) : error ? (
         <div className="text-[14px] text-rose-500 font-semibold">조회 실패</div>
       ) : (
-        <div className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap tracking-tight" style={T.kpiValue} title={value}>
+        <div className="font-bold tabular-nums text-ink leading-[1.1] whitespace-nowrap tracking-tight" style={T.kpiValue} title={value}>
           {value}
         </div>
       )}
