@@ -34,8 +34,8 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   return (
     <nav
       aria-label="페이지 경로"
-      // 2026-10-07 · Batch 3 · font 15→13px (spec: Breadcrumb 12~13px compact)
-      className={`flex items-center flex-wrap gap-1 text-[13px] font-medium select-none ${className}`}
+      // 2026-10-08 · 사용자 피드백 · breadcrumb 13→15px · 상단 링크 가독성
+      className={`flex items-center flex-wrap gap-1 text-[15px] font-medium select-none ${className}`}
     >
       {items.map((it, i) => {
         const isLast = i === items.length - 1;
@@ -44,8 +44,8 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
         //   · 현재 페이지 클릭 시 · 서브탭 재설정 (state reset 안전)
         const clickable = !!(it.page && onNavigate);
         const content = (
-          <span className="inline-flex items-center gap-1">
-            {isFirst && showHomeIcon && <House size={13} weight="fill" className="opacity-80" />}
+          <span className="inline-flex items-center gap-1.5">
+            {isFirst && showHomeIcon && <House size={15} weight="fill" className="opacity-80" />}
             {it.icon}
             <span>{it.label}</span>
           </span>
@@ -79,7 +79,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
               </span>
             )}
             {!isLast && (
-              <CaretRight size={11} weight="bold" className="text-ink-soft/50 shrink-0" aria-hidden />
+              <CaretRight size={13} weight="bold" className="text-ink-soft/50 shrink-0" aria-hidden />
             )}
           </React.Fragment>
         );

@@ -147,11 +147,12 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
           type="button"
           aria-label={`${group.label} 그룹 ${open ? "접기" : "펼치기"}`}
           className={[
-            // 2026-10-07 · Batch 3 · 그룹 헤더 compact · spec: nav font 13~14px · group gap 14~18px
+            // 2026-10-08 · 사용자 피드백 · 사이드바 폰트/아이콘 확대 · 직관적 가독성 우선
+            //   · 그룹 헤더 font 14→16px · padding 1.5→2 · 좀 더 명확한 섹션 구분
             "flex w-full items-center justify-between",
-            "px-2.5 py-1.5 mt-3 mb-0",
+            "px-2.5 py-2 mt-3 mb-0",
             "rounded-lg",
-            "text-[14px] leading-none",
+            "text-[16px] leading-none",
             "transition-colors duration-150 ease-out",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
             hasActiveItem
@@ -161,7 +162,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   "font-semibold",
                 ].join(" ")
               : [
-                  "text-[#9FBAD4]",
+                  "text-[#B8CFE6]",       // 피드백 반영 · muted blue 더 밝게 (가독성)
                   "hover:bg-white/[0.04] hover:text-white",
                   "font-medium",
                 ].join(" "),
@@ -176,16 +177,16 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                 style={{ background: NAV_ACCENT[group.color].hex }}
               />
             )}
-            {/* 2026-10-07 · Batch 3 · 아이콘 · 활성=white · 비활성=muted blue-gray · drop-shadow glow 제거 */}
+            {/* 2026-10-08 · 사용자 피드백 · 아이콘 size 16→20 · 더 직관적 */}
             {group.icon && (() => {
               const GroupIcon = group.icon;
               return (
                 <GroupIcon
-                  size={16}
+                  size={20}
                   weight={hasActiveItem ? "fill" : "regular"}
                   className={[
                     "shrink-0 transition-colors duration-150 ease-out",
-                    hasActiveItem ? "text-white" : "text-[#8FA5BF]",
+                    hasActiveItem ? "text-white" : "text-[#A8BFD5]",
                   ].join(" ")}
                 />
               );
@@ -206,7 +207,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
             aria-hidden="true"
           >
             <CaretDown
-              size={12}
+              size={14}
               weight="bold"
               className={[
                 "shrink-0 transition-transform duration-200 ease-out",
@@ -252,10 +253,10 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   aria-current={active ? "page" : undefined}
                   aria-label={item.label}
                   className={[
-                    // 2026-10-07 · Batch 3 · nav row h-10 (40px · spec 40~42) · font 13px · active bg subtle
-                    "group-data-[collapsible=icon]:pl-2 pl-2.5 pr-2",
-                    "h-10 rounded-lg",
-                    "text-[13px]",
+                    // 2026-10-08 · 사용자 피드백 · 폰트/row 확대 · 가독성 우선 (13→15, h-10→h-11)
+                    "group-data-[collapsible=icon]:pl-2 pl-3 pr-2",
+                    "h-11 rounded-lg",
+                    "text-[15px]",
                     active
                       ? [
                           "bg-white/[0.08]",
@@ -263,19 +264,19 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                           "font-semibold tracking-tight",
                         ].join(" ")
                       : [
-                          "font-medium text-[#9FBAD4]",
+                          "font-medium text-[#B8CFE6]",
                           "hover:bg-white/[0.05] hover:text-white",
                         ].join(" "),
                     "transition-colors duration-150 ease-out",
                   ].join(" ")}
                 >
-                  {/* 2026-10-07 · Batch 3 · 아이콘 · 활성=white · 비활성=muted · drop-shadow glow 제거 */}
+                  {/* 2026-10-08 · 사용자 피드백 · 아이콘 size 16→18 · 활성=white · 비활성=brighter muted */}
                   <Icon
-                    size={16}
+                    size={18}
                     weight={active ? "fill" : "regular"}
                     className={[
                       "shrink-0 transition-colors duration-150 ease-out",
-                      active ? "text-white" : "text-[#8FA5BF]",
+                      active ? "text-white" : "text-[#A8BFD5]",
                     ].join(" ")}
                   />
                   <span className="inline-flex items-center gap-1.5">
@@ -323,11 +324,11 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, ac
       aria-current={active ? "page" : undefined}
       aria-label={group.label}
       className={[
-        // 2026-10-07 · Batch 3 · Single item 그룹 header-like · spec: nav font 13~14px · 40px row
-        "flex w-full items-center gap-2",
-        "px-2.5 h-10 mt-3 mb-0",
+        // 2026-10-08 · 사용자 피드백 · SingleItem 그룹 폰트/row 확대 (14→16, h-10→h-11)
+        "flex w-full items-center gap-2.5",
+        "px-2.5 h-11 mt-3 mb-0",
         "rounded-lg",
-        "text-[14px] leading-none",
+        "text-[16px] leading-none",
         "transition-colors duration-150 ease-out",
         "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
         active
@@ -337,20 +338,20 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, ac
               "font-semibold tracking-tight",
             ].join(" ")
           : [
-              "text-[#9FBAD4]",
+              "text-[#B8CFE6]",
               "hover:bg-white/[0.05] hover:text-white",
               "font-medium",
             ].join(" "),
         "group-data-[collapsible=icon]:justify-center",
       ].join(" ")}
     >
-      {/* 2026-10-07 · Batch 3 · 아이콘 · 활성=white · 비활성=muted · drop-shadow glow 제거 */}
+      {/* 2026-10-08 · 사용자 피드백 · 아이콘 size 16→20 · 더 또렷 */}
       <Icon
-        size={16}
+        size={20}
         weight={active ? "fill" : "regular"}
         className={[
           "shrink-0 transition-colors duration-150 ease-out",
-          active ? "text-white" : "text-[#8FA5BF]",
+          active ? "text-white" : "text-[#A8BFD5]",
         ].join(" ")}
       />
       <span className="group-data-[collapsible=icon]:hidden tracking-tight">{group.label}</span>
@@ -475,14 +476,14 @@ export const SideNav: React.FC<SideNavProps> = ({
               alt={`${brand.region ? brand.region + " " : ""}${brand.shortName} 로고`}
               className="w-7 h-7 rounded-full object-cover shrink-0 ring-1 ring-white/15 transition-all duration-200 hover:ring-white/30"
             />
-            {/* icon-only 모드에서 숨김 · 2026-10-07 · brand/region 폰트 축소 (14px/13px → spec 13~14px) */}
+            {/* 2026-10-08 · 사용자 피드백 · brand/region 폰트 확대 (14/12 → 16/13) · 로고 영역 가독성 */}
             <div className="flex flex-col gap-0 leading-none group-data-[collapsible=icon]:hidden min-w-0">
               {brand.region && (
-                <span className="text-[14px] font-semibold text-white tracking-tight leading-tight break-words whitespace-normal">
+                <span className="text-[16px] font-semibold text-white tracking-tight leading-tight break-words whitespace-normal">
                   {brand.region}
                 </span>
               )}
-              <span className="text-[12px] font-medium text-[#93B4D0] tracking-tight leading-tight break-words whitespace-normal mt-0.5">
+              <span className="text-[13px] font-medium text-[#A8C2DD] tracking-tight leading-tight break-words whitespace-normal mt-0.5">
                 {brand.shortName}
               </span>
             </div>
@@ -522,10 +523,10 @@ export const SideNav: React.FC<SideNavProps> = ({
       <div className="relative h-px shrink-0" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 50%, transparent)" }} aria-hidden />
 
       <SidebarFooter className="relative px-2 py-1.5 gap-0.5 z-10">
-        {/* 2026-10-07 · Batch 3 · footer user compact · spec: name 13~14px */}
+        {/* 2026-10-08 · 사용자 피드백 · footer user name 13→15 · 가독성 */}
         {authSession && authSession.employeeName && (
           <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
-            <span className="text-[13px] font-semibold text-white break-words whitespace-normal leading-tight">
+            <span className="text-[15px] font-semibold text-white break-words whitespace-normal leading-tight">
               {authSession.employeeName}
             </span>
           </div>
@@ -547,14 +548,14 @@ export const SideNav: React.FC<SideNavProps> = ({
                 tooltip="로그아웃"
                 aria-label="로그아웃"
                 className={[
-                  // 2026-10-07 · Batch 3 · logout compact · spec: nav font 13px · translate hover 제거
-                  "h-9 rounded-md pl-2",
-                  "text-[13px] font-medium",
-                  "text-[#9FBAD4] hover:bg-white/[0.05] hover:text-white",
+                  // 2026-10-08 · 사용자 피드백 · logout 폰트 13→14 · h-9→h-10 · 아이콘 14→16
+                  "h-10 rounded-md pl-2.5",
+                  "text-[14px] font-medium",
+                  "text-[#B8CFE6] hover:bg-white/[0.05] hover:text-white",
                   "transition-colors duration-150 ease-out",
                 ].join(" ")}
               >
-                <LogOut size={14} strokeWidth={2} className="shrink-0" />
+                <LogOut size={16} strokeWidth={2} className="shrink-0" />
                 <span>로그아웃</span>
               </SidebarMenuButton>
             </SidebarMenuItem>

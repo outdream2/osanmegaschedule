@@ -373,7 +373,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             <button
               type="button"
               onClick={() => onNavigate?.("mypage" as AppNavPage)}
-              className="inline-flex items-center justify-center h-9 sm:h-auto sm:min-h-[36px] text-[13px] font-semibold text-white whitespace-nowrap px-2 sm:px-2.5 py-1.5 rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer max-w-[42vw] sm:max-w-none"
+              // 2026-10-08 · 사용자 피드백 · 상단 링크 폰트 확대 (13→15)
+              className="inline-flex items-center justify-center h-9 sm:h-auto sm:min-h-[36px] text-[15px] font-semibold text-white whitespace-nowrap px-2 sm:px-2.5 py-1.5 rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer max-w-[42vw] sm:max-w-none"
               title="마이페이지"
             >
               <span className="break-words whitespace-normal leading-tight">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
@@ -385,15 +386,16 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           {authSession && onLogout ? (
             <button
               onClick={onLogout}
-              className="flex items-center gap-1.5 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[13px] font-medium text-white/85 hover:bg-white/[0.08] hover:text-white rounded-lg transition-colors cursor-pointer shrink-0"
+              // 2026-10-08 · 사용자 피드백 · 상단 링크 폰트 확대 (13→15)
+              className="flex items-center gap-1.5 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[15px] font-medium text-white/85 hover:bg-white/[0.08] hover:text-white rounded-lg transition-colors cursor-pointer shrink-0"
               title="로그아웃"
             >
-              <LogOut size={14} strokeWidth={2} />
+              <LogOut size={16} strokeWidth={2} />
               <span className="hidden sm:inline">로그아웃</span>
             </button>
           ) : (
-            <div className="flex items-center gap-1 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[13px] font-medium bg-white/[0.04] text-white/50 rounded-lg shrink-0" title="비로그인">
-              <Lock size={13} strokeWidth={2} />
+            <div className="flex items-center gap-1 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[15px] font-medium bg-white/[0.04] text-white/50 rounded-lg shrink-0" title="비로그인">
+              <Lock size={15} strokeWidth={2} />
             </div>
           )}
         </div>
