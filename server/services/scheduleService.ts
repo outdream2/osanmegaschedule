@@ -129,6 +129,24 @@ export class ScheduleService {
       .like("date", `${prevPrefix}%`);
     if (error) throw new Error(error.message);
 
+    // 2026-10-07 · PHASE 3A · F9 재확장 · 퇴직 직원 skip
+    //   · copy 는 "previous month 템플릿 → target month 신규 upsert" 이므로 신규 write 에 해당
+    //   · retireDate ≤ target month first day 인 직원은 target month 에 실제로 근무하지 않음
+    //   · 전체 copy 를 실패시키지 않고 해당 직원만 skip (운영 flow 유지)
+    //   · active 판정 기준 · target month 의 첫날 (= target month 내 신규 schedule 시점)
+    const targetFirstDay = `${targetYear}-${targetMonthStr}-01`;
+    const { data: emps, error: empErr } = await supabase
+      .from("employees")
+      .select('id, "retireDate"');
+    if (empErr) throw new Error(empErr.message);
+    const retiredEmpIds = new Set<number>();
+    for (const emp of (emps ?? [])) {
+      const retire = String((emp as { retireDate?: string | null }).retireDate ?? "").slice(0, 10);
+      if (retire && /^\d{4}-\d{2}-\d{2}$/.test(retire) && targetFirstDay > retire) {
+        retiredEmpIds.add(Number((emp as { id: number }).id));
+      }
+    }
+
     // Build per-employee weekday template via majority vote
     // structure: empId → dayOfWeek (0=Sun…6=Sat) → { type, workingHours, actualHours, memo, count }
     type DowData = { type: string; workingHours: string; actualHours: string; memo: string; count: number };
@@ -136,6 +154,7 @@ export class ScheduleService {
 
     for (const sched of (prevSchedules ?? [])) {
       if (!sched.type?.trim()) continue;
+      if (retiredEmpIds.has(Number(sched.employeeId))) continue; // F9 · 퇴직 직원 skip
       const dow = new Date(sched.date + "T00:00:00").getDay();
       if (!empDowMap.has(sched.employeeId)) empDowMap.set(sched.employeeId, new Map());
       const dowMap = empDowMap.get(sched.employeeId)!;
@@ -175,14 +194,14 @@ export class ScheduleService {
       }
     }
 
-    if (rows.length === 0) return { count: 0 };
+    if (rows.length === 0) return { count: 0, skippedRetired: retiredEmpIds.size };
 
     const { error: upsertErr } = await supabase
       .from("schedules")
       .upsert(rows, { onConflict: "employeeId,date" });
     if (upsertErr) throw new Error(upsertErr.message);
 
-    return { count: rows.length };
+    return { count: rows.length, skippedRetired: retiredEmpIds.size };
   }
 
   async batchUpdateSchedules(items: Array<{

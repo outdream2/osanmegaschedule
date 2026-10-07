@@ -204,6 +204,10 @@ router.put("/api/leave-requests/:id", authorize(5), validateBody(ReviewLeaveRequ
     }
     // 공통 guard · 월(들) lock 상태 검증 · lv≥9 bypass (서버 측 명시 에러 메시지용)
     await assertScheduleNotLockedForDates(dates, authLevel);
+    // 2026-10-07 · PHASE 3A · F9 · 승인 시 target 직원 ACTIVE 재검증
+    //   · pending 생성 당시엔 active 였어도 승인 시점에 퇴직 가능 (매니저 대기열에 묵혀둔 request)
+    //   · end_date 기준 (후보 schedule 날짜 범위 중 가장 큰 날짜) 검증 · 과거 보정은 허용 (historical 날짜 ≤ retireDate 는 통과)
+    await assertEmployeeActiveForWrite(Number(pre.employee_id), endDate);
 
     // RPC canonical 호출 · atomic transaction
     const { error: rpcErr } = await supabase.rpc("approve_leave_request", {
