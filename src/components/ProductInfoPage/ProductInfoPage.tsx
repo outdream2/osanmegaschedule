@@ -36,7 +36,7 @@ import { saveInventoryCheck } from "../../lib/inventoryChecksApi";
 import { getProductByCode } from "../../lib/productsApi";
 // 2026-09-14 · 통계설정 · 적정재고 계산 일수 · 실시간 반영
 import { useOptimalStockPeriod } from "../../hooks/useOptimalStockPeriod";
-import { PAGE_CONTAINER_CLS, CARD_BASE } from "../../styles/tokens";
+import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { AccentBar } from "../common/AccentBar";
 import { matchesProductQuery } from "../../lib/productMatch";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
@@ -921,15 +921,20 @@ export const ProductInfoPage: React.FC<Props> = ({ authSession }) => {
 
   return (
     <div className="flex-1 flex flex-col bg-[#F4F7FA] min-h-0">
-      {/* ── 상단 FilterBar ── */}
+      {/* ── 상단 FilterBar · 2026-10-07 · Batch 2 (PRESENTATION ONLY) · CARD_BASE 의 shadow-sm 제거 ·
+             PageToolbar 와 동일 Attio inset light + 2-layer shadow 로 톤 통일 (visual-reference-lock) ·
+             state / handler / SearchBar historyKey / SaleStatusFilter / Button onClick 모두 unchanged ── */}
       <div className={`${PAGE_CONTAINER_CLS} px-3 sm:px-4 lg:px-6 py-3 shrink-0`}>
-        <div className={`${CARD_BASE} px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2`}>
+        <div
+          className="bg-white rounded-xl border border-line px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2"
+          style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.60), 0 1px 2px rgba(10,46,74,0.05), 0 2px 8px -2px rgba(10,46,74,0.06)" }}
+        >
           <div className="flex items-center gap-2.5 shrink-0">
-            <AccentBar />
+            <AccentBar size="lg" />
             <Package size={16} className="text-brand-deep shrink-0" />
-            <span className="text-[17px] font-bold text-ink">상품정보</span>
+            <span className="text-[18px] font-bold text-ink tracking-tight">상품정보</span>
           </div>
-          <StatusPill tone="sky" size="sm">{filtered.length}건</StatusPill>
+          <StatusPill tone="brand" size="md">{filtered.length}건</StatusPill>
           {/* 검색창 */}
           <SearchBar
             value={search}
