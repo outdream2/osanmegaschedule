@@ -36,6 +36,8 @@ import SupplierVatTab from "./tabs/SupplierVatTab";
 import { AccentBar } from "../common/AccentBar";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
+// 2026-10-08 · GLOBAL UI reference-tone · Analytics template wrapper
+import { AnalyticsPageTemplate } from "../common/AnalyticsPageTemplate";
 import { useKvSetting } from "../../hooks/useKvSetting";
 
 // ─── 타입 ────────────────────────────────────────────────────────
@@ -298,92 +300,83 @@ const VatPreparePage: React.FC = () => {
     return { bg: "bg-sky-50", text: "text-sky-700", ring: "ring-sky-200" };
   })();
 
+  // 2026-10-08 · GLOBAL UI reference-tone · AnalyticsPageTemplate 적용
+  //   · 이전 · 거대한 Card hero (title + logo square + 다음 신고 카운트다운 pill + preset + period + refresh)
+  //           → "giant card" + "oversized heading" + "card chrome" + rose solid preset pill 위반
+  //   · 이후 · flat title (plain text) · compact controls row (preset text buttons + period select + 다음신고 inline text + refresh icon)
+  //   · 상단 Card wrapper 완전 제거 · "다음 신고 D-N" 은 플레인 텍스트 (배지 사용 자제 · 사용자 피드백 반영)
+  //   · state (preset · period · loading · summary) · handler (applyPreset · setPeriod · loadData) 전부 보존
   return (
-    <div className="flex flex-col gap-3 min-h-0 h-full">
-
-      {/* ── 상단: 다음 신고일 · Preset 선택 ── */}
-      <Card>
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-          {/* 로고·타이틀 · 2026-08-17 · 최신 트렌드 · accent bar + 딥네이비 통일 */}
-          <div className="flex items-center gap-3 shrink-0">
-            <AccentBar h={26} className="shrink-0" />
-            <div className="w-10 h-10 rounded-xl bg-brand-deep flex items-center justify-center text-white shrink-0 shadow-sm">
-              <Calculator size={20} />
-            </div>
-            <div>
-              <div className="text-[18px] font-bold text-ink leading-tight tracking-tight">부가세 준비</div>
-              <div className="text-[15px] text-ink-soft leading-tight mt-0.5">공급사별 매입세액 집계 · 신고 준비 체크리스트</div>
-            </div>
-          </div>
-
-          {/* 다음 신고일 카운트다운 */}
-          {summary?.next && (
-            <div className={`flex items-center gap-3 px-4 py-2 rounded-xl ring-1 ${dCountColor.bg} ${dCountColor.ring} shrink-0`}>
-              <Calendar size={18} className={dCountColor.text} />
-              <div>
-                <div className={`text-[14px] font-bold ${dCountColor.text} uppercase tracking-wide`}>{summary.next.type} · 다음 신고</div>
-                <div className={`text-[15px] font-bold ${dCountColor.text} leading-tight`}>
-                  {summary.next.label} · <span className="tabular-nums">D-{summary.next.daysLeft}</span>
-                </div>
-                <div className="text-[14px] text-zinc-500">신고 기한 · {summary.next.dueDate}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Preset · 새로고침 · 우측 정렬 */}
-          <div className="flex items-center gap-2 lg:ml-auto flex-wrap">
-            {(["current-half", "prev-half", "current-year"] as PeriodPreset[]).map(p => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => applyPreset(p)}
-                className={`h-8 px-3 text-[13px] font-bold rounded-lg transition cursor-pointer ${
-                  preset === p
-                    ? "bg-rose-500 text-white shadow"
-                    : "bg-zinc-50 text-zinc-600 border border-line hover:bg-zinc-100"
-                }`}
-              >
-                {p === "current-half" ? "현재 반기" : p === "prev-half" ? "직전 반기" : "올해"}
-              </button>
-            ))}
-            <select
-              value={period}
-              onChange={e => { setPreset("custom"); setPeriod(e.target.value); }}
-              className="h-8 px-2 text-[13px] font-semibold border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint"
-            >
-              {[0, 1, 2].map(offset => {
-                const y = new Date().getFullYear() - offset;
-                return (
-                  <React.Fragment key={y}>
-                    <option value={`${y}-1H`}>{y} 1기 확정 (1~6월)</option>
-                    <option value={`${y}-2H`}>{y} 2기 확정 (7~12월)</option>
-                    <option value={`${y}-Q1`}>{y} 1기 예정 (1~3월)</option>
-                    <option value={`${y}-Q3`}>{y} 2기 예정 (7~9월)</option>
-                  </React.Fragment>
-                );
-              })}
-            </select>
+    <AnalyticsPageTemplate
+      title="부가세 준비"
+      description="공급사별 매입세액 집계 · 신고 준비 체크리스트"
+      actions={
+        <button
+          type="button"
+          onClick={loadData}
+          disabled={loading}
+          className="h-9 w-9 flex items-center justify-center rounded-lg bg-white border border-line hover:bg-zinc-50 text-ink-soft cursor-pointer disabled:opacity-50 transition-colors"
+          title="새로고침"
+          aria-label="새로고침"
+        >
+          <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+        </button>
+      }
+      controls={
+        <>
+          {/* preset text buttons · 2026-10-08 · 배지/rose solid 제거 → plain text toggle · 반응형 wrap OK */}
+          {(["current-half", "prev-half", "current-year"] as PeriodPreset[]).map(p => (
             <button
+              key={p}
               type="button"
-              onClick={loadData}
-              disabled={loading}
-              className="h-8 w-8 flex items-center justify-center rounded-lg bg-zinc-50 border border-line hover:bg-zinc-100 text-zinc-600 cursor-pointer disabled:opacity-50"
-              title="새로고침"
+              onClick={() => applyPreset(p)}
+              className={`h-9 px-3 text-[13px] font-semibold rounded-lg border transition-colors cursor-pointer ${
+                preset === p
+                  ? "bg-brand-tint/60 text-brand-deep border-brand-deep/15"
+                  : "bg-white text-ink-soft border-line hover:bg-zinc-50 hover:text-ink"
+              }`}
             >
-              <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+              {p === "current-half" ? "현재 반기" : p === "prev-half" ? "직전 반기" : "올해"}
             </button>
-          </div>
-        </div>
-
-        {summary?.range && (
-          <div className="mt-3 pt-3 border-t border-zinc-100 text-[13px] text-zinc-500 flex flex-wrap items-center gap-x-4 gap-y-1">
-            <span><b className="text-zinc-700">조회 기간</b> · {summary.range.from} ~ {summary.range.to}</span>
-            <span><b className="text-zinc-700">신고 유형</b> · {summary.range.type}</span>
-            <span><b className="text-zinc-700">신고 기한</b> · {summary.range.dueDate}</span>
-            <span><b className="text-zinc-700">매입 건수</b> · {fmt(summary.rowCount)}건</span>
-          </div>
-        )}
-      </Card>
+          ))}
+          <select
+            value={period}
+            onChange={e => { setPreset("custom"); setPeriod(e.target.value); }}
+            className="h-9 px-2.5 text-[13px] font-medium text-ink border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint bg-white"
+          >
+            {[0, 1, 2].map(offset => {
+              const y = new Date().getFullYear() - offset;
+              return (
+                <React.Fragment key={y}>
+                  <option value={`${y}-1H`}>{y} 1기 확정 (1~6월)</option>
+                  <option value={`${y}-2H`}>{y} 2기 확정 (7~12월)</option>
+                  <option value={`${y}-Q1`}>{y} 1기 예정 (1~3월)</option>
+                  <option value={`${y}-Q3`}>{y} 2기 예정 (7~9월)</option>
+                </React.Fragment>
+              );
+            })}
+          </select>
+          {/* 다음 신고 inline · 배지/pill 제거 · plain text with calendar icon */}
+          {summary?.next && (
+            <span className={`inline-flex items-center gap-1.5 text-[13px] font-medium ${dCountColor.text}`}>
+              <Calendar size={14} />
+              <span className="font-semibold">{summary.next.type} · 다음 신고</span>
+              <span className="tabular-nums font-bold">D-{summary.next.daysLeft}</span>
+              <span className="text-ink-soft">· {summary.next.dueDate}</span>
+            </span>
+          )}
+          {summary?.range && (
+            <span className="text-[12px] text-ink-soft ml-auto whitespace-nowrap hidden md:inline-flex items-center gap-3">
+              <span><b className="text-ink/80 font-semibold">조회</b> {summary.range.from} ~ {summary.range.to}</span>
+              <span><b className="text-ink/80 font-semibold">건수</b> <span className="tabular-nums">{fmt(summary.rowCount)}</span>건</span>
+            </span>
+          )}
+        </>
+      }
+    >
+      {/* ─ Analytics template children · controls/kpi/primary/secondary slot props 는 아래 자유 body로 유지 (복잡 조건부 render)
+             · 원래 outer div 자리 · gap/column 그대로 ─ */}
+      <div className="flex flex-col gap-3 min-h-0 flex-1">
 
       {/* ── 경고 · 에러 ── */}
       {error && (
@@ -691,6 +684,7 @@ const VatPreparePage: React.FC = () => {
         </div>
       </div>
     </div>
+    </AnalyticsPageTemplate>
   );
 };
 
