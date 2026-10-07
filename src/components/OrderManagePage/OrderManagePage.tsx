@@ -21,9 +21,6 @@ const ScanPage = React.lazy(() => import("../ScanPage/ScanPage").then(m => ({ de
 const ProductArrivalPage = React.lazy(() => import("../ProductArrivalPage/ProductArrivalPage").then(m => ({ default: m.ProductArrivalPage })));
 // 2026-08-23 · #177 · Phase A · ProductInfoPage 신설 (상품정보 서브탭)
 const ProductInfoPage = React.lazy(() => import("../ProductInfoPage/ProductInfoPage").then(m => ({ default: m.ProductInfoPage })));
-// 2026-09-01 · 사용자 지시 · 판매대시보드 서브탭 (매장>판매>통계 안) · SalesTrendPage 원본 그대로 유지 · DashboardTab 재사용
-const DashboardTab = React.lazy(() => import("../SalesTrendPage/DashboardTab").then(m => ({ default: m.DashboardTab })));
-
 const SubTabFallback = () => (
   <div className="flex-1 flex items-center justify-center py-16">
     <Spinner size={14} tone="zinc" label="로딩 중..." labelSize={12} />
@@ -158,8 +155,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // 2026-09-02 · #69 · card-register · card-history 신규 (사용자 지시)
   // 2026-09-14 · #118 · 결제 대시보드 · 첫 번째 탭 (기본 진입)
   const [paymentSubTab, setPaymentSubTab] = useState<"payment-dashboard" | "vendor" | "payment-input" | "card-register" | "card-history" | "borrowing" | "vat-prepare">("payment-dashboard");
-  // 2026-09-01 · 사용자 지시 · dashboard 서브탭 추가 (기본 dashboard · 판매대시보드 우선 노출)
-  const [statSubTab, setStatSubTab] = useState<StatKey>("dashboard");
+  // 2026-10-07 · 사용자 지시 · 판매대시보드 서브탭 제거 · 첫 번째 탭 = 급상승 (trending)
+  const [statSubTab, setStatSubTab] = useState<StatKey>("trending");
 
   // 2026-10-06 · 사용자 지시 · breadcrumb 4번째 depth · active inner tab 추적
   //   · topTab 변경 or inner tab 변경 시 activeNav.nested 동기화
@@ -861,14 +858,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             statSortable.tabs.map(t => ({ k: t.key, label: t.label, icon: t.icon, color: t.color })),
             statSubTab, setStatSubTab,
             { getTabProps: statSortable.getTabProps, isDragging: statSortable.isDragging },
-          )}
-          {/* 2026-09-01 · 사용자 지시 · 판매대시보드 (DashboardTab 재사용 · SalesTrendPage 원본 그대로 유지) */}
-          {statSubTab === "dashboard" && (
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              <Suspense fallback={<SubTabFallback />}>
-                <DashboardTab />
-              </Suspense>
-            </div>
           )}
           {statSubTab === "trending" && (
             <div className="flex-1 min-h-0 overflow-y-auto">

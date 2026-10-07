@@ -84,9 +84,6 @@ export const SK_STOCKMANAGE_SUPPLIER_W = "megatown_stockmanage_supplier_w";
 export const SK_FLOW_CLASSFILTER = "megatown_flow_classfilter";
 
 // ── 매출 트렌드 ───────────────────────────────────────────────────────────────
-/** 대시보드 탭 좌측 너비 · SalesTrendPage/DashboardTab.tsx */
-export const SK_DASHBOARD_LEFT_W = "megatown_dashboard_left_w";
-
 /** 카테고리 패널 너비 · SalesTrendPage/ZoneCategoryContent.tsx */
 export const SK_SALESTREND_CATEGORY_W = "megatown_salestrend_category_w";
 

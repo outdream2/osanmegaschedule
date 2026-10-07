@@ -7,7 +7,7 @@
 import {
   ShoppingCart, ClipboardList, AlertTriangle, Package, Building2, ArrowLeftRight, PackageCheck,
   ScanLine, PackagePlus, Info, Wallet, HandCoins, Calculator, TrendingUp, PieChart, Boxes,
-  BarChart3, CreditCard, LineChart, LayoutDashboard, ClipboardCheck,
+  CreditCard, LineChart, LayoutDashboard, ClipboardCheck,
 } from "lucide-react";
 
 // 2026-09-25 · #1 · 발주매입 대조 시스템 · 신규 2탭 (사용자 지시)
@@ -22,8 +22,8 @@ export type PurchaseKey = "purchase-history" | "productinfo" | "productarrival" 
 //   · card-history  · 카드별 결제내역 (대시보드 · 차월 예정)
 // 2026-09-14 · #118 · 결제 대시보드 페이지 신규 · 첫 번째 탭
 export type PaymentKey = "payment-dashboard" | "payment-input" | "vendor" | "card-register" | "card-history" | "borrowing" | "vat-prepare";
-// 2026-09-01 · 사용자 지시 · 판매대시보드 서브탭 신설 (SalesTrendPage 는 그대로 유지 · 매장>판매>통계 에도 추가)
-export type StatKey = "dashboard" | "trending" | "category" | "flow" | "diff" | "supplier";
+// 2026-10-07 · 사용자 지시 · 판매대시보드 서브탭 제거 (DashboardTab 완전 삭제)
+export type StatKey = "trending" | "category" | "flow" | "diff" | "supplier";
 
 export interface SubTabDef<K extends string> {
   key: K;
@@ -70,9 +70,8 @@ export const PAYMENT_DEFAULT_TABS: SubTabDef<PaymentKey>[] = [
   { key: "vat-prepare",   label: "부가세 준비",      icon: Calculator,  color: "rose"   },
 ];
 
+// 2026-10-07 · 사용자 지시 · 판매대시보드 서브탭 완전 제거 (첫 번째 탭 = 급상승)
 export const STAT_DEFAULT_TABS: SubTabDef<StatKey>[] = [
-  // 2026-09-01 · 사용자 지시 · 판매대시보드 신설 (DashboardTab 재사용 · SalesTrendPage 원본 유지)
-  { key: "dashboard", label: "판매대시보드", icon: BarChart3,    color: "teal"    },
   { key: "trending",  label: "급상승",       icon: TrendingUp,    color: "indigo"  },
   { key: "category",  label: "구역현황",     icon: PieChart,      color: "amber"   },
   { key: "flow",      label: "상품현황",     icon: Boxes,         color: "sky"     },
