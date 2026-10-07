@@ -102,20 +102,20 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
             <div className="pl-2 flex flex-col gap-0.5">
               {/* 연차 */}
               <div className="flex items-center justify-between gap-2 min-w-0" title={`연차 ${leaveCount}건`}>
-                <span className="text-[13px] sm:text-[14px] text-zinc-600 font-semibold tracking-tight shrink-0">연차</span>
+                <span className="text-[12px] sm:text-[13px] text-zinc-500 font-medium tracking-wide shrink-0">연차</span>
                 <span
                   className="font-bold tabular-nums leading-tight text-brand-amber-ink whitespace-nowrap"
-                  style={{ fontSize: "clamp(15px, 2.4vw, 22px)" }}
+                  style={{ fontSize: "clamp(15px, 2.3vw, 20px)" }}
                 >
                   {leaveCount.toLocaleString("ko-KR")}건
                 </span>
               </div>
               {/* 사직서 */}
               <div className="flex items-center justify-between gap-2 min-w-0" title={`사직서 ${resignationCount}건`}>
-                <span className="text-[13px] sm:text-[14px] text-zinc-600 font-semibold tracking-tight shrink-0">사직서</span>
+                <span className="text-[12px] sm:text-[13px] text-zinc-500 font-medium tracking-wide shrink-0">사직서</span>
                 <span
                   className="font-bold tabular-nums leading-tight text-brand-amber-ink whitespace-nowrap"
-                  style={{ fontSize: "clamp(15px, 2.4vw, 22px)" }}
+                  style={{ fontSize: "clamp(15px, 2.3vw, 20px)" }}
                 >
                   {resignationCount.toLocaleString("ko-KR")}건
                 </span>
@@ -123,10 +123,10 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
               {/* 거래처 (admin + requestsMenuVisible 조건) */}
               {isAdmin && requestsMenuVisible && (
                 <div className="flex items-center justify-between gap-2 min-w-0" title={`거래처 ${vendorCount}건`}>
-                  <span className="text-[13px] sm:text-[14px] text-zinc-600 font-semibold tracking-tight shrink-0">거래처</span>
+                  <span className="text-[12px] sm:text-[13px] text-zinc-500 font-medium tracking-wide shrink-0">거래처</span>
                   <span
                     className="font-bold tabular-nums leading-tight text-brand-amber-ink whitespace-nowrap"
-                    style={{ fontSize: "clamp(15px, 2.4vw, 22px)" }}
+                    style={{ fontSize: "clamp(15px, 2.3vw, 20px)" }}
                   >
                     {vendorCount.toLocaleString("ko-KR")}건
                   </span>
@@ -142,11 +142,11 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
           >
             <div className="flex items-center gap-1.5 mb-1 whitespace-nowrap">
               <span className={`w-2 h-2 rounded-full ${displayCount > 0 ? "bg-sky-500" : "bg-zinc-300"}`} aria-hidden />
-              <span className="text-[14px] sm:text-[15px] text-zinc-500 font-semibold tracking-tight">진열 요청</span>
+              <span className="text-[12px] sm:text-[13px] text-zinc-500 font-medium tracking-wide">진열 요청</span>
             </div>
             <div
               className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap"
-              style={{ fontSize: "clamp(13px, 2.0vw, 20px)" }}
+              style={{ fontSize: "clamp(15px, 2.3vw, 20px)" }}
               title={`${displayCount}건`}
             >
               {displayCount.toLocaleString("ko-KR")}건
@@ -160,11 +160,11 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
           >
             <div className="flex items-center gap-1.5 mb-1 whitespace-nowrap">
               <span className={`w-2 h-2 rounded-full ${orderCount > 0 ? "bg-teal-500" : "bg-zinc-300"}`} aria-hidden />
-              <span className="text-[14px] sm:text-[15px] text-zinc-500 font-semibold tracking-tight">발주 요청</span>
+              <span className="text-[12px] sm:text-[13px] text-zinc-500 font-medium tracking-wide">발주 요청</span>
             </div>
             <div
               className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap"
-              style={{ fontSize: "clamp(13px, 2.0vw, 20px)" }}
+              style={{ fontSize: "clamp(15px, 2.3vw, 20px)" }}
               title={`${orderCount}건`}
             >
               {orderCount.toLocaleString("ko-KR")}건
@@ -172,7 +172,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
           </div>
           {/* 승인 상세 → (PC) · amber tint + arrow hover */}
           <div className="hidden sm:flex items-center px-4 bg-gradient-to-br from-brand-amber/[0.08] to-brand-amber-tint/60 group-hover:from-brand-amber/[0.14] group-hover:to-brand-amber-tint transition">
-            <div className="text-[15px] text-brand-amber-ink font-bold whitespace-nowrap tracking-tight flex items-center gap-1.5">
+            <div className="text-[13px] sm:text-[14px] text-brand-amber-ink font-bold whitespace-nowrap tracking-tight flex items-center gap-1.5">
               승인 상세
               <span className="transition-transform group-hover:translate-x-0.5">›</span>
             </div>

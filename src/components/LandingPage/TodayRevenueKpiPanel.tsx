@@ -97,13 +97,13 @@ export const TodayRevenueKpiPanel: React.FC<Props> = ({ onOpenRevenue }) => {
                 <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-60" />
                 <span className="relative w-2 h-2 rounded-full bg-emerald-500" />
               </span>
-              <span className="text-[14px] sm:text-[15px] text-zinc-600 font-semibold tracking-tight">현재 매출</span>
+              <span className="text-[12px] sm:text-[13px] text-zinc-500 font-medium tracking-wide">현재 매출</span>
             </div>
-            {/* 2026-10-06 · 사용자 지시 · 반응형에서 금액 줄바꿈 금지 · 최신 트렌드 (clamp 반응형 폰트 · whitespace-nowrap)
-                · 폭 좁아지면 폰트 자동 축소 · 금액은 절대 중간 깨짐 X */}
+            {/* 2026-10-07 · 사용자 지시 · 최신 KPI 트렌드 · label 작게 · value prominent · ratio 1.4-1.7x
+                · clamp fluid typography · 폭 좁아지면 폰트 자동 축소 · nowrap */}
             <div
               className="font-bold tabular-nums leading-tight text-brand-deep whitespace-nowrap"
-              style={{ fontSize: "clamp(17px, 3.2vw, 26px)" }}
+              style={{ fontSize: "clamp(16px, 2.8vw, 22px)" }}
               title={showValue ? fmt(sale) + "원" : undefined}
             >
               {showValue ? fmt(sale) + "원" : "-"}
@@ -112,10 +112,10 @@ export const TodayRevenueKpiPanel: React.FC<Props> = ({ onOpenRevenue }) => {
         </div>
         {/* 객단가 */}
         <div className="flex-1 px-3 sm:px-4 py-3 sm:py-4 min-w-0 group-hover:bg-zinc-50/60 transition">
-          <div className="text-[14px] sm:text-[15px] text-zinc-500 font-semibold mb-1 tracking-tight whitespace-nowrap">객단가</div>
+          <div className="text-[12px] sm:text-[13px] text-zinc-500 font-medium mb-1 tracking-wide whitespace-nowrap">객단가</div>
           <div
             className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap"
-            style={{ fontSize: "clamp(15px, 2.4vw, 22px)" }}
+            style={{ fontSize: "clamp(15px, 2.3vw, 20px)" }}
             title={showValue && txn > 0 ? fmt(sale / txn) + "원" : undefined}
           >
             {showValue && txn > 0 ? fmt(sale / txn) + "원" : "-"}
@@ -123,10 +123,10 @@ export const TodayRevenueKpiPanel: React.FC<Props> = ({ onOpenRevenue }) => {
         </div>
         {/* 방문객 */}
         <div className="flex-1 px-3 sm:px-4 py-3 sm:py-4 min-w-0 group-hover:bg-zinc-50/60 transition">
-          <div className="text-[14px] sm:text-[15px] text-zinc-500 font-semibold mb-1 tracking-tight whitespace-nowrap">방문객</div>
+          <div className="text-[12px] sm:text-[13px] text-zinc-500 font-medium mb-1 tracking-wide whitespace-nowrap">방문객</div>
           <div
             className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap"
-            style={{ fontSize: "clamp(15px, 2.4vw, 22px)" }}
+            style={{ fontSize: "clamp(15px, 2.3vw, 20px)" }}
             title={showValue ? fmt(txn) + "명" : undefined}
           >
             {showValue ? fmt(txn) + "명" : "-"}
@@ -134,7 +134,7 @@ export const TodayRevenueKpiPanel: React.FC<Props> = ({ onOpenRevenue }) => {
         </div>
         {/* 매출 상세 → (PC) · subtle brand tint + arrow hover */}
         <div className="hidden sm:flex items-center px-4 bg-gradient-to-br from-brand-deep/[0.06] to-indigo-50/60 group-hover:from-brand-deep/[0.10] group-hover:to-indigo-100/80 transition">
-          <div className="text-[15px] text-brand-deep font-bold whitespace-nowrap tracking-tight flex items-center gap-1.5">
+          <div className="text-[13px] sm:text-[14px] text-brand-deep font-bold whitespace-nowrap tracking-tight flex items-center gap-1.5">
             매출 상세
             <span className="transition-transform group-hover:translate-x-0.5">›</span>
           </div>
