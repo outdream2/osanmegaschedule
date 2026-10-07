@@ -48,17 +48,20 @@ export const AnalyticsPageTemplate: React.FC<AnalyticsPageTemplateProps> = ({
   children,
   containerClassName,
 }) => {
-  const container = containerClassName ?? "flex-1 w-full max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex flex-col gap-3 sm:gap-4 min-h-0";
+  // 2026-10-08 · GLOBAL UI visual recovery · widen + hierarchy divider
+  //   · max-w cap 제거 · reference image full-width 활용
+  //   · title row 하단 border · controls → KPI → primary → secondary 각 영역 명확
+  const container = containerClassName ?? "flex-1 w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex flex-col gap-3 sm:gap-4 min-h-0";
 
   return (
     <main className={container} data-template="analytics">
-      {tabs && <div className="shrink-0 -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6">{tabs}</div>}
+      {tabs && <div className="shrink-0 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">{tabs}</div>}
 
       {(title != null || description != null || actions != null) && (
-        <header className="flex items-start justify-between gap-3 shrink-0 pt-1">
+        <header className="flex items-start justify-between gap-3 shrink-0 pt-1 pb-3 border-b border-slate-200">
           <div className="min-w-0 flex-1">
             {title != null && (
-              <h1 className="text-[22px] sm:text-[24px] font-bold text-ink tracking-tight leading-tight break-words">
+              <h1 className="text-[22px] sm:text-[26px] font-bold text-ink tracking-tight leading-tight break-words">
                 {title}
               </h1>
             )}
@@ -74,7 +77,11 @@ export const AnalyticsPageTemplate: React.FC<AnalyticsPageTemplateProps> = ({
         </header>
       )}
 
-      {controls != null && <div className="shrink-0 flex flex-wrap items-center gap-2">{controls}</div>}
+      {controls != null && (
+        <div className="shrink-0 flex flex-wrap items-center gap-x-3 gap-y-2 min-h-[40px]">
+          {controls}
+        </div>
+      )}
 
       {kpi != null && <div className="shrink-0">{kpi}</div>}
 
