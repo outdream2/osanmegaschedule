@@ -61,10 +61,9 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
   const requestsMenuVisible = isVisible("requests", currentViewport)       && !isPermsHidden("requests");
   const businessMenuVisible = isVisible("business-manage", currentViewport) && !isPermsHidden("business-manage");
 
-  // 2026-10-06 · 사용자 지시 · 연차 + 사직서 → 서류 승인 통합
-  const docCount =
-    (leaveMenuVisible ? leavePendingCount : 0)
-    + ((businessMenuVisible || requestsMenuVisible) ? requestsCounts.resignation : 0);
+  // 2026-10-07 · 사용자 지시 · 승인대기 cell 을 연차/사직서/거래처 3개 아이템 으로 분리 표시
+  const leaveCount       = leaveMenuVisible ? leavePendingCount : 0;
+  const resignationCount = (businessMenuVisible || requestsMenuVisible) ? requestsCounts.resignation : 0;
 
   const displayCount = requestsMenuVisible ? requestsCounts.display : 0;
   const orderCount   = displayMenuVisible  ? requestsCounts.order   : 0;
@@ -93,29 +92,46 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
         {/* 2026-10-07 · 사용자 지시 · 승인요청 카드 내부 accent 전부 amber (제목 tone 과 매칭) */}
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-amber/50 to-transparent pointer-events-none" aria-hidden />
         <div className="flex items-stretch divide-x divide-zinc-100">
-          {/* 승인대기 (메인) · 좌측 amber gradient bar · amber tint background */}
+          {/* 2026-10-07 · 사용자 지시 · 승인대기 분해 · 연차/사직서/거래처 3 라인 · 글씨 -2 */}
           <div
             className="flex-[2] px-4 sm:px-6 py-3 sm:py-4 min-w-0 relative bg-gradient-to-br from-brand-amber/[0.06] via-brand-amber-tint/40 to-transparent cursor-pointer"
             onClick={stop(() => { setActiveByPage("requests", "leave"); onNavigate("requests", authSession); })}
             title="서류 승인 · 승인업무로 이동"
           >
             <span className="absolute left-0 top-3 bottom-3 w-[3px] bg-gradient-to-b from-brand-amber-ink via-brand-amber to-brand-amber/70 rounded-r-full shadow-[0_0_10px_rgba(232,138,61,0.25)]" aria-hidden />
-            <div className="pl-2">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="relative flex w-2 h-2 shrink-0" aria-hidden title={docCount > 0 ? "대기" : "없음"}>
-                  <span className={`absolute inset-0 rounded-full ${docCount > 0 ? "bg-amber-400 animate-ping opacity-60" : ""}`} />
-                  <span className={`relative w-2 h-2 rounded-full ${docCount > 0 ? "bg-amber-500" : "bg-zinc-300"}`} />
+            <div className="pl-2 flex flex-col gap-0.5">
+              {/* 연차 */}
+              <div className="flex items-center justify-between gap-2 min-w-0" title={`연차 ${leaveCount}건`}>
+                <span className="text-[13px] sm:text-[14px] text-zinc-600 font-semibold tracking-tight shrink-0">연차</span>
+                <span
+                  className="font-bold tabular-nums leading-tight text-brand-amber-ink whitespace-nowrap"
+                  style={{ fontSize: "clamp(15px, 2.4vw, 22px)" }}
+                >
+                  {leaveCount.toLocaleString("ko-KR")}건
                 </span>
-                <span className="text-[14px] sm:text-[15px] text-zinc-600 font-semibold tracking-tight">승인대기</span>
               </div>
-              {/* 2026-10-06 · 사용자 지시 반응형 폰트 clamp · 숫자 whitespace-nowrap */}
-              <div
-                className="font-bold tabular-nums leading-tight text-brand-amber-ink whitespace-nowrap"
-                style={{ fontSize: "clamp(17px, 3.2vw, 26px)" }}
-                title={`${docCount}건`}
-              >
-                {docCount.toLocaleString("ko-KR")}건
+              {/* 사직서 */}
+              <div className="flex items-center justify-between gap-2 min-w-0" title={`사직서 ${resignationCount}건`}>
+                <span className="text-[13px] sm:text-[14px] text-zinc-600 font-semibold tracking-tight shrink-0">사직서</span>
+                <span
+                  className="font-bold tabular-nums leading-tight text-brand-amber-ink whitespace-nowrap"
+                  style={{ fontSize: "clamp(15px, 2.4vw, 22px)" }}
+                >
+                  {resignationCount.toLocaleString("ko-KR")}건
+                </span>
               </div>
+              {/* 거래처 (admin + requestsMenuVisible 조건) */}
+              {isAdmin && requestsMenuVisible && (
+                <div className="flex items-center justify-between gap-2 min-w-0" title={`거래처 ${vendorCount}건`}>
+                  <span className="text-[13px] sm:text-[14px] text-zinc-600 font-semibold tracking-tight shrink-0">거래처</span>
+                  <span
+                    className="font-bold tabular-nums leading-tight text-brand-amber-ink whitespace-nowrap"
+                    style={{ fontSize: "clamp(15px, 2.4vw, 22px)" }}
+                  >
+                    {vendorCount.toLocaleString("ko-KR")}건
+                  </span>
+                </div>
+              )}
             </div>
           </div>
           {/* 진열 요청 */}
@@ -130,7 +146,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
             </div>
             <div
               className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap"
-              style={{ fontSize: "clamp(15px, 2.4vw, 22px)" }}
+              style={{ fontSize: "clamp(13px, 2.0vw, 20px)" }}
               title={`${displayCount}건`}
             >
               {displayCount.toLocaleString("ko-KR")}건
@@ -148,7 +164,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
             </div>
             <div
               className="font-bold tabular-nums text-ink leading-tight whitespace-nowrap"
-              style={{ fontSize: "clamp(15px, 2.4vw, 22px)" }}
+              style={{ fontSize: "clamp(13px, 2.0vw, 20px)" }}
               title={`${orderCount}건`}
             >
               {orderCount.toLocaleString("ko-KR")}건
@@ -177,18 +193,7 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
                 <b className={`tabular-nums ${lunchCount > 0 ? "text-emerald-700" : "text-ink"}`}>{lunchCount}</b>건
               </button>
             )}
-            {isAdmin && requestsMenuVisible && (
-              <button
-                type="button"
-                onClick={stop(() => { setActiveByPage("requests", "vendor"); onNavigate("requests", authSession); })}
-                className="inline-flex items-center gap-1 cursor-pointer"
-                title="거래처 승인 · 요청목록 > 거래처승인 탭으로 이동"
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${vendorCount > 0 ? "bg-blue-500" : "bg-zinc-300"}`} aria-hidden />
-                <span className="text-zinc-600">거래처</span>
-                <b className={`tabular-nums ${vendorCount > 0 ? "text-blue-700" : "text-ink"}`}>{vendorCount}</b>건
-              </button>
-            )}
+            {/* 2026-10-07 · 거래처 는 승인대기 메인 cell 에 통합 · 모바일 하단바에서 중복 제거 */}
           </div>
           <span className="text-brand-amber-ink font-bold flex items-center gap-1">
             승인 상세 <span>›</span>
