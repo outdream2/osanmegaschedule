@@ -187,8 +187,11 @@ const HourlyReportTab: React.FC = () => {
   // 2026-10-06 · 사용자 지시 · 주말만 체크박스 · 체크 시 주말 날짜만 표시 (주말 포함과 상호 배타)
   const [weekendOnly, setWeekendOnly] = useState<boolean>(false);
   // 2026-10-07 · 공휴일 포함 체크 (session only · default=포함 · GET /api/holidays?year, is_holiday=true 만)
+  //   · 대체공휴일 포함 · data.go.kr 특일정보 API 가 isHoliday=Y 로 반환 (예: "대체공휴일(삼일절)")
   const [includeHoliday, setIncludeHoliday] = useState<boolean>(true);
   const [holidaySet, setHolidaySet] = useState<Set<string>>(() => new Set());
+  // 2026-10-07 · 일별 추이 x축 공휴일명 표시 · date → name lookup
+  const [holidayNameMap, setHolidayNameMap] = useState<Map<string, string>>(() => new Map());
   const [hourlyRows, setHourlyRows] = useState<HourlyRow[] | null>(null);
   const [hourlyStatus, setHourlyStatus] = useState<FetchStatus>("idle");
   const [hourlyError, setHourlyError] = useState<string | null>(null);
@@ -262,18 +265,22 @@ const HourlyReportTab: React.FC = () => {
       if (Number.isFinite(sy)) years.add(sy);
       if (Number.isFinite(ey)) years.add(ey);
     }
-    if (years.size === 0) { setHolidaySet(new Set()); return; }
+    if (years.size === 0) { setHolidaySet(new Set()); setHolidayNameMap(new Map()); return; }
     (async () => {
       const dates = new Set<string>();
+      const nameMap = new Map<string, string>();
       for (const y of years) {
         try {
-          const resp = await api.get<{ holidays?: Array<{ date: string; is_holiday: boolean }> }>(`/api/holidays?year=${y}`);
+          const resp = await api.get<{ holidays?: Array<{ date: string; name?: string; is_holiday: boolean }> }>(`/api/holidays?year=${y}`);
           for (const h of resp.data.holidays ?? []) {
-            if (h.is_holiday && typeof h.date === "string") dates.add(h.date);
+            if (h.is_holiday && typeof h.date === "string") {
+              dates.add(h.date);
+              if (typeof h.name === "string" && h.name) nameMap.set(h.date, h.name);
+            }
           }
         } catch { /* HOLIDAY_API_KEY 미설정 등 · 해당 연도 skip */ }
       }
-      if (!cancelled) setHolidaySet(dates);
+      if (!cancelled) { setHolidaySet(dates); setHolidayNameMap(nameMap); }
     })();
     return () => { cancelled = true; };
   }, [activeRanges]);
@@ -679,16 +686,7 @@ const HourlyReportTab: React.FC = () => {
                   </button>
                 ))}
               </div>
-              {/* 2026-10-07 · 사용자 지시 · 공휴일 포함 체크박스 · 주말 포함 앞 · default 체크 (첫 로딩 포함) */}
-              <label className="inline-flex items-center gap-1.5 text-[13px] text-zinc-700 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={includeHoliday}
-                  onChange={(e) => setIncludeHoliday(e.target.checked)}
-                  className="w-4 h-4 accent-amber-500 cursor-pointer"
-                />
-                <span>공휴일 포함{holidaySet.size > 0 ? ` (${holidaySet.size}일)` : ""}</span>
-              </label>
+              {/* 2026-10-07 · 사용자 지시 · 체크박스 순서 · [주말 포함] [주말만] [공휴일 포함] (공휴일 포함을 주말만 옆으로 이동) */}
               {chartAxis !== "weekday" ? (
                 <>
                   <label className={`inline-flex items-center gap-1.5 text-[13px] cursor-pointer select-none ${weekendOnly ? "text-zinc-400" : "text-zinc-700"}`}>
@@ -732,6 +730,16 @@ const HourlyReportTab: React.FC = () => {
                   })}
                 </div>
               )}
+              {/* 2026-10-07 · 사용자 지시 · 공휴일 포함 체크박스 · 주말만 (또는 요일 선택) 옆에 배치 */}
+              <label className="inline-flex items-center gap-1.5 text-[13px] text-zinc-700 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={includeHoliday}
+                  onChange={(e) => setIncludeHoliday(e.target.checked)}
+                  className="w-4 h-4 accent-amber-500 cursor-pointer"
+                />
+                <span>공휴일 포함{holidaySet.size > 0 ? ` (${holidaySet.size}일)` : ""}</span>
+              </label>
             </div>
             {/* 제목 + 일수 */}
             <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -901,11 +909,17 @@ const HourlyReportTab: React.FC = () => {
                               );
                             }
                             const dow = DOW_KO_X[dt.getDay()];
-                            const color = dt.getDay() === 0 ? "#dc2626" : dt.getDay() === 6 ? "#2563eb" : "#71717a";
+                            // 2026-10-07 · 사용자 지시 · 공휴일인 날짜에 공휴일명 표시 (예: "1일" / "월 개천절")
+                            const dateYmd = `${singleMonthKey}-${String(day).padStart(2, "0")}`;
+                            const holidayName = holidayNameMap.get(dateYmd);
+                            const isHolidayDay = Boolean(holidayName);
+                            const color = isHolidayDay ? "#dc2626" : dt.getDay() === 0 ? "#dc2626" : dt.getDay() === 6 ? "#2563eb" : "#71717a";
+                            const secondLineFontSize = isHolidayDay ? 10 : 11;
+                            const secondLineText = isHolidayDay ? `${dow} ${holidayName}` : dow;
                             return (
                               <g>
                                 <text x={x} y={y + 12} textAnchor="middle" fontSize={13} fill="#52525b">{`${day}일`}</text>
-                                <text x={x} y={y + 26} textAnchor="middle" fontSize={11} fill={color}>{dow}</text>
+                                <text x={x} y={y + 26} textAnchor="middle" fontSize={secondLineFontSize} fill={color} fontWeight={isHolidayDay ? 600 : 400}>{secondLineText}</text>
                               </g>
                             );
                           }}
@@ -1921,24 +1935,35 @@ const MonthlyReportTab: React.FC = () => {
               }
               const isToday = cell.dateStr === todayStr;
               const hasData = !!(cell.buy || cell.sale);
-              // 2026-10-06 · 사용자 지시 · 공식 공휴일 (data.go.kr) · 빨간 날짜 + 공휴일명 라벨
+              // 2026-10-07 · 사용자 지시 · 매월 말일 셀 하단 월간 합계 표시
+              const isLastDay = cell.day === daysInMonth;
+              const hasMonthTotal = isLastDay && show && (sel.saleTotal + sel.buyTotal > 0);
+              // 2026-10-07 · 사용자 지시 · 공휴일 표현 변경 (붉은색 X · 데이터와 날짜 숫자 구분)
+              //   · 날짜 숫자: zinc-800 bold (dark · 평일과 통일 · 요일 색만 유지)
+              //   · 공휴일 표시: 왼쪽 상단 amber dot + 하단 공휴일명 (amber-700 · 작은 글씨)
+              //   · 셀 배경: 공휴일 subtle amber tint (bg-amber-50/50) · 오늘은 amber-50/60 우선
               const holidayName = holidayMap.get(cell.dateStr);
               const isHoliday = !!holidayName;
-              const dayColor = isHoliday || isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-700";
+              // 날짜 숫자 색상: 요일 기준만 (일=rose, 토=sky, 평일=zinc-800) · 공휴일 자체는 색 아닌 dot/label 로 표현
+              const dayColor = isSunday ? "text-rose-600" : ci === 6 ? "text-sky-600" : "text-zinc-800";
               return (
-                <div key={ci} className={`min-h-[90px] md:min-h-[140px] border-r border-zinc-100 last:border-r-0 min-w-0 flex flex-col ${isToday ? "bg-amber-50/60" : isHoliday ? "bg-rose-50/40" : "bg-white"}`}>
+                <div key={ci} className={`min-h-[90px] md:min-h-[140px] border-r border-zinc-100 last:border-r-0 min-w-0 flex flex-col ${isToday ? "bg-amber-50/60" : isHoliday ? "bg-amber-50/40" : "bg-white"}`}>
                   <button
                     type="button"
                     onClick={() => hasData && setModalDay(cell)}
                     disabled={!hasData}
-                    className={`flex-1 w-full text-left p-1 md:p-2 min-w-0 transition ${hasData ? "cursor-pointer hover:bg-brand-tint/30" : "cursor-default"}`}
+                    className={`flex-1 w-full text-left p-1 md:p-2 min-w-0 transition relative ${hasData ? "cursor-pointer hover:bg-brand-tint/30" : "cursor-default"}`}
                     title={hasData ? `${cell.dateStr} 상세 보기${isHoliday ? ` · ${holidayName}` : ""}` : (isHoliday ? holidayName : undefined)}
                   >
-                    <div className={`text-[14px] md:text-[16px] font-bold ${dayColor} ${isToday ? "text-amber-700" : ""} leading-tight`}>
+                    {/* 2026-10-07 · 공휴일 dot · 좌측 상단 amber · 날짜 숫자와 분리 */}
+                    {isHoliday && (
+                      <span className="absolute left-0.5 top-0.5 md:left-1 md:top-1 w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-amber-500" aria-hidden />
+                    )}
+                    <div className={`text-[14px] md:text-[16px] font-bold ${dayColor} ${isToday ? "text-amber-700" : ""} leading-tight ${isHoliday ? "pl-2.5 md:pl-3" : ""}`}>
                       {cell.day}{isToday && <span className="ml-1 text-[12px] md:text-[14px] text-amber-700">● 오늘</span>}
                     </div>
                     {isHoliday && (
-                      <div className="text-[11px] md:text-[12px] text-rose-600 font-semibold leading-tight truncate" title={holidayName}>{holidayName}</div>
+                      <div className="text-[10px] md:text-[11px] text-amber-700 font-semibold leading-tight truncate tracking-tight" title={holidayName}>{holidayName}</div>
                     )}
                     <div className="mt-1 space-y-1 text-[12px] md:text-[14px]">
                       {cell.sale && (
@@ -1963,6 +1988,21 @@ const MonthlyReportTab: React.FC = () => {
                   </button>
                   {/* 일요일 셀 안 주간 subtotal */}
                   {hasWeek && ws && <div className="px-1 md:px-2 pb-1 md:pb-2"><WeekSubtotalBlock ws={ws} /></div>}
+                  {/* 2026-10-07 · 매월 말일 셀 하단 월간 합계 */}
+                  {hasMonthTotal && (
+                    <div className="px-1 md:px-2 pb-1 md:pb-2">
+                      <MonthSubtotalBlock
+                        ms={{
+                          buyTotal: sel.buyTotal,
+                          saleTotal: sel.saleTotal,
+                          cust: sel.customerCnt,
+                          avg: sel.customerCnt > 0 ? Math.round(sel.saleTotal / sel.customerCnt) : 0,
+                          margin: sel.margin,
+                          marginPct: sel.marginPercent,
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -2065,6 +2105,29 @@ const WeekSubtotalBlock: React.FC<{ ws: { buyTotal: number; saleTotal: number; c
     <div className="flex flex-col min-w-0">
       <span className="text-emerald-600 font-semibold leading-tight">객/단가</span>
       <span className="tabular-nums text-emerald-800 leading-tight break-all">{ws.cust.toLocaleString()} / {fmtNum(ws.avg)}</span>
+    </div>
+  </div>
+);
+
+// 2026-10-07 · 사용자 지시 · 매월 말일 셀 하단 월간 합계 블록 (주간 합계와 시각적 차별 · indigo-rose 그라디언트)
+const MonthSubtotalBlock: React.FC<{ ms: { buyTotal: number; saleTotal: number; cust: number; avg: number; margin: number; marginPct: number } }> = ({ ms }) => (
+  <div className="mt-2 pt-2 border-t-2 border-indigo-400/30 space-y-1 text-[12px] md:text-[14px] bg-gradient-to-br from-indigo-50 to-rose-50 rounded px-1.5 py-1.5 min-w-0">
+    <div className="text-indigo-700 font-bold leading-tight tracking-tight">[월간 합계]</div>
+    <div className="flex flex-col min-w-0">
+      <span className="text-rose-600 font-semibold leading-tight">매출</span>
+      <span className="tabular-nums font-bold text-rose-700 leading-tight break-all">{fmtNum(ms.saleTotal)}</span>
+    </div>
+    <div className="flex flex-col min-w-0">
+      <span className="text-brand-deep font-semibold leading-tight">매입</span>
+      <span className="tabular-nums text-brand-deep leading-tight break-all">{fmtNum(ms.buyTotal)}</span>
+    </div>
+    <div className="flex flex-col min-w-0">
+      <span className="text-indigo-600 font-semibold leading-tight">이익/마진</span>
+      <span className="tabular-nums text-indigo-800 leading-tight break-all">{fmtNum(ms.margin)} / {ms.marginPct.toFixed(1)}%</span>
+    </div>
+    <div className="flex flex-col min-w-0">
+      <span className="text-emerald-600 font-semibold leading-tight">객/단가</span>
+      <span className="tabular-nums text-emerald-800 leading-tight break-all">{ms.cust.toLocaleString()} / {fmtNum(ms.avg)}</span>
     </div>
   </div>
 );
