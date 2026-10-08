@@ -17,7 +17,7 @@ import { MonthGridV2 } from "./month-grid/MonthGridV2";
 import { EmployeeBulkPanel } from "./employee/EmployeeBulkPanel";
 import { EmployeeInfoPanel } from "./employee/EmployeeInfoPanel";
 
-type EmpSubView = "calendar" | "bulk" | "info";
+export type EmpSubView = "calendar" | "bulk" | "info";
 
 interface Props {
   year: number;
@@ -28,11 +28,16 @@ interface Props {
   onEmployeeManagement?: (employeeId: number) => void;
   /** 2026-10-08 · V1 parity · Month/Week 직원명 click 으로 진입 시 초기 선택 */
   initialEmployeeId?: number | null;
+  /** 2026-10-08 · 일괄등록 shortcut · 부모가 요청한 subview (bulk 등) · 변경 시 subview 자동 전환 */
+  initialSubview?: EmpSubView;
+  /** 2026-10-08 · subview 변경 시 부모 알림 (requested state 리셋 용도) */
+  onSubviewChange?: (sub: EmpSubView) => void;
 }
 
 export const EmployeeScheduleViewV2: React.FC<Props> = ({
   year, month, onMonthDelta, onToday, authSession, onEmployeeManagement,
   initialEmployeeId,
+  initialSubview, onSubviewChange,
 }) => {
   void onMonthDelta; void onToday;
   const [notification, setNotification] = useState<{ msg: string; tone: "ok" | "err" } | null>(null);
@@ -88,7 +93,19 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
   );
 
   // 우측 subview
-  const [subview, setSubview] = useState<EmpSubView>("calendar");
+  // 2026-10-08 · 일괄등록 shortcut · 부모 initialSubview 반영
+  const [subview, setSubviewRaw] = useState<EmpSubView>(initialSubview ?? "calendar");
+  const setSubview = useCallback((next: EmpSubView) => {
+    setSubviewRaw(next);
+    onSubviewChange?.(next);
+  }, [onSubviewChange]);
+  // 외부에서 initialSubview 변경 시 (예: Month toolbar [일괄등록] click 후) subview 자동 전환
+  useEffect(() => {
+    if (initialSubview && initialSubview !== subview) {
+      setSubviewRaw(initialSubview);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSubview]);
 
   // 달력 edit mode
   const [editMode, setEditMode] = useState(false);

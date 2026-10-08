@@ -13,7 +13,9 @@ import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { MonthScheduleViewV2 } from "./views/MonthScheduleViewV2";
 import { WeekScheduleViewV2 } from "./views/WeekScheduleViewV2";
 import { DayScheduleViewV2 } from "./views/DayScheduleViewV2";
-import { EmployeeScheduleViewV2 } from "./views/EmployeeScheduleViewV2";
+import { EmployeeScheduleViewV2, type EmpSubView } from "./views/EmployeeScheduleViewV2";
+import { BulkEmployeePickerModal } from "./components/BulkEmployeePickerModal";
+import type { Employee } from "../../types";
 import { toYmd } from "./helpers/week";
 
 export type ScheduleV2View = "month" | "week" | "day" | "employee";
@@ -53,6 +55,13 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
   //   · Month/Week 날짜 click → Day · 직원 click → Employee
   //   · V1 ScheduleGrid.tsx:143 (onSetTimelineDate) + SchedulePage.tsx:669 (setCalendarEmployee) 와 동일 흐름
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
+
+  // 2026-10-08 · 일괄등록 shortcut
+  //   · Month/Week toolbar [일괄등록] 클릭 → employee picker modal → 직원 선택 → Employee View bulk subview
+  //   · 기존 EmployeeBulkPanel 그대로 재사용 · 신규 bulk logic 0
+  const [requestedEmployeeSubview, setRequestedEmployeeSubview] = useState<EmpSubView | undefined>(undefined);
+  const [bulkPickerOpen, setBulkPickerOpen] = useState(false);
+  const [bulkPickerEmployees, setBulkPickerEmployees] = useState<Employee[]>([]);
 
   // 2026-10-08 · V1 parity · filter state (positionTab + searchQuery)
   //   · V1 SchedulePage.tsx:226-227 상동 · buildFilteredEmployees 재사용
@@ -104,6 +113,32 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
   const handleOpenEmployee = useCallback((empId: number) => {
     setSelectedEmployeeId(empId);
     setView("employee");
+  }, []);
+
+  // 2026-10-08 · 일괄등록 shortcut · Month/Week [일괄등록] 버튼 → employee picker open
+  //   · Month/Week 가 자기 employees (visibleEmployees · 필터 반영) 를 picker 로 전달
+  const handleRequestBulk = useCallback((employees: Employee[]) => {
+    // 이미 Employee View 에 직원 선택되어 있으면 picker 생략 (사용자 지시 §3)
+    if (view === "employee" && selectedEmployeeId != null) {
+      setRequestedEmployeeSubview("bulk");
+      return;
+    }
+    setBulkPickerEmployees(employees);
+    setBulkPickerOpen(true);
+  }, [view, selectedEmployeeId]);
+
+  // Picker 에서 직원 선택 → Employee View bulk subview
+  const handleBulkEmployeeSelect = useCallback((empId: number) => {
+    setSelectedEmployeeId(empId);
+    setRequestedEmployeeSubview("bulk");
+    setView("employee");
+    setBulkPickerOpen(false);
+  }, []);
+
+  // Employee View subview 가 다른 걸로 바뀌면 requested 는 null 로 (다시 bulk 로 강제 이동 방지)
+  const handleEmployeeSubviewChange = useCallback((sub: EmpSubView) => {
+    void sub;
+    setRequestedEmployeeSubview(undefined);
   }, []);
   const goDayDelta = useCallback((daysDelta: number) => {
     const d = new Date(anchorDate);
@@ -176,6 +211,7 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
               setSearchQuery={setSearchQuery}
               onOpenDay={handleOpenDay}
               onOpenEmployee={handleOpenEmployee}
+              onRequestBulk={handleRequestBulk}
             />
           )}
           {view === "week" && (
@@ -190,6 +226,7 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
               setSearchQuery={setSearchQuery}
               onOpenDay={handleOpenDay}
               onOpenEmployee={handleOpenEmployee}
+              onRequestBulk={handleRequestBulk}
             />
           )}
           {view === "day" && (
@@ -209,6 +246,8 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
               onToday={goToday}
               authSession={authSession}
               initialEmployeeId={selectedEmployeeId}
+              initialSubview={requestedEmployeeSubview}
+              onSubviewChange={handleEmployeeSubviewChange}
               onEmployeeManagement={() => {
                 // 2026-10-07 · V2-D · employee master 수정은 기존 Employee Management 로 이동
                 //   · empId 전달은 App.tsx 의 navigateInnerWithOptions 가 필요 · 추후 통합
@@ -219,6 +258,14 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
           )}
         </div>
       </main>
+
+      {/* 2026-10-08 · 일괄등록 shortcut · 직원 picker (Month/Week [일괄등록] → 선택 → Employee View bulk subview) */}
+      <BulkEmployeePickerModal
+        open={bulkPickerOpen}
+        onClose={() => setBulkPickerOpen(false)}
+        employees={bulkPickerEmployees}
+        onSelect={handleBulkEmployeeSelect}
+      />
     </div>
   );
 };

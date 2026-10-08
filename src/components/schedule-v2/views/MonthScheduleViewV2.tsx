@@ -7,7 +7,7 @@
 //     · lock month 는 server guard 가 차단 · frontend 는 chip + popover 비활성
 //   · 공통 OFF semantics: src/shared/schedule/offTypes.ts (isOffType)
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CaretLeft, CaretRight, Lock, PencilSimple, Check, X } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, Lock, PencilSimple, Check, X, ClipboardText } from "@phosphor-icons/react";
 import { useScheduleData, type CellUpdateData } from "../../SchedulePage/useScheduleData";
 import { useSettings } from "../../../hooks/useSettings";
 import {
@@ -16,7 +16,7 @@ import {
 // 2026-10-08 · V2 자체 UI · V1 ScheduleFilterBar UI 제거 · V2 자체 toolbar
 //   · 기능 로직은 V1 재사용 (buildFilteredEmployees · usePositionCategories 등) · UI 만 신규
 import { ScheduleV2FilterBar } from "../components/ScheduleV2FilterBar";
-import type { AuthSession } from "../../../types";
+import type { AuthSession, Employee } from "../../../types";
 import { Spinner } from "../../common/Spinner";
 import { MonthGridV2 } from "./month-grid/MonthGridV2";
 // 2026-10-07 · 순환 import 해소 · scheduleCellContent 를 별도 모듈로 분리 · 아래에서 re-export (BC)
@@ -36,12 +36,14 @@ interface Props {
   /** 2026-10-08 · V1 parity · 날짜 click → Day · 직원명 click → Employee */
   onOpenDay?: (date: string) => void;
   onOpenEmployee?: (employeeId: number) => void;
+  /** 2026-10-08 · 일괄등록 shortcut · 현재 visible employees 전달 → 부모가 picker open */
+  onRequestBulk?: (employees: Employee[]) => void;
 }
 
 export const MonthScheduleViewV2: React.FC<Props> = ({
   year, month, onMonthDelta, onToday, authSession,
   positionTab, setPositionTab, searchQuery, setSearchQuery,
-  onOpenDay, onOpenEmployee,
+  onOpenDay, onOpenEmployee, onRequestBulk,
 }) => {
   const [notification, setNotification] = useState<{ msg: string; tone: "ok" | "err" } | null>(null);
   const showNotification = useCallback((msg: string, type?: "success" | "error") => {
@@ -204,6 +206,19 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
             <span className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[12px] font-semibold">
               <Lock size={12} weight="fill" /> 확정됨{!canEdit && " · 편집 불가"}
             </span>
+          )}
+          {/* 2026-10-08 · 일괄등록 shortcut · 직원 picker → Employee view bulk subview */}
+          {onRequestBulk && (
+            <button
+              type="button"
+              disabled={!canEdit}
+              onClick={() => onRequestBulk(visibleEmployees)}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-line bg-white text-ink text-[13px] font-semibold hover:bg-zinc-50 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              title={!canEdit ? "확정된 월은 편집할 수 없습니다" : "일괄등록 (여러 날짜 한번에)"}
+            >
+              <ClipboardText size={13} weight="bold" />
+              일괄등록
+            </button>
           )}
           <button
             type="button"
