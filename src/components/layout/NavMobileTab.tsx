@@ -22,7 +22,8 @@ export const NavMobileTab: React.FC<NavMobileTabProps> = ({
   const Icon = tab.icon;
 
   // 2026-10-08 · compact · navy shell 위 flat · active=흰 밑줄 · pill/glow 전부 삭제
-  const base = "relative flex-1 min-w-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 h-11 text-[12px] whitespace-nowrap transition-colors duration-150 cursor-pointer disabled:opacity-40";
+  // 2026-10-08 · 사용자 피드백 · 모바일 탭 폰트 +2 (12 → 14)
+  const base = "relative flex-1 min-w-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 h-11 text-[14px] whitespace-nowrap transition-colors duration-150 cursor-pointer disabled:opacity-40";
   const activeClass = `${base} text-white font-semibold`;
   const inactiveClass = `${base} text-[#9FBAD4] hover:text-white font-medium`;
 

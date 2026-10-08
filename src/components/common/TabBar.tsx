@@ -191,7 +191,8 @@ export function TabBar<K extends string = string>({
                   className={[
                     "relative inline-flex items-center justify-center shrink-0",
                     "h-11 px-1",
-                    "text-[13px] sm:text-[14px] whitespace-nowrap tracking-tight",
+                    // 2026-10-08 · 사용자 피드백 · 모든 탭 폰트 +2 (13/14 → 15/16)
+                    "text-[15px] sm:text-[16px] whitespace-nowrap tracking-tight",
                     "bg-transparent border-0 rounded-none shadow-none",
                     "transition-colors duration-150 cursor-pointer outline-none",
                     "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-tint",
@@ -278,7 +279,8 @@ export function TabBar<K extends string = string>({
                   onTouchCancel={dnd?.onTouchCancel}
                   className={[
                     "inline-flex items-center gap-1 h-8 px-3 rounded-lg",
-                    "text-[13px] font-medium whitespace-nowrap tracking-tight",
+                    // 2026-10-08 · 사용자 피드백 · 탭 폰트 +2 (13 → 15)
+                    "text-[15px] font-medium whitespace-nowrap tracking-tight",
                     "transition-colors duration-150 cursor-pointer outline-none",
                     "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-tint",
                     "border",

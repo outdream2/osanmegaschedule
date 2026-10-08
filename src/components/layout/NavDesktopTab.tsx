@@ -23,7 +23,8 @@ export const NavDesktopTab: React.FC<NavDesktopTabProps> = ({
 
   // 2026-10-08 · Line Tabs 톤 · navy 바탕 shell 안에서도 flat text + 2px underline
   //   · pill bg 삭제 · glow 삭제 · rainbow icon 삭제 · drop-shadow 삭제
-  const baseCommon = "relative flex items-center gap-1.5 px-3 h-10 text-[14px] whitespace-nowrap tracking-tight transition-colors duration-150 cursor-pointer outline-none";
+  // 2026-10-08 · 사용자 피드백 · 상단 탭 폰트 +2 (14 → 16) · 높이 h-10 → h-11
+  const baseCommon = "relative flex items-center gap-1.5 px-3 h-11 text-[16px] whitespace-nowrap tracking-tight transition-colors duration-150 cursor-pointer outline-none";
   const activeClass = `${baseCommon} text-white font-semibold`;
   const inactiveClass = `${baseCommon} text-[#9FBAD4] hover:text-white font-medium disabled:opacity-40`;
 

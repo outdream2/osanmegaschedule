@@ -465,10 +465,10 @@ const VatPreparePage: React.FC = () => {
                 key={t.key}
                 type="button"
                 onClick={() => setMainTab(t.key)}
-                className={`relative inline-flex items-center justify-center shrink-0 h-11 px-1 text-[13px] sm:text-[14px] whitespace-nowrap tracking-tight bg-transparent border-0 rounded-none shadow-none transition-colors duration-150 cursor-pointer ${
+                className={`relative inline-flex items-center justify-center shrink-0 h-11 px-1 text-[15px] sm:text-[16px] whitespace-nowrap tracking-tight bg-transparent border-0 rounded-none shadow-none transition-colors duration-150 cursor-pointer ${
                   active
                     ? "text-ink font-semibold"
-                    : "text-ink-soft/80 font-medium hover:text-ink"
+                    : "text-slate-500 font-medium hover:text-ink"
                 }`}
               >
                 <Icon size={14} strokeWidth={active ? 2.2 : 1.8} className={`shrink-0 mr-1.5 ${active ? "text-ink" : "text-ink-soft/70"}`} />

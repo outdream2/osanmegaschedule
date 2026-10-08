@@ -464,7 +464,7 @@ return (
               key={t.key}
               type="button"
               onClick={() => setMainTab(t.key)}
-              className={`relative inline-flex items-center justify-center shrink-0 h-11 px-1 text-[13px] sm:text-[14px] whitespace-nowrap tracking-tight transition-colors duration-150 cursor-pointer ${
+              className={`relative inline-flex items-center justify-center shrink-0 h-11 px-1 text-[15px] sm:text-[16px] whitespace-nowrap tracking-tight transition-colors duration-150 cursor-pointer ${
                 active ? "text-ink font-semibold" : "text-slate-500 font-medium hover:text-ink"
               }`}
             >
