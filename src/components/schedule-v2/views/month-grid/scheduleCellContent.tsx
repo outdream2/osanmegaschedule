@@ -16,13 +16,14 @@ export const scheduleCellContent = (
   scheduleTypes?: ScheduleTypeEntry[],
 ): React.ReactElement => {
   if (!schedule || !schedule.type) {
-    // 빈 셀 · 전체 셀 꽉 채움 (h-full) + height 통일
     return <div className="h-full w-full flex items-center justify-center text-[11px] text-zinc-200">·</div>;
   }
   const t = schedule.type.trim();
   const off = isOffType(t);
   const hours = (schedule.workingHours ?? "").trim() || typeHoursMap[t] || "";
-  // 2026-10-08 · V1 ScheduleCell:128,164 과 동일 · bgHex 있으면 fallback 포함 적용 (휴무도 bg 유지)
+  // 2026-10-08 · V1 ScheduleCell:197-213 parity · actualHours (지각/조퇴/결근 등) 셀 2번째 라인 우선 표시
+  //   · 공간 많이 안 먹게 · badge style · 이모지 금지 (사용자 UI 원칙)
+  const actual = (schedule.actualHours ?? "").trim();
   const bgHex = scheduleTypes ? getTypeHex(t, scheduleTypes) : null;
   const hasBg = !!bgHex;
   const isLight = hasBg ? isLightHex(bgHex!) : true;
@@ -32,17 +33,35 @@ export const scheduleCellContent = (
   const hoursCls = hasBg
     ? (isLight ? "text-zinc-700" : "text-white/85")
     : "text-ink-soft";
-  // 2026-10-08 · 사용자 피드백 · 셀 크기 통일 + 여백 없게 + 각진 네모 + overflow hidden (hours wrap 방지)
-  const showHours = !!hours && !off;
+
+  // actualHours 색상 · V1 ScheduleCell:197-213 과 동일 분기 (이모지만 제외)
+  const actualTone = (() => {
+    if (!actual) return null;
+    if (actual.includes("지각")) return "text-amber-700 bg-amber-50 border border-amber-200";
+    if (actual.includes("조퇴")) return "text-purple-700 bg-purple-50 border border-purple-200";
+    if (actual.includes("결근")) return "text-rose-700 bg-rose-50 border border-rose-200";
+    return "text-rose-700 bg-rose-50/70 border border-rose-100";
+  })();
+
+  // 2번째 line 결정: actual > workingHours > 공백
+  const showActual = !!actual;
+  const showHours = !showActual && !!hours && !off;
+
   return (
     <div
       className={`h-full w-full px-1 py-0.5 flex flex-col justify-center overflow-hidden ${textCls}`}
       style={hasBg ? { backgroundColor: bgHex! } : undefined}
     >
       <div className="text-[12px] font-bold leading-tight truncate">{t}</div>
-      <div className={`text-[10px] tabular-nums leading-tight truncate ${hoursCls} ${showHours ? "" : "invisible select-none"}`}>
-        {showHours ? hours : "·"}
-      </div>
+      {showActual ? (
+        <div className={`text-[10px] font-bold leading-tight truncate px-1 rounded-sm ${actualTone}`}>
+          {actual}
+        </div>
+      ) : (
+        <div className={`text-[10px] tabular-nums leading-tight truncate ${hoursCls} ${showHours ? "" : "invisible select-none"}`}>
+          {showHours ? hours : "·"}
+        </div>
+      )}
     </div>
   );
 };

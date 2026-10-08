@@ -83,14 +83,14 @@ export const MonthGridV2: React.FC<GridProps> = ({
                 <th
                   key={`h-${d}`}
                   onClick={dateClickable ? () => onDateHeaderClick!(d) : undefined}
-                  className={`sticky top-0 z-20 border-r border-b border-line px-1 py-1.5 text-center text-[12px] font-semibold tabular-nums ${
-                    isToday ? "bg-brand-tint/60 text-brand-deep" : isSun ? "bg-rose-50/60 text-rose-700" : isSat ? "bg-sky-50/60 text-sky-700" : "bg-zinc-50 text-ink"
+                  className={`sticky top-0 z-20 border-r border-b-2 px-1 py-1.5 text-center text-[12px] font-semibold tabular-nums ${
+                    isToday ? "bg-brand-deep text-white border-brand-deep" : isSun ? "bg-rose-50/60 text-rose-700 border-line" : isSat ? "bg-sky-50/60 text-sky-700 border-line" : "bg-zinc-50 text-ink border-line"
                   } ${dateClickable ? "cursor-pointer hover:bg-brand-tint/40" : ""}`}
                   title={dateClickable ? "일간 보기" : undefined}
                 >
                   <div className="leading-tight">
                     <div className="text-[14px] font-bold">{dayNum}</div>
-                    <div className="text-[10px] opacity-70">{dow}</div>
+                    <div className={`text-[10px] ${isToday ? "opacity-85" : "opacity-70"}`}>{dow}</div>
                   </div>
                 </th>
               );

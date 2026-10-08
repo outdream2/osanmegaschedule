@@ -7,11 +7,12 @@
 //     · lock month 는 server guard 가 차단 · frontend 는 chip + popover 비활성
 //   · 공통 OFF semantics: src/shared/schedule/offTypes.ts (isOffType)
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { CaretLeft, CaretRight, Lock, PencilSimple, Check, X, ClipboardText } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, Lock, PencilSimple, Check, X, ClipboardText, Copy } from "@phosphor-icons/react";
+import { CopyPrevMonthModal } from "../components/CopyPrevMonthModal";
 import { useScheduleData, type CellUpdateData } from "../../SchedulePage/useScheduleData";
 import { useSettings } from "../../../hooks/useSettings";
 import {
-  buildDateList, getTodayStr, getTypeHoursMap,
+  buildDateList, getTodayStr, getTypeHoursMap, getEmpMonthStats,
 } from "../../SchedulePage/scheduleHelpers";
 // 2026-10-08 · V2 자체 UI · V1 ScheduleFilterBar UI 제거 · V2 자체 toolbar
 //   · 기능 로직은 V1 재사용 (buildFilteredEmployees · usePositionCategories 등) · UI 만 신규
@@ -67,9 +68,10 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
     handleCellUpdate,
     fetchScheduleData,
     isInitialFetchRef,
+    executeCopyFromPreviousMonth,
   } = useScheduleData(year, month, showNotification);
 
-  const { scheduleTypes, wageRates, positions: settingsPositions } = useSettings();
+  const { scheduleTypes, wageRates, employeeWageOverrides, positions: settingsPositions } = useSettings();
 
   const todayStr = getTodayStr();
   const dateList = useMemo(() => buildDateList(year, month), [year, month]);
@@ -140,9 +142,23 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
   const [editMode, setEditMode] = useState(false);
   const effectiveEditMode = editMode && (!isMonthLocked || level >= 9);
 
-  // 2026-10-08 · 사용자 지시 · 필터별 합계 pills · settings.positions 동적
-  //   · "총 N명" + settings.positions 각 직군 count + "기타" (positions 외 직원 수)
-  //   · exact match (chip 과 동일 semantics) · 전체는 visibleEmployees 기준 (filter 반영)
+  // 2026-10-08 · 사용자 지시 · V1 전월복사 (executeCopyFromPreviousMonth · useScheduleData 재사용)
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [showLabor, setShowLabor] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const handleCopyPrev = useCallback(async (opts: { copySchedules: boolean; copyDayAssignments: boolean }) => {
+    setCopying(true);
+    try {
+      await executeCopyFromPreviousMonth(opts);
+    } finally {
+      setCopying(false);
+    }
+  }, [executeCopyFromPreviousMonth]);
+
+  // 2026-10-08 · 사용자 지시 · 필터별 합계 pills · settings.positions 동적 + 인건비 toggle
+  //   · "총 N명" + settings.positions 각 직군 count + "기타" (positions 외 직원 수) + (toggle 시) "인건비 N원"
+  //   · 인건비 · V1 getEmpMonthStats 재사용 · 사용자 지시 "v1 기능 있으면 만들어야해"
+  const monthKey = useMemo(() => `${year}-${String(month).padStart(2, "0")}`, [year, month]);
   const summaryCounts = useMemo(() => {
     const total = visibleEmployees.length;
     const perPos: { label: string; count: number }[] = [];
@@ -159,6 +175,17 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
     if (etc > 0) perPos.push({ label: "기타", count: etc });
     return { total, perPos };
   }, [visibleEmployees, settingsPositions, positionSet]);
+
+  // 인건비 total · showLabor === true 일 때만 compute (불필요 reduce 방지)
+  const totalLabor = useMemo(() => {
+    if (!showLabor) return 0;
+    let sum = 0;
+    for (const emp of visibleEmployees) {
+      const stats = getEmpMonthStats(emp, monthKey, scheduleTypes, wageRates ?? {}, employeeWageOverrides ?? {});
+      sum += stats.laborCost;
+    }
+    return sum;
+  }, [showLabor, visibleEmployees, monthKey, scheduleTypes, wageRates, employeeWageOverrides]);
 
   const canEdit = !isMonthLocked || level >= 9;
 
@@ -186,9 +213,9 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
   }, [editTarget, handleCellUpdate, closeEdit]);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col gap-2">
-      {/* Toolbar: 월 네비 · 오늘 · 요약 · lock · 편집 */}
-      <div className="flex flex-wrap items-center gap-2 py-2 border-b border-line">
+    <div className="flex-1 min-h-0 flex flex-col gap-1.5">
+      {/* Row 1 · 월 네비 + 오늘 | ml-auto Lock + 편집 (사용자 지시 §21 레이아웃) */}
+      <div className="flex items-center gap-2 py-2 border-b border-line flex-wrap">
         <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
@@ -221,35 +248,11 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-x-2 gap-y-1 text-[13px] text-ink-soft tabular-nums flex-wrap">
-          <span className="font-semibold text-ink">총 {summaryCounts.total}명</span>
-          {summaryCounts.perPos.map((g, i) => (
-            <React.Fragment key={`sm-${g.label}`}>
-              <span className="text-zinc-300">·</span>
-              <span>{g.label} {g.count}</span>
-              {void i}
-            </React.Fragment>
-          ))}
-        </div>
-
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           {isMonthLocked && (
             <span className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[12px] font-semibold">
               <Lock size={12} weight="fill" /> 확정됨{!canEdit && " · 편집 불가"}
             </span>
-          )}
-          {/* 2026-10-08 · 일괄등록 shortcut · 직원 picker → Employee view bulk subview */}
-          {onRequestBulk && (
-            <button
-              type="button"
-              disabled={!canEdit}
-              onClick={() => onRequestBulk(visibleEmployees)}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-line bg-white text-ink text-[13px] font-semibold hover:bg-zinc-50 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              title={!canEdit ? "확정된 월은 편집할 수 없습니다" : "일괄등록 (여러 날짜 한번에)"}
-            >
-              <ClipboardText size={13} weight="bold" />
-              일괄등록
-            </button>
           )}
           <button
             type="button"
@@ -268,6 +271,23 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* Row 2 · summary standalone · 사용자 지시 §6 · filter 와 역할 분리 + 인건비 toggle */}
+      <div className="flex items-center gap-x-2.5 gap-y-0.5 text-[13px] text-ink-soft tabular-nums flex-wrap px-1 py-1.5 rounded-md bg-zinc-50/60 border border-line">
+        <span className="font-semibold text-ink">총 {summaryCounts.total}명</span>
+        {summaryCounts.perPos.map((g) => (
+          <React.Fragment key={`sm-${g.label}`}>
+            <span className="text-zinc-300">·</span>
+            <span>{g.label} <span className="font-semibold text-ink">{g.count}</span></span>
+          </React.Fragment>
+        ))}
+        {showLabor && (
+          <>
+            <span className="text-zinc-300">·</span>
+            <span className="font-semibold text-brand-deep">인건비 {totalLabor.toLocaleString()}원</span>
+          </>
+        )}
+      </div>
+
       {/* notification */}
       {notification && (
         <div className={`shrink-0 text-[13px] border rounded-md px-3 py-1.5 ${
@@ -279,8 +299,7 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 2026-10-08 · V2 compact filter toolbar · duplicate chip row 제거 · summary 는 상단 inline 으로 이동
-          · search · 직군 ▾ · 정렬 ▾ · 오름/내림 · 오늘우선 · 초기화 */}
+      {/* 2026-10-08 · V2 compact filter toolbar · 오른쪽에 [전월복사] [일괄등록] [인건비] action 배치 */}
       <ScheduleV2FilterBar
         employees={employees}
         positionTab={positionTab}
@@ -295,6 +314,56 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
         setTodayFirst={setTodayFirst}
         onReset={onFilterReset}
         settingsPositions={settingsPositions ?? []}
+        rightActions={
+          <>
+            {/* 2026-10-08 · V1 전월복사 (useScheduleData.executeCopyFromPreviousMonth 재사용) */}
+            <button
+              type="button"
+              disabled={!canEdit || copying}
+              onClick={() => setShowCopyModal(true)}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-line bg-white text-ink text-[13px] font-semibold hover:bg-zinc-50 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              title={!canEdit ? "확정된 월은 편집할 수 없습니다" : "전월 데이터 복사"}
+            >
+              <Copy size={13} weight="bold" />
+              전월복사
+            </button>
+            {/* 2026-10-08 · V1 인건비 toggle (getEmpMonthStats 재사용) */}
+            <button
+              type="button"
+              onClick={() => setShowLabor(v => !v)}
+              className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[13px] font-semibold transition cursor-pointer border ${
+                showLabor
+                  ? "bg-brand-deep text-white border-brand-deep hover:bg-[#0d3a5c]"
+                  : "bg-white text-ink border-line hover:bg-zinc-50"
+              }`}
+              title="월 인건비 합계 표시"
+            >
+              인건비
+            </button>
+            {/* 2026-10-08 · 일괄등록 shortcut */}
+            {onRequestBulk && (
+              <button
+                type="button"
+                disabled={!canEdit}
+                onClick={() => onRequestBulk(visibleEmployees)}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-line bg-white text-ink text-[13px] font-semibold hover:bg-zinc-50 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                title={!canEdit ? "확정된 월은 편집할 수 없습니다" : "일괄등록 (여러 날짜 한번에)"}
+              >
+                <ClipboardText size={13} weight="bold" />
+                일괄등록
+              </button>
+            )}
+          </>
+        }
+      />
+
+      {/* 2026-10-08 · 전월복사 modal · V2 own UI */}
+      <CopyPrevMonthModal
+        open={showCopyModal}
+        onClose={() => setShowCopyModal(false)}
+        targetYear={year}
+        targetMonth={month}
+        onConfirm={handleCopyPrev}
       />
 
       {/* Grid */}

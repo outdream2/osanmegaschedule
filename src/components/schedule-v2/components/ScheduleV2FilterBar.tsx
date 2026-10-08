@@ -27,6 +27,8 @@ interface Props {
   onReset: () => void;
   /** settings.positions SSOT · chip/dropdown 카테고리 */
   settingsPositions: string[];
+  /** 2026-10-08 · 사용자 지시 §21 · 필터 toolbar 오른쪽에 action 버튼 배치 (전월복사 · 일괄등록 등) */
+  rightActions?: React.ReactNode;
 }
 
 const SORT_LABELS: Record<SortBy, string> = {
@@ -46,6 +48,7 @@ export const ScheduleV2FilterBar: React.FC<Props> = ({
   todayFirst, setTodayFirst,
   onReset,
   settingsPositions,
+  rightActions,
 }) => {
   // 직군 options · "전체" + settings.positions + "기타"(count>0 일 때만)
   const positionSet = useMemo(
@@ -165,6 +168,13 @@ export const ScheduleV2FilterBar: React.FC<Props> = ({
           <ArrowCounterClockwise size={12} weight="bold" />
           초기화
         </button>
+      )}
+
+      {/* 2026-10-08 · 사용자 지시 §21 · 오른쪽 action 버튼 slot (전월복사 · 일괄등록) */}
+      {rightActions && (
+        <div className="ml-auto flex items-center gap-1.5">
+          {rightActions}
+        </div>
       )}
     </div>
   );

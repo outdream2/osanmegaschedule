@@ -191,9 +191,9 @@ export const WeekScheduleViewV2: React.FC<Props> = ({
   const rangeLabel = `${start.getFullYear()}.${String(start.getMonth() + 1).padStart(2, "0")}.${String(start.getDate()).padStart(2, "0")} ~ ${end.getFullYear()}.${String(end.getMonth() + 1).padStart(2, "0")}.${String(end.getDate()).padStart(2, "0")}`;
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col gap-2">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 py-2 border-b border-line">
+    <div className="flex-1 min-h-0 flex flex-col gap-1.5">
+      {/* Row 1 · 주 네비 + 이번주 | ml-auto Lock + 편집 */}
+      <div className="flex items-center gap-2 py-2 border-b border-line flex-wrap">
         <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
@@ -226,17 +226,7 @@ export const WeekScheduleViewV2: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-x-2 gap-y-1 text-[13px] text-ink-soft tabular-nums flex-wrap">
-          <span className="font-semibold text-ink">총 {summaryCounts.total}명</span>
-          {summaryCounts.perPos.map((g) => (
-            <React.Fragment key={`sm-${g.label}`}>
-              <span className="text-zinc-300">·</span>
-              <span>{g.label} {g.count}</span>
-            </React.Fragment>
-          ))}
-        </div>
-
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           {isMonthLocked && (
             <span className="inline-flex items-center gap-1 h-7 px-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[12px] font-semibold">
               <Lock size={12} weight="fill" /> 확정됨{!canEdit && " · 편집 불가"} ({anchor.month}월)
@@ -249,19 +239,6 @@ export const WeekScheduleViewV2: React.FC<Props> = ({
             >
               경계 {offAnchorDates.size}일
             </span>
-          )}
-          {/* 2026-10-08 · 일괄등록 shortcut */}
-          {onRequestBulk && (
-            <button
-              type="button"
-              disabled={!canEdit}
-              onClick={() => onRequestBulk(visibleEmployees)}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-line bg-white text-ink text-[13px] font-semibold hover:bg-zinc-50 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              title={!canEdit ? "확정된 월은 편집할 수 없습니다" : "일괄등록 (여러 날짜 한번에)"}
-            >
-              <ClipboardText size={13} weight="bold" />
-              일괄등록
-            </button>
           )}
           <button
             type="button"
@@ -280,6 +257,17 @@ export const WeekScheduleViewV2: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* Row 2 · summary standalone */}
+      <div className="flex items-center gap-x-2.5 gap-y-0.5 text-[13px] text-ink-soft tabular-nums flex-wrap px-1 py-1.5 rounded-md bg-zinc-50/60 border border-line">
+        <span className="font-semibold text-ink">총 {summaryCounts.total}명</span>
+        {summaryCounts.perPos.map((g) => (
+          <React.Fragment key={`sm-${g.label}`}>
+            <span className="text-zinc-300">·</span>
+            <span>{g.label} <span className="font-semibold text-ink">{g.count}</span></span>
+          </React.Fragment>
+        ))}
+      </div>
+
       {notification && (
         <div className={`shrink-0 text-[13px] border rounded-md px-3 py-1.5 ${
           notification.tone === "err"
@@ -290,7 +278,7 @@ export const WeekScheduleViewV2: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 2026-10-08 · V2 자체 UI · V1 ScheduleFilterBar UI 교체 (logic 재사용 · UI 신규) */}
+      {/* 2026-10-08 · V2 compact filter toolbar · 오른쪽 [일괄등록] action */}
       <ScheduleV2FilterBar
         employees={employees}
         positionTab={positionTab}
@@ -305,6 +293,20 @@ export const WeekScheduleViewV2: React.FC<Props> = ({
         setTodayFirst={setTodayFirst}
         onReset={onFilterReset}
         settingsPositions={settingsPositions ?? []}
+        rightActions={
+          onRequestBulk ? (
+            <button
+              type="button"
+              disabled={!canEdit}
+              onClick={() => onRequestBulk(visibleEmployees)}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-line bg-white text-ink text-[13px] font-semibold hover:bg-zinc-50 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              title={!canEdit ? "확정된 월은 편집할 수 없습니다" : "일괄등록 (여러 날짜 한번에)"}
+            >
+              <ClipboardText size={13} weight="bold" />
+              일괄등록
+            </button>
+          ) : undefined
+        }
       />
 
       {isLoading ? (
