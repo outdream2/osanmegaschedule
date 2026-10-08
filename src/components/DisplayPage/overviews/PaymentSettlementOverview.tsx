@@ -6,7 +6,7 @@
 import React from "react";
 import { CurrencyKrw, Receipt, Buildings, Calendar } from "@phosphor-icons/react";
 import type { DpSubTabKey } from "../DisplayPage.types";
-import { OverviewSection, OverviewTaskRow, OverviewQuickAction, OverviewEmpty } from "./StoreOverviewPrimitives";
+import { OverviewSection, OverviewTaskRow, OverviewQuickAction } from "./StoreOverviewPrimitives";
 
 export interface PaymentSettlementOverviewProps {
   onSelectSubTab: (sub: DpSubTabKey) => void;
@@ -71,9 +71,9 @@ export const PaymentSettlementOverview: React.FC<PaymentSettlementOverviewProps>
         </OverviewSection>
       </div>
 
-      <OverviewSection title="최근 결제·정산 활동">
-        <OverviewEmpty message="최근 결제 내역은 결제 메뉴에서 확인하실 수 있습니다" />
-      </OverviewSection>
+      {/* 2026-10-08 · GLOBAL UI · Payment business page (PaymentInputPage · supplierPayments) 보호
+             · 자체 KPI/summary 미설치 (복잡한 pending/settlement semantics · 신규 API 생성 금지)
+             · 상세는 Quick Action 또는 Task row 로 기존 결제 L2 진입 */}
     </div>
   );
 };

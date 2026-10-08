@@ -6,7 +6,7 @@
 import React from "react";
 import { ChartBar, CurrencyKrw, TrendUp, Receipt } from "@phosphor-icons/react";
 import type { DpSubTabKey } from "../DisplayPage.types";
-import { OverviewSection, OverviewTaskRow, OverviewQuickAction, OverviewEmpty } from "./StoreOverviewPrimitives";
+import { OverviewSection, OverviewTaskRow, OverviewQuickAction } from "./StoreOverviewPrimitives";
 
 export interface SalesRevenueOverviewProps {
   onSelectSubTab: (sub: DpSubTabKey) => void;
@@ -78,9 +78,8 @@ export const SalesRevenueOverview: React.FC<SalesRevenueOverviewProps> = ({ onSe
         </OverviewSection>
       </div>
 
-      <OverviewSection title="최근 판매·매출 활동">
-        <OverviewEmpty message="상세 매출/판매 데이터는 분석 메뉴에서 확인하실 수 있습니다" />
-      </OverviewSection>
+      {/* 2026-10-08 · GLOBAL UI · Revenue functional 보호 (hotfix 0edb1c3f) · 자체 KPI/chart 미설치
+             · 상세 매출/통계는 아래 Quick Action 또는 Task row 로 기존 RevenuePage/통계 L2 로 진입 */}
     </div>
   );
 };
