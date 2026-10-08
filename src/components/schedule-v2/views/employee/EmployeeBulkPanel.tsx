@@ -114,6 +114,28 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
           <span>이 월({month}월)은 확정됨 · 편집 불가</span>
         </div>
       )}
+      {/* 2026-10-08 · 사용자 지시 · 저장 bar 를 상단에 노출 (sticky · 스크롤 시에도 가시) */}
+      <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-3 px-4 py-2.5 bg-white/95 backdrop-blur border-b border-line flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!canEdit || saving || selectedDates.size === 0 || !type}
+          className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-brand-deep text-white text-[13px] font-semibold hover:bg-[#0d3a5c] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+        >
+          <Check size={14} weight="bold" /> {saving ? "저장 중..." : `${selectedDates.size}건 저장`}
+        </button>
+        <button
+          type="button"
+          onClick={clearAll}
+          disabled={saving || selectedDates.size === 0}
+          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-white text-ink border border-zinc-200 text-[13px] font-semibold hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+        >
+          <XIcon size={14} weight="bold" /> 선택 해제
+        </button>
+        {selectedDates.size > 0 && !type && (
+          <span className="ml-auto text-[12px] font-semibold text-amber-700">근무유형 선택 필요</span>
+        )}
+      </div>
       <div className="flex flex-col gap-4">
         {/* 섹션 1 · 날짜 선택 · 실제 월 달력 레이아웃 (사용자 지시 "해당월 달력처럼 배치")
             · 요일 header (일~토) click → 해당 요일 전체 toggle (사용자 지시 "그 후 요일 선택")
@@ -268,25 +290,7 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
           </div>
         </section>
 
-        {/* 섹션 3 · 저장 */}
-        <section className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!canEdit || saving || selectedDates.size === 0 || !type}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-brand-deep text-white text-[13px] font-semibold hover:bg-[#0d3a5c] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-          >
-            <Check size={14} weight="bold" /> {saving ? "저장 중..." : `${selectedDates.size}건 저장`}
-          </button>
-          <button
-            type="button"
-            onClick={clearAll}
-            disabled={saving || selectedDates.size === 0}
-            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-white text-ink border border-zinc-200 text-[13px] font-semibold hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-          >
-            <XIcon size={14} weight="bold" /> 선택 해제
-          </button>
-        </section>
+        {/* 2026-10-08 · 저장 섹션 3 · 상단 sticky bar 로 이동 완료 (중복 제거) */}
       </div>
     </Card>
   );
