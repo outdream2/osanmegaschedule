@@ -83,15 +83,24 @@ export const MonthGridV2: React.FC<GridProps> = ({
                 <th
                   key={`h-${d}`}
                   onClick={dateClickable ? () => onDateHeaderClick!(d) : undefined}
-                  className={`sticky top-0 z-20 border-r border-b-2 px-1 py-1.5 text-center text-[12px] font-semibold tabular-nums ${
-                    isToday ? "bg-brand-deep text-white border-brand-deep" : isSun ? "bg-rose-50/60 text-rose-700 border-line" : isSat ? "bg-sky-50/60 text-sky-700 border-line" : "bg-zinc-50 text-ink border-line"
+                  className={`sticky top-0 z-20 border-r border-b border-line px-1 py-1.5 text-center text-[12px] font-semibold tabular-nums relative ${
+                    isToday ? "bg-brand-tint/30 text-brand-deep" : isSun ? "bg-rose-50/60 text-rose-700" : isSat ? "bg-sky-50/60 text-sky-700" : "bg-zinc-50 text-ink"
                   } ${dateClickable ? "cursor-pointer hover:bg-brand-tint/40" : ""}`}
-                  title={dateClickable ? "일간 보기" : undefined}
+                  title={dateClickable ? (isToday ? "오늘 · 일간 보기" : "일간 보기") : undefined}
                 >
-                  <div className="leading-tight">
-                    <div className="text-[14px] font-bold">{dayNum}</div>
-                    <div className={`text-[10px] ${isToday ? "opacity-85" : "opacity-70"}`}>{dow}</div>
+                  {/* 2026-10-08 · 사용자 지시 · 오늘 표시 modern trend
+                      · Linear/Vercel/Notion 2026 톤 · subtle column tint + bold number + 2px accent underline
+                      · 과한 bg-brand-deep (reverse 색) 대신 brand-tint/30 로 subtle · 숫자가 brand-deep 로 돋보임 */}
+                  <div className="leading-tight flex flex-col items-center">
+                    <div className={`${isToday ? "text-[15px] font-extrabold" : "text-[14px] font-bold"}`}>{dayNum}</div>
+                    <div className={`text-[10px] ${isToday ? "font-semibold" : "opacity-70"}`}>{dow}</div>
                   </div>
+                  {isToday && (
+                    <span
+                      aria-hidden
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[2px] rounded-full bg-brand-deep"
+                    />
+                  )}
                 </th>
               );
             })}

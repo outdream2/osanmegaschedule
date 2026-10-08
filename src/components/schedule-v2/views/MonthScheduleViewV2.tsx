@@ -149,11 +149,11 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
   const handleCopyPrev = useCallback(async (opts: { copySchedules: boolean; copyDayAssignments: boolean }) => {
     setCopying(true);
     try {
-      await executeCopyFromPreviousMonth(opts);
+      await executeCopyFromPreviousMonth(opts.copySchedules, opts.copyDayAssignments, dateList, () => { /* fetch 는 hook 안에서 자동 */ });
     } finally {
       setCopying(false);
     }
-  }, [executeCopyFromPreviousMonth]);
+  }, [executeCopyFromPreviousMonth, dateList]);
 
   // 2026-10-08 · 사용자 지시 · 필터별 합계 pills · settings.positions 동적 + 인건비 toggle
   //   · "총 N명" + settings.positions 각 직군 count + "기타" (positions 외 직원 수) + (toggle 시) "인건비 N원"
@@ -271,20 +271,44 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Row 2 · summary standalone · 사용자 지시 §6 · filter 와 역할 분리 + 인건비 toggle */}
-      <div className="flex items-center gap-x-2.5 gap-y-0.5 text-[13px] text-ink-soft tabular-nums flex-wrap px-1 py-1.5 rounded-md bg-zinc-50/60 border border-line">
-        <span className="font-semibold text-ink">총 {summaryCounts.total}명</span>
-        {summaryCounts.perPos.map((g) => (
-          <React.Fragment key={`sm-${g.label}`}>
-            <span className="text-zinc-300">·</span>
-            <span>{g.label} <span className="font-semibold text-ink">{g.count}</span></span>
-          </React.Fragment>
-        ))}
+      {/* Row 2 · summary + 직군 filter 통합 (사용자 지시 · "두 줄을 한 줄로 병합") · pill click → positionTab */}
+      <div className="flex items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-soft tabular-nums flex-wrap px-1.5 py-1.5 rounded-md bg-zinc-50/60 border border-line">
+        {/* "전체" pill */}
+        <button
+          type="button"
+          onClick={() => setPositionTab("전체")}
+          className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-md transition cursor-pointer ${
+            positionTab === "전체"
+              ? "bg-brand-deep text-white font-semibold"
+              : "bg-white text-ink border border-line hover:bg-zinc-50 font-semibold"
+          }`}
+          aria-pressed={positionTab === "전체"}
+        >
+          <span>총</span>
+          <span className="tabular-nums">{summaryCounts.total}명</span>
+        </button>
+        {/* position pills · 각각 clickable filter */}
+        {summaryCounts.perPos.map((g) => {
+          const active = positionTab === g.label;
+          return (
+            <button
+              key={`sm-${g.label}`}
+              type="button"
+              onClick={() => setPositionTab(active ? "전체" : g.label)}
+              className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-md transition cursor-pointer ${
+                active
+                  ? "bg-brand-deep text-white font-semibold"
+                  : "bg-white text-ink-soft border border-line hover:bg-zinc-50 hover:text-ink"
+              }`}
+              aria-pressed={active}
+            >
+              <span>{g.label}</span>
+              <span className={`tabular-nums ${active ? "text-white/85" : "text-zinc-400"}`}>{g.count}</span>
+            </button>
+          );
+        })}
         {showLabor && (
-          <>
-            <span className="text-zinc-300">·</span>
-            <span className="font-semibold text-brand-deep">인건비 {totalLabor.toLocaleString()}원</span>
-          </>
+          <span className="ml-1 font-semibold text-brand-deep tabular-nums">인건비 {totalLabor.toLocaleString()}원</span>
         )}
       </div>
 

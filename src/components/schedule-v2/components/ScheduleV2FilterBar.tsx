@@ -50,27 +50,8 @@ export const ScheduleV2FilterBar: React.FC<Props> = ({
   settingsPositions,
   rightActions,
 }) => {
-  // 직군 options · "전체" + settings.positions + "기타"(count>0 일 때만)
-  const positionSet = useMemo(
-    () => new Set((settingsPositions ?? []).map(p => (p ?? "").trim()).filter(Boolean)),
-    [settingsPositions],
-  );
-  const etcCount = useMemo(() => employees.filter(e => {
-    const pos = (e.position ?? "").trim();
-    if (!pos) return true;
-    return !positionSet.has(pos);
-  }).length, [employees, positionSet]);
-
-  const positionOptions = useMemo(() => {
-    const list: string[] = ["전체"];
-    for (const p of settingsPositions ?? []) {
-      const label = (p ?? "").trim();
-      if (!label) continue;
-      if (!list.includes(label)) list.push(label);
-    }
-    if (etcCount > 0) list.push("기타");
-    return list;
-  }, [settingsPositions, etcCount]);
+  // 2026-10-08 · 직군 dropdown 제거 (Row 2 pills 로 대체) · reset 활성 조건에 positionTab 포함
+  void employees; void settingsPositions;
 
   // reset 활성 조건 · 기본값과 다른 상태 하나라도 있으면 노출
   const isDirty =
@@ -109,17 +90,7 @@ export const ScheduleV2FilterBar: React.FC<Props> = ({
         )}
       </div>
 
-      {/* 직군 dropdown */}
-      <label className="inline-flex items-center gap-1.5">
-        <span className="text-[12px] text-ink-soft">직군</span>
-        <select
-          value={positionTab}
-          onChange={e => setPositionTab(e.target.value)}
-          className="h-8 pl-2 pr-6 text-[13px] rounded-md border border-line bg-white text-ink font-semibold focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-deep/20 cursor-pointer"
-        >
-          {positionOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-        </select>
-      </label>
+      {/* 2026-10-08 · 사용자 지시 · 직군 dropdown 제거 (Row 2 summary pills 가 clickable filter 로 대체) */}
 
       {/* 정렬 dropdown */}
       <label className="inline-flex items-center gap-1.5">

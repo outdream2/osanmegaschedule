@@ -257,15 +257,40 @@ export const WeekScheduleViewV2: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Row 2 · summary standalone */}
-      <div className="flex items-center gap-x-2.5 gap-y-0.5 text-[13px] text-ink-soft tabular-nums flex-wrap px-1 py-1.5 rounded-md bg-zinc-50/60 border border-line">
-        <span className="font-semibold text-ink">총 {summaryCounts.total}명</span>
-        {summaryCounts.perPos.map((g) => (
-          <React.Fragment key={`sm-${g.label}`}>
-            <span className="text-zinc-300">·</span>
-            <span>{g.label} <span className="font-semibold text-ink">{g.count}</span></span>
-          </React.Fragment>
-        ))}
+      {/* Row 2 · summary + 직군 filter 통합 (사용자 지시) · pill click → positionTab */}
+      <div className="flex items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-soft tabular-nums flex-wrap px-1.5 py-1.5 rounded-md bg-zinc-50/60 border border-line">
+        <button
+          type="button"
+          onClick={() => setPositionTab("전체")}
+          className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-md transition cursor-pointer ${
+            positionTab === "전체"
+              ? "bg-brand-deep text-white font-semibold"
+              : "bg-white text-ink border border-line hover:bg-zinc-50 font-semibold"
+          }`}
+          aria-pressed={positionTab === "전체"}
+        >
+          <span>총</span>
+          <span className="tabular-nums">{summaryCounts.total}명</span>
+        </button>
+        {summaryCounts.perPos.map((g) => {
+          const active = positionTab === g.label;
+          return (
+            <button
+              key={`sm-${g.label}`}
+              type="button"
+              onClick={() => setPositionTab(active ? "전체" : g.label)}
+              className={`inline-flex items-center gap-1 h-7 px-2.5 rounded-md transition cursor-pointer ${
+                active
+                  ? "bg-brand-deep text-white font-semibold"
+                  : "bg-white text-ink-soft border border-line hover:bg-zinc-50 hover:text-ink"
+              }`}
+              aria-pressed={active}
+            >
+              <span>{g.label}</span>
+              <span className={`tabular-nums ${active ? "text-white/85" : "text-zinc-400"}`}>{g.count}</span>
+            </button>
+          );
+        })}
       </div>
 
       {notification && (
