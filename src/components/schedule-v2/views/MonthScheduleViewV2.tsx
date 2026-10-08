@@ -12,7 +12,6 @@ import { useScheduleData, type CellUpdateData } from "../../SchedulePage/useSche
 import { useSettings } from "../../../hooks/useSettings";
 import {
   buildDateList, getTodayStr, getTypeHoursMap,
-  buildFilteredEmployees,
 } from "../../SchedulePage/scheduleHelpers";
 // 2026-10-08 · V2 자체 UI · V1 ScheduleFilterBar UI 제거 · V2 자체 toolbar
 //   · 기능 로직은 V1 재사용 (buildFilteredEmployees · usePositionCategories 등) · UI 만 신규
@@ -60,19 +59,38 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
     isInitialFetchRef,
   } = useScheduleData(year, month, showNotification);
 
-  const { scheduleTypes, wageRates } = useSettings();
+  const { scheduleTypes, wageRates, positions: settingsPositions } = useSettings();
 
   const todayStr = getTodayStr();
   const dateList = useMemo(() => buildDateList(year, month), [year, month]);
 
-  // 2026-10-08 · V1 parity · V1 buildFilteredEmployees 그대로 재사용
-  //   · positionTab (settings.wageRates 동적) + searchQuery AND 조합
-  //   · sortBy="none" · sortOrder="asc" · todayFirst=false (P1 scope · 정렬은 P2 backlog)
+  // 2026-10-08 · 사용자 지시 · settings.positions 기반 chip + exact position match 필터
+  //   · V1 wageRates-based buildFilteredEmployees 는 wageRates 와 settings.positions 가
+  //     불일치할 때 count/filter mismatch 발생 · V2 는 settings.positions SSOT 로 통일
+  //   · "전체" = 전체 · "기타" = settings.positions 에 없는 position · 나머지 = exact match
+  //   · search = 이름 includes (V1 과 동일 semantics)
   const wageRateKeys = useMemo(() => Object.keys(wageRates ?? {}), [wageRates]);
-  const visibleEmployees = useMemo(
-    () => buildFilteredEmployees(employees, positionTab, searchQuery, "none", "asc", false, todayStr, wageRateKeys),
-    [employees, positionTab, searchQuery, todayStr, wageRateKeys],
+  const positionSet = useMemo(
+    () => new Set((settingsPositions ?? []).map(p => (p ?? "").trim()).filter(Boolean)),
+    [settingsPositions],
   );
+  const visibleEmployees = useMemo(() => {
+    let list = employees;
+    if (positionTab === "전체") {
+      // no position filter
+    } else if (positionTab === "기타") {
+      list = list.filter(e => {
+        const pos = (e.position ?? "").trim();
+        if (!pos) return true;
+        return !positionSet.has(pos);
+      });
+    } else {
+      list = list.filter(e => (e.position ?? "").trim() === positionTab);
+    }
+    const q = searchQuery.trim().toLowerCase();
+    if (q) list = list.filter(e => (e.name ?? "").toLowerCase().includes(q));
+    return list;
+  }, [employees, positionTab, searchQuery, positionSet]);
 
   // 2026-10-08 · E-HOTFIX · V1 SchedulePage 와 동일한 caller-driven fetch trigger
   //   · useScheduleData 는 자동 fetch 하지 않음 (caller-driven) · 누락 시 isLoading 영구 true
@@ -89,18 +107,25 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
   const [editMode, setEditMode] = useState(false);
   const effectiveEditMode = editMode && (!isMonthLocked || level >= 9);
 
+  // 2026-10-08 · 사용자 지시 · 필터별 합계 pills · settings.positions 동적
+  //   · "총 N명" + settings.positions 각 직군 count + "기타" (positions 외 직원 수)
+  //   · exact match (chip 과 동일 semantics) · 전체는 visibleEmployees 기준 (filter 반영)
   const summaryCounts = useMemo(() => {
-    const totals = { total: 0, pharm: 0, store: 0, logi: 0, etc: 0 };
-    for (const emp of visibleEmployees) {
-      totals.total += 1;
-      const pos = String(emp.position ?? "").trim();
-      if (pos.includes("약사")) totals.pharm += 1;
-      else if (pos.includes("물류") || pos.includes("창고")) totals.logi += 1;
-      else if (pos.includes("매장") || pos.includes("캐셔") || pos.includes("진열")) totals.store += 1;
-      else totals.etc += 1;
+    const total = visibleEmployees.length;
+    const perPos: { label: string; count: number }[] = [];
+    for (const p of settingsPositions ?? []) {
+      const label = (p ?? "").trim();
+      if (!label) continue;
+      perPos.push({ label, count: visibleEmployees.filter(e => (e.position ?? "").trim() === label).length });
     }
-    return totals;
-  }, [visibleEmployees]);
+    const etc = visibleEmployees.filter(e => {
+      const pos = (e.position ?? "").trim();
+      if (!pos) return true;
+      return !positionSet.has(pos);
+    }).length;
+    if (etc > 0) perPos.push({ label: "기타", count: etc });
+    return { total, perPos };
+  }, [visibleEmployees, settingsPositions, positionSet]);
 
   const canEdit = !isMonthLocked || level >= 9;
 
@@ -163,16 +188,15 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-[13px] text-ink-soft tabular-nums">
-          <span className="font-semibold text-ink">근무 {summaryCounts.total}</span>
-          <span className="text-zinc-300">·</span>
-          <span>약사 {summaryCounts.pharm}</span>
-          <span className="text-zinc-300">·</span>
-          <span>매장 {summaryCounts.store}</span>
-          <span className="text-zinc-300">·</span>
-          <span>창고 {summaryCounts.logi}</span>
-          <span className="text-zinc-300">·</span>
-          <span>기타 {summaryCounts.etc}</span>
+        <div className="flex items-center gap-x-2 gap-y-1 text-[13px] text-ink-soft tabular-nums flex-wrap">
+          <span className="font-semibold text-ink">총 {summaryCounts.total}명</span>
+          {summaryCounts.perPos.map((g, i) => (
+            <React.Fragment key={`sm-${g.label}`}>
+              <span className="text-zinc-300">·</span>
+              <span>{g.label} {g.count}</span>
+              {void i}
+            </React.Fragment>
+          ))}
         </div>
 
         <div className="ml-auto flex items-center gap-2">
@@ -218,7 +242,8 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
         setPositionTab={setPositionTab}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        wageRates={wageRates}
+        settingsPositions={settingsPositions ?? []}
+        wageRateKeys={wageRateKeys}
       />
 
       {/* Grid */}

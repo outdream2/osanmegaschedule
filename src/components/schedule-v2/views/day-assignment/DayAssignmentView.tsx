@@ -39,6 +39,8 @@ import { getTypeHoursMap } from "../../../SchedulePage/scheduleHelpers";
 // Zone grid 가 쓰는 10시 ~ 19시 (10 hour starts) · V1 ZoneSection:68 과 동일
 const ZONE_HOUR_SLOTS = HOUR_SLOTS.slice(0, -3);
 // Zone slot key convention · V1 과 동일 "HH:00" / "HH:30" sub-slot
+//   · V2 UI 는 HOUR cell 1개로 통합 (세로 쌓임 방지) · drop 저장은 "HH:00" (V1 buildAutoSuggest 와 동일)
+//   · 조회 시 (HH:00 ids) + (HH:30 ids) merge 하여 모두 표시 (V1 호환 · 기존 "HH:30" 저장도 노출)
 function subSlotKey(hour: string, minute: 0 | 30): string {
   const h = parseInt(hour.split(":")[0], 10);
   return `${String(h).padStart(2, "0")}:${minute === 0 ? "00" : "30"}`;
@@ -210,9 +212,12 @@ export const DayAssignmentView: React.FC<Props> = ({ date, employees, scheduleTy
   }, [date]);
 
   // Drag API · dataTransfer 로 source + empId 전달
+  //   · setData 는 custom MIME + text/plain fallback (일부 브라우저 drag 세션 유지 조건)
   const handleDragStartWorker = useCallback((e: React.DragEvent, empId: number) => {
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("application/x-sched-v2", JSON.stringify({ source: "pool", empId }));
+    const payload = JSON.stringify({ source: "pool", empId });
+    e.dataTransfer.setData("application/x-sched-v2", payload);
+    e.dataTransfer.setData("text/plain", payload);
   }, []);
 
   return (
@@ -315,8 +320,8 @@ const WorkerPool: React.FC<{
               key={`wk-${w.emp.id}`}
               draggable={canEdit}
               onDragStart={(e) => canEdit && onDragStartWorker(e, w.emp.id)}
-              className={`flex items-center gap-2 px-3 py-2 ${canEdit ? "cursor-grab active:cursor-grabbing hover:bg-zinc-50" : "cursor-default"}`}
-              title={`${w.emp.name} · ${w.schedule.type}${w.wh ? ` · ${w.wh}` : ""}`}
+              className={`flex items-center gap-2 px-3 py-2 select-none ${canEdit ? "cursor-grab active:cursor-grabbing hover:bg-sky-50/60" : "cursor-default"}`}
+              title={canEdit ? `${w.emp.name} · 끌어서 구역/점심/휴게 배정` : `${w.emp.name} · ${w.schedule.type}${w.wh ? ` · ${w.wh}` : ""}`}
             >
               <span
                 className="inline-block w-1 h-6 rounded-sm shrink-0"
@@ -351,7 +356,7 @@ const ZonePanel: React.FC<{
   const handleDrop = useCallback((e: React.DragEvent, zone: ZoneRow, slot: string) => {
     if (!canEdit) return;
     e.preventDefault();
-    const raw = e.dataTransfer.getData("application/x-sched-v2");
+    const raw = e.dataTransfer.getData("application/x-sched-v2") || e.dataTransfer.getData("text/plain");
     if (!raw) return;
     try {
       const parsed = JSON.parse(raw) as { source: "pool" | "zone" | "lunch" | "rest"; empId: number; zone?: ZoneRow; slot?: string };
@@ -369,13 +374,13 @@ const ZonePanel: React.FC<{
     <section className="min-h-0 flex flex-col rounded-xl border border-line bg-white overflow-hidden">
       <header className="shrink-0 flex items-baseline justify-between px-3 py-2 border-b border-line">
         <h3 className="text-[13px] font-bold text-ink tracking-tight">구역 배정</h3>
-        <span className="text-[11px] text-ink-soft">10:00 ~ 20:00 · 30분 단위</span>
+        <span className="text-[11px] text-ink-soft">왼쪽 직원 이름을 끌어다 놓으세요 · 10:00 ~ 20:00</span>
       </header>
       <div className="flex-1 min-h-0 overflow-auto">
-        <table className="border-collapse text-[12px]" style={{ tableLayout: "fixed", minWidth: 760 }}>
+        <table className="border-collapse text-[12px]" style={{ tableLayout: "fixed", minWidth: 980 }}>
           <colgroup>
-            <col style={{ width: 60 }} />
-            {ZONE_HOUR_SLOTS.map(h => <col key={`c-${h}`} style={{ width: 68 }} />)}
+            <col style={{ width: 72 }} />
+            {ZONE_HOUR_SLOTS.map(h => <col key={`c-${h}`} style={{ width: 110 }} />)}
           </colgroup>
           <thead>
             <tr>
@@ -398,24 +403,22 @@ const ZonePanel: React.FC<{
                   const k30 = subSlotKey(h, 30);
                   const ids00 = zoneSlots[zone]?.[k00] ?? [];
                   const ids30 = zoneSlots[zone]?.[k30] ?? [];
+                  // 2026-10-08 · 사용자 지시 · 세로 쌓임 수정 · HOUR cell 1개로 통합
+                  //   · 저장 slot = "HH:00" (V1 buildAutoSuggest 와 동일 · "HH:30" 는 chip 유래 정보로만 유지)
+                  //   · 표시 chips = (HH:00) + (HH:30) · V1 호환 (기존 HH:30 데이터도 노출)
+                  const items = [
+                    ...ids00.map(id => ({ id, slot: k00 })),
+                    ...ids30.map(id => ({ id, slot: k30 })),
+                  ];
                   return (
                     <td key={`c-${zone}-${h}`} className="border-r border-b border-line p-0 align-top">
-                      <div className="grid grid-cols-2 min-h-[48px]">
-                        <ZoneSubSlotCell
-                          zone={zone} slot={k00} ids={ids00}
-                          empById={empById} typeTones={typeTones}
-                          onDropToCell={handleDrop}
-                          onRemove={onRemove}
-                          canEdit={canEdit}
-                        />
-                        <ZoneSubSlotCell
-                          zone={zone} slot={k30} ids={ids30}
-                          empById={empById} typeTones={typeTones}
-                          onDropToCell={handleDrop}
-                          onRemove={onRemove}
-                          canEdit={canEdit}
-                        />
-                      </div>
+                      <ZoneHourCell
+                        zone={zone} dropSlot={k00} items={items}
+                        empById={empById} typeTones={typeTones}
+                        onDropToCell={handleDrop}
+                        onRemove={onRemove}
+                        canEdit={canEdit}
+                      />
                     </td>
                   );
                 })}
@@ -428,23 +431,29 @@ const ZonePanel: React.FC<{
   );
 };
 
-const ZoneSubSlotCell: React.FC<{
-  zone: ZoneRow; slot: string; ids: number[];
-  empById: Map<number, WorkerEntry>; typeTones: Record<string, TypeTone>;
+const ZoneHourCell: React.FC<{
+  zone: ZoneRow;
+  dropSlot: string;                 // drop 시 저장되는 slot ("HH:00")
+  items: { id: number; slot: string }[]; // 표시 · chip 별 origin slot (HH:00 or HH:30)
+  empById: Map<number, WorkerEntry>;
+  typeTones: Record<string, TypeTone>;
   onDropToCell: (e: React.DragEvent, zone: ZoneRow, slot: string) => void;
   onRemove: (zone: ZoneRow, slot: string, empId: number) => void;
   canEdit: boolean;
-}> = ({ zone, slot, ids, empById, typeTones, onDropToCell, onRemove, canEdit }) => {
+}> = ({ zone, dropSlot, items, empById, typeTones, onDropToCell, onRemove, canEdit }) => {
   const [hover, setHover] = useState(false);
   return (
     <div
-      onDragOver={canEdit ? (e) => { e.preventDefault(); setHover(true); } : undefined}
+      onDragOver={canEdit ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setHover(true); } : undefined}
       onDragLeave={() => setHover(false)}
-      onDrop={canEdit ? (e) => { setHover(false); onDropToCell(e, zone, slot); } : undefined}
-      className={`relative border-r last:border-r-0 border-zinc-100 min-h-[48px] p-1 flex flex-wrap gap-1 content-start transition-colors ${hover ? "bg-sky-50" : ""}`}
+      onDrop={canEdit ? (e) => { setHover(false); onDropToCell(e, zone, dropSlot); } : undefined}
+      className={`relative min-h-[52px] p-1.5 flex flex-wrap gap-1 content-start transition-colors ${hover ? "bg-sky-50" : ""}`}
     >
-      {ids.map(id => (
-        <SlotChip key={`${slot}-${id}`} id={id} empById={empById} typeTones={typeTones}
+      {items.length === 0 && (
+        <span className="text-[10px] text-zinc-300 italic">—</span>
+      )}
+      {items.map(({ id, slot }) => (
+        <SlotChip key={`${zone}-${slot}-${id}`} id={id} empById={empById} typeTones={typeTones}
           sourceType="zone" sourceZone={zone} sourceSlot={slot}
           onRemove={() => onRemove(zone, slot, id)}
           canEdit={canEdit}
@@ -514,7 +523,7 @@ const BreakRow: React.FC<{
   const handleDrop = (e: React.DragEvent, slot: string) => {
     if (!canEdit) return;
     e.preventDefault();
-    const raw = e.dataTransfer.getData("application/x-sched-v2");
+    const raw = e.dataTransfer.getData("application/x-sched-v2") || e.dataTransfer.getData("text/plain");
     if (!raw) return;
     try {
       const parsed = JSON.parse(raw) as { source: "pool" | "zone" | "lunch" | "rest"; empId: number; zone?: ZoneRow; slot?: string };
@@ -610,10 +619,12 @@ const SlotChip: React.FC<{
   const handleDragStart = (e: React.DragEvent) => {
     if (!canEdit) return;
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("application/x-sched-v2", JSON.stringify({
+    const payload = JSON.stringify({
       source: sourceType, empId: id,
       ...(sourceType === "zone" ? { zone: sourceZone, slot: sourceSlot } : { slot: sourceSlot }),
-    }));
+    });
+    e.dataTransfer.setData("application/x-sched-v2", payload);
+    e.dataTransfer.setData("text/plain", payload);
   };
 
   return (
