@@ -18,10 +18,8 @@ import { buildBreadcrumbFromNav } from "./sideNavGroups";
 // 2026-09-27 · 네비게이션 SSOT · useActiveSubTab 훅 · localStorage · CustomEvent → useActiveNav Context
 import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
-import { SIDE_NAV_GROUPS, filterGroupsForSession, isItemActive, type SideNavItem } from "./sideNavGroups";
-// 2026-10-08 · GLOBAL UI · Group Line Tabs (desktop slim 헤더) · SideNav navigation 로직 재사용
-import { dispatchLandingAction } from "./SideNav";
-import { useEmploymentStatus } from "../../hooks/useEmploymentStatus";
+import { SIDE_NAV_GROUPS } from "./sideNavGroups";
+// 2026-10-08 · Group Line Tabs 제거 (Sidebar primary nav 와 중복) · filterGroupsForSession/isItemActive/SideNavItem/dispatchLandingAction/useEmploymentStatus import 삭제
 import { useIsMobile } from "../../hooks/use-mobile";
 import { usePageVisibility } from "../../hooks/usePageVisibility";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
@@ -418,55 +416,16 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     }
   };
 
-  // ── 2026-10-08 · GLOBAL UI · GROUP LINE TABS ─────────────────────────
-  //   · 사용자 요구 (reference image Flowrit 톤) · desktop slim 헤더에도 상단 Line Tabs 노출
-  //   · 현재 activePage 가 속한 group 의 siblings 를 자동 렌더
-  //   · navigation data source · SIDE_NAV_GROUPS (SSOT) · route/permission 변경 없음
-  //   · onClick handler · SideNav.handleNavItem 과 동일 로직 (setActiveByPage + onNavigate)
-  //   · behavior = 0 (presentation surface 하나 추가 · 기존 state/handler/API 무변경)
-  const { status: employmentStatus } = useEmploymentStatus(authSession);
-  const activeSubTab = activeNav?.itemKey === activePage ? (activeNav.subTab ?? null) : null;
-
-  const currentGroupItems = useMemo<SideNavItem[]>(() => {
-    if (!authSession || isVendor) return [];
-    const groups = filterGroupsForSession(authSession, perms, employmentStatus);
-    const currentGroup = groups.find(g =>
-      g.items.some(it => it.key === activePage)
-    );
-    if (!currentGroup) return [];
-    return currentGroup.items.filter(it => {
-      if (it.key === "landing") return true;
-      if (!isPageVisible(it.key as string, viewport)) return false;
-      if (it.subTab && !isPageVisible(`${it.key}:${it.subTab}`, viewport)) return false;
-      return true;
-    });
-  }, [authSession, isVendor, perms, employmentStatus, activePage, isPageVisible, viewport]);
-
-  const handleGroupItemClick = (item: SideNavItem) => {
-    // 2026-09-04 · Bug #3 · vendor 특수 라우팅 · SideNav 와 동일 가드
-    if (isVendor && item.key === "display" && item.subTab === "vendor-manage") {
-      dispatchLandingAction("open-vendor-self");
-      onNavigate?.("landing");
-      return;
-    }
-    if (item.subTab) {
-      const [outer, inner] = item.subTab.split(":");
-      setActiveByPage(item.key, outer, inner ?? null);
-    } else {
-      setActiveByPage(item.key);
-    }
-    onNavigate?.(item.key as AppNavPage);
-  };
-
   // ── 슬림 헤더 (사이드바 데스크탑) · 2026-10-07 Batch 3 ─────────────────────────
   //   - height 52~56px (spec 56~60px · breadcrumb 포함 compact)
   //   - SidebarTrigger · 명확한 chip 제거 · 플랫 icon 버튼 (spec 11)
   //   - shadow 거의 없음 · border-b 중립 · zero behavior delta
-  //   - 2026-10-08 · GLOBAL UI · 그 아래 Group Line Tabs row 조건부 노출
+  //   - 2026-10-08 · GLOBAL UI 재조정 · Group Line Tabs 로직 제거 (Sidebar primary nav 와 중복)
+  //       · navigation hierarchy · Sidebar=Primary · 각 Page의 L2 TabBar=Secondary · SegmentedControl=View · Toolbar=Filter
+  //       · 각 페이지가 자체 서브탭 (TabBar level=2)으로 content 상단 Line Tabs 담당
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
-      <div className="sticky top-0 z-40 shrink-0">
-      <div className="flex items-center justify-between gap-3 px-4 h-14 bg-white border-b border-line">
+      <div className="flex items-center justify-between gap-3 px-4 h-14 shrink-0 bg-white border-b border-line sticky top-0 z-40">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <SidebarTrigger
             className="h-9 w-9 rounded-lg text-ink-soft hover:bg-zinc-100 hover:text-ink transition-colors cursor-pointer shrink-0 [&_svg]:h-4 [&_svg]:w-4"
@@ -508,49 +467,6 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             </div>
           )}
         </div>
-      </div>
-
-      {/* 2026-10-08 · GLOBAL UI · Group Line Tabs (desktop sidebar mode · reference-tone)
-             · 현재 group의 siblings 가 2개 이상일 때만 표시 (단일 페이지 group 은 noise 방지)
-             · navigation 데이터 · SIDE_NAV_GROUPS SSOT · state/handler 로직 SideNav 동일 */}
-      {currentGroupItems.length > 1 && (
-        <nav
-          aria-label="그룹 내 페이지 네비게이션"
-          className="bg-white border-b border-slate-200"
-        >
-          <div className="px-4 sm:px-6 lg:px-8 flex items-stretch flex-nowrap gap-5 sm:gap-7 md:gap-8 overflow-x-auto scrollbar-hide">
-            {currentGroupItems.map(item => {
-              const active = isItemActive(item, activePage, activeSubTab);
-              return (
-                <button
-                  key={`${item.key}:${item.subTab ?? ""}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => handleGroupItemClick(item)}
-                  className={[
-                    "relative inline-flex items-center justify-center shrink-0",
-                    "h-11 px-1",
-                    "text-[13px] sm:text-[14px] whitespace-nowrap tracking-tight",
-                    "bg-transparent border-0 rounded-none shadow-none",
-                    "transition-colors duration-150 cursor-pointer outline-none",
-                    "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-tint",
-                    active
-                      ? "text-ink font-semibold"
-                      : "text-ink-soft/80 font-medium hover:text-ink",
-                  ].join(" ")}
-                  title={item.label}
-                >
-                  <span>{item.label}</span>
-                  {active && (
-                    <span aria-hidden className="absolute left-0 right-0 -bottom-px h-[2px] bg-ink" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </nav>
-      )}
       </div>
     );
   }
