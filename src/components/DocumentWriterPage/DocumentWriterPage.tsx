@@ -86,13 +86,12 @@ const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* 2026-09-11 · #50 · 사용자 지시 · 매입 서브탭 (매입이력·거래명세서·유통기한임박) 과 동일 · TabBar level=3 */}
+      {/* 2026-10-08 · GLOBAL UI · page L2 nav Line Tabs 로 통일 (level 3→2) · maxWidth cap 제거 */}
       <TabBar<DocTab>
-        level={3}
+        level={2}
         tabs={sortable.tabs}
         activeKey={tab}
         onSelect={setTab}
-        maxWidth={1400}
         sortable={{ getTabProps: sortable.getTabProps, isDragging: sortable.isDragging }}
       />
 

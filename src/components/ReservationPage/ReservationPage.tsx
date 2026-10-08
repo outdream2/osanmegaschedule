@@ -27,6 +27,8 @@ import {
 import { Spinner } from "../common/Spinner";
 import type { AuthSession } from "../../types";
 import { AppNavHeader } from "../layout/AppNavHeader";
+// 2026-10-08 · GLOBAL UI · Operations template migration (outer shell only · 2-panel body 유지)
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 // 2026-10-06 · 사용자 지시 · breadcrumb 통일 · 네비게이션 SSOT · activeNav 정착
 import { useSetActiveByPage } from "../../contexts/ActiveNavContext";
 // 2026-10-06 · 모달 분리 (framework audit · 800라인 방지)
@@ -395,10 +397,16 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
       {/* 2026-10-06 · 사용자 지시 · activePage="reservation" 정정 */}
       <AppNavHeader activePage="reservation" authSession={authSession ?? null} onBack={onBack} />
 
-      <div className={`flex-1 flex flex-col lg:flex-row gap-0 lg:overflow-hidden ${PAGE_CONTAINER_CLS}`}>
+      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · 2-panel body 유지 · 좌패널 자체 h1 제거 (template heading 과 중복) */}
+      <OperationsPageTemplate
+        title="방문 예약"
+        description="날짜를 선택하면 예약 가능 시간이 표시됩니다"
+        containerClassName="flex-1 w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex flex-col gap-3 min-h-0"
+      >
+      <div className="flex-1 flex flex-col lg:flex-row gap-0 lg:overflow-hidden min-h-0 bg-white border border-slate-200 rounded-xl overflow-hidden">
 
         {/* ====== LEFT PANEL: Calendar ====== */}
-        <div className="lg:w-[320px] shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 p-5 flex flex-col gap-5">
+        <div className="lg:w-[320px] shrink-0 border-b lg:border-b-0 lg:border-r border-gray-200 p-5 flex flex-col gap-5">
 
           {submitted && (
             <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200">
@@ -412,11 +420,6 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
               </button>
             </div>
           )}
-
-          <div>
-            <h1 className="text-gray-900 font-bold text-base">방문 예약</h1>
-            <p className="text-gray-500 text-xs mt-1">날짜를 선택하면 예약 가능 시간이 표시됩니다</p>
-          </div>
 
           {/* 담당자 설정 없음 안내 */}
           {!hasAssignees && (
@@ -742,6 +745,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
           </div>
         </div>
       </div>
+      </OperationsPageTemplate>
 
       {/* ====== MODAL: Reservation Info Form (분리) ====== */}
       <ReservationFormModal

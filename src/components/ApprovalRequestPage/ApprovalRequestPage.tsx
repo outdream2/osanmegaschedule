@@ -18,6 +18,8 @@ import { useIsMobile } from "../../hooks/use-mobile";
 // 2026-08-17 · #131 · 페이지 안보이기 · 내부 subtab tab bar 필터
 import { usePagePermissions } from "../../hooks/usePagePermissions";
 import { TabBar, type TabDef } from "../common/TabBar";
+// 2026-10-08 · GLOBAL UI · Operations template migration
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { LeavePage } from "../LeavePage/LeavePage";
 import { LunchPage } from "../LunchPage/LunchPage";
@@ -139,18 +141,20 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
         onLogout={onLogout}
       />
 
-      {/* ── 서브탭 바 · 공통 TabBar (level 2) · 2026-08-17 · #131 · 안보이기 처리 filter ── */}
-      {!(SIDEBAR_ENABLED && !isMobile) && visibleTabs.length > 0 && (
-        <TabBar<ArSubTab>
-          level={2}
-          tabs={visibleTabs}
-          activeKey={subTab}
-          onSelect={setSubTab}
-        />
-      )}
-
-      {/* ── 서브탭 컨텐츠 ── */}
-      <main className={`flex-1 flex flex-col min-h-0 ${PAGE_CONTAINER_CLS}`}>
+      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · L2 TabBar는 모바일만 (사이드바 모드 중복 방지) */}
+      <OperationsPageTemplate
+        title="업무 요청"
+        description="연차 신청 · 서류 작성 · 각종 신청 통합"
+        tabs={!(SIDEBAR_ENABLED && !isMobile) && visibleTabs.length > 0 ? (
+          <TabBar<ArSubTab>
+            level={2}
+            tabs={visibleTabs}
+            activeKey={subTab}
+            onSelect={setSubTab}
+          />
+        ) : undefined}
+      >
+      <main className="flex-1 flex flex-col min-h-0">
         {subTab === "leave" && (
           <LeavePage {...commonSubPageProps} mode="apply" />
         )}
@@ -166,6 +170,7 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
           </Suspense>
         )}
       </main>
+      </OperationsPageTemplate>
     </div>
   );
 };
