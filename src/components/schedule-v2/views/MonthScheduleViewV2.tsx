@@ -14,7 +14,9 @@ import {
   buildDateList, getTodayStr, getTypeHoursMap,
   buildFilteredEmployees,
 } from "../../SchedulePage/scheduleHelpers";
-import { ScheduleFilterBar } from "../../SchedulePage/ScheduleFilterBar";
+// 2026-10-08 · V2 자체 UI · V1 ScheduleFilterBar UI 제거 · V2 자체 toolbar
+//   · 기능 로직은 V1 재사용 (buildFilteredEmployees · usePositionCategories 등) · UI 만 신규
+import { ScheduleV2FilterBar } from "../components/ScheduleV2FilterBar";
 import type { AuthSession } from "../../../types";
 import { Spinner } from "../../common/Spinner";
 import { MonthGridV2 } from "./month-grid/MonthGridV2";
@@ -207,18 +209,15 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
         </div>
       )}
 
-      {/* 2026-10-08 · V1 parity · Filter bar (positionTab + searchQuery) · V1 ScheduleFilterBar 그대로 재사용 */}
-      <ScheduleFilterBar
+      {/* 2026-10-08 · V2 자체 UI · V1 ScheduleFilterBar UI 교체
+          · logic 재사용 (usePositionCategories · positionToCategoryDynamic · buildFilteredEmployees)
+          · UI 신규 (compact search + chip row · 파스텔/이모지/배지 없음) */}
+      <ScheduleV2FilterBar
         employees={employees}
         positionTab={positionTab}
         setPositionTab={setPositionTab}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        sortBy="none"
-        setSortBy={() => { /* P2 backlog */ }}
-        sortOrder="asc"
-        setSortOrder={() => { /* P2 backlog */ }}
-        onResetCustomOrder={() => { /* P2 backlog */ }}
         wageRates={wageRates}
       />
 

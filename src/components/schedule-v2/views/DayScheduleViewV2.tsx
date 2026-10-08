@@ -5,18 +5,18 @@
 //   · subview · 현황 (overview + timeline) · 배치 (V1 DayTimelineModal 재사용 · full editor)
 //   · canonical 재사용 · useScheduleData · useSettings · getTypeHoursMap · isOffType
 //   · V1↔V2 Day parity · 동일 helper · 동일 storage · 동일 API
-// 2026-10-08 · V1 FUNCTIONAL PARITY · 배치 subview = V1 DayTimelineModal 그대로 재사용
-//   · 이전 (V2-C2) · remove-only inline grid → V1 과 기능 parity 안 됨
-//   · 이후 (V1 parity) · 배치 tab 선택 시 V1 modal open · drag/add/auto-suggest/
-//     copy/확정/확정해제 전부 V1 그대로 사용 · 저장은 동일 shared helper 로 수렴
+// 2026-10-08 · V2 자체 UI · V1 DayTimelineModal UI 사용 중단 · DayAssignmentView 로 교체
+//   · 기능 로직은 V1 재사용 (useSlotHandlers · buildAutoSuggestZoneMap · computeLunchAssignments
+//     · shared/schedule/dayAssignment · /api/zone-day) · UI 는 V2 자체 (modern)
+//   · 트렌드: Linear/Vercel/Notion 2026 톤 · 파스텔/이모지/배지 금지 · thin border · low shadow
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { useScheduleData } from "../../SchedulePage/useScheduleData";
 import { useSettings } from "../../../hooks/useSettings";
-import { buildDateList, getTodayStr, getTypeHoursMap } from "../../SchedulePage/scheduleHelpers";
+import { buildDateList, getTodayStr } from "../../SchedulePage/scheduleHelpers";
 import { parseRange, pct, widthPct, buildTypeTones, DISPLAY_START, DISPLAY_END, HOUR_SLOTS } from "../../DayTimelineModal/utils";
 import { SKIP_TYPES } from "../../DayTimelineModal/types";
-import { DayTimelineModal } from "../../DayTimelineModal/DayTimelineModal";
+import { DayAssignmentView } from "./day-assignment/DayAssignmentView";
 import { Spinner } from "../../common/Spinner";
 import { Card } from "../../common/Card";
 import type { AuthSession, Employee, Schedule } from "../../../types";
@@ -26,7 +26,7 @@ interface Props {
   onDateDelta: (daysDelta: number) => void;
   onToday: () => void;
   authSession: AuthSession | null;
-  /** 2026-10-08 · V1 parity · 내부 modal 날짜 네비게이션 → V2 anchor 동기화 */
+  /** 2026-10-08 · reserved · 외부 jump (Month/Week → Day) · 현재 Day 는 자체 nav 사용 · 미사용 but BC */
   onJumpToDate?: (date: string) => void;
 }
 
@@ -35,6 +35,7 @@ type DaySubView = "overview" | "assignment";
 const DOW_LABELS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 
 export const DayScheduleViewV2: React.FC<Props> = ({ date, onDateDelta, onToday, authSession, onJumpToDate }) => {
+  void onJumpToDate;
   const level = authSession?.level ?? 0;
   const canEdit = level >= 5; // V1 isAdmin 등가 · 매니저+
   const [notification, setNotification] = useState<string | null>(null);
@@ -51,7 +52,6 @@ export const DayScheduleViewV2: React.FC<Props> = ({ date, onDateDelta, onToday,
   const {
     employees, isLoading, error,
     fetchScheduleData, isInitialFetchRef,
-    handleCellUpdate,
   } = useScheduleData(year, month, showNotification);
   const { scheduleTypes, positions } = useSettings();
   const todayStr = getTodayStr();
@@ -199,7 +199,9 @@ export const DayScheduleViewV2: React.FC<Props> = ({ date, onDateDelta, onToday,
         </div>
       )}
 
-      {/* Content · 현황 subview (경량 overview · timeline) */}
+      {/* Content · subview 분기
+          · 현황 (경량 overview · timeline per group)
+          · 배치 (V2 자체 DayAssignmentView · 기능은 V1 helpers 재사용 · UI 신규) */}
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center py-16">
           <Spinner size={16} tone="brand" label="스케줄 불러오는 중..." />
@@ -208,25 +210,14 @@ export const DayScheduleViewV2: React.FC<Props> = ({ date, onDateDelta, onToday,
         <div className="flex-1 flex items-center justify-center py-16 text-[13px] text-rose-600">
           로드 실패 · {error}
         </div>
-      ) : (
+      ) : subview === "overview" ? (
         <DayOverview grouped={grouped} typeTones={typeTones} />
-      )}
-
-      {/* 2026-10-08 · V1 FUNCTIONAL PARITY · 배치 subview = V1 DayTimelineModal 재사용
-          · drag/add/remove · auto-suggest · lunch/rest offset-interval-count · copy · 확정
-            모두 V1 modal 그대로 사용 · 저장은 shared/schedule/dayAssignment + /api/zone-day/{date} 로 수렴
-          · onDateChange = V2 anchor 로 전달 (onJumpToDate) · modal 내부 날짜 네비게이션 유지
-          · onUpdateSchedule = handleCellUpdate (lv>=5 만 전달 · V1 isAdmin 등가 · lock 서버 가드) */}
-      {subview === "assignment" && !isLoading && !error && (
-        <DayTimelineModal
+      ) : (
+        <DayAssignmentView
           date={date}
           employees={employees}
-          typeHoursMap={getTypeHoursMap("", "", scheduleTypes)}
-          pharmTypeHoursMap={getTypeHoursMap("약사", "", scheduleTypes)}
-          scheduleTypeEntries={scheduleTypes}
-          onUpdateSchedule={canEdit ? handleCellUpdate : undefined}
-          onClose={() => setSubview("overview")}
-          onDateChange={onJumpToDate}
+          scheduleTypes={scheduleTypes}
+          canEdit={canEdit}
         />
       )}
     </div>
