@@ -16,8 +16,8 @@ export const scheduleCellContent = (
   scheduleTypes?: ScheduleTypeEntry[],
 ): React.ReactElement => {
   if (!schedule || !schedule.type) {
-    // 빈 셀 · 셀 height 일관성 위해 min-h 유지 (휴무/일반 셀과 동일 크기)
-    return <div className="min-h-[36px] flex items-center justify-center text-[11px] text-zinc-200">·</div>;
+    // 빈 셀 · 전체 셀 꽉 채움 (h-full) + height 통일
+    return <div className="h-full w-full flex items-center justify-center text-[11px] text-zinc-200">·</div>;
   }
   const t = schedule.type.trim();
   const off = isOffType(t);
@@ -32,18 +32,15 @@ export const scheduleCellContent = (
   const hoursCls = hasBg
     ? (isLight ? "text-zinc-700" : "text-white/85")
     : "text-ink-soft";
-  // 2026-10-08 · 사용자 피드백 · 오픈/마감/오픈마감/휴무 셀 크기 통일 + rounded 제거 (각진 네모) + 깔끔
-  //   · min-h-[36px] · flex column justify-center · 두 번째 라인 자리 유지 (OFF 도 invisible 공백)
-  //   · rounded-sm → rounded-none (각진 네모 · 사용자 지시)
-  //   · 셀 꽉 채우기 · padding compact
+  // 2026-10-08 · 사용자 피드백 · 셀 크기 통일 + 여백 없게 + 각진 네모 + overflow hidden (hours wrap 방지)
   const showHours = !!hours && !off;
   return (
     <div
-      className={`text-[12px] leading-tight px-1 py-0.5 min-h-[36px] flex flex-col justify-center ${textCls}`}
+      className={`h-full w-full px-1 py-0.5 flex flex-col justify-center overflow-hidden ${textCls}`}
       style={hasBg ? { backgroundColor: bgHex! } : undefined}
     >
-      <div className="font-bold">{t}</div>
-      <div className={`text-[10px] tabular-nums ${hoursCls} ${showHours ? "" : "invisible select-none"}`}>
+      <div className="text-[12px] font-bold leading-tight truncate">{t}</div>
+      <div className={`text-[10px] tabular-nums leading-tight truncate ${hoursCls} ${showHours ? "" : "invisible select-none"}`}>
         {showHours ? hours : "·"}
       </div>
     </div>

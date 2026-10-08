@@ -124,6 +124,7 @@ export const MonthGridV2: React.FC<GridProps> = ({
                     <td
                       key={`c-${emp.id}-${d}`}
                       onClick={clickable ? () => onOpenEdit(emp.id, d) : undefined}
+                      style={{ height: 44 }}
                       className={`relative border-r border-b border-line p-0 text-center align-top ${
                         isToday ? "bg-brand-tint/20" : ""
                       } ${

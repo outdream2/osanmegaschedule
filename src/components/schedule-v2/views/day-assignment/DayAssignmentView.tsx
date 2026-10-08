@@ -219,6 +219,14 @@ export const DayAssignmentView: React.FC<Props> = ({ date, employees, scheduleTy
     e.dataTransfer.setData("application/x-sched-v2", payload);
     e.dataTransfer.setData("text/plain", payload);
   }, []);
+  // 2026-10-08 · 사용자 피드백 · drop 실패 알림
+  //   · dropEffect === "none" 이면 유효 drop target 밖에 놓은 것 · 이유 안내
+  //   · (겹침/약사 1명/중복 등은 useSlotHandlers 가 showError 로 이미 알림)
+  const handleDragEndWorker = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.dropEffect === "none") {
+      show("배정 실패 · 구역/점심/휴게 셀 안에 놓아주세요.", 3200, "warn");
+    }
+  }, [show]);
 
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-2">
@@ -272,7 +280,7 @@ export const DayAssignmentView: React.FC<Props> = ({ date, employees, scheduleTy
 
       {/* 3-column · desktop + · mobile stacked */}
       <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-[220px_1fr_300px] gap-2">
-        <WorkerPool workers={workers} typeTones={typeTones} onDragStartWorker={handleDragStartWorker} canEdit={canEdit} />
+        <WorkerPool workers={workers} typeTones={typeTones} onDragStartWorker={handleDragStartWorker} onDragEndWorker={handleDragEndWorker} canEdit={canEdit} />
         <ZonePanel
           zoneSlots={zoneSlots}
           empById={empById}
@@ -301,8 +309,9 @@ const WorkerPool: React.FC<{
   workers: WorkerEntry[];
   typeTones: Record<string, TypeTone>;
   onDragStartWorker: (e: React.DragEvent, empId: number) => void;
+  onDragEndWorker: (e: React.DragEvent) => void;
   canEdit: boolean;
-}> = ({ workers, typeTones, onDragStartWorker, canEdit }) => {
+}> = ({ workers, typeTones, onDragStartWorker, onDragEndWorker, canEdit }) => {
   return (
     <section className="min-h-0 flex flex-col rounded-xl border border-line bg-white overflow-hidden">
       <header className="shrink-0 flex items-baseline justify-between px-3 py-2 border-b border-line">
@@ -320,6 +329,7 @@ const WorkerPool: React.FC<{
               key={`wk-${w.emp.id}`}
               draggable={canEdit}
               onDragStart={(e) => canEdit && onDragStartWorker(e, w.emp.id)}
+              onDragEnd={canEdit ? onDragEndWorker : undefined}
               className={`flex items-center gap-2 px-3 py-2 select-none ${canEdit ? "cursor-grab active:cursor-grabbing hover:bg-sky-50/60" : "cursor-default"}`}
               title={canEdit ? `${w.emp.name} · 끌어서 구역/점심/휴게 배정` : `${w.emp.name} · ${w.schedule.type}${w.wh ? ` · ${w.wh}` : ""}`}
             >
@@ -447,7 +457,7 @@ const ZoneHourCell: React.FC<{
       onDragOver={canEdit ? (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setHover(true); } : undefined}
       onDragLeave={() => setHover(false)}
       onDrop={canEdit ? (e) => { setHover(false); onDropToCell(e, zone, dropSlot); } : undefined}
-      className={`relative min-h-[52px] p-1.5 flex flex-wrap gap-1 content-start transition-colors ${hover ? "bg-sky-50" : ""}`}
+      className={`relative h-full min-h-[56px] p-1.5 flex flex-wrap gap-1 content-start transition-colors ${hover ? "bg-sky-50" : ""}`}
     >
       {items.length === 0 && (
         <span className="text-[10px] text-zinc-300 italic">—</span>
@@ -606,7 +616,8 @@ const SlotChip: React.FC<{
   sourceSlot: string;
   onRemove: () => void;
   canEdit: boolean;
-}> = ({ id, empById, typeTones, sourceType, sourceZone, sourceSlot, onRemove, canEdit }) => {
+  onDragEnd?: (e: React.DragEvent) => void;
+}> = ({ id, empById, typeTones, sourceType, sourceZone, sourceSlot, onRemove, canEdit, onDragEnd }) => {
   const w = empById.get(id);
   const name = w?.emp.name ?? `#${id}`;
   const type = w?.schedule.type ?? "";
@@ -631,6 +642,7 @@ const SlotChip: React.FC<{
     <span
       draggable={canEdit}
       onDragStart={handleDragStart}
+      onDragEnd={canEdit && onDragEnd ? onDragEnd : undefined}
       className={`inline-flex items-center gap-1 h-5 pl-1.5 pr-0.5 rounded border text-[11px] font-semibold leading-none tabular-nums ${canEdit ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
       style={{ background: bg, color: text, borderColor: border }}
       title={w ? `${name} · ${type}` : `직원 #${id} · 근무 외`}
