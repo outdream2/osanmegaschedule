@@ -83,24 +83,20 @@ export const MonthGridV2: React.FC<GridProps> = ({
                 <th
                   key={`h-${d}`}
                   onClick={dateClickable ? () => onDateHeaderClick!(d) : undefined}
-                  className={`sticky top-0 z-20 border-r border-b border-line px-1 py-1.5 text-center text-[12px] font-semibold tabular-nums relative ${
-                    isToday ? "bg-brand-tint/30 text-brand-deep" : isSun ? "bg-rose-50/60 text-rose-700" : isSat ? "bg-sky-50/60 text-sky-700" : "bg-zinc-50 text-ink"
+                  className={`sticky top-0 z-30 border-r border-b border-line px-1 py-1.5 text-center text-[12px] font-semibold tabular-nums ${
+                    isToday
+                      ? "bg-rose-50 text-rose-700 ring-2 ring-inset ring-rose-500 relative"
+                      : isSun ? "bg-rose-50/60 text-rose-700" : isSat ? "bg-sky-50/60 text-sky-700" : "bg-zinc-50 text-ink"
                   } ${dateClickable ? "cursor-pointer hover:bg-brand-tint/40" : ""}`}
                   title={dateClickable ? (isToday ? "오늘 · 일간 보기" : "일간 보기") : undefined}
                 >
-                  {/* 2026-10-08 · 사용자 지시 · 오늘 표시 modern trend
-                      · Linear/Vercel/Notion 2026 톤 · subtle column tint + bold number + 2px accent underline
-                      · 과한 bg-brand-deep (reverse 색) 대신 brand-tint/30 로 subtle · 숫자가 brand-deep 로 돋보임 */}
+                  {/* 2026-10-08 · 사용자 지시 · V1 ScheduleGrid.tsx:144 와 동일 rose-500 inset ring + 2026 트렌드 톤
+                      · Linear/Vercel/Google calendar · today column 전체에 vertical rail (inset ring 2px)
+                      · V1 parity 유지 (붉은 테두리) · ring 두께·색상 그대로 */}
                   <div className="leading-tight flex flex-col items-center">
                     <div className={`${isToday ? "text-[15px] font-extrabold" : "text-[14px] font-bold"}`}>{dayNum}</div>
                     <div className={`text-[10px] ${isToday ? "font-semibold" : "opacity-70"}`}>{dow}</div>
                   </div>
-                  {isToday && (
-                    <span
-                      aria-hidden
-                      className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[2px] rounded-full bg-brand-deep"
-                    />
-                  )}
                 </th>
               );
             })}
@@ -135,7 +131,7 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       onClick={clickable ? () => onOpenEdit(emp.id, d) : undefined}
                       style={{ height: 44 }}
                       className={`relative border-r border-b border-line p-0 text-center align-top ${
-                        isToday ? "bg-brand-tint/20" : ""
+                        isToday ? "ring-2 ring-inset ring-rose-500 z-10 relative" : ""
                       } ${
                         clickable
                           ? "cursor-pointer hover:bg-sky-50/60 outline outline-1 outline-transparent hover:outline-sky-300"
