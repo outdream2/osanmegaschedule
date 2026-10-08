@@ -338,20 +338,9 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
         setTodayFirst={setTodayFirst}
         onReset={onFilterReset}
         settingsPositions={settingsPositions ?? []}
-        rightActions={
+        inlineActions={
           <>
-            {/* 2026-10-08 · V1 전월복사 (useScheduleData.executeCopyFromPreviousMonth 재사용) */}
-            <button
-              type="button"
-              disabled={!canEdit || copying}
-              onClick={() => setShowCopyModal(true)}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-line bg-white text-ink text-[13px] font-semibold hover:bg-zinc-50 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              title={!canEdit ? "확정된 월은 편집할 수 없습니다" : "전월 데이터 복사"}
-            >
-              <Copy size={13} weight="bold" />
-              전월복사
-            </button>
-            {/* 2026-10-08 · V1 인건비 toggle (getEmpMonthStats 재사용) */}
+            {/* 2026-10-08 · 사용자 지시 · 인건비 + 일괄등록 을 오늘우선 옆 inline 배치 */}
             <button
               type="button"
               onClick={() => setShowLabor(v => !v)}
@@ -364,7 +353,6 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
             >
               인건비
             </button>
-            {/* 2026-10-08 · 일괄등록 shortcut */}
             {onRequestBulk && (
               <button
                 type="button"
@@ -378,6 +366,18 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
               </button>
             )}
           </>
+        }
+        rightActions={
+          <button
+            type="button"
+            disabled={!canEdit || copying}
+            onClick={() => setShowCopyModal(true)}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-line bg-white text-ink text-[13px] font-semibold hover:bg-zinc-50 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            title={!canEdit ? "확정된 월은 편집할 수 없습니다" : "전월 데이터 복사"}
+          >
+            <Copy size={13} weight="bold" />
+            전월복사
+          </button>
         }
       />
 

@@ -318,7 +318,7 @@ export const WeekScheduleViewV2: React.FC<Props> = ({
         setTodayFirst={setTodayFirst}
         onReset={onFilterReset}
         settingsPositions={settingsPositions ?? []}
-        rightActions={
+        inlineActions={
           onRequestBulk ? (
             <button
               type="button"

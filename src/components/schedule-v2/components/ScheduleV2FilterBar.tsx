@@ -27,7 +27,9 @@ interface Props {
   onReset: () => void;
   /** settings.positions SSOT · chip/dropdown 카테고리 */
   settingsPositions: string[];
-  /** 2026-10-08 · 사용자 지시 §21 · 필터 toolbar 오른쪽에 action 버튼 배치 (전월복사 · 일괄등록 등) */
+  /** 2026-10-08 · 오늘우선 옆에 inline 배치 (인건비 · 일괄등록 등 primary action) */
+  inlineActions?: React.ReactNode;
+  /** 2026-10-08 · 필터 toolbar 오른쪽 끝 ml-auto 배치 (전월복사 등 secondary action) */
   rightActions?: React.ReactNode;
 }
 
@@ -48,6 +50,7 @@ export const ScheduleV2FilterBar: React.FC<Props> = ({
   todayFirst, setTodayFirst,
   onReset,
   settingsPositions,
+  inlineActions,
   rightActions,
 }) => {
   // 2026-10-08 · 직군 dropdown 제거 (Row 2 pills 로 대체) · reset 활성 조건에 positionTab 포함
@@ -127,6 +130,9 @@ export const ScheduleV2FilterBar: React.FC<Props> = ({
         />
         <span className="text-[13px] text-ink font-semibold select-none">오늘우선</span>
       </label>
+
+      {/* 2026-10-08 · 사용자 지시 · 인건비·일괄등록 등 primary action 을 오늘우선 옆에 inline 배치 */}
+      {inlineActions}
 
       {/* 초기화 */}
       {isDirty && (
