@@ -16,14 +16,15 @@ export const scheduleCellContent = (
   scheduleTypes?: ScheduleTypeEntry[],
 ): React.ReactElement => {
   if (!schedule || !schedule.type) {
-    return <span className="inline-block w-full text-[11px] text-zinc-200">·</span>;
+    // 빈 셀 · 셀 height 일관성 위해 min-h 유지 (휴무/일반 셀과 동일 크기)
+    return <div className="min-h-[36px] flex items-center justify-center text-[11px] text-zinc-200">·</div>;
   }
   const t = schedule.type.trim();
   const off = isOffType(t);
   const hours = (schedule.workingHours ?? "").trim() || typeHoursMap[t] || "";
-  // V1 ScheduleCell 과 동일 · settings 등록 color 없으면 bg 미적용 (text 만)
+  // 2026-10-08 · V1 ScheduleCell:128,164 과 동일 · bgHex 있으면 fallback 포함 적용 (휴무도 bg 유지)
   const bgHex = scheduleTypes ? getTypeHex(t, scheduleTypes) : null;
-  const hasBg = !!bgHex && bgHex !== "#f1f5f9"; // "#f1f5f9" = constants fallback · 색 없음 취급
+  const hasBg = !!bgHex;
   const isLight = hasBg ? isLightHex(bgHex!) : true;
   const textCls = hasBg
     ? (isLight ? "text-zinc-900" : "text-white")
@@ -31,13 +32,20 @@ export const scheduleCellContent = (
   const hoursCls = hasBg
     ? (isLight ? "text-zinc-700" : "text-white/85")
     : "text-ink-soft";
+  // 2026-10-08 · 사용자 피드백 · 오픈/마감/오픈마감/휴무 셀 크기 통일 + rounded 제거 (각진 네모) + 깔끔
+  //   · min-h-[36px] · flex column justify-center · 두 번째 라인 자리 유지 (OFF 도 invisible 공백)
+  //   · rounded-sm → rounded-none (각진 네모 · 사용자 지시)
+  //   · 셀 꽉 채우기 · padding compact
+  const showHours = !!hours && !off;
   return (
     <div
-      className={`text-[12px] leading-tight rounded-sm px-1 py-0.5 ${textCls}`}
+      className={`text-[12px] leading-tight px-1 py-0.5 min-h-[36px] flex flex-col justify-center ${textCls}`}
       style={hasBg ? { backgroundColor: bgHex! } : undefined}
     >
       <div className="font-bold">{t}</div>
-      {hours && !off && <div className={`text-[10px] tabular-nums ${hoursCls}`}>{hours}</div>}
+      <div className={`text-[10px] tabular-nums ${hoursCls} ${showHours ? "" : "invisible select-none"}`}>
+        {showHours ? hours : "·"}
+      </div>
     </div>
   );
 };
