@@ -1,14 +1,16 @@
 // src/components/schedule-v2/components/ScheduleV2FilterBar.tsx
-// 2026-10-08 · 스케줄 V2 · 자체 UI · 기능 코드는 V1 재사용 (logic reuse · UI 신규)
-//   · logic: usePositionCategories + positionToCategoryDynamic + isPharmPosition (V1)
-//   · UI: compact horizontal · search 입력 (좌) + position chip row (우) · thin border · low shadow
-//   · 트렌드: Linear/Vercel/Notion 2026 톤 · 파스텔/이모지/배지 금지 · neutral surface
-//   · P1 scope · sort/order/todayFirst/drag reorder/reset 는 P2 backlog
+// 2026-10-08 · 스케줄 V2 · compact single-row filter toolbar
+//   · 사용자 지시 · duplicate filter UI 제거 (summary pills 는 상단 month row 로 이동)
+//   · 구성: [검색] [직군 ▾] [정렬 ▾] [오늘우선 ☐] [초기화]
+//   · logic: V1 재사용 가능한 helper 는 전부 import (usePositionCategories · positionToCategoryDynamic)
+//   · 트렌드: Linear/Vercel/Notion 2026 · thin border · neutral · compact (h-8)
 import React, { useMemo } from "react";
-import { MagnifyingGlass, X } from "@phosphor-icons/react";
+import { MagnifyingGlass, X, ArrowCounterClockwise } from "@phosphor-icons/react";
 import type { Employee } from "../../../types";
-import { positionToCategoryDynamic } from "../../SchedulePage/usePositionCategories";
 import { KO_INPUT_PROPS } from "../../../lib/koreanInput";
+
+export type SortBy = "none" | "today" | "name" | "position" | "workplace";
+export type SortOrder = "asc" | "desc";
 
 interface Props {
   employees: Employee[];
@@ -16,69 +18,72 @@ interface Props {
   setPositionTab: (tab: string) => void;
   searchQuery: string;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
-  /** 2026-10-08 · 사용자 지시 · settings.positions SSOT · wageRates 는 count 분류용으로만 사용 */
+  sortBy: SortBy;
+  setSortBy: (s: SortBy) => void;
+  sortOrder: SortOrder;
+  setSortOrder: (o: SortOrder) => void;
+  todayFirst: boolean;
+  setTodayFirst: (v: boolean) => void;
+  onReset: () => void;
+  /** settings.positions SSOT · chip/dropdown 카테고리 */
   settingsPositions: string[];
-  /** 2026-10-08 · settings.wageRates keys · positionToCategoryDynamic 매칭용 (하위호환) */
-  wageRateKeys?: string[];
 }
+
+const SORT_LABELS: Record<SortBy, string> = {
+  none: "기본",
+  today: "오늘 근무",
+  name: "이름",
+  position: "직군",
+  workplace: "근무지",
+};
 
 export const ScheduleV2FilterBar: React.FC<Props> = ({
   employees,
   positionTab, setPositionTab,
   searchQuery, setSearchQuery,
+  sortBy, setSortBy,
+  sortOrder, setSortOrder,
+  todayFirst, setTodayFirst,
+  onReset,
   settingsPositions,
-  wageRateKeys = [],
 }) => {
-  // 2026-10-08 · 사용자 지시 · chip list = ["전체", ...settings.positions, "기타"(count>0 때만)]
-  //   · "기타" 는 settings.positions 에 포함되지 않은 직군을 가진 직원이 있을 때만 노출
-  //   · 중복 "기타" 제거 (settings.positions 에 이미 있으면 그걸 사용)
-  //   · V1 ScheduleFilterBar 는 wageRates keys 기준 · V2 는 settings.positions 기준 (사용자 명시 변경)
-  const categories = useMemo(() => {
-    const base = (settingsPositions ?? []).filter(p => p && p.trim() !== "");
+  // 직군 options · "전체" + settings.positions + "기타"(count>0 일 때만)
+  const positionSet = useMemo(
+    () => new Set((settingsPositions ?? []).map(p => (p ?? "").trim()).filter(Boolean)),
+    [settingsPositions],
+  );
+  const etcCount = useMemo(() => employees.filter(e => {
+    const pos = (e.position ?? "").trim();
+    if (!pos) return true;
+    return !positionSet.has(pos);
+  }).length, [employees, positionSet]);
+
+  const positionOptions = useMemo(() => {
     const list: string[] = ["전체"];
-    for (const p of base) {
-      if (!list.includes(p)) list.push(p);
+    for (const p of settingsPositions ?? []) {
+      const label = (p ?? "").trim();
+      if (!label) continue;
+      if (!list.includes(label)) list.push(label);
     }
+    if (etcCount > 0) list.push("기타");
     return list;
-  }, [settingsPositions]);
+  }, [settingsPositions, etcCount]);
 
-  // count 매핑
-  //   · "전체" = 전체 직원 수
-  //   · 각 position = exact match (emp.position === cat)
-  //   · "기타" = emp.position 이 settings.positions 에 없는 직원 수 (0 이면 chip 숨김)
-  const positionSet = useMemo(() => new Set((settingsPositions ?? []).map(p => (p ?? "").trim()).filter(Boolean)), [settingsPositions]);
-  const countMap = useMemo(() => {
-    const m: Record<string, number> = {};
-    for (const cat of categories) {
-      if (cat === "전체") { m[cat] = employees.length; continue; }
-      m[cat] = employees.filter(e => (e.position ?? "").trim() === cat).length;
-    }
-    // 기타 · settings.positions 에 없는 position 보유 직원
-    const etcCount = employees.filter(e => {
-      const pos = (e.position ?? "").trim();
-      if (!pos) return true;
-      return !positionSet.has(pos);
-    }).length;
-    if (etcCount > 0) m["기타"] = etcCount;
-    return m;
-  }, [employees, categories, positionSet]);
+  // reset 활성 조건 · 기본값과 다른 상태 하나라도 있으면 노출
+  const isDirty =
+    positionTab !== "전체" ||
+    searchQuery.trim() !== "" ||
+    sortBy !== "none" ||
+    sortOrder !== "asc" ||
+    todayFirst !== false;
 
-  // "기타" chip 은 count>0 때만 끝에 추가
-  const visibleCategories = useMemo(() => {
-    const list = [...categories];
-    if ((countMap["기타"] ?? 0) > 0) list.push("기타");
-    return list;
-  }, [categories, countMap]);
-
-  // positionToCategoryDynamic 는 상위 filter engine (buildFilteredEmployees) 호환성 유지용
-  //   · V1 wageRates 매핑과 V2 settings.positions chip 가 일치하지 않을 수 있음 (사용자 설정 다를 때)
-  //   · 하지만 count 는 chip 기준 (exact match + 기타) · filter 는 V1 pattern (wageRates based)
-  void positionToCategoryDynamic; void wageRateKeys;
+  // sort 방향 toggle · sortBy === "none" 이면 비활성
+  const canToggleOrder = sortBy !== "none";
 
   return (
     <div className="shrink-0 flex items-center gap-2 py-2 flex-wrap">
       {/* 직원 검색 */}
-      <div className="relative w-full sm:w-[260px]">
+      <div className="relative w-full sm:w-[220px]">
         <MagnifyingGlass size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft pointer-events-none" />
         <input
           type="text"
@@ -101,29 +106,66 @@ export const ScheduleV2FilterBar: React.FC<Props> = ({
         )}
       </div>
 
-      {/* 직군 chip row */}
-      <div className="flex items-center gap-1 flex-wrap">
-        {visibleCategories.map(cat => {
-          const active = cat === positionTab;
-          const count = countMap[cat] ?? 0;
-          return (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setPositionTab(cat)}
-              className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[13px] font-semibold transition cursor-pointer border ${
-                active
-                  ? "bg-brand-deep text-white border-brand-deep"
-                  : "bg-white text-ink-soft border-line hover:text-ink hover:bg-zinc-50"
-              }`}
-              aria-pressed={active}
-            >
-              <span>{cat}</span>
-              <span className={`text-[11px] tabular-nums ${active ? "text-white/85" : "text-zinc-400"}`}>{count}</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* 직군 dropdown */}
+      <label className="inline-flex items-center gap-1.5">
+        <span className="text-[12px] text-ink-soft">직군</span>
+        <select
+          value={positionTab}
+          onChange={e => setPositionTab(e.target.value)}
+          className="h-8 pl-2 pr-6 text-[13px] rounded-md border border-line bg-white text-ink font-semibold focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-deep/20 cursor-pointer"
+        >
+          {positionOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
+      </label>
+
+      {/* 정렬 dropdown */}
+      <label className="inline-flex items-center gap-1.5">
+        <span className="text-[12px] text-ink-soft">정렬</span>
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value as SortBy)}
+          className="h-8 pl-2 pr-6 text-[13px] rounded-md border border-line bg-white text-ink font-semibold focus:outline-none focus:border-brand-deep focus:ring-1 focus:ring-brand-deep/20 cursor-pointer"
+        >
+          {(Object.keys(SORT_LABELS) as SortBy[]).map(k => (
+            <option key={k} value={k}>{SORT_LABELS[k]}</option>
+          ))}
+        </select>
+        {/* 오름/내림 토글 (sort 적용 시만 활성) */}
+        <button
+          type="button"
+          disabled={!canToggleOrder}
+          onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+          className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-line bg-white text-ink-soft hover:bg-zinc-50 text-[12px] font-bold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          title={canToggleOrder ? (sortOrder === "asc" ? "오름차순 → 내림차순" : "내림차순 → 오름차순") : "정렬 선택 시 활성"}
+          aria-label="정렬 방향"
+        >
+          {sortOrder === "asc" ? "↑" : "↓"}
+        </button>
+      </label>
+
+      {/* 오늘우선 toggle */}
+      <label className="inline-flex items-center gap-1.5 h-8 px-2 rounded-md border border-line bg-white cursor-pointer hover:bg-zinc-50">
+        <input
+          type="checkbox"
+          checked={todayFirst}
+          onChange={e => setTodayFirst(e.target.checked)}
+          className="w-3.5 h-3.5 accent-brand-deep cursor-pointer"
+        />
+        <span className="text-[13px] text-ink font-semibold select-none">오늘우선</span>
+      </label>
+
+      {/* 초기화 */}
+      {isDirty && (
+        <button
+          type="button"
+          onClick={onReset}
+          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-line bg-white text-ink-soft hover:text-ink hover:bg-zinc-50 text-[12px] font-semibold cursor-pointer"
+          title="필터·정렬·순서 전부 초기화"
+        >
+          <ArrowCounterClockwise size={12} weight="bold" />
+          초기화
+        </button>
+      )}
     </div>
   );
 };

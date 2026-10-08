@@ -22,11 +22,18 @@ interface Props {
   onAnchorDelta: (daysDelta: number) => void;
   onThisWeek: () => void;
   authSession: AuthSession | null;
-  /** 2026-10-08 · V1 parity · 공유 필터 state */
+  /** 2026-10-08 · V1 FULL parity · 공유 필터 state */
   positionTab: string;
   setPositionTab: (tab: string) => void;
   searchQuery: string;
   setSearchQuery: React.Dispatch<React.SetStateAction<string>>;
+  sortBy: "none" | "today" | "name" | "position" | "workplace";
+  setSortBy: (s: "none" | "today" | "name" | "position" | "workplace") => void;
+  sortOrder: "asc" | "desc";
+  setSortOrder: (o: "asc" | "desc") => void;
+  todayFirst: boolean;
+  setTodayFirst: (v: boolean) => void;
+  onFilterReset: () => void;
   /** 2026-10-08 · V1 parity · 날짜 click → Day · 직원명 click → Employee */
   onOpenDay?: (date: string) => void;
   onOpenEmployee?: (employeeId: number) => void;
@@ -37,6 +44,7 @@ interface Props {
 export const WeekScheduleViewV2: React.FC<Props> = ({
   anchorDate, onAnchorDelta, onThisWeek, authSession,
   positionTab, setPositionTab, searchQuery, setSearchQuery,
+  sortBy, setSortBy, sortOrder, setSortOrder, todayFirst, setTodayFirst, onFilterReset,
   onOpenDay, onOpenEmployee, onRequestBulk,
 }) => {
   const [notification, setNotification] = useState<{ msg: string; tone: "ok" | "err" } | null>(null);
@@ -72,7 +80,7 @@ export const WeekScheduleViewV2: React.FC<Props> = ({
   const visibleEmployees = useMemo(() => {
     let list = employees;
     if (positionTab === "전체") {
-      // no position filter
+      // no filter
     } else if (positionTab === "기타") {
       list = list.filter(e => {
         const pos = (e.position ?? "").trim();
@@ -84,8 +92,28 @@ export const WeekScheduleViewV2: React.FC<Props> = ({
     }
     const q = searchQuery.trim().toLowerCase();
     if (q) list = list.filter(e => (e.name ?? "").toLowerCase().includes(q));
-    return list;
-  }, [employees, positionTab, searchQuery, positionSet]);
+    // sort (Month 와 동일)
+    const working = [...list];
+    const positionIndex = (pos: string) => {
+      const idx = (settingsPositions ?? []).indexOf(pos);
+      return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+    };
+    const workedToday = (e: Employee) => !!e.schedules?.find(s => s.date === todayStr && s.type && !/^(휴무|월차|지정휴무|결근)$/.test(s.type.trim()));
+    if (sortBy !== "none") {
+      working.sort((a, b) => {
+        let v = 0;
+        if (sortBy === "name") v = (a.name ?? "").localeCompare(b.name ?? "", "ko");
+        else if (sortBy === "position") v = positionIndex(a.position ?? "") - positionIndex(b.position ?? "") || (a.name ?? "").localeCompare(b.name ?? "", "ko");
+        else if (sortBy === "workplace") v = (a.workplace ?? "").localeCompare(b.workplace ?? "", "ko") || (a.name ?? "").localeCompare(b.name ?? "", "ko");
+        else if (sortBy === "today") v = (workedToday(b) ? 1 : 0) - (workedToday(a) ? 1 : 0) || (a.name ?? "").localeCompare(b.name ?? "", "ko");
+        return sortOrder === "asc" ? v : -v;
+      });
+    }
+    if (todayFirst) {
+      working.sort((a, b) => (workedToday(b) ? 1 : 0) - (workedToday(a) ? 1 : 0));
+    }
+    return working;
+  }, [employees, positionTab, searchQuery, positionSet, sortBy, sortOrder, todayFirst, todayStr, settingsPositions]);
 
   // 2026-10-08 · E-HOTFIX · V1 SchedulePage 와 동일한 caller-driven fetch trigger
   //   · useScheduleData 는 자동 fetch 하지 않음 (caller-driven) · 누락 시 isLoading 영구 true
@@ -269,8 +297,14 @@ export const WeekScheduleViewV2: React.FC<Props> = ({
         setPositionTab={setPositionTab}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        todayFirst={todayFirst}
+        setTodayFirst={setTodayFirst}
+        onReset={onFilterReset}
         settingsPositions={settingsPositions ?? []}
-        wageRateKeys={wageRateKeys}
       />
 
       {isLoading ? (

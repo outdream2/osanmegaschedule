@@ -16,6 +16,7 @@ import { DayScheduleViewV2 } from "./views/DayScheduleViewV2";
 import { EmployeeScheduleViewV2, type EmpSubView } from "./views/EmployeeScheduleViewV2";
 import { BulkEmployeePickerModal } from "./components/BulkEmployeePickerModal";
 import type { Employee } from "../../types";
+import { SK_EMPLOYEE_ORDER } from "../../lib/storageKeys";
 import { toYmd } from "./helpers/week";
 
 export type ScheduleV2View = "month" | "week" | "day" | "employee";
@@ -63,11 +64,25 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
   const [bulkPickerOpen, setBulkPickerOpen] = useState(false);
   const [bulkPickerEmployees, setBulkPickerEmployees] = useState<Employee[]>([]);
 
-  // 2026-10-08 · V1 parity · filter state (positionTab + searchQuery)
-  //   · V1 SchedulePage.tsx:226-227 상동 · buildFilteredEmployees 재사용
-  //   · P1 범위 · sortBy/sortOrder/todayFirst/drag reorder/reset 는 P2 backlog
+  // 2026-10-08 · V1 FULL parity · 공유 filter state
+  //   · V1 SchedulePage.tsx:226-230 상동
+  //   · positionTab · searchQuery · sortBy · sortOrder · todayFirst · reset
   const [positionTab, setPositionTab] = useState<string>("전체");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [sortBy, setSortBy] = useState<"none" | "today" | "name" | "position" | "workplace">("none");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [todayFirst, setTodayFirst] = useState<boolean>(false);
+
+  // reset · 모든 필터 + localStorage SK_EMPLOYEE_ORDER (커스텀 순서) 삭제
+  //   · V1 ScheduleFilterBar:99-112 와 동일 semantics
+  const handleFilterReset = useCallback(() => {
+    setPositionTab("전체");
+    setSearchQuery("");
+    setSortBy("none");
+    setSortOrder("asc");
+    setTodayFirst(false);
+    try { localStorage.removeItem(SK_EMPLOYEE_ORDER); } catch { /**/ }
+  }, []);
 
   const goMonthDelta = useCallback((delta: number) => {
     const d = new Date(year, month - 1 + delta, 1);
@@ -178,7 +193,7 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
                   key={t.key}
                   type="button"
                   onClick={() => setView(t.key)}
-                  className={`relative inline-flex items-center gap-1.5 px-4 py-2 text-[15px] font-semibold transition cursor-pointer ${
+                  className={`relative inline-flex items-center gap-1.5 px-4 py-2 text-[14px] font-semibold tracking-tight transition cursor-pointer ${
                     active
                       ? "text-brand-deep"
                       : "text-zinc-500 hover:text-ink"
@@ -209,6 +224,13 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
               setPositionTab={setPositionTab}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              sortOrder={sortOrder}
+              setSortOrder={setSortOrder}
+              todayFirst={todayFirst}
+              setTodayFirst={setTodayFirst}
+              onFilterReset={handleFilterReset}
               onOpenDay={handleOpenDay}
               onOpenEmployee={handleOpenEmployee}
               onRequestBulk={handleRequestBulk}
@@ -224,6 +246,13 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
               setPositionTab={setPositionTab}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              sortOrder={sortOrder}
+              setSortOrder={setSortOrder}
+              todayFirst={todayFirst}
+              setTodayFirst={setTodayFirst}
+              onFilterReset={handleFilterReset}
               onOpenDay={handleOpenDay}
               onOpenEmployee={handleOpenEmployee}
               onRequestBulk={handleRequestBulk}
