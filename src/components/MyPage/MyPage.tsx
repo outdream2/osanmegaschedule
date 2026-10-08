@@ -9,6 +9,8 @@ import { useScanUnregisteredMode } from "../../hooks/useScanUnregisteredMode";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+// 2026-10-08 · GLOBAL UI · PageTemplate migration (presentation-only · state/handler unchanged)
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 import type { AuthSession, Employee } from "../../types";
 import { updateEmployee } from "../../lib/employeeApi";
 import { AddressSearchModal } from "../common/features/AddressSearchModal";
@@ -110,28 +112,18 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
     <div className="min-h-screen flex flex-col bg-[#F4F7FA]">
       <AppNavHeader activePage={"mypage" as AppNavPage} authSession={authSession} onBack={onBack} onNavigate={onNavigate} onLogout={onLogout} />
 
-      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 py-4 sm:py-6 space-y-3`}>
-        {/* 2026-08-17 · 프로필 헤더 v2 · 성씨 initial 제거 (사용자 요청) · User 아이콘 + gradient · 세련 */}
-        <div className="bg-white rounded-xl shadow-sm border border-line p-4 sm:p-6">
-          <div className="flex items-center gap-4">
-            <div
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center shrink-0 ring-1 ring-white/25 shadow-[0_4px_16px_rgba(10,46,74,0.25)]"
-              style={{ background: "linear-gradient(135deg, #0A2E4A 0%, #1E5C8E 100%)" }}
-            >
-              <User size={26} className="text-white" strokeWidth={2} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[14px] font-bold text-brand-deep uppercase tracking-wider">마이페이지</div>
-              <div className="text-lg sm:text-xl font-bold text-zinc-800 mt-0.5 break-words whitespace-normal">
-                {me?.name ?? authSession?.employeeName ?? "-"}
-                {me?.rank && <span className="text-sm text-zinc-500 font-bold ml-1">{me.rank}</span>}
-              </div>
-              <div className="text-[15px] text-zinc-500 mt-0.5">
-                {me?.position ?? "-"} · {me?.employmentType ?? "-"} · Level {authSession?.level ?? "-"}
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · hero gradient card 제거 · plain title + description */}
+      <OperationsPageTemplate
+        title={
+          <span className="inline-flex items-baseline gap-2">
+            <User size={20} className="text-brand-deep self-center" strokeWidth={2.2} />
+            <span>{me?.name ?? authSession?.employeeName ?? "마이페이지"}</span>
+            {me?.rank && <span className="text-[16px] font-semibold text-ink-soft/70">{me.rank}</span>}
+          </span>
+        }
+        description={`${me?.position ?? "-"} · ${me?.employmentType ?? "-"} · Level ${authSession?.level ?? "-"}`}
+      >
+        <div className="space-y-3">
 
         {/* 정보 카드 (읽기 전용) */}
         <div className="bg-white rounded-xl shadow-sm border border-line overflow-hidden">
@@ -298,7 +290,8 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
           <Check size={12} className="mt-0.5 text-emerald-500 shrink-0" />
           <span>본인이 직접 수정할 수 있는 항목은 <b>비밀번호·주소</b>뿐입니다. 그 외 정보(이름·직급·연차 등) 는 관리자에게 문의하세요.</span>
         </Card>
-      </main>
+        </div>
+      </OperationsPageTemplate>
 
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">

@@ -11,6 +11,8 @@ import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
+// 2026-10-08 · GLOBAL UI · Operations template migration (presentation-only)
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 import { EmptyState } from "../common/EmptyState";
 import type { AuthSession } from "../../types";
 // 2026-09-21 · #329 · 한글 IME 우선
@@ -284,40 +286,39 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
         />
       )}
 
-      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-4 py-6 flex flex-col gap-5`}>
-
-        {/* 날짜 네비게이션 · 2026-08-17 · 최신 트렌드 · 딥네이비 accent · 폰트 +2 */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2.5">
+      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · AccentBar hero 제거 · title=점심 관리 · actions=date nav */}
+      <OperationsPageTemplate
+        title={
+          <span className="inline-flex items-baseline gap-2">
+            <UtensilsCrossed size={20} className="text-brand-deep self-center" strokeWidth={2.2} />
+            <span>점심 관리</span>
+            <span className="text-[16px] font-semibold text-ink-soft/70 tabular-nums">{dateLabel(selectedDate)}</span>
+          </span>
+        }
+        actions={
+          <div className="flex items-center gap-2">
             <button onClick={() => setSelectedDate(d => addDays(d, -1))}
-              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-line text-ink-soft hover:text-brand-deep hover:border-brand-deep transition-colors cursor-pointer shadow-sm">
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-line text-ink-soft hover:text-brand-deep hover:border-brand-deep transition-colors cursor-pointer">
               <ChevronLeft size={16} />
             </button>
-            <div className="flex items-center gap-2.5">
-              <AccentBar />
-              <div className="flex flex-col leading-tight">
-                <span className="text-[15px] text-ink-soft font-semibold">점심 관리</span>
-                <h1 className="text-[19px] font-extrabold text-ink tracking-tight tabular-nums">{dateLabel(selectedDate)}</h1>
-              </div>
-            </div>
             <button onClick={() => setSelectedDate(d => addDays(d, 1))} disabled={isToday}
-              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-line text-ink-soft hover:text-brand-deep hover:border-brand-deep transition-colors cursor-pointer shadow-sm disabled:opacity-40 disabled:cursor-default">
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-line text-ink-soft hover:text-brand-deep hover:border-brand-deep transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-default">
               <ChevronRight size={16} />
             </button>
-          </div>
-          <div className="flex items-center gap-2">
             {!isToday && (
               <button onClick={() => setSelectedDate(today)}
-                className="text-[14px] text-white font-semibold rounded-lg px-3.5 py-1.5 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] transition-colors cursor-pointer shadow-sm">
+                className="text-[13px] text-white font-semibold rounded-lg px-3 h-9 bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] transition-colors cursor-pointer">
                 오늘
               </button>
             )}
             <button onClick={() => { loadLunch(); loadBreakData(); }}
-              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-line text-ink-soft hover:text-brand-deep hover:border-brand-deep transition-colors cursor-pointer shadow-sm">
+              className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-line text-ink-soft hover:text-brand-deep hover:border-brand-deep transition-colors cursor-pointer">
               <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
             </button>
           </div>
-        </div>
+        }
+      >
+      <div className="flex flex-col gap-5">
 
         {error && (
           <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" padding="sm" className="text-rose-800 text-[14px] font-semibold">{error}</Card>
@@ -568,7 +569,8 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             )}
           </Card>
         )}
-      </main>
+      </div>
+      </OperationsPageTemplate>
     </div>
   );
 };

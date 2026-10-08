@@ -27,6 +27,9 @@ import { AccentBar } from "../common/AccentBar";
 import { StatusPill } from "../common/StatusPill";
 import { Card } from "../common/Card";
 import { Hero, HeroButton } from "../common/Hero";
+// 2026-10-08 · GLOBAL UI · Operations template migration (presentation-only)
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
+import { FileText } from "lucide-react";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import type { AuthSession } from "../../types";
 // 2026-08-21 · Framework Phase 4 · large-file 분리
@@ -228,43 +231,35 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
         />
       )}
 
-      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-5 py-5 flex flex-col gap-4`}>
-
-        {/* 2026-08-31 · 목업 톤 재적용 · Hero 컴포넌트 (Linear/Vercel gradient + aurora) */}
-        <Hero
-          eyebrow="HR FORMS · 인사 서류"
-          title="각종 양식"
-          description="근로계약서 · 사직서 · 서약서 · 위임장 · 급여 · 기타 인사 양식"
-          actions={
-            <>
-              <HeroButton
-                onClick={load}
-                icon={<RefreshCw size={14} className={loading ? "animate-spin" : ""} />}
-                ghost
-              >
-                새로고침
-              </HeroButton>
-              {isManager && (
-                showUploadForm ? (
-                  <HeroButton
-                    onClick={() => setShowUploadForm(false)}
-                    icon={<X size={14} />}
-                    ghost
-                  >
-                    취소
-                  </HeroButton>
-                ) : (
-                  <HeroButton
-                    onClick={() => setShowUploadForm(true)}
-                    icon={<Plus size={14} />}
-                  >
-                    양식 업로드
-                  </HeroButton>
-                )
-              )}
-            </>
-          }
-        />
+      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · Hero gradient card 제거 */}
+      <OperationsPageTemplate
+        title={
+          <span className="inline-flex items-baseline gap-2">
+            <FileText size={20} className="text-brand-deep self-center" strokeWidth={2.2} />
+            <span>각종 양식</span>
+          </span>
+        }
+        description="근로계약서 · 사직서 · 서약서 · 위임장 · 급여 · 기타 인사 양식"
+        actions={
+          <>
+            <HeroButton onClick={load} icon={<RefreshCw size={14} className={loading ? "animate-spin" : ""} />} ghost>
+              새로고침
+            </HeroButton>
+            {isManager && (
+              showUploadForm ? (
+                <HeroButton onClick={() => setShowUploadForm(false)} icon={<X size={14} />} ghost>
+                  취소
+                </HeroButton>
+              ) : (
+                <HeroButton onClick={() => setShowUploadForm(true)} icon={<Plus size={14} />}>
+                  양식 업로드
+                </HeroButton>
+              )
+            )}
+          </>
+        }
+      >
+      <div className="flex flex-col gap-4">
 
         {/* ── 업로드 폼 ──────────────────────────────────────────────────── */}
         {showUploadForm && isManager && (
@@ -743,7 +738,8 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
             </div>
           </div>
         )}
-      </main>
+      </div>
+      </OperationsPageTemplate>
       {/* 2026-08-21 · Framework Phase 3 · toast · alert 대체 */}
       {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
     </div>

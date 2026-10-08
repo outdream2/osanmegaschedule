@@ -6,6 +6,8 @@ import { TIMING } from "../../constants/timing";
 import { Package, Search, X } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+// 2026-10-08 · GLOBAL UI · Operations template migration (presentation-only)
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 import type { AuthSession } from "../../types";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 import { StatusPill } from "../common/StatusPill";
@@ -149,21 +151,29 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-50">
+    <div className="min-h-screen flex flex-col bg-[#F4F7FA]">
       <AppNavHeader
         activePage="stockcheck"
         authSession={authSession ?? null}
         onBack={onBack}
         onNavigate={onNavigate}
         onLogout={onLogout}
-        rightSlot={
-          <StatusPill tone="indigo" size="md" icon={<Package size={11} />}>
-            <span className="hidden sm:inline">재고 확인</span>
-          </StatusPill>
-        }
       />
 
-      <div className={`flex-1 flex flex-col ${PAGE_CONTAINER_CLS} px-4 pt-6 pb-20`}>
+      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 (presentation-only) */}
+      <OperationsPageTemplate
+        title={
+          <span className="inline-flex items-baseline gap-2">
+            <Package size={20} className="text-brand-deep self-center" strokeWidth={2.2} />
+            <span>재고 확인</span>
+            {results && (
+              <span className="text-[16px] font-semibold text-ink-soft/70 tabular-nums">{results.length}건</span>
+            )}
+          </span>
+        }
+        description="약품·제품명으로 재고를 빠르게 조회합니다"
+      >
+      <div className="flex-1 flex flex-col">
         {/* Search bar */}
         <div className="relative mb-2">
           <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
@@ -323,6 +333,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
           </div>
         )}
       </div>
+      </OperationsPageTemplate>
     </div>
   );
 };

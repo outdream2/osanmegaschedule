@@ -13,6 +13,8 @@ import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { Spinner } from "../common/Spinner";
 import { Card } from "../common/Card";
+// 2026-10-08 · GLOBAL UI · Operations template migration
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 import { useSortableTable, type Comparator } from "../../hooks/useSortableTable";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
@@ -287,19 +289,19 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
       />
       )}
 
-      <div className={`${PAGE_CONTAINER_CLS} px-4 py-4 flex flex-col gap-3`}>
-        {/* 2026-08-25 · 사용자 지시 · 입고알림 페이지 v9 목업 개선 · 헤더 툴바 · IconTile + 폰트 +2 */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center shrink-0">
-            <Bell size={16} className="text-sky-600" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-[17px] font-bold text-ink leading-tight tracking-tight">입고알림</div>
-            <div className="text-[15px] text-ink-soft leading-tight mt-0.5">
-              전 직원에게 즉시 · 예약 발송 · 총 {arrivals.length}건
-            </div>
-          </div>
-        </div>
+      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · IconTile hero 제거 · plain title + description */}
+      <OperationsPageTemplate
+        containerClassName={embedded ? "flex-1 w-full px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex flex-col gap-3 min-h-0" : undefined}
+        title={
+          <span className="inline-flex items-baseline gap-2">
+            <Bell size={20} className="text-brand-deep self-center" strokeWidth={2.2} />
+            <span>입고알림</span>
+            <span className="text-[16px] font-semibold text-ink-soft/70 tabular-nums">{arrivals.length}건</span>
+          </span>
+        }
+        description="전 직원에게 즉시 · 예약 발송"
+      >
+      <div className="flex flex-col gap-3">
 
         {/* ── 작성 폼 ─────────────────────────────────────────────────────── */}
         {/* 2026-08-25 · v9 · topAccent + 상단 아이콘 · 폰트 +2 */}
@@ -528,6 +530,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
           </div>
         </Card>
       </div>
+      </OperationsPageTemplate>
     </div>
   );
 };
