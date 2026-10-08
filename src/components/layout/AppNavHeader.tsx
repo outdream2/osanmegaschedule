@@ -6,7 +6,7 @@
 //   - 경영관리 탭 클릭 → business-manage 페이지로 단순 라우팅 (팝오버 제거)
 // 2026-08-31 · 분리: NavDesktopTab · NavMobileTab · AppNavHeader.types
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
-import { Lock, LogOut, Menu } from "lucide-react";
+import { Lock, LogOut, Menu, Sun, CloudSun, Cloud, CloudFog, CloudRain, CloudSnow, CloudLightning, User } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { NotificationBell } from "../NotificationBell";
 // 2026-09-14 · #108 · NotificationToggle 제거 (사용자 결정 · 실사용 빈도 낮음)
@@ -18,7 +18,10 @@ import { buildBreadcrumbFromNav } from "./sideNavGroups";
 // 2026-09-27 · 네비게이션 SSOT · useActiveSubTab 훅 · localStorage · CustomEvent → useActiveNav Context
 import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
-import { SIDE_NAV_GROUPS } from "./sideNavGroups";
+import { SIDE_NAV_GROUPS, filterGroupsForSession, isItemActive, type SideNavItem } from "./sideNavGroups";
+// 2026-10-08 · GLOBAL UI · Group Line Tabs (desktop slim 헤더) · SideNav navigation 로직 재사용
+import { dispatchLandingAction } from "./SideNav";
+import { useEmploymentStatus } from "../../hooks/useEmploymentStatus";
 import { useIsMobile } from "../../hooks/use-mobile";
 import { usePageVisibility } from "../../hooks/usePageVisibility";
 import { useBrandIdentity } from "../../hooks/useBrandIdentity";
@@ -92,6 +95,114 @@ const TABS: TabDef[] = DERIVED_TOP_TABS.map((t: DerivedTopTab): TabDef => ({
   pharmacistOnly: t.pharmacistOnly,
   color: t.color as SideNavColor & TabDef["color"],
 }));
+
+// 2026-10-08 · 사용자 지시 · 헤더 우측 · 오늘 날짜 + 날씨 + 현재 접속 지역 (geolocation 기반)
+//   · Open-Meteo 무료 API (날씨 · 키 불필요) + BigDataCloud reverse-geocode (지역명 · 키 불필요)
+//   · WMO weathercode 매핑 · lucide 아이콘 (이모지 금지 원칙)
+//   · 권한 거부/실패 시 fallback = 오산 (약국 소재지)
+const WEATHER_LAT_FALLBACK = 37.1498; // 오산시 (날씨 fallback 좌표 · 지역 라벨은 미표시)
+const WEATHER_LON_FALLBACK = 127.0772;
+
+const WeatherIcon: React.FC<{ code: number; size?: number }> = ({ code, size = 14 }) => {
+  const common = { size, strokeWidth: 2 as const };
+  if (code === 0) return <Sun {...common} className="text-amber-300" />;
+  if (code <= 3) return <CloudSun {...common} className="text-sky-200" />;
+  if (code === 45 || code === 48) return <CloudFog {...common} className="text-slate-300" />;
+  if (code >= 71 && code <= 77) return <CloudSnow {...common} className="text-sky-100" />;
+  if (code >= 95) return <CloudLightning {...common} className="text-violet-300" />;
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 86)) return <CloudRain {...common} className="text-sky-300" />;
+  return <Cloud {...common} className="text-slate-300" />;
+};
+
+// 2026-10-08 · 사용자 지시 · 년/월/일/요일 full · 날씨 + 접속 지역 (geolocation)
+//   · 포맷: 2026년 10월 8일 (수) · [icon] 맑음 24° · 오산
+const weatherLabel = (code: number): string => {
+  if (code === 0 || code === 1) return "맑음";
+  if (code === 2) return "구름 조금";
+  if (code === 3) return "흐림";
+  if (code === 45 || code === 48) return "안개";
+  if (code >= 51 && code <= 57) return "이슬비";
+  if (code >= 61 && code <= 67) return "비";
+  if (code >= 71 && code <= 77) return "눈";
+  if (code >= 80 && code <= 82) return "소나기";
+  if (code >= 85 && code <= 86) return "눈 소나기";
+  if (code >= 95) return "뇌우";
+  return "";
+};
+const HeaderDateWeather: React.FC<{ dark?: boolean }> = ({ dark = true }) => {
+  const [weather, setWeather] = useState<{ temp: number; code: number } | null>(null);
+  // 2026-10-08 · 사용자 지시 · 위치 허용 안 되면 지역 미표시 (fallback 라벨 제거)
+  const [region, setRegion] = useState<string | null>(null);
+  const now = new Date();
+  const dayNames = ["일","월","화","수","목","금","토"];
+  const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 (${dayNames[now.getDay()]})`;
+
+  useEffect(() => {
+    const fetchWeather = (lat: number, lon: number) => {
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=Asia/Seoul`)
+        .then(r => r.json())
+        .then(d => {
+          if (d?.current_weather && typeof d.current_weather.temperature === "number") {
+            setWeather({ temp: Math.round(d.current_weather.temperature), code: Number(d.current_weather.weathercode ?? 0) });
+          }
+        })
+        .catch(() => { /* silent · 날씨 미표시 fallback */ });
+    };
+    const fetchRegion = (lat: number, lon: number) => {
+      // BigDataCloud 역지오코딩 · client-side 무료 · 키 불필요
+      //   · city > locality > principalSubdivision (예: 오산시 > 오산동 > 경기도)
+      //   · 사용자 지시 · "시" 접미어 유지 (예: 오산시 그대로)
+      fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ko`)
+        .then(r => r.json())
+        .then(d => {
+          const raw = d?.city || d?.locality || d?.principalSubdivision;
+          if (raw && typeof raw === "string") setRegion(raw);
+        })
+        .catch(() => { /* silent · fallback 지역 유지 */ });
+    };
+
+    const useFallback = () => {
+      fetchWeather(WEATHER_LAT_FALLBACK, WEATHER_LON_FALLBACK);
+    };
+
+    if (!navigator.geolocation) { useFallback(); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        fetchWeather(latitude, longitude);
+        fetchRegion(latitude, longitude);
+      },
+      () => useFallback(),
+      { timeout: 5000, maximumAge: 10 * 60 * 1000 }
+    );
+  }, []);
+  // 2026-10-08 · 사용자 지시 · 배지(pill) 제거 · 텍스트만
+  //   · 레이아웃: 날짜 (한줄) + 날씨아이콘 + 세로스택 [맑음 18°C / 오산시]
+  //   · 위치 허용 안 되면 region null · "오산시" 아예 미표시
+  const dateCls = dark ? "text-white"    : "text-slate-900";
+  const metaCls = dark ? "text-white/70" : "text-slate-500";
+  const subCls  = dark ? "text-white/55" : "text-slate-400";
+  const tempCls = dark ? "text-white"    : "text-slate-900";
+  return (
+    <div className="hidden md:inline-flex items-center gap-2.5 whitespace-nowrap">
+      <span className={`text-[14px] font-semibold tabular-nums ${dateCls}`}>{dateStr}</span>
+      {weather && (
+        <div className="inline-flex items-center gap-1.5">
+          <WeatherIcon code={weather.code} size={18} />
+          <div className="inline-flex flex-col leading-tight">
+            <span className={`text-[13px] ${metaCls}`}>
+              {weatherLabel(weather.code)}
+              <span className={`font-semibold tabular-nums ml-1 ${tempCls}`}>{weather.temp}°C</span>
+            </span>
+            {region && (
+              <span className={`text-[11px] ${subCls}`}>{region}</span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // 2026-08-29 · #196 Phase 4 · SIDE_NAV_GROUPS business 그룹 items 로부터 자동 파생 (하드코드 제거)
 const BUSINESS_PAGES: Set<AppNavPage> = new Set(
@@ -307,13 +418,55 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     }
   };
 
+  // ── 2026-10-08 · GLOBAL UI · GROUP LINE TABS ─────────────────────────
+  //   · 사용자 요구 (reference image Flowrit 톤) · desktop slim 헤더에도 상단 Line Tabs 노출
+  //   · 현재 activePage 가 속한 group 의 siblings 를 자동 렌더
+  //   · navigation data source · SIDE_NAV_GROUPS (SSOT) · route/permission 변경 없음
+  //   · onClick handler · SideNav.handleNavItem 과 동일 로직 (setActiveByPage + onNavigate)
+  //   · behavior = 0 (presentation surface 하나 추가 · 기존 state/handler/API 무변경)
+  const { status: employmentStatus } = useEmploymentStatus(authSession);
+  const activeSubTab = activeNav?.itemKey === activePage ? (activeNav.subTab ?? null) : null;
+
+  const currentGroupItems = useMemo<SideNavItem[]>(() => {
+    if (!authSession || isVendor) return [];
+    const groups = filterGroupsForSession(authSession, perms, employmentStatus);
+    const currentGroup = groups.find(g =>
+      g.items.some(it => it.key === activePage)
+    );
+    if (!currentGroup) return [];
+    return currentGroup.items.filter(it => {
+      if (it.key === "landing") return true;
+      if (!isPageVisible(it.key as string, viewport)) return false;
+      if (it.subTab && !isPageVisible(`${it.key}:${it.subTab}`, viewport)) return false;
+      return true;
+    });
+  }, [authSession, isVendor, perms, employmentStatus, activePage, isPageVisible, viewport]);
+
+  const handleGroupItemClick = (item: SideNavItem) => {
+    // 2026-09-04 · Bug #3 · vendor 특수 라우팅 · SideNav 와 동일 가드
+    if (isVendor && item.key === "display" && item.subTab === "vendor-manage") {
+      dispatchLandingAction("open-vendor-self");
+      onNavigate?.("landing");
+      return;
+    }
+    if (item.subTab) {
+      const [outer, inner] = item.subTab.split(":");
+      setActiveByPage(item.key, outer, inner ?? null);
+    } else {
+      setActiveByPage(item.key);
+    }
+    onNavigate?.(item.key as AppNavPage);
+  };
+
   // ── 슬림 헤더 (사이드바 데스크탑) · 2026-10-07 Batch 3 ─────────────────────────
   //   - height 52~56px (spec 56~60px · breadcrumb 포함 compact)
   //   - SidebarTrigger · 명확한 chip 제거 · 플랫 icon 버튼 (spec 11)
   //   - shadow 거의 없음 · border-b 중립 · zero behavior delta
+  //   - 2026-10-08 · GLOBAL UI · 그 아래 Group Line Tabs row 조건부 노출
   if (SIDEBAR_ENABLED && !isMobileNav) {
     return (
-      <div className="flex items-center justify-between gap-3 px-4 h-14 shrink-0 bg-white border-b border-line sticky top-0 z-40">
+      <div className="sticky top-0 z-40 shrink-0">
+      <div className="flex items-center justify-between gap-3 px-4 h-14 bg-white border-b border-line">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <SidebarTrigger
             className="h-9 w-9 rounded-lg text-ink-soft hover:bg-zinc-100 hover:text-ink transition-colors cursor-pointer shrink-0 [&_svg]:h-4 [&_svg]:w-4"
@@ -323,7 +476,81 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           <span className="w-px h-4 bg-zinc-200 shrink-0" aria-hidden />
           <Breadcrumb items={breadcrumbItems} onNavigate={handleBreadcrumbNav} className="min-w-0" />
         </div>
-        <div className="flex items-center gap-2 shrink-0">{rightSlot}</div>
+        {/* 2026-10-08 · 사용자 지시 · slim 헤더에도 날짜/날씨 → 알림 → 아바타 → 로그아웃 (full 헤더와 동일 순서) */}
+        <div className="flex items-center gap-2 shrink-0">
+          <HeaderDateWeather dark={false} />
+          <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} />
+          {authSession?.employeeName && (
+            <button
+              type="button"
+              onClick={() => onNavigate?.("mypage" as AppNavPage)}
+              // 2026-10-08 · 사용자 지시 · 최신 트렌드 ghost · 아이콘 20px (slim/light 톤)
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer shrink-0"
+              title={`${authSession.employeeName}${authSession.employeeRank ?? ""} · 마이페이지`}
+              aria-label={`${authSession.employeeName}${authSession.employeeRank ?? ""} 마이페이지`}
+            >
+              <User size={20} strokeWidth={2} />
+            </button>
+          )}
+          {rightSlot}
+          {authSession && onLogout ? (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1.5 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[14px] font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-lg transition-colors cursor-pointer shrink-0"
+              title="로그아웃"
+            >
+              <LogOut size={16} strokeWidth={2} />
+              <span className="hidden sm:inline">로그아웃</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-1 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-1.5 text-[14px] font-medium bg-slate-50 text-slate-400 rounded-lg shrink-0" title="비로그인">
+              <Lock size={15} strokeWidth={2} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 2026-10-08 · GLOBAL UI · Group Line Tabs (desktop sidebar mode · reference-tone)
+             · 현재 group의 siblings 가 2개 이상일 때만 표시 (단일 페이지 group 은 noise 방지)
+             · navigation 데이터 · SIDE_NAV_GROUPS SSOT · state/handler 로직 SideNav 동일 */}
+      {currentGroupItems.length > 1 && (
+        <nav
+          aria-label="그룹 내 페이지 네비게이션"
+          className="bg-white border-b border-slate-200"
+        >
+          <div className="px-4 sm:px-6 lg:px-8 flex items-stretch flex-nowrap gap-5 sm:gap-7 md:gap-8 overflow-x-auto scrollbar-hide">
+            {currentGroupItems.map(item => {
+              const active = isItemActive(item, activePage, activeSubTab);
+              return (
+                <button
+                  key={`${item.key}:${item.subTab ?? ""}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => handleGroupItemClick(item)}
+                  className={[
+                    "relative inline-flex items-center justify-center shrink-0",
+                    "h-11 px-1",
+                    "text-[13px] sm:text-[14px] whitespace-nowrap tracking-tight",
+                    "bg-transparent border-0 rounded-none shadow-none",
+                    "transition-colors duration-150 cursor-pointer outline-none",
+                    "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-tint",
+                    active
+                      ? "text-ink font-semibold"
+                      : "text-ink-soft/80 font-medium hover:text-ink",
+                  ].join(" ")}
+                  title={item.label}
+                >
+                  <span>{item.label}</span>
+                  {active && (
+                    <span aria-hidden className="absolute left-0 right-0 -bottom-px h-[2px] bg-ink" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      )}
       </div>
     );
   }
@@ -369,19 +596,22 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
 
         <div className="flex items-center h-9 gap-1 sm:gap-1.5 shrink-0">
+          {/* 2026-10-08 · 사용자 지시 · 우측 끝 순서 · 날짜·날씨·지역 → 알림 → 로그인 정보 → 로그아웃 */}
+          <HeaderDateWeather dark />
+          {/* 2026-09-14 · #108 · NotificationToggle 제거 · Bell 만 유지 */}
+          <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} />
           {authSession?.employeeName && (
             <button
               type="button"
               onClick={() => onNavigate?.("mypage" as AppNavPage)}
-              // 2026-10-08 · 사용자 피드백 · 상단 링크 폰트 확대 (13→15)
-              className="inline-flex items-center justify-center h-9 sm:h-auto sm:min-h-[36px] text-[15px] font-semibold text-white whitespace-nowrap px-2 sm:px-2.5 py-1.5 rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer max-w-[42vw] sm:max-w-none"
-              title="마이페이지"
+              // 2026-10-08 · 사용자 지시 · visible chrome · 알림종과 통일 톤 (dark bg용)
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.1] hover:bg-white/[0.16] ring-1 ring-white/15 text-white transition-colors cursor-pointer shrink-0"
+              title={`${authSession.employeeName}${authSession.employeeRank ?? ""} · 마이페이지`}
+              aria-label={`${authSession.employeeName}${authSession.employeeRank ?? ""} 마이페이지`}
             >
-              <span className="break-words whitespace-normal leading-tight">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
+              <User size={20} strokeWidth={2} />
             </button>
           )}
-          {/* 2026-09-14 · #108 · NotificationToggle 제거 · Bell 만 유지 */}
-          <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} />
           {rightSlot}
           {authSession && onLogout ? (
             <button
