@@ -69,7 +69,7 @@ export const MonthGridV2: React.FC<GridProps> = ({
         <thead>
           <tr>
             <th
-              className="sticky top-0 left-0 z-30 bg-zinc-50 border-r border-b border-line text-left px-3 py-2 text-[12px] font-bold text-ink-soft uppercase tracking-wide"
+              className="sticky top-0 left-0 z-30 bg-zinc-50 border-r border-b border-line text-left px-3 py-2 text-[13px] font-bold text-ink-soft uppercase tracking-wide"
               style={{ minWidth: 160 }}
             >
               직원
@@ -97,8 +97,8 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       · Linear/Vercel/Google calendar · today column 전체에 vertical rail (inset ring 2px)
                       · V1 parity 유지 (붉은 테두리) · ring 두께·색상 그대로 */}
                   <div className="leading-tight flex flex-col items-center">
-                    <div className={`${isToday ? "text-[15px] font-extrabold" : "text-[14px] font-bold"}`}>{dayNum}</div>
-                    <div className={`text-[10px] ${isToday ? "font-semibold" : "opacity-70"}`}>{dow}</div>
+                    <div className={`${isToday ? "text-[16px] font-extrabold" : "text-[15px] font-bold"}`}>{dayNum}</div>
+                    <div className={`text-[11px] ${isToday ? "font-semibold" : "opacity-70"}`}>{dow}</div>
                   </div>
                 </th>
               );
@@ -119,10 +119,10 @@ export const MonthGridV2: React.FC<GridProps> = ({
                   }`}
                   title={onEmployeeNameClick ? `${emp.name} · 개인 일정` : undefined}
                 >
-                  <div className="text-[13px] leading-tight">{emp.name}</div>
-                  <div className="text-[11px] text-ink-soft">{emp.position}</div>
+                  <div className="text-[14px] leading-tight">{emp.name}</div>
+                  <div className="text-[12px] text-ink-soft">{emp.position}</div>
                   {empLaborMap && empLaborMap.has(emp.id) && (
-                    <div className="text-[11px] font-bold text-brand-deep tabular-nums mt-0.5">
+                    <div className="text-[12px] font-bold text-brand-deep tabular-nums mt-0.5">
                       {(empLaborMap.get(emp.id) ?? 0).toLocaleString()}원
                     </div>
                   )}
@@ -138,7 +138,11 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       key={`c-${emp.id}-${d}`}
                       onClick={clickable ? () => onOpenEdit(emp.id, d) : undefined}
                       style={{ height: 44 }}
-                      className={`relative border-r border-b border-line p-0 text-center align-top ${
+                      className={`relative border-b p-0 text-center align-top ${
+                        isToday
+                          ? "border-l-2 border-l-rose-500 border-r-2 border-r-rose-500 border-b-line z-10"
+                          : "border-r border-line border-b-line"
+                      } ${
                         clickable
                           ? "cursor-pointer hover:bg-sky-50/60 outline outline-1 outline-transparent hover:outline-sky-300"
                           : ""
@@ -147,8 +151,7 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       }`}
                       title={isDimmed ? "다른 월 날짜 · 월간 뷰에서 수정" : undefined}
                     >
-                      {/* 2026-10-08 · 사용자 지시 · 오늘 column 붉은 테두리 보이게 wrapper 로 감쌈 (scheduleCellContent bg 안 가림) */}
-                      <div className={`h-full w-full relative ${isToday ? "ring-2 ring-inset ring-rose-500 z-10" : ""}`}>
+                      <div className="h-full w-full">
                         {scheduleCellContent(s, typeHoursMap, scheduleTypes)}
                       </div>
                       {isEditing && (
