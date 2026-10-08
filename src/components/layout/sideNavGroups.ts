@@ -105,25 +105,23 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     id: "display",
     label: "매장",
     color: "red",
-    icon: SquaresFour, // 헤더용 · 기존 TABS 아이콘 유지 (items[0]=Truck 발주 와 다름 · 회귀 방지)
+    icon: SquaresFour,
     topTab: { key: "display" },
     managerOnly: true,
+    // 2026-10-08 · GLOBAL UI · 매장 5개 통합 (OLD 8개 standalone → NEW 5 통합 entries)
+    //   · 발주·반품 (purchase-order + return)
+    //   · 매입·입고 (purchase + stock-arrivals · 상품정보/실재고/유통기한 inner tab)
+    //   · 판매·매출 (statistics + revenue)
+    //   · 결제·정산 (payment)
+    //   · 재고·진열 (store + 상품정보/실재고/유통기한 cross-link)
+    //   · 각 entry default landing = overview-* (현황) · click 시 자체 overview 로 진입
+    //   · OLD subTab identity 전부 보존 (deep link 호환) · DisplayPage switch 로 직접 render
     items: [
-      // 2026-10-05 · 사용자 지시 · "상품" 서브탭 제거 · 3개 이너탭 (상품정보·상품입고·실재고확인) 매입 아래로 재이관
-      //   · 사이드바 + 공통헤더 (DERIVED_TOP_TABS 자동 파생) 동시 반영
-      // 2026-09-10 · 사용자 지시 · 순서 · 발주 → 매입 → 판매
-      { key: "display", label: "발주", icon: Truck, color: "red", subTab: "purchase-order", minLevel: 9 },
-      { key: "display", label: "매입", icon: Package, color: "red", subTab: "purchase", minLevel: 9 },
-      { key: "display", label: "판매", icon: ChartBar, color: "red", subTab: "statistics", minLevel: 9 },
-      // 2026-10-05 · 사용자 지시 · 매출 (ERP sales 기반 · sale_total/margin SSOT · 금액 중심)
-      { key: "display", label: "매출", icon: CurrencyKrw, color: "red", subTab: "revenue", minLevel: 9 },
-      { key: "display", label: "결제", icon: CurrencyKrw, color: "red", subTab: "payment", minLevel: 9 },
-      { key: "display", label: "반품", icon: ArrowLeftRight, color: "red", subTab: "return", minLevel: 9 },
-      { key: "display", label: "매장진열", icon: Storefront, color: "red", subTab: "store", managerOnly: true },
-      // 2026-09-02 · #74 · 창고 구역 설정 페이지 제거 (사용자 지시)
-      //   · 규칙 고정 · 창고1(6개) · 나머지 모두 창고2 · 수동 편집 불필요
-      // 입고알림 · dpCanSeeStockArrivals (level ≥ 3)
-      { key: "display", label: "입고알림", icon: Bell, color: "red", subTab: "stock-arrivals", minLevel: 3 },
+      { key: "display", label: "발주·반품",   icon: Truck,            color: "red", subTab: "overview-order-return",      minLevel: 9 },
+      { key: "display", label: "매입·입고",   icon: Package,          color: "red", subTab: "overview-purchase-arrival",  minLevel: 9 },
+      { key: "display", label: "판매·매출",   icon: ChartBar,         color: "red", subTab: "overview-sales-revenue",     minLevel: 9 },
+      { key: "display", label: "결제·정산",   icon: CurrencyKrw,      color: "red", subTab: "overview-payment-settlement", minLevel: 9 },
+      { key: "display", label: "재고·진열",   icon: Storefront,       color: "red", subTab: "overview-inventory-display", managerOnly: true },
     ],
   },
   // 2026-09-05 · 사용자 지시 · 거래처 그룹 · 매장 아래 이동 · 관리자에게도 노출
@@ -391,6 +389,26 @@ export function filterGroupsForSession(
  *    · item.subTab 이 activeSubTab 과 일치 (page 도 일치) 시 · true
  *    · activeSubTab 미제공 · 이전 동작 유지 (subTab 항목 false) */
 const BUSINESS_SUB_PAGES: Set<AppNavPage> = new Set(["business-manage", "permissions", "hr-forms"]);
+
+// 2026-10-08 · GLOBAL UI · 매장 5개 통합 · OLD subTab → NEW overview subTab (active state 매핑)
+//   · OLD standalone subTab 으로 deep link 진입해도 통합 Sidebar entry 가 active 유지
+//   · DisplayPage switch 는 OLD subTab 그대로 render (deep link 기능 보존)
+const STORE_OVERVIEW_ALIAS: Record<string, string> = {
+  // 발주·반품 그룹
+  "purchase-order":    "overview-order-return",
+  "return":            "overview-order-return",
+  // 매입·입고 그룹
+  "purchase":          "overview-purchase-arrival",
+  "stock-arrivals":    "overview-purchase-arrival",
+  // 판매·매출 그룹
+  "statistics":        "overview-sales-revenue",
+  "revenue":           "overview-sales-revenue",
+  // 결제·정산 그룹
+  "payment":           "overview-payment-settlement",
+  // 재고·진열 그룹
+  "store":             "overview-inventory-display",
+};
+
 export function isItemActive(
   item: SideNavItem,
   currentPage: AppNavPage,
@@ -402,6 +420,11 @@ export function isItemActive(
     if (item.key !== currentPage) return false;
     // nested subtab 지원 · "outer:inner" · outer 만 저장돼도 매칭 (하위 호환)
     if (item.subTab === activeSubTab) return true;
+    // 2026-10-08 · GLOBAL UI · 매장 통합 overview alias · OLD subTab 진입 시에도 overview entry active
+    if (item.key === "display" && item.subTab.startsWith("overview-")) {
+      const alias = STORE_OVERVIEW_ALIAS[activeSubTab];
+      if (alias === item.subTab) return true;
+    }
     // nested item · outer 만 활성 상태일 때 · outer 항목만 활성 (nested 항목은 false)
     return false;
   }

@@ -5,6 +5,8 @@ import type { AppNavPage } from "../layout/AppNavHeader";
 
 // ─── DisplayPage 서브탭 key ─────────────────────────────────────────────
 // 2026-10-05 · 사용자 지시 · "product" (상품) 서브탭 제거 · 3개 이너탭 (상품정보·상품입고·실재고확인) 매입 아래로 재이관
+// 2026-10-08 · GLOBAL UI · 매장 5개 통합 overview 신규 (overview-* · 각 통합 메뉴의 현황 landing)
+//   · legacy subTab (purchase-order · purchase · payment · statistics · revenue · return · stock-arrivals · store · vendor-manage) 전부 유지 · deep link 호환
 export type DpSubTabKey =
   | "purchase-order"
   | "purchase"
@@ -14,7 +16,13 @@ export type DpSubTabKey =
   | "return"          // 2026-08-25 · 사용자 지시 · 반품 (신규)
   | "stock-arrivals"
   | "store"
-  | "vendor-manage";
+  | "vendor-manage"
+  // 2026-10-08 · 매장 5개 통합 현황 overview (NEW)
+  | "overview-order-return"
+  | "overview-purchase-arrival"
+  | "overview-sales-revenue"
+  | "overview-payment-settlement"
+  | "overview-inventory-display";
 
 // ─── DisplayPage props ─────────────────────────────────────────────────
 export interface DisplayPageProps {

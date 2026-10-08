@@ -31,6 +31,12 @@ const DP_SUBTAB_META: Record<DpSubTabKey, DpSubTabMeta> = {
   "stock-arrivals": { icon: Bell,             color: "orange"  },
   "store":          { icon: Store,            color: "violet"  },
   "vendor-manage":  { icon: Building2,        color: "rose"    },
+  // 2026-10-08 · GLOBAL UI · 매장 5개 통합 overview 메타 (NEW)
+  "overview-order-return":       { icon: ClipboardList,    color: "sky"     },
+  "overview-purchase-arrival":   { icon: Package,          color: "amber"   },
+  "overview-sales-revenue":      { icon: CircleDollarSign, color: "emerald" },
+  "overview-payment-settlement": { icon: Wallet,           color: "teal"    },
+  "overview-inventory-display":  { icon: Store,            color: "violet"  },
 };
 
 // ─── 매장 서브탭 defaults · SIDE_NAV_GROUPS 매장 그룹 items 자동 파생

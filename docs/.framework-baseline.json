@@ -1,7 +1,7 @@
 {
-  "created": "2026-10-07",
+  "created": "2026-10-08",
   "version": 1,
-  "totalViolations": 526,
+  "totalViolations": 525,
   "files": {
     "server/ocr/pipeline/stages/03-vendor-match.ts": {
       "lines": 684,
@@ -84,7 +84,7 @@
       "totalWeight": 25
     },
     "src/components/DisplayPage/RevenuePage.tsx": {
-      "lines": 2041,
+      "lines": 2466,
       "violations": [
         {
           "ruleId": "large-file-critical",
@@ -152,7 +152,7 @@
       "totalWeight": 11
     },
     "server/routes/stock/salesAutoRecommend.ts": {
-      "lines": 393,
+      "lines": 379,
       "violations": [
         {
           "ruleId": "no-raw-console-server",
@@ -302,7 +302,7 @@
       "totalWeight": 6
     },
     "src/components/OrderManagePage/PaymentInputPage.tsx": {
-      "lines": 1015,
+      "lines": 1013,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -322,7 +322,7 @@
       "totalWeight": 6
     },
     "src/components/ProductInfoPage/ProductInfoPage.tsx": {
-      "lines": 1125,
+      "lines": 1135,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -352,7 +352,7 @@
       "totalWeight": 6
     },
     "server/routes/purchase/supplierPayments/purchaseDetail.ts": {
-      "lines": 250,
+      "lines": 221,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -362,17 +362,7 @@
       "totalWeight": 6
     },
     "server/routes/purchase/vat.ts": {
-      "lines": 641,
-      "violations": [
-        {
-          "ruleId": "no-any-server",
-          "count": 6
-        }
-      ],
-      "totalWeight": 6
-    },
-    "server/routes/stock/productArrivals.ts": {
-      "lines": 786,
+      "lines": 594,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -427,6 +417,16 @@
     },
     "server/routes/payment/borrowings.ts": {
       "lines": 329,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 5
+        }
+      ],
+      "totalWeight": 5
+    },
+    "server/routes/stock/productArrivals.ts": {
+      "lines": 682,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -515,6 +515,16 @@
       ],
       "totalWeight": 4
     },
+    "src/components/LandingPage/HomeDashboard.tsx": {
+      "lines": 811,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
     "src/components/LandingPage/VendorListEditor.tsx": {
       "lines": 907,
       "violations": [
@@ -536,7 +546,7 @@
       "totalWeight": 3
     },
     "src/components/OrderManagePage/OrderManagePage.tsx": {
-      "lines": 911,
+      "lines": 904,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -566,17 +576,7 @@
       "totalWeight": 3
     },
     "src/components/ProductArrivalPage/ProductArrivalPage.tsx": {
-      "lines": 943,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 3
-    },
-    "src/components/SalesTrendPage/DashboardCharts.tsx": {
-      "lines": 948,
+      "lines": 940,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -586,7 +586,7 @@
       "totalWeight": 3
     },
     "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 974,
+      "lines": 964,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -596,7 +596,7 @@
       "totalWeight": 3
     },
     "src/components/SchedulePage/SchedulePage.tsx": {
-      "lines": 802,
+      "lines": 804,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -606,7 +606,7 @@
       "totalWeight": 3
     },
     "server/controllers/scheduleController.ts": {
-      "lines": 318,
+      "lines": 390,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -616,7 +616,7 @@
       "totalWeight": 3
     },
     "server/productCache.ts": {
-      "lines": 432,
+      "lines": 406,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -636,7 +636,7 @@
       "totalWeight": 3
     },
     "server/services/scheduleService.ts": {
-      "lines": 393,
+      "lines": 465,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -646,7 +646,7 @@
       "totalWeight": 3
     },
     "src/components/NotificationBell.tsx": {
-      "lines": 334,
+      "lines": 353,
       "violations": [
         {
           "ruleId": "prefer-modal-primitive",
@@ -736,7 +736,7 @@
       "totalWeight": 2
     },
     "server/routes/daily/leave.ts": {
-      "lines": 450,
+      "lines": 508,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -966,7 +966,7 @@
       "totalWeight": 1
     },
     "server/routes/stock/stockManage/productHistory.ts": {
-      "lines": 69,
+      "lines": 44,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -976,7 +976,7 @@
       "totalWeight": 1
     },
     "server/routes/stock/stockManage/trending.ts": {
-      "lines": 374,
+      "lines": 369,
       "violations": [
         {
           "ruleId": "no-any-server",

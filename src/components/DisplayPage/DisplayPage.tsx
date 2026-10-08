@@ -34,6 +34,14 @@ import OrderManagePage from "../OrderManagePage/OrderManagePage";
 // 2026-08-29 · #193 · 반품 서브탭 · 매입 우회 · 반품필요 + 반품확정 직접 렌더 (이너 탭)
 const ReturnListPanelLazy = React.lazy(() => import("../OrderManagePage/ReturnListPanel").then(m => ({ default: m.ReturnListPanel })));
 const ReturnConfirmedPanelLazy = React.lazy(() => import("../OrderManagePage/ReturnConfirmedPanel").then(m => ({ default: m.ReturnConfirmedPanel })));
+// 2026-10-08 · GLOBAL UI · 5개 매장 통합 overview (lazy · navigation hub only · no business logic)
+const STORE_OVERVIEW_MAP: Partial<Record<string, React.ComponentType<{ onSelectSubTab: (sub: any) => void }>>> = {
+  "overview-order-return":       React.lazy(() => import("./overviews/OrderReturnOverview").then(m => ({ default: m.OrderReturnOverview }))),
+  "overview-purchase-arrival":   React.lazy(() => import("./overviews/PurchaseArrivalOverview").then(m => ({ default: m.PurchaseArrivalOverview }))),
+  "overview-sales-revenue":      React.lazy(() => import("./overviews/SalesRevenueOverview").then(m => ({ default: m.SalesRevenueOverview }))),
+  "overview-payment-settlement": React.lazy(() => import("./overviews/PaymentSettlementOverview").then(m => ({ default: m.PaymentSettlementOverview }))),
+  "overview-inventory-display":  React.lazy(() => import("./overviews/InventoryDisplayOverview").then(m => ({ default: m.InventoryDisplayOverview }))),
+};
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import { useConfirm } from "../../hooks/useConfirm";
@@ -579,6 +587,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     "stock-arrivals": dpCanSeeStockArrivals && !dpHiddenSubs.has("stock-arrivals"),
     "store": !dpHiddenSubs.has("store"),
     "vendor-manage": dpCanSeeStockManage && !dpHiddenSubs.has("vendor-manage"),
+    // 2026-10-08 · GLOBAL UI · 매장 5개 통합 overview visibility (NEW · dpCanSeeStockManage 기준)
+    "overview-order-return":       dpCanSeeStockManage,
+    "overview-purchase-arrival":   dpCanSeeStockManage,
+    "overview-sales-revenue":      dpCanSeeStockManage,
+    "overview-payment-settlement": dpCanSeeStockManage,
+    "overview-inventory-display":  dpCanSeeStockManage,
   };
   const dpVisibleTabs: CommonTabDef<DpSubTabKey>[] = dpTabSortable.tabs.map(t => ({ ...t, visible: dpVisibilityMap[t.key] }));
 
@@ -595,7 +609,14 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         <TabBar<DpSubTabKey> level={2} tabs={dpVisibleTabs} activeKey={dpSubTab} onSelect={setDpSubTab} sortable={{ getTabProps: dpTabSortable.getTabProps, isDragging: dpTabSortable.isDragging }} />
       )}
 
-      {dpSubTab === "stock-arrivals" && dpCanSeeStockArrivals ? (
+      {/* 2026-10-08 · GLOBAL UI · 매장 5개 통합 overview · map 기반 단일 분기 (navigation hub · lazy) */}
+      {STORE_OVERVIEW_MAP[dpSubTab] ? (
+        <main className="flex-1 flex flex-col min-h-0">
+          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
+            {React.createElement(STORE_OVERVIEW_MAP[dpSubTab]!, { onSelectSubTab: setDpSubTab })}
+          </React.Suspense>
+        </main>
+      ) : dpSubTab === "stock-arrivals" && dpCanSeeStockArrivals ? (
         <main className="flex-1 flex flex-col min-h-0">
           <StockArrivalPage authSession={authSession ?? null} onBack={onBack} onNavigate={onNavigate as any} onLogout={onLogout} embedded />
         </main>
