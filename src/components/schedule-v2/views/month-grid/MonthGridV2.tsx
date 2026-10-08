@@ -138,11 +138,7 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       key={`c-${emp.id}-${d}`}
                       onClick={clickable ? () => onOpenEdit(emp.id, d) : undefined}
                       style={{ height: 44 }}
-                      className={`relative border-b p-0 text-center align-top ${
-                        isToday
-                          ? "border-l-2 border-l-rose-500 border-r-2 border-r-rose-500 border-b-line z-10"
-                          : "border-r border-line border-b-line"
-                      } ${
+                      className={`relative border-r border-b border-line p-0 text-center align-top ${
                         clickable
                           ? "cursor-pointer hover:bg-sky-50/60 outline outline-1 outline-transparent hover:outline-sky-300"
                           : ""
@@ -151,6 +147,15 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       }`}
                       title={isDimmed ? "다른 월 날짜 · 월간 뷰에서 수정" : undefined}
                     >
+                      {/* 2026-10-08 · 사용자 재재지시 · 오늘 column 좌/우 vertical rail (absolute 로 명시 그림)
+                          · 이전 border/ring/shadow 모두 border-collapse table 또는 scheduleCellContent bg 로 가려짐
+                          · absolute span 은 bg 위에 z-20 으로 그려져 반드시 보임 */}
+                      {isToday && (
+                        <>
+                          <span aria-hidden className="absolute inset-y-0 left-0 w-[2px] bg-rose-500 z-20 pointer-events-none" />
+                          <span aria-hidden className="absolute inset-y-0 right-0 w-[2px] bg-rose-500 z-20 pointer-events-none" />
+                        </>
+                      )}
                       <div className="h-full w-full">
                         {scheduleCellContent(s, typeHoursMap, scheduleTypes)}
                       </div>
