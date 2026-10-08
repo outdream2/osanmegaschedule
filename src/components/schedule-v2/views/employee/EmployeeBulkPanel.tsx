@@ -136,7 +136,7 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
           <span className="ml-auto text-[12px] font-semibold text-amber-700">근무유형 선택 필요</span>
         )}
       </div>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {/* 섹션 1 · 날짜 선택 · 실제 월 달력 레이아웃 (사용자 지시 "해당월 달력처럼 배치")
             · 요일 header (일~토) click → 해당 요일 전체 toggle (사용자 지시 "그 후 요일 선택")
             · 1일 position = 요일 column · 앞 빈칸 (leading placeholder) + 뒤 빈칸 (trailing placeholder) 유지해 그리드 정렬 */}
@@ -229,7 +229,7 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
                     type="button"
                     onClick={() => toggleDate(d)}
                     disabled={!canEdit}
-                    className={`h-10 rounded-md border text-[13px] font-semibold tabular-nums transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                    className={`h-9 rounded-md border text-[13px] font-semibold tabular-nums transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                       selected
                         ? "bg-brand-deep text-white border-brand-deep"
                         : isSun ? "bg-rose-50/40 border-rose-100 text-rose-700 hover:bg-rose-100/60"

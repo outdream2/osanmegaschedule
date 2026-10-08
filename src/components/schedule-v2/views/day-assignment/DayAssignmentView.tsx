@@ -339,8 +339,13 @@ const WorkerPool: React.FC<{
                 aria-hidden
               />
               <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-semibold text-ink leading-tight truncate">{w.emp.name}</div>
-                <div className="text-[11px] text-ink-soft tabular-nums leading-tight">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <span className="text-[14px] font-semibold text-ink leading-tight truncate">{w.emp.name}</span>
+                  {w.emp.position && (
+                    <span className="text-[12px] text-ink-soft shrink-0 leading-tight">{w.emp.position}</span>
+                  )}
+                </div>
+                <div className="text-[12px] text-ink-soft tabular-nums leading-tight">
                   {w.schedule.type}{w.wh ? ` · ${w.wh}` : ""}
                 </div>
               </div>

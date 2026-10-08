@@ -158,19 +158,8 @@ export const DayScheduleViewV2: React.FC<Props> = ({ date, onDateDelta, onToday,
           </button>
         </div>
 
-        {/* summary pills · canonical 계산만 */}
-        <div className="flex items-center gap-2 text-[13px] text-ink-soft tabular-nums">
-          <span className="font-semibold text-ink">근무 {summary.total}</span>
-          {summary.perGroup.map(g => (
-            <React.Fragment key={g.label}>
-              <span className="text-zinc-300">·</span>
-              <span>{g.label} {g.count}</span>
-            </React.Fragment>
-          ))}
-        </div>
-
-        {/* subview · segmented control (현황 | 배치) */}
-        <div className="ml-auto inline-flex rounded-lg border border-line bg-white overflow-hidden">
+        {/* 2026-10-08 · 사용자 지시 · 현황/배치 subview tabs 를 날짜 nav 옆으로 이동 (Employee view 와 유사) */}
+        <div className="inline-flex rounded-lg border border-line bg-white overflow-hidden shrink-0">
           {([
             { key: "overview", label: "현황" },
             { key: "assignment", label: "배치" },
@@ -181,7 +170,7 @@ export const DayScheduleViewV2: React.FC<Props> = ({ date, onDateDelta, onToday,
                 key={opt.key}
                 type="button"
                 onClick={() => setSubview(opt.key)}
-                className={`h-8 px-3 text-[13px] font-semibold transition cursor-pointer ${
+                className={`h-8 px-3 text-[14px] font-semibold tracking-tight transition cursor-pointer ${
                   active ? "bg-brand-deep text-white" : "text-ink-soft hover:text-ink hover:bg-zinc-50"
                 }`}
                 aria-pressed={active}
@@ -190,6 +179,17 @@ export const DayScheduleViewV2: React.FC<Props> = ({ date, onDateDelta, onToday,
               </button>
             );
           })}
+        </div>
+
+        {/* summary pills · canonical 계산만 · ml-auto 로 오른쪽 끝 */}
+        <div className="ml-auto flex items-center gap-2 text-[13px] text-ink-soft tabular-nums">
+          <span className="font-semibold text-ink">근무 {summary.total}</span>
+          {summary.perGroup.map(g => (
+            <React.Fragment key={g.label}>
+              <span className="text-zinc-300">·</span>
+              <span>{g.label} {g.count}</span>
+            </React.Fragment>
+          ))}
         </div>
       </div>
 

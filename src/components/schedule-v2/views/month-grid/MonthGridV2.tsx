@@ -131,8 +131,6 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       onClick={clickable ? () => onOpenEdit(emp.id, d) : undefined}
                       style={{ height: 44 }}
                       className={`relative border-r border-b border-line p-0 text-center align-top ${
-                        isToday ? "ring-2 ring-inset ring-rose-500 z-10 relative" : ""
-                      } ${
                         clickable
                           ? "cursor-pointer hover:bg-sky-50/60 outline outline-1 outline-transparent hover:outline-sky-300"
                           : ""
@@ -141,7 +139,10 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       }`}
                       title={isDimmed ? "다른 월 날짜 · 월간 뷰에서 수정" : undefined}
                     >
-                      {scheduleCellContent(s, typeHoursMap, scheduleTypes)}
+                      {/* 2026-10-08 · 사용자 지시 · 오늘 column 붉은 테두리 보이게 wrapper 로 감쌈 (scheduleCellContent bg 안 가림) */}
+                      <div className={`h-full w-full relative ${isToday ? "ring-2 ring-inset ring-rose-500 z-10" : ""}`}>
+                        {scheduleCellContent(s, typeHoursMap, scheduleTypes)}
+                      </div>
                       {isEditing && (
                         <ScheduleTypePopover
                           scheduleTypes={scheduleTypes}

@@ -52,13 +52,13 @@ export const scheduleCellContent = (
       className={`h-full w-full px-1 py-0.5 flex flex-col justify-center overflow-hidden ${textCls}`}
       style={hasBg ? { backgroundColor: bgHex! } : undefined}
     >
-      <div className="text-[12px] font-bold leading-tight truncate">{t}</div>
+      <div className="text-[13px] font-bold leading-tight truncate">{t}</div>
       {showActual ? (
-        <div className={`text-[10px] font-bold leading-tight truncate px-1 rounded-sm ${actualTone}`}>
+        <div className={`text-[11px] font-bold leading-tight truncate px-1 rounded-sm ${actualTone}`}>
           {actual}
         </div>
       ) : (
-        <div className={`text-[10px] tabular-nums leading-tight truncate ${hoursCls} ${showHours ? "" : "invisible select-none"}`}>
+        <div className={`text-[11px] tabular-nums leading-tight truncate ${hoursCls} ${showHours ? "" : "invisible select-none"}`}>
           {showHours ? hours : "·"}
         </div>
       )}

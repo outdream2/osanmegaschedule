@@ -210,7 +210,7 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
                       key={opt.k}
                       type="button"
                       onClick={() => setSubview(opt.k)}
-                      className={`h-8 px-3 text-[13px] font-semibold transition cursor-pointer ${
+                      className={`h-8 px-3 text-[14px] font-semibold tracking-tight transition cursor-pointer ${
                         active ? "bg-brand-deep text-white" : "text-ink-soft hover:text-ink hover:bg-zinc-50"
                       }`}
                       aria-pressed={active}
