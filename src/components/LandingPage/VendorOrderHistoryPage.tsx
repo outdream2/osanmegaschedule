@@ -16,6 +16,8 @@ import { Package, ChevronDown, ChevronRight, FileDown, Truck } from "lucide-reac
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { PageToolbar } from "../common/PageToolbar";
+// 2026-10-08 · GLOBAL UI · Operations template migration
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 import { MonthToggleSelector } from "../common/MonthToggleSelector";
 import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { InlineLabel } from "../common/InlineLabel";
@@ -285,38 +287,37 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
         }
       />
 
-      <div className={`${PAGE_CONTAINER_CLS} max-w-[1400px] flex-1 flex flex-col px-4 sm:px-6 py-4 gap-3 min-h-0`}>
-        {toast && (
-          <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
-        )}
+      {toast && (
+        <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
+      )}
 
-        {/* 상단 툴바 */}
-        <PageToolbar
-          icon={<Package size={18} strokeWidth={2.2} />}
-          title="발주이력 확인"
-          count={orders.length}
-          leftSlot={
-            <span className="text-[15px] font-medium text-ink-soft tracking-tight tabular-nums">
-              {totalItems}종 · {fmtWon(totalAmount)}
-            </span>
-          }
-          right={
-            <div className="flex items-center gap-2 flex-wrap">
-              <InlineLabel size="sm">기간</InlineLabel>
-              {/* 2026-10-06 · 월 멀티선택 통일 (매입이력 STANDARD) · 비연속 월 지원 */}
-              <MonthToggleSelector
-                selectedMonths={selectedMonths}
-                onChange={setSelectedMonths}
-                maxMonths={6}
-                minOne
-                ariaLabel="발주이력 조회기간"
-              />
-              {selectedMonths.length > 0 && (
-                <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
-              )}
-            </div>
-          }
-        />
+      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · PageToolbar card 제거 → Template slot */}
+      <OperationsPageTemplate
+        title={
+          <span className="inline-flex items-baseline gap-2">
+            <Package size={20} className="text-brand-deep self-center" strokeWidth={2.2} />
+            <span>발주이력 확인</span>
+            <span className="text-[16px] font-semibold text-ink-soft/70 tabular-nums">{orders.length}건</span>
+          </span>
+        }
+        description={`${totalItems}종 · ${fmtWon(totalAmount)}`}
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <InlineLabel size="sm">기간</InlineLabel>
+            <MonthToggleSelector
+              selectedMonths={selectedMonths}
+              onChange={setSelectedMonths}
+              maxMonths={6}
+              minOne
+              ariaLabel="발주이력 조회기간"
+            />
+            {selectedMonths.length > 0 && (
+              <span className="text-[13px] text-ink-soft tabular-nums">{selectedMonths.length}개월 선택</span>
+            )}
+          </div>
+        }
+      >
+      <div className="flex flex-col gap-3">
 
         {/* 안내 배너 · 약국 정보 */}
         <Card variant="flat" bg="bg-sky-50/60" borderColor="border-sky-200" padding="sm" className="text-[14px]">
@@ -567,6 +568,7 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
           )}
         </Card>
       </div>
+      </OperationsPageTemplate>
 
       {/* 오프스크린 PDF 프리뷰 */}
       {pdfTarget && (

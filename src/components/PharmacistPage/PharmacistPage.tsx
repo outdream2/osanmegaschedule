@@ -11,6 +11,8 @@ import { Settings2, Plus, Eye, FileText as FileTextIcon, ChevronRight, ChevronDo
 import { Spinner } from "../common/Spinner";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
+// 2026-10-08 · GLOBAL UI · Operations template migration
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 // 2026-08-31 · AccentBar 제거 · Card topAccent 사용
 // import { AccentBar } from "../common/AccentBar";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
@@ -292,55 +294,49 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
         />
       </div>
 
-      {/* 2026-08-31 · 사용자 지시 · 화면 85% · SplitPanel 통일 · 목업 톤 */}
-      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-4 py-3 sm:py-4 flex flex-col gap-3`}>
-        {/* 2026-08-31 · #58 · UI_MOCKUP_2026-08-21 톤 · Card topAccent + 그라디언트 아이콘 · 목업 통일 */}
-        <Card padding="none" rounded="xl" topAccent className="px-5 py-4 flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-deep to-[#3E7CB1] text-white flex items-center justify-center shadow-md shrink-0">
-            <FirstAid size={22} weight="fill" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-[22px] sm:text-[26px] font-extrabold text-ink tracking-tight leading-tight">약사 전용</h1>
-            <p className="text-[16px] text-ink-soft mt-1 truncate">복약 · 처방 · 상담 · 학술 자료 · <b className="text-emerald-700">약사 (lv 3+)</b> · PDF 워터마크 보안</p>
-          </div>
-          <div className="flex-1" />
-          <div className="hidden sm:flex items-center gap-1.5 text-[15px] font-semibold">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-tint text-brand-deep border border-brand/15">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-deep" />
-              level ≥ 3
-            </span>
-            {/* 2026-08-17 · StatusPill 프레임워크 통일 */}
+      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · 거대 Card hero + gradient icon tile 제거 */}
+      <OperationsPageTemplate
+        title={
+          <span className="inline-flex items-baseline gap-2">
+            <FirstAid size={20} className="text-brand-deep self-center" weight="fill" />
+            <span>약사 전용</span>
+          </span>
+        }
+        description="복약 · 처방 · 상담 · 학술 자료 · 약사 (lv 3+) · PDF 워터마크 보안"
+        actions={
+          <div className="flex items-center gap-2">
             {isAdmin && tab !== "education" && (
               <StatusPill tone="amber" size="md" dot>관리자 CRUD</StatusPill>
             )}
+            {isAdmin && tab !== "education" && (
+              <button
+                type="button"
+                onClick={() => selectedCatObj && setSettingsOpen(true)}
+                disabled={!selectedCatObj}
+                className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg text-[13px] font-semibold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-200 disabled:text-zinc-400 text-white transition cursor-pointer shrink-0"
+                title={selectedCatObj ? "선택된 카테고리의 하위메뉴 관리" : "좌측에서 카테고리를 먼저 선택하세요"}
+              >
+                <Settings2 size={14} />
+                하위메뉴 설정
+              </button>
+            )}
           </div>
-          {/* 관리자 · 설정 버튼 · 교육탭에서는 트리 위 통합 컨트롤로 대체 (숨김) */}
-          {isAdmin && tab !== "education" && (
-            <button
-              type="button"
-              onClick={() => selectedCatObj && setSettingsOpen(true)}
-              disabled={!selectedCatObj}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[14px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:bg-zinc-200 disabled:text-zinc-400 text-white transition cursor-pointer shrink-0 shadow-sm"
-              title={selectedCatObj ? "선택된 카테고리의 하위메뉴 관리" : "좌측에서 카테고리를 먼저 선택하세요"}
-            >
-              <Settings2 size={14} />
-              하위메뉴 설정
-            </button>
-          )}
-        </Card>
-
-        {/* Level-2 TabBar · admin 만 드래그 재정렬 */}
-        <TabBar<PharmTabKey>
-          level={2}
-          tabs={sortable.tabs}
-          activeKey={tab}
-          onSelect={setTab}
-          sortable={{
-            getTabProps: ((k: PharmTabKey | CommonTabDef<PharmTabKey>) =>
-              sortable.getTabProps(typeof k === "string" ? k : (k as CommonTabDef<PharmTabKey>))) as (k: PharmTabKey | CommonTabDef<PharmTabKey>) => TabHandlerProps,
-            isDragging: sortable.isDragging,
-          }}
-        />
+        }
+        tabs={
+          <TabBar<PharmTabKey>
+            level={2}
+            tabs={sortable.tabs}
+            activeKey={tab}
+            onSelect={setTab}
+            sortable={{
+              getTabProps: ((k: PharmTabKey | CommonTabDef<PharmTabKey>) =>
+                sortable.getTabProps(typeof k === "string" ? k : (k as CommonTabDef<PharmTabKey>))) as (k: PharmTabKey | CommonTabDef<PharmTabKey>) => TabHandlerProps,
+              isDragging: sortable.isDragging,
+            }}
+          />
+        }
+      >
+      <main className="flex-1 flex flex-col gap-3">
 
         {/* T20 · 좌 리스트 + 리사이저 + 우 PDF 인라인 뷰어 (2026-08-05 교육탭 트리구조) */}
         <SplitPanel
@@ -720,6 +716,7 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
           }
         />
       </main>
+      </OperationsPageTemplate>
 
       {/* ── 설정 모달 (관리자) ─────────────────────────── */}
       {isAdmin && selectedCatObj && (

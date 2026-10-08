@@ -8,6 +8,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Package, AlertTriangle, RefreshCw } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+// 2026-10-08 · GLOBAL UI · MasterDetail template migration
+import { MasterDetailPageTemplate } from "../common/MasterDetailPageTemplate";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { SplitPanel } from "../common/SplitPanel";
 import { SearchBar } from "../common/SearchBar";
@@ -509,7 +511,17 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
         }
       />
 
-      <div className={`${PAGE_CONTAINER_CLS} max-w-[1600px] flex-1 flex flex-col px-4 sm:px-6 py-4 gap-3 min-h-0`}>
+      {/* 2026-10-08 · GLOBAL UI · MasterDetailPageTemplate 적용 (presentation-only) */}
+      <MasterDetailPageTemplate
+        title={
+          <span className="inline-flex items-baseline gap-2">
+            <Package size={20} className="text-brand-deep self-center" strokeWidth={2.2} />
+            <span>공급사 재고확인</span>
+            {vendorName && <span className="text-[15px] font-semibold text-ink-soft/70">{vendorName}</span>}
+          </span>
+        }
+        description="공급사별 재고 조회 · 좌측 상품 선택 → 우측 상세"
+      >
         {/* SplitPanel · 좌 제품 리스트 / 우 상세 */}
         <div className="flex-1 min-h-0">
           <SplitPanel
@@ -524,7 +536,7 @@ export const VendorStockPage: React.FC<VendorStockPageProps> = ({
             style={{ minHeight: "calc(100vh - 180px)" }}
           />
         </div>
-      </div>
+      </MasterDetailPageTemplate>
 
       {/* Toast · 조회 실패 등 */}
       {toast && (

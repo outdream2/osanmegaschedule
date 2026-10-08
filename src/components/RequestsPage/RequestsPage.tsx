@@ -17,6 +17,8 @@ import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import { fmtDateMD } from "../../lib/format";
 import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+// 2026-10-08 · GLOBAL UI · Operations template migration
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 import { useConfirm } from "../../hooks/useConfirm";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -532,26 +534,32 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         onLogout={onLogout}
       />
 
-      {/* 2026-09-10 · #50 · 사용자 지시 · 매입 서브탭 (매입이력·거래명세서·유통기한임박) 과 동일 · TabBar level=3 · Linear docs 톤 */}
-      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-4 py-4 flex flex-col gap-4`}>
-        <TabBar<Tab>
-          level={3}
-          tabs={TABS.map(([key, label, count]) => {
-            const meta: Record<Tab, { icon: any; color: any }> = {
-              display:     { icon: ClipboardList, color: "sky"     },
-              order:       { icon: Package,       color: "amber"   },
-              lunch:       { icon: Coffee,        color: "orange"  },
-              inventory:   { icon: Package,       color: "violet"  },
-              leave:       { icon: CalendarDays,  color: "indigo"  },
-              vendor:      { icon: Handshake,     color: "emerald" },
-              resignation: { icon: FileText,      color: "rose"    },
-            };
-            const m = meta[key];
-            return { key, label, icon: m.icon, color: m.color, badge: count > 0 ? count : undefined } as CommonTabDef<Tab>;
-          })}
-          activeKey={tab}
-          onSelect={setTab}
-        />
+      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · 탭을 tabs slot으로 · level 3→2 (page L2 nav Line Tabs) */}
+      <OperationsPageTemplate
+        title="업무 요청"
+        description="진열 · 발주 · 점심 · 재고 · 연차 · 거래처 · 사직서 등 요청 통합"
+        tabs={
+          <TabBar<Tab>
+            level={2}
+            tabs={TABS.map(([key, label, count]) => {
+              const meta: Record<Tab, { icon: any; color: any }> = {
+                display:     { icon: ClipboardList, color: "sky"     },
+                order:       { icon: Package,       color: "amber"   },
+                lunch:       { icon: Coffee,        color: "orange"  },
+                inventory:   { icon: Package,       color: "violet"  },
+                leave:       { icon: CalendarDays,  color: "indigo"  },
+                vendor:      { icon: Handshake,     color: "emerald" },
+                resignation: { icon: FileText,      color: "rose"    },
+              };
+              const m = meta[key];
+              return { key, label, icon: m.icon, color: m.color, badge: count > 0 ? count : undefined } as CommonTabDef<Tab>;
+            })}
+            activeKey={tab}
+            onSelect={setTab}
+          />
+        }
+      >
+      <main className="flex-1 flex flex-col gap-4">
 
         {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · DisplayRequestTab */}
         {tab === "display" && (
@@ -668,6 +676,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         )}
 
       </main>
+      </OperationsPageTemplate>
 
       {/* 발주요청 중복 확인 모달 */}
       <Modal

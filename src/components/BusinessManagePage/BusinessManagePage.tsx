@@ -17,6 +17,8 @@ import { LunchPage } from "../LunchPage/LunchPage";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import type { AuthSession } from "../../types";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
+// 2026-10-08 · GLOBAL UI · Operations template migration
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 import { TEXT, PAGE_CONTAINER_CLS } from "../../styles/tokens";
 // 2026-08-21 · Framework Phase 3 · fetch → apiClient
 // 2026-09-14 · leaveApi · resignationsApi 프리미티브
@@ -199,33 +201,31 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
         onLogout={onLogout}
       />
 
-      {/* ── 서브탭 바 · 공통 TabBar (level 2) · long-press 드래그 지원 ── */}
-      {/* 2026-08-03 · 관리자(level>=8) · 500ms long-press 후 드래그로 순서 변경 가능 */}
-      {/* 2026-08-03 (#183) · 공통 TabBar 사용 · duplicate 스타일 흡수 · approval-center 배지 동적 매핑 */}
-      {/* 2026-08-11 · 사이드바 V2 · PC 는 사이드바가 서브탭 담당 · TabBar 숨김 (모바일 유지) */}
-      {!(SIDEBAR_ENABLED && !isBmMobile) && (
-      <TabBar<BmSubTab>
-        level={2}
-        // 2026-08-17 · #131 · 안보이기 처리 subtab 필터
-        tabs={sortable.tabs.filter(t => !bmHiddenSubs.has(t.key)).map((t): CommonTabDef<BmSubTab> => ({
-          key: t.key,
-          label: t.label,
-          icon: t.icon,
-          color: t.color,
-          badge: (t.key === "approval-center" && showApprovalBadge) ? approvalPending : undefined,
-        }))}
-        activeKey={subTab}
-        onSelect={setSubTab}
-        badgeColor="rose"
-        sortable={{
-          getTabProps: (keyOrTab) => sortable.getTabProps(typeof keyOrTab === "string" ? keyOrTab : keyOrTab.key),
-          isDragging: sortable.isDragging,
-        }}
-      />
-      )}
-
-      {/* ── 서브탭 컨텐츠 ── */}
-      <main className={`flex-1 flex flex-col min-h-0 ${PAGE_CONTAINER_CLS}`}>
+      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · L2 TabBar는 모바일에서만 (사이드바 모드 중복 방지) */}
+      <OperationsPageTemplate
+        title="경영관리"
+        description="직원관리 · 승인대기 · 계약서 작성 · 각종 양식"
+        tabs={!(SIDEBAR_ENABLED && !isBmMobile) ? (
+          <TabBar<BmSubTab>
+            level={2}
+            tabs={sortable.tabs.filter(t => !bmHiddenSubs.has(t.key)).map((t): CommonTabDef<BmSubTab> => ({
+              key: t.key,
+              label: t.label,
+              icon: t.icon,
+              color: t.color,
+              badge: (t.key === "approval-center" && showApprovalBadge) ? approvalPending : undefined,
+            }))}
+            activeKey={subTab}
+            onSelect={setSubTab}
+            badgeColor="rose"
+            sortable={{
+              getTabProps: (keyOrTab) => sortable.getTabProps(typeof keyOrTab === "string" ? keyOrTab : keyOrTab.key),
+              isDragging: sortable.isDragging,
+            }}
+          />
+        ) : undefined}
+      >
+      <main className="flex-1 flex flex-col min-h-0">
         {subTab === "staff-manage" && (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="직원관리 로딩 중..." size={16} tone="brand" /></div>}>
             <StaffManagePage
@@ -257,6 +257,7 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
           </Suspense>
         )}
       </main>
+      </OperationsPageTemplate>
     </div>
   );
 };
