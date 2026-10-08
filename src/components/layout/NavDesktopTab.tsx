@@ -1,9 +1,12 @@
 // src/components/layout/NavDesktopTab.tsx
 // 공통헤더 · 데스크탑 탭 단일 렌더 컴포넌트 · 2026-08-31 분리
+// 2026-10-08 · GLOBAL UI reference-tone · Line Tabs 톤 전환 (presentation-only)
+//   · 이전 · text 20-22 pill (bg-white/[0.10]) · drop-shadow glow · rainbow icon · translate-y hover · 3px accent bar
+//   · 이후 · Batch 4 Line Tabs 통일 · pill/glow/rainbow/translate 전부 삭제
+//   · 역할·props·활성 판정 로직 그대로 (behavior = 0)
 import React from "react";
 import type { AppNavPage } from "./AppNavHeader";
 import type { TabDef } from "./AppNavHeader.types";
-import { NAV_ACCENT, headerAccentGradient, type SideNavColor } from "./sideNavGroups";
 
 interface NavDesktopTabProps {
   tab: TabDef;
@@ -18,27 +21,17 @@ export const NavDesktopTab: React.FC<NavDesktopTabProps> = ({
 }) => {
   const Icon = tab.icon;
 
-  const colorKey = (tab.color ?? "slate") as SideNavColor;
-  const validColor: SideNavColor = (["slate","amber","red","sky","indigo","emerald","violet","cyan"] as SideNavColor[]).includes(colorKey) ? colorKey : "slate";
-  const accent = NAV_ACCENT[validColor];
-  const iconAccent = accent.iconText;
+  // 2026-10-08 · Line Tabs 톤 · navy 바탕 shell 안에서도 flat text + 2px underline
+  //   · pill bg 삭제 · glow 삭제 · rainbow icon 삭제 · drop-shadow 삭제
+  const baseCommon = "relative flex items-center gap-1.5 px-3 h-10 text-[14px] whitespace-nowrap tracking-tight transition-colors duration-150 cursor-pointer outline-none";
+  const activeClass = `${baseCommon} text-white font-semibold`;
+  const inactiveClass = `${baseCommon} text-[#9FBAD4] hover:text-white font-medium disabled:opacity-40`;
 
-  // 2026-09-20 · 사용자 지시 · 전체 탭 메뉴 글씨 +1
-  const baseCommon = "relative flex items-center gap-1.5 px-3 sm:px-3 md:px-3.5 lg:px-4 py-1.5 rounded-lg text-[20px] sm:text-[20px] md:text-[21px] lg:text-[22px] font-semibold whitespace-nowrap transition-all duration-200 ease-out";
-  const activeClass = `${baseCommon} bg-white/[0.10] text-white font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.10)]`;
-  const inactiveClass = `${baseCommon} text-[#C4DAEE] hover:bg-white/[0.06] hover:text-white hover:-translate-y-[1px] active:scale-95 cursor-pointer disabled:opacity-40 group/tab`;
-
-  const accentBar = (
+  // 2026-10-08 · active 2px underline · navy shell 위 흰색 bar (glow 0)
+  const underline = (
     <span
-      className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-[90%] h-[3px] rounded-full pointer-events-none"
-      style={{ background: `linear-gradient(90deg, transparent, ${accent.hex} 30%, ${accent.hex} 70%, transparent)`, boxShadow: `0 0 12px ${accent.hex}, 0 2px 10px ${accent.hex}80` }}
-    />
-  );
-  const hoverBar = (
-    <span
-      className="absolute bottom-[-2px] left-1/2 -translate-x-1/2 w-0 h-[2px] rounded-full pointer-events-none transition-all duration-300 ease-out group-hover/tab:w-[50%]"
-      style={{ backgroundColor: `${accent.hex}80` }}
       aria-hidden
+      className="absolute left-2 right-2 -bottom-px h-[2px] bg-white rounded-sm pointer-events-none"
     />
   );
 
@@ -48,19 +41,16 @@ export const NavDesktopTab: React.FC<NavDesktopTabProps> = ({
     if (isActive) {
       return (
         <span key="business" className={activeClass}>
-          <span className="inline-flex" style={{ filter: `drop-shadow(0 0 8px ${accent.hex}) drop-shadow(0 0 16px ${accent.hex}40)` }}>
-            <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent} scale-110 transition-transform`} />
-          </span>
+          <Icon size={14} weight="fill" className="shrink-0 text-white" />
           <span>{tab.label}</span>
-          {accentBar}
+          {underline}
         </span>
       );
     }
     return (
       <button key="business" type="button" onClick={bizOnClick} disabled={!onNavigate} className={inactiveClass}>
-        <Icon size={20} weight="duotone" className={`shrink-0 opacity-75 group-hover/tab:opacity-100 transition-all ${iconAccent}`} />
+        <Icon size={14} weight="regular" className="shrink-0 opacity-80" />
         <span>{tab.label}</span>
-        {hoverBar}
       </button>
     );
   }
@@ -71,19 +61,16 @@ export const NavDesktopTab: React.FC<NavDesktopTabProps> = ({
   if (isActive) {
     return (
       <span key={tab.key} className={activeClass}>
-        <span className="inline-flex" style={{ filter: `drop-shadow(0 0 8px ${accent.hex}) drop-shadow(0 0 16px ${accent.hex}40)` }}>
-          <Icon size={20} weight="fill" className={`shrink-0 ${iconAccent} scale-110 transition-transform`} />
-        </span>
+        <Icon size={14} weight="fill" className="shrink-0 text-white" />
         <span>{tab.label}</span>
-        {accentBar}
+        {underline}
       </span>
     );
   }
   return (
     <button key={tab.key} onClick={onClick} disabled={!onNavigate && !onBack} className={inactiveClass}>
-      <Icon size={20} weight="duotone" className={`shrink-0 opacity-75 group-hover/tab:opacity-100 transition-all ${iconAccent}`} />
+      <Icon size={14} weight="regular" className="shrink-0 opacity-80" />
       <span>{tab.label}</span>
-      {hoverBar}
     </button>
   );
 };

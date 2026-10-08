@@ -1,10 +1,12 @@
 // src/components/layout/NavMobileTab.tsx
 // 공통헤더 · 모바일 탭 단일 렌더 컴포넌트 · 2026-08-31 분리
+// 2026-10-08 · GLOBAL UI reference-tone · compact tab · pill/glow 전부 삭제
+//   · 이전 · 2줄 split label + bg-white/[0.10] pill + drop-shadow glow + rainbow icon + scale-110
+//   · 이후 · flat text · 1줄 label · small icon (글자 뚜렷)
+//   · 역할·props 그대로 (behavior = 0)
 import React from "react";
 import type { AppNavPage } from "./AppNavHeader";
 import type { TabDef } from "./AppNavHeader.types";
-import { TAB_COLOR_MAP } from "./AppNavHeader.types";
-import { NAV_ACCENT, type SideNavColor } from "./sideNavGroups";
 
 interface NavMobileTabProps {
   tab: TabDef;
@@ -14,80 +16,66 @@ interface NavMobileTabProps {
   onBack?: () => void;
 }
 
-function splitLabel(L: string): React.ReactNode {
-  const isAllAscii = /^[\x20-\x7e]+$/.test(L);
-  if (L.length >= 4 && !isAllAscii) {
-    const custom: Record<string, [string, string]> = {
-      "거래명세서": ["거래", "명세서"],
-      "스케줄관리": ["스케줄", "관리"],
-    };
-    if (custom[L]) return <><div>{custom[L][0]}</div><div>{custom[L][1]}</div></>;
-    const half = L.length === 5 ? 2 : Math.ceil(L.length / 2);
-    return <><div>{L.slice(0, half)}</div><div>{L.slice(half)}</div></>;
-  }
-  return L;
-}
-
 export const NavMobileTab: React.FC<NavMobileTabProps> = ({
   tab, activePage, isBizPage, onNavigate, onBack,
 }) => {
   const Icon = tab.icon;
-  const c = TAB_COLOR_MAP[tab.color ?? "slate"];
 
-  const mobileColorKey = (tab.color ?? "slate") as SideNavColor;
-  const mobileValidColor: SideNavColor = (["slate","amber","red","sky","indigo","emerald","violet","cyan"] as SideNavColor[]).includes(mobileColorKey) ? mobileColorKey : "slate";
-  const mobileAccent = NAV_ACCENT[mobileValidColor];
+  // 2026-10-08 · compact · navy shell 위 flat · active=흰 밑줄 · pill/glow 전부 삭제
+  const base = "relative flex-1 min-w-[48px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 h-11 text-[12px] whitespace-nowrap transition-colors duration-150 cursor-pointer disabled:opacity-40";
+  const activeClass = `${base} text-white font-semibold`;
+  const inactiveClass = `${base} text-[#9FBAD4] hover:text-white font-medium`;
 
-  const base = "flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 rounded-lg text-[15px] font-bold transition-all duration-200 ease-out active:scale-95";
-  const activeInset = "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.08)]";
+  const underline = (
+    <span
+      aria-hidden
+      className="absolute left-1.5 right-1.5 bottom-0 h-[2px] bg-white rounded-sm pointer-events-none"
+    />
+  );
 
   if (tab.key === "business") {
     const isActive = isBizPage;
     const bizOnClick = () => onNavigate?.("business-manage");
     if (isActive) {
       return (
-        <span key="business" className={`${base} bg-white/[0.10] ${c.activeText} ${activeInset} font-bold`}>
-          <span className="inline-flex" style={{ filter: `drop-shadow(0 0 6px ${mobileAccent.hex}) drop-shadow(0 0 12px ${mobileAccent.hex}60)` }}>
-            <Icon size={26} weight="fill" className={`${mobileAccent.iconText} scale-110 transition-transform`} />
-          </span>
-          <span className="leading-tight text-center whitespace-nowrap min-h-[2.2em] flex flex-col justify-start">경영</span>
+        <span key="business" className={activeClass}>
+          <Icon size={16} weight="fill" className="shrink-0 text-white" />
+          <span className="leading-tight">경영</span>
+          {underline}
         </span>
       );
     }
     return (
-      <button key="business" type="button" onClick={bizOnClick} disabled={!onNavigate}
-        className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/[0.10] cursor-pointer disabled:opacity-40`}>
-        <Icon size={26} weight="fill" className={`${mobileAccent.iconText} opacity-75`} />
-        <span className="leading-tight text-center min-h-[2.2em] flex flex-col justify-start">경영</span>
+      <button
+        key="business"
+        type="button"
+        onClick={bizOnClick}
+        disabled={!onNavigate}
+        className={inactiveClass}
+      >
+        <Icon size={16} weight="regular" className="shrink-0 opacity-80" />
+        <span className="leading-tight">경영</span>
       </button>
     );
   }
 
   const isActive = tab.key === activePage;
   const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key as AppNavPage);
+  const label = tab.mobileLabel ?? tab.label;
 
   if (isActive) {
     return (
-      <span key={tab.key} className={`${base} bg-white/[0.10] ${c.activeText} ${activeInset} font-bold`}>
-        <span className="inline-flex" style={{ filter: `drop-shadow(0 0 6px ${mobileAccent.hex}) drop-shadow(0 0 12px ${mobileAccent.hex}60)` }}>
-          <Icon size={26} weight="fill" className={`${mobileAccent.iconText} scale-110 transition-transform`} />
-        </span>
-        <span className="leading-tight text-center min-h-[2.2em] flex flex-col justify-start">{splitLabel(tab.label)}</span>
+      <span key={tab.key} className={activeClass}>
+        <Icon size={16} weight="fill" className="shrink-0 text-white" />
+        <span className="leading-tight">{label}</span>
+        {underline}
       </span>
     );
   }
   return (
-    <button key={tab.key} onClick={onClick} disabled={!onNavigate && !onBack}
-      className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white/[0.10] cursor-pointer disabled:opacity-40`}>
-      <Icon size={26} weight="fill" className={`${mobileAccent.iconText} opacity-75`} />
-      <span className="leading-tight text-center whitespace-nowrap min-h-[2.2em] flex flex-col justify-start">
-        {tab.label.length > 3 ? (
-          <>
-            <div>{tab.label.slice(0, tab.label.length - 2)}</div>
-            <div>{tab.label.slice(-2)}</div>
-          </>
-        ) : tab.label}
-      </span>
+    <button key={tab.key} onClick={onClick} disabled={!onNavigate && !onBack} className={inactiveClass}>
+      <Icon size={16} weight="regular" className="shrink-0 opacity-80" />
+      <span className="leading-tight">{label}</span>
     </button>
   );
 };
