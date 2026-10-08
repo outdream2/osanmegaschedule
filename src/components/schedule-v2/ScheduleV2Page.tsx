@@ -26,6 +26,8 @@ interface Props {
   onBack?: () => void;
   onLogout?: () => void;
   onNavigate?: (page: AppNavPage) => void;
+  /** 2026-10-08 · V1 과 동일 pattern · 기본정보 "직원관리 수정" → 해당 직원 preselected 로 이동 */
+  onEditEmployeeAtStaffManage?: (employeeId: number) => void;
 }
 
 const VIEW_TABS: { key: ScheduleV2View; label: string; icon: React.ElementType }[] = [
@@ -35,7 +37,7 @@ const VIEW_TABS: { key: ScheduleV2View; label: string; icon: React.ElementType }
   { key: "employee", label: "직원별", icon: UsersThree },
 ];
 
-export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout, onNavigate }) => {
+export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout, onNavigate, onEditEmployeeAtStaffManage }) => {
   // 2026-10-07 · activeNav 등록 · AppNavHeader breadcrumb 정확
   const { setActiveByPage } = useActiveNav();
   useEffect(() => { setActiveByPage("schedule-v2" as AppNavPage); }, [setActiveByPage]);
@@ -277,11 +279,12 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
               initialEmployeeId={selectedEmployeeId}
               initialSubview={requestedEmployeeSubview}
               onSubviewChange={handleEmployeeSubviewChange}
-              onEmployeeManagement={() => {
-                // 2026-10-07 · V2-D · employee master 수정은 기존 Employee Management 로 이동
-                //   · empId 전달은 App.tsx 의 navigateInnerWithOptions 가 필요 · 추후 통합
-                //   · 지금은 단순 네비게이션
-                onNavigate?.("business-manage" as AppNavPage);
+              onEmployeeManagement={(empId: number) => {
+                // 2026-10-08 · 사용자 지시 · 직원관리 수정 → 해당 직원 preselected 로 이동
+                //   · onEditEmployeeAtStaffManage · App.tsx navigateInnerWithOptions · V1 과 동일 flow
+                //   · fallback · prop 없으면 그냥 페이지 이동
+                if (onEditEmployeeAtStaffManage) onEditEmployeeAtStaffManage(empId);
+                else onNavigate?.("business-manage" as AppNavPage);
               }}
             />
           )}

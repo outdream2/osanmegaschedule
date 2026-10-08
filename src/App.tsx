@@ -392,7 +392,16 @@ export default function App() {
     "order-settings": () => <Lazy Component={OrderSettingsPage} />,
     "settings-hub": () => <Lazy Component={SettingsHubPage} />,
     // 2026-10-07 · 스케줄 V2 평가용 (사이드바 "새 스케줄")
-    "schedule-v2": () => <Lazy Component={ScheduleV2Page} />,
+    // 2026-10-08 · onEditEmployeeAtStaffManage · V1 과 동일 pattern · 직원관리 페이지에 선택 직원 전달
+    "schedule-v2": () => (
+      <Lazy
+        Component={ScheduleV2Page}
+        extraProps={{
+          onEditEmployeeAtStaffManage: (empId: number) =>
+            navigateInnerWithOptions("business-manage", { employeeId: empId, fromPage: "schedule-v2" }),
+        }}
+      />
+    ),
   };
 
   const landingEl = (

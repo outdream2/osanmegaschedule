@@ -115,75 +115,88 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
         </div>
       )}
       <div className="flex flex-col gap-4">
-        {/* 섹션 1 · 날짜 선택 */}
+        {/* 섹션 1 · 날짜 선택 · 실제 월 달력 레이아웃 (사용자 지시 "해당월 달력처럼 배치")
+            · 요일 header (일~토) click → 해당 요일 전체 toggle (사용자 지시 "그 후 요일 선택")
+            · 1일 position = 요일 column · 앞 빈칸 (leading placeholder) + 뒤 빈칸 (trailing placeholder) 유지해 그리드 정렬 */}
         <section>
           <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
             <h3 className="text-[14px] font-bold text-ink">① 날짜 선택</h3>
-            <div className="flex items-center gap-1 text-[12px] flex-wrap">
-              {/* 2026-10-08 · 사용자 지시 · 평일/주말 shortcut 대신 요일별 (월~일) toggle */}
-              {([
-                { dow: 1, label: "월" },
-                { dow: 2, label: "화" },
-                { dow: 3, label: "수" },
-                { dow: 4, label: "목" },
-                { dow: 5, label: "금" },
-                { dow: 6, label: "토" },
-                { dow: 0, label: "일" },
-              ]).map(({ dow, label }) => {
-                const active = isDowAllSelected(dow);
-                return (
-                  <button
-                    key={`dow-${dow}`}
-                    type="button"
-                    onClick={() => toggleDow(dow)}
-                    className={`h-7 w-8 rounded-md border font-semibold tabular-nums cursor-pointer transition ${
-                      active
-                        ? "bg-brand-deep text-white border-brand-deep"
-                        : dow === 0 ? "bg-white border-rose-100 text-rose-700 hover:bg-rose-50/60"
-                        : dow === 6 ? "bg-white border-sky-100 text-sky-700 hover:bg-sky-50/60"
-                        : "bg-white border-zinc-200 text-ink hover:bg-zinc-50"
-                    }`}
-                    title={`${label}요일 전체 선택/해제`}
-                    aria-pressed={active}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-              <span className="mx-1 w-px h-5 bg-zinc-200" aria-hidden />
+            <div className="flex items-center gap-1 text-[12px]">
               <button type="button" onClick={selectAll} className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-sky-50 text-ink cursor-pointer">전체</button>
               <button type="button" onClick={clearAll} className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-zinc-100 text-ink cursor-pointer">해제</button>
             </div>
           </div>
-          <div className="grid grid-cols-7 gap-1.5">
-            {dateList.map(d => {
-              const dateObj = new Date(d);
-              const dayNum = dateObj.getDate();
-              const dow = weekdays[dateObj.getDay()];
-              const selected = selectedDates.has(d);
-              const isSun = dateObj.getDay() === 0;
-              const isSat = dateObj.getDay() === 6;
+
+          {/* 요일 header · click 시 해당 요일 toggle · 일(rose)/토(sky) 톤 */}
+          <div className="grid grid-cols-7 gap-1.5 mb-1.5">
+            {([
+              { dow: 0, label: "일" },
+              { dow: 1, label: "월" },
+              { dow: 2, label: "화" },
+              { dow: 3, label: "수" },
+              { dow: 4, label: "목" },
+              { dow: 5, label: "금" },
+              { dow: 6, label: "토" },
+            ]).map(({ dow, label }) => {
+              const active = isDowAllSelected(dow);
               return (
                 <button
-                  key={d}
+                  key={`dow-h-${dow}`}
                   type="button"
-                  onClick={() => toggleDate(d)}
-                  disabled={!canEdit}
-                  className={`h-10 rounded-md border text-[12px] font-semibold tabular-nums transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                    selected
+                  onClick={() => toggleDow(dow)}
+                  className={`h-7 rounded-md border text-[12px] font-bold cursor-pointer transition ${
+                    active
                       ? "bg-brand-deep text-white border-brand-deep"
-                      : isSun ? "bg-rose-50/40 border-rose-100 text-rose-700 hover:bg-rose-100/60"
-                      : isSat ? "bg-sky-50/40 border-sky-100 text-sky-700 hover:bg-sky-100/60"
-                      : "bg-white border-zinc-200 text-ink hover:bg-zinc-50"
+                      : dow === 0 ? "bg-rose-50/60 border-rose-100 text-rose-700 hover:bg-rose-100/70"
+                      : dow === 6 ? "bg-sky-50/60 border-sky-100 text-sky-700 hover:bg-sky-100/70"
+                      : "bg-zinc-50 border-zinc-200 text-ink-soft hover:bg-zinc-100"
                   }`}
+                  title={`${label}요일 전체 선택/해제`}
+                  aria-pressed={active}
                 >
-                  <div className="leading-tight">
-                    <div>{dayNum}</div>
-                    <div className="text-[10px] opacity-70">{dow}</div>
-                  </div>
+                  {label}
                 </button>
               );
             })}
+          </div>
+
+          {/* 달력 grid · 1일 요일 position 맞춤 + leading/trailing 빈 placeholder */}
+          <div className="grid grid-cols-7 gap-1.5">
+            {(() => {
+              const firstDowOfMonth = dateList.length > 0 ? new Date(dateList[0]).getDay() : 0;
+              const leading = Array.from({ length: firstDowOfMonth }, (_, i) => ({ kind: "pad" as const, key: `pad-l-${i}` }));
+              const dateCells = dateList.map(d => ({ kind: "date" as const, key: d, d }));
+              const trailingCount = (7 - ((firstDowOfMonth + dateList.length) % 7)) % 7;
+              const trailing = Array.from({ length: trailingCount }, (_, i) => ({ kind: "pad" as const, key: `pad-r-${i}` }));
+              return [...leading, ...dateCells, ...trailing].map(cell => {
+                if (cell.kind === "pad") {
+                  return <div key={cell.key} className="h-10 rounded-md" aria-hidden />;
+                }
+                const d = cell.d;
+                const dateObj = new Date(d);
+                const dayNum = dateObj.getDate();
+                const selected = selectedDates.has(d);
+                const isSun = dateObj.getDay() === 0;
+                const isSat = dateObj.getDay() === 6;
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => toggleDate(d)}
+                    disabled={!canEdit}
+                    className={`h-10 rounded-md border text-[13px] font-semibold tabular-nums transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      selected
+                        ? "bg-brand-deep text-white border-brand-deep"
+                        : isSun ? "bg-rose-50/40 border-rose-100 text-rose-700 hover:bg-rose-100/60"
+                        : isSat ? "bg-sky-50/40 border-sky-100 text-sky-700 hover:bg-sky-100/60"
+                        : "bg-white border-zinc-200 text-ink hover:bg-zinc-50"
+                    }`}
+                  >
+                    {dayNum}
+                  </button>
+                );
+              });
+            })()}
           </div>
           <div className="mt-1.5 text-[12px] text-ink-soft tabular-nums">선택 {selectedDates.size}일</div>
         </section>
