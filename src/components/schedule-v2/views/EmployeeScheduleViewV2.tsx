@@ -195,18 +195,10 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
           </Card>
         ) : (
           <>
-            {/* 상단 · 선택 직원 요약 + subview tabs + edit toggle */}
+            {/* 상단 · 사용자 지시 · subview tabs 를 직원 이름 바로 옆으로 (ml-auto 제거) */}
             <div className="flex flex-wrap items-center gap-2 py-2 border-b border-line">
-              <div className="flex items-center gap-2 shrink-0">
-                <h2 className="text-[18px] font-extrabold text-ink leading-tight tracking-tight">{selectedEmployee.name}</h2>
-                <span className="text-[13px] text-ink-soft">{selectedEmployee.position} · {selectedEmployee.employmentType ?? "-"}</span>
-                {isMonthLocked && (
-                  <span className="inline-flex items-center h-6 px-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-semibold">
-                    {month}월 확정됨
-                  </span>
-                )}
-              </div>
-              <div className="ml-auto inline-flex rounded-lg border border-line bg-white overflow-hidden">
+              <h2 className="text-[18px] font-extrabold text-ink leading-tight tracking-tight shrink-0">{selectedEmployee.name}</h2>
+              <div className="inline-flex rounded-lg border border-line bg-white overflow-hidden shrink-0">
                 {([
                   { k: "calendar" as const, label: "달력" },
                   { k: "bulk" as const,     label: "일괄등록" },
@@ -228,20 +220,28 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
                   );
                 })}
               </div>
-              {subview === "calendar" && (
-                <button
-                  type="button"
-                  disabled={!canEdit}
-                  onClick={() => setEditMode(prev => !prev)}
-                  className={`h-8 px-3 rounded-lg text-[13px] font-semibold transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                    effectiveEditMode
-                      ? "bg-brand-deep text-white border border-brand-deep hover:bg-[#0d3a5c]"
-                      : "bg-white text-brand-deep border border-brand-deep/30 hover:bg-brand-tint/40"
-                  }`}
-                >
-                  {effectiveEditMode ? "편집 중" : "편집"}
-                </button>
+              <span className="text-[13px] text-ink-soft shrink-0">{selectedEmployee.position} · {selectedEmployee.employmentType ?? "-"}</span>
+              {isMonthLocked && (
+                <span className="inline-flex items-center h-6 px-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-semibold shrink-0">
+                  {month}월 확정됨
+                </span>
               )}
+              <div className="ml-auto flex items-center gap-2">
+                {subview === "calendar" && (
+                  <button
+                    type="button"
+                    disabled={!canEdit}
+                    onClick={() => setEditMode(prev => !prev)}
+                    className={`h-8 px-3 rounded-lg text-[13px] font-semibold transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      effectiveEditMode
+                        ? "bg-brand-deep text-white border border-brand-deep hover:bg-[#0d3a5c]"
+                        : "bg-white text-brand-deep border border-brand-deep/30 hover:bg-brand-tint/40"
+                    }`}
+                  >
+                    {effectiveEditMode ? "편집 중" : "편집"}
+                  </button>
+                )}
+              </div>
             </div>
 
             {notification && (

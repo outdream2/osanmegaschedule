@@ -45,21 +45,25 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
       return next;
     });
   };
-  const selectWeekdaysOnly = () => {
-    const s = new Set<string>();
-    for (const d of dateList) {
-      const dow = new Date(d).getDay();
-      if (dow >= 1 && dow <= 5) s.add(d);
-    }
-    setSelectedDates(s);
+  // 2026-10-08 · 사용자 지시 · 평일/주말 shortcut 제거 · 요일별 (월·화·수·목·금·토·일) toggle 지원
+  //   · 각 요일 click → 해당 요일 날짜만 selectedDates 추가/제거 (toggle)
+  const toggleDow = (targetDow: number) => {
+    const dowDates = dateList.filter(d => new Date(d).getDay() === targetDow);
+    setSelectedDates(prev => {
+      const next = new Set(prev);
+      // 해당 요일 날짜가 전부 선택되어 있으면 전체 해제, 아니면 전체 선택
+      const allSelected = dowDates.every(d => next.has(d));
+      for (const d of dowDates) {
+        if (allSelected) next.delete(d); else next.add(d);
+      }
+      return next;
+    });
   };
-  const selectWeekendsOnly = () => {
-    const s = new Set<string>();
-    for (const d of dateList) {
-      const dow = new Date(d).getDay();
-      if (dow === 0 || dow === 6) s.add(d);
-    }
-    setSelectedDates(s);
+  // 특정 요일 전체가 선택되었는지 (버튼 active 표시용)
+  const isDowAllSelected = (targetDow: number): boolean => {
+    const dowDates = dateList.filter(d => new Date(d).getDay() === targetDow);
+    if (dowDates.length === 0) return false;
+    return dowDates.every(d => selectedDates.has(d));
   };
   const selectAll = () => setSelectedDates(new Set(dateList));
   const clearAll = () => setSelectedDates(new Set());
@@ -113,11 +117,40 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
       <div className="flex flex-col gap-4">
         {/* 섹션 1 · 날짜 선택 */}
         <section>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
             <h3 className="text-[14px] font-bold text-ink">① 날짜 선택</h3>
-            <div className="flex items-center gap-1.5 text-[12px]">
-              <button type="button" onClick={selectWeekdaysOnly} className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-sky-50 text-ink cursor-pointer">평일</button>
-              <button type="button" onClick={selectWeekendsOnly} className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-sky-50 text-ink cursor-pointer">주말</button>
+            <div className="flex items-center gap-1 text-[12px] flex-wrap">
+              {/* 2026-10-08 · 사용자 지시 · 평일/주말 shortcut 대신 요일별 (월~일) toggle */}
+              {([
+                { dow: 1, label: "월" },
+                { dow: 2, label: "화" },
+                { dow: 3, label: "수" },
+                { dow: 4, label: "목" },
+                { dow: 5, label: "금" },
+                { dow: 6, label: "토" },
+                { dow: 0, label: "일" },
+              ]).map(({ dow, label }) => {
+                const active = isDowAllSelected(dow);
+                return (
+                  <button
+                    key={`dow-${dow}`}
+                    type="button"
+                    onClick={() => toggleDow(dow)}
+                    className={`h-7 w-8 rounded-md border font-semibold tabular-nums cursor-pointer transition ${
+                      active
+                        ? "bg-brand-deep text-white border-brand-deep"
+                        : dow === 0 ? "bg-white border-rose-100 text-rose-700 hover:bg-rose-50/60"
+                        : dow === 6 ? "bg-white border-sky-100 text-sky-700 hover:bg-sky-50/60"
+                        : "bg-white border-zinc-200 text-ink hover:bg-zinc-50"
+                    }`}
+                    title={`${label}요일 전체 선택/해제`}
+                    aria-pressed={active}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+              <span className="mx-1 w-px h-5 bg-zinc-200" aria-hidden />
               <button type="button" onClick={selectAll} className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-sky-50 text-ink cursor-pointer">전체</button>
               <button type="button" onClick={clearAll} className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-zinc-100 text-ink cursor-pointer">해제</button>
             </div>
