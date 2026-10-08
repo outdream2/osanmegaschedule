@@ -176,15 +176,19 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
     return { total, perPos };
   }, [visibleEmployees, settingsPositions, positionSet]);
 
-  // 인건비 total · showLabor === true 일 때만 compute (불필요 reduce 방지)
-  const totalLabor = useMemo(() => {
-    if (!showLabor) return 0;
+  // 인건비 · 사용자 지시 "각 직원별로 인건비 계산"
+  //   · showLabor === true 때만 compute (V1 getEmpMonthStats 재사용 · 동일 공식)
+  //   · 각 직원별 월 인건비 Map + 전체 합계
+  const { totalLabor, empLaborMap } = useMemo(() => {
+    if (!showLabor) return { totalLabor: 0, empLaborMap: undefined as Map<number, number> | undefined };
+    const map = new Map<number, number>();
     let sum = 0;
     for (const emp of visibleEmployees) {
       const stats = getEmpMonthStats(emp, monthKey, scheduleTypes, wageRates ?? {}, employeeWageOverrides ?? {});
+      map.set(emp.id, stats.laborCost);
       sum += stats.laborCost;
     }
-    return sum;
+    return { totalLabor: sum, empLaborMap: map };
   }, [showLabor, visibleEmployees, monthKey, scheduleTypes, wageRates, employeeWageOverrides]);
 
   const canEdit = !isMonthLocked || level >= 9;
@@ -416,6 +420,7 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
           onTypeSelect={handleTypeSelect}
           onDateHeaderClick={onOpenDay}
           onEmployeeNameClick={onOpenEmployee}
+          empLaborMap={empLaborMap}
         />
       )}
     </div>

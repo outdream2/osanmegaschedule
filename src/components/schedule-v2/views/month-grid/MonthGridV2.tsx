@@ -28,6 +28,8 @@ interface GridProps {
   onDateHeaderClick?: (date: string) => void;
   /** 2026-10-08 · V1 parity · 직원명 click → Employee view (V1 EmployeeCalendarModal 대응) */
   onEmployeeNameClick?: (employeeId: number) => void;
+  /** 2026-10-08 · 사용자 지시 · 인건비 토글 활성 시 각 직원 월 인건비 표시 (sticky left cell 하단) */
+  empLaborMap?: Map<number, number>;
 }
 
 export const MonthGridV2: React.FC<GridProps> = ({
@@ -35,6 +37,7 @@ export const MonthGridV2: React.FC<GridProps> = ({
   editMode, editTarget, onOpenEdit, onCloseEdit, onTypeSelect,
   dimmedDates,
   onDateHeaderClick, onEmployeeNameClick,
+  empLaborMap,
 }) => {
   // 날짜별 schedule lookup · O(1)
   const scheduleIndex = useMemo(() => {
@@ -118,6 +121,11 @@ export const MonthGridV2: React.FC<GridProps> = ({
                 >
                   <div className="text-[13px] leading-tight">{emp.name}</div>
                   <div className="text-[11px] text-ink-soft">{emp.position}</div>
+                  {empLaborMap && empLaborMap.has(emp.id) && (
+                    <div className="text-[11px] font-bold text-brand-deep tabular-nums mt-0.5">
+                      {(empLaborMap.get(emp.id) ?? 0).toLocaleString()}원
+                    </div>
+                  )}
                 </th>
                 {dateList.map((d) => {
                   const s = empMap?.get(d);
