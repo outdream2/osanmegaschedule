@@ -34,7 +34,10 @@ export { EmptyState } from "./EmptyState";
 export { ErrorBoundary } from "./ErrorBoundary";
 export { ChartCard } from "./ChartCard";
 export type { ChartCardProps } from "./ChartCard";
-// 2026-10-08 · GLOBAL UI · reference-tone application · 3 page templates (presentation-only wrappers)
+// 2026-10-08 · GLOBAL UI · 단일 통합 PageTemplate (canonical)
+export { PageTemplate } from "./PageTemplate";
+export type { PageTemplateProps } from "./PageTemplate";
+// 2026-10-08 · GLOBAL UI · 3 기존 템플릿은 PageTemplate 의 thin alias로 유지 (backward compat)
 export { OperationsPageTemplate } from "./OperationsPageTemplate";
 export type { OperationsPageTemplateProps } from "./OperationsPageTemplate";
 export { MasterDetailPageTemplate } from "./MasterDetailPageTemplate";

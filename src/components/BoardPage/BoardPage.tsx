@@ -120,29 +120,15 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           </Button>
         }
         toolbar={
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            {/* Compact search · 기존 className 스타일 유지 (focus ring, placeholder color) */}
+          // 2026-10-08 · reference-tone · toolbar는 search + 구분자 + 카테고리 chip만 compact (상태 chip은 filterbar 로 분리)
+          <>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="제목·본문 검색"
               aria-label="게시물 검색"
-              className="text-[14px] border border-line rounded-lg px-3 h-9 min-w-[180px] max-w-[320px] flex-1 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors bg-white text-ink placeholder-ink-soft"
-            />
-            <span className="h-5 w-px bg-line" aria-hidden />
-            <CategoryChips
-              label="상태"
-              value={filterStatus}
-              onChange={(v) => setFilterStatus(v as Status | "")}
-              size="sm"
-              ariaLabel="이슈 상태 필터"
-              options={[
-                { value: "" as Status | "", label: "전체", tone: "zinc" },
-                { value: "open"        as Status | "", label: "미해결", tone: "rose"    },
-                { value: "in_progress" as Status | "", label: "진행중", tone: "amber"   },
-                { value: "resolved"    as Status | "", label: "해결",   tone: "emerald" },
-              ]}
+              className="text-[14px] border border-line rounded-lg px-3 h-9 min-w-[180px] max-w-[360px] flex-1 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition-colors bg-white text-ink placeholder-ink-soft"
             />
             <span className="h-5 w-px bg-line" aria-hidden />
             <CategoryChips
@@ -161,7 +147,23 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
                 { value: "__none__" as typeof filterCategory, label: "미분류", tone: "zinc" },
               ]}
             />
-          </div>
+          </>
+        }
+        filterbar={
+          // 2026-10-08 · reference-tone · 상태 chip row 를 toolbar 아래 별도 scanning line (filterbar slot)
+          <CategoryChips
+            label="상태"
+            value={filterStatus}
+            onChange={(v) => setFilterStatus(v as Status | "")}
+            size="sm"
+            ariaLabel="이슈 상태 필터"
+            options={[
+              { value: "" as Status | "", label: "전체", tone: "zinc" },
+              { value: "open"        as Status | "", label: "미해결", tone: "rose"    },
+              { value: "in_progress" as Status | "", label: "진행중", tone: "amber"   },
+              { value: "resolved"    as Status | "", label: "해결",   tone: "emerald" },
+            ]}
+          />
         }
       >
         {/* Dense list · card wrapper 제거 · divide-y 로 row 구분 · reload overlay 는 inline spinner */}
