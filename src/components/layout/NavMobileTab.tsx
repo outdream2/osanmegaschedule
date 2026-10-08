@@ -26,10 +26,12 @@ export const NavMobileTab: React.FC<NavMobileTabProps> = ({
   const activeClass = `${base} text-white font-semibold`;
   const inactiveClass = `${base} text-[#9FBAD4] hover:text-white font-medium`;
 
+  // 2026-10-08 · GLOBAL UI · brand accent restored (bg-white → brand blue)
+  //   · 전체 nav 통일 · navy shell 위에서 brand blue underline 이 포인트 역할
   const underline = (
     <span
       aria-hidden
-      className="absolute left-1.5 right-1.5 bottom-0 h-[2px] bg-white rounded-sm pointer-events-none"
+      className="absolute left-1.5 right-1.5 bottom-0 h-[2px] bg-[#5EA9E8] rounded-sm pointer-events-none"
     />
   );
 

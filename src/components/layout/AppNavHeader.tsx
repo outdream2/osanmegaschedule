@@ -547,9 +547,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
       </div>
 
-      {/* 브레드크럼 */}
+      {/* 브레드크럼 · 2026-10-08 · spacing 균등 (py-1.5→py-2 상하 동일) · height ~40-44 */}
       {breadcrumbItems.length > 0 && (
-        <div className="relative px-4 sm:px-6 py-1.5 bg-white border-t border-white/10">
+        <div className="relative px-4 sm:px-6 py-2 bg-white border-t border-white/10">
           <Breadcrumb items={breadcrumbItems} onNavigate={handleBreadcrumbNav} />
         </div>
       )}
@@ -574,24 +574,23 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           {desktopShownTabs.map(t => (
             <NavDesktopTab key={t.key} tab={t} activePage={activePage} isBizPage={isBizPage} onNavigate={onNavigate} onBack={onBack} />
           ))}
-          {/* 오버플로 · 삼선 ☰ 드롭다운 */}
+          {/* 오버플로 · 삼선 ☰ 드롭다운 · 2026-10-08 · amber → neutral (더보기는 inactive tone) */}
           {desktopOverflowTabs.length > 0 && (
             <div ref={desktopOverflowBtnRef} className="relative shrink-0 ml-0.5">
-              {/* 2026-09-10 · #38 · 사용자 지시 · 삼선 메뉴 · 컬러 액센트 (amber) */}
               <button
                 type="button"
                 onClick={() => setDesktopOverflowOpen(v => !v)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[15px] font-semibold transition-colors duration-150 active:scale-95 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[14px] font-medium transition-colors duration-150 cursor-pointer ${
                   desktopOverflowOpen
-                    ? "bg-amber-400/[0.22] text-amber-200 ring-1 ring-amber-300/40"
-                    : "text-amber-300 hover:bg-amber-400/[0.14] hover:text-amber-200"
+                    ? "bg-white/[0.12] text-white"
+                    : "text-[#9FBAD4] hover:bg-white/[0.06] hover:text-white"
                 }`}
                 title={`더보기 (${desktopOverflowTabs.length}개)`}
                 aria-label="더보기 메뉴"
                 aria-expanded={desktopOverflowOpen}
               >
-                <Menu size={16} strokeWidth={2.4} />
-                <span className="text-[14px] font-bold tabular-nums bg-amber-400/[0.25] rounded-full px-1.5 leading-none py-0.5">{desktopOverflowTabs.length}</span>
+                <Menu size={14} strokeWidth={2} />
+                <span className="text-[12px] font-semibold tabular-nums bg-white/[0.14] rounded-full px-1.5 leading-none py-0.5">{desktopOverflowTabs.length}</span>
               </button>
               {desktopOverflowOpen && (
                 <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1.5 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto">
@@ -629,10 +628,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
       </div>
 
-      {/* ── Mobile 전용 탭 행 ── */}
+      {/* ── Mobile 전용 탭 행 · 2026-10-08 · spacing symmetric (pb-2→py-2 · container py-1→py-1.5) · 상/하 균등 ── */}
       {visibleTabs.length > 1 && (
-        <div className="sm:hidden px-4 pb-2">
-          <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-white/[0.08] border border-white/[0.12] rounded-xl px-2 py-1 relative shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-sm">
+        <div className="sm:hidden px-4 py-2">
+          <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-white/[0.08] border border-white/[0.12] rounded-xl px-2 py-1.5 relative shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-sm">
             {/* 측정용 hidden 영역 */}
             <div
               ref={mobileMeasureRef}
@@ -650,24 +649,23 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             {mobileShownTabs.map(t => (
               <NavMobileTab key={t.key} tab={t} activePage={activePage} isBizPage={isBizPage} onNavigate={onNavigate} onBack={onBack} />
             ))}
-            {/* 오버플로 · 삼선 ☰ 드롭다운 */}
+            {/* 오버플로 · 삼선 ☰ 드롭다운 · 2026-10-08 · amber → neutral (더보기는 inactive tone) */}
             {mobileOverflowTabs.length > 0 && (
               <div ref={mobileOverflowBtnRef} className="relative shrink-0">
-                {/* 2026-09-10 · #38 · 사용자 지시 · 삼선 메뉴 · 컬러 액센트 (amber) */}
                 <button
                   type="button"
                   onClick={() => setMobileOverflowOpen(v => !v)}
-                  className={`min-w-[44px] h-full flex flex-col items-center justify-center gap-0.5 px-2 rounded-lg text-[14px] font-bold transition-colors active:scale-95 ${
+                  className={`min-w-[44px] h-full flex flex-col items-center justify-center gap-0.5 px-2 rounded-lg text-[12px] font-medium transition-colors ${
                     mobileOverflowOpen
-                      ? "bg-amber-400/[0.24] text-amber-200 shadow-sm ring-1 ring-amber-300/40"
-                      : "text-amber-300 hover:bg-amber-400/[0.16] hover:text-amber-200"
+                      ? "bg-white/[0.14] text-white"
+                      : "text-[#9FBAD4] hover:bg-white/[0.08] hover:text-white"
                   }`}
                   title={`더보기 (${mobileOverflowTabs.length}개)`}
                   aria-label="더보기 메뉴"
                   aria-expanded={mobileOverflowOpen}
                 >
-                  <Menu size={18} strokeWidth={2.6} />
-                  <span className="text-[13px]">더보기</span>
+                  <Menu size={16} strokeWidth={2} />
+                  <span className="leading-tight">더보기</span>
                 </button>
                 {mobileOverflowOpen && (
                   <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl ring-1 ring-black/10 border border-zinc-200 py-1 min-w-[160px] z-[45] max-h-[70vh] overflow-y-auto">

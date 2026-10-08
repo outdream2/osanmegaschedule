@@ -195,9 +195,10 @@ export function TabBar<K extends string = string>({
                     "bg-transparent border-0 rounded-none shadow-none",
                     "transition-colors duration-150 cursor-pointer outline-none",
                     "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-tint",
+                    // 2026-10-08 · 사용자 피드백 · 탭 글씨 가독성 (inactive opacity 80% 제거 · slate-500 명확한 색)
                     active
                       ? "text-ink font-semibold"
-                      : "text-ink-soft/80 font-medium hover:text-ink",
+                      : "text-slate-500 font-medium hover:text-ink",
                     dragCls,
                   ].join(" ")}
                 >
@@ -211,9 +212,11 @@ export function TabBar<K extends string = string>({
                     </span>
                   )}
                   {active && (
+                    // 2026-10-08 · GLOBAL UI · brand accent restored (bg-ink → bg-brand-deep)
+                    //   · 전체 nav 통일 · active = deep navy text + brand blue underline
                     <span
                       aria-hidden
-                      className="absolute left-0 right-0 -bottom-px h-[2px] bg-ink"
+                      className="absolute left-0 right-0 -bottom-px h-[2px] bg-brand-deep"
                     />
                   )}
                 </button>
@@ -279,9 +282,10 @@ export function TabBar<K extends string = string>({
                     "transition-colors duration-150 cursor-pointer outline-none",
                     "focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-tint",
                     "border",
+                    // 2026-10-08 · 사용자 피드백 · L3 chip 글씨 가독성 (text-ink-soft → slate-600 명확한 색)
                     active
                       ? "bg-brand-tint/60 text-brand-deep border-brand-deep/15 font-semibold"
-                      : "bg-transparent text-ink-soft border-transparent hover:bg-zinc-50 hover:text-ink",
+                      : "bg-transparent text-slate-600 border-transparent hover:bg-zinc-50 hover:text-ink",
                     dragCls,
                   ].join(" ")}
                 >

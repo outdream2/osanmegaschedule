@@ -27,11 +27,11 @@ export const NavDesktopTab: React.FC<NavDesktopTabProps> = ({
   const activeClass = `${baseCommon} text-white font-semibold`;
   const inactiveClass = `${baseCommon} text-[#9FBAD4] hover:text-white font-medium disabled:opacity-40`;
 
-  // 2026-10-08 · active 2px underline · navy shell 위 흰색 bar (glow 0)
+  // 2026-10-08 · brand accent restored · navy shell 위에서 brand blue underline
   const underline = (
     <span
       aria-hidden
-      className="absolute left-2 right-2 -bottom-px h-[2px] bg-white rounded-sm pointer-events-none"
+      className="absolute left-2 right-2 -bottom-px h-[2px] bg-[#5EA9E8] rounded-sm pointer-events-none"
     />
   );
 
