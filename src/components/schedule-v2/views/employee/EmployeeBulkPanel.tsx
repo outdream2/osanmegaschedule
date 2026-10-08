@@ -120,44 +120,67 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
             · 1일 position = 요일 column · 앞 빈칸 (leading placeholder) + 뒤 빈칸 (trailing placeholder) 유지해 그리드 정렬 */}
         <section>
           <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-            <h3 className="text-[14px] font-bold text-ink">① 날짜 선택</h3>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-[14px] font-bold text-ink">① 날짜 선택</h3>
+              <span className="text-[14px] font-bold text-brand-deep tabular-nums tracking-tight">
+                {year}년 {month}월
+              </span>
+            </div>
             <div className="flex items-center gap-1 text-[12px]">
               <button type="button" onClick={selectAll} className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-sky-50 text-ink cursor-pointer">전체</button>
               <button type="button" onClick={clearAll} className="h-7 px-2 rounded-md border border-zinc-200 bg-white hover:bg-zinc-100 text-ink cursor-pointer">해제</button>
             </div>
           </div>
 
-          {/* 요일 header · click 시 해당 요일 toggle · 일(rose)/토(sky) 톤 */}
+          {/* 2026-10-08 · 사용자 지시 · 명시적 "요일 전체 선택" row 분리 · 요일 button click → 해당 요일 toggle */}
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className="text-[12px] font-semibold text-ink-soft shrink-0">요일 선택</span>
+            <div className="flex items-center gap-1">
+              {([
+                { dow: 0, label: "일" },
+                { dow: 1, label: "월" },
+                { dow: 2, label: "화" },
+                { dow: 3, label: "수" },
+                { dow: 4, label: "목" },
+                { dow: 5, label: "금" },
+                { dow: 6, label: "토" },
+              ]).map(({ dow, label }) => {
+                const active = isDowAllSelected(dow);
+                return (
+                  <button
+                    key={`dow-sel-${dow}`}
+                    type="button"
+                    onClick={() => toggleDow(dow)}
+                    className={`h-8 w-9 rounded-md border text-[13px] font-bold cursor-pointer transition ${
+                      active
+                        ? "bg-brand-deep text-white border-brand-deep"
+                        : dow === 0 ? "bg-white border-rose-200 text-rose-700 hover:bg-rose-50"
+                        : dow === 6 ? "bg-white border-sky-200 text-sky-700 hover:bg-sky-50"
+                        : "bg-white border-zinc-200 text-ink hover:bg-zinc-50"
+                    }`}
+                    title={`${label}요일 전체 선택/해제`}
+                    aria-pressed={active}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 달력 요일 header · display 전용 (click X · 요일 선택은 위 row 사용) */}
           <div className="grid grid-cols-7 gap-1.5 mb-1.5">
-            {([
-              { dow: 0, label: "일" },
-              { dow: 1, label: "월" },
-              { dow: 2, label: "화" },
-              { dow: 3, label: "수" },
-              { dow: 4, label: "목" },
-              { dow: 5, label: "금" },
-              { dow: 6, label: "토" },
-            ]).map(({ dow, label }) => {
-              const active = isDowAllSelected(dow);
-              return (
-                <button
-                  key={`dow-h-${dow}`}
-                  type="button"
-                  onClick={() => toggleDow(dow)}
-                  className={`h-7 rounded-md border text-[12px] font-bold cursor-pointer transition ${
-                    active
-                      ? "bg-brand-deep text-white border-brand-deep"
-                      : dow === 0 ? "bg-rose-50/60 border-rose-100 text-rose-700 hover:bg-rose-100/70"
-                      : dow === 6 ? "bg-sky-50/60 border-sky-100 text-sky-700 hover:bg-sky-100/70"
-                      : "bg-zinc-50 border-zinc-200 text-ink-soft hover:bg-zinc-100"
-                  }`}
-                  title={`${label}요일 전체 선택/해제`}
-                  aria-pressed={active}
-                >
-                  {label}
-                </button>
-              );
-            })}
+            {["일","월","화","수","목","금","토"].map((label, i) => (
+              <div
+                key={`cal-h-${i}`}
+                className={`h-6 flex items-center justify-center text-[11px] font-semibold tabular-nums ${
+                  i === 0 ? "text-rose-600" : i === 6 ? "text-sky-600" : "text-ink-soft"
+                }`}
+                aria-hidden
+              >
+                {label}
+              </div>
+            ))}
           </div>
 
           {/* 달력 grid · 1일 요일 position 맞춤 + leading/trailing 빈 placeholder */}
