@@ -620,9 +620,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         </main>
       ) : dpSubTab === "return" && dpCanSeeStockManage ? (
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="px-4 pt-4 shrink-0">
+          <div className="shrink-0">
+            {/* 2026-10-08 · GLOBAL UI nav hierarchy · 반품 L2 sub nav (반품필요/반품확정) · level 3→2 Line Tabs · 상단 full-width (px wrapper 제거 · content 최상단) */}
             <TabBar<"need" | "confirmed">
-              level={3}
+              level={2}
               tabs={[
                 { key: "need",      label: "반품필요", icon: RotateCcw,    color: "amber"   },
                 { key: "confirmed", label: "반품확정", icon: CheckCircle2, color: "emerald" },

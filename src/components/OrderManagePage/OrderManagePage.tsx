@@ -631,8 +631,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     setTab: (k: K) => void,
     sortable?: { getTabProps: (key: K) => TabHandlerProps; isDragging: boolean },
   ) => hideSubTabs ? null : (
+    // 2026-10-08 · GLOBAL UI nav hierarchy correction (presentation-only · state/handler unchanged)
+    //   · Sidebar=L1 primary · 각 페이지 subtabs=L2 Line Tabs · level 3→2 로 톤 상승
+    //   · 사이드바 모드에서 보이는 "발주요청 발주필요 발주이력 ..." 등을 Batch 4 Line Tabs (bg transparent · 2px underline · 14px · gap 28-36) 로 표시
+    //   · activeTab/setTab/sortable/badge semantics 100% 그대로 (TabBar level=2 default variant 는 Batch 4 commit 04517c60+e824a4c1 로 Line Tabs 톤 보장)
     <TabBar<K>
-      level={3}
+      level={2}
       tabs={tabs.map((t): CommonTabDef<K> => ({
         key: t.k, label: t.label,
         icon: t.icon as CommonTabDef<K>["icon"],
