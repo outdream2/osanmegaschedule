@@ -403,30 +403,27 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         />
       )}
 
-      {/* ── Page header strip (standalone only) ── */}
+      {/* 2026-10-08 · GLOBAL UI · page header inlined · PageTemplate 톤 통일 (icon tile/shadow-strip 제거) */}
       {!embedded && (
-        <div className="bg-white border-b border-line shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div className={`${PAGE_CONTAINER_CLS} px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3`}>
-            <AccentBar h={22} className="shrink-0" />
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-deep
-              flex items-center justify-center shadow-sm shrink-0">
-              <PackagePlus size={17} className="text-white" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-[17px] sm:text-[19px] font-bold text-ink leading-tight tracking-tight">상품 입고 검수</h1>
-              <p className="text-[15px] sm:text-[16px] text-ink-soft mt-0.5 leading-tight">
-                거래명세표와 실제 입고물품·수량 일치 확인
-              </p>
-            </div>
-            {/* Pill 영역: 공간 항상 확보 · input+데이터 있을 때만 visible */}
-            <div className={`ml-auto flex items-center gap-2 shrink-0 ${arrivalTab === "input" && counts.total > 0 ? "visible" : "invisible pointer-events-none"}`}>
-              <StatusPill tone="brand" size="md">{counts.total}건 / {counts.totalQty}개</StatusPill>
-              {counts.pending > 0 && (
-                <StatusPill tone="amber" size="md" dot pulse>{counts.pending}건 미결</StatusPill>
+        <header className="w-full px-4 sm:px-6 lg:px-8 pt-4 sm:pt-5 pb-3 border-b border-slate-200 bg-white flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[22px] sm:text-[26px] font-bold text-ink tracking-tight leading-tight break-words inline-flex items-baseline gap-2">
+              <PackagePlus size={20} className="text-brand-deep self-center" strokeWidth={2.2} />
+              <span>상품 입고 검수</span>
+              {arrivalTab === "input" && counts.total > 0 && (
+                <span className="text-[15px] font-semibold text-ink-soft/70 tabular-nums">
+                  {counts.total}건 / {counts.totalQty}개
+                </span>
               )}
-            </div>
+            </h1>
+            <p className="text-[13px] sm:text-[14px] text-ink-soft mt-1 leading-snug">거래명세표와 실제 입고물품·수량 일치 확인</p>
           </div>
-        </div>
+          {arrivalTab === "input" && counts.pending > 0 && (
+            <div className="shrink-0 flex items-center gap-2">
+              <StatusPill tone="amber" size="md" dot pulse>{counts.pending}건 미결</StatusPill>
+            </div>
+          )}
+        </header>
       )}
 
       {/* ── FilterBar (매입페이지 스타일 · CARD_BASE) ── */}

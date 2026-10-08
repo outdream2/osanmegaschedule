@@ -449,35 +449,32 @@ return (
       />
     )}
 
-    {/* Tab bar */}
-    <div className="bg-white/90 backdrop-blur-sm border-b border-line/70 sticky top-0 z-10">
-      <div className={`${PAGE_CONTAINER_CLS} px-2 sm:px-4 py-2`}>
-        <div className="flex flex-wrap bg-zinc-100/70 border border-line/60 rounded-2xl p-1 gap-0.5">
-          <button
-            onClick={() => setMainTab("ocr")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-colors duration-150 cursor-pointer ${mainTab === "ocr" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
-          >
-            <Upload size={13} className={mainTab === "ocr" ? "text-zinc-800" : "text-zinc-400"} /> OCR 추출
-          </button>
-          <button
-            onClick={() => setMainTab("synonyms")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-colors duration-150 cursor-pointer ${mainTab === "synonyms" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
-          >
-            <BookOpen size={13} className={mainTab === "synonyms" ? "text-zinc-800" : "text-zinc-400"} /> 동의어 관리
-          </button>
-          <button
-            onClick={() => setMainTab("balance")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-colors duration-150 cursor-pointer ${mainTab === "balance" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
-          >
-            잔고항목 지정
-          </button>
-          <button
-            onClick={() => setMainTab("records")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg shrink-0 transition-colors duration-150 cursor-pointer ${mainTab === "records" ? "bg-white text-zinc-900 ring-1 ring-zinc-200/70 shadow-sm" : "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"}`}
-          >
-            <FileText size={13} className={mainTab === "records" ? "text-zinc-800" : "text-zinc-400"} /> 거래명세서 조회
-          </button>
-        </div>
+    {/* 2026-10-08 · GLOBAL UI · page-level pill tab 패턴 제거 → L2 Line Tabs (reference-tone) */}
+    <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <div className="px-4 sm:px-6 lg:px-8 flex items-stretch flex-nowrap gap-5 sm:gap-7 md:gap-8 overflow-x-auto scrollbar-hide">
+        {([
+          { key: "ocr" as const,      label: "OCR 추출" },
+          { key: "synonyms" as const, label: "동의어 관리" },
+          { key: "balance" as const,  label: "잔고항목 지정" },
+          { key: "records" as const,  label: "거래명세서 조회" },
+        ]).map(t => {
+          const active = mainTab === t.key;
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setMainTab(t.key)}
+              className={`relative inline-flex items-center justify-center shrink-0 h-11 px-1 text-[13px] sm:text-[14px] whitespace-nowrap tracking-tight transition-colors duration-150 cursor-pointer ${
+                active ? "text-ink font-semibold" : "text-slate-500 font-medium hover:text-ink"
+              }`}
+            >
+              <span>{t.label}</span>
+              {active && (
+                <span aria-hidden className="absolute left-0 right-0 -bottom-px h-[2px] bg-brand-deep" />
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
 

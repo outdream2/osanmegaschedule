@@ -10,6 +10,8 @@ import {
   Signature, ClockCounterClockwise, X as XIcon,
 } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
+// 2026-10-08 · GLOBAL UI · Operations template migration
+import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 import type { AuthSession } from "../../types";
 import SplitPanel from "../common/SplitPanel";
 import { Card } from "../common/Card";
@@ -399,18 +401,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         />
       )}
 
-      <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-3 sm:px-5 py-4 flex flex-col gap-3 min-h-0`}>
-        {/* 페이지 헤더 · T-CTR-11 · 컴팩트 축소 */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            {/* 2026-08-18 · IconTile 확산 */}
-            <IconTile icon={<NotePencil size={16} weight="fill" />} tone="emerald" size="md" />
-
-            <div>
-              <h1 className="text-sm sm:text-base font-bold text-zinc-800 leading-none">근로계약서 작성</h1>
-              <p className="text-[14px] text-zinc-500 mt-0.5">좌측 폼 · 우측 이미지 재현 · 프리뷰 내 서명 spot 클릭하여 서명 입력</p>
-            </div>
-          </div>
+      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · IconTile hero 제거 */}
+      <OperationsPageTemplate
+        title={
+          <span className="inline-flex items-baseline gap-2">
+            <NotePencil size={20} className="text-brand-deep self-center" weight="fill" />
+            <span>근로계약서 작성</span>
+          </span>
+        }
+        description="좌측 폼 · 우측 이미지 재현 · 프리뷰 내 서명 spot 클릭하여 서명 입력"
+        actions={
           <div className="flex items-center gap-2">
             {existingContract && existingContract.end_date && (
               <button type="button"
@@ -419,23 +419,24 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   setExtendMonths(prevMonths != null && prevMonths > 0 ? String(prevMonths) : "3");
                   setExtendModalOpen(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-sm font-bold transition-colors cursor-pointer shadow-sm"
+                className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-[13px] font-semibold transition-colors cursor-pointer"
                 title={`기존 계약 (${existingContract.start_date ?? "-"} ~ ${existingContract.end_date}) 연장`}
               >
                 <ClockCounterClockwise size={14} weight="fill" />
                 <span>연장</span>
               </button>
             )}
-            {/* T-CTR-Collapse+Reset (2026-08-06) · 초기화 버튼 · 컴팩트 축소 · 눈에 덜 띄게 */}
             <button type="button" onClick={handleReset}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded border border-line bg-white text-zinc-400 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200 text-[15px] font-medium transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1 px-2 h-9 rounded border border-line bg-white text-zinc-400 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200 text-[13px] font-medium transition-colors cursor-pointer"
               title="입력 내용·서명·임시저장 · 전체 초기화"
             >
               <Eraser size={12} weight="regular" />
               <span className="hidden sm:inline">초기화</span>
             </button>
           </div>
-        </div>
+        }
+      >
+      <main className="flex-1 flex flex-col gap-3 min-h-0">
 
         {existingContract && form.employeeId != null && (
           <div className="rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-[14px] text-indigo-800 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -493,6 +494,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           right={rightPreviewNode}
         />
       </main>
+      </OperationsPageTemplate>
 
       <ExtendContractModal
         open={extendModalOpen}
