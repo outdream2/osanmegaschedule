@@ -193,7 +193,8 @@ export const RealStockTablePage: React.FC = () => {
     );
   }, [rows, search, saleMatches, noZoneOnly]);
 
-  const { sorted, sortKey, sortDir, toggleSort, setSort } = useSortableTable<Row, SortKey>(filtered, "product_name", CMP, "asc");
+  // 2026-10-09 · 사용자 지시 · 실재고 테이블 첫 로딩 시 매장1 수량 기준 정렬 (desc · 큰 수량부터)
+  const { sorted, sortKey, sortDir, toggleSort, setSort } = useSortableTable<Row, SortKey>(filtered, "s1", CMP, "desc");
 
   // 검색/필터 변경 시 첫 페이지로 리셋
   useEffect(() => { setPage(1); }, [search, saleFilter, locFilter, groupByZone]);
@@ -346,30 +347,27 @@ export const RealStockTablePage: React.FC = () => {
   //   · 데이터 없음 · zinc-300 dashed · 명확 구분
   const renderZoneCell = (r: Row, slot: SlotKey) => {
     const zone = slot === "w1" ? r.w1zone : slot === "w2" ? r.w2zone : slot === "s1" ? r.s1zone : slot === "s2" ? r.s2zone : r.s3zone;
-    const tone: "cyan" | "violet" = (slot === "w1" || slot === "w2") ? "cyan" : "violet";
-    // 2026-09-09 · 사용자 지시 · 구역 셀 아래 · 해당 구역의 상세구역 표시 (구역별 매핑)
+    // 2026-10-09 · 사용자 지시 · 홈 랜딩 톤 · 색 배지 폐기 · 중립 slate 베이스 · 2-tier typography
     const shelfCode = slot === "w1" ? "warehouse1" : slot === "w2" ? "warehouse2"
       : slot === "s1" ? "store1" : slot === "s2" ? "store2" : "store3";
     const sp = shelfMap[r.product_code];
     const detailRaw = sp?.[shelfCode];
     const shelfDetail = typeof detailRaw === "string" && detailRaw.length === 3
       ? `${detailRaw[0]}-${detailRaw[1]}-${detailRaw[2]}` : null;
-    const shelfCls = tone === "cyan" ? "text-cyan-600" : "text-violet-600";
     if (!zone) {
       return (
         <div className="inline-flex flex-col items-center gap-0.5">
-          <span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[15px]">—</span>
-          {shelfDetail && <span className={`text-[11px] font-semibold tabular-nums ${shelfCls}`}>{shelfDetail}</span>}
+          <span className="inline-flex items-center justify-center min-w-[34px] h-[22px] text-slate-300 font-medium text-[13px]">—</span>
+          {shelfDetail && <span className="text-[11px] font-medium tabular-nums text-slate-400">{shelfDetail}</span>}
         </div>
       );
     }
-    const cls = tone === "cyan" ? "bg-cyan-100 text-cyan-800" : "bg-violet-100 text-violet-800";
     return (
       <div className="inline-flex flex-col items-center gap-0.5">
-        <span className={`inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md ${cls} font-extrabold text-[16px] tabular-nums tracking-tight`}>
+        <span className="inline-flex items-center justify-center min-w-[34px] h-[22px] px-1.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-[13.5px] tabular-nums tracking-tight">
           {zone}
         </span>
-        {shelfDetail && <span className={`text-[11px] font-semibold tabular-nums ${shelfCls}`}>{shelfDetail}</span>}
+        {shelfDetail && <span className="text-[11px] font-medium tabular-nums text-slate-400">{shelfDetail}</span>}
       </div>
     );
   };
@@ -384,7 +382,6 @@ export const RealStockTablePage: React.FC = () => {
 
   const renderQtyCell = (r: Row, slot: SlotKey) => {
     const qty = slot === "w1" ? r.w1 : slot === "w2" ? r.w2 : slot === "s1" ? r.s1 : slot === "s2" ? r.s2 : r.s3;
-    const tone: "cyan" | "violet" = (slot === "w1" || slot === "w2") ? "cyan" : "violet";
     const isEditing = editing?.code === r.product_code && editing?.slot === slot;
     if (isEditing) {
       return (
@@ -399,27 +396,28 @@ export const RealStockTablePage: React.FC = () => {
               if (e.key === "Escape") { e.preventDefault(); cancelEdit(); }
             }}
             onBlur={() => { if (!saving) commitEdit(); }}
-            className={`w-14 h-7 px-1.5 rounded border text-[16px] text-right tabular-nums font-bold outline-none focus:ring-2 ${tone === "violet" ? "border-violet-500 focus:ring-violet-200 text-violet-800" : "border-cyan-500 focus:ring-cyan-200 text-cyan-800"} bg-white`}
+            className="w-14 h-7 px-1.5 rounded-md border border-slate-300 bg-white text-[14px] text-right tabular-nums font-semibold text-ink outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep"
             disabled={saving}
           />
-          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={commitEdit} disabled={saving} className={`shrink-0 w-6 h-6 flex items-center justify-center rounded ${tone === "violet" ? "bg-violet-600 hover:bg-violet-700" : "bg-cyan-600 hover:bg-cyan-700"} text-white cursor-pointer disabled:opacity-40`} title="저장 (Enter)">
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={commitEdit} disabled={saving} className="shrink-0 w-6 h-6 flex items-center justify-center rounded-md bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer disabled:opacity-40" title="저장 (Enter)">
             {saving ? <Spinner size={10} tone="white" /> : <Check size={11} />}
           </button>
-          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={cancelEdit} disabled={saving} className="shrink-0 w-6 h-6 flex items-center justify-center rounded bg-white border border-line hover:bg-zinc-50 text-zinc-500 cursor-pointer disabled:opacity-40" title="취소 (Esc)">
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={cancelEdit} disabled={saving} className="shrink-0 w-6 h-6 flex items-center justify-center rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 cursor-pointer disabled:opacity-40" title="취소 (Esc)">
             <X size={11} />
           </button>
         </div>
       );
     }
-    const qtyCls = qty == null || qty <= 0 ? "text-zinc-300" : tone === "cyan" ? "text-cyan-800" : "text-violet-800";
+    // 2026-10-09 · 사용자 지시 · 홈 랜딩 톤 · subtle 중립 (slate 700) · 0/null 은 slate-300
+    const qtyCls = qty == null || qty <= 0 ? "text-slate-300 font-medium" : "text-slate-800 font-semibold";
     return (
       <button
         type="button"
         onClick={() => beginEdit(r, slot)}
-        className="hover:bg-white rounded px-1.5 py-0.5 -mx-1 transition cursor-pointer"
+        className="hover:bg-slate-50 rounded-md px-1.5 py-0.5 -mx-1 transition cursor-pointer"
         title={`${SLOT_LABEL[slot]} · 수량 편집`}
       >
-        <span className={`font-extrabold tabular-nums text-[18px] ${qtyCls}`}>{qty ?? "-"}</span>
+        <span className={`tabular-nums text-[14px] ${qtyCls}`}>{qty ?? "-"}</span>
       </button>
     );
   };
@@ -433,47 +431,41 @@ export const RealStockTablePage: React.FC = () => {
       {detailRow && (
         <RealStockDetailModal row={detailRow} shelfMap={shelfMap} onClose={() => setDetailRow(null)} />
       )}
-      <div className="flex flex-col gap-3">
-        {/* 2026-08-27 · UI 목업 반영 · 프리미티브 톤 (Linear/Attio/Vercel 2026) · 가로 구조 통일 */}
-        {/* 2026-09-17 · 사용자 지시 · 좁은 화면 대응 · 제목 (Row 1) + 검색·필터·액션 (Row 2) · 2줄 분리 · lg+ 만 1줄 */}
-        <Card padding="md" topAccent>
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            {/* Row 1 · 아이콘 + 제목 + 건수 + 부제 (좁은 화면 · 항상 상단) */}
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-200/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.60),0_1px_2px_rgba(10,46,74,0.05)] flex items-center justify-center shrink-0">
-                <PackageCheck size={20} className="text-emerald-600" strokeWidth={2.2} />
-              </div>
+      <div className="flex flex-col gap-4">
+        {/* 2026-10-09 · 사용자 지시 · 홈 랜딩 톤으로 재구성 (CARD · plain icon · 좌측 세로 bar · 2-tier typography) */}
+        <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden relative">
+          <div className="absolute top-0 left-0 bottom-0 w-[4px] bg-gradient-to-b from-emerald-400 to-emerald-600" aria-hidden />
+          <div className="pl-6 pr-5 pt-4 pb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+            {/* 제목 · plain icon · 홈 톤 */}
+            <div className="flex items-center gap-2.5 min-w-0">
+              <PackageCheck size={18} className="text-emerald-600 shrink-0" strokeWidth={2.2} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2 flex-wrap">
-                  <h2 className="text-[20px] font-extrabold text-ink tracking-tight leading-tight">실재고 테이블</h2>
-                  <span className="text-[14px] tabular-nums font-bold text-brand-deep bg-brand-tint px-2 py-0.5 rounded-md">
-                    {loading ? <Spinner size={11} tone="brand" className="inline" /> : `${filtered.length.toLocaleString()}${search ? `/${rows.length.toLocaleString()}` : ""}건`}
+                  <h2 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight leading-tight">실재고 테이블</h2>
+                  <span className="text-[14px] md:text-[15px] font-semibold tabular-nums text-emerald-700">
+                    {loading ? "..." : `${filtered.length.toLocaleString()}${search ? `/${rows.length.toLocaleString()}` : ""}건`}
                   </span>
                 </div>
-                <div className="text-[14px] text-ink-soft mt-0.5 leading-tight">상품별 · 진열위치 · ERP · 매장1/2/3 · 창고1/2 · 실재고 편집 저장</div>
+                <div className="text-[13px] md:text-[14px] text-slate-500 font-medium mt-0.5 leading-tight truncate">상품별 · 진열위치 · ERP · 매장/창고 · 실재고 편집 저장</div>
               </div>
             </div>
-            {/* Row 2 · 검색 + 필터 + 액션 (좁은 화면 · 아래 줄로 · lg+ 만 우측 정렬) */}
+            {/* 검색 + 필터 + 액션 */}
             <div className="flex items-center gap-2 flex-wrap lg:ml-auto">
-              {/* 검색 · Search 아이콘 · 좁은 화면 · full width · lg+ 만 w-80 */}
               <div className="relative flex-1 min-w-[200px] lg:flex-none">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                 <input
                   type="text" {...KO_INPUT_PROPS}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="상품명 · 공급사 · 코드 · 진열위치 검색"
-                  className="w-full lg:w-80 h-10 pl-9 pr-3 text-[15px] font-medium border border-line rounded-lg outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
+                  placeholder="상품명 · 공급사 · 코드 · 진열위치"
+                  className="w-full lg:w-72 h-9 pl-8 pr-3 text-[14px] font-medium border border-slate-200 rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep bg-white transition"
                 />
               </div>
-              {/* 2026-08-28 · 사용자 지시 · SaleStatusFilter 프리미티브 · 3-state (전체/판매중/판매중지) */}
               <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="md" />
-              <label className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-lg border text-[14px] font-bold transition cursor-pointer select-none ${groupByZone ? "bg-brand-deep border-brand-deep text-white shadow-sm" : "bg-white border-line text-ink-soft hover:border-brand-deep hover:text-brand-deep"}`}>
-                <input type="checkbox" checked={groupByZone} onChange={(e) => setGroupByZone(e.target.checked)} className="w-4 h-4 accent-brand-deep cursor-pointer" />
+              <label className="inline-flex items-center gap-1.5 text-[14px] font-medium text-slate-600 cursor-pointer select-none">
+                <input type="checkbox" checked={groupByZone} onChange={(e) => setGroupByZone(e.target.checked)} className="w-3.5 h-3.5 accent-brand-deep cursor-pointer" />
                 구역별 그룹
               </label>
-              {/* 2026-08-28 · 사용자 지시 · 전체/매장만/창고만 필터 · 리스트 상단으로 이동 (아래) */}
-              {/* 2026-08-27 · 사용자 지시 · 구역별 그룹 · 접기/펼치기 컨트롤 · groupByZone 활성 시만 표시 */}
               {groupByZone && (
                 <button
                   type="button"
@@ -486,58 +478,50 @@ export const RealStockTablePage: React.FC = () => {
                       expandAll();
                     }
                   }}
-                  className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-white border border-line text-[15px] font-bold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer"
-                  title={allExpanded ? "모두 접기" : "모두 펼치기"}
+                  className="inline-flex items-center gap-1 h-8 px-2.5 text-[13.5px] font-medium text-slate-500 hover:text-ink hover:bg-slate-50 rounded-md cursor-pointer transition-colors"
                 >
-                  {allExpanded ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                  {allExpanded ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
                   {allExpanded ? "모두 접기" : "모두 펼치기"}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setNoZoneOnly(v => !v)}
-                className={`inline-flex items-center gap-1 h-9 px-3 rounded-lg border text-[15px] font-bold transition cursor-pointer ${noZoneOnly ? "bg-rose-500 border-rose-600 text-white shadow-sm" : "bg-white border-line text-zinc-600 hover:border-rose-400 hover:text-rose-600"}`}
-                title="창고 구역 미지정 상품만 표시"
-              >
-                창고 미지정
-                {noZoneOnly && <span className="ml-1 bg-white/20 text-white text-[13px] px-1.5 rounded">{filtered.length}건</span>}
-              </button>
+              <label className="inline-flex items-center gap-1.5 text-[14px] font-medium text-slate-600 cursor-pointer select-none">
+                <input type="checkbox" checked={noZoneOnly} onChange={(e) => setNoZoneOnly(e.target.checked)} className="w-3.5 h-3.5 accent-rose-500 cursor-pointer" />
+                창고 미지정만
+                {noZoneOnly && <span className="text-rose-600 font-semibold tabular-nums">{filtered.length}</span>}
+              </label>
               <button
                 type="button"
                 onClick={load}
                 disabled={loading}
-                className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-white border border-line text-[16px] font-bold text-ink-soft hover:bg-zinc-50 hover:border-brand-deep hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
+                className="inline-flex items-center gap-1 h-8 px-2.5 text-[13.5px] font-medium text-slate-500 hover:text-ink hover:bg-slate-50 rounded-md cursor-pointer transition-colors disabled:opacity-40"
                 title="새로고침"
               >
-                <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> 새로고침
+                <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> 새로고침
               </button>
             </div>
           </div>
-        </Card>
+        </section>
 
         {loading && rows.length === 0 ? (
-          <Card padding="none" className="flex items-center justify-center py-16">
-            <Spinner size={18} tone="brand" label="실재고 로딩 중..." labelSize={15} />
-          </Card>
+          <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-center justify-center py-16">
+            <Spinner size={16} tone="brand" label="실재고 로딩 중..." labelSize={14} />
+          </div>
         ) : error ? (
-          <Card variant="flat" bg="bg-rose-50" borderColor="border-rose-200" padding="md" className="text-[15px] text-rose-700 font-semibold">
-            ⚠ {error}
-            <button onClick={load} className="ml-2 underline cursor-pointer">다시 시도</button>
-          </Card>
+          <div className="bg-rose-50 border border-rose-100 rounded-[12px] px-4 py-3 text-[14px] text-rose-700 font-medium flex items-center gap-2">
+            <span>⚠ {error}</span>
+            <button onClick={load} className="underline cursor-pointer text-rose-600">다시 시도</button>
+          </div>
         ) : sorted.length === 0 ? (
-          <Card padding="none" className="py-16">
-            <EmptyState
-              icon={PackageCheck}
-              title={search ? "검색 결과 없음" : "상품 없음"}
-              hint={search ? "다른 검색어로 시도" : "상품이 등록되면 여기에 표시됩니다"}
-              size="normal"
-            />
-          </Card>
+          <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] py-16 flex flex-col items-center gap-2 text-slate-500">
+            <PackageCheck size={28} className="text-slate-300" />
+            <div className="text-[15px] font-semibold text-ink">{search ? "검색 결과 없음" : "상품 없음"}</div>
+            <div className="text-[13px]">{search ? "다른 검색어로 시도" : "상품이 등록되면 여기에 표시됩니다"}</div>
+          </div>
         ) : (
-          <>
-            {/* 2026-08-29 · framework audit · SegmentedControl 프리미티브 사용 · raw-card-wrapper 해소 */}
-            <div className="flex items-center gap-2 px-1 mb-2 flex-wrap">
-              <span className="text-[14px] font-bold text-ink-soft mr-1">보기:</span>
+          <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+            {/* 보기 필터 · 홈 톤 toolbar */}
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-100 flex-wrap">
+              <span className="text-[14px] font-medium text-slate-500 mr-1">보기</span>
               <SegmentedControl
                 value={locFilter}
                 onChange={(v) => setLocFilter(v as typeof locFilter)}
@@ -548,40 +532,38 @@ export const RealStockTablePage: React.FC = () => {
                   { value: "warehouse", label: "창고만", tone: "sky",    title: "창고만 표시" },
                 ]}
               />
-              <span className="text-[14px] text-ink-soft ml-auto tabular-nums">
-                {sorted.length}건
-              </span>
+              <span className="text-[14px] text-slate-500 ml-auto tabular-nums">총 <b className="text-ink">{sorted.length.toLocaleString()}</b>건</span>
             </div>
           <TableListWrap>
             <table className="w-full border-collapse">
-              <thead className={tableHeadCls("text-[18px]")}>
-                {/* 2026-08-28 · 사용자 지시 · 진열위치·ERP 도 매장/창고와 동일 구조 · 상단(이름)+하단(서브) · 헤더 +2 (18px) */}
+              {/* 2026-10-09 · 사용자 지시 · 최신트렌드 (Linear/Attio) · 색 배지 폐기 · subtle hierarchy · 폰트 downsize */}
+              <thead className={tableHeadCls("text-[13px]")}>
                 <tr>
                   {thSortable("supplier",     "left",   "공급사", 140, "", 2)}
                   {thSortable("product_name", "left",   "상품명", 240, "", 2)}
-                  <th colSpan={1} className={`${tableThCls("center")} bg-amber-100/80 text-amber-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>진열위치</th>
-                  <th colSpan={1} className={`${tableThCls("center")} bg-amber-100/80 text-amber-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>ERP</th>
-                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/80 text-violet-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>매장1</th>}
-                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/80 text-violet-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>매장2</th>}
-                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-violet-100/80 text-violet-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>매장3</th>}
-                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-cyan-100/80 text-cyan-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>창고1</th>}
-                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-cyan-100/80 text-cyan-800 font-extrabold shadow-[inset_0_-1px_0_rgba(0,0,0,0.05)]`}>창고2</th>}
-                  {thSortable("total", "num", "실재고 합계", 95, "bg-brand-tint/30", 2)}
-                  {thSortable("diff",  "num", "차이",         80, "bg-rose-50/40",    2)}
+                  <th colSpan={1} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>진열위치</th>
+                  <th colSpan={1} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>ERP</th>
+                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>매장1</th>}
+                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>매장2</th>}
+                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>매장3</th>}
+                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>창고1</th>}
+                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>창고2</th>}
+                  {thSortable("total", "num", "실재고합", 95, "bg-slate-50 text-brand-deep", 2)}
+                  {thSortable("diff",  "num", "차이",     80, "bg-slate-50 text-slate-500",   2)}
                 </tr>
                 <tr>
-                  {thSortable("location", "center", "구역", 60, "bg-amber-50/40", undefined, true)}
-                  {thSortable("erp",      "num",    "수량", 60, "bg-amber-100/50", undefined, true)}
-                  {showStore && thSortable("s1zone", "center", "구역", 60, "bg-violet-50/40", undefined, true)}
-                  {showStore && thSortable("s1",     "num",    "수량", 60, "bg-violet-100/50", undefined, true)}
-                  {showStore && thSortable("s2zone", "center", "구역", 60, "bg-violet-50/40", undefined, true)}
-                  {showStore && thSortable("s2",     "num",    "수량", 60, "bg-violet-100/50", undefined, true)}
-                  {showStore && thSortable("s3zone", "center", "구역", 60, "bg-violet-50/40", undefined, true)}
-                  {showStore && thSortable("s3",     "num",    "수량", 60, "bg-violet-100/50", undefined, true)}
-                  {showWarehouse && thSortable("w1zone", "center", "구역", 60, "bg-cyan-50/40", undefined, true)}
-                  {showWarehouse && thSortable("w1",     "num",    "수량", 60, "bg-cyan-100/50", undefined, true)}
-                  {showWarehouse && thSortable("w2zone", "center", "구역", 60, "bg-cyan-50/40", undefined, true)}
-                  {showWarehouse && thSortable("w2",     "num",    "수량", 60, "bg-cyan-100/50", undefined, true)}
+                  {thSortable("location", "center", "구역", 60, "bg-slate-50/50", undefined, true)}
+                  {thSortable("erp",      "num",    "수량", 60, "bg-slate-50/50", undefined, true)}
+                  {showStore && thSortable("s1zone", "center", "구역", 60, "bg-slate-50/50", undefined, true)}
+                  {showStore && thSortable("s1",     "num",    "수량", 60, "bg-slate-50/50", undefined, true)}
+                  {showStore && thSortable("s2zone", "center", "구역", 60, "bg-slate-50/50", undefined, true)}
+                  {showStore && thSortable("s2",     "num",    "수량", 60, "bg-slate-50/50", undefined, true)}
+                  {showStore && thSortable("s3zone", "center", "구역", 60, "bg-slate-50/50", undefined, true)}
+                  {showStore && thSortable("s3",     "num",    "수량", 60, "bg-slate-50/50", undefined, true)}
+                  {showWarehouse && thSortable("w1zone", "center", "구역", 60, "bg-slate-50/50", undefined, true)}
+                  {showWarehouse && thSortable("w1",     "num",    "수량", 60, "bg-slate-50/50", undefined, true)}
+                  {showWarehouse && thSortable("w2zone", "center", "구역", 60, "bg-slate-50/50", undefined, true)}
+                  {showWarehouse && thSortable("w2",     "num",    "수량", 60, "bg-slate-50/50", undefined, true)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -604,15 +586,12 @@ export const RealStockTablePage: React.FC = () => {
                     const totalErp = rows.reduce((s, r) => s + (r.erp ?? 0), 0);
                     const totalReal = rows.reduce((s, r) => s + r.total, 0);
                     return [
-                      <tr key={`group-${k}`} className="bg-brand-tint border-t-2 border-b border-brand-deep/40 sticky top-[84px] z-20 shadow-sm hover:bg-brand-tint/80 cursor-pointer transition" onClick={() => toggleGroup(k)}>
-                        {/* 2026-08-28 · colSpan · 필터에 따라 동적 계산 · 4 fixed + store(6) + warehouse(4) + total/diff(2) */}
-                        <td colSpan={4 + (showStore ? 6 : 0) + (showWarehouse ? 4 : 0) + 2} className="px-3 py-2.5 bg-brand-tint">
+                      <tr key={`group-${k}`} className="bg-slate-50 border-y border-slate-100 sticky top-[84px] z-20 hover:bg-slate-100/60 cursor-pointer transition-colors" onClick={() => toggleGroup(k)}>
+                        <td colSpan={4 + (showStore ? 6 : 0) + (showWarehouse ? 4 : 0) + 2} className="px-4 py-2 bg-slate-50">
                           <div className="flex items-center gap-2 flex-wrap">
-                            {collapsedGroups.has(k) ? <ChevronRight size={16} className="text-brand-deep shrink-0" /> : <ChevronDown size={16} className="text-brand-deep shrink-0" />}
-                            <span className="w-1 h-4 rounded-full bg-brand-deep" />
-                            <span className="text-[15px] font-extrabold text-brand-deep tabular-nums">{k}</span>
-                            <span className="text-[14px] font-bold text-brand-deep/70 tabular-nums">· {rows.length}건</span>
-                            {/* 2026-08-27 · 사용자 지시 · 구역별 전체보기 · 이 그룹만 열고 나머지 접기 */}
+                            {collapsedGroups.has(k) ? <ChevronRight size={13} className="text-slate-400 shrink-0" /> : <ChevronDown size={13} className="text-slate-400 shrink-0" />}
+                            <span className="text-[13.5px] font-semibold text-ink tabular-nums">{k}</span>
+                            <span className="text-[12.5px] font-medium text-slate-400 tabular-nums">· {rows.length}건</span>
                             <button
                               type="button"
                               onClick={(e) => {
@@ -620,91 +599,86 @@ export const RealStockTablePage: React.FC = () => {
                                 const others = sortedKeys.filter(x => x !== k);
                                 setCollapsedGroups(new Set(others));
                               }}
-                              className="ml-1 inline-flex items-center gap-1 h-6 px-2 rounded-md bg-white/70 border border-brand-deep/30 text-[15px] font-bold text-brand-deep hover:bg-white cursor-pointer transition"
+                              className="ml-1 inline-flex items-center gap-1 h-6 px-2 text-[12px] font-medium text-slate-400 hover:text-ink hover:bg-slate-100 rounded-md cursor-pointer transition-colors"
                               title="이 구역만 전체보기 (다른 구역 접기)"
                             >
                               전체보기
                             </button>
-                            {/* 2026-08-27 · 사용자 지시 · 그룹 내부 정렬 방향 · 화살표 위아래만 · 현재 sortKey 기준 toggle */}
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); setSort(sortKey, sortDir === "asc" ? "desc" : "asc"); }}
-                              className={`inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md border cursor-pointer transition ${sortDir === "asc" ? "bg-brand-tint border-brand-deep/30 text-brand-deep" : "bg-white/70 border-line text-ink-soft hover:border-brand-deep/30"}`}
+                              className={`inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md cursor-pointer transition ${sortDir === "asc" ? "bg-slate-200 text-slate-700" : "bg-white text-slate-400 hover:bg-slate-100"}`}
                               title={`오름차순 정렬 (현재: ${sortDir === "asc" ? "활성" : "비활성"})`}
                             >
-                              <ArrowUp size={12} />
+                              <ArrowUp size={11} />
                             </button>
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); setSort(sortKey, sortDir === "desc" ? "asc" : "desc"); }}
-                              className={`inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md border cursor-pointer transition ${sortDir === "desc" ? "bg-brand-tint border-brand-deep/30 text-brand-deep" : "bg-white/70 border-line text-ink-soft hover:border-brand-deep/30"}`}
+                              className={`inline-flex items-center gap-0.5 h-6 px-1.5 rounded-md cursor-pointer transition ${sortDir === "desc" ? "bg-slate-200 text-slate-700" : "bg-white text-slate-400 hover:bg-slate-100"}`}
                               title={`내림차순 정렬 (현재: ${sortDir === "desc" ? "활성" : "비활성"})`}
                             >
-                              <ArrowDown size={12} />
+                              <ArrowDown size={11} />
                             </button>
-                            <span className="ml-auto flex items-center gap-3 text-[14px] font-bold tabular-nums">
-                              <span className="text-amber-700">ERP 합계 {totalErp}</span>
-                              <span className="text-brand-deep">실재고 합계 {totalReal}</span>
-                              <span className={totalErp - totalReal > 0 ? "text-rose-600" : totalErp - totalReal < 0 ? "text-emerald-600" : "text-zinc-400"}>
-                                차이 {totalErp - totalReal > 0 ? `+${totalErp - totalReal}` : totalErp - totalReal}
-                              </span>
+                            <span className="ml-auto flex items-center gap-3 text-[12.5px] font-semibold tabular-nums">
+                              <span className="text-slate-500">ERP <span className="text-slate-700 font-bold">{totalErp}</span></span>
+                              <span className="text-slate-500">실재고 <span className="text-emerald-700 font-bold">{totalReal}</span></span>
+                              <span className="text-slate-500">차이 <span className={totalErp - totalReal > 0 ? "text-rose-600 font-bold" : totalErp - totalReal < 0 ? "text-emerald-600 font-bold" : "text-slate-400 font-semibold"}>{totalErp - totalReal > 0 ? `+${totalErp - totalReal}` : totalErp - totalReal}</span></span>
                             </span>
                           </div>
                         </td>
                       </tr>,
                       ...(collapsedGroups.has(k) ? [] : rows.map(r => (
-                        <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px] whitespace-nowrap">
-                          <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ? (displayVendorName(r.supplier) || r.supplier) : "-"}</td>
+                        <tr key={r.product_code} className="hover:bg-slate-50/60 transition text-[14px] whitespace-nowrap">
+                          <td className={tableTdCls("left", "text-slate-600 text-[13.5px]")}>{r.supplier ? (displayVendorName(r.supplier) || r.supplier) : "-"}</td>
                           <td className={tableTdCls("left")}>
-                            <button type="button" onClick={() => setDetailRow(r)} className="text-left font-bold text-zinc-800 break-keep whitespace-normal hover:text-brand-deep hover:underline cursor-pointer" title="상세 정보">
+                            <button type="button" onClick={() => setDetailRow(r)} className="text-left font-semibold text-ink text-[14px] break-keep whitespace-normal hover:text-brand-deep hover:underline cursor-pointer" title="상세 정보">
                               {r.product_name}
                             </button>
                           </td>
-                          {/* 2026-09-11 · 사용자 지시 · 진열위치 셀 · 상세위치 전체 나열 제거 · 각 구역 셀에 개별 표시 유지 */}
-                          <td className={tableTdCls("center", "bg-amber-50/30")}>
-                            {r.location ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[16px] tabular-nums tracking-tight">{r.location}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[15px]">—</span>)}
+                          <td className={tableTdCls("center")}>
+                            {r.location ? (<span className="text-[13.5px] font-semibold text-slate-700 tabular-nums tracking-tight">{r.location}</span>) : (<span className="text-slate-300 font-medium text-[13px]">—</span>)}
                           </td>
-                          <td className={tableTdCls("center", "bg-amber-50/30")}>{r.erp != null && r.erp > 0 ? (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] px-1.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[16px] tabular-nums tracking-tight">{r.erp}</span>) : (<span className="inline-flex items-center justify-center min-w-[38px] h-[28px] rounded-md border border-dashed border-zinc-200 text-zinc-300 font-medium text-[15px]">—</span>)}</td>
-                          {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td></>}
-                          {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s2")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s2")}</td></>}
-                          {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s3")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s3")}</td></>}
-                          {showWarehouse && <><td className={tableTdCls("center", "bg-cyan-50/30")}>{renderZoneCell(r, "w1")}</td><td className={tableTdCls("num", "bg-cyan-100/40")}>{renderQtyCell(r, "w1")}</td></>}
-                          {showWarehouse && <><td className={tableTdCls("center", "bg-cyan-50/30")}>{renderZoneCell(r, "w2")}</td><td className={tableTdCls("num", "bg-cyan-100/40")}>{renderQtyCell(r, "w2")}</td></>}
-                          <td className={tableTdCls("num", `tabular-nums font-extrabold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>{r.total > 0 ? r.total : "-"}</td>
-                          <td className={tableTdCls("num", `tabular-nums font-bold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/20`)}>{r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}</td>
+                          <td className={tableTdCls("num")}>{r.erp != null && r.erp > 0 ? (<span className="text-[14px] font-semibold text-slate-800 tabular-nums tracking-tight">{r.erp}</span>) : (<span className="text-slate-300 font-medium text-[13px]">—</span>)}</td>
+                          {showStore && <><td className={tableTdCls("center")}>{renderZoneCell(r, "s1")}</td><td className={tableTdCls("num")}>{renderQtyCell(r, "s1")}</td></>}
+                          {showStore && <><td className={tableTdCls("center")}>{renderZoneCell(r, "s2")}</td><td className={tableTdCls("num")}>{renderQtyCell(r, "s2")}</td></>}
+                          {showStore && <><td className={tableTdCls("center")}>{renderZoneCell(r, "s3")}</td><td className={tableTdCls("num")}>{renderQtyCell(r, "s3")}</td></>}
+                          {showWarehouse && <><td className={tableTdCls("center")}>{renderZoneCell(r, "w1")}</td><td className={tableTdCls("num")}>{renderQtyCell(r, "w1")}</td></>}
+                          {showWarehouse && <><td className={tableTdCls("center")}>{renderZoneCell(r, "w2")}</td><td className={tableTdCls("num")}>{renderQtyCell(r, "w2")}</td></>}
+                          <td className={tableTdCls("num", `tabular-nums text-[14px] font-semibold ${r.total > 0 ? "text-emerald-700" : "text-slate-300 font-medium"}`)}>{r.total > 0 ? r.total : "-"}</td>
+                          <td className={tableTdCls("num", `tabular-nums text-[13.5px] font-semibold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-slate-300 font-medium"}`)}>{r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}</td>
                         </tr>
                       ))),
                     ];
                   });
                 })()}
                 {!groupByZone && pagedRows.map(r => (
-                  <tr key={r.product_code} className="hover:bg-zinc-50/60 transition text-[15px] whitespace-nowrap">
-                    <td className={tableTdCls("left", "text-zinc-700")}>{r.supplier ?? "-"}</td>
+                  <tr key={r.product_code} className="hover:bg-slate-50/60 transition text-[14px] whitespace-nowrap">
+                    <td className={tableTdCls("left", "text-slate-600 text-[13.5px]")}>{r.supplier ?? "-"}</td>
                     <td className={tableTdCls("left")}>
                       <button
                         type="button"
                         onClick={() => setDetailRow(r)}
-                        className="text-left font-bold text-zinc-800 break-keep whitespace-normal hover:text-brand-deep hover:underline cursor-pointer"
+                        className="text-left font-semibold text-ink text-[14px] break-keep whitespace-normal hover:text-brand-deep hover:underline cursor-pointer"
                         title="상세 정보"
                       >
                         {r.product_name}
                       </button>
                     </td>
-                    {/* 2026-08-27 · 컬럼 분리 · 진열위치·ERP 각각 · 매장/창고 구역·수량 분리 · 색깔톤 shade */}
-                    {/* 2026-09-11 · 사용자 지시 · 진열위치 셀 · 상세위치 전체 나열 제거 · 각 구역 셀에 개별 표시 유지 */}
-                    <td className={tableTdCls("center", "bg-amber-50/30")}>
-                      <span className={`text-[16px] font-semibold ${r.location ? "text-amber-500" : "text-zinc-300"} tabular-nums`}>{r.location ?? "-"}</span>
+                    {/* 2026-10-09 · 사용자 지시 · 홈 랜딩 톤 · 색 셀 배경 폐기 · subtle 중립 slate */}
+                    <td className={tableTdCls("center")}>
+                      <span className={`text-[13.5px] font-semibold ${r.location ? "text-slate-700" : "text-slate-300 font-medium text-[13px]"} tabular-nums`}>{r.location ?? "—"}</span>
                     </td>
-                    <td className={tableTdCls("num", `tabular-nums font-extrabold text-[18px] ${r.erp != null && r.erp > 0 ? "text-amber-700" : "text-zinc-300"} bg-amber-100/40`)}>{r.erp ?? "-"}</td>
-                    {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s1")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s1")}</td></>}
-                    {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s2")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s2")}</td></>}
-                    {showStore && <><td className={tableTdCls("center", "bg-violet-50/30")}>{renderZoneCell(r, "s3")}</td><td className={tableTdCls("num", "bg-violet-100/40")}>{renderQtyCell(r, "s3")}</td></>}
-                    {showWarehouse && <><td className={tableTdCls("center", "bg-cyan-50/30")}>{renderZoneCell(r, "w1")}</td><td className={tableTdCls("num", "bg-cyan-100/40")}>{renderQtyCell(r, "w1")}</td></>}
-                    {showWarehouse && <><td className={tableTdCls("center", "bg-cyan-50/30")}>{renderZoneCell(r, "w2")}</td><td className={tableTdCls("num", "bg-cyan-100/40")}>{renderQtyCell(r, "w2")}</td></>}
-                    <td className={tableTdCls("num", `tabular-nums font-extrabold ${r.total > 0 ? "text-brand-deep" : "text-zinc-300"} bg-brand-tint/20`)}>
-                      {r.total > 0 ? r.total : "-"}
+                    <td className={tableTdCls("num", `tabular-nums text-[14px] font-semibold ${r.erp != null && r.erp > 0 ? "text-slate-800" : "text-slate-300 font-medium"}`)}>{r.erp ?? "—"}</td>
+                    {showStore && <><td className={tableTdCls("center")}>{renderZoneCell(r, "s1")}</td><td className={tableTdCls("num")}>{renderQtyCell(r, "s1")}</td></>}
+                    {showStore && <><td className={tableTdCls("center")}>{renderZoneCell(r, "s2")}</td><td className={tableTdCls("num")}>{renderQtyCell(r, "s2")}</td></>}
+                    {showStore && <><td className={tableTdCls("center")}>{renderZoneCell(r, "s3")}</td><td className={tableTdCls("num")}>{renderQtyCell(r, "s3")}</td></>}
+                    {showWarehouse && <><td className={tableTdCls("center")}>{renderZoneCell(r, "w1")}</td><td className={tableTdCls("num")}>{renderQtyCell(r, "w1")}</td></>}
+                    {showWarehouse && <><td className={tableTdCls("center")}>{renderZoneCell(r, "w2")}</td><td className={tableTdCls("num")}>{renderQtyCell(r, "w2")}</td></>}
+                    <td className={tableTdCls("num", `tabular-nums text-[14px] font-semibold ${r.total > 0 ? "text-emerald-700" : "text-slate-300 font-medium"}`)}>
+                      {r.total > 0 ? r.total : "—"}
                     </td>
-                    <td className={tableTdCls("num", `tabular-nums font-bold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-zinc-300"} bg-rose-50/20`)}>
+                    <td className={tableTdCls("num", `tabular-nums text-[13.5px] font-semibold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-slate-300 font-medium"}`)}>
                       {r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}
                     </td>
                   </tr>
@@ -712,22 +686,22 @@ export const RealStockTablePage: React.FC = () => {
               </tbody>
             </table>
           </TableListWrap>
-          {/* 페이지네이션 · 1000건 단위 */}
+          {/* 페이지네이션 · 홈 랜딩 톤 (plain · subtle · 작은 글씨) */}
           {hasMore && (
-            <div className="flex items-center justify-center py-4">
+            <div className="flex items-center justify-center py-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setPage(p => p + 1)}
-                className="inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-brand-deep text-white text-[15px] font-bold shadow-sm hover:bg-[#0d3a5c] active:bg-[#08253a] transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-white text-slate-600 text-[13.5px] font-medium border border-slate-200 hover:bg-slate-50 hover:text-ink transition cursor-pointer"
               >
-                더 불러오기 ({pagedRows.length.toLocaleString()} / {sorted.length.toLocaleString()}건)
+                더 불러오기 <span className="text-slate-400 tabular-nums">({pagedRows.length.toLocaleString()} / {sorted.length.toLocaleString()}건)</span>
               </button>
             </div>
           )}
           {!hasMore && sorted.length > PAGE_SIZE && (
-            <div className="text-center py-3 text-[14px] text-zinc-400">전체 {sorted.length.toLocaleString()}건 표시됨</div>
+            <div className="text-center py-2.5 text-[12.5px] text-slate-400 border-t border-slate-100">전체 {sorted.length.toLocaleString()}건 표시됨</div>
           )}
-          </>
+          </section>
         )}
       </div>
     </div>
