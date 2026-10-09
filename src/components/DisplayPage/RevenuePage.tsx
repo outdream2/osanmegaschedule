@@ -127,25 +127,34 @@ export const RevenuePage: React.FC = () => {
   return (
     // 2026-10-06 · 사용자 지시 · 세로 스크롤 보장 · 가로 overflow 방지 · overflow-hidden 완화
     <div className="flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full">
-      {/* 2026-10-09 · 상단 탭 (매출 | 판매) · 홈 랜딩 inline pill 통일 (HomeDashboard SalesOverviewCard 패턴) */}
-      <div className="px-4 pt-4 shrink-0 w-full min-w-0 max-w-full">
-        <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+      {/* 2026-10-09 · 사용자 지시 · 발주반품현황 상단 디자인 적용 · compact inline hero */}
+      <section className="flex items-center gap-2 py-0.5 px-4 pt-4 shrink-0 w-full min-w-0 max-w-full">
+        <span className="w-[3px] h-[14px] bg-emerald-500 rounded-full shrink-0" />
+        <span className="text-[14px] md:text-[15px] text-slate-700">
+          <strong className="font-semibold text-ink">판매·매출현황</strong> · 시간대별 · 월별 · 구역별 판매
+        </span>
+      </section>
+
+      {/* 2026-10-09 · 사용자 지시 · inner tab bar · OrderReturnOverview 패턴 (bottom bar + count slot · 프로세스 X) */}
+      <div className="px-4 pt-2 shrink-0 w-full min-w-0 max-w-full">
+        <nav className="flex items-stretch border-b border-slate-200 overflow-x-auto -mb-px" aria-label="판매·매출 inner tabs">
           {([
-            { k: "revenue" as const, label: "매출" },
-            { k: "sales"   as const, label: "판매" },
-          ]).map((t) => (
-            <button
-              key={t.k}
-              type="button"
-              onClick={() => setTopTab(t.k)}
-              className={`px-3 py-1.5 rounded-md text-[13px] md:text-[14px] font-medium transition-colors ${
-                topTab === t.k ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+            { k: "revenue" as const, label: "매출", tone: { bar: "bg-emerald-500", soft: "bg-emerald-50" } },
+            { k: "sales"   as const, label: "판매", tone: { bar: "bg-rose-500",    soft: "bg-rose-50"    } },
+          ]).map((t) => {
+            const active = topTab === t.k;
+            return (
+              <button key={t.k} type="button" onClick={() => setTopTab(t.k)}
+                className={`relative shrink-0 px-2.5 h-10 text-[14px] md:text-[15px] font-medium transition-colors cursor-pointer inline-flex items-baseline gap-1.5 whitespace-nowrap ${
+                  active ? "text-ink font-semibold" : "text-slate-500 hover:text-ink"
+                }`}
+              >
+                <span>{t.label}</span>
+                {active && <span className={`absolute left-0 right-0 -bottom-px h-[2px] ${t.tone.bar} rounded-full`} />}
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
       {topTab === "revenue" ? (
