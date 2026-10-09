@@ -304,23 +304,22 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
   const canAddStore = visibleStoreCount < 3;
 
   return (
+    // 2026-10-09 · #9 Phase 4 홈 톤 리뉴얼 · rounded-[12px] · shadow 축소 · 공간 X
     <div
       className={[
-        "group relative bg-white rounded-2xl border transition-all duration-200",
-        "shadow-[0_1px_2px_rgba(10,46,74,0.04),0_1px_3px_rgba(10,46,74,0.03)]",
-        "hover:shadow-[0_2px_6px_rgba(10,46,74,0.06),0_4px_12px_-2px_rgba(10,46,74,0.04)]",
-        // 2026-08-25 · 유통기한임박 표시 (사용자 지시 · 빨갛게)
+        "group relative bg-white rounded-[12px] border transition-colors",
+        "shadow-[0_1px_3px_rgba(0,0,0,0.04)]",
         hasExpiryFlag
-          ? "border-red-300 bg-red-50/40 shadow-[0_0_0_2px_rgba(239,68,68,0.10)]"
+          ? "border-rose-300 bg-rose-50/40"
           : isRecent
-            ? "border-brand-deep/40 shadow-[0_0_0_3px_rgba(10,46,74,0.06),0_1px_3px_rgba(10,46,74,0.05)]"
+            ? "border-brand-deep/40"
             : isWarn
               ? "border-amber-200"
-              : "border-line/70",
+              : "border-slate-200",
       ].join(" ")}
     >
-      {/* ─── 헤더 · 탭하면 접힘 토글 */}
-      <div className="w-full flex items-start gap-3 px-4 py-3">
+      {/* ─── 헤더 · 탭하면 접힘 토글 · 2026-10-09 패딩 축소 py-3 → py-2 */}
+      <div className="w-full flex items-start gap-2.5 px-3 py-2">
         {/* 좌측 · 상품명 · 코드 · 현재고/추가/합계 요약 */}
         <button
           type="button"
