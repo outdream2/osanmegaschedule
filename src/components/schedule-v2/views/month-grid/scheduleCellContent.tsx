@@ -13,10 +13,13 @@ import { isOffType } from "../../../../shared/schedule/offTypes";
 // 2026-10-08 · V1 parity · settings scheduleTypes 기반 색상 적용 (V1 ScheduleCell:128,164 패턴)
 import { getTypeHex, isLightHex, type ScheduleTypeEntry } from "../../../../constants";
 
+// 2026-10-09 · 사용자 피드백 반복 "오늘테두리 안나와" → outline 으로 전환
+//   · outline 은 border-collapse table 과 무관 · 레이어 가림 없음 · layout 공간 X
+//   · outline-offset 로 content 안쪽으로 당겨 cell 안에 보이게 (바깥 overflow 가려짐 방지)
+//   · 좌/우만 원하지만 outline 은 전체 4변 · 상/하는 scheduleCellContent padding 안쪽에 미세하게 보임 (허용)
 const TODAY_BORDER: React.CSSProperties = {
-  borderLeft: "2px solid #f43f5e",
-  borderRight: "2px solid #f43f5e",
-  boxSizing: "border-box",
+  outline: "3px solid #f43f5e",
+  outlineOffset: "-3px",
 };
 
 export const scheduleCellContent = (
