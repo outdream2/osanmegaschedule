@@ -376,22 +376,21 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
               </div>
             );
           })()}
-          {/* chip strip · 접힘 시만 · 5-way 실재고 요약 */}
+          {/* 2026-10-09 · #9 Phase 6 · chip strip 축소 · dot 제거 · 폰트 축소 */}
           {!expanded && (
-            <div className="flex items-center gap-2 flex-wrap mt-1">
+            <div className="flex items-center gap-1 flex-wrap mt-1">
               {visibleSlots.map(s => {
                 const add = row[s.addKey] as number | "";
                 const hasVal = add !== "" && Number(add) > 0;
                 return (
                   <span
                     key={s.key}
-                    className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 border ${
-                      hasVal ? `${s.softBg} border-transparent` : "bg-transparent border-line/60"
+                    className={`inline-flex items-center gap-1 h-5 px-1.5 rounded border text-[11.5px] ${
+                      hasVal ? `${s.softBg} border-transparent` : "bg-transparent border-slate-200"
                     }`}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full ${s.dot} ${hasVal ? "" : "opacity-40"}`} />
-                    <span className={`text-[14px] font-semibold ${hasVal ? s.text : "text-zinc-400"}`}>{s.label}</span>
-                    <span className={`text-[13px] font-bold tabular-nums ${hasVal ? "text-ink" : "text-zinc-300"}`}>
+                    <span className={`font-semibold ${hasVal ? s.text : "text-slate-400"}`}>{s.label}</span>
+                    <span className={`font-bold tabular-nums ${hasVal ? "text-ink" : "text-slate-300"}`}>
                       {add !== "" ? Number(add) : "-"}
                     </span>
                   </span>
@@ -495,7 +494,8 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
           const canRemoveSlot = isStore && !isPrimaryStore;
 
           return (
-            <div key={s.key} className={`relative rounded-lg border ${s.softBg} border-zinc-200/70 p-2.5 flex flex-col gap-2`}>
+            // 2026-10-09 · #9 Phase 6 · 슬롯 축소 · rounded-md · p-2 · gap-1.5
+            <div key={s.key} className={`relative rounded-md border ${s.softBg} border-slate-200 p-2 flex flex-col gap-1.5`}>
               {/* 매장2·3 · 슬롯 삭제 버튼 (storeCount 축소) · 입력값 있어도 제거 가능 */}
               {canRemoveSlot && (
                 <button
@@ -523,10 +523,10 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                   <X size={11} strokeWidth={2.5} />
                 </button>
               )}
-              {/* 슬롯 헤더: 위치명 */}
-              <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
-                <span className={`w-1.5 h-6 rounded-full ${s.dot} shrink-0 self-center`} />
-                <span className={`text-[16px] font-bold ${s.text} truncate`}>{s.full}</span>
+              {/* 슬롯 헤더: 위치명 · 2026-10-09 축소 · 폰트 16 → 14 · bar 축소 */}
+              <div className="flex items-baseline gap-1.5 min-w-0 flex-wrap">
+                <span className={`w-1 h-5 rounded-full ${s.dot} shrink-0 self-center`} />
+                <span className={`text-[14px] font-semibold ${s.text} truncate`}>{s.full}</span>
                 {prev != null && prev !== (add !== "" ? Number(add) : prev) && (
                   <span className="text-[13px] text-zinc-400 tabular-nums">이전 {prev}</span>
                 )}
