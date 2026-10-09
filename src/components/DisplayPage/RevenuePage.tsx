@@ -21,10 +21,10 @@ import { CLASS_FILTER_LABEL, type ClassFilter, type ProductClass } from "../../u
 type RevenueTab = "hourly" | "monthly";
 // 2026-10-09 · 사용자 지시 · 판매·매출현황 페이지 상단 탭 (매출 | 판매)
 type TopTab = "revenue" | "sales";
-// 2026-10-09 · 사용자 지시 · 판매 탭 · "판매-구역별현황" (CategoryTab) 임베드 (lazy)
-//   · 이전: SalesPanel(OrderManagePage statistics 전체)
-//   · 이후: CategoryTab 단독 (zone 별 판매 집계 + 매장 구역도)
-const CategoryTab = React.lazy(() => import("../OrderManagePage/CategoryTab").then(m => ({ default: m.CategoryTab })));
+// 2026-10-09 · 사용자 지시 · 판매 탭 · SalesPanel (statistics) · default sub-tab = category (구역별 현황)
+//   · 이전: CategoryTab 단독 (덥썩 교체 X)
+//   · 이후: SalesPanel 유지 + initialStatSubTab="category" prop 전달 (statistics 안쪽 서브탭 유지)
+const SalesPanel = React.lazy(() => import("../OrderManagePage/OrderManagePage"));
 type FetchStatus = "idle" | "loading" | "success" | "error";
 
 interface HourlyRow {
@@ -127,18 +127,19 @@ export const RevenuePage: React.FC = () => {
   return (
     // 2026-10-06 · 사용자 지시 · 세로 스크롤 보장 · 가로 overflow 방지 · overflow-hidden 완화
     <div className="flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full">
-      {/* 2026-10-09 · 상단 탭 (매출 | 판매) · 홈 랜딩 톤 · subtle slate border */}
+      {/* 2026-10-09 · 상단 탭 (매출 | 판매) · 홈 랜딩 inline pill 통일 (HomeDashboard SalesOverviewCard 패턴) */}
       <div className="px-4 pt-4 shrink-0 w-full min-w-0 max-w-full">
-        <div className="inline-flex items-center gap-0 bg-white border border-slate-200 rounded-md p-0.5">
+        <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
           {([
             { k: "revenue" as const, label: "매출" },
             { k: "sales"   as const, label: "판매" },
           ]).map((t) => (
             <button
               key={t.k}
+              type="button"
               onClick={() => setTopTab(t.k)}
-              className={`px-4 h-9 rounded-md text-[14px] md:text-[15px] font-semibold transition-colors cursor-pointer ${
-                topTab === t.k ? "bg-slate-900 text-white" : "text-slate-500 hover:text-ink hover:bg-slate-50"
+              className={`px-3 py-1.5 rounded-md text-[13px] md:text-[14px] font-medium transition-colors ${
+                topTab === t.k ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
               {t.label}
@@ -149,16 +150,16 @@ export const RevenuePage: React.FC = () => {
 
       {topTab === "revenue" ? (
         <>
-          {/* 매출 하위 탭 · 시간대별 / 월별 */}
+          {/* 매출 하위 탭 · 시간대별 / 월별 · 2026-10-09 홈 랜딩 inline pill 통일 */}
           <div className="px-4 pt-3 shrink-0 w-full min-w-0 max-w-full">
-            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-md p-1 w-fit">
+            <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
               {([
-                { k: "hourly" as const,  label: "⏱ 시간대별 조회" },
-                { k: "monthly" as const, label: "📅 월별 조회" },
+                { k: "hourly" as const,  label: "시간대별" },
+                { k: "monthly" as const, label: "월별" },
               ]).map((t) => (
-                <button key={t.k} onClick={() => setTab(t.k)}
-                  className={`px-3.5 h-9 rounded text-[14px] md:text-[15px] font-semibold transition ${
-                    tab === t.k ? "bg-brand-deep text-white" : "text-slate-500 hover:text-ink hover:bg-slate-50"
+                <button key={t.k} type="button" onClick={() => setTab(t.k)}
+                  className={`px-3 py-1.5 rounded-md text-[13px] md:text-[14px] font-medium transition-colors ${
+                    tab === t.k ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
                   }`}>
                   {t.label}
                 </button>
@@ -177,10 +178,10 @@ export const RevenuePage: React.FC = () => {
           </div>
         </>
       ) : (
-        /* 판매 탭 · 2026-10-09 사용자 지시 · 판매-구역별 현황 (CategoryTab) 임베드 · UI 톤은 추후 */
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden mt-3 p-4">
-          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16 text-[14px] text-slate-500">구역별 현황 로딩 중...</div>}>
-            <CategoryTab />
+        /* 판매 탭 · SalesPanel (statistics) · prop 확장 보류 (사용자 "탭 디자인 통일 먼저") */
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col mt-3">
+          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16 text-[14px] text-slate-500">판매 데이터 로딩 중...</div>}>
+            <SalesPanel initialTopTab="statistics" hideTopTabs />
           </React.Suspense>
         </div>
       )}
