@@ -1770,7 +1770,23 @@ const MonthlyReportTab: React.FC = () => {
         </div>
         {/* 2026-10-05 · 사용자 지시 · 12개월 가로 막대바 chart · 분기별 컬러 accent · Linear 톤 */}
         {(() => {
-          const maxSale = Math.max(0, ...[...yearOverview.values()].map(v => v.saleTotal));
+          // 2026-10-09 · 사용자 지시 · 현재 월 bar 뒤에 "예상매출" overlay (겹쳐서 projection)
+          //   · 공식 = 평균 × 총일수 (현재까지 매출/지난일수 × 당월 총일수)
+          const currentM = now.getMonth() + 1;
+          const projected = (() => {
+            if (year !== now.getFullYear()) return null;
+            const row = yearOverview.get(currentM);
+            if (!row || row.saleTotal <= 0) return null;
+            const daysInMonth = new Date(year, currentM, 0).getDate();
+            const pastDays = now.getDate();
+            if (pastDays <= 0) return null;
+            return { total: (row.saleTotal / pastDays) * daysInMonth };
+          })();
+          const maxSale = Math.max(
+            0,
+            ...[...yearOverview.values()].map(v => v.saleTotal),
+            projected?.total ?? 0,
+          );
           const QUARTER_TONES: Record<number, { label: string; accent: string; barFrom: string; barTo: string; barMuted: string; text: string; ring: string }> = {
             1: { label: "Q1", accent: "bg-emerald-500", barFrom: "from-emerald-500", barTo: "to-emerald-300", barMuted: "bg-emerald-200", text: "text-emerald-700", ring: "ring-emerald-300" },
             2: { label: "Q2", accent: "bg-amber-500",   barFrom: "from-amber-500",   barTo: "to-amber-300",   barMuted: "bg-amber-200",   text: "text-amber-700",   ring: "ring-amber-300" },
@@ -1794,7 +1810,7 @@ const MonthlyReportTab: React.FC = () => {
                     : "hover:bg-zinc-50"
                 }`}
               >
-                {/* 상단 · 매출 금액 + 보조 metric */}
+                {/* 상단 · 매출 금액 + 보조 metric · 2026-10-09 현재 월 예상매출 라벨 추가 */}
                 <div className="h-[42px] flex flex-col items-center justify-end gap-0.5 min-w-0 w-full">
                   {row === undefined ? (
                     <span className="text-[11px] text-zinc-300">...</span>
@@ -1805,6 +1821,11 @@ const MonthlyReportTab: React.FC = () => {
                       <span className={`text-[13px] md:text-[14px] font-extrabold tabular-nums tracking-tight leading-none ${isCurrent ? "text-rose-600" : "text-zinc-800"}`}>
                         {fmtWonShort(row.saleTotal)}
                       </span>
+                      {isCurrent && projected && projected.total > row.saleTotal && (
+                        <span className="text-[9px] md:text-[10px] font-semibold tabular-nums text-cyan-700 leading-none" title={`일별 평균 × 총일수 = 월말 예상 총매출`}>
+                          예상 {fmtWonShort(projected.total)}
+                        </span>
+                      )}
                       <div className="flex items-center gap-1 text-[9px] md:text-[10px] tabular-nums whitespace-nowrap leading-none">
                         <span className="text-emerald-700">{fmtWonShort(row.margin)}</span>
                         <span className="text-zinc-300">·</span>
@@ -1813,11 +1834,19 @@ const MonthlyReportTab: React.FC = () => {
                     </>
                   )}
                 </div>
-                {/* 세로 bar */}
-                <div className="w-full h-[140px] md:h-[180px] flex items-end justify-center mt-1.5 mb-1.5">
+                {/* 세로 bar · 2026-10-09 현재 월 예상매출 overlay (뒤에 겹쳐서) */}
+                <div className="w-full h-[140px] md:h-[180px] flex items-end justify-center mt-1.5 mb-1.5 relative">
+                  {isCurrent && projected && projected.total > 0 && maxSale > 0 && (
+                    <div
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[42px] rounded-t-md bg-cyan-200/50 border border-dashed border-cyan-500 pointer-events-none"
+                      style={{ height: `${Math.max((projected.total / maxSale) * 100, 3)}%` }}
+                      title={`예상 월말 매출 ${fmtWonShort(projected.total)}`}
+                      aria-hidden
+                    />
+                  )}
                   {hasData ? (
                     <div
-                      className={`w-full max-w-[42px] rounded-t-md transition-all bg-gradient-to-t ${qt.barFrom} ${qt.barTo} ${isCurrent ? "shadow-[0_-2px_8px_rgba(244,63,94,0.25)] ring-1 ring-white" : "opacity-80 group-hover:opacity-100"}`}
+                      className={`relative z-10 w-full max-w-[42px] rounded-t-md transition-all bg-gradient-to-t ${qt.barFrom} ${qt.barTo} ${isCurrent ? "shadow-[0_-2px_8px_rgba(244,63,94,0.25)] ring-1 ring-white" : "opacity-80 group-hover:opacity-100"}`}
                       style={{ height: `${Math.max(ratio * 100, 3)}%` }}
                     />
                   ) : (
@@ -1850,6 +1879,7 @@ const MonthlyReportTab: React.FC = () => {
               {/* 범례 · 매출(rose) · 마진(emerald) · 객단(brand) */}
               <div className="flex items-center justify-end gap-3 pt-2 text-[10px] md:text-[11px] text-zinc-500 flex-wrap">
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500" />매출</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full border border-dashed border-cyan-500 bg-cyan-200/50" />예상</span>
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />마진</span>
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-brand-deep" />객단가</span>
                 <span className="text-zinc-300">|</span>
