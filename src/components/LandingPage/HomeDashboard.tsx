@@ -71,6 +71,8 @@ export interface HomeDashboardProps {
 }
 
 const fmtWon = (n: number): string => `${Math.round(n).toLocaleString("ko-KR")}원`;
+// 2026-10-09 · 사용자 지시 · 예상 월매출액 "12.34억원" 포맷
+const fmtEok = (n: number): string => `${(n / 1e8).toFixed(2)}억원`;
 const todayYmd = (): string => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -87,6 +89,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const [hourlyRows, setHourlyRows] = useState<HourlyRow[] | null>(null);
   const [salesLoading, setSalesLoading] = useState(false);
   const [salesError, setSalesError] = useState<string | null>(null);
+  // 2026-10-09 · 사용자 지시 · 예상 월매출액 (매출현황 헤더 옆 노출) · 월 saleTotal 기반 projection
+  const [monthProjectionWon, setMonthProjectionWon] = useState<number | null>(null);
   // 2026-10-09 · 사용자 지시 · 매출현황 주간 tab · 7일 range hourly data
   const [weekHourlyRows, setWeekHourlyRows] = useState<HourlyRow[] | null>(null);
   const [weekSalesLoading, setWeekSalesLoading] = useState(false);
@@ -108,12 +112,27 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   // 2026-10-08 · 사용자 지시 · 상품 클릭 시 상품정보 모달
   const [selectedProduct, setSelectedProduct] = useState<ProductInfo | null>(null);
 
+  // 2026-10-09 · 사용자 지시 · 상품 클릭 디버깅 로그 (안 나옴 분석)
   const handleProductClick = useCallback(async (pcode: string | null) => {
-    if (!pcode) return;
+    console.log("[HomeDashboard.productClick] pcode=", pcode);
+    if (!pcode) {
+      console.warn("[HomeDashboard.productClick] skip · pcode is null/empty");
+      return;
+    }
     try {
-      const r = await api.get<ProductInfo>(`/api/products/${encodeURIComponent(pcode)}`);
+      const url = `/api/products/${encodeURIComponent(pcode)}`;
+      console.log("[HomeDashboard.productClick] GET", url);
+      const r = await api.get<ProductInfo>(url);
+      console.log("[HomeDashboard.productClick] response data=", r.data);
+      if (!r.data) {
+        console.warn("[HomeDashboard.productClick] empty data · modal skip");
+        return;
+      }
       setSelectedProduct(r.data);
-    } catch { /* silent · 상품 조회 실패 시 미노출 */ }
+      console.log("[HomeDashboard.productClick] setSelectedProduct done · modal should open");
+    } catch (e) {
+      console.error("[HomeDashboard.productClick] FAILED", e);
+    }
   }, []);
 
   const loadSales = useCallback(async () => {
@@ -126,6 +145,26 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       setHourlyRows(r.data.rows ?? []);
     } catch (e) { setSalesError((e as Error).message); setHourlyRows(null); }
     finally { setSalesLoading(false); }
+  }, [isManagerOrAdmin]);
+
+  // 2026-10-09 · 사용자 지시 · 예상 월매출액 projection · year-overview cache (현재 월 saleTotal → 평균 × 총일수)
+  const loadMonthProjection = useCallback(async () => {
+    if (!isManagerOrAdmin) return;
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      interface YearOverviewApiResponse { ok: boolean; results?: Record<string, { saleTotal: number } | null>; }
+      const r = await api.get<YearOverviewApiResponse>(`/api/erp/sale-year-overview?year=${year}`);
+      if (!r.data.ok || !r.data.results) { setMonthProjectionWon(null); return; }
+      const row = r.data.results[String(month)];
+      const saleTotal = row ? Number(row.saleTotal ?? 0) : 0;
+      if (saleTotal <= 0) { setMonthProjectionWon(null); return; }
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const pastDays = now.getDate();
+      if (pastDays <= 0) { setMonthProjectionWon(null); return; }
+      setMonthProjectionWon((saleTotal / pastDays) * daysInMonth);
+    } catch { setMonthProjectionWon(null); }
   }, [isManagerOrAdmin]);
 
   // 2026-10-09 · 사용자 지시 · 주간 매출 (7일 range)
@@ -270,6 +309,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
   useEffect(() => { void loadSales(); }, [loadSales]);
   useEffect(() => { void loadWeekSales(); }, [loadWeekSales]);
+  useEffect(() => { void loadMonthProjection(); }, [loadMonthProjection]);
   useEffect(() => { void loadDayProducts(); }, [loadDayProducts]);
   useEffect(() => { void loadTodayPurchases(); }, [loadTodayPurchases]);
   useEffect(() => { void loadLowStock(); }, [loadLowStock]);
@@ -432,6 +472,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 onOpen={goTo("display", "revenue")}
                 weekRows={weekHourlyRows}
                 weekLoading={weekSalesLoading}
+                monthProjectionWon={monthProjectionWon}
               />
               {/* 2026-10-09 · 사용자 지시 · 매입발주현황 (매출현황처럼 tabbed · 1주 chart) */}
               <PurchaseOrderOverviewCard
@@ -575,9 +616,11 @@ interface SalesOverviewProps {
   // 2026-10-09 · 사용자 지시 · 주간 탭 추가
   weekRows: HourlyRow[] | null;
   weekLoading: boolean;
+  // 2026-10-09 · 사용자 지시 · 매출현황 헤더 옆 "예상월매출액 X.XX억원"
+  monthProjectionWon: number | null;
 }
 
-const SalesOverviewCard: React.FC<SalesOverviewProps> = ({ loading, error, rows, todaySale, todayCust, avgOrder, curHour, onOpen, weekRows, weekLoading }) => {
+const SalesOverviewCard: React.FC<SalesOverviewProps> = ({ loading, error, rows, todaySale, todayCust, avgOrder, curHour, onOpen, weekRows, weekLoading, monthProjectionWon }) => {
   // 2026-10-09 · tab · 오늘 (hourly) · 주간 (daily)
   const [tab, setTab] = useState<"today" | "week">("today");
   const isWeek = tab === "week";
@@ -614,9 +657,16 @@ const SalesOverviewCard: React.FC<SalesOverviewProps> = ({ loading, error, rows,
     <div className={`${CARD} w-full flex flex-col`}>
       {/* Header · 2026-10-09 · 사용자 지시 · 오늘/주간 탭 추가 */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 gap-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="w-[3px] h-[16px] bg-blue-500 rounded-full" />
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+          <span className="w-[3px] h-[16px] bg-blue-500 rounded-full shrink-0" />
           <h3 className={T.sectionTitle}>매출 현황</h3>
+          {/* 2026-10-09 · 사용자 지시 · 예상월매출액 inline (평균×총일수) · 12.34억원 포맷 */}
+          {monthProjectionWon != null && monthProjectionWon > 0 && (
+            <span className="text-[12.5px] md:text-[13.5px] font-semibold text-cyan-700 tabular-nums whitespace-nowrap"
+              title="평균 일 매출 × 당월 총일수 = 월말 예상 총매출">
+              (예상월매출액 {fmtEok(monthProjectionWon)})
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
@@ -996,9 +1046,14 @@ const TodaySalesTable: React.FC<TodaySalesTableProps> = ({ loading, error, items
                       {onProductClick ? (
                         <button
                           type="button"
-                          onClick={() => onProductClick(it.pcode)}
+                          onClick={() => {
+                            // 2026-10-09 · 사용자 지시 · 상품 클릭 디버깅 로그
+                            console.log("[TodaySalesTable.rowClick]", { idx: i, pcode: it.pcode, productName: it.productName, hasPcode: !!it.pcode });
+                            onProductClick(it.pcode);
+                          }}
                           disabled={!it.pcode}
                           className="text-left break-words whitespace-normal hover:underline underline-offset-[3px] decoration-slate-300 cursor-pointer disabled:cursor-default disabled:no-underline"
+                          title={!it.pcode ? "pcode 없음 (ERP 데이터 누락)" : "상품 정보 보기"}
                         >
                           {it.productName ?? "(상품명 없음)"}
                         </button>
