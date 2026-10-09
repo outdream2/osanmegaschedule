@@ -294,11 +294,30 @@ export const MatchOverviewSection: React.FC = () => {
         </div>
       ) : (
         <div className="divide-y divide-slate-100">
-          {/* 컬럼 헤더 (좌/우/끝) */}
-          <div className="grid grid-cols-[1fr_1fr_220px] bg-slate-50/60 text-[11.5px] font-semibold text-slate-500 uppercase tracking-wide">
-            <div className="px-4 py-2 border-r border-slate-200">발주정보</div>
-            <div className="px-4 py-2 border-r border-slate-200">매입정보</div>
-            <div className="px-4 py-2 text-right">판정 · 처리상태</div>
+          {/* 컬럼 헤더 · 좌(발주 5) / 우(매입 5) / 끝(상태 + 처리) */}
+          <div className="grid grid-cols-[1fr_1fr_260px] bg-slate-50/60 text-[11.5px] font-semibold text-slate-500 uppercase tracking-wide border-b border-slate-200">
+            {/* 좌 · 발주 */}
+            <div className="grid grid-cols-[22px_160px_90px_84px_90px_1fr] gap-2 px-3 py-2 border-r border-slate-200 items-center">
+              <span></span>
+              <span>발주번호 · 공급사</span>
+              <span>발주기간</span>
+              <span className="text-right">품목·수량</span>
+              <span className="text-right">발주금액</span>
+              <span>문서</span>
+            </div>
+            {/* 우 · 매입 */}
+            <div className="grid grid-cols-[160px_90px_84px_90px_1fr] gap-2 px-3 py-2 border-r border-slate-200 items-center">
+              <span>매입일 · 공급사</span>
+              <span>매입기간</span>
+              <span className="text-right">품목·수량</span>
+              <span className="text-right">매입금액</span>
+              <span>상태</span>
+            </div>
+            {/* 끝 · 상태 + 처리 */}
+            <div className="grid grid-cols-[80px_1fr] gap-2 px-3 py-2 items-center">
+              <span>처리상태</span>
+              <span className="text-right">처리</span>
+            </div>
           </div>
           {filteredOrders.map((og) => (
             <MatchOrderRow key={og.orderKey} order={og}
@@ -366,55 +385,74 @@ const MatchOrderRow: React.FC<MatchOrderRowProps> = ({ order, isOpen, onToggle, 
 
   return (
     <div>
-      {/* 메인 행 · 좌/우/끝 3-column grid */}
-      <div onClick={onToggle}
-        className="grid grid-cols-[1fr_1fr_220px] cursor-pointer hover:bg-slate-50/40 transition-colors">
-        {/* 좌 · 발주정보 */}
-        <div className="px-4 py-3 border-r border-slate-200 flex gap-2">
+      {/* 메인 행 · 좌(발주 5) / 우(매입 5) / 끝(상태 + 처리) · 매칭 됐을 때만 클릭 → 아래 상세 */}
+      <div onClick={purchaseGroup.matchedCount > 0 ? onToggle : undefined}
+        className={`grid grid-cols-[1fr_1fr_260px] transition-colors ${purchaseGroup.matchedCount > 0 ? "hover:bg-slate-50/40 cursor-pointer" : ""}`}>
+        {/* 좌 · 발주 5 cells · 발주번호·공급사 / 발주기간 / 품목·수량 / 발주금액 / 문서 */}
+        <div className="px-3 py-3 border-r border-slate-200 grid grid-cols-[22px_160px_90px_84px_90px_1fr] gap-2 items-center">
           <CaretRight size={13} weight="bold"
-            className={`shrink-0 text-slate-400 transition-transform mt-0.5 ${isOpen ? "rotate-90" : ""}`} />
-          <div className="min-w-0 flex-1 space-y-0.5">
-            <div className="text-[13px] text-slate-500 font-mono truncate">#{order.orderNumber ?? "—"}</div>
-            <div className="text-[14px] font-semibold text-ink truncate">{supplierDisplay || "공급사 미지정"}</div>
-            <div className="text-[12.5px] text-slate-600">{shortDate(order.sentAt ?? order.orderDate) || "—"}</div>
-            <div className="text-[12.5px] text-slate-600 tabular-nums">{order.distinctProducts}종 · {fmtQty(totalOrderQty)}</div>
-            <div className="text-[14px] font-semibold text-emerald-700 tabular-nums">{fmtWon(totalOrderAmount)}</div>
+            className={`shrink-0 text-slate-400 transition-transform ${purchaseGroup.matchedCount > 0 ? "" : "opacity-30"} ${isOpen ? "rotate-90" : ""}`} />
+          {/* cell 1 · 발주번호 · 공급사 · 2줄 */}
+          <div className="min-w-0 leading-tight">
+            <div className="text-[12.5px] text-slate-500 font-mono truncate">#{order.orderNumber ?? "—"}</div>
+            <div className="text-[13.5px] font-semibold text-ink truncate">{supplierDisplay || "공급사 미지정"}</div>
           </div>
+          {/* cell 2 · 발주기간 (단일 발주일) */}
+          <span className="text-[12.5px] text-slate-600 whitespace-nowrap">{shortDate(order.sentAt ?? order.orderDate) || "—"}</span>
+          {/* cell 3 · 품목·수량 */}
+          <span className="text-[12.5px] text-slate-600 tabular-nums text-right whitespace-nowrap">{order.distinctProducts}종 · {fmtQty(totalOrderQty)}</span>
+          {/* cell 4 · 발주금액 */}
+          <span className="text-[13.5px] font-semibold text-emerald-700 tabular-nums text-right whitespace-nowrap">{fmtWon(totalOrderAmount)}</span>
+          {/* cell 5 · 문서 */}
+          <span className="text-[12.5px] text-slate-400">—</span>
         </div>
-        {/* 우 · 매입정보 (불일치 시 rose 톤) */}
-        <div className={`px-4 py-3 border-r border-slate-200 space-y-0.5 ${isMismatch ? "bg-rose-50/60" : ""}`}>
-          <div className="text-[13px] text-slate-500 truncate">
-            {pDates.from ? (pDates.from === pDates.to ? shortDate(pDates.from) : `${shortDate(pDates.from)} ~ ${shortDate(pDates.to)}`) : "—"}
-          </div>
-          <div className="text-[14px] font-semibold text-ink truncate">{supplierDisplay || "—"}</div>
-          <div className="text-[12.5px] text-slate-600 tabular-nums">
-            {purchaseGroup.matchedCount > 0 ? `${purchaseKinds}종 · ${fmtQty(totalPurchaseQty)}` : "—"}
-          </div>
-          <div className="text-[12.5px] text-slate-600 tabular-nums">
-            매칭 {purchaseGroup.matchedCount} · 미매칭 {purchaseGroup.missingCount}
-          </div>
-          {totalPurchaseAmount > 0 ? (
-            <div className={`text-[14px] font-semibold tabular-nums ${isMismatch ? "text-rose-700" : "text-sky-700"}`}>
-              {fmtWon(totalPurchaseAmount)}
+        {/* 우 · 매입 5 cells · 매입일·공급사 / 매입기간 / 품목·수량 / 매입금액 / 상태 */}
+        {purchaseGroup.matchedCount > 0 ? (
+          <div className={`px-3 py-3 border-r border-slate-200 grid grid-cols-[160px_90px_84px_90px_1fr] gap-2 items-center ${isMismatch ? "bg-rose-50/60" : ""}`}>
+            {/* cell 1 · 매입일 · 공급사 · 2줄 */}
+            <div className="min-w-0 leading-tight">
+              <div className="text-[12.5px] text-slate-500 whitespace-nowrap">{pDates.from ? shortDate(pDates.from) : "—"}</div>
+              <div className="text-[13.5px] font-semibold text-ink truncate">{supplierDisplay || "—"}</div>
             </div>
-          ) : (
-            <div className="inline-flex items-center h-[20px] px-1.5 rounded border bg-rose-50 text-rose-700 border-rose-200 text-[11.5px] font-semibold">
-              매입 없음
+            {/* cell 2 · 매입기간 */}
+            <span className="text-[12.5px] text-slate-600 whitespace-nowrap">
+              {pDates.from && pDates.to && pDates.from !== pDates.to ? `${shortDate(pDates.from)} ~ ${shortDate(pDates.to)}` : (pDates.from ? shortDate(pDates.from) : "—")}
+            </span>
+            {/* cell 3 · 품목·수량 */}
+            <span className="text-[12.5px] text-slate-600 tabular-nums text-right whitespace-nowrap">{purchaseKinds}종 · {fmtQty(totalPurchaseQty)}</span>
+            {/* cell 4 · 매입금액 */}
+            <span className={`text-[13.5px] font-semibold tabular-nums text-right whitespace-nowrap ${isMismatch ? "text-rose-700" : "text-sky-700"}`}>{fmtWon(totalPurchaseAmount)}</span>
+            {/* cell 5 · 상태 (매칭 · 미매칭 수) */}
+            <span className="text-[11.5px] tabular-nums whitespace-nowrap">
+              <span className="text-emerald-700 font-semibold">매칭 {purchaseGroup.matchedCount}</span>
+              {purchaseGroup.missingCount > 0 && <span className="ml-1 text-rose-600 font-semibold">미매칭 {purchaseGroup.missingCount}</span>}
+            </span>
+          </div>
+        ) : (
+          <div className="px-3 py-3 border-r border-slate-200 bg-rose-50/60 grid grid-cols-[160px_90px_84px_90px_1fr] gap-2 items-center">
+            <div className="min-w-0 leading-tight">
+              <div className="text-[12.5px] text-rose-500">—</div>
+              <div className="text-[13.5px] font-semibold text-rose-700 truncate">{supplierDisplay || "—"}</div>
             </div>
-          )}
-        </div>
-        {/* 끝 · 판정 액션 + 처리상태 */}
-        <div className="px-3 py-3 flex flex-col items-end gap-1.5" onClick={e => e.stopPropagation()}>
-          <span className={`inline-flex items-center h-[22px] px-2 rounded border text-[12px] font-semibold ${pill.bg} ${pill.text} ${pill.border}`}>
+            <span className="text-[12.5px] text-rose-500">—</span>
+            <span className="text-[12.5px] text-rose-500 text-right">—</span>
+            <span className="text-[12.5px] text-rose-500 text-right">—</span>
+            <span className="text-[12px] text-rose-700 font-semibold">매입 없음</span>
+          </div>
+        )}
+        {/* 끝 · 상태 pill + 처리 액션 */}
+        <div className="px-3 py-3 grid grid-cols-[80px_1fr] gap-2 items-center" onClick={e => e.stopPropagation()}>
+          {/* 상태 */}
+          <span className={`inline-flex items-center justify-center h-[22px] px-2 rounded border text-[11.5px] font-semibold ${pill.bg} ${pill.text} ${pill.border}`}>
             {pillLabel}
-            {order.hasUserDecision && <span className="ml-1 text-[10px] opacity-70">판정</span>}
           </span>
+          {/* 처리 액션 */}
           <div className="flex items-center gap-1 flex-wrap justify-end">
             {anyPending ? (
               <>
                 <button type="button" onClick={() => { void onConfirm(order.rows); }} disabled={busy}
                   className="inline-flex items-center gap-1 h-7 px-2 rounded border border-emerald-200 bg-emerald-50 text-emerald-700 text-[11.5px] font-semibold hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">
-                  <PhCheck size={11} weight="bold" />매입확인
+                  <PhCheck size={11} weight="bold" />확인
                 </button>
                 <button type="button" onClick={() => onException(order.rows[0] ?? null)} disabled={busy}
                   className="inline-flex items-center gap-1 h-7 px-2 rounded border border-amber-200 bg-amber-50 text-amber-700 text-[11.5px] font-semibold hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">
@@ -427,7 +465,7 @@ const MatchOrderRow: React.FC<MatchOrderRowProps> = ({ order, isOpen, onToggle, 
                     <a href={mailto} onClick={e => e.stopPropagation()}
                       className="inline-flex items-center gap-1 h-7 px-2 rounded border border-sky-200 bg-sky-50 text-sky-700 text-[11.5px] font-semibold hover:bg-sky-100 transition-colors cursor-pointer"
                       title="공급사 담당자에게 재조정 이메일 발송">
-                      <EnvelopeSimple size={11} weight="fill" />이메일
+                      <EnvelopeSimple size={11} weight="fill" />메일
                     </a>
                   );
                 })()}
@@ -435,7 +473,7 @@ const MatchOrderRow: React.FC<MatchOrderRowProps> = ({ order, isOpen, onToggle, 
             ) : decidedCount > 0 ? (
               <button type="button" onClick={() => { void onUndo(order.rows); }} disabled={busy}
                 className="inline-flex items-center gap-1 h-7 px-2 rounded border border-slate-200 bg-white text-slate-600 text-[11.5px] font-semibold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">
-                <ArrowCounterClockwise size={11} weight="bold" />판정취소
+                <ArrowCounterClockwise size={11} weight="bold" />취소
               </button>
             ) : null}
           </div>
