@@ -83,8 +83,18 @@
       ],
       "totalWeight": 25
     },
+    "src/components/DisplayPage/overviews/OrderReturnOverview.tsx": {
+      "lines": 2979,
+      "violations": [
+        {
+          "ruleId": "large-file-critical",
+          "count": 1
+        }
+      ],
+      "totalWeight": 24
+    },
     "src/components/DisplayPage/RevenuePage.tsx": {
-      "lines": 2467,
+      "lines": 2470,
       "violations": [
         {
           "ruleId": "large-file-critical",
@@ -291,18 +301,8 @@
       ],
       "totalWeight": 7
     },
-    "src/components/DisplayPage/overviews/OrderReturnOverview.tsx": {
-      "lines": 1036,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        }
-      ],
-      "totalWeight": 6
-    },
     "src/components/LandingPage/HomeDashboard.tsx": {
-      "lines": 1208,
+      "lines": 1216,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -556,7 +556,7 @@
       "totalWeight": 3
     },
     "src/components/OrderManagePage/OrderManagePage.tsx": {
-      "lines": 904,
+      "lines": 905,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -576,7 +576,7 @@
       "totalWeight": 3
     },
     "src/components/OrderManagePage/SalesRecommendationPanel.tsx": {
-      "lines": 873,
+      "lines": 840,
       "violations": [
         {
           "ruleId": "large-file-warn",
