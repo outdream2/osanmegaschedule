@@ -347,30 +347,27 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             const hasActual = actualQty > 0;
             const lossQty = erpQty - actualQty;
             return (
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className="inline-flex flex-col items-center leading-none bg-amber-50 border border-amber-200/70 rounded-lg px-2.5 py-1.5 min-w-[52px]" title="현재고 (products.current_stock · ERP 원본)">
-                  <span className="text-[11px] font-bold text-amber-600 tracking-tight">현재고</span>
-                  <span className={`text-[20px] font-extrabold tabular-nums mt-0.5 leading-none ${erpQty > 0 ? "text-amber-800" : "text-amber-300"}`}>
-                    {erpQty}
-                  </span>
+              // 2026-10-09 · #9 Phase 5 · ERP/실재고/손실 compact pill (가로 inline · 공간 축소)
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                <span className="inline-flex items-center gap-1 h-6 px-1.5 rounded border border-amber-200 bg-amber-50 text-[12px]" title="현재고 (ERP)">
+                  <span className="font-semibold text-amber-600">현재고</span>
+                  <span className={`font-bold tabular-nums ${erpQty > 0 ? "text-amber-800" : "text-amber-300"}`}>{erpQty}</span>
                 </span>
-                <span className="text-zinc-300 text-[15px] font-light">vs</span>
-                <span className="inline-flex flex-col items-center leading-none bg-sky-50 border border-sky-200/70 rounded-lg px-2.5 py-1.5 min-w-[46px]">
-                  <span className="text-[11px] font-bold text-sky-600 uppercase tracking-wide">실재고</span>
-                  <span className={`text-[20px] font-extrabold tabular-nums mt-0.5 leading-none ${actualQty > 0 ? "text-sky-700" : "text-zinc-300"}`}>
-                    {actualQty > 0 ? actualQty : "-"}
-                  </span>
+                <span className="text-slate-300 text-[11px]">vs</span>
+                <span className="inline-flex items-center gap-1 h-6 px-1.5 rounded border border-sky-200 bg-sky-50 text-[12px]">
+                  <span className="font-semibold text-sky-600">실재고</span>
+                  <span className={`font-bold tabular-nums ${actualQty > 0 ? "text-sky-700" : "text-slate-300"}`}>{actualQty > 0 ? actualQty : "-"}</span>
                 </span>
                 {hasActual && (
                   <>
-                    <span className="text-zinc-300 text-[15px] font-light">=</span>
-                    <span className={`inline-flex flex-col items-center leading-none rounded-lg px-2.5 py-1.5 min-w-[46px] border ${
-                      lossQty < 0 ? "bg-rose-50 border-rose-200/70" : lossQty > 0 ? "bg-amber-50 border-amber-200/70" : "bg-emerald-50 border-emerald-200/70"
+                    <span className="text-slate-300 text-[11px]">=</span>
+                    <span className={`inline-flex items-center gap-1 h-6 px-1.5 rounded border text-[12px] ${
+                      lossQty < 0 ? "border-rose-200 bg-rose-50" : lossQty > 0 ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"
                     }`}>
-                      <span className={`text-[11px] font-bold uppercase tracking-wide ${lossQty < 0 ? "text-rose-600" : lossQty > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+                      <span className={`font-semibold ${lossQty < 0 ? "text-rose-600" : lossQty > 0 ? "text-amber-600" : "text-emerald-600"}`}>
                         {lossQty < 0 ? "손실" : lossQty > 0 ? "이상" : "일치"}
                       </span>
-                      <span className={`text-[20px] font-extrabold tabular-nums mt-0.5 leading-none ${lossQty < 0 ? "text-rose-600" : lossQty > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+                      <span className={`font-bold tabular-nums ${lossQty < 0 ? "text-rose-700" : lossQty > 0 ? "text-amber-700" : "text-emerald-700"}`}>
                         {lossQty > 0 ? `+${lossQty}` : lossQty}
                       </span>
                     </span>

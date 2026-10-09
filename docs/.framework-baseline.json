@@ -1,7 +1,7 @@
 {
   "created": "2026-10-09",
   "version": 1,
-  "totalViolations": 527,
+  "totalViolations": 529,
   "files": {
     "server/ocr/pipeline/stages/03-vendor-match.ts": {
       "lines": 684,
@@ -391,6 +391,16 @@
       ],
       "totalWeight": 6
     },
+    "server/routes/stock/products.ts": {
+      "lines": 1400,
+      "violations": [
+        {
+          "ruleId": "no-any-server",
+          "count": 6
+        }
+      ],
+      "totalWeight": 6
+    },
     "server/routes/stock/stockManage/topSales.ts": {
       "lines": 1093,
       "violations": [
@@ -515,16 +525,6 @@
       ],
       "totalWeight": 4
     },
-    "server/routes/stock/products.ts": {
-      "lines": 1388,
-      "violations": [
-        {
-          "ruleId": "no-any-server",
-          "count": 4
-        }
-      ],
-      "totalWeight": 4
-    },
     "server/services/googleDriveService.ts": {
       "lines": 466,
       "violations": [
@@ -606,7 +606,7 @@
       "totalWeight": 3
     },
     "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 964,
+      "lines": 956,
       "violations": [
         {
           "ruleId": "large-file-warn",
