@@ -50,7 +50,8 @@
 
 | # | 태스크 | 상세 | 상태 |
 |---|-----|-----|-----|
-| **#1** | **월별 매출 · 예상 매출 금액 표시 추가** · 사용자 지시 2026-10-09 | 공식 = (현재까지 일별 평균 매출) × (남은 일수) · 월말 예상 총매출 projection · "월별 매출" 영역에 노출 · 데이터 소스 ERP Sales 월별 집계 (fallback 금지 · DB 연동만) | 🟡 조사 중 |
+| **#1** | **월별 매출 · 예상 매출 금액 표시 추가** · 사용자 지시 2026-10-09 | 공식 = (현재까지 일별 평균 매출) × (남은 일수) + 현재까지 매출 = 평균 × 총일수 · RevenuePage 선택월 상세 items 배열 조건부 삽입 (isCurMonth 일 때만 · cyan 톤) · tooltip 공식 노출 | ✅ 완료 (`9bd9b849`) |
+| **#2** | **승인업무 페이지 레이아웃 홈 랜딩 톤 재구성** · 사용자 지시 2026-10-09 | `LeavePage.tsx` showApproval 섹션 + `src/components/RequestsPage` 승인업무 inner tab · 홈 랜딩 톤 SSOT 적용 · CARD(rounded-[12px]+border-slate-200+thin shadow) · 2-tier typography (body 15/16, label 13/14) · 좌측 accent 레일 제거 · 아이콘 inline (section label 3px thin accent 패턴) · BEHAVIOR DELTA = 0 (className only) | 🟡 진행중 |
 
 ---
 
@@ -62,7 +63,9 @@
 
 ## 🐞 에러 태스크 (버그·회귀)
 
-(현재 · 대기 에러 없음)
+| # | 태스크 | 상세 | 상태 |
+|---|-----|-----|-----|
+| **E-1** | **발주요청 추가 시 알림 발송 제거** · 사용자 지시 2026-10-09 "발주요청 추가된건 알림 보내지마" | `createOrderRequest` (POST /api/order-requests) 시점의 알림 발송 로직 제거 · 실제 발주 전송 (`bulkSendOrderRequests`) 시점 알림은 유지 · 요청 추가는 조용히 등록만 | 🟡 조사 중 |
 
 ---
 

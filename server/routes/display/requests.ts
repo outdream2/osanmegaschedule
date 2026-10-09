@@ -716,13 +716,9 @@ router.post("/api/order-requests", authorize(1), validateBody(CreateOrderRequest
     ...basePayload,
   }]).select("id").single();
   if (error) throw new HttpError(500, error.message);
-  // 2026-08-13 · #107 · 신규 발주요청 · 관리자 알림
-  notificationsService.notifyAllAdmins({
-    title: "📦 발주 요청",
-    body: `${b.product_name ?? code} · 발주 요청 추가됨.`,
-    type: "info",
-    push: { url: "/", tag: `order-req-${data?.id ?? code}` },
-  }).catch(() => null);
+  // 2026-10-09 · E-1 · 사용자 지시 · 발주요청 추가 시점 알림 발송 제거
+  //   · "발주요청 추가된건 알림 보내지마 · 발주 나갔을 때만 알림"
+  //   · 실제 발주 전송 (bulkSendOrderRequests) 시점에만 알림 (sms/kakao/email)
   res.json({ ok: true, updated: false, id: data?.id });
 }));
 
