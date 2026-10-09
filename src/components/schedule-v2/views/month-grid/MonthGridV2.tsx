@@ -98,11 +98,15 @@ export const MonthGridV2: React.FC<GridProps> = ({
                   key={`h-${d}`}
                   ref={isToday ? todayHeaderRef : undefined}
                   onClick={dateClickable ? () => onDateHeaderClick!(d) : undefined}
-                  className={`sticky top-0 z-30 border-r border-b border-line px-1 py-1.5 text-center text-[12px] font-semibold tabular-nums ${
+                  className={`sticky top-0 z-30 border-r border-b border-line px-1 py-1.5 text-center text-[12px] font-semibold tabular-nums relative ${
                     isToday
-                      ? "bg-rose-50 text-rose-700 ring-2 ring-inset ring-rose-500 relative"
+                      ? "bg-rose-50 text-rose-700"
                       : isSun ? "bg-rose-50/60 text-rose-700" : isSat ? "bg-sky-50/60 text-sky-700" : "bg-zinc-50 text-ink"
                   } ${dateClickable ? "cursor-pointer hover:bg-brand-tint/40" : ""}`}
+                  style={isToday ? {
+                    // 2026-10-09 · 사용자 지시 · column 전체 하나의 네모 · header 상단 + 좌/우 (하단은 cell 들로 이어짐)
+                    boxShadow: "inset 0 2px 0 0 #ef4444, inset 2px 0 0 0 #ef4444, inset -2px 0 0 0 #ef4444",
+                  } : undefined}
                   title={dateClickable ? (isToday ? "오늘 · 일간 보기" : "일간 보기") : undefined}
                 >
                   {/* 2026-10-08 · 사용자 지시 · V1 ScheduleGrid.tsx:144 와 동일 rose-500 inset ring + 2026 트렌드 톤
@@ -118,9 +122,10 @@ export const MonthGridV2: React.FC<GridProps> = ({
           </tr>
         </thead>
         <tbody>
-          {employees.map((emp) => {
+          {employees.map((emp, rowIdx) => {
             const empMap = scheduleIndex.get(emp.id);
             const typeHoursMap = typeHoursByEmp.get(emp.id) ?? {};
+            const isLastRow = rowIdx === employees.length - 1;
             return (
               <tr key={`r-${emp.id}`} className="hover:bg-brand-tint/10">
                 <th
@@ -160,13 +165,15 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       title={isDimmed ? "다른 월 날짜 · 월간 뷰에서 수정" : undefined}
                     >
                       {scheduleCellContent(s, typeHoursMap, scheduleTypes, isToday)}
-                      {/* 2026-10-09 · 사용자 지시 · 오늘 cell 전체 사각형 테두리 (상·하·좌·우) */}
+                      {/* 2026-10-09 · 사용자 지시 · column 전체 하나의 네모 · 각 cell 은 좌/우 (+ 마지막 row 는 하단 포함) */}
                       {isToday && (
                         <div
                           aria-hidden
                           className="pointer-events-none absolute inset-0 z-20"
                           style={{
-                            boxShadow: "inset 0 0 0 2px #ef4444",
+                            boxShadow: isLastRow
+                              ? "inset 2px 0 0 0 #ef4444, inset -2px 0 0 0 #ef4444, inset 0 -2px 0 0 #ef4444"
+                              : "inset 2px 0 0 0 #ef4444, inset -2px 0 0 0 #ef4444",
                           }}
                         />
                       )}
