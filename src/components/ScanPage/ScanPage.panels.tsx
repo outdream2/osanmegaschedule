@@ -197,25 +197,19 @@ export const SaveCard: React.FC<SaveCardProps> = ({
 }) => {
   if (rows.length === 0) return null;
   return (
-    <div className={`bg-white rounded-2xl border-2 overflow-hidden transition-colors duration-150 ${
-      saveStatus === "done"
-        ? "border-emerald-300/80 shadow-[0_0_0_4px_rgba(16,185,129,0.08),0_4px_16px_rgba(0,0,0,0.08)]"
-        : "border-line/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
+    // 2026-10-09 · #9 Phase 7 · 홈 톤 CARD · 공간 축소
+    <div className={`bg-white rounded-[12px] overflow-hidden transition-colors border shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${
+      saveStatus === "done" ? "border-emerald-300" : "border-slate-200"
     }`}>
-      {/* 2026-08-25 · 사용자 지시 · 합계 · product_storage.png 톤 (창고 cyan · 매장 violet 파스텔) 적용 */}
-      <div className={`px-5 py-3.5 border-b border-zinc-100/80 flex items-center gap-2 ${
-        saveStatus === "done" ? "bg-emerald-50/60" : "bg-zinc-50/40"
+      <div className={`px-4 py-2.5 border-b border-slate-100 flex items-center gap-2 ${
+        saveStatus === "done" ? "bg-emerald-50/40" : "bg-white"
       }`}>
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-          saveStatus === "done" ? "bg-emerald-100" : "bg-zinc-100"
-        }`}>
-          <SaveAll size={14} className={saveStatus === "done" ? "text-emerald-600" : "text-zinc-400"} />
-        </div>
-        <span className="text-[16px] font-bold text-zinc-800">전체 등록</span>
-        <span className="ml-1 text-[15px] font-semibold text-zinc-500 tabular-nums">{rows.length}건</span>
+        <SaveAll size={16} className={`shrink-0 ${saveStatus === "done" ? "text-emerald-600" : "text-slate-500"}`} />
+        <span className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight">전체 등록</span>
+        <span className="text-[12.5px] text-slate-500 font-medium tabular-nums">· {rows.length}건</span>
       </div>
 
-      <div className="px-5 py-4 flex flex-col gap-3">
+      <div className="px-4 py-3 flex flex-col gap-2.5">
         {/* 2026-08-23 · #202 · 사용자 지시 · 전체 등록 버튼 바로 위 · 등록 준비 요약 리스트 */}
         <div className="rounded-lg border border-line/70 bg-zinc-50/50 divide-y divide-zinc-100 overflow-hidden">
           <div className="px-3 py-2 flex items-center gap-2 bg-white/60 border-b border-line/60">
@@ -270,25 +264,21 @@ export const SaveCard: React.FC<SaveCardProps> = ({
           onClick={onReview}
           disabled={saveStatus === "saving" || saveStatus === "done" || rows.length === 0}
           className={[
-            "relative w-full min-h-[56px] py-3.5 rounded-xl",
-            "font-bold text-[14px] sm:text-[15px] text-white",
-            "transition-colors duration-150 cursor-pointer disabled:cursor-not-allowed",
-            "active:scale-[0.99] overflow-hidden",
+            "w-full h-11 rounded-md font-semibold text-[14px] text-white transition-colors cursor-pointer disabled:cursor-not-allowed",
             saveStatus === "done"
-              ? "bg-emerald-500 shadow-md"
+              ? "bg-emerald-500"
               : saveStatus === "error"
-                ? "bg-rose-500 hover:bg-rose-600 shadow-md"
+                ? "bg-rose-500 hover:bg-rose-600"
                 : saveStatus === "saving"
-                  ? "bg-zinc-400"
-                  : "bg-teal-600 hover:bg-teal-700 shadow-md hover:shadow-lg",
+                  ? "bg-slate-400"
+                  : "bg-brand-deep hover:bg-[#0d3a5c]",
           ].join(" ")}
         >
-          <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
-          <span className="relative flex items-center justify-center gap-2.5">
-            {saveStatus === "saving" && <Spinner size={17} />}
-            {saveStatus === "done"    && <Sparkles size={17} />}
-            {saveStatus === "error"   && <AlertCircle size={17} />}
-            {saveStatus === "idle"    && <SaveAll size={17} />}
+          <span className="flex items-center justify-center gap-2">
+            {saveStatus === "saving" && <Spinner size={15} />}
+            {saveStatus === "done"    && <Sparkles size={15} />}
+            {saveStatus === "error"   && <AlertCircle size={15} />}
+            {saveStatus === "idle"    && <SaveAll size={15} />}
             {saveStatus === "saving" ? "저장 중..." :
              saveStatus === "done"   ? `저장 완료 (${savedCount}건)` :
              saveStatus === "error"  ? "다시 시도" :
