@@ -708,24 +708,16 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         />
       )}
 
-      {/* ── Page header strip · 2026-08-17 · 최신 트렌드 · 좌측 accent bar + 딥네이비 통일 ── */}
-      <div className="bg-white border-b border-line shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-        <div className={`${PAGE_CONTAINER_CLS} px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3`}>
-          <AccentBar h={22} className="shrink-0" />
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-deep
-            flex items-center justify-center shadow-sm shrink-0">
-            <ScanLine size={17} className="text-white" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-[17px] sm:text-[19px] font-bold text-ink leading-tight tracking-tight">실재고 확인</h1>
-            <p className="text-[15px] sm:text-[14px] text-ink-soft mt-0.5 leading-tight">
-              바코드 스캔 후 창고1·2 · 매장1·2·3 수량 입력 · 전체 저장
-            </p>
-          </div>
+      {/* 2026-10-09 · 사용자 지시 · #9 홈 톤 리뉴얼 Phase 1 · 공간 최소 · accent bar 제거 · 2-tier typography */}
+      <div className="bg-white border-b border-slate-200">
+        <div className={`${PAGE_CONTAINER_CLS} px-4 sm:px-6 py-2.5 flex items-center gap-2.5`}>
+          <ScanLine size={18} className="text-slate-500 shrink-0" />
+          <h1 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">실재고 확인</h1>
+          <span className="text-[13px] md:text-[14px] text-slate-500 font-medium truncate">· 바코드 스캔 → 창1·창2·매1·매2·매3 수량 입력 → 저장</span>
           {rows.length > 0 && (
-            <div className="ml-auto flex items-center gap-2 shrink-0">
-              <StatusPill tone="brand" size="md">{rows.length}건</StatusPill>
-            </div>
+            <span className="ml-auto inline-flex items-center h-[22px] px-2 rounded border bg-sky-50 text-sky-700 border-sky-200 text-[12px] font-semibold tabular-nums shrink-0">
+              {rows.length}건
+            </span>
           )}
         </div>
       </div>

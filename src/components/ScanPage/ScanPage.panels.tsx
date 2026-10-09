@@ -48,25 +48,23 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
   canManageProducts, onOpenCreate,
 }) => {
   return (
-    <Card clip padding="none">
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-line bg-zinc-50/60">
-        <AccentBar className="shrink-0" />
-        <ScanLine size={18} className="text-brand-deep shrink-0" />
-        <div className="min-w-0">
-          <p className="text-[16px] font-bold text-ink leading-tight tracking-tight">바코드 스캔</p>
-          <p className="text-[15px] text-ink-soft leading-tight mt-0.5">스캔 시 우측 리스트에 자동 등록</p>
-        </div>
+    // 2026-10-09 · #9 홈 톤 리뉴얼 Phase 2 · AccentBar 제거 · 공간 최소 · rounded-[12px]
+    <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100">
+        <ScanLine size={16} className="text-slate-500 shrink-0" />
+        <span className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight">바코드 스캔</span>
+        <span className="text-[12.5px] text-slate-500 font-medium truncate">· 스캔 시 우측에 자동 등록</span>
       </div>
 
-      <div className="px-4 py-4 flex flex-col gap-3">
+      <div className="px-4 py-3 flex flex-col gap-2.5">
         <button
           onClick={onOpenScanner}
           disabled={mapLoading}
-          className="w-full h-11 flex items-center justify-center gap-2 rounded-md font-bold text-[14px] text-white bg-teal-600 hover:bg-teal-700 active:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="w-full h-10 flex items-center justify-center gap-2 rounded-md font-semibold text-[14px] text-white bg-brand-deep hover:bg-[#0d3a5c] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           {mapLoading
-            ? <><Spinner size={16} /> 상품 정보 로딩...</>
-            : <><ScanLine size={16} /> 바코드 스캔</>
+            ? <><Spinner size={14} /> 상품 정보 로딩...</>
+            : <><ScanLine size={15} /> 바코드 스캔</>
           }
         </button>
 
@@ -177,7 +175,7 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
           </div>
         )}
       </div>
-    </Card>
+    </div>
   );
 };
 
