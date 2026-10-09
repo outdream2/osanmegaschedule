@@ -19,6 +19,10 @@ import { MonthToggleSelector, dateRangesFromMonths } from "../common/MonthToggle
 import { CLASS_FILTER_LABEL, type ClassFilter, type ProductClass } from "../../utils/productClassify";
 
 type RevenueTab = "hourly" | "monthly";
+// 2026-10-09 · 사용자 지시 · 판매·매출현황 페이지 상단 탭 (매출 | 판매)
+type TopTab = "revenue" | "sales";
+// 2026-10-09 · 사용자 지시 · 판매 탭 · OrderManagePage statistics (lazy)
+const SalesPanel = React.lazy(() => import("../OrderManagePage/OrderManagePage"));
 type FetchStatus = "idle" | "loading" | "success" | "error";
 
 interface HourlyRow {
@@ -115,36 +119,69 @@ function parseHour(saleTime: string): number {
 //   · MONTHLY state (selectedYear/selectedMonth/monthlyData/monthlyLoading/monthlyError) → MonthlyReportTab 자체 보유 (이미 분리)
 //   · 공용 date state 금지 · HOURLY/MONTHLY API 호출 · parser · state 완전 독립
 export const RevenuePage: React.FC = () => {
+  // 2026-10-09 · 사용자 지시 · 판매·매출현황 상단 탭 (매출 | 판매) · 홈 랜딩 톤
+  const [topTab, setTopTab] = useState<TopTab>("revenue");
   const [tab, setTab] = useState<RevenueTab>("hourly");
   return (
     // 2026-10-06 · 사용자 지시 · 세로 스크롤 보장 · 가로 overflow 방지 · overflow-hidden 완화
     <div className="flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full">
-      {/* 탭 */}
+      {/* 2026-10-09 · 상단 탭 (매출 | 판매) · 홈 랜딩 톤 · subtle slate border */}
       <div className="px-4 pt-4 shrink-0 w-full min-w-0 max-w-full">
-        <div className="flex items-center gap-1 bg-white border border-zinc-200 rounded-lg p-1 w-fit">
+        <div className="inline-flex items-center gap-0 bg-white border border-slate-200 rounded-md p-0.5">
           {([
-            { k: "hourly" as const,  label: "⏱ 시간대별 조회" },
-            { k: "monthly" as const, label: "📅 월별 조회" },
+            { k: "revenue" as const, label: "매출" },
+            { k: "sales"   as const, label: "판매" },
           ]).map((t) => (
-            <button key={t.k} onClick={() => setTab(t.k)}
-              className={`px-4 py-2 rounded text-[18px] font-semibold transition ${
-                tab === t.k ? "bg-brand-deep text-white" : "text-zinc-600 hover:bg-zinc-100"
-              }`}>
+            <button
+              key={t.k}
+              onClick={() => setTopTab(t.k)}
+              className={`px-4 h-9 rounded-md text-[14px] md:text-[15px] font-semibold transition-colors cursor-pointer ${
+                topTab === t.k ? "bg-slate-900 text-white" : "text-slate-500 hover:text-ink hover:bg-slate-50"
+              }`}
+            >
               {t.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* 세로 scroll · overscroll touch · 가로 clip · 자식 min-h-0 */}
-      <div
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 w-full min-w-0 max-w-full"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        <div className="w-full min-w-0 max-w-full">
-          {tab === "hourly" ? <HourlyReportTab /> : <MonthlyReportTab />}
+      {topTab === "revenue" ? (
+        <>
+          {/* 매출 하위 탭 · 시간대별 / 월별 */}
+          <div className="px-4 pt-3 shrink-0 w-full min-w-0 max-w-full">
+            <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-md p-1 w-fit">
+              {([
+                { k: "hourly" as const,  label: "⏱ 시간대별 조회" },
+                { k: "monthly" as const, label: "📅 월별 조회" },
+              ]).map((t) => (
+                <button key={t.k} onClick={() => setTab(t.k)}
+                  className={`px-3.5 h-9 rounded text-[14px] md:text-[15px] font-semibold transition ${
+                    tab === t.k ? "bg-brand-deep text-white" : "text-slate-500 hover:text-ink hover:bg-slate-50"
+                  }`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 세로 scroll · overscroll touch · 가로 clip · 자식 min-h-0 */}
+          <div
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 w-full min-w-0 max-w-full"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
+            <div className="w-full min-w-0 max-w-full">
+              {tab === "hourly" ? <HourlyReportTab /> : <MonthlyReportTab />}
+            </div>
+          </div>
+        </>
+      ) : (
+        /* 판매 탭 · OrderManagePage statistics 임베드 · hideTopTabs */
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col mt-3">
+          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16 text-[14px] text-slate-500">판매 데이터 로딩 중...</div>}>
+            <SalesPanel initialTopTab="statistics" hideTopTabs />
+          </React.Suspense>
         </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -261,6 +298,7 @@ const HourlyReportTab: React.FC = () => {
   useEffect(() => { void loadHourlyRanges(activeRanges); }, [loadHourlyRanges, activeRanges]);
 
   // 2026-10-07 · 공휴일 fetch · 활성 범위 연도별 · 서버 24h cache · API 실패 silent skip
+  //   · 2026-10-08 · 서버 fetchHolidays 에서 고정 공휴일 fallback 처리 (API 누락 방어)
   useEffect(() => {
     let cancelled = false;
     const years = new Set<number>();
@@ -520,10 +558,13 @@ const HourlyReportTab: React.FC = () => {
           return new Date(y, m - 1, d).getDay();
         };
         // 2026-10-07 · 공휴일 제외 필터 (모든 축 적용 · ON 시만)
+        // 2026-10-09 · fix · 주말만 + 공휴일 포함 조합 · OR 로직 (주말 OR 공휴일)
+        //   · 이전 · AND · 주말만이 평일 공휴일 제외 → 공휴일 포함이 복구 불가
+        //   · 지금 · weekendOnly 시 includeHoliday 이면 공휴일도 함께 포함
         const effDateDataBase = chartAxis === "weekday"
           ? displayDateData.filter((d) => selectedWeekdays.has(getDayOfWeek(d.date)))
           : weekendOnly
-            ? displayDateData.filter((d) => isWeekend(d.date))
+            ? displayDateData.filter((d) => isWeekend(d.date) || (includeHoliday && holidaySet.has(d.date)))
             : (includeWeekend ? displayDateData : displayDateData.filter((d) => !isWeekend(d.date)));
         const effDateData = !includeHoliday ? effDateDataBase.filter((d) => !holidaySet.has(d.date)) : effDateDataBase;
         // 2026-10-06 · effDateData 빈 경우 chart 영역만 메시지 (상단 탭/메트릭 탭 유지)
@@ -670,17 +711,54 @@ const HourlyReportTab: React.FC = () => {
                   })}
                 </div>
               )}
-              {/* 2026-10-07 · 사용자 지시 · 공휴일 포함 체크박스 · 주말만 (또는 요일 선택) 옆에 배치 */}
-              <label className="inline-flex items-center gap-1.5 text-[13px] text-zinc-700 cursor-pointer select-none">
+              {/* 2026-10-07 · 사용자 지시 · 공휴일 포함 체크박스 · 주말만 (또는 요일 선택) 옆에 배치
+                  2026-10-08 · 사용자 지시 · 활성 범위 내 공휴일 갯수 표시 (예: "공휴일 포함(2일)") */}
+              <label className={`inline-flex items-center gap-1.5 text-[13px] cursor-pointer select-none ${includeHoliday ? "text-red-700 font-semibold" : "text-zinc-700"}`}>
                 <input
                   type="checkbox"
                   checked={includeHoliday}
                   onChange={(e) => setIncludeHoliday(e.target.checked)}
-                  className="w-4 h-4 accent-amber-500 cursor-pointer"
+                  className="w-4 h-4 accent-red-600 cursor-pointer"
                 />
-                <span>공휴일 포함{holidaySet.size > 0 ? ` (${holidaySet.size}일)` : ""}</span>
+                <span>
+                  공휴일 포함
+                  {(() => {
+                    let count = 0;
+                    for (const [date] of holidayNameMap) {
+                      if (activeRanges.some((r) => date >= r.startDate && date <= r.endDate)) count++;
+                    }
+                    return count > 0 ? <span className="tabular-nums">({count}일)</span> : null;
+                  })()}
+                </span>
               </label>
             </div>
+            {/* 2026-10-08 · 사용자 지시 · 공휴일 포함 체크 시 · 활성 범위 내 공휴일 상세 리스트 (예: 10/3 개천절 · 10/5 대체공휴일) */}
+            {includeHoliday && (() => {
+              const items: Array<{ date: string; name: string }> = [];
+              for (const [date, name] of holidayNameMap) {
+                if (activeRanges.some((r) => date >= r.startDate && date <= r.endDate)) {
+                  items.push({ date, name });
+                }
+              }
+              if (items.length === 0) return null;
+              items.sort((a, b) => a.date.localeCompare(b.date));
+              return (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 text-[12px]">
+                  <span className="text-red-700 font-bold">공휴일</span>
+                  {items.map((it, idx) => {
+                    const m = Number(it.date.slice(5, 7));
+                    const d = Number(it.date.slice(8, 10));
+                    return (
+                      <span key={it.date} className="inline-flex items-center gap-1.5">
+                        <span className="text-red-700 font-bold tabular-nums">{m}/{d}</span>
+                        <span className="text-red-400 font-semibold">{it.name}</span>
+                        {idx < items.length - 1 && <span className="text-zinc-300">·</span>}
+                      </span>
+                    );
+                  })}
+                </div>
+              );
+            })()}
             {/* 제목 + 일수 */}
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <div className="text-[15px] md:text-[16px] font-bold text-zinc-800">{chartAxis === "hour" ? "시간대별 추이" : "일별 추이"}</div>
@@ -1019,9 +1097,9 @@ const HourlyReportTab: React.FC = () => {
               const dow = new Date(y, m - 1, dd).getDay();
               return dow === 0 || dow === 6;
             };
-            // 2026-10-07 · 공휴일 제외 반영
+            // 2026-10-07 · 공휴일 제외 반영 · 2026-10-09 · fix · 주말만+공휴일포함 OR 로직
             const dayFilteredBase = weekendOnly
-              ? displayDateData.filter((d) => isWeekendDate(d.date))
+              ? displayDateData.filter((d) => isWeekendDate(d.date) || (includeHoliday && holidaySet.has(d.date)))
               : (includeWeekend ? displayDateData : displayDateData.filter((d) => !isWeekendDate(d.date)));
             const dayFiltered = !includeHoliday ? dayFilteredBase.filter((d) => !holidaySet.has(d.date)) : dayFilteredBase;
             const weekMap = new Map<string, DayData[]>(); // key = "YYYY-MM/W"
@@ -1249,9 +1327,9 @@ const HourlyReportTab: React.FC = () => {
               const dow = new Date(y, m - 1, dd).getDay();
               return dow === 0 || dow === 6;
             };
-            // 2026-10-07 · 공휴일 제외 반영 (월별 아코디언)
+            // 2026-10-07 · 공휴일 제외 반영 (월별 아코디언) · 2026-10-09 · fix · 주말만+공휴일포함 OR 로직
             const dayFilteredBase = weekendOnly
-              ? displayDateData.filter((d) => isWeekendDate(d.date))
+              ? displayDateData.filter((d) => isWeekendDate(d.date) || (includeHoliday && holidaySet.has(d.date)))
               : (includeWeekend ? displayDateData : displayDateData.filter((d) => !isWeekendDate(d.date)));
             const dayFiltered = !includeHoliday ? dayFilteredBase.filter((d) => !holidaySet.has(d.date)) : dayFilteredBase;
             const monthMap = new Map<string, DayData[]>();
@@ -1806,10 +1884,30 @@ const MonthlyReportTab: React.FC = () => {
           >
             {(() => {
               const avg = sel.customerCnt > 0 ? sel.saleTotal / sel.customerCnt : 0;
-              // 2026-10-05 · 사용자 지시 · 각 metric 좌측 color accent bar · 캘린더 색 체계 통일
-              //   · 매출(rose) · 매입(brand-deep) · 객단가(emerald) · 매출이익(indigo) · 마진율(amber) · 방문객(sky)
-              const items: Array<{ label: string; value: string; accent: string; labelColor: string; valueColor: string }> = [
+              // 2026-10-09 · 사용자 지시 · 예상매출 projection (현재 월만)
+              //   · 공식 = (현재까지 일별 평균 매출) × (남은 일수) + (현재까지 매출) = (평균 × 총일수)
+              //   · 사용자 공식 "일별 평균 매출에 남은 일수를 곱" · 월말 예상 총액 projection
+              const projected = (() => {
+                if (!isCurMonth) return null;
+                const daysInMonth = new Date(year, month, 0).getDate();
+                const pastDays = maxDay && /^\d{4}-\d{2}-\d{2}$/.test(maxDay)
+                  ? Number(maxDay.slice(8, 10))
+                  : now.getDate();
+                if (pastDays <= 0 || sel.saleTotal <= 0) return null;
+                const avgPerDay = sel.saleTotal / pastDays;
+                const remainingDays = Math.max(0, daysInMonth - pastDays);
+                return { avgPerDay, remainingDays, total: avgPerDay * daysInMonth };
+              })();
+              const items: Array<{ label: string; value: string; accent: string; labelColor: string; valueColor: string; title?: string }> = [
                 { label: "매출총액", value: fmtWon(sel.saleTotal), accent: "bg-rose-500",     labelColor: "text-rose-600",     valueColor: "text-rose-700" },
+                ...(projected ? [{
+                  label: "예상매출",
+                  value: fmtWon(projected.total),
+                  accent: "bg-cyan-500",
+                  labelColor: "text-cyan-600",
+                  valueColor: "text-cyan-800",
+                  title: `일별 평균 ${fmtWon(projected.avgPerDay)} × 남은 ${projected.remainingDays}일 (월말 예상 총매출)`,
+                }] : []),
                 { label: "객단가",   value: fmtWon(avg),           accent: "bg-emerald-500",  labelColor: "text-emerald-600",  valueColor: "text-emerald-800" },
                 { label: "매입총액", value: fmtWon(sel.buyTotal),  accent: "bg-brand-deep",   labelColor: "text-brand-deep",   valueColor: "text-brand-deep" },
                 { label: "매출이익", value: fmtWon(sel.margin),    accent: "bg-indigo-500",   labelColor: "text-indigo-600",   valueColor: "text-indigo-800" },
@@ -1823,7 +1921,7 @@ const MonthlyReportTab: React.FC = () => {
                   <div
                     className={`font-bold tabular-nums leading-tight whitespace-nowrap ${it.valueColor}`}
                     style={{ fontSize: "clamp(15px, 1.5vw, 22px)" }}
-                    title={it.value}
+                    title={it.title ?? it.value}
                   >
                     {it.value}
                   </div>
@@ -2017,11 +2115,14 @@ interface DayProductApiResponse {
   ok: boolean;
   date?: string;
   totals?: DayProductClassStats;
-  // 2026-10-07 · 사용자 지시 · cosmetics (화장품 · 뷰티 포함) 그룹 추가
+  // 2026-10-07 · cosmetics (화장품 · 뷰티 포함) 그룹 추가
+  // 2026-10-08 · fridge (냉장고) / liquid (물약) 그룹 추가
   byClass?: {
     stationery: DayProductClassStats;
     general: DayProductClassStats;
     cosmetics: DayProductClassStats;
+    fridge: DayProductClassStats;
+    liquid: DayProductClassStats;
     unknown: DayProductClassStats;
   };
   items?: DaySaleProductItem[];
@@ -2176,20 +2277,22 @@ const DayProductSection: React.FC<{
   error: string;
   classFilter: ClassFilter;
   setClassFilter: (f: ClassFilter) => void;
-  byClass: { stationery: DayProductClassStats; general: DayProductClassStats; cosmetics: DayProductClassStats; unknown: DayProductClassStats } | null;
+  byClass: { stationery: DayProductClassStats; general: DayProductClassStats; cosmetics: DayProductClassStats; fridge: DayProductClassStats; liquid: DayProductClassStats; unknown: DayProductClassStats } | null;
   totals: DayProductClassStats | null;
   items: DaySaleProductItem[];
   totalCount: number;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
 }> = ({ status, error, classFilter, setClassFilter, byClass, totals, items, totalCount, searchQuery, setSearchQuery }) => {
-  // 2026-10-07 · 사용자 지시 · 5-tab (화장품 추가) · count reconciliation
-  //   전체 count = 상비약 + 일반약 + 화장품 + 미분류 (서버 byClass.*.count 합산 보장)
+  // 2026-10-08 · 사용자 지시 · 7-tab (냉장고 · 물약 추가)
+  //   전체 count = 상비약+일반약+뷰티+냉장고+물약+미분류 (서버 byClass.*.count 합산 보장)
   const tabs: Array<{ key: ClassFilter; label: string; count: number | null; accent: string }> = [
     { key: "all",        label: CLASS_FILTER_LABEL.all,        count: totals?.count ?? (totalCount || null), accent: "bg-zinc-900" },
     { key: "stationery", label: CLASS_FILTER_LABEL.stationery, count: byClass?.stationery.count ?? null,     accent: "bg-emerald-500" },
     { key: "general",    label: CLASS_FILTER_LABEL.general,    count: byClass?.general.count ?? null,         accent: "bg-amber-500" },
     { key: "cosmetics",  label: CLASS_FILTER_LABEL.cosmetics,  count: byClass?.cosmetics.count ?? null,       accent: "bg-pink-500" },
+    { key: "fridge",     label: CLASS_FILTER_LABEL.fridge,     count: byClass?.fridge.count ?? null,          accent: "bg-sky-500" },
+    { key: "liquid",     label: CLASS_FILTER_LABEL.liquid,     count: byClass?.liquid.count ?? null,          accent: "bg-indigo-500" },
     { key: "unknown",    label: CLASS_FILTER_LABEL.unknown,    count: byClass?.unknown.count ?? null,         accent: "bg-zinc-400" },
   ];
 
@@ -2198,7 +2301,7 @@ const DayProductSection: React.FC<{
   //   · 매입단가 추가 (unitCost 필드)
   //   · default = 마진률 desc · column 헤더 클릭 토글 (asc/desc)
   //   · null 값 뒤로 (asc/desc 상관없이)
-  type SortKey = "name" | "class" | "marginPct" | "sale" | "unitCost" | "qty";
+  type SortKey = "name" | "marginPct" | "sale" | "unitCost" | "qty";
   type SortDir = "asc" | "desc";
   const [sortKey, setSortKey] = useState<SortKey>("marginPct");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -2208,15 +2311,14 @@ const DayProductSection: React.FC<{
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      // 숫자 column default desc · name/class default asc
-      setSortDir(key === "name" || key === "class" ? "asc" : "desc");
+      // 숫자 column default desc · name default asc
+      setSortDir(key === "name" ? "asc" : "desc");
     }
   };
 
   const sortedItems = useMemo(() => {
     const copy = [...items];
     const sign = sortDir === "asc" ? 1 : -1;
-    const classOrder: Record<ProductClass, number> = { stationery: 1, general: 2, cosmetics: 3, unknown: 4 };
     copy.sort((a, b) => {
       const nullOrder = (x: unknown, y: unknown): number | null => {
         const xn = x === null || x === undefined || x === "";
@@ -2230,9 +2332,6 @@ const DayProductSection: React.FC<{
         const no = nullOrder(a.productName, b.productName);
         if (no !== null) return no;
         return sign * (a.productName ?? "").localeCompare(b.productName ?? "", "ko");
-      }
-      if (sortKey === "class") {
-        return sign * (classOrder[a.class] - classOrder[b.class]);
       }
       const key = sortKey === "qty" ? "totalStock"
         : sortKey === "sale" ? "saleTotal"
@@ -2251,22 +2350,6 @@ const DayProductSection: React.FC<{
     k === sortKey
       ? <span className="ml-0.5 text-[10px] text-zinc-500">{sortDir === "asc" ? "▲" : "▼"}</span>
       : <span className="ml-0.5 text-[10px] text-zinc-300">▲</span>;
-
-  // 2026-10-07 · 분류 pill (상비약 emerald / 일반약 amber / 화장품 pink / 미분류 zinc)
-  const classPill = (cls: ProductClass) => {
-    const map: Record<ProductClass, { bg: string; text: string; label: string }> = {
-      stationery: { bg: "bg-emerald-50", text: "text-emerald-700", label: "상비약" },
-      general:    { bg: "bg-amber-50",   text: "text-amber-700",   label: "일반약" },
-      cosmetics:  { bg: "bg-pink-50",    text: "text-pink-700",    label: "뷰티" },
-      unknown:    { bg: "bg-zinc-100",   text: "text-zinc-500",    label: "미분류" },
-    };
-    const s = map[cls];
-    return (
-      <span className={`inline-block px-1.5 py-[1px] rounded text-[11px] md:text-[12px] font-semibold ${s.bg} ${s.text}`}>
-        {s.label}
-      </span>
-    );
-  };
 
   return (
     <div className="flex flex-col gap-2">
@@ -2359,18 +2442,11 @@ const DayProductSection: React.FC<{
                   상품명<SortArrow k="name" />
                 </th>
                 <th
-                  className="px-2 py-1 text-left font-semibold cursor-pointer hover:bg-zinc-100 transition-colors whitespace-nowrap"
-                  onClick={() => onHeaderClick("class")}
-                  aria-sort={sortKey === "class" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
-                >
-                  분류<SortArrow k="class" />
-                </th>
-                <th
                   className="px-2 py-1 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors whitespace-nowrap"
-                  onClick={() => onHeaderClick("qty")}
-                  aria-sort={sortKey === "qty" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                  onClick={() => onHeaderClick("marginPct")}
+                  aria-sort={sortKey === "marginPct" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
                 >
-                  수량<SortArrow k="qty" />
+                  마진율<SortArrow k="marginPct" />
                 </th>
                 <th
                   className="px-2 py-1 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors whitespace-nowrap"
@@ -2381,17 +2457,17 @@ const DayProductSection: React.FC<{
                 </th>
                 <th
                   className="px-2 py-1 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors whitespace-nowrap"
-                  onClick={() => onHeaderClick("margin")}
-                  aria-sort={sortKey === "margin" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                  onClick={() => onHeaderClick("unitCost")}
+                  aria-sort={sortKey === "unitCost" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
                 >
-                  이익<SortArrow k="margin" />
+                  매입단가<SortArrow k="unitCost" />
                 </th>
                 <th
                   className="px-2 py-1 text-right font-semibold cursor-pointer hover:bg-zinc-100 transition-colors whitespace-nowrap"
-                  onClick={() => onHeaderClick("marginPct")}
-                  aria-sort={sortKey === "marginPct" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+                  onClick={() => onHeaderClick("qty")}
+                  aria-sort={sortKey === "qty" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
                 >
-                  마진율<SortArrow k="marginPct" />
+                  수량<SortArrow k="qty" />
                 </th>
               </tr>
             </thead>
@@ -2401,20 +2477,17 @@ const DayProductSection: React.FC<{
                   <td className="px-2 py-0.5 text-zinc-800 truncate max-w-[260px]" title={it.productName ?? ""}>
                     {it.productName ?? "-"}
                   </td>
-                  <td className="px-2 py-0.5">
-                    {classPill(it.class)}
-                  </td>
-                  <td className="px-2 py-0.5 text-right tabular-nums text-zinc-700">
-                    {it.totalStock !== null ? fmtNum(it.totalStock) : "-"}
+                  <td className="px-2 py-0.5 text-right tabular-nums text-amber-700">
+                    {it.marginPct !== null ? `${it.marginPct.toFixed(1)}%` : "-"}
                   </td>
                   <td className="px-2 py-0.5 text-right tabular-nums font-semibold text-zinc-900">
                     {it.saleTotal !== null ? fmtNum(it.saleTotal) : "-"}
                   </td>
-                  <td className="px-2 py-0.5 text-right tabular-nums text-emerald-700">
-                    {it.margin !== null ? fmtNum(it.margin) : "-"}
+                  <td className="px-2 py-0.5 text-right tabular-nums text-zinc-700">
+                    {it.unitCost !== null ? fmtNum(it.unitCost) : "-"}
                   </td>
-                  <td className="px-2 py-0.5 text-right tabular-nums text-amber-700">
-                    {it.marginPct !== null ? `${it.marginPct.toFixed(1)}%` : "-"}
+                  <td className="px-2 py-0.5 text-right tabular-nums text-zinc-700">
+                    {it.totalStock !== null ? fmtNum(it.totalStock) : "-"}
                   </td>
                 </tr>
               ))}
