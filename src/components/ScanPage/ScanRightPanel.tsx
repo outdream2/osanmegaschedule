@@ -40,63 +40,57 @@ export const ScanRightPanel: React.FC<ScanRightPanelProps> = ({
   const expiryOn = !!targetRow && hasExpiry(targetRow);
   void scanFilter;
   return (
-    <div className="bg-white rounded-2xl border border-line/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-y-auto">
-      <div className="flex flex-col gap-3 px-4 sm:px-5 py-3 sm:py-3.5 border-b border-line/80 bg-zinc-50/80 rounded-t-2xl sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2.5">
-            <IconTile icon={<Package size={14} />} tone="teal" size="md" />
-            <span className="text-[15px] font-bold text-ink tracking-tight">스캔한 상품 · 실재고 입력</span>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0" aria-label="마지막 스캔 상품 액션">
-            {/* 2026-09-10 · #74 · 사용자 지시 · 진열요청 · 빨간색 (rose) 강조 · 하단 액션 셀 중복 제거 */}
-            <button
-              type="button"
-              disabled={disabled || requestingKey === (targetRow?.key ?? "")}
-              onClick={() => { if (targetRow) requestDisplay(targetRow); }}
-              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[15px] font-bold shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white"
-              title={disabled ? "먼저 상품을 스캔하세요" : `${targetRow?.product.name} · 진열요청 전송`}
-            >
-              <Megaphone size={13} strokeWidth={2.5} />
-              진열요청
-            </button>
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => { if (targetRow) setExpiryModalRow(targetRow); }}
-              className={[
-                "inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[15px] font-bold shadow-sm transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
-                expiryOn
-                  ? "bg-amber-600 hover:bg-amber-700 text-white ring-2 ring-amber-300"
-                  : "bg-white border border-line text-ink-soft hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700",
-              ].join(" ")}
-              title={disabled ? "먼저 상품을 스캔하세요" : (expiryOn ? "유통기한 정보 수정 · 해제" : "유통기한 임박 · 입력날짜+만료일 저장")}
-            >
-              <AlertCircle size={13} strokeWidth={2.5} />
-              유통기한임박{expiryOn ? " ✓" : ""}
-            </button>
-          </div>
+    // 2026-10-09 · #9 Phase 3 홈 톤 리뉴얼 · rounded-[12px] · 공간 최소 · IconTile 제거 (리스트 앞 동그란 아이콘 금지)
+    <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col min-h-[320px] overflow-y-auto">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100 bg-white sticky top-0 z-10">
+        <Package size={16} className="text-slate-500 shrink-0" />
+        <span className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight">스캔한 상품 · 실재고 입력</span>
+        <div className="ml-auto flex items-center gap-1.5 shrink-0" aria-label="마지막 스캔 상품 액션">
+          <button
+            type="button"
+            disabled={disabled || requestingKey === (targetRow?.key ?? "")}
+            onClick={() => { if (targetRow) requestDisplay(targetRow); }}
+            className="inline-flex items-center gap-1 h-7 px-2 rounded border border-rose-200 bg-rose-50 text-rose-700 text-[12px] font-semibold hover:bg-rose-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            title={disabled ? "먼저 상품을 스캔하세요" : `${targetRow?.product.name} · 진열요청 전송`}
+          >
+            <Megaphone size={11} strokeWidth={2.5} />진열요청
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => { if (targetRow) setExpiryModalRow(targetRow); }}
+            className={[
+              "inline-flex items-center gap-1 h-7 px-2 rounded border text-[12px] font-semibold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed",
+              expiryOn
+                ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                : "border-slate-200 bg-white text-slate-600 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700",
+            ].join(" ")}
+            title={disabled ? "먼저 상품을 스캔하세요" : (expiryOn ? "유통기한 정보 수정 · 해제" : "유통기한 임박 · 입력날짜+만료일 저장")}
+          >
+            <AlertCircle size={11} strokeWidth={2.5} />유통기한{expiryOn ? " ✓" : ""}
+          </button>
         </div>
       </div>
 
       {rows.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 sm:py-24 select-none">
-          <IconTile icon={<Package size={28} className="text-zinc-300" />} tone="zinc" size="2xl" shape="rounded-2xl" />
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 py-12 select-none">
+          <Package size={28} className="text-slate-300" />
           <div className="text-center">
-            <p className="text-[15px] font-bold text-ink-soft">스캔한 상품이 여기에 표시됩니다</p>
-            <p className="text-[15px] text-zinc-400 mt-1">좌측 바코드 스캔 후 자동 등록</p>
+            <p className="text-[14px] font-semibold text-slate-500">스캔한 상품이 여기에 표시됩니다</p>
+            <p className="text-[13px] text-slate-400 mt-0.5">좌측 바코드 스캔 후 자동 등록</p>
           </div>
         </div>
       ) : filteredRows.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 select-none">
-          <p className="text-[14px] font-semibold text-ink-soft">필터 결과 없음</p>
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 py-12 select-none">
+          <p className="text-[13px] font-semibold text-slate-500">필터 결과 없음</p>
           <button
             type="button"
             onClick={() => setScanFilter("all")}
-            className="text-[15px] font-semibold text-brand-deep hover:underline cursor-pointer"
+            className="text-[13px] font-semibold text-brand-deep hover:underline cursor-pointer"
           >전체 보기</button>
         </div>
       ) : (
-        <div className="flex-1 px-3 sm:px-4 py-3 flex flex-col gap-2 bg-zinc-50/30">
+        <div className="flex-1 px-3 py-2.5 flex flex-col gap-1.5">
           {filteredRows.map((row) => (
             <StockRowCard
               key={row.key}
