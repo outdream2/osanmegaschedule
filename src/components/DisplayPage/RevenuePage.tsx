@@ -21,8 +21,10 @@ import { CLASS_FILTER_LABEL, type ClassFilter, type ProductClass } from "../../u
 type RevenueTab = "hourly" | "monthly";
 // 2026-10-09 · 사용자 지시 · 판매·매출현황 페이지 상단 탭 (매출 | 판매)
 type TopTab = "revenue" | "sales";
-// 2026-10-09 · 사용자 지시 · 판매 탭 · OrderManagePage statistics (lazy)
-const SalesPanel = React.lazy(() => import("../OrderManagePage/OrderManagePage"));
+// 2026-10-09 · 사용자 지시 · 판매 탭 · "판매-구역별현황" (CategoryTab) 임베드 (lazy)
+//   · 이전: SalesPanel(OrderManagePage statistics 전체)
+//   · 이후: CategoryTab 단독 (zone 별 판매 집계 + 매장 구역도)
+const CategoryTab = React.lazy(() => import("../OrderManagePage/CategoryTab").then(m => ({ default: m.CategoryTab })));
 type FetchStatus = "idle" | "loading" | "success" | "error";
 
 interface HourlyRow {
@@ -175,10 +177,10 @@ export const RevenuePage: React.FC = () => {
           </div>
         </>
       ) : (
-        /* 판매 탭 · OrderManagePage statistics 임베드 · hideTopTabs */
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col mt-3">
-          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16 text-[14px] text-slate-500">판매 데이터 로딩 중...</div>}>
-            <SalesPanel initialTopTab="statistics" hideTopTabs />
+        /* 판매 탭 · 2026-10-09 사용자 지시 · 판매-구역별 현황 (CategoryTab) 임베드 · UI 톤은 추후 */
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden mt-3 p-4">
+          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16 text-[14px] text-slate-500">구역별 현황 로딩 중...</div>}>
+            <CategoryTab />
           </React.Suspense>
         </div>
       )}

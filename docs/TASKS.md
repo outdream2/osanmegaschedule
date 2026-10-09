@@ -51,13 +51,16 @@
 | # | 태스크 | 상세 | 상태 |
 |---|-----|-----|-----|
 | **#1** | **월별 매출 · 예상 매출 금액 표시 추가** · 사용자 지시 2026-10-09 | 공식 = (현재까지 일별 평균 매출) × (남은 일수) + 현재까지 매출 = 평균 × 총일수 · RevenuePage 선택월 상세 items 배열 조건부 삽입 (isCurMonth 일 때만 · cyan 톤) · tooltip 공식 노출 | ✅ 완료 (`9bd9b849`) |
-| **#2** | **승인업무 페이지 레이아웃 홈 랜딩 톤 재구성** · 사용자 지시 2026-10-09 | `LeavePage.tsx` showApproval 섹션 + `src/components/RequestsPage` 승인업무 inner tab · 홈 랜딩 톤 SSOT 적용 · CARD(rounded-[12px]+border-slate-200+thin shadow) · 2-tier typography (body 15/16, label 13/14) · 좌측 accent 레일 제거 · 아이콘 inline (section label 3px thin accent 패턴) · BEHAVIOR DELTA = 0 (className only) | 🟡 진행중 |
+| **#2** | **승인업무 페이지 레이아웃 홈 랜딩 톤 재구성 + 카드 2~3개 그리드** · 사용자 지시 2026-10-09 | `LeavePage.tsx` showApproval 섹션 · 홈 랜딩 톤 `<section>` CARD(rounded-[12px]+border-slate-200+thin shadow) · 2-tier typography (body 15/16, label 13/14) · 좌측 레일 제거 · 3px thin label accent · PendingLeaveCard 폰트/padding 축소 (text-[22]→[15], py-4→p-3.5) · PendingPCTable 폐기 → 그리드 통일 · xl=3col/md=2col/mobile=1col · 전체이력 섹션도 동일 톤 · BEHAVIOR DELTA = 0 | ✅ 완료 (local) |
 
 ---
 
 ## 🎨 UI 태스크 (디자인·레이아웃·폰트)
 
-(현재 · 대기 UI 태스크 없음)
+| # | 태스크 | 상세 | 상태 |
+|---|-----|-----|-----|
+| **UI-1** | **판매·매출현황 inline tab 홈 톤 통일 + 판매탭 → 구역별 현황 (CategoryTab)** · 사용자 지시 2026-10-09 | (a) RevenuePage 상단 탭 (매출/판매) + 매출 하위 탭 · solid slate-900 → inline pill (bg-slate-100 container + white rounded-md active · text-blue-700 shadow-sm · HomeDashboard SalesOverviewCard 패턴) · (b) 판매 탭 content: `SalesPanel initialTopTab="statistics"` → `CategoryTab` embed (구역별 판매 집계) | 🟡 진행중 |
+| **UI-2** | **CategoryTab 홈 랜딩 톤 전면 리뉴얼** · 사용자 지시 2026-10-09 (판매·매출현황 판매탭 가져온 뒤) | OrderManagePage/CategoryTab.tsx 홈 톤 전면 적용 · CARD(rounded-[12px]+border-slate-200+thin shadow) · 2-tier typography · 좌측 accent 제거 · 아이콘 inline · zone 집계 UI 홈 톤 매칭 · 큰 작업 (639+ lines) | 🔴 미시작 (UI-1 완료 후) |
 
 ---
 
@@ -65,7 +68,7 @@
 
 | # | 태스크 | 상세 | 상태 |
 |---|-----|-----|-----|
-| **E-1** | **발주요청 추가 시 알림 발송 제거** · 사용자 지시 2026-10-09 "발주요청 추가된건 알림 보내지마" | `createOrderRequest` (POST /api/order-requests) 시점의 알림 발송 로직 제거 · 실제 발주 전송 (`bulkSendOrderRequests`) 시점 알림은 유지 · 요청 추가는 조용히 등록만 | 🟡 조사 중 |
+| **E-1** | **발주요청 추가 시 알림 발송 제거** · 사용자 지시 2026-10-09 "발주요청 추가된건 알림 보내지마 · 발주 나갔을 때만 알림" | POST /api/order-requests · `notificationsService.notifyAllAdmins` 블록 제거 (requests.ts:719-725) · bulkSendOrderRequests 쪽 sms/kakao/email 알림은 유지 | ✅ 완료 (`9158729d`) |
 
 ---
 
