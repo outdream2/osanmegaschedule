@@ -38,7 +38,7 @@
 - **말줄임표 금지** · 폭 확장 or 줄바꿈
 - **반응형 · md: 이하 카드 전환** 대원칙
 - **첫 탭 default** · 페이지 진입 시 첫 탭 자동 활성 · localStorage 복원 X
-- **UI 목업 참조** · `docs/UI_MOCKUP_2026-08-21.html` · 모든 UI 작업 필수 참조
+- **UI 기준 교체 (2026-10-09)** · 홈 랜딩페이지 = SSOT · `src/components/LandingPage/HomeDashboard.tsx` + `LandingPage.tsx` 톤 참조 · CARD(`rounded-[12px]` + thin shadow + `border-slate-200`) · 2-tier typography (body 15/16 · label 13/14) · 좌측 accent 레일 제거 · 아이콘 inline · 과거 `docs/UI_MOCKUP_2026-08-21.html` **참조 중단**
 - **한글 IME 우선** · KO_INPUT_PROPS (`src/lib/koreanInput.ts`)
 - **폰트 +2 default** · 40대+ 가독성
 
@@ -57,6 +57,11 @@
 | **#3** | **발주 전송 통합 플로우 (SendBulkOrderDialog 공통 모듈)** · 매우 중요 (사용자 강조 다중) | **4단계 flow**: (1) **채널 선택** 모달 (카카오톡/문자/이메일 라디오 or 탭) · (2) **담당자 정보 체크** (선택 채널에 해당 연락처 유무 · 없으면 블록 + 안내) · (3) **확인 모달** (담당자 정보 + 상품 리스트 전체 노출 → "확인" 클릭) · (4) **완료 모달** ("발주가 완료되었습니다" · 전송 결과 ACK) · 기존 integration 활용 (`server/services/kakaoNotifyService.ts`, `server/lib/notification/solapiClient.ts`) · **공통 Dialog** 로 모듈화 → #5 재조정 담당자 발송에도 재사용 | 🔴 미시작 · 설계 필요 |
 | **#4** | **발주·반품 현황 페이지 로딩속도 저하 조사** · 사용자 보고 "갑자기 느려짐" | OrderReturnOverview 성능 저하 원인 조사 · 최근 변경 (TodayTasks·StockArrival·MatchOverviewSection 등) 리그레션 가능 · fetch 전수 조사 + 메모이제이션 누락 확인 · 발주 캐시 X 원칙은 유지 | 🔴 미시작 |
 | **#5** | **매칭상세 재조정 flow + 발주매입재조정 페이지 (신규)** | **(a)** MatchOverviewSection inline expand 품목상세/매칭상세 라인 체크박스 · "재조정하기" → 선택 라인 → 발주매입재조정 페이지로 이동 · 처리상태 "재조정 요청중" · **(b)** 발주매입재조정 페이지 (신규): 재조정 리스트 수집 · 각 라인 수량차이·단가차이 표시 · 재조정 수량·재조정 단가 입력 · 담당자 발송 → **#3 SendBulkOrderDialog 공통 모듈 재사용** · **설계 확인 필요**: 페이지 위치 (별도 라우트 / inner tab) · DB 스키마 (신규 테이블 OR resolution_* 활용) | 🔴 미시작 · 설계 확인 중 |
+| **#6** | **업무요청 메뉴 재구조화 · 상단 그룹 탭 (현황/승인업무/요청확인/서류작성)** · 사용자 지시 2026-10-09 | **(a) 현황** · `RequestsOverview.tsx` 신규 · OrderReturnOverview 톤 · KPI pills + 섹션 카드 (승인업무: 연차·거래처·사직서 / 요청확인: 진열요청·점심불참) · 각 섹션 클릭 → 해당 그룹 inner tab 이동 · 데이터 `/api/requests/pending-counts` + `/api/leave-requests/pending-count` 재사용 · 신규 API 0 · **(b) RequestsPage.tsx** · `topGroup` state 추가 · 상단 그룹 TabBar + 조건부 inner TabBar · 기존 inner content `topGroup` 체크로 wrapping · **(c) 서류작성** · 2 inner tab (근로계약서/사직서) · 각 shortcut → ContractWriterPage/ResignationWriterPage 네비게이션 | ✅ 적용 (TS/빌드 검증 대기 · 사용자 테스트 대기) |
+| **#7** | **매장 아래 상품스캔 메뉴 (바코드 → 실재고 입력)** · 2026-10-09 | sideNavGroups.ts 매장 그룹 "매장진열" 아래 "상품스캔" (Barcode icon) · `DpSubTabKey "product-scan"` + 라우팅 분기 · 기존 `ScanPage` embedded 재사용 · 가시성 level 3+ | ✅ 완료 (`0c69923c`) |
+| **#8** | **실재고 테이블 매장1 수량 기준 default 정렬** · 2026-10-09 | `RealStockTablePage.tsx` 첫 로딩 시 매장1(s1) 수량 desc 정렬 (이전: product_name asc) · `useSortableTable` 초기 인자 변경만 | ✅ 완료 (`e729324c`) |
+| **#9** | **ScanPage 전면 UI 홈 톤 리뉴얼** · 2026-10-09 · "최신 트렌드 · 깔끔 · 공간 X" | Phase 1 상단 header (AccentBar 제거) · Phase 2 ScanLeftPanel · Phase 3 ScanRightPanel · Phase 4 StockRowCard 외곽 · Phase 5 ERP/실재고/손실 가로 pill · Phase 6 chip strip + 확장 슬롯 · Phase 7 SaveCard · Phase 8 모달들 (HistoryModal/ReviewSheet/ExpiryDateModal · pending) · Phase 9 모바일 반응형 체크 (pending) · 공간 축소 50-60% | 🟡 Phase 1-7 완료 (`fcb3394d`·`161b26ff`·`7200e5f3`·`6a672a67`·`8660265d`·`5d5a1728`) · Phase 8-9 pending |
+| **#10** | **StockRowCard 가격정보 접힘 섹션 추가** · 2026-10-09 · 사용자 지시 "바코드스캔후 나오는 화면에 상품정보접히게 추가해 판매가 매입가 나와야해 · 가격정보로 하자" | 바코드 스캔 후 카드에 "가격정보" 토글 섹션 추가 · 접힘 default · 펼치면 매입가 (`row.product.purchase_price`) · 판매가 (`row.product.sale_price`) 2줄 inline · 홈 톤 CARD · 위치 결정 필요 (A: Row3 아래 / B: 상품명 옆 inline / C: expanded 영역 상단) | 🔴 미시작 · 위치 결정 대기 |
 
 ---
 
@@ -70,12 +75,12 @@
 
 ## 🐞 에러 태스크 (버그·회귀)
 
-| # | 태스크 | 우선순위 | 비고 |
+| # | 태스크 | 상세 | 상태 |
 |---|-----|-----|-----|
+| **E-4** | 위치별 재고현황 "실재고테이블 →" 링크 오연결 | `PurchaseArrivalOverview.tsx:286` · `onSelectSubTab("purchase")` → `setInnerTab("real-stock")` 수정 · 같은 페이지 inner tab 으로 이동 | ✅ 완료 (local) |
 <!-- E-1 ✅ · 근본 fix · ActiveNav Context SSOT · 사이드 채널 (localStorage/CustomEvent) 제거 · buildBreadcrumb 정공법 lookup · 7커밋 · 2026-09-27 -->
 <!-- E-2 ✅ · 공급사별 결제내역 · 재고자산·판매액 · cogs 통일 · 기간 정합 · 2026-09-25 -->
 <!-- E-3 ✅ · 32개 이중화 그룹 · 4개 테이블 통합 완료 · 2026-09-25 -->
-(현재 · 대기 에러 없음)
 
 ---
 
