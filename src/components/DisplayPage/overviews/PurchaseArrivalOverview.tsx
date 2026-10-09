@@ -188,37 +188,37 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
 
   return (
     <div className="flex flex-col gap-5 min-h-0 pb-6 bg-[#F4F7FA]">
-      {/* 헤더 */}
-      <header className="px-4 sm:px-6 pt-4 pb-3 border-b border-slate-200 bg-white flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-[22px] sm:text-[24px] font-bold text-ink tracking-tight leading-tight">매입 재고현황</h1>
-          <p className="text-[13px] sm:text-[14px] text-slate-500 mt-1">매입이력 · 일별 매입금액 · 매입이상 · 실재고 vs ERP 재고자산 비교</p>
-        </div>
-        <div className="shrink-0 flex items-center gap-2">
-          <select value={period} onChange={(e) => setPeriod(e.target.value as any)}
-            className="h-9 px-3 text-[14px] font-semibold text-ink border border-slate-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer">
-            <option value="7">최근 7일</option><option value="14">최근 14일</option><option value="30">최근 30일</option>
-          </select>
-        </div>
-      </header>
+      {/* 2026-10-09 · 사용자 지시 · 발주반품현황 상단 디자인 적용 · compact inline hero */}
+      <section className="flex items-center gap-2 py-0.5 px-4 sm:px-6 pt-4">
+        <span className="w-[3px] h-[14px] bg-sky-500 rounded-full shrink-0" />
+        <span className="text-[14px] md:text-[15px] text-slate-700">
+          <strong className="font-semibold text-ink">매입 재고현황</strong> · 매입이력 · 일별 매입금액 · 매입이상 · 실재고 vs ERP 재고자산 비교
+        </span>
+        <select value={period} onChange={(e) => setPeriod(e.target.value as any)}
+          className="ml-auto h-8 px-2.5 text-[13px] font-semibold text-ink border border-slate-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer">
+          <option value="7">최근 7일</option><option value="14">최근 14일</option><option value="30">최근 30일</option>
+        </select>
+      </section>
 
-      {/* 2026-10-09 · 사용자 지시 · 현황 | 실재고테이블 inner tab (OrderReturnOverview 패턴) */}
+      {/* 2026-10-09 · 사용자 지시 · inner tab bar · OrderReturnOverview 패턴 (count badge + 활성 bottom bar · 프로세스 connector X) */}
       <div className="px-4 sm:px-6">
-        <nav className="flex items-end border-b border-slate-200 -mb-px" aria-label="매입 재고 inner tabs">
+        <nav className="flex items-stretch border-b border-slate-200 overflow-x-auto -mb-px" aria-label="매입 재고 inner tabs">
           {([
-            { k: "overview", label: "현황", tone: "brand" },
-            { k: "real-stock", label: "실재고테이블", tone: "violet" },
-          ] as { k: InnerTabKey; label: string; tone: "brand" | "violet" }[]).map(t => {
+            { k: "overview",   label: "현황",         tone: { bar: "bg-sky-500",    soft: "bg-sky-50" },    count: null },
+            { k: "real-stock", label: "실재고테이블", tone: { bar: "bg-violet-500", soft: "bg-violet-50" }, count: null },
+          ] as { k: InnerTabKey; label: string; tone: { bar: string; soft: string }; count: number | null }[]).map(t => {
             const active = innerTab === t.k;
-            const bar = t.tone === "brand" ? "bg-brand-deep" : "bg-violet-500";
             return (
               <button key={t.k} type="button" onClick={() => setInnerTab(t.k)}
-                className={`relative px-3 h-11 text-[15px] md:text-[16px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
-                  active ? "text-ink" : "text-slate-500 hover:text-ink"
+                className={`relative shrink-0 px-2.5 h-10 text-[14px] md:text-[15px] font-medium transition-colors cursor-pointer inline-flex items-baseline gap-1.5 whitespace-nowrap ${
+                  active ? "text-ink font-semibold" : "text-slate-500 hover:text-ink"
                 }`}
               >
-                {t.label}
-                {active && <span className={`absolute left-0 right-0 -bottom-px h-[2.5px] ${bar} rounded-full`} />}
+                <span>{t.label}</span>
+                {t.count != null && (
+                  <span className={`text-[13px] md:text-[14px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full ${active ? t.tone.soft + " text-ink" : "bg-slate-100 text-slate-500"}`}>{t.count.toLocaleString()}</span>
+                )}
+                {active && <span className={`absolute left-0 right-0 -bottom-px h-[2px] ${t.tone.bar} rounded-full`} />}
               </button>
             );
           })}
@@ -282,8 +282,8 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
               <Package size={18} weight="fill" className="text-slate-500" />
               <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">위치별 재고현황</h3>
               <span className="text-[14px] text-slate-500 font-medium">· 실재고 × 사입단가 · 총 {fmt(locationStock.totalAmt)}원 ({fmt(locationStock.totalQty)}개)</span>
-              {/* 2026-10-09 · 사용자 지시 · 실재고테이블 (매입 > 실재고확인) 바로가기 */}
-              <button type="button" onClick={() => onSelectSubTab("purchase")}
+              {/* 2026-10-09 · 사용자 지시 · 같은 페이지의 "실재고테이블" inner tab 으로 이동 (E-4 fix · onSelectSubTab("purchase") 오연결 수정) */}
+              <button type="button" onClick={() => setInnerTab("real-stock")}
                 className="ml-auto inline-flex items-center gap-0.5 text-[13px] md:text-[14px] font-semibold text-violet-700 hover:text-violet-900 cursor-pointer transition-colors">
                 실재고테이블 →
               </button>

@@ -61,6 +61,7 @@
 |---|-----|-----|-----|
 | **UI-1** | **판매·매출현황 inline tab 홈 톤 통일 + 판매탭 → 구역별 현황 (CategoryTab)** · 사용자 지시 2026-10-09 | (a) RevenuePage 상단 탭 (매출/판매) + 매출 하위 탭 · solid slate-900 → inline pill (bg-slate-100 container + white rounded-md active · text-blue-700 shadow-sm · HomeDashboard SalesOverviewCard 패턴) · (b) 판매 탭 content: `SalesPanel initialTopTab="statistics"` → `CategoryTab` embed (구역별 판매 집계) | 🟡 진행중 |
 | **UI-2** | **CategoryTab 홈 랜딩 톤 전면 리뉴얼** · 사용자 지시 2026-10-09 (판매·매출현황 판매탭 가져온 뒤) | OrderManagePage/CategoryTab.tsx 홈 톤 전면 적용 · CARD(rounded-[12px]+border-slate-200+thin shadow) · 2-tier typography · 좌측 accent 제거 · 아이콘 inline · zone 집계 UI 홈 톤 매칭 · 큰 작업 (639+ lines) | 🔴 미시작 (UI-1 완료 후) |
+| **UI-3** | **매입 재고현황 페이지 inner tab 재구성** · 사용자 지시 2026-10-09 "발주·반품 현황 처럼" | PurchaseArrivalOverview.tsx 재구성 · 상단 inner tab bar (counter 포함) · 섹션: 현황 / 매입이력 / 일별 매입금액 / 매입이상 / 실재고 vs ERP 재고자산 비교 / 실재고테이블 · 최근 14일 필터 · 홈 톤 CARD (OrderReturnOverview 패턴 벤치) | 🔴 미시작 |
 
 ---
 
