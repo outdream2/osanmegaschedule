@@ -29,6 +29,10 @@ type AnyRow = Record<string, any>;
 type SectionKey = "order-request" | "order-need" | "stockout" | "order-history" | "match" | "mismatch" | "return-need" | "return-done";
 type InnerTabKey = "overview" | "order-need" | "order-request" | "stockout" | "order-history" | "match" | "return";
 
+// 2026-10-09 · HomeDashboard 톤 통일 (사용자 지시 "홈화면 디자인 적용")
+//   · rounded-[12px] · thin flat shadow · no top accent bar · 2-tier typography
+const CARD = "bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]";
+
 // ─── Tone system · plain color accents (no badge · 사용자 지시) ─────────
 const TONE: Record<string, { text: string; dot: string; bar: string; soft: string }> = {
   brand:  { text: "text-brand-deep",   dot: "bg-brand-deep",     bar: "bg-brand-deep",     soft: "bg-brand-tint/40" },
@@ -191,8 +195,9 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
         ];
       case "order-history":
         return [
-          { key: "when", label: "일시" },
-          { key: "order_no", label: "발주번호" },
+          // 2026-10-09 · 사용자 지시 · 일자 세로 wrap 방지 · whitespace-nowrap + width
+          { key: "when", label: "일시", className: "whitespace-nowrap w-[108px]" },
+          { key: "order_no", label: "발주번호", className: "whitespace-nowrap" },
           { key: "supplier", label: "공급사" },
           { key: "items", label: "품목", align: "right" },
           { key: "amount", label: "금액", align: "right" },
@@ -201,8 +206,8 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
       case "match":
       case "mismatch":
         return [
-          { key: "when", label: "발주일" },
-          { key: "order_no", label: "발주번호" },
+          { key: "when", label: "발주일", className: "whitespace-nowrap w-[108px]" },
+          { key: "order_no", label: "발주번호", className: "whitespace-nowrap" },
           { key: "product", label: "상품" },
           { key: "supplier", label: "공급사" },
           { key: "order_qty", label: "발주량", align: "right" },
@@ -216,7 +221,7 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
           { key: "supplier", label: "공급사" },
           { key: "reason", label: "사유" },
           { key: "qty", label: "수량", align: "right" },
-          { key: "when", label: "일자", align: "center" },
+          { key: "when", label: "일자", align: "center", className: "whitespace-nowrap w-[88px]" },
         ];
     }
   };

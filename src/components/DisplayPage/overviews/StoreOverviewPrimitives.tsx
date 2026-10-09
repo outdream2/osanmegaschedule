@@ -175,13 +175,14 @@ export const OverviewTable: React.FC<{
   emptyMessage?: React.ReactNode;
 }> = ({ columns, rows, emptyMessage = "데이터가 없습니다" }) => (
   <div className="w-full overflow-x-auto">
-    <table className="w-full text-[14px]">
+    {/* 2026-10-09 · 사용자 지시 · 전체 밸런싱 · padding compact (py-2.5/py-3 → py-1.5) · font 13 */}
+    <table className="w-full text-[13px]">
       <thead>
         <tr className="border-b border-slate-200 bg-slate-50/60">
           {columns.map(col => (
             <th
               key={col.key}
-              className={`py-2.5 px-3 text-[13px] font-semibold text-ink-soft ${
+              className={`py-1.5 px-2.5 text-[12px] font-semibold text-ink-soft ${
                 col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left"
               } ${col.className ?? ""}`}
             >
@@ -193,7 +194,7 @@ export const OverviewTable: React.FC<{
       <tbody>
         {rows.length === 0 ? (
           <tr>
-            <td colSpan={columns.length} className="py-8 text-center text-[13px] text-ink-soft/70">
+            <td colSpan={columns.length} className="py-6 text-center text-[12px] text-ink-soft/70">
               {emptyMessage}
             </td>
           </tr>
@@ -209,7 +210,7 @@ export const OverviewTable: React.FC<{
                 {columns.map(col => (
                   <td
                     key={col.key}
-                    className={`py-3 px-3 text-ink ${
+                    className={`py-1.5 px-2.5 text-ink ${
                       col.align === "right" ? "text-right tabular-nums" : col.align === "center" ? "text-center" : ""
                     } ${col.className ?? ""}`}
                   >

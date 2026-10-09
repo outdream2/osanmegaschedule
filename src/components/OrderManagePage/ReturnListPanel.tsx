@@ -582,7 +582,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                 ref={el => { if (el) el.indeterminate = someChecked; }}
                 onChange={toggleAllReturn}
                 onClick={(e) => e.stopPropagation()}
-                className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
+                className="w-3 h-3 accent-rose-500 cursor-pointer"
                 title={allChecked ? "전체 선택 해제" : "화면 표시 항목 전체 선택"}
               />
               <span {...colResizerProps("num")} className={RESIZER_CLS} style={{ touchAction: "none" }} />
@@ -656,7 +656,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
                     checked={isChecked}
                     onChange={toggleOne}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
+                    className="w-3 h-3 accent-rose-500 cursor-pointer"
                     title={`${x.product_name} · 반품요청 대상 ${isChecked ? "해제" : "선택"}`}
                   />
                   <div className="text-[14px] text-zinc-300 tabular-nums mt-0.5">{i + 1}</div>
