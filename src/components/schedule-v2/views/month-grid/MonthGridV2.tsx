@@ -147,16 +147,18 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       }`}
                       title={isDimmed ? "다른 월 날짜 · 월간 뷰에서 수정" : undefined}
                     >
-                      {/* 2026-10-08 · 사용자 재재지시 · 오늘 column 좌/우 vertical rail (absolute 로 명시 그림)
-                          · 이전 border/ring/shadow 모두 border-collapse table 또는 scheduleCellContent bg 로 가려짐
-                          · absolute span 은 bg 위에 z-20 으로 그려져 반드시 보임 */}
-                      {isToday && (
-                        <>
-                          <span aria-hidden className="absolute inset-y-0 left-0 w-[2px] bg-rose-500 z-20 pointer-events-none" />
-                          <span aria-hidden className="absolute inset-y-0 right-0 w-[2px] bg-rose-500 z-20 pointer-events-none" />
-                        </>
-                      )}
-                      <div className="h-full w-full">
+                      {/* 2026-10-09 · 사용자 재재재지시 · 오늘 column 좌/우 vertical rail (inline style border)
+                          · 이전 approach 전부 실패 (ring collapse · shadow bg 가림 · absolute 위치 안됨)
+                          · 최종 · wrapper <div> 에 inline style borderLeft/Right · box-sizing border-box
+                            scheduleCellContent (내부 child) 가 wrapper content box 안에 confine · border 가려지지 않음 */}
+                      <div
+                        className="h-full w-full"
+                        style={isToday ? {
+                          borderLeft: "2px solid #f43f5e",
+                          borderRight: "2px solid #f43f5e",
+                          boxSizing: "border-box",
+                        } : undefined}
+                      >
                         {scheduleCellContent(s, typeHoursMap, scheduleTypes)}
                       </div>
                       {isEditing && (
