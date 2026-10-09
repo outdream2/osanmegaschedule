@@ -14,7 +14,8 @@ import {
 } from "@phosphor-icons/react";
 import type { DpSubTabKey } from "../DisplayPage.types";
 import { OverviewPageHeader, OverviewToolbar, OverviewTable, StoreStatusBadge, type OverviewTableColumn } from "./StoreOverviewPrimitives";
-import { listOrderRequests, type OrderRequestRow } from "../../../lib/orderRequestsApi";
+import { listOrderRequests, createOrderRequest, type OrderRequestRow } from "../../../lib/orderRequestsApi";
+import { useToast } from "../../../hooks/useToast";
 import { api } from "../../../lib/apiClient";
 import type { OrderDetailRow } from "./OrderDetailModal";
 // 2026-10-09 · 사용자 지시 · 기존 OrderManagePage 기능 그대로 가져옴 (발주매입대조 · 반품)
@@ -70,6 +71,40 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
   const [period, setPeriod] = useState<"7" | "14" | "30">("14");
   const [orderDetail, setOrderDetail] = useState<OrderDetailRow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // 2026-10-09 · 사용자 지시 · 발주필요 → 선택 → 발주요청 전송 flow
+  const [selectedNeed, setSelectedNeed] = useState<Set<string>>(new Set());
+  const [sendingToOrderReq, setSendingToOrderReq] = useState(false);
+  // 2026-10-09 · 사용자 지시 · 발주필요 리스트 헤더 자동정렬
+  const [needSortKey, setNeedSortKey] = useState<string | null>(null);
+  const [needSortDir, setNeedSortDir] = useState<"asc" | "desc">("asc");
+  const toggleNeedSort = useCallback((key: string) => {
+    setNeedSortKey(prev => {
+      if (prev === key) { setNeedSortDir(d => d === "asc" ? "desc" : "asc"); return prev; }
+      setNeedSortDir("asc"); return key;
+    });
+  }, []);
+  const { toast, show, showSuccess, showError, clear: clearToast } = useToast();
+  const toggleNeedSelection = useCallback((code: string) => {
+    setSelectedNeed(prev => {
+      const next = new Set(prev);
+      if (next.has(code)) next.delete(code); else next.add(code);
+      return next;
+    });
+  }, []);
+  const clearNeedSelection = useCallback(() => setSelectedNeed(new Set()), []);
+  const toggleAllNeedSelection = useCallback((rows: AnyRow[]) => {
+    setSelectedNeed(prev => {
+      const codes = rows.map(r => String(r.product_code ?? "")).filter(Boolean);
+      const allSelected = codes.length > 0 && codes.every(c => prev.has(c));
+      if (allSelected) {
+        const next = new Set(prev);
+        codes.forEach(c => next.delete(c));
+        return next;
+      }
+      return new Set([...prev, ...codes]);
+    });
+  }, []);
 
   useEffect(() => { let alive = true;
     listOrderRequests().then(r => { if (alive) setOrderReqs(Array.isArray(r) ? r : []); }).catch(() => { if (alive) setOrderReqs([]); });
@@ -183,8 +218,16 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
 
   const columnsForSection = (k: SectionKey): OverviewTableColumn[] => {
     switch (k) {
-      case "order-request":
       case "order-need":
+        return [
+          { key: "sel", label: "", className: "w-[28px]" },
+          { key: "product", label: "상품" },
+          { key: "supplier", label: "공급사" },
+          { key: "stock", label: "현재고", align: "right" },
+          { key: "optimal", label: "적정재고", align: "right" },
+          { key: "need", label: "부족", align: "right" },
+        ];
+      case "order-request":
       case "stockout":
         return [
           { key: "product", label: "상품" },
@@ -234,7 +277,16 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
         const stock = Number(r.current_stock ?? 0);
         const opt = Number(r.optimal_stock ?? 0);
         const short = opt - stock;
+        const code = String(r.product_code ?? "");
+        const isSel = k === "order-need" && selectedNeed.has(code);
         return {
+          sel: k === "order-need" ? (
+            <input type="checkbox" checked={isSel}
+              onClick={(e) => e.stopPropagation()}
+              onChange={() => code && toggleNeedSelection(code)}
+              className="w-4 h-4 cursor-pointer accent-brand-deep"
+              aria-label="발주요청 대상 선택" />
+          ) : null,
           product: (<div className="flex flex-col"><span className="font-semibold text-ink">{r.product_name ?? "-"}</span><span className="text-[15.5px] text-ink-soft tabular-nums">{r.product_code ?? ""}</span></div>),
           supplier: r.supplier ?? "-",
           stock: Number.isFinite(stock) ? <span className={stock <= 0 ? "text-rose-600 font-bold" : ""}>{stock.toLocaleString()}</span> : "-",
@@ -283,6 +335,42 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
   };
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
+
+  // 2026-10-09 · bulk 발주요청 전송 (사용자 지시 · 선택 → 발주요청)
+  const sendSelectedNeedToOrderRequest = useCallback(async () => {
+    if (selectedNeed.size === 0) return;
+    const codes = Array.from(selectedNeed);
+    const selectedRows = (lowStock ?? []).filter(r => codes.includes(String(r.product_code ?? "")));
+    if (selectedRows.length === 0) return;
+    setSendingToOrderReq(true);
+    show(`${selectedRows.length}건 발주요청 등록 중...`);
+    let ok = 0, fail = 0;
+    for (const r of selectedRows) {
+      try {
+        const stock = Number(r.current_stock ?? 0);
+        const opt = Number(r.optimal_stock ?? 0);
+        const needed = Math.max(0, opt - stock);
+        await createOrderRequest({
+          product_code: String(r.product_code),
+          product_name: String(r.product_name ?? r.product_code),
+          current_stock: Number.isFinite(stock) ? stock : null,
+          optimal_stock: Number.isFinite(opt) && opt > 0 ? opt : null,
+          order_qty: needed > 0 ? needed : null,
+          supplier: r.supplier ?? null,
+          supplier_code: r.supplier_code ?? null,
+          note: `발주·반품 현황판 · 선택 발주요청 (${new Date().toLocaleString("ko-KR")})`,
+        });
+        ok++;
+      } catch {
+        fail++;
+      }
+    }
+    setSendingToOrderReq(false);
+    clearNeedSelection();
+    refresh();
+    if (fail === 0) showSuccess(`${ok}건 발주요청 등록 완료`);
+    else showError(`${ok}건 성공 · ${fail}건 실패`);
+  }, [selectedNeed, lowStock, show, showSuccess, showError, clearNeedSelection, refresh]);
 
   // ═══════════════════════════════════════════════════════════════════
   //  보드 (현황판) · 아이콘 only · chart · list · 폰트 리밸런싱
@@ -347,20 +435,21 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
       (k === "order-request" || k === "order-need" || k === "stockout")
         ? [
             { key: "product", label: "상품" },
-            { key: "stock",   label: "현재/적정", align: "right", w: "w-[96px]" },
+            { key: "stock",   label: "현재/적정", align: "right", w: "w-[96px] whitespace-nowrap" },
           ]
       : k === "order-history"
         ? [
-            { key: "when",     label: "일자" },
+            // 2026-10-09 · 사용자 지시 · 일자 세로 wrap 방지 · nowrap + 고정 폭
+            { key: "when",     label: "일자", w: "w-[72px] whitespace-nowrap" },
             { key: "supplier", label: "공급사" },
-            { key: "amount",   label: "금액", align: "right", w: "w-[104px]" },
+            { key: "amount",   label: "금액", align: "right", w: "w-[88px] whitespace-nowrap" },
           ]
       : [
-            // 2026-10-09 · 사용자 지시 · 이상품목 리스트 · 공급사·상품명 나란히 (2 column 분리) · info density ↑
-            { key: "when",     label: "일자", w: "w-[52px]" },
+            // 2026-10-09 · 사용자 지시 · 이상품목 리스트 · 공급사·상품명 나란히 (2 column 분리) · info density ↑ · nowrap
+            { key: "when",     label: "일자", w: "w-[64px] whitespace-nowrap" },
             { key: "product",  label: "상품" },
-            { key: "supplier", label: "공급사", w: "w-[90px]" },
-            { key: "variance", label: "발주/매입", align: "right", w: "w-[100px]" },
+            { key: "supplier", label: "공급사", w: "w-[88px] whitespace-nowrap" },
+            { key: "variance", label: "발주/매입", align: "right", w: "w-[96px] whitespace-nowrap" },
         ];
 
     const defaultRow = (r: AnyRow): Record<string, React.ReactNode> => {
@@ -619,7 +708,41 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
 
       {innerTab === "order-need" && (
         <div className="px-4 sm:px-6">
-          <FullBoard k="order-need" rows={needRows} count={countForSection("order-need")} columns={columnsForSection("order-need")} mapper={mapRow} />
+          {/* 발주필요 전용 · 선택 · bulk-send 바 (사용자 지시 · 발주필요 리스트 페이지에만) */}
+          {selectedNeed.size > 0 && (
+            <div className="mb-3 flex items-center justify-between gap-3 px-4 py-2.5 bg-brand-tint/30 border border-brand-deep/15 rounded-[12px]">
+              <div className="flex items-center gap-2 text-[14px] md:text-[15px]">
+                <span className="font-semibold text-brand-deep">{selectedNeed.size}건 선택됨</span>
+                <button type="button" onClick={clearNeedSelection}
+                  className="text-slate-500 hover:text-ink underline-offset-2 hover:underline cursor-pointer">
+                  선택 해제
+                </button>
+              </div>
+              <button type="button" onClick={sendSelectedNeedToOrderRequest}
+                disabled={sendingToOrderReq}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-[14px] md:text-[15px] font-semibold bg-brand-deep text-white hover:bg-[#0d3a5c] disabled:opacity-50 transition-colors cursor-pointer">
+                <ShoppingCart size={14} weight="fill" />
+                발주요청대기로 보내기 ({selectedNeed.size})
+              </button>
+            </div>
+          )}
+          <FullBoard k="order-need" rows={needRows} count={countForSection("order-need")}
+            columns={(() => {
+              // 전체선택 체크박스 label 주입 (OverviewTable primitive 지원 · label React.ReactNode)
+              const cols = columnsForSection("order-need");
+              const codes = needRows.map(r => String(r.product_code ?? "")).filter(Boolean);
+              const allChecked = codes.length > 0 && codes.every(c => selectedNeed.has(c));
+              return cols.map(c => c.key === "sel" ? ({
+                ...c,
+                label: (
+                  <input type="checkbox" checked={allChecked}
+                    onChange={() => toggleAllNeedSelection(needRows)}
+                    className="w-4 h-4 cursor-pointer accent-brand-deep"
+                    aria-label="전체 선택" />
+                ),
+              }) : c);
+            })()}
+            mapper={mapRow} />
         </div>
       )}
       {innerTab === "order-history" && (
@@ -682,6 +805,16 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
 
       {/* ═══ 발주 상세 · Right-side Slide Drawer (2025 트렌드 · Linear/Notion/Attio) ═══ */}
       <OrderDetailDrawer order={orderDetail} onClose={() => setOrderDetail(null)} />
+
+      {/* ═══ Toast (bulk send 결과) ═══ */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[60] bg-ink text-white rounded-lg px-4 py-3 shadow-lg text-[14px] font-medium flex items-center gap-2">
+          <span>{toast.message}</span>
+          <button type="button" onClick={clearToast} className="ml-2 opacity-60 hover:opacity-100 cursor-pointer">
+            <X size={14} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
