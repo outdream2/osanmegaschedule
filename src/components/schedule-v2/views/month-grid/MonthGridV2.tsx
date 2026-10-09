@@ -3,7 +3,7 @@
 //   · Card primitive 사용 (framework audit raw-card-wrapper 회피)
 //   · edit mode 에서 cell click → ScheduleTypePopover
 //   · lock month 는 상위 editMode=false 로 전달되어 자동 비활성
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import type { Employee, Schedule } from "../../../../types";
 import type { ScheduleTypeEntry } from "../../../../hooks/useSettings";
 import { Card } from "../../../common/Card";
@@ -39,6 +39,17 @@ export const MonthGridV2: React.FC<GridProps> = ({
   onDateHeaderClick, onEmployeeNameClick,
   empLaborMap,
 }) => {
+  // 2026-10-09 · 사용자 지시 · 로딩 시 오늘 column 을 가로 중앙으로 scroll
+  //   · todayStr 가 dateList 에 포함될 때만 scroll (다른 월 보고 있으면 noop)
+  //   · dateList 변경 (월 이동) · todayStr 변경 (hour 롤오버) 때 재실행
+  const todayHeaderRef = useRef<HTMLTableCellElement | null>(null);
+  useEffect(() => {
+    if (!todayHeaderRef.current) return;
+    if (!dateList.includes(todayStr)) return;
+    try {
+      todayHeaderRef.current.scrollIntoView({ block: "nearest", inline: "center", behavior: "auto" });
+    } catch { /* no-op (older browsers) */ }
+  }, [dateList, todayStr]);
   // 날짜별 schedule lookup · O(1)
   const scheduleIndex = useMemo(() => {
     const idx = new Map<number, Map<string, Schedule>>();
@@ -85,6 +96,7 @@ export const MonthGridV2: React.FC<GridProps> = ({
               return (
                 <th
                   key={`h-${d}`}
+                  ref={isToday ? todayHeaderRef : undefined}
                   onClick={dateClickable ? () => onDateHeaderClick!(d) : undefined}
                   className={`sticky top-0 z-30 border-r border-b border-line px-1 py-1.5 text-center text-[12px] font-semibold tabular-nums ${
                     isToday
@@ -147,14 +159,14 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       }`}
                       title={isDimmed ? "다른 월 날짜 · 월간 뷰에서 수정" : undefined}
                     >
-                      {/* 2026-10-09 · 오늘 column rail · td 자체 (table cell · 가장 바깥쪽) 에 inline style outline 직접 적용 → 어떤 child element 와도 충돌 없음 */}
                       {scheduleCellContent(s, typeHoursMap, scheduleTypes, isToday)}
+                      {/* 2026-10-09 · 사용자 지시 · 오늘 cell 전체 사각형 테두리 (상·하·좌·우) */}
                       {isToday && (
                         <div
                           aria-hidden
                           className="pointer-events-none absolute inset-0 z-20"
                           style={{
-                            boxShadow: "inset 3px 0 0 0 #ef4444, inset -3px 0 0 0 #ef4444",
+                            boxShadow: "inset 0 0 0 2px #ef4444",
                           }}
                         />
                       )}
