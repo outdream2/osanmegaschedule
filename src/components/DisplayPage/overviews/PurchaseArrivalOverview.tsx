@@ -252,7 +252,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
               <span className="w-[3px] h-[16px] bg-sky-500 rounded-full shrink-0" aria-hidden />
               <div className="min-w-0">
                 <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">일별 매입금액</h3>
-                <p className="text-[13px] text-slate-500 mt-0.5">최근 {period}일 · 총 {fmt(totalAmount)}원 · 일평균 {fmt(avgAmount)}원</p>
+                <p className="text-[13px] md:text-[14px] text-slate-500 mt-0.5">최근 {period}일 · 총 {fmt(totalAmount)}원 · 일평균 {fmt(avgAmount)}원</p>
               </div>
             </header>
             <div className="px-5 py-4">
@@ -267,7 +267,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                   );
                 })}
               </div>
-              <div className="flex justify-between mt-2 text-[11px] font-medium text-slate-500 tabular-nums">
+              <div className="flex justify-between mt-2 text-[11px] md:text-[12px] font-medium text-slate-500 tabular-nums">
                 <span>{daily[0]?.date.slice(5) ?? ""}</span>
                 <span>{daily[Math.floor(daily.length / 2)]?.date.slice(5) ?? ""}</span>
                 <span>{daily[daily.length - 1]?.date.slice(5) ?? ""}</span>
@@ -284,7 +284,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
               <span className="text-[14px] text-slate-500 font-medium">· 실재고 × 사입단가 · 총 {fmt(locationStock.totalAmt)}원 ({fmt(locationStock.totalQty)}개)</span>
               {/* 2026-10-09 · 사용자 지시 · 실재고테이블 (매입 > 실재고확인) 바로가기 */}
               <button type="button" onClick={() => onSelectSubTab("purchase")}
-                className="ml-auto inline-flex items-center gap-0.5 text-[13.5px] font-semibold text-violet-700 hover:text-violet-900 cursor-pointer transition-colors">
+                className="ml-auto inline-flex items-center gap-0.5 text-[13px] md:text-[14px] font-semibold text-violet-700 hover:text-violet-900 cursor-pointer transition-colors">
                 실재고테이블 →
               </button>
             </header>
@@ -311,8 +311,8 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                           </div>
                           {/* 라벨 + 금액 */}
                           <div className="mt-2 text-center w-full">
-                            <div className="text-[13px] font-medium text-ink group-hover:text-brand-deep transition-colors">{b.label}</div>
-                            <div className="text-[13px] font-bold text-ink tabular-nums mt-0.5 truncate">{fmt(b.amount)}원</div>
+                            <div className="text-[13px] md:text-[14px] font-medium text-ink group-hover:text-brand-deep transition-colors">{b.label}</div>
+                            <div className="text-[13px] md:text-[14px] font-bold text-ink tabular-nums mt-0.5 truncate">{fmt(b.amount)}원</div>
                             <div className="text-[12px] text-slate-500 tabular-nums mt-0.5">
                               {fmt(b.qty)}개 · {totalPct}%
                             </div>
@@ -334,20 +334,20 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
               <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">매입이력</h3>
               <span className="text-[14px] text-slate-500 font-medium">· 최근 {period}일 · {historyRows.length}건</span>
               <button type="button" onClick={() => onSelectSubTab("purchase")}
-                className="ml-auto inline-flex items-center gap-0.5 text-[13.5px] font-semibold text-brand-deep hover:text-[#0d3a5c] cursor-pointer transition-colors">
+                className="ml-auto inline-flex items-center gap-0.5 text-[13px] md:text-[14px] font-semibold text-brand-deep hover:text-[#0d3a5c] cursor-pointer transition-colors">
                 전체보기 →
               </button>
             </header>
-            <div className="max-h-[520px] overflow-y-auto">
+            <div className="max-h-[360px] overflow-y-auto">
               <table className="w-full text-[14px]">
                 <thead className="sticky top-0 bg-white z-10">
                   <tr className="border-b border-slate-200">
-                    <th className="pl-5 pr-3 py-2 text-left text-[13px] font-semibold text-slate-500 w-[108px]">일자</th>
-                    <th className="px-3 py-2 text-left text-[13px] font-semibold text-slate-500">상품</th>
-                    <th className="px-3 py-2 text-left text-[13px] font-semibold text-slate-500 w-[130px]">공급사</th>
-                    <th className="px-3 py-2 text-right text-[13px] font-semibold text-slate-500 w-[70px]">수량</th>
-                    <th className="px-3 py-2 text-right text-[13px] font-semibold text-slate-500 w-[90px]">단가</th>
-                    <th className="px-3 pr-5 py-2 text-right text-[13px] font-semibold text-slate-500 w-[112px]">금액</th>
+                    <th className="pl-5 pr-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500 w-[108px]">일자</th>
+                    <th className="px-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500">상품</th>
+                    <th className="px-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500 w-[130px]">공급사</th>
+                    <th className="px-3 py-2 text-right text-[13px] md:text-[14px] font-semibold text-slate-500 w-[70px]">수량</th>
+                    <th className="px-3 py-2 text-right text-[13px] md:text-[14px] font-semibold text-slate-500 w-[90px]">단가</th>
+                    <th className="px-3 pr-5 py-2 text-right text-[13px] md:text-[14px] font-semibold text-slate-500 w-[112px]">금액</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -355,11 +355,11 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                     <tr><td colSpan={6} className="py-8 text-center text-[13px] text-slate-500">{purchases == null ? "불러오는 중..." : "매입이력이 없습니다"}</td></tr>
                   ) : historyRows.slice(0, 100).map((r, i) => (
                     <tr key={i} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60">
-                      <td className="pl-5 pr-3 py-2 text-[13.5px] tabular-nums text-slate-500">{String(r.purchase_date ?? "").slice(0, 10)}</td>
+                      <td className="pl-5 pr-3 py-2 text-[13px] md:text-[14px] tabular-nums text-slate-500">{String(r.purchase_date ?? "").slice(0, 10)}</td>
                       <td className="px-3 py-2">
-                        <div className="flex flex-col"><span className="text-[14px] text-ink font-medium truncate">{r.product_name ?? "-"}</span><span className="text-[12.5px] text-slate-500 tabular-nums">{r.product_code ?? ""}</span></div>
+                        <div className="flex flex-col"><span className="text-[14px] text-ink font-medium truncate">{r.product_name ?? "-"}</span><span className="text-[12px] md:text-[13px] text-slate-500 tabular-nums">{r.product_code ?? ""}</span></div>
                       </td>
-                      <td className="px-3 py-2 text-[13.5px] text-ink truncate">{r.supplier ?? "-"}</td>
+                      <td className="px-3 py-2 text-[13px] md:text-[14px] text-ink truncate">{r.supplier ?? "-"}</td>
                       <td className="px-3 py-2 text-right text-[14px] tabular-nums text-ink">{fmt(Number(r.qty ?? 0))}</td>
                       <td className="px-3 py-2 text-right text-[14px] tabular-nums text-slate-500">{fmt(Number(r.unit_price ?? 0))}</td>
                       <td className="px-3 pr-5 py-2 text-right text-[14px] tabular-nums font-semibold text-ink">{fmt(Number(r.amount ?? 0))}</td>
@@ -380,22 +380,22 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
               <Warning size={18} weight="fill" className="text-slate-500" />
               <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">매입이상</h3>
               <span className="text-[14px] text-slate-500 font-medium">· {exceptionRows.length}건</span>
-              <button type="button" onClick={() => onSelectSubTab("overview-order-return")}
-                className="ml-auto inline-flex items-center gap-0.5 text-[13.5px] font-semibold text-brand-deep hover:text-[#0d3a5c] cursor-pointer transition-colors">
+              <button type="button" onClick={() => { try { sessionStorage.setItem("overview-order-return.innerTab", "exception"); } catch {} onSelectSubTab("overview-order-return"); }}
+                className="ml-auto inline-flex items-center gap-0.5 text-[13px] md:text-[14px] font-semibold text-brand-deep hover:text-[#0d3a5c] cursor-pointer transition-colors">
                 전체보기 →
               </button>
             </header>
             {/* 2026-10-09 · 사용자 지시 · 날짜 · 상품 · 처리현황 column */}
             <div className="max-h-[320px] overflow-y-auto">
               {exceptionRows.length === 0 ? (
-                <div className="py-8 text-center text-[13.5px] text-slate-500">{matchData == null ? "불러오는 중..." : "매입이상이 없습니다"}</div>
+                <div className="py-8 text-center text-[13px] md:text-[14px] text-slate-500">{matchData == null ? "불러오는 중..." : "매입이상이 없습니다"}</div>
               ) : (
                 <table className="w-full text-[14px]">
                   <thead className="sticky top-0 bg-white z-10">
                     <tr className="border-b border-slate-200">
-                      <th className="pl-5 pr-2 py-1.5 text-left text-[12.5px] font-semibold text-slate-500 w-[72px]">날짜</th>
-                      <th className="px-2 py-1.5 text-left text-[12.5px] font-semibold text-slate-500">상품</th>
-                      <th className="px-2 pr-5 py-1.5 text-left text-[12.5px] font-semibold text-slate-500 w-[108px]">처리현황</th>
+                      <th className="pl-5 pr-2 py-1.5 text-left text-[12px] md:text-[13px] font-semibold text-slate-500 w-[72px]">날짜</th>
+                      <th className="px-2 py-1.5 text-left text-[12px] md:text-[13px] font-semibold text-slate-500">상품</th>
+                      <th className="px-2 pr-5 py-1.5 text-left text-[12px] md:text-[13px] font-semibold text-slate-500 w-[108px]">처리현황</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -408,7 +408,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                         : status.includes("미") || status.includes("불일치") ? "text-rose-600" : "text-amber-700";
                       return (
                         <tr key={i}
-                          onClick={() => onSelectSubTab("overview-order-return")}
+                          onClick={() => { try { sessionStorage.setItem("overview-order-return.innerTab", "exception"); } catch {} onSelectSubTab("overview-order-return"); }}
                           className="border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 cursor-pointer transition-colors"
                           title="클릭 · 발주·매입대조 상품 리스트로 이동"
                         >
@@ -416,7 +416,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                             {String(r.order_date ?? "").slice(5, 10) || "-"}
                           </td>
                           <td className="px-2 py-2 align-top">
-                            <div className="text-[13.5px] text-ink font-medium truncate">{r.product_name ?? r.product_code ?? "-"}</div>
+                            <div className="text-[13px] md:text-[14px] text-ink font-medium truncate">{r.product_name ?? r.product_code ?? "-"}</div>
                             <div className="text-[12px] text-slate-500 tabular-nums truncate mt-0.5">
                               {r.supplier ?? "-"} · 발주 {fmt(oq)} / 매입 <span className={diff === 0 ? "" : "text-rose-600 font-semibold"}>{fmt(pq)}</span>
                             </div>
@@ -437,22 +437,18 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
               <span className="w-[3px] h-[16px] bg-amber-500 rounded-full shrink-0" aria-hidden />
               <Scales size={18} weight="fill" className="text-slate-500" />
               <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">실재고현황 vs ERP 재고자산</h3>
-              {/* 2026-10-09 · 사용자 지시 fix · 실재고테이블 inner tab 으로 이동 (외부 subTab 이동 X) */}
-              <button type="button" onClick={() => setInnerTab("real-stock")}
-                className="ml-auto inline-flex items-center gap-0.5 text-[13.5px] font-semibold text-brand-deep hover:text-[#0d3a5c] cursor-pointer transition-colors">
-                실재고테이블 →
-              </button>
+              {/* 2026-10-09 · 사용자 지시 · 실재고테이블 → 링크 일단 삭제 */}
             </header>
             <div className="px-5 py-4 space-y-3">
               <div className="grid grid-cols-2 gap-3 text-[14px]">
                 <div className="bg-slate-50 border border-slate-100 rounded-md px-3 py-2">
-                  <div className="text-[12.5px] text-slate-500 font-medium">ERP 재고자산</div>
-                  <div className="text-[16px] font-bold text-ink tabular-nums mt-0.5">{fmt(stockCompare.totalErp)}원</div>
+                  <div className="text-[12px] md:text-[13px] text-slate-500 font-medium">ERP 재고자산</div>
+                  <div className="text-[16px] md:text-[17px] font-bold text-ink tabular-nums mt-0.5">{fmt(stockCompare.totalErp)}원</div>
                   <div className="text-[12px] text-slate-500 mt-0.5">현재고 × 사입단가 · 제품수 <b className="text-ink tabular-nums">{fmt(stockCompare.erpCount)}</b></div>
                 </div>
                 <div className="bg-slate-50 border border-slate-100 rounded-md px-3 py-2">
-                  <div className="text-[12.5px] text-slate-500 font-medium">실재고현황</div>
-                  <div className="text-[16px] font-bold text-ink tabular-nums mt-0.5">{fmt(stockCompare.totalReal)}원</div>
+                  <div className="text-[12px] md:text-[13px] text-slate-500 font-medium">실재고현황</div>
+                  <div className="text-[16px] md:text-[17px] font-bold text-ink tabular-nums mt-0.5">{fmt(stockCompare.totalReal)}원</div>
                   <div className="text-[12px] text-slate-500 mt-0.5">실재고 × 사입단가 · 제품수 <b className="text-ink tabular-nums">{fmt(stockCompare.realCount)}</b></div>
                 </div>
               </div>
@@ -463,7 +459,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                     {stockCompare.totalDiff > 0 ? "+" : ""}{fmt(stockCompare.totalDiff)}원
                   </span>
                 </div>
-                <div className="text-[12.5px] text-slate-500 mt-1">
+                <div className="text-[12px] md:text-[13px] text-slate-500 mt-1">
                   재고 불일치 {stockCompare.mismatchCount}건 / 체크 {stockCompare.list.length}건
                 </div>
               </div>
@@ -471,7 +467,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
             {/* 상세 리스트 (불일치 상위) */}
             {stockCompare.list.length > 0 && (
               <div className="max-h-[260px] overflow-y-auto border-t border-slate-100">
-                <table className="w-full text-[13.5px]">
+                <table className="w-full text-[13px] md:text-[14px]">
                   <thead className="sticky top-0 bg-white z-10">
                     <tr className="border-b border-slate-200">
                       <th className="pl-5 pr-2 py-1.5 text-left text-[12px] font-semibold text-slate-500">상품</th>
@@ -488,7 +484,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                       .map((x, i) => (
                         <tr key={i} className="border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60">
                           <td className="pl-5 pr-2 py-1.5">
-                            <div className="text-[13.5px] text-ink truncate max-w-[200px]">{x.name}</div>
+                            <div className="text-[13px] md:text-[14px] text-ink truncate max-w-[200px]">{x.name}</div>
                             <div className="text-[12px] text-slate-500 tabular-nums">{x.code}</div>
                           </td>
                           <td className="px-2 py-1.5 text-right text-[13px] tabular-nums text-slate-500">{fmt(x.erpStock)}</td>
@@ -594,17 +590,17 @@ const LocationStockDrawer: React.FC<{
                 <table className="w-full text-[14px]">
                   <thead className="sticky top-0 bg-white z-10">
                     <tr className="border-b border-slate-200">
-                      <th className="pl-5 pr-2 py-2 text-left text-[12.5px] font-semibold text-slate-500">상품</th>
-                      <th className="px-2 py-2 text-right text-[12.5px] font-semibold text-slate-500 w-[60px]">수량</th>
-                      <th className="px-2 py-2 text-right text-[12.5px] font-semibold text-slate-500 w-[88px]">단가</th>
-                      <th className="px-2 pr-5 py-2 text-right text-[12.5px] font-semibold text-slate-500 w-[108px]">금액</th>
+                      <th className="pl-5 pr-2 py-2 text-left text-[12px] md:text-[13px] font-semibold text-slate-500">상품</th>
+                      <th className="px-2 py-2 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[60px]">수량</th>
+                      <th className="px-2 py-2 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[88px]">단가</th>
+                      <th className="px-2 pr-5 py-2 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[108px]">금액</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((x, i) => (
                       <tr key={i} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60">
                         <td className="pl-5 pr-2 py-2">
-                          <div className="text-[13.5px] text-ink font-medium truncate">{x.name}</div>
+                          <div className="text-[13px] md:text-[14px] text-ink font-medium truncate">{x.name}</div>
                           <div className="text-[12px] text-slate-500 tabular-nums truncate mt-0.5">
                             {x.code} · {x.supplier}
                           </div>
@@ -612,7 +608,7 @@ const LocationStockDrawer: React.FC<{
                         <td className="px-2 py-2 text-right text-[14px] tabular-nums text-ink font-semibold">
                           {x.qty.toLocaleString()}
                         </td>
-                        <td className="px-2 py-2 text-right text-[13.5px] tabular-nums text-slate-500">
+                        <td className="px-2 py-2 text-right text-[13px] md:text-[14px] tabular-nums text-slate-500">
                           {x.unit > 0 ? x.unit.toLocaleString() : "-"}
                         </td>
                         <td className="px-2 pr-5 py-2 text-right text-[14px] tabular-nums font-semibold text-ink">
