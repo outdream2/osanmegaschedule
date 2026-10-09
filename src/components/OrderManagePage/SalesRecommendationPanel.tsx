@@ -280,57 +280,29 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
     return (
       <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
         <Card padding="md" rounded="xl" className="flex-1 min-h-[400px] flex flex-col gap-3 overflow-y-auto">
-          {/* 2026-09-18 · Phase 1 · 안내형 문구 · 오늘 날짜 + 진행 이벤트 요약 + 힌트 · 계절 배너 통합 */}
-          <div className="flex flex-col gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-br from-brand-tint/30 via-white to-emerald-50/30 border border-brand-tint/50">
-            <div className="flex items-center gap-2">
-              <Calendar size={14} className="text-brand-deep shrink-0" strokeWidth={2.2} />
-              <span className="text-[16px] font-bold text-ink tracking-tight">
-                오늘은 <span className="tabular-nums">{formatKoreanDate(new Date())}</span>입니다
+          {/* 2026-10-09 · 사용자 지시 · 중복 제거 (chip list 삭제) · 깔끔 1줄 요약 (오늘 · 시즌 · 진행 N건)
+              · 각 이벤트 상세는 아래 "진행중·임박 이벤트" 카드로 유지 */}
+          <div className="flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg bg-brand-tint/15 border border-brand-tint/40">
+            <Calendar size={13} className="text-brand-deep shrink-0" strokeWidth={2.2} />
+            <span className="text-[14px] font-bold text-ink tabular-nums">
+              {formatKoreanDate(new Date())}
+            </span>
+            {currentSeason && (() => {
+              const t = TYPE_TONE[currentSeason] ?? TYPE_TONE.custom;
+              return (
+                <span className={`inline-flex items-center text-[13px] font-bold px-1.5 py-0.5 rounded-md ${t.cls}`}>
+                  {t.label} 시즌
+                </span>
+              );
+            })()}
+            {eventsToday.length > 0 ? (
+              <span className="ml-auto inline-flex items-center gap-1 text-[13px] text-ink-soft">
+                <span>진행중 이벤트</span>
+                <span className="font-bold text-brand-deep tabular-nums">{eventsToday.length}</span>
+                <span>건</span>
               </span>
-            </div>
-            <div className="text-[15px] text-ink-soft leading-relaxed">
-              {(() => {
-                const chips: React.ReactNode[] = [];
-                if (currentSeason) {
-                  const t = TYPE_TONE[currentSeason] ?? TYPE_TONE.custom;
-                  chips.push(
-                    <span key="season" className={`inline-flex items-center text-[14px] font-bold px-1.5 py-0.5 rounded-md ${t.cls}`}>
-                      {t.label} 시즌
-                    </span>
-                  );
-                }
-                for (const ev of eventsToday) {
-                  const t = TYPE_TONE[ev.type] ?? TYPE_TONE.custom;
-                  const d = dayDiff(ev.start_date);
-                  const suffix = d != null && d > 0 ? ` D-${d}` : "";
-                  chips.push(
-                    <span key={`ev-${ev.id}`} className={`inline-flex items-center text-[14px] font-bold px-1.5 py-0.5 rounded-md ${t.cls}`}>
-                      {ev.name}{suffix}
-                    </span>
-                  );
-                }
-                if (chips.length === 0) {
-                  return <span className="text-ink-soft">이 기간에 등록된 이벤트가 없습니다. 아래 [이벤트 추가] 로 선택할 수 있습니다.</span>;
-                }
-                return (
-                  <span className="inline-flex flex-wrap items-center gap-1.5">
-                    <span>이 기간은</span>
-                    {chips.map((chip, i) => (
-                      <React.Fragment key={i}>
-                        {chip}
-                        {i < chips.length - 1 && <span className="text-ink-soft/60">·</span>}
-                      </React.Fragment>
-                    ))}
-                    <span>이벤트가 있습니다.</span>
-                  </span>
-                );
-              })()}
-            </div>
-            {eventsToday.length > 0 && (
-              <div className="flex items-center gap-1.5 text-[14px] text-brand-deep font-semibold">
-                <ChevronDown size={12} strokeWidth={2.5} className="animate-pulse" />
-                아래 이벤트를 클릭하면 추천 상품이 표시됩니다
-              </div>
+            ) : (
+              <span className="ml-auto text-[13px] text-ink-soft">진행중 이벤트 없음</span>
             )}
           </div>
           {/* 임박 이벤트 리스트 · 상단 (#55)
@@ -368,11 +340,9 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                   </button>
                 )}
               </div>
-              {/* 2026-09-24 · 사용자 지시 · 안내 코멘트 · 통계설정 상품 등록 유도 */}
-              <div className="text-[14.5px] text-zinc-500 leading-relaxed bg-zinc-50 border border-line rounded-md px-3 py-2">
-                <span className="font-semibold text-zinc-700">💡 이벤트별 추천 상품</span> · 이벤트 클릭 → 등록된 상품 표시 · <span className="font-semibold text-brand-deep">[상품추가]</span> 로 발주필요에 즉시 추가.
-                <br />
-                등록된 상품이 없는 이벤트는 <span className="font-semibold text-brand-deep">통계설정 → 계절별 추천 상품</span> 에서 상품을 등록하세요.
+              {/* 2026-10-09 · 사용자 지시 · 안내 compact · 1줄 요약 */}
+              <div className="text-[13px] text-zinc-500 px-1">
+                이벤트 클릭 → 등록 상품 표시 · <span className="font-semibold text-brand-deep">[상품추가]</span> 로 발주 등록 · 미등록 이벤트는 <span className="font-semibold text-brand-deep">통계설정</span> 에서 상품 추가.
               </div>
               {dedupedEvents.map(ev => {
                 const tone = TYPE_TONE[ev.type] ?? TYPE_TONE.custom;
