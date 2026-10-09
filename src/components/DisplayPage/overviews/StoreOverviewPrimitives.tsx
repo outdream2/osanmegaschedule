@@ -92,15 +92,15 @@ export const OverviewKpi: React.FC<{
         </span>
       )}
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-        <div className="text-[12px] font-semibold text-ink-soft truncate">{label}</div>
+        <div className="text-[13px] font-semibold text-ink-soft truncate">{label}</div>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-[24px] font-extrabold text-ink tabular-nums leading-tight tracking-[-0.02em]">
+          <span className="text-[26px] font-extrabold text-ink tabular-nums leading-tight tracking-[-0.02em]">
             {value}
           </span>
-          {unit && <span className="text-[12px] font-semibold text-ink-soft">{unit}</span>}
+          {unit && <span className="text-[13px] font-semibold text-ink-soft">{unit}</span>}
         </div>
         {hint != null && (
-          <div className="text-[11px] font-medium text-ink-soft truncate">{hint}</div>
+          <div className="text-[12px] font-medium text-ink-soft truncate">{hint}</div>
         )}
       </div>
     </div>
@@ -116,7 +116,7 @@ export const OverviewSection: React.FC<{
 }> = ({ title, action, children, className = "" }) => (
   <section className={`bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3 min-h-0 ${className}`}>
     <header className="flex items-center justify-between gap-2 shrink-0">
-      <h3 className="text-[14px] font-semibold text-ink tracking-tight">{title}</h3>
+      <h3 className="text-[15px] font-semibold text-ink tracking-tight">{title}</h3>
       {action && <div className="shrink-0">{action}</div>}
     </header>
     <div className="flex-1 min-h-0">{children}</div>
@@ -150,11 +150,11 @@ export const OverviewTaskRow: React.FC<{
     >
       {icon && <span className="shrink-0 text-ink-soft">{icon}</span>}
       <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-medium text-ink truncate">{label}</div>
-        {description && <div className="text-[11px] font-medium text-ink-soft truncate">{description}</div>}
+        <div className="text-[14px] font-medium text-ink truncate">{label}</div>
+        {description && <div className="text-[12px] font-medium text-ink-soft truncate">{description}</div>}
       </div>
       {count != null && (
-        <span className={`text-[13px] font-bold tabular-nums shrink-0 ${countTone}`}>{count}</span>
+        <span className={`text-[14px] font-bold tabular-nums shrink-0 ${countTone}`}>{count}</span>
       )}
     </button>
   );

@@ -1,135 +1,91 @@
 // src/components/DisplayPage/overviews/SalesRevenueOverview.tsx
-// 2026-10-08 · GLOBAL UI · 매장 통합 · 판매·매출 현황 (Reference-tone dashboard · nav hub)
+// 2026-10-09 · GLOBAL UI · 판매·매출 통합 대시보드 · 한 페이지 통합 + Modal
 //   · Revenue functional 보호 (hotfix 0edb1c3f) · 자체 매출 fetch 없음
-//   · L2 + Toolbar + KPI (placeholder) + Main+Tasks + QuickActions + Bottom + Right
-//   · 각 widget click → setDpSubTab (revenue · statistics)
+//   · 각 섹션 click → setDpSubTab(revenue/statistics) · modal 영역 placeholder
 
 import React, { useState } from "react";
-import { ChartBar, CurrencyKrw, TrendUp, Receipt, ChartLineUp, ChartPie, Users, Target } from "@phosphor-icons/react";
+import { CurrencyKrw, ChartBar, Receipt, Users, TrendUp, ChartLineUp, ChartPie, Target, Package } from "@phosphor-icons/react";
 import type { DpSubTabKey } from "../DisplayPage.types";
 import {
   OverviewL2TabsRow, OverviewToolbar, OverviewSection, OverviewKpi,
-  OverviewTaskRow, OverviewQuickAction, OverviewTable,
-  type OverviewTableColumn,
 } from "./StoreOverviewPrimitives";
 
-export interface SalesRevenueOverviewProps {
-  onSelectSubTab: (sub: DpSubTabKey) => void;
-}
-
-const L2_TABS = [
-  { key: "overview", label: "현황" },
-  { key: "revenue", label: "매출" },
-  { key: "statistics", label: "판매·통계" },
-];
+export interface SalesRevenueOverviewProps { onSelectSubTab: (sub: DpSubTabKey) => void; }
 
 export const SalesRevenueOverview: React.FC<SalesRevenueOverviewProps> = ({ onSelectSubTab }) => {
   const [search, setSearch] = useState("");
+  const [period, setPeriod] = useState<"7" | "14" | "30">("14");
 
-  const columns: OverviewTableColumn[] = [
-    { key: "metric", label: "지표" },
-    { key: "value", label: "값", align: "right" },
-    { key: "source", label: "상세", align: "center" },
-  ];
-  const rows: Array<Record<string, React.ReactNode>> = [
-    { metric: "오늘 매출", value: "매출 메뉴 확인", source: "매출" },
-    { metric: "판매 통계", value: "통계 메뉴 확인", source: "판매" },
-    { metric: "상품 분석", value: "판매 메뉴 확인", source: "판매" },
-    { metric: "카테고리별", value: "판매 메뉴 확인", source: "판매" },
-  ];
+  const section = (opts: { key: string; icon: React.ReactNode; title: string; sub?: string; onClick: () => void }) => (
+    <button key={opts.key} type="button" onClick={opts.onClick}
+      className="w-full flex items-center gap-2 px-2 h-10 rounded-md text-left transition-colors hover:bg-slate-50 cursor-pointer">
+      <span className="shrink-0 text-ink-soft">{opts.icon}</span>
+      <div className="flex-1 min-w-0">
+        <div className="text-[14px] font-medium text-ink truncate">{opts.title}</div>
+        {opts.sub && <div className="text-[12px] text-ink-soft truncate">{opts.sub}</div>}
+      </div>
+    </button>
+  );
 
   return (
     <div className="flex flex-col gap-4 min-h-0 pb-6">
-      <OverviewL2TabsRow
-        active="overview"
-        tabs={L2_TABS}
-        onSelect={(k) => {
-          if (k === "overview") return;
-          if (k === "revenue") onSelectSubTab("revenue");
-          else onSelectSubTab("statistics");
-        }}
+      <OverviewL2TabsRow active="overview" tabs={[{ key: "overview", label: "현황" }]} onSelect={() => {}} />
+      <OverviewToolbar search={search} onSearch={setSearch} placeholder="상품·카테고리 검색"
+        right={
+          <select value={period} onChange={(e) => setPeriod(e.target.value as any)}
+            className="h-9 px-2.5 text-[13px] font-medium text-ink border border-slate-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-brand-tint">
+            <option value="7">최근 7일</option><option value="14">최근 14일</option><option value="30">최근 30일</option>
+          </select>
+        }
       />
 
-      <OverviewToolbar search={search} onSearch={setSearch} placeholder="상품명 검색" />
-
       <div className="px-4 sm:px-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <OverviewKpi icon={<CurrencyKrw size={16} weight="fill" />} label="오늘 매출" value="-" tone="brand" hint="매출 메뉴에서 확인" />
-        <OverviewKpi icon={<Users size={16} weight="fill" />} label="고객수" value="-" tone="emerald" hint="상세 메뉴 확인" />
-        <OverviewKpi icon={<Receipt size={16} weight="fill" />} label="객단가" value="-" tone="violet" hint="상세 메뉴 확인" />
-        <OverviewKpi icon={<TrendUp size={16} weight="fill" />} label="마진율" value="-" tone="amber" hint="상세 메뉴 확인" />
+        <OverviewKpi icon={<CurrencyKrw size={16} weight="fill" />} label="오늘 매출" value="-" tone="brand" hint="매출 메뉴 확인" />
+        <OverviewKpi icon={<Users size={16} weight="fill" />} label="고객수" value="-" tone="emerald" hint="상세 확인" />
+        <OverviewKpi icon={<Receipt size={16} weight="fill" />} label="객단가" value="-" tone="violet" hint="상세 확인" />
+        <OverviewKpi icon={<TrendUp size={16} weight="fill" />} label="마진율" value="-" tone="amber" hint="상세 확인" />
       </div>
 
-      <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-        <OverviewSection title="판매·매출 바로가기" action={
-          <button type="button" onClick={() => onSelectSubTab("revenue")}
-            className="text-[12px] font-semibold text-brand-deep hover:underline">매출 분석</button>
-        }>
-          <OverviewTable columns={columns} rows={rows} />
+      <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <OverviewSection
+          title={<span>매출 분석 <span className="ml-1.5 text-[13px] font-medium text-ink-soft">RevenuePage</span></span>}
+          action={<button type="button" onClick={() => onSelectSubTab("revenue")} className="text-[13px] font-semibold text-brand-deep hover:underline">열기</button>}
+        >
+          <div className="flex flex-col gap-0.5">
+            {section({ key: "rev-1", icon: <CurrencyKrw size={14} />, title: "오늘·기간별 매출", sub: "시간대 · 월별 분석", onClick: () => onSelectSubTab("revenue") })}
+            {section({ key: "rev-2", icon: <TrendUp size={14} />, title: "매출 추이", sub: "ERP sales 기반", onClick: () => onSelectSubTab("revenue") })}
+          </div>
         </OverviewSection>
 
-        <OverviewSection title="오늘 처리할 업무">
+        <OverviewSection
+          title={<span>판매 통계 <span className="ml-1.5 text-[13px] font-medium text-ink-soft">상품·카테고리</span></span>}
+          action={<button type="button" onClick={() => onSelectSubTab("statistics")} className="text-[13px] font-semibold text-brand-deep hover:underline">열기</button>}
+        >
           <div className="flex flex-col gap-0.5">
-            <OverviewTaskRow icon={<CurrencyKrw size={14} />} label="매출 분석" description="기간별·시간대"
-              tone="brand" onClick={() => onSelectSubTab("revenue")} />
-            <OverviewTaskRow icon={<ChartBar size={14} />} label="판매 통계" description="상품·카테고리"
-              tone="brand" onClick={() => onSelectSubTab("statistics")} />
-            <OverviewTaskRow icon={<TrendUp size={14} />} label="마진·수익" description="저마진 확인"
-              tone="emerald" onClick={() => onSelectSubTab("statistics")} />
-            <OverviewTaskRow icon={<Receipt size={14} />} label="판매 이력" description="환불·거래"
-              tone="neutral" onClick={() => onSelectSubTab("statistics")} />
+            {section({ key: "sta-1", icon: <ChartBar size={14} />, title: "상품별 판매 통계", sub: "TOP 판매 상품", onClick: () => onSelectSubTab("statistics") })}
+            {section({ key: "sta-2", icon: <ChartPie size={14} />, title: "카테고리별 매출", sub: "분류별 구성", onClick: () => onSelectSubTab("statistics") })}
+            {section({ key: "sta-3", icon: <ChartLineUp size={14} />, title: "판매 이력", sub: "최근 거래 확인", onClick: () => onSelectSubTab("statistics") })}
+          </div>
+        </OverviewSection>
+
+        <OverviewSection
+          title={<span>수익·마진 <span className="ml-1.5 text-[13px] font-medium text-ink-soft">상세 메뉴</span></span>}
+          action={<button type="button" onClick={() => onSelectSubTab("statistics")} className="text-[13px] font-semibold text-brand-deep hover:underline">열기</button>}
+        >
+          <div className="flex flex-col gap-0.5">
+            {section({ key: "mar-1", icon: <Target size={14} />, title: "마진 분석", sub: "상품별 수익률", onClick: () => onSelectSubTab("statistics") })}
+            {section({ key: "mar-2", icon: <Package size={14} />, title: "저마진 알림", sub: "주의 필요 상품", onClick: () => onSelectSubTab("statistics") })}
           </div>
         </OverviewSection>
       </div>
 
-      <div className="px-4 sm:px-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-        <OverviewQuickAction icon={<CurrencyKrw size={16} weight="bold" />} label="매출 분석" description="ERP sales"
-          tone="brand" onClick={() => onSelectSubTab("revenue")} />
-        <OverviewQuickAction icon={<ChartBar size={16} />} label="판매 통계" description="상품·카테고리"
-          tone="emerald" onClick={() => onSelectSubTab("statistics")} />
-        <OverviewQuickAction icon={<ChartLineUp size={16} />} label="상품 분석" description="TOP 상품"
-          tone="violet" onClick={() => onSelectSubTab("statistics")} />
-        <OverviewQuickAction icon={<ChartPie size={16} />} label="카테고리" description="분류별 매출"
-          tone="amber" onClick={() => onSelectSubTab("statistics")} />
-        <OverviewQuickAction icon={<Target size={16} />} label="마진 분석" description="수익률"
-          tone="rose" onClick={() => onSelectSubTab("statistics")} />
-      </div>
-
-      <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-        <OverviewSection title="판매·매출 메뉴" action={
-          <button type="button" onClick={() => onSelectSubTab("statistics")}
-            className="text-[12px] font-semibold text-brand-deep hover:underline">전체</button>
-        }>
-          <div className="flex flex-col gap-0.5">
-            <OverviewTaskRow icon={<CurrencyKrw size={14} />} label="매출 분석" description="시간대·월별 ERP sales"
-              tone="brand" onClick={() => onSelectSubTab("revenue")} />
-            <OverviewTaskRow icon={<ChartBar size={14} />} label="판매 통계" description="상품·카테고리 분석"
-              tone="brand" onClick={() => onSelectSubTab("statistics")} />
-            <OverviewTaskRow icon={<ChartLineUp size={14} />} label="상품별 추이" description="TOP·저마진"
-              tone="emerald" onClick={() => onSelectSubTab("statistics")} />
-            <OverviewTaskRow icon={<Receipt size={14} />} label="판매 이력" description="최근 거래 확인"
-              tone="neutral" onClick={() => onSelectSubTab("statistics")} />
+      <div className="px-4 sm:px-6">
+        <OverviewSection title={<span>판매·매출 바로가기</span>}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+            {section({ key: "gw-1", icon: <CurrencyKrw size={14} className="text-brand-deep" />, title: "매출 분석 (Revenue)", sub: "ERP sales · 시간대/월별", onClick: () => onSelectSubTab("revenue") })}
+            {section({ key: "gw-2", icon: <ChartBar size={14} className="text-emerald-600" />, title: "판매 통계", sub: "상품·카테고리 분석", onClick: () => onSelectSubTab("statistics") })}
           </div>
         </OverviewSection>
-
-        <div className="flex flex-col gap-3">
-          <OverviewSection title="주요 분석">
-            <div className="flex flex-col gap-0.5">
-              <OverviewTaskRow icon={<ChartPie size={14} />} label="카테고리별" tone="violet"
-                onClick={() => onSelectSubTab("statistics")} />
-              <OverviewTaskRow icon={<TrendUp size={14} />} label="마진율" tone="emerald"
-                onClick={() => onSelectSubTab("statistics")} />
-            </div>
-          </OverviewSection>
-
-          <OverviewSection title="고객·리포트">
-            <div className="flex flex-col gap-0.5">
-              <OverviewTaskRow icon={<Users size={14} />} label="고객 통계" tone="brand"
-                onClick={() => onSelectSubTab("statistics")} />
-              <OverviewTaskRow icon={<Target size={14} />} label="목표·실적" tone="amber"
-                onClick={() => onSelectSubTab("statistics")} />
-            </div>
-          </OverviewSection>
-        </div>
       </div>
     </div>
   );
