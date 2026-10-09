@@ -1898,6 +1898,23 @@ const MonthlyReportTab: React.FC = () => {
         <div className="flex items-baseline gap-2 mb-3 md:mb-4 flex-wrap">
           <span className="text-[18px] md:text-[20px] font-bold text-zinc-900">{year}년 {month}월</span>
           {isCurMonth && <span className="text-[12px] md:text-[13px] text-zinc-500">· 이번달{asOfLabel}</span>}
+          {/* 2026-10-09 · 사용자 지시 · 예상매출 라벨 inline (헤더 옆) · 공식 평균×총일수 */}
+          {isCurMonth && show && sel.saleTotal > 0 && (() => {
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const pastDays = maxDay && /^\d{4}-\d{2}-\d{2}$/.test(maxDay)
+              ? Number(maxDay.slice(8, 10))
+              : now.getDate();
+            if (pastDays <= 0) return null;
+            const total = (sel.saleTotal / pastDays) * daysInMonth;
+            return (
+              <span
+                className="text-[12px] md:text-[13px] font-semibold text-cyan-700 tabular-nums whitespace-nowrap"
+                title={`일별 평균 × ${daysInMonth}일 · 월말 예상 총매출`}
+              >
+                · 예상 {fmtWon(total)}
+              </span>
+            );
+          })()}
         </div>
         {!show ? (
           <div className="text-center py-8 text-zinc-400 text-[15px]">
@@ -1914,30 +1931,9 @@ const MonthlyReportTab: React.FC = () => {
           >
             {(() => {
               const avg = sel.customerCnt > 0 ? sel.saleTotal / sel.customerCnt : 0;
-              // 2026-10-09 · 사용자 지시 · 예상매출 projection (현재 월만)
-              //   · 공식 = (현재까지 일별 평균 매출) × (남은 일수) + (현재까지 매출) = (평균 × 총일수)
-              //   · 사용자 공식 "일별 평균 매출에 남은 일수를 곱" · 월말 예상 총액 projection
-              const projected = (() => {
-                if (!isCurMonth) return null;
-                const daysInMonth = new Date(year, month, 0).getDate();
-                const pastDays = maxDay && /^\d{4}-\d{2}-\d{2}$/.test(maxDay)
-                  ? Number(maxDay.slice(8, 10))
-                  : now.getDate();
-                if (pastDays <= 0 || sel.saleTotal <= 0) return null;
-                const avgPerDay = sel.saleTotal / pastDays;
-                const remainingDays = Math.max(0, daysInMonth - pastDays);
-                return { avgPerDay, remainingDays, total: avgPerDay * daysInMonth };
-              })();
+              // 2026-10-09 · 예상매출은 상단 헤더로 이동 (사용자 지시 "헤더 옆에 깔끔하게")
               const items: Array<{ label: string; value: string; accent: string; labelColor: string; valueColor: string; title?: string }> = [
                 { label: "매출총액", value: fmtWon(sel.saleTotal), accent: "bg-rose-500",     labelColor: "text-rose-600",     valueColor: "text-rose-700" },
-                ...(projected ? [{
-                  label: "예상매출",
-                  value: fmtWon(projected.total),
-                  accent: "bg-cyan-500",
-                  labelColor: "text-cyan-600",
-                  valueColor: "text-cyan-800",
-                  title: `일별 평균 ${fmtWon(projected.avgPerDay)} × 남은 ${projected.remainingDays}일 (월말 예상 총매출)`,
-                }] : []),
                 { label: "객단가",   value: fmtWon(avg),           accent: "bg-emerald-500",  labelColor: "text-emerald-600",  valueColor: "text-emerald-800" },
                 { label: "매입총액", value: fmtWon(sel.buyTotal),  accent: "bg-brand-deep",   labelColor: "text-brand-deep",   valueColor: "text-brand-deep" },
                 { label: "매출이익", value: fmtWon(sel.margin),    accent: "bg-indigo-500",   labelColor: "text-indigo-600",   valueColor: "text-indigo-800" },
