@@ -17,10 +17,11 @@ export type DpSubTabKey =
   | "stock-arrivals"
   | "store"
   | "vendor-manage"
+  // 2026-10-09 · 사용자 지시 · 매장 아래 상품스캔 신규 서브탭 · 바코드 스캔 → 실재고 입력
+  | "product-scan"
   // 2026-10-08 · 매장 5개 통합 현황 overview (NEW)
   | "overview-order-return"
   | "overview-purchase-arrival"
-  | "overview-sales-revenue"
   | "overview-payment-settlement"
   | "overview-inventory-display";
 

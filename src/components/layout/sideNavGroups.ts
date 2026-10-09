@@ -5,7 +5,7 @@
 //   · subTab 클릭 시 · localStorage 저장 후 페이지 이동 → 각 페이지 마운트 시 localStorage 읽어 초기 탭 설정
 import {
   House, Calendar, CalendarDots, CalendarBlank, Bookmarks, Coffee,
-  SquaresFour, ScanSmiley, Package, Bell,
+  SquaresFour, ScanSmiley, Barcode, Package, Bell,
   ShoppingCart, FileMagnifyingGlass, Truck, CurrencyKrw, ChartBar, Storefront, Buildings,
   ChatCircle, FirstAid, FileText,
   Briefcase, Chat, Lock,
@@ -108,20 +108,27 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     icon: SquaresFour,
     topTab: { key: "display" },
     managerOnly: true,
-    // 2026-10-08 · GLOBAL UI · 매장 5개 통합 (OLD 8개 standalone → NEW 5 통합 entries)
-    //   · 발주·반품 (purchase-order + return)
-    //   · 매입·입고 (purchase + stock-arrivals · 상품정보/실재고/유통기한 inner tab)
-    //   · 판매·매출 (statistics + revenue)
-    //   · 결제·정산 (payment)
-    //   · 재고·진열 (store + 상품정보/실재고/유통기한 cross-link)
-    //   · 각 entry default landing = overview-* (현황) · click 시 자체 overview 로 진입
-    //   · OLD subTab identity 전부 보존 (deep link 호환) · DisplayPage switch 로 직접 render
+    // 2026-10-09 · 사용자 지시 · "기존 탭메뉴 아직 없애지마"
+    //   · OLD 8개 standalone 탭 유지 (발주·매입·판매·매출·결제·반품·매장진열·입고알림)
+    //   · NEW 5개 overview 통합 탭 (overview-*) 병행 노출 · 2개 UX 공존
+    //   · 추후 사용자 지시 시 OLD → NEW 전환 예정
     items: [
-      { key: "display", label: "발주·반품",   icon: Truck,            color: "red", subTab: "overview-order-return",      minLevel: 9 },
-      { key: "display", label: "매입·입고",   icon: Package,          color: "red", subTab: "overview-purchase-arrival",  minLevel: 9 },
-      { key: "display", label: "판매·매출",   icon: ChartBar,         color: "red", subTab: "overview-sales-revenue",     minLevel: 9 },
-      { key: "display", label: "결제·정산",   icon: CurrencyKrw,      color: "red", subTab: "overview-payment-settlement", minLevel: 9 },
-      { key: "display", label: "재고·진열",   icon: Storefront,       color: "red", subTab: "overview-inventory-display", managerOnly: true },
+      // ── OLD · 기존 standalone 탭 (사용자 지시 · 유지) ──
+      { key: "display", label: "발주", icon: Truck, color: "red", subTab: "purchase-order", minLevel: 9 },
+      { key: "display", label: "매입", icon: Package, color: "red", subTab: "purchase", minLevel: 9 },
+      { key: "display", label: "판매", icon: ChartBar, color: "red", subTab: "statistics", minLevel: 9 },
+      { key: "display", label: "결제", icon: CurrencyKrw, color: "red", subTab: "payment", minLevel: 9 },
+      { key: "display", label: "반품", icon: ArrowLeftRight, color: "red", subTab: "return", minLevel: 9 },
+      { key: "display", label: "매장진열", icon: Storefront, color: "red", subTab: "store", managerOnly: true },
+      // 2026-10-09 · 사용자 지시 · 매장 아래 상품스캔 (바코드 스캔 → 실재고 입력 · 실재고 테이블 연동)
+      { key: "display", label: "상품스캔", icon: Barcode, color: "red", subTab: "product-scan", minLevel: 3 },
+      { key: "display", label: "입고알림", icon: Bell, color: "red", subTab: "stock-arrivals", minLevel: 3 },
+      // ── NEW · 5개 통합 overview (2026-10-08 ~ 2026-10-09 신설) ──
+      { key: "display", label: "발주·반품 현황",   icon: Truck,       color: "red", subTab: "overview-order-return",      minLevel: 9 },
+      { key: "display", label: "매입 재고현황",     icon: Package,     color: "red", subTab: "overview-purchase-arrival",  minLevel: 9 },
+      { key: "display", label: "판매·매출현황",     icon: CurrencyKrw, color: "red", subTab: "revenue",                    minLevel: 9 },
+      { key: "display", label: "결제·정산 현황",   icon: CurrencyKrw, color: "red", subTab: "overview-payment-settlement", minLevel: 9 },
+      { key: "display", label: "재고·진열 현황",   icon: Storefront,  color: "red", subTab: "overview-inventory-display", managerOnly: true },
     ],
   },
   // 2026-09-05 · 사용자 지시 · 거래처 그룹 · 매장 아래 이동 · 관리자에게도 노출
@@ -400,9 +407,6 @@ const STORE_OVERVIEW_ALIAS: Record<string, string> = {
   // 매입·입고 그룹
   "purchase":          "overview-purchase-arrival",
   "stock-arrivals":    "overview-purchase-arrival",
-  // 판매·매출 그룹
-  "statistics":        "overview-sales-revenue",
-  "revenue":           "overview-sales-revenue",
   // 결제·정산 그룹
   "payment":           "overview-payment-settlement",
   // 재고·진열 그룹

@@ -5,7 +5,7 @@
 //   · 매장 서브탭 추가·순서 변경 → sideNavGroups.ts 한 곳만 수정 (사이드바·TabBar 자동 동기)
 import {
   Bell, ClipboardList, Package, Store, BarChart2, Wallet, Building2,
-  RotateCcw, CircleDollarSign,
+  RotateCcw, CircleDollarSign, ScanLine,
 } from "lucide-react";
 import { ZONE_DEFS } from "../../constants/displayZones";
 import {
@@ -31,10 +31,11 @@ const DP_SUBTAB_META: Record<DpSubTabKey, DpSubTabMeta> = {
   "stock-arrivals": { icon: Bell,             color: "orange"  },
   "store":          { icon: Store,            color: "violet"  },
   "vendor-manage":  { icon: Building2,        color: "rose"    },
+  // 2026-10-09 · 사용자 지시 · 매장 아래 상품스캔 (바코드 → 실재고 입력)
+  "product-scan":   { icon: ScanLine,         color: "rose"    },
   // 2026-10-08 · GLOBAL UI · 매장 5개 통합 overview 메타 (NEW)
   "overview-order-return":       { icon: ClipboardList,    color: "sky"     },
   "overview-purchase-arrival":   { icon: Package,          color: "amber"   },
-  "overview-sales-revenue":      { icon: CircleDollarSign, color: "emerald" },
   "overview-payment-settlement": { icon: Wallet,           color: "teal"    },
   "overview-inventory-display":  { icon: Store,            color: "violet"  },
 };

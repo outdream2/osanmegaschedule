@@ -38,7 +38,6 @@ const ReturnConfirmedPanelLazy = React.lazy(() => import("../OrderManagePage/Ret
 const STORE_OVERVIEW_MAP: Partial<Record<string, React.ComponentType<{ onSelectSubTab: (sub: any) => void }>>> = {
   "overview-order-return":       React.lazy(() => import("./overviews/OrderReturnOverview").then(m => ({ default: m.OrderReturnOverview }))),
   "overview-purchase-arrival":   React.lazy(() => import("./overviews/PurchaseArrivalOverview").then(m => ({ default: m.PurchaseArrivalOverview }))),
-  "overview-sales-revenue":      React.lazy(() => import("./overviews/SalesRevenueOverview").then(m => ({ default: m.SalesRevenueOverview }))),
   "overview-payment-settlement": React.lazy(() => import("./overviews/PaymentSettlementOverview").then(m => ({ default: m.PaymentSettlementOverview }))),
   "overview-inventory-display":  React.lazy(() => import("./overviews/InventoryDisplayOverview").then(m => ({ default: m.InventoryDisplayOverview }))),
 };
@@ -75,6 +74,8 @@ import { DisplayProductPanel } from "./DisplayProductPanel";
 import { VendorManageSplit } from "./VendorManageSplit";
 // 2026-10-05 · 매출 (ERP Sales_Days_TimeReport 기반 · 시간대/월별 탭)
 const RevenuePage = React.lazy(() => import("./RevenuePage").then((m) => ({ default: m.RevenuePage })));
+// 2026-10-09 · 사용자 지시 · 매장 아래 상품스캔 (바코드 → 실재고 입력) · 기존 ScanPage 재사용 · 추후 홈 톤 리뉴얼 예정 (#8)
+const ScanPageLazy = React.lazy(() => import("../ScanPage/ScanPage").then((m) => ({ default: m.ScanPage })));
 import { useDisplayData } from "./useDisplayData";
 // 2026-10-06 · 사용자 지시 · 배치구역 불일치 기능 전체 제거
 // 2026-08-26 · 사용자 지시 · 실재고 테이블 페이지 · 창고2 옆 신규 탭
@@ -125,7 +126,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const dpHiddenSubs = React.useMemo(() => {
     const set = new Set<DpSubTabKey>();
     // 2026-10-05 · 사용자 지시 · "product" 제거
-    const subs: DpSubTabKey[] = ["purchase-order", "purchase", "payment", "statistics", "revenue", "return", "stock-arrivals", "store", "vendor-manage"];
+    const subs: DpSubTabKey[] = ["purchase-order", "purchase", "payment", "statistics", "revenue", "return", "stock-arrivals", "store", "vendor-manage", "product-scan"];
     for (const s of subs) {
       const perm = (dpPerms as any)[`display:${s}`];
       if (perm?.hidden === true) set.add(s);
@@ -587,10 +588,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     "stock-arrivals": dpCanSeeStockArrivals && !dpHiddenSubs.has("stock-arrivals"),
     "store": !dpHiddenSubs.has("store"),
     "vendor-manage": dpCanSeeStockManage && !dpHiddenSubs.has("vendor-manage"),
+    // 2026-10-09 · 사용자 지시 · 매장 아래 상품스캔 (바코드 → 실재고) · stock-arrivals 와 동일 레벨 (level 3+)
+    "product-scan": dpCanSeeStockArrivals && !dpHiddenSubs.has("product-scan"),
     // 2026-10-08 · GLOBAL UI · 매장 5개 통합 overview visibility (NEW · dpCanSeeStockManage 기준)
     "overview-order-return":       dpCanSeeStockManage,
     "overview-purchase-arrival":   dpCanSeeStockManage,
-    "overview-sales-revenue":      dpCanSeeStockManage,
     "overview-payment-settlement": dpCanSeeStockManage,
     "overview-inventory-display":  dpCanSeeStockManage,
   };
@@ -619,6 +621,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       ) : dpSubTab === "stock-arrivals" && dpCanSeeStockArrivals ? (
         <main className="flex-1 flex flex-col min-h-0">
           <StockArrivalPage authSession={authSession ?? null} onBack={onBack} onNavigate={onNavigate as any} onLogout={onLogout} embedded />
+        </main>
+      ) : dpSubTab === "product-scan" && dpCanSeeStockArrivals ? (
+        /* 2026-10-09 · 사용자 지시 · 매장 하위 상품스캔 (바코드 스캔 → 실재고 입력) · 기존 ScanPage embedded 재사용 */
+        <main className="flex-1 flex flex-col min-h-0">
+          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="상품스캔 로딩 중..." size={16} tone="brand" /></div>}>
+            <ScanPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />
+          </React.Suspense>
         </main>
       ) : dpSubTab === "vendor-manage" && dpCanSeeStockManage ? (
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-3">

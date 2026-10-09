@@ -1,7 +1,7 @@
 {
   "created": "2026-10-09",
   "version": 1,
-  "totalViolations": 526,
+  "totalViolations": 527,
   "files": {
     "server/ocr/pipeline/stages/03-vendor-match.ts": {
       "lines": 684,
@@ -84,7 +84,7 @@
       "totalWeight": 25
     },
     "src/components/DisplayPage/overviews/OrderReturnOverview.tsx": {
-      "lines": 2979,
+      "lines": 2313,
       "violations": [
         {
           "ruleId": "large-file-critical",
@@ -94,7 +94,7 @@
       "totalWeight": 24
     },
     "src/components/DisplayPage/RevenuePage.tsx": {
-      "lines": 2470,
+      "lines": 2507,
       "violations": [
         {
           "ruleId": "large-file-critical",
@@ -302,7 +302,7 @@
       "totalWeight": 7
     },
     "src/components/LandingPage/HomeDashboard.tsx": {
-      "lines": 1216,
+      "lines": 1236,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -312,7 +312,7 @@
       "totalWeight": 6
     },
     "src/components/LeavePage/LeavePage.tsx": {
-      "lines": 1397,
+      "lines": 1401,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -534,6 +534,16 @@
         }
       ],
       "totalWeight": 4
+    },
+    "src/components/DisplayPage/DisplayPage.tsx": {
+      "lines": 807,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
     },
     "src/components/LandingPage/VendorListEditor.tsx": {
       "lines": 907,
