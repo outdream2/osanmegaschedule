@@ -147,8 +147,17 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       }`}
                       title={isDimmed ? "다른 월 날짜 · 월간 뷰에서 수정" : undefined}
                     >
-                      {/* 2026-10-09 · 오늘 column 좌/우 rail · scheduleCellContent 자체에 isToday 전달 (border 와 bg 를 같은 element 에서 inline style 로 함께 적용) */}
+                      {/* 2026-10-09 · 오늘 column rail · td 자체 (table cell · 가장 바깥쪽) 에 inline style outline 직접 적용 → 어떤 child element 와도 충돌 없음 */}
                       {scheduleCellContent(s, typeHoursMap, scheduleTypes, isToday)}
+                      {isToday && (
+                        <div
+                          aria-hidden
+                          className="pointer-events-none absolute inset-0 z-20"
+                          style={{
+                            boxShadow: "inset 3px 0 0 0 #ef4444, inset -3px 0 0 0 #ef4444",
+                          }}
+                        />
+                      )}
                       {isEditing && (
                         <ScheduleTypePopover
                           scheduleTypes={scheduleTypes}
