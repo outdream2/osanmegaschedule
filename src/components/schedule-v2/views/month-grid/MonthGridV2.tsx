@@ -147,20 +147,8 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       }`}
                       title={isDimmed ? "다른 월 날짜 · 월간 뷰에서 수정" : undefined}
                     >
-                      {/* 2026-10-09 · 사용자 재재재지시 · 오늘 column 좌/우 vertical rail (inline style border)
-                          · 이전 approach 전부 실패 (ring collapse · shadow bg 가림 · absolute 위치 안됨)
-                          · 최종 · wrapper <div> 에 inline style borderLeft/Right · box-sizing border-box
-                            scheduleCellContent (내부 child) 가 wrapper content box 안에 confine · border 가려지지 않음 */}
-                      <div
-                        className="h-full w-full"
-                        style={isToday ? {
-                          borderLeft: "2px solid #f43f5e",
-                          borderRight: "2px solid #f43f5e",
-                          boxSizing: "border-box",
-                        } : undefined}
-                      >
-                        {scheduleCellContent(s, typeHoursMap, scheduleTypes)}
-                      </div>
+                      {/* 2026-10-09 · 오늘 column 좌/우 rail · scheduleCellContent 자체에 isToday 전달 (border 와 bg 를 같은 element 에서 inline style 로 함께 적용) */}
+                      {scheduleCellContent(s, typeHoursMap, scheduleTypes, isToday)}
                       {isEditing && (
                         <ScheduleTypePopover
                           scheduleTypes={scheduleTypes}
