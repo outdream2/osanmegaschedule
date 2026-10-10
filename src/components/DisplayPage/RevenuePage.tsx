@@ -148,17 +148,23 @@ export const RevenuePage: React.FC = () => {
 
       {topTab === "revenue" ? (
         <>
-          {/* 2026-10-10 · 사용자 지시 · 매출 하위 탭 · OverviewInnerTabs 공통 모듈 교체
-              · 발주반품현황 nav bar 스타일 통일 (border-b + underline + text-ink · 공통 디자인) */}
-          <OverviewInnerTabs<RevenueTab>
-            ariaLabel="매출 하위 탭"
-            active={tab}
-            onChange={setTab}
-            tabs={[
-              { k: "hourly",  label: "시간대별", tone: "emerald", count: null },
-              { k: "monthly", label: "월별",     tone: "emerald", count: null },
-            ] as const satisfies ReadonlyArray<OverviewInnerTab<RevenueTab>>}
-          />
+          {/* 매출 하위 탭 · 시간대별 / 월별 · pill 유지 (사용자 "매출 하위 탭은 손대지마")
+              2026-10-10 · wrapper gap-3 md:gap-4 로 간격 자동 · pt 자체 제거 */}
+          <div className="px-4 shrink-0 w-full min-w-0 max-w-full">
+            <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
+              {([
+                { k: "hourly" as const,  label: "시간대별" },
+                { k: "monthly" as const, label: "월별" },
+              ]).map((t) => (
+                <button key={t.k} type="button" onClick={() => setTab(t.k)}
+                  className={`px-3 py-1.5 rounded-md text-[13px] md:text-[14px] font-medium transition-colors ${
+                    tab === t.k ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* 세로 scroll · overscroll touch · 가로 clip · 자식 min-h-0
               2026-10-10 · gap-3 md:gap-4 wrapper 간격 사용 · 자체 pt 제거 */}
