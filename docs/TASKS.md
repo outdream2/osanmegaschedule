@@ -41,6 +41,21 @@
 - **UI 기준 교체 (2026-10-09)** · 홈 랜딩페이지 = SSOT · `src/components/LandingPage/HomeDashboard.tsx` + `LandingPage.tsx` 톤 참조 · CARD(`rounded-[12px]` + thin shadow + `border-slate-200`) · 2-tier typography (body 15/16 · label 13/14) · 좌측 accent 레일 제거 · 아이콘 inline · 과거 `docs/UI_MOCKUP_2026-08-21.html` **참조 중단**
 - **한글 IME 우선** · KO_INPUT_PROPS (`src/lib/koreanInput.ts`)
 - **폰트 +2 default** · 40대+ 가독성
+- 🚨 **폰트 사이즈 작지 않게** · 2026-10-10 재재강조 · body 15~17 · label 13~14 · tiny 12 하한선 · **11.5 / 12.5 / 13.5 소수점 금지** (들쭉날쭉 원인) · 체계 통일 (각 요소 1~2단계 차이만) · HomeDashboard 패턴 참조 · 매 UI 작업 시 체크리스트 필수
+
+---
+
+## 📝 세션 메모 · 2026-10-10 종료 (다른 세션 이관)
+
+- **#6 완료** · 커밋 `6ec27c82` (로컬) · 업무요청 사이드바 하위 3개 → 단일 "업무요청" · 서류작성 탭 안 DocumentWriterPage lazy embed · 데드코드 (topGroup=="request"/"approval" 블록) 정리 · AssignStaffModal 유지 · 사용자 테스트 대기
+- **approval-request 라우트** · 사이드바에서 접근 불가 (dead code) · 코드만 보존 · 추후 정리 가능
+- **line 44 폰트 대원칙 신규** · 11.5/12.5/13.5 소수점 금지 · body 15~17 · label 13~14 · tiny 12 하한 · 모든 UI 작업 체크리스트 필수
+- **다음 세션 우선순위**
+  - UI-5 · RequestsOverview 폰트 리밸런싱 (line 44 신규 대원칙 적용 · 소수점 전부 정수 치환)
+  - UI-7 · drawer 안 panel (LeavePage·VendorApprovalPanel·ResignationApprovalPage·DisplayRequestTab·LunchPanel) 홈 톤 통일
+  - UI-6 · UI-7 완료 시 수렴 가능
+- **미커밋 다른 작업** · `git status` 상 다수 파일 M (ERP·overview·레시피 작업중) · 이 세션 scope 아님 · 각 작업 담당 세션에서 커밋 예정
+- **리모트 미푸시** · 사용자 명시 요청 전까지 로컬만
 
 ---
 
