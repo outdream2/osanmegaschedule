@@ -128,8 +128,9 @@ export const RevenuePage: React.FC = () => {
   const [tab, setTab] = useState<RevenueTab>("hourly");
   return (
     // 2026-10-06 · 사용자 지시 · 세로 스크롤 보장 · 가로 overflow 방지
-    // 2026-10-10 · 사용자 지시 · 발주반품현황 공통 리듬 · gap-3 md:gap-4 (섹션 자동 간격 통일)
-    <div className="flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full gap-3 md:gap-4">
+    // 2026-10-10 · 사용자 "컬러포인트 여백 많다 · 발주반품현황은 안 그렇다" · gap 축소 (3/4 → 1.5/2)
+    //   · OverviewInnerTabs underline bar 바로 아래 간격 tight · 발주반품현황 눈 리듬 매칭
+    <div className="flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full gap-1.5 md:gap-2">
       {/* 2026-10-09 · UI-4 · 공통 모듈 OverviewHero + OverviewInnerTabs */}
       <OverviewHero
         tone="emerald"
