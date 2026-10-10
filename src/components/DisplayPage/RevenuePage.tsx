@@ -122,15 +122,21 @@ function parseHour(saleTime: string): number {
 //   · HOURLY state (hourlyRows/hourlyLoading/hourlyError/hourlyFromDate/hourlyToDate) → HourlyReportTab 자체 보유
 //   · MONTHLY state (selectedYear/selectedMonth/monthlyData/monthlyLoading/monthlyError) → MonthlyReportTab 자체 보유 (이미 분리)
 //   · 공용 date state 금지 · HOURLY/MONTHLY API 호출 · parser · state 완전 독립
-export const RevenuePage: React.FC = () => {
+// 2026-10-10 · #12 · 메뉴 쪼개기 · initialTab prop 추가
+//   · 매출현황 메뉴 (subTab=revenue) → initialTab="revenue"
+//   · 판매현황 메뉴 (subTab=sales) → initialTab="sales"
+//   · 상단 [매출|판매] 탭은 유지 (사용자 전환 가능 · 이후 전용 페이지 분리 시 제거)
+export interface RevenuePageProps { initialTab?: "revenue" | "sales"; }
+export const RevenuePage: React.FC<RevenuePageProps> = ({ initialTab = "revenue" }) => {
   // 2026-10-09 · 사용자 지시 · 판매·매출현황 상단 탭 (매출 | 판매) · 홈 랜딩 톤
-  const [topTab, setTopTab] = useState<TopTab>("revenue");
+  // 2026-10-10 · #12 · 메뉴에서 받은 initialTab 으로 default
+  const [topTab, setTopTab] = useState<TopTab>(initialTab);
   const [tab, setTab] = useState<RevenueTab>("hourly");
   return (
-    // 2026-10-10 · 사용자 "위아래 여백 다 달라 전수조사" 후 통일
-    //   · 발주반품/매입재고/재고진열 wrapper 공식 복제 (gap-3 md:gap-4 + pb-6 + bg-[#F4F7FA])
-    //   · flex-1 + min-h-0 추가 (스크롤 레이아웃 유지)
-    <div className="flex-1 flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] w-full min-w-0 max-w-full">
+    // 2026-10-10 · 사용자 "철저 조사" 후 통일 (2차)
+    //   · 발주반품/매입재고/재고진열 wrapper 공식 100% 복제 · w-full/min-w-0/max-w-full 제거
+    //   · flex-1 유지 (상위 flex container 안 스크롤 보장)
+    <div className="flex-1 flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
       {/* 2026-10-09 · UI-4 · 공통 모듈 OverviewHero + OverviewInnerTabs */}
       <OverviewHero
         tone="emerald"
