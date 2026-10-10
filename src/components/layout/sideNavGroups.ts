@@ -8,7 +8,7 @@ import {
   SquaresFour, ScanSmiley, Barcode, Package, Bell,
   ShoppingCart, FileMagnifyingGlass, Truck, CurrencyKrw, ChartBar, Storefront, Buildings,
   ChatCircle, FirstAid, FileText,
-  Briefcase, Chat, Lock,
+  Briefcase, Lock,
   UserCircle, UsersThree, CheckSquare, PencilLine,
   Palette, Gear,
   // 2026-08-25 · 반품 메뉴 신규 (사용자 지시)
@@ -90,15 +90,13 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     label: "업무요청",
     color: "indigo",
     icon: CheckSquare, // 헤더용 · 기존 TABS 아이콘 유지 (items[0]=CalendarDots 와 다름 · 회귀 방지)
-    topTab: { key: "approval-request", mobileLabel: "업무" },
+    topTab: { key: "requests", mobileLabel: "업무" },
     // 2026-08-12 · 직원(lv1) 도 본인 승인 신청 · managerOnly 해제
+    // 2026-10-10 · 사용자 지시 · 하위 메뉴 전부 제거 · 그룹 라벨 = 단일 메뉴
+    //   · "업무요청" 클릭 시 RequestsPage(현황) 바로 진입 · 현황 overview 가 승인·요청·서류 섹션 통합
+    //   · 상단 탭 (현황 / 서류작성) 안에서 세부 UI 접근
     items: [
-      // 2026-09-20 · 사용자 지시 · 업무요청 아래 3개 하위 · 승인목록 · 요청목록 · 서류작성
-      //   · 연차신청 · 스케줄 그룹으로 이동
-      //   · 점심불참 · 확인 성격 · 요청목록 내부 탭에서 접근
-      { key: "requests",        label: "승인업무", icon: CheckSquare,  color: "indigo", subTab: "leave",           managerOnly: true },
-      { key: "requests",        label: "요청확인", icon: Chat,         color: "indigo", subTab: "display",         managerOnly: true },
-      { key: "approval-request", label: "서류작성", icon: PencilLine,   color: "indigo", subTab: "document-writer" },
+      { key: "requests", label: "업무요청", icon: CheckSquare, color: "indigo" },
     ],
   },
   {

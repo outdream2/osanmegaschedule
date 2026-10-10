@@ -1,5 +1,7 @@
 // 2026-08-17 · apiClient 마이그레이션
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { Suspense, useEffect, useRef, useState, useCallback } from "react";
+// 2026-10-10 · 사용자 지시 · 서류작성 탭 안 · DocumentWriterPage embed (사이드바 서류작성 메뉴 제거 → 탭 내부로 통합)
+const DocumentWriterPage = React.lazy(() => import("../DocumentWriterPage/DocumentWriterPage"));
 import { api } from "../../lib/apiClient";
 // 2026-09-14 · inventoryChecksApi · orderRequestsApi · leaveApi 프리미티브
 import { listInventoryChecks } from "../../lib/inventoryChecksApi";
@@ -10,7 +12,7 @@ import { dispatchApprovalChange, useApprovalRefreshListener } from "../../lib/ap
 // 2026-09-27 · 네비게이션 SSOT · useActiveNav Context
 import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { TIMING } from "../../constants/timing";
-import { ShoppingCart, Square, CheckSquare, ClipboardList, Package, Coffee, CalendarDays, Handshake, FileText } from "lucide-react";
+import { ShoppingCart, Square, CheckSquare, ClipboardList, Package, Coffee, CalendarDays, Handshake, FileText, LayoutDashboard, PenLine, X as XIcon, Calendar as CalendarIcon } from "lucide-react";
 // 2026-09-10 · #50 · 사용자 지시 · 탭 메뉴 · 매입이력 스타일 통일 · TabBar 프리미티브
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
@@ -43,6 +45,8 @@ import { AssignStaffModal } from "./AssignStaffModal";
 import { LunchPanel } from "./LunchPanel";
 // 2026-09-08 · 사용자 지시 · 메뉴 안보이기 설정 시 · 요청목록 탭도 자동 숨김
 import { usePagePermissions } from "../../hooks/usePagePermissions";
+// 2026-10-09 · 사용자 지시 · 현황 대시보드 탭 (OrderReturnOverview 톤)
+import { RequestsOverview } from "./RequestsOverview";
 
 interface RequestsPageProps {
   onBack: () => void;
@@ -65,11 +69,30 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     return "display";
   })();
   const [tab, _setTab] = useState<Tab>(initialTab);
+  // 2026-10-09 · 사용자 지시 · 상단 그룹 탭 축소 · 승인업무/요청확인 탭 제거
+  //   · overview · 통합 현황판 + 왼쪽 slide-in drawer 에서 승인·요청 처리
+  //   · document · 서류작성 (DocumentWriterPage embed · 내부 TabBar 로 근로계약서/사직서 전환)
+  type TopGroup = "overview" | "document";
+  const [topGroup, setTopGroup] = useState<TopGroup>("overview");
+  // 2026-10-09 · 사용자 지시 · 왼쪽 slide-in drawer · overview row 클릭 시 해당 처리 UI 노출
+  //   · drawer=null · drawer 닫힘
+  //   · drawer={group, tab} · drawer 열림 (type 에 따라 LeavePage·VendorApprovalPanel 등 render)
+  const [drawer, setDrawer] = useState<{ group: "approval" | "request"; tab: Tab } | null>(null);
   // 2026-09-27 · setTab · activeNav 즉시 갱신
   const setTab = React.useCallback((next: Tab) => {
     _setTab(next);
     setActiveByPage("requests", next);
   }, [setActiveByPage]);
+  // 2026-10-09 · topGroup 전환
+  const handleTopGroupChange = React.useCallback((next: TopGroup) => {
+    setTopGroup(next);
+  }, []);
+  // 2026-10-09 · overview 섹션 row 클릭 → 왼쪽 drawer 열기 (별도 탭 네비게이션 X)
+  const handleOverviewNavigate = React.useCallback((group: "approval" | "request", innerTab: string) => {
+    setDrawer({ group, tab: innerTab as Tab });
+    _setTab(innerTab as Tab);
+  }, []);
+  const closeDrawer = React.useCallback(() => setDrawer(null), []);
   // 2026-09-27 · activeNav 변화 감지 · 사이드바 재클릭 대응
   useEffect(() => {
     if (activeNav?.itemKey !== "requests") return;
@@ -534,59 +557,62 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         onLogout={onLogout}
       />
 
-      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · 탭을 tabs slot으로 · level 3→2 (page L2 nav Line Tabs) */}
+      {/* 2026-10-10 · 사용자 지시 · 상단 2개 그룹 탭 (현황 / 서류작성)
+          · description · topGroup 별 context-aware */}
       <OperationsPageTemplate
         title="업무 요청"
-        description="진열 · 발주 · 점심 · 재고 · 연차 · 거래처 · 사직서 등 요청 통합"
+        description={
+          topGroup === "overview"  ? "승인·요청·서류 종합 현황" :
+          topGroup === "document"  ? "근로계약서·사직서 작성" :
+          "통합 요청·결재 센터"
+        }
         tabs={
-          <TabBar<Tab>
-            level={2}
-            tabs={TABS.map(([key, label, count]) => {
-              const meta: Record<Tab, { icon: any; color: any }> = {
-                display:     { icon: ClipboardList, color: "sky"     },
-                order:       { icon: Package,       color: "amber"   },
-                lunch:       { icon: Coffee,        color: "orange"  },
-                inventory:   { icon: Package,       color: "violet"  },
-                leave:       { icon: CalendarDays,  color: "indigo"  },
-                vendor:      { icon: Handshake,     color: "emerald" },
-                resignation: { icon: FileText,      color: "rose"    },
-              };
-              const m = meta[key];
-              return { key, label, icon: m.icon, color: m.color, badge: count > 0 ? count : undefined } as CommonTabDef<Tab>;
-            })}
-            activeKey={tab}
-            onSelect={setTab}
-          />
+          <div className="flex flex-col gap-2">
+            <TabBar<TopGroup>
+              level={2}
+              tabs={[
+                { key: "overview",  label: "현황",     icon: LayoutDashboard, color: "brand"   },
+                { key: "document",  label: "서류작성", icon: PenLine,         color: "emerald" },
+              ] as CommonTabDef<TopGroup>[]}
+              activeKey={topGroup}
+              onSelect={handleTopGroupChange}
+            />
+            {/* 2026-10-10 · 사용자 지시 · level-3 contract/resignation TabBar 제거
+                · DocumentWriterPage 내부 TabBar 가 근로계약서/사직서 전환 담당 */}
+          </div>
         }
       >
       <main className="flex-1 flex flex-col gap-4">
 
-        {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · DisplayRequestTab */}
-        {tab === "display" && (
-          <DisplayRequestTab
-            displayReqs={displayReqs}
-            displayLoading={displayLoading}
-            selectedDisplay={selectedDisplay}
-            setSelectedDisplay={setSelectedDisplay}
-            completingDisplay={completingDisplay}
-            notifyToast={notifyToast}
-            notifying={notifying}
+        {/* 2026-10-09 · 사용자 지시 · 통합 현황판 (HomeDashboard 톤) · 서류작성 현황 포함 */}
+        {topGroup === "overview" && (
+          <RequestsOverview
+            onNavigate={handleOverviewNavigate}
+            onNavigateToDocument={() => handleTopGroupChange("document")}
             isManager={isManager}
-            isAdminLevel8={isAdminLevel8}
-            canPrepare={canPrepare}
-            canComplete={canComplete}
-            onToggleOne={(id) => toggleOne(selectedDisplay, id, setSelectedDisplay)}
-            onDeleteSelected={() => deleteDisplay([...selectedDisplay])}
-            onDeleteAll={async () => { if (await confirm({ message: `진열요청 전체 ${displayReqs.length}건을 삭제할까요?`, danger: true })) deleteDisplay(displayReqs.map(r => r.id)); }}
-            onRefresh={loadDisplayReqs}
-            onNotifyAll={handleNotifyAll}
-            onPrepareDisplay={handlePrepareDisplay}
-            onCompleteDisplay={handleCompleteDisplay}
-            /* 2026-09-11 · #75 · 담당자 지정 flow · 부모 상태로 request 저장 · 모달 오픈 */
-            onAssignStaff={(r) => setAssignTarget(r)}
           />
         )}
-        {/* 2026-09-11 · #75 · 담당자 지정 모달 */}
+
+        {/* 2026-10-10 · 사용자 지시 · 서류작성 탭 · DocumentWriterPage embed
+            · 사이드바 "서류작성" 메뉴 제거 → 현황판 서류작성 탭 안에서 직접 작성
+            · DocumentWriterPage 내부 TabBar(level 2) 로 근로계약서/사직서 전환 · settings 은 숨김 (allowedTabs)
+            · ContractWriterPage · ResignationWriterPage 는 DocumentWriterPage 내부 lazy render */}
+        {topGroup === "document" && (
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="서류작성 로딩 중..." size={16} tone="brand" /></div>}>
+            <DocumentWriterPage
+              embedded
+              allowedTabs={["contract", "resignation"]}
+              onBack={onBack}
+              authSession={authSession ?? null}
+              onNavigate={onNavigate}
+              onLogout={onLogout}
+            />
+          </Suspense>
+        )}
+
+        {/* 2026-10-10 · 사용자 지시 · topGroup 승인업무/요청확인 inner block 제거
+            · 모든 승인·요청 panel 은 drawer 안에서 render (아래 drawer block 참조)
+            · AssignStaffModal 은 drawer 안 DisplayRequestTab 의 onAssignStaff flow 지원 · topGroup 밖 유지 */}
         <AssignStaffModal
           open={!!assignTarget}
           onClose={() => setAssignTarget(null)}
@@ -594,89 +620,132 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
           onAssigned={loadDisplayReqs}
         />
 
-
-        {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · OrderRequestTab */}
-        {tab === "order" && (
-          <OrderRequestTab
-            orderReqs={orderReqs}
-            orderLoading={orderLoading}
-            orderError={orderError}
-            orderRequestError={orderRequestError}
-            selectedOrder={selectedOrder}
-            productsLoading={productsLoading}
-            lowStock={lowStock}
-            invStockMap={invStockMap}
-            requestedCodes={requestedCodes}
-            requestingOrder={requestingOrder}
-            onToggleAll={() => toggleAll(orderReqs, selectedOrder, setSelectedOrder)}
-            onToggleOne={(id) => toggleOne(selectedOrder, id, setSelectedOrder)}
-            onDeleteSelected={() => deleteOrder([...selectedOrder])}
-            onDeleteAll={async () => { if (await confirm({ message: `발주요청 전체 ${orderReqs.length}건을 삭제할까요?`, danger: true })) deleteOrder(orderReqs.map(r => r.id)); }}
-            onRefresh={loadOrderReqs}
-            onRequestOrder={handleRequestOrder}
-          />
-        )}
-
-        {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · InventoryCheckTab */}
-        {tab === "inventory" && (
-          <InventoryCheckTab
-            inventoryChecks={inventoryChecks}
-            inventoryLoading={inventoryLoading}
-            selectedInventory={selectedInventory}
-            displayReqsCount={displayReqs.length}
-            orderReqsCount={orderReqs.length}
-            requestedCodes={requestedCodes}
-            requestingInvOrder={requestingInvOrder}
-            invLogOpen={invLogOpen}
-            setInvLogOpen={setInvLogOpen}
-            onToggleAll={() => toggleAll(inventoryChecks, selectedInventory, setSelectedInventory)}
-            onToggleOne={(id) => toggleOne(selectedInventory, id, setSelectedInventory)}
-            onDeleteSelected={() => deleteInventory([...selectedInventory])}
-            onDeleteAll={async () => { if (await confirm({ message: `실재고 점검 내역 전체 ${inventoryChecks.length}건을 삭제할까요?`, danger: true })) deleteInventory(inventoryChecks.map(r => r.id)); }}
-            onRefresh={loadInventoryChecks}
-            onOrderFromInventory={handleOrderFromInventory}
-          />
-        )}
-
-        {/* ── 점심불참 · 2026-08-26 LunchPanel 이관 ── */}
-        {tab === "lunch" && (
-          <LunchPanel
-            lunchRequests={lunchRequests}
-            lunchLoading={lunchLoading}
-            onRefresh={loadLunch}
-          />
-        )}
-
-        {/* ── 연차승인 (2026-08-12 · 관리자용 승인 목록 · LeavePage embedded mode="approval") ── */}
-        {tab === "leave" && isManager && (
-          <div className="flex flex-col gap-2">
-            <LeavePage
-              embedded
-              mode="approval"
-              authSession={authSession ?? null}
-              onBack={onBack}
-              onNavigate={onNavigate}
-              onLogout={onLogout}
-            />
-          </div>
-        )}
-
-        {/* 2026-08-26 · #192 · 거래처승인 신규 탭 · 연차승인 UX 복제 · vendor pending 리스트 */}
-        {tab === "vendor" && isManager && (
-          <div className="flex flex-col gap-2">
-            <VendorApprovalPanel />
-          </div>
-        )}
-
-        {/* 2026-09-08 · 사직서승인 · business-manage 에서 이관 · 승인 요청 통합 */}
-        {tab === "resignation" && isManager && (
-          <div className="flex flex-col gap-2">
-            <ResignationApprovalPage authSession={authSession ?? null} />
-          </div>
-        )}
-
       </main>
       </OperationsPageTemplate>
+
+      {/* 2026-10-10 · 사용자 지시 · 다른 페이지 drawer 들과 통일 · 오른쪽에서 slide-in
+          · 이전 (10-09) · 왼쪽 drawer → 사용자 재지시 "다른 페이지들 다 오른쪽에서 열려" · fix 오른쪽으로
+          · 안에서 기존 승인/요청 panel 들 (LeavePage · VendorApprovalPanel · ResignationApprovalPage · DisplayRequestTab · LunchPanel) render */}
+      {drawer && (
+        <>
+          {/* 명시적 keyframes · tailwindcss-animate 의존 제거 */}
+          <style>{`
+            @keyframes requestsDrawerSlideIn {
+              from { transform: translateX(100%); }
+              to   { transform: translateX(0); }
+            }
+            @keyframes requestsDrawerFadeIn {
+              from { opacity: 0; }
+              to   { opacity: 1; }
+            }
+          `}</style>
+          {/* Backdrop · overview 가려짐 */}
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-40"
+            style={{ animation: "requestsDrawerFadeIn 200ms ease-out" }}
+            onClick={closeDrawer}
+            aria-hidden
+          />
+          {/* Slide panel · 오른쪽에 위치 · 오른쪽에서 왼쪽으로 slide-in (다른 drawer 들과 통일) */}
+          <aside
+            className="fixed right-0 top-0 bottom-0 w-full md:w-[640px] lg:w-[760px] bg-[#F4F7FA] z-50 shadow-[-8px_0_32px_rgba(15,23,42,0.12)] flex flex-col"
+            style={{ animation: "requestsDrawerSlideIn 250ms ease-out" }}
+            role="dialog"
+            aria-modal="true"
+          >
+            {/* 2026-10-10 · 사용자 지시 · 홈 랜딩 톤 통일 · HomeDashboard 공식 패턴 적용
+                · 아이콘 tile · w-7 h-7 rounded-[8px] (HomeDashboard 공식)
+                · 상단 bar · 흰 bg + 미묘한 border-b · 돋보임 X */}
+            <header className="sticky top-0 z-10 flex items-center gap-2 px-3 py-2.5 md:px-4 md:py-3 border-b border-slate-200 bg-white">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-[8px] bg-slate-100 text-slate-600 shrink-0">
+                {drawer.tab === "leave" && <CalendarIcon size={14} />}
+                {drawer.tab === "vendor" && <Handshake size={14} />}
+                {drawer.tab === "resignation" && <FileText size={14} />}
+                {drawer.tab === "display" && <ClipboardList size={14} />}
+                {drawer.tab === "lunch" && <Coffee size={14} />}
+                {drawer.tab === "order" && <Package size={14} />}
+                {drawer.tab === "inventory" && <Package size={14} />}
+              </span>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight truncate leading-tight">
+                  {drawer.tab === "leave" && "연차승인"}
+                  {drawer.tab === "vendor" && "거래처승인"}
+                  {drawer.tab === "resignation" && "사직서승인"}
+                  {drawer.tab === "display" && (isManager ? "진열요청 · 실재고차이" : "내가 받은 요청")}
+                  {drawer.tab === "lunch" && "점심불참"}
+                  {drawer.tab === "order" && "발주요청"}
+                  {drawer.tab === "inventory" && "실재고 확인"}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={closeDrawer}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-[8px] text-slate-500 hover:text-ink hover:bg-slate-100 transition-colors cursor-pointer"
+                aria-label="닫기"
+                title="닫기"
+              >
+                <XIcon size={14} />
+              </button>
+            </header>
+
+            {/* 2026-10-10 · Content · HomeDashboard 간격 (gap-2.5 md:gap-4 패턴)
+                · 각 panel 자체 레이아웃 유지 (추후 panel 별 톤 통일 필요 시 별도 작업) */}
+            <div className="flex-1 overflow-y-auto p-2.5 md:p-4 flex flex-col gap-2.5 md:gap-4">
+              {/* 진열요청 · 실재고차이 */}
+              {drawer.tab === "display" && (
+                <DisplayRequestTab
+                  displayReqs={displayReqs}
+                  displayLoading={displayLoading}
+                  selectedDisplay={selectedDisplay}
+                  setSelectedDisplay={setSelectedDisplay}
+                  completingDisplay={completingDisplay}
+                  notifyToast={notifyToast}
+                  notifying={notifying}
+                  isManager={isManager}
+                  isAdminLevel8={isAdminLevel8}
+                  canPrepare={canPrepare}
+                  canComplete={canComplete}
+                  onToggleOne={(id) => toggleOne(selectedDisplay, id, setSelectedDisplay)}
+                  onDeleteSelected={() => deleteDisplay([...selectedDisplay])}
+                  onDeleteAll={async () => { if (await confirm({ message: `진열요청 전체 ${displayReqs.length}건을 삭제할까요?`, danger: true })) deleteDisplay(displayReqs.map(r => r.id)); }}
+                  onRefresh={loadDisplayReqs}
+                  onNotifyAll={handleNotifyAll}
+                  onPrepareDisplay={handlePrepareDisplay}
+                  onCompleteDisplay={handleCompleteDisplay}
+                  onAssignStaff={(r) => setAssignTarget(r)}
+                />
+              )}
+              {/* 점심불참 */}
+              {drawer.tab === "lunch" && (
+                <LunchPanel
+                  lunchRequests={lunchRequests}
+                  lunchLoading={lunchLoading}
+                  onRefresh={loadLunch}
+                />
+              )}
+              {/* 연차승인 · 관리자만 */}
+              {drawer.tab === "leave" && isManager && (
+                <LeavePage
+                  embedded
+                  mode="approval"
+                  authSession={authSession ?? null}
+                  onBack={onBack}
+                  onNavigate={onNavigate}
+                  onLogout={onLogout}
+                />
+              )}
+              {/* 거래처승인 · 관리자만 */}
+              {drawer.tab === "vendor" && isManager && (
+                <VendorApprovalPanel />
+              )}
+              {/* 사직서승인 · 관리자만 */}
+              {drawer.tab === "resignation" && isManager && (
+                <ResignationApprovalPage authSession={authSession ?? null} />
+              )}
+            </div>
+          </aside>
+        </>
+      )}
 
       {/* 발주요청 중복 확인 모달 */}
       <Modal
