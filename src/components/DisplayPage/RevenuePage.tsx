@@ -141,15 +141,16 @@ export const RevenuePage: React.FC = () => {
         active={topTab}
         onChange={setTopTab}
         tabs={[
-          { k: "revenue", label: "매출", tone: "emerald", count: null },
-          { k: "sales",   label: "판매", tone: "rose",    count: null },
+          { k: "revenue", label: "매출현황", tone: "emerald", count: null },
+          { k: "sales",   label: "판매현황", tone: "rose",    count: null },
         ] as const satisfies ReadonlyArray<OverviewInnerTab<TopTab>>}
       />
 
       {topTab === "revenue" ? (
-        <>
-          {/* 매출 하위 탭 · 시간대별 / 월별 · pill 유지 (사용자 "매출 하위 탭은 손대지마")
-              2026-10-10 · wrapper gap-3 md:gap-4 로 간격 자동 · pt 자체 제거 */}
+        /* 2026-10-10 · pill + content 를 하나의 섹션으로 wrap · wrapper gap-3 md:gap-4 과 발주반품현황 리듬 동일화
+            · 내부 간격 gap-2 (pill ~ content tight · 사용자 "아래 여백 줄여") */
+        <div className="flex-1 flex flex-col min-h-0 gap-2 w-full min-w-0 max-w-full">
+          {/* 매출 하위 탭 · pill 유지 (사용자 "매출 하위 탭은 손대지마") */}
           <div className="px-4 shrink-0 w-full min-w-0 max-w-full">
             <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
               {([
@@ -166,8 +167,6 @@ export const RevenuePage: React.FC = () => {
             </div>
           </div>
 
-          {/* 세로 scroll · overscroll touch · 가로 clip · 자식 min-h-0
-              2026-10-10 · gap-3 md:gap-4 wrapper 간격 사용 · 자체 pt 제거 */}
           <div
             className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-4 w-full min-w-0 max-w-full"
             style={{ WebkitOverflowScrolling: "touch" }}
@@ -176,7 +175,7 @@ export const RevenuePage: React.FC = () => {
               {tab === "hourly" ? <HourlyReportTab /> : <MonthlyReportTab />}
             </div>
           </div>
-        </>
+        </div>
       ) : (
         /* 판매 탭 · SalesPanel (statistics) · 2026-10-10 · gap wrapper 간격 사용 · 자체 mt 제거 */
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
