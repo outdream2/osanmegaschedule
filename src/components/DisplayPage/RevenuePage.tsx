@@ -147,8 +147,9 @@ export const RevenuePage: React.FC = () => {
 
       {topTab === "revenue" ? (
         <>
-          {/* 매출 하위 탭 · 시간대별 / 월별 · 2026-10-09 홈 랜딩 inline pill 통일 */}
-          <div className="px-4 pt-3 shrink-0 w-full min-w-0 max-w-full">
+          {/* 매출 하위 탭 · 시간대별 / 월별 · 2026-10-09 홈 랜딩 inline pill 통일
+              2026-10-10 · 사용자 "매출/판매 ~ pill 너무 가까워" · pt-3 → pt-4 (발주반품현황 리듬) */}
+          <div className="px-4 pt-4 shrink-0 w-full min-w-0 max-w-full">
             <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
               {([
                 { k: "hourly" as const,  label: "시간대별" },
@@ -165,9 +166,9 @@ export const RevenuePage: React.FC = () => {
           </div>
 
           {/* 세로 scroll · overscroll touch · 가로 clip · 자식 min-h-0
-              2026-10-10 · 사용자 지시 · pill 아래 여백 축소 (pt-4 → pt-2) · 위 여백 (pt-3) 유지 */}
+              2026-10-10 · 사용자 "아래는 너무 멀고" · pill↔content pt-4 → pt-3 (발주반품현황 gap-3 md:gap-4 리듬) */}
           <div
-            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-2 pb-4 w-full min-w-0 max-w-full"
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-3 pb-4 w-full min-w-0 max-w-full"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
             <div className="w-full min-w-0 max-w-full">
@@ -177,8 +178,8 @@ export const RevenuePage: React.FC = () => {
         </>
       ) : (
         /* 판매 탭 · SalesPanel (statistics) · prop 확장 보류 (사용자 "탭 디자인 통일 먼저")
-           2026-10-10 · 사용자 지시 · 매출/판매 탭 아래 여백 축소 · mt-3 → mt-1 */
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col mt-1">
+           2026-10-10 · 사용자 리밸런싱 "발주반품현황과 같게" · mt-4 (매출 pill wrapper pt-4와 통일) */
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col mt-4">
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16 text-[14px] text-slate-500">판매 데이터 로딩 중...</div>}>
             <SalesPanel initialTopTab="statistics" hideTopTabs />
           </React.Suspense>
