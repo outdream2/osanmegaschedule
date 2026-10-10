@@ -2,7 +2,7 @@
 // 2026-10-09 · GLOBAL UI · 재고·진열 Single-Page Operations Console
 //   · L2 폐기 · shortcut 폐기 · modal-first
 //   · Real · listExpiryImminentProducts · listInventoryChecks
-//   · row click → OrderDetailModal (shared · 상품/실재고 상세) · Shelf SSOT 보호
+//   · row click → ProductInventoryDetailModal (domain-specific · Shelf SSOT 보호)
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Package, Storefront, Clock, ListChecks } from "@phosphor-icons/react";
@@ -12,18 +12,25 @@ import {
 } from "./StoreOverviewPrimitives";
 import { listExpiryImminentProducts } from "../../../lib/productsApi";
 import { listInventoryChecks } from "../../../lib/inventoryChecksApi";
-import { OrderDetailModal, type OrderDetailRow } from "./OrderDetailModal";
+import { ProductInventoryDetailModal, type ProductInventoryDetailRow } from "./ProductInventoryDetailModal";
+// 2026-10-10 · 사용자 지시 · 매장구역도 뷰어 inner tab 추가 · 공통 StoreZoneMap readonly render
+import { StoreZoneMap } from "../../common/StoreZoneMap";
 
 export interface InventoryDisplayOverviewProps { onSelectSubTab: (sub: any) => void; }
 
 type AnyRow = Record<string, any>;
 
+// 2026-10-10 · 사용자 지시 · inner tab · "현황" / "매장구역도" 2탭 · 홈 톤 pill 패턴
+type InnerTab = "overview" | "map";
+
 export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> = () => {
   const [expiry, setExpiry] = useState<AnyRow[] | null>(null);
   const [checks, setChecks] = useState<AnyRow[] | null>(null);
   const [search, setSearch] = useState("");
-  const [detail, setDetail] = useState<OrderDetailRow | null>(null);
+  const [detail, setDetail] = useState<ProductInventoryDetailRow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  // 2026-10-10 · inner tab · overview 기본 (대원칙 · 첫 탭 default)
+  const [innerTab, setInnerTab] = useState<InnerTab>("overview");
 
   useEffect(() => {
     let alive = true;
@@ -51,9 +58,21 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
 
   const openDetail = useCallback((row: AnyRow) => {
     setDetail({
-      id: row.id, product_code: row.product_code, product_name: row.product_name,
-      note: row.expiry_date ? `유통기한: ${row.expiry_date}` : row.note,
-      items: [{ product_code: row.product_code, product_name: row.product_name, order_qty: row.current_stock, unit_price: null, amount: null }],
+      id: row.id,
+      product_code: row.product_code,
+      product_name: row.product_name,
+      barcode: row.barcode,
+      category: row.category,
+      current_stock: row.current_stock,
+      optimal_stock: row.optimal_stock,
+      expiry_date: row.expiry_date ?? row.expiry,
+      shelf_positions: row.shelf_positions,
+      display_location: row.display_location,
+      checked_at: row.checked_at,
+      created_at: row.created_at,
+      qty: row.qty,
+      quantity: row.quantity,
+      note: row.note,
     });
   }, []);
 
@@ -87,6 +106,38 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
     <div className="flex flex-col gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
       <OverviewPageHeader title="재고·진열" description="재고/실재고/유통기한/진열 업무를 한 페이지에서 처리합니다" />
 
+      {/* 2026-10-10 · 사용자 지시 · inner tab · 현황 / 매장구역도 · 홈 톤 pill 패턴 (SalesOverview·CategoryTab 벤치) */}
+      <div className="px-4 sm:px-6">
+        <div className="inline-flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+          {([
+            { key: "overview", label: "현황" },
+            { key: "map",      label: "매장구역도" },
+          ] as const).map(t => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setInnerTab(t.key)}
+              className={`h-9 px-4 rounded-md text-[14px] font-semibold transition-colors cursor-pointer ${
+                innerTab === t.key
+                  ? "bg-white text-blue-700 shadow-sm"
+                  : "text-slate-600 hover:text-ink"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ═════════ 매장구역도 탭 · 공통 StoreZoneMap readonly 뷰어 ═════════ */}
+      {innerTab === "map" && (
+        <div className="px-4 sm:px-6">
+          <StoreZoneMap />
+        </div>
+      )}
+
+      {/* ═════════ 현황 탭 · 기존 KPI + 섹션들 ═════════ */}
+      {innerTab === "overview" && (<>
       <OverviewToolbar search={search} onSearch={setSearch} placeholder="상품명·코드 검색"
         right={
           <button type="button" onClick={() => setRefreshKey(k => k + 1)}
@@ -132,8 +183,9 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
           </div>
         </OverviewSection>
       </div>
+      </>)}
 
-      <OrderDetailModal open={detail != null} onClose={() => setDetail(null)} order={detail} />
+      <ProductInventoryDetailModal open={detail != null} onClose={() => setDetail(null)} row={detail} />
     </div>
   );
 };
