@@ -127,8 +127,9 @@ export const RevenuePage: React.FC = () => {
   const [topTab, setTopTab] = useState<TopTab>("revenue");
   const [tab, setTab] = useState<RevenueTab>("hourly");
   return (
-    // 2026-10-06 · 사용자 지시 · 세로 스크롤 보장 · 가로 overflow 방지 · overflow-hidden 완화
-    <div className="flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full">
+    // 2026-10-06 · 사용자 지시 · 세로 스크롤 보장 · 가로 overflow 방지
+    // 2026-10-10 · 사용자 지시 · 발주반품현황 공통 리듬 · gap-3 md:gap-4 (섹션 자동 간격 통일)
+    <div className="flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full gap-3 md:gap-4">
       {/* 2026-10-09 · UI-4 · 공통 모듈 OverviewHero + OverviewInnerTabs */}
       <OverviewHero
         tone="emerald"
@@ -147,28 +148,22 @@ export const RevenuePage: React.FC = () => {
 
       {topTab === "revenue" ? (
         <>
-          {/* 매출 하위 탭 · 시간대별 / 월별 · 2026-10-09 홈 랜딩 inline pill 통일
-              2026-10-10 · 사용자 "매출/판매 ~ pill 너무 가까워" · pt-3 → pt-4 (발주반품현황 리듬) */}
-          <div className="px-4 pt-4 shrink-0 w-full min-w-0 max-w-full">
-            <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
-              {([
-                { k: "hourly" as const,  label: "시간대별" },
-                { k: "monthly" as const, label: "월별" },
-              ]).map((t) => (
-                <button key={t.k} type="button" onClick={() => setTab(t.k)}
-                  className={`px-3 py-1.5 rounded-md text-[13px] md:text-[14px] font-medium transition-colors ${
-                    tab === t.k ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                  }`}>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* 2026-10-10 · 사용자 지시 · 매출 하위 탭 · OverviewInnerTabs 공통 모듈 교체
+              · 발주반품현황 nav bar 스타일 통일 (border-b + underline + text-ink · 공통 디자인) */}
+          <OverviewInnerTabs<RevenueTab>
+            ariaLabel="매출 하위 탭"
+            active={tab}
+            onChange={setTab}
+            tabs={[
+              { k: "hourly",  label: "시간대별", tone: "emerald", count: null },
+              { k: "monthly", label: "월별",     tone: "emerald", count: null },
+            ] as const satisfies ReadonlyArray<OverviewInnerTab<RevenueTab>>}
+          />
 
           {/* 세로 scroll · overscroll touch · 가로 clip · 자식 min-h-0
-              2026-10-10 · 사용자 "아래는 너무 멀고" · pill↔content pt-4 → pt-3 (발주반품현황 gap-3 md:gap-4 리듬) */}
+              2026-10-10 · gap-3 md:gap-4 wrapper 간격 사용 · 자체 pt 제거 */}
           <div
-            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-3 pb-4 w-full min-w-0 max-w-full"
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-4 w-full min-w-0 max-w-full"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
             <div className="w-full min-w-0 max-w-full">
@@ -177,9 +172,8 @@ export const RevenuePage: React.FC = () => {
           </div>
         </>
       ) : (
-        /* 판매 탭 · SalesPanel (statistics) · prop 확장 보류 (사용자 "탭 디자인 통일 먼저")
-           2026-10-10 · 사용자 리밸런싱 "발주반품현황과 같게" · mt-4 (매출 pill wrapper pt-4와 통일) */
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col mt-4">
+        /* 판매 탭 · SalesPanel (statistics) · 2026-10-10 · gap wrapper 간격 사용 · 자체 mt 제거 */
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16 text-[14px] text-slate-500">판매 데이터 로딩 중...</div>}>
             <SalesPanel initialTopTab="statistics" hideTopTabs />
           </React.Suspense>
