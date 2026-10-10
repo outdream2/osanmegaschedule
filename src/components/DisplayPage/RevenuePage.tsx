@@ -23,10 +23,10 @@ import { CLASS_FILTER_LABEL, type ClassFilter, type ProductClass } from "../../u
 type RevenueTab = "hourly" | "monthly";
 // 2026-10-09 · 사용자 지시 · 판매·매출현황 페이지 상단 탭 (매출 | 판매)
 type TopTab = "revenue" | "sales";
-// 2026-10-09 · 사용자 지시 · 판매 탭 · SalesPanel (statistics) · default sub-tab = category (구역별 현황)
-//   · 이전: CategoryTab 단독 (덥썩 교체 X)
-//   · 이후: SalesPanel 유지 + initialStatSubTab="category" prop 전달 (statistics 안쪽 서브탭 유지)
-const SalesPanel = React.lazy(() => import("../OrderManagePage/OrderManagePage"));
+// 2026-10-10 · #11-P1 · 판매탭 완전 신규 설계 (C안 · 2026 트렌드)
+//   · 이전: SalesPanel (OrderManagePage statistics) lazy embed
+//   · 이후: SalesTab 신규 컴포넌트 (Insight Card + KPI 4-strip + Area + 베스트셀러 Top10)
+const SalesTab = React.lazy(() => import("./RevenuePage.SalesTab").then(m => ({ default: m.SalesTab })));
 type FetchStatus = "idle" | "loading" | "success" | "error";
 
 interface HourlyRow {
@@ -127,10 +127,10 @@ export const RevenuePage: React.FC = () => {
   const [topTab, setTopTab] = useState<TopTab>("revenue");
   const [tab, setTab] = useState<RevenueTab>("hourly");
   return (
-    // 2026-10-06 · 사용자 지시 · 세로 스크롤 보장 · 가로 overflow 방지
-    // 2026-10-10 · 사용자 "컬러포인트 여백 많다 · 발주반품현황은 안 그렇다" · gap 축소 (3/4 → 1.5/2)
-    //   · OverviewInnerTabs underline bar 바로 아래 간격 tight · 발주반품현황 눈 리듬 매칭
-    <div className="flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full gap-1.5 md:gap-2">
+    // 2026-10-10 · 사용자 "위아래 여백 다 달라 전수조사" 후 통일
+    //   · 발주반품/매입재고/재고진열 wrapper 공식 복제 (gap-3 md:gap-4 + pb-6 + bg-[#F4F7FA])
+    //   · flex-1 + min-h-0 추가 (스크롤 레이아웃 유지)
+    <div className="flex-1 flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] w-full min-w-0 max-w-full">
       {/* 2026-10-09 · UI-4 · 공통 모듈 OverviewHero + OverviewInnerTabs */}
       <OverviewHero
         tone="emerald"
@@ -178,10 +178,10 @@ export const RevenuePage: React.FC = () => {
           </div>
         </div>
       ) : (
-        /* 판매 탭 · SalesPanel (statistics) · 2026-10-10 · gap wrapper 간격 사용 · 자체 mt 제거 */
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+        /* 판매 탭 · 2026-10-10 · #11-P1 · 신규 SalesTab (Insight+KPI+Area+Top10) */
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16 text-[14px] text-slate-500">판매 데이터 로딩 중...</div>}>
-            <SalesPanel initialTopTab="statistics" hideTopTabs />
+            <SalesTab />
           </React.Suspense>
         </div>
       )}
