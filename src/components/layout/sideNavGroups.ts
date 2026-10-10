@@ -125,7 +125,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "display", label: "발주·반품 현황",   icon: Truck,       color: "red", subTab: "overview-order-return",      minLevel: 9 },
       { key: "display", label: "매입 재고현황",     icon: Package,     color: "red", subTab: "overview-purchase-arrival",  minLevel: 9 },
       { key: "display", label: "판매·매출현황",     icon: CurrencyKrw, color: "red", subTab: "revenue",                    minLevel: 9 },
-      { key: "display", label: "결제·정산 현황",   icon: CurrencyKrw, color: "red", subTab: "overview-payment-settlement", minLevel: 9 },
+      // 2026-10-10 · 사용자 지시 · 결제·정산 현황 메뉴 제거
       { key: "display", label: "재고·진열 현황",   icon: Storefront,  color: "red", subTab: "overview-inventory-display", managerOnly: true },
     ],
   },
