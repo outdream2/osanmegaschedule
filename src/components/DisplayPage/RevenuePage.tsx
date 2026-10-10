@@ -9,6 +9,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { Modal } from "../common/Modal";
+// 2026-10-09 · UI-4 · overview 상단 공통 모듈
+import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "./overviews/OverviewHeader";
 import { CalendarDays } from "lucide-react";
 import { LineChart, Line, Bar, ComposedChart, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from "recharts";
 import { shortDateWithDow } from "../../lib/dateFormat";
@@ -127,35 +129,21 @@ export const RevenuePage: React.FC = () => {
   return (
     // 2026-10-06 · 사용자 지시 · 세로 스크롤 보장 · 가로 overflow 방지 · overflow-hidden 완화
     <div className="flex-1 flex flex-col min-h-0 w-full min-w-0 max-w-full">
-      {/* 2026-10-09 · 사용자 지시 · 발주반품현황 상단 디자인 적용 · compact inline hero */}
-      <section className="flex items-center gap-2 py-0.5 px-4 pt-4 shrink-0 w-full min-w-0 max-w-full">
-        <span className="w-[3px] h-[14px] bg-emerald-500 rounded-full shrink-0" />
-        <span className="text-[14px] md:text-[15px] text-slate-700">
-          <strong className="font-semibold text-ink">판매·매출현황</strong> · 시간대별 · 월별 · 구역별 판매
-        </span>
-      </section>
-
-      {/* 2026-10-09 · 사용자 지시 · inner tab bar · OrderReturnOverview 패턴 (bottom bar + count slot · 프로세스 X) */}
-      <div className="px-4 pt-2 shrink-0 w-full min-w-0 max-w-full">
-        <nav className="flex items-stretch border-b border-slate-200 overflow-x-auto -mb-px" aria-label="판매·매출 inner tabs">
-          {([
-            { k: "revenue" as const, label: "매출", tone: { bar: "bg-emerald-500", soft: "bg-emerald-50" } },
-            { k: "sales"   as const, label: "판매", tone: { bar: "bg-rose-500",    soft: "bg-rose-50"    } },
-          ]).map((t) => {
-            const active = topTab === t.k;
-            return (
-              <button key={t.k} type="button" onClick={() => setTopTab(t.k)}
-                className={`relative shrink-0 px-2.5 h-10 text-[14px] md:text-[15px] font-medium transition-colors cursor-pointer inline-flex items-baseline gap-1.5 whitespace-nowrap ${
-                  active ? "text-ink font-semibold" : "text-slate-500 hover:text-ink"
-                }`}
-              >
-                <span>{t.label}</span>
-                {active && <span className={`absolute left-0 right-0 -bottom-px h-[2px] ${t.tone.bar} rounded-full`} />}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      {/* 2026-10-09 · UI-4 · 공통 모듈 OverviewHero + OverviewInnerTabs */}
+      <OverviewHero
+        tone="emerald"
+        title="판매·매출현황"
+        description="시간대별 · 월별 · 구역별 판매"
+      />
+      <OverviewInnerTabs<TopTab>
+        ariaLabel="판매·매출 inner tabs"
+        active={topTab}
+        onChange={setTopTab}
+        tabs={[
+          { k: "revenue", label: "매출", tone: "emerald", count: null },
+          { k: "sales",   label: "판매", tone: "rose",    count: null },
+        ] as const satisfies ReadonlyArray<OverviewInnerTab<TopTab>>}
+      />
 
       {topTab === "revenue" ? (
         <>
@@ -176,9 +164,10 @@ export const RevenuePage: React.FC = () => {
             </div>
           </div>
 
-          {/* 세로 scroll · overscroll touch · 가로 clip · 자식 min-h-0 */}
+          {/* 세로 scroll · overscroll touch · 가로 clip · 자식 min-h-0
+              2026-10-10 · 사용자 지시 · pill 아래 여백 축소 (pt-4 → pt-2) · 위 여백 (pt-3) 유지 */}
           <div
-            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 w-full min-w-0 max-w-full"
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-2 pb-4 w-full min-w-0 max-w-full"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
             <div className="w-full min-w-0 max-w-full">
@@ -187,8 +176,9 @@ export const RevenuePage: React.FC = () => {
           </div>
         </>
       ) : (
-        /* 판매 탭 · SalesPanel (statistics) · prop 확장 보류 (사용자 "탭 디자인 통일 먼저") */
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col mt-3">
+        /* 판매 탭 · SalesPanel (statistics) · prop 확장 보류 (사용자 "탭 디자인 통일 먼저")
+           2026-10-10 · 사용자 지시 · 매출/판매 탭 아래 여백 축소 · mt-3 → mt-1 */
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col mt-1">
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16 text-[14px] text-slate-500">판매 데이터 로딩 중...</div>}>
             <SalesPanel initialTopTab="statistics" hideTopTabs />
           </React.Suspense>
@@ -237,6 +227,11 @@ const HourlyReportTab: React.FC = () => {
   const [includeWeekend, setIncludeWeekend] = useState<boolean>(true);
   // 2026-10-06 · 사용자 지시 · 주말만 체크박스 · 체크 시 주말 날짜만 표시 (주말 포함과 상호 배타)
   const [weekendOnly, setWeekendOnly] = useState<boolean>(false);
+  // 2026-10-10 · 사용자 지시 · 일별 추이 요일 기준 정렬
+  //   · X축=일(1~31) 유지 · 다른 월 데이터를 현재월 요일에 맞춰 좌 shift
+  //   · 예: 9월 첫째주 토일과 10월 첫째주 토일이 같은 X 위치에 겹침
+  //   · chartAxis==="day" 에서만 노출
+  const [weekdayAlign, setWeekdayAlign] = useState<boolean>(false);
   // 2026-10-07 · 공휴일 포함 체크 (session only · default=포함 · GET /api/holidays?year, is_holiday=true 만)
   //   · 대체공휴일 포함 · data.go.kr 특일정보 API 가 isHoliday=Y 로 반환 (예: "대체공휴일(삼일절)")
   const [includeHoliday, setIncludeHoliday] = useState<boolean>(true);
@@ -682,6 +677,18 @@ const HourlyReportTab: React.FC = () => {
               {/* 2026-10-07 · 사용자 지시 · 체크박스 순서 · [주말 포함] [주말만] [공휴일 포함] (공휴일 포함을 주말만 옆으로 이동) */}
               {chartAxis !== "weekday" ? (
                 <>
+                  {/* 2026-10-10 · 사용자 지시 · 일별 추이 전용 · 요일 기준 shift (주말 포함 앞 배치) */}
+                  {chartAxis === "day" && (
+                    <label className={`inline-flex items-center gap-1.5 text-[13px] cursor-pointer select-none ${weekdayAlign ? "text-indigo-700 font-semibold" : "text-zinc-700"}`}>
+                      <input
+                        type="checkbox"
+                        checked={weekdayAlign}
+                        onChange={(e) => setWeekdayAlign(e.target.checked)}
+                        className="w-4 h-4 accent-indigo-600 cursor-pointer"
+                      />
+                      <span>요일 기준</span>
+                    </label>
+                  )}
                   <label className={`inline-flex items-center gap-1.5 text-[13px] cursor-pointer select-none ${weekendOnly ? "text-zinc-400" : "text-zinc-700"}`}>
                     <input
                       type="checkbox"
@@ -906,12 +913,35 @@ const HourlyReportTab: React.FC = () => {
                   // 2026-10-07 · 사용자 지시 · 일별 추이 x축 날짜 아래 요일 (단일 월 조회 시만 표시)
                   const singleMonthKey = months.length === 1 ? months[0] : null;
                   const DOW_KO_X = ["일", "월", "화", "수", "목", "금", "토"];
+                  // 2026-10-10 · 사용자 지시 · 요일 기준 shift
+                  //   · reference = 현재월(today 포함) · 없으면 months 마지막 (최신)
+                  //   · 각 month 1일 dow 와 ref 1일 dow 차이만큼 좌 shift
+                  //   · 예: ref=10월(1일=수), 비교=9월(1일=월) → offset=-2 → 9월 데이터는 왼쪽 2칸 shift
+                  //         → 9월 3일(수) 데이터가 X=1 자리 (10월 1일=수 와 overlay)
+                  //         → 9월 6일(토) 데이터가 X=4 자리 (10월 4일=토 와 overlay)
+                  const todayMonthKey = today.slice(0, 7);
+                  const refMonthKey = months.includes(todayMonthKey) ? todayMonthKey : months[months.length - 1];
+                  const dowOf1st = (monthKey: string): number => {
+                    const [yr, mo] = monthKey.split("-").map(Number);
+                    return new Date(yr, mo - 1, 1).getDay();
+                  };
+                  const refDow = refMonthKey ? dowOf1st(refMonthKey) : 0;
+                  const monthOffset = new Map<string, number>();
+                  for (const m of months) {
+                    if (!weekdayAlign) { monthOffset.set(m, 0); continue; }
+                    const diff = ((dowOf1st(m) - refDow + 7) % 7);
+                    // 좌 shift (0 ~ -6)
+                    monthOffset.set(m, -diff);
+                  }
                   const dayChartData: Record<string, number | string | null>[] = [];
                   for (let day = 1; day <= 31; day++) {
                     const point: Record<string, number | string | null> = { day };
                     for (const monthKey of months) {
-                      const r = monthMap.get(monthKey)!.get(day);
-                      if (!r) { point[monthKey] = null; continue; }
+                      const off = monthOffset.get(monthKey) ?? 0;
+                      // offset 적용 · 원본 날짜 = day - off (양수 ≥ 1)
+                      const srcDay = day - off;
+                      const r = monthMap.get(monthKey)!.get(srcDay);
+                      if (!r || srcDay < 1 || srcDay > 31) { point[monthKey] = null; continue; }
                       const { sale, cust, marg } = r;
                       let v: number | null = null;
                       if (chartMetric === "revenue") v = sale;
