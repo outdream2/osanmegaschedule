@@ -10,6 +10,8 @@ import {
   OverviewPageHeader, OverviewToolbar, OverviewSection, OverviewKpi, OverviewTable,
   type OverviewTableColumn,
 } from "./StoreOverviewPrimitives";
+// 2026-10-10 · 사용자 지시 · 현황 들어간 메뉴들 전부 공통 UI 모듈 통일 · OverviewPageHeader → OverviewHero
+import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "./OverviewHeader";
 import { listExpiryImminentProducts } from "../../../lib/productsApi";
 import { listInventoryChecks } from "../../../lib/inventoryChecksApi";
 import { ProductInventoryDetailModal, type ProductInventoryDetailRow } from "./ProductInventoryDetailModal";
@@ -280,30 +282,23 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
 
   return (
     <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
-      <OverviewPageHeader title="재고·진열" description="재고/실재고/유통기한/진열 업무를 한 페이지에서 처리합니다" />
+      {/* 2026-10-10 · 사용자 지시 · 공통 모듈 OverviewHero (발주반품현황·매출현황 패턴 통일) */}
+      <OverviewHero
+        tone="violet"
+        title="재고·진열 현황"
+        description="재고 / 실재고 / 유통기한 / 진열 업무"
+      />
 
-      {/* 2026-10-10 · 사용자 지시 · inner tab · 현황 / 구역도 · 홈 톤 pill 패턴 (SalesOverview·CategoryTab 벤치) */}
-      <div className="px-4 sm:px-6">
-        <div className="inline-flex items-center gap-1 bg-slate-100 rounded-lg p-1">
-          {([
-            { key: "overview", label: "현황" },
-            { key: "map",      label: "구역도" },
-          ] as const).map(t => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setInnerTab(t.key)}
-              className={`h-9 px-4 rounded-md text-[14px] font-semibold transition-colors cursor-pointer ${
-                innerTab === t.key
-                  ? "bg-white text-blue-700 shadow-sm"
-                  : "text-slate-600 hover:text-ink"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* 2026-10-10 · 사용자 지시 · inner tab · 현황 / 구역도 · 공통 모듈 OverviewInnerTabs (nav border-b + underline) */}
+      <OverviewInnerTabs<InnerTab>
+        ariaLabel="재고·진열 inner tabs"
+        active={innerTab}
+        onChange={setInnerTab}
+        tabs={[
+          { k: "overview", label: "현황",   tone: "violet", count: null },
+          { k: "map",      label: "구역도", tone: "violet", count: null },
+        ] as const satisfies ReadonlyArray<OverviewInnerTab<InnerTab>>}
+      />
 
       {/* ═════════ 구역도 탭 · 세로탭 + 매대 리스트 + 상품 아코디언 ═════════
           · 사용자 지시 "세로탭 · 매대별 제품수+재고자산 · 클릭 → 제품들 · 실재고 기준 · 정렬 · 보기 좋게"
