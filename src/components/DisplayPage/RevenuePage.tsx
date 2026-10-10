@@ -23,10 +23,11 @@ import { CLASS_FILTER_LABEL, type ClassFilter, type ProductClass } from "../../u
 type RevenueTab = "hourly" | "monthly";
 // 2026-10-09 · 사용자 지시 · 판매·매출현황 페이지 상단 탭 (매출 | 판매)
 type TopTab = "revenue" | "sales";
-// 2026-10-10 · #11-P1 · 판매탭 완전 신규 설계 (C안 · 2026 트렌드)
-//   · 이전: SalesPanel (OrderManagePage statistics) lazy embed
-//   · 이후: SalesTab 신규 컴포넌트 (Insight Card + KPI 4-strip + Area + 베스트셀러 Top10)
-const SalesTab = React.lazy(() => import("./RevenuePage.SalesTab").then(m => ({ default: m.SalesTab })));
+// 2026-10-10 · #13 · 판매현황 대시보드 신규 (공급사·구역·급상승·손실 중심 · 재고↔판매 혼합)
+//   · 이전: SalesTab (매출 중심 Insight+KPI+Area+Top10) · 사용자 지적 "매출탭과 중복"
+//   · 이후: SalesStatus (KPI + 급상승 + 손실 + 구역별 + 공급사 scorecard)
+//   · 리서치: Shopify Inventory + Target SPMD + 약국 Big Three 교차
+const SalesStatus = React.lazy(() => import("./RevenuePage.SalesStatus").then(m => ({ default: m.SalesStatus })));
 type FetchStatus = "idle" | "loading" | "success" | "error";
 
 interface HourlyRow {
@@ -145,11 +146,11 @@ export const RevenuePage: React.FC<RevenuePageProps> = ({ initialTab = "revenue"
       />
 
       {topTab === "revenue" ? (
-        /* 2026-10-10 · pill + content 를 하나의 섹션으로 wrap · wrapper gap-3 md:gap-4 과 발주반품현황 리듬 동일화
-            · 내부 간격 gap-2 (pill ~ content tight · 사용자 "아래 여백 줄여") */
-        <div className="flex-1 flex flex-col min-h-0 gap-2 w-full min-w-0 max-w-full">
-          {/* 매출 하위 탭 · pill 유지 (사용자 "매출 하위 탭은 손대지마") */}
-          <div className="px-4 shrink-0 w-full min-w-0 max-w-full">
+        <>
+          {/* 2026-10-10 · A안 · 사용자 "똑바로 조사 · 최신트렌드 · 맞춰" ·
+              pill-content wrap 제거 → pill 과 content 를 wrapper 직접 자식으로 (섹션 리듬 통일)
+              매출 하위 탭 · pill 디자인 유지 (사용자 "매출 하위 탭은 손대지마") */}
+          <div className="px-4 sm:px-6 shrink-0">
             <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
               {([
                 { k: "hourly" as const,  label: "시간대별" },
@@ -165,20 +166,15 @@ export const RevenuePage: React.FC<RevenuePageProps> = ({ initialTab = "revenue"
             </div>
           </div>
 
-          <div
-            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-4 w-full min-w-0 max-w-full"
-            style={{ WebkitOverflowScrolling: "touch" }}
-          >
-            <div className="w-full min-w-0 max-w-full">
-              {tab === "hourly" ? <HourlyReportTab /> : <MonthlyReportTab />}
-            </div>
+          <div className="px-4 sm:px-6">
+            {tab === "hourly" ? <HourlyReportTab /> : <MonthlyReportTab />}
           </div>
-        </div>
+        </>
       ) : (
-        /* 판매 탭 · 2026-10-10 · #11-P1 · 신규 SalesTab (Insight+KPI+Area+Top10) */
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16 text-[14px] text-slate-500">판매 데이터 로딩 중...</div>}>
-            <SalesTab />
+        /* 판매현황 대시보드 · 2026-10-10 · #13 · SalesStatus (급상승 + 손실 + 구역별 + 공급사 scorecard) */
+        <div className="px-4 sm:px-6">
+          <React.Suspense fallback={<div className="flex items-center justify-center py-16 text-[14px] text-slate-500">판매현황 로딩 중...</div>}>
+            <SalesStatus />
           </React.Suspense>
         </div>
       )}
