@@ -133,24 +133,15 @@ export const RevenuePage: React.FC<RevenuePageProps> = ({ initialTab = "revenue"
   const [topTab, setTopTab] = useState<TopTab>(initialTab);
   const [tab, setTab] = useState<RevenueTab>("hourly");
   return (
-    // 2026-10-10 · 사용자 "철저 조사" 후 통일 (2차)
-    //   · 발주반품/매입재고/재고진열 wrapper 공식 100% 복제 · w-full/min-w-0/max-w-full 제거
-    //   · flex-1 유지 (상위 flex container 안 스크롤 보장)
-    <div className="flex-1 flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
-      {/* 2026-10-09 · UI-4 · 공통 모듈 OverviewHero + OverviewInnerTabs */}
+    // 2026-10-10 · 사용자 "아직도 달라 · 똑같이 · 통일성" 3차 통일
+    //   · 발주반품/매입재고/재고진열 wrapper 공식 100% 복제 · flex-1 제거
+    //   · 다른 overview 들은 flex-1 없이 상위 main 의 min-h-0 flex-col 안에서 자연 작동
+    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
+      {/* 2026-10-10 · #12 · 메뉴 쪼개진 후 상단 inner tab 제거 (사용자 지시 "매출현황메뉴에서는 매출현황탭 판매현황탭 없애야지") · OverviewHero title 만 initialTab 따라 분기 */}
       <OverviewHero
-        tone="emerald"
-        title="판매·매출현황"
-        description="시간대별 · 월별 · 구역별 판매"
-      />
-      <OverviewInnerTabs<TopTab>
-        ariaLabel="판매·매출 inner tabs"
-        active={topTab}
-        onChange={setTopTab}
-        tabs={[
-          { k: "revenue", label: "매출현황", tone: "emerald", count: null },
-          { k: "sales",   label: "판매현황", tone: "rose",    count: null },
-        ] as const satisfies ReadonlyArray<OverviewInnerTab<TopTab>>}
+        tone={initialTab === "sales" ? "rose" : "emerald"}
+        title={initialTab === "sales" ? "판매현황" : "매출현황"}
+        description={initialTab === "sales" ? "구역별 · 제품별 · 공급사별 판매" : "시간대별 · 월별 매출"}
       />
 
       {topTab === "revenue" ? (
