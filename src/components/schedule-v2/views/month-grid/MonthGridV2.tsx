@@ -141,7 +141,7 @@ export const MonthGridV2: React.FC<GridProps> = ({
                 <th
                   scope="row"
                   onClick={onEmployeeNameClick ? () => onEmployeeNameClick(emp.id) : undefined}
-                  className={`sticky left-0 z-10 bg-white border-r border-b border-line text-left px-3 py-1.5 font-semibold text-ink ${
+                  className={`sticky left-0 z-20 bg-white overflow-hidden border-r border-b border-line text-left px-3 py-1.5 font-semibold text-ink ${
                     onEmployeeNameClick ? "cursor-pointer hover:bg-brand-tint/30" : ""
                   }`}
                   title={onEmployeeNameClick ? `${emp.name} · 개인 일정` : undefined}
