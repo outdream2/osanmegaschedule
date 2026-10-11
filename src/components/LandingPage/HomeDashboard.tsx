@@ -9,11 +9,14 @@ import {
   Package, Scan, Calendar, MessageSquare, PlusCircle, CalendarPlus, History,
   ChevronRight,
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, Legend, ComposedChart, Line } from "recharts";
 import { api } from "../../lib/apiClient";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import { StockArrivalList } from "./StockArrivalList";
+// 2026-10-10 · 사용자 지시 · 입고알림페이지 홈 랜딩에서 클릭 → 오른쪽 slide-in drawer · StockArrivalPage lazy embed
+import { X as XIcon } from "lucide-react";
+const StockArrivalPageLazy = React.lazy(() => import("../StockArrivalPage/StockArrivalPage").then(m => ({ default: m.StockArrivalPage })));
 // 2026-10-08 · 사용자 지시 · 판매현황 상품 클릭 → 상품정보 모달
 import { ProductInfoModal } from "../DisplayPage/ProductInfoModal";
 import type { ProductInfo } from "../../lib/productsCache";
@@ -86,6 +89,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   authSession, leavePendingCount, requestsCounts, paymentPendingCount,
   isAdmin, isManagerOrAdmin, onNavigate, setActiveByPage,
 }) => {
+  // 2026-10-10 · 사용자 지시 · 입고알림 slide-in drawer (사이드바 메뉴 → 홈 랜딩 shortcut 이관)
+  const [stockArrivalDrawer, setStockArrivalDrawer] = useState(false);
   const [hourlyRows, setHourlyRows] = useState<HourlyRow[] | null>(null);
   const [salesLoading, setSalesLoading] = useState(false);
   const [salesError, setSalesError] = useState<string | null>(null);
@@ -506,7 +511,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   <StockArrivalList
                     isVendor={false}
                     compact
-                    onOpenInputPage={() => onNavigate("stockarrivals", authSession)}
+                    onOpenInputPage={() => setStockArrivalDrawer(true)}
                   />
                 </div>
               </div>
@@ -541,6 +546,64 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           onClose={() => setSelectedProduct(null)}
           onProductUpdate={(updates) => setSelectedProduct(prev => prev ? { ...prev, ...updates } : prev)}
         />
+      )}
+
+      {/* 2026-10-10 · 사용자 지시 · 입고알림 slide-in Drawer · 홈 랜딩 shortcut 클릭 시 오른쪽 slide-in
+          · 다른 drawer 들과 톤 통일 (RequestsPage 패턴) · StockArrivalPage embedded 로 통째 render */}
+      {stockArrivalDrawer && (
+        <>
+          <style>{`
+            @keyframes stockArrivalDrawerSlideIn {
+              from { transform: translateX(100%); }
+              to   { transform: translateX(0); }
+            }
+            @keyframes stockArrivalDrawerFadeIn {
+              from { opacity: 0; }
+              to   { opacity: 1; }
+            }
+          `}</style>
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-40"
+            style={{ animation: "stockArrivalDrawerFadeIn 200ms ease-out" }}
+            onClick={() => setStockArrivalDrawer(false)}
+            aria-hidden
+          />
+          <aside
+            className="fixed right-0 top-0 bottom-0 w-full md:w-[720px] lg:w-[840px] bg-[#F4F7FA] z-50 shadow-[-8px_0_32px_rgba(15,23,42,0.12)] flex flex-col"
+            style={{ animation: "stockArrivalDrawerSlideIn 250ms ease-out" }}
+            role="dialog"
+            aria-modal="true"
+          >
+            <header className="sticky top-0 z-10 flex items-center gap-2 px-3 py-2.5 md:px-4 md:py-3 border-b border-slate-200 bg-white">
+              <span className="inline-flex items-center justify-center w-7 h-7 rounded-[8px] bg-slate-100 text-slate-600 shrink-0">
+                <Package size={14} weight="fill" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight truncate leading-tight">입고 알림</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStockArrivalDrawer(false)}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-[8px] text-slate-500 hover:text-ink hover:bg-slate-100 transition-colors cursor-pointer"
+                aria-label="닫기"
+                title="닫기"
+              >
+                <XIcon size={14} />
+              </button>
+            </header>
+            <div className="flex-1 overflow-y-auto">
+              <React.Suspense fallback={<div className="p-6 text-center text-[14px] text-slate-500">불러오는 중...</div>}>
+                <StockArrivalPageLazy
+                  embedded
+                  authSession={authSession}
+                  onBack={() => setStockArrivalDrawer(false)}
+                  onNavigate={onNavigate as any}
+                  onLogout={() => { /* drawer 내부라 noop */ }}
+                />
+              </React.Suspense>
+            </div>
+          </aside>
+        </>
       )}
     </div>
   );
@@ -1098,25 +1161,37 @@ const PurchaseOrderOverviewCard: React.FC<PurchaseOrderOverviewProps & {
   const isPurchase = tab === "purchase";
   const isWeek = period === "week";
 
+  // 2026-10-11 · 사용자 지시 · 매입 + 발주 하나의 그래프 (매입 bar · 발주 line)
+  //   · chartData · 두 series merge by date · 각 x축 label 당 purchase (매출액) + order (건수)
   const chartData = useMemo(() => {
-    if (isPurchase) {
-      const src = isWeek ? weekPurchases : monthPurchases;
-      return src.map((d) => ({
-        label: `${Number(d.date.slice(5, 7))}/${Number(d.date.slice(8, 10))}`,
-        value: d.amount,
-      }));
+    const purSrc = isWeek ? weekPurchases : monthPurchases;
+    const ordSrc = isWeek ? weekOrders : monthOrders;
+    const map = new Map<string, { label: string; purchase: number; order: number }>();
+    for (const d of purSrc) {
+      const label = `${Number(d.date.slice(5, 7))}/${Number(d.date.slice(8, 10))}`;
+      map.set(d.date, { label, purchase: d.amount, order: 0 });
     }
-    const src = isWeek ? weekOrders : monthOrders;
-    return src.map((d) => ({
-      label: `${Number(d.date.slice(5, 7))}/${Number(d.date.slice(8, 10))}`,
-      value: d.count,
-    }));
-  }, [isPurchase, isWeek, weekPurchases, monthPurchases, weekOrders, monthOrders]);
+    for (const d of ordSrc) {
+      const label = `${Number(d.date.slice(5, 7))}/${Number(d.date.slice(8, 10))}`;
+      const prev = map.get(d.date);
+      if (prev) prev.order = d.count;
+      else map.set(d.date, { label, purchase: 0, order: d.count });
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([, v]) => v);
+  }, [isWeek, weekPurchases, monthPurchases, weekOrders, monthOrders]);
 
-  const total = chartData.reduce((a, d) => a + d.value, 0);
-  const todayVal = chartData.length > 0 ? chartData[chartData.length - 1].value : 0;
-  const avg = chartData.length > 0 ? total / chartData.length : 0;
+  // 2026-10-11 · summary 섹션용 · tab 에 따라 매입액 or 발주건수 노출 (기존 로직 호환)
+  const summarySeries = useMemo(() => {
+    if (isPurchase) return chartData.map(d => d.purchase);
+    return chartData.map(d => d.order);
+  }, [isPurchase, chartData]);
+
+  const total = summarySeries.reduce((a, v) => a + v, 0);
+  const todayVal = summarySeries.length > 0 ? summarySeries[summarySeries.length - 1] : 0;
+  const avg = summarySeries.length > 0 ? total / summarySeries.length : 0;
   const periodDays = isWeek ? 7 : 30;
+  const hasPurchase = chartData.some(d => d.purchase > 0);
+  const hasOrder = chartData.some(d => d.order > 0);
 
   const barColor = isPurchase ? "#8b5cf6" : "#f59e0b"; // violet / amber
   const accentColor = isPurchase ? "bg-violet-500" : "bg-amber-500";
@@ -1203,21 +1278,41 @@ const PurchaseOrderOverviewCard: React.FC<PurchaseOrderOverviewProps & {
           </div>
         </div>
         <div className="md:col-span-7 h-[180px] md:h-[220px] px-3 py-3">
-          {chartData.length === 0 || total === 0 ? (
+          {chartData.length === 0 || (!hasPurchase && !hasOrder) ? (
             <div className="h-full flex items-center justify-center text-[14px] text-slate-400">데이터 없음</div>
           ) : (
+            /* 2026-10-11 · 사용자 지시 · 매입(막대) + 발주(꺽은선) 하나의 그래프 (ComposedChart)
+               · 좌측 YAxis · 매입액 · 우측 YAxis · 발주건수 */
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
+              <ComposedChart data={chartData} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
                 <CartesianGrid vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} width={48} tickFormatter={(v) => v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}k` : `${v}`} />
+                <YAxis
+                  yAxisId="purchase"
+                  tick={{ fontSize: 12, fill: "#8b5cf6" }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={48}
+                  tickFormatter={(v) => v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : v >= 1000 ? `${(v/1000).toFixed(0)}k` : `${v}`}
+                />
+                <YAxis
+                  yAxisId="order"
+                  orientation="right"
+                  tick={{ fontSize: 12, fill: "#f59e0b" }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={32}
+                  allowDecimals={false}
+                />
                 <Tooltip
-                  formatter={(v: number) => isPurchase ? fmtWon(v) : `${v.toLocaleString("ko-KR")}건`}
+                  formatter={(v: number, name: string) => name === "매입액" ? [fmtWon(v), name] : [`${v.toLocaleString("ko-KR")}건`, name]}
                   contentStyle={{ fontSize: 13, borderRadius: 8, padding: "6px 10px", border: "1px solid #e2e8f0" }}
                   cursor={{ fill: "rgba(139,92,246,0.06)" }}
                 />
-                <Bar dataKey="value" radius={[3, 3, 0, 0]} fill={barColor} />
-              </BarChart>
+                <Legend wrapperStyle={{ fontSize: 12 }} iconSize={10} />
+                <Bar yAxisId="purchase" dataKey="purchase" name="매입액" radius={[3, 3, 0, 0]} fill="#8b5cf6" />
+                <Line yAxisId="order" dataKey="order" name="발주건수" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3, fill: "#f59e0b" }} activeDot={{ r: 5 }} />
+              </ComposedChart>
             </ResponsiveContainer>
           )}
         </div>
