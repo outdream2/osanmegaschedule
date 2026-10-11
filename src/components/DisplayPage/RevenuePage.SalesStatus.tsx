@@ -22,6 +22,8 @@ import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { MonthToggleSelector, dateRangesFromMonths } from "../common/MonthToggleSelector";
 import { formatDisplayLocation } from "../../lib/formatDisplayLocation";
 import { OverviewInnerTabs, type OverviewInnerTab } from "./overviews/OverviewHeader";
+// 2026-10-11 · 사용자 지시 · 구역별 판매 (요약) 에 매대 이름 · zone_defs 매핑
+import { useZoneDefs } from "../../hooks/useZoneDefs";
 // 2026-10-11 · 사용자 지시 · drawer 안 수량/판매 트렌드 bar chart
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -77,7 +79,7 @@ interface ProductMeta {
   category?: string | null;
 }
 
-type InnerTabKey = "overview" | "zone" | "supplier";
+type InnerTabKey = "overview" | "zone" | "supplier" | "product";
 type ClassFilter = "all" | "pre" | "general" | "unknown";
 type Status = "good" | "warn" | "risk";
 function statusToPill(s: Status) {
@@ -90,6 +92,25 @@ export const SalesStatus: React.FC = () => {
   const [innerTab, setInnerTab] = useState<InnerTabKey>("overview");
   const { selectedMonths, setSelectedMonths } = useMonthFilter();
   const [classFilter, setClassFilter] = useState<ClassFilter>("all");
+  // 2026-10-11 · 사용자 지시 · 구역별 판매 (요약) 매대 이름 매핑
+  const { zones: zoneDefsList } = useZoneDefs();
+  const locationToLabel = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const z of zoneDefsList) {
+      // A/B 분리된 side 가 있으면 각 location (예: 1A, 1B) 별로 매핑
+      if (z.__locationA && z.subA) m.set(z.__locationA.toUpperCase(), z.subA);
+      if (z.__locationB && z.subB) m.set(z.__locationB.toUpperCase(), z.subB);
+      // base (A/B 없음) 또는 location 단독
+      if (z.__location && (z.category || z.label)) {
+        m.set(z.__location.toUpperCase(), z.category || z.label);
+      }
+      // num 단독 fallback (예: "22", "35")
+      if (!z.__location && (z.category || z.label)) {
+        m.set(String(z.num), z.category || z.label);
+      }
+    }
+    return m;
+  }, [zoneDefsList]);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [err, setErr] = useState<string>("");
   // 2026-10-11 · 사용자 지시 · 급상승 제품 row 클릭 → 상세 slide drawer
@@ -323,6 +344,7 @@ export const SalesStatus: React.FC = () => {
     { k: "overview", label: "현황",              tone: "indigo",  count: null },
     { k: "zone",     label: "구역별 판매현황",   tone: "amber",   count: null },
     { k: "supplier", label: "공급사별 판매현황", tone: "emerald", count: supplierScore.length || null },
+    { k: "product",  label: "상품별 판매현황",   tone: "rose",    count: (topRising.length + topDead.length) || null },
   ];
 
   return (
@@ -444,6 +466,8 @@ export const SalesStatus: React.FC = () => {
             <Kpi label="조치 필요" value={status === "loading" ? "..." : fmtNum(kpi.action)} suffix="건" tone={kpi.action > 0 ? "risk" : "good"} />
           </section>
 
+          {/* 2026-10-11 · 사용자 지시 "일루 내용 이동" · 급상승+손실 섹션은 "상품별 판매현황" 탭에서만 노출 (overview 에서 제거) */}
+          {innerTab === "product" && (
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
@@ -504,19 +528,25 @@ export const SalesStatus: React.FC = () => {
               </table>
             </div>
           </section>
+          )}
 
+          {/* 2026-10-11 · overview 전용 섹션 (카테고리/구역/공급사 요약) · product 탭에서는 숨김 */}
+          {innerTab === "overview" && (<>
           <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-4 md:p-5">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">카테고리별 판매 (중분류)</h3>
               <span className="text-[13px] text-slate-500 font-medium">전체 카테고리 · 매출 desc</span>
             </div>
-            {categoryRanking.length === 0 ? (
-              <div className="h-[120px] flex items-center justify-center text-[14px] text-slate-400">{status === "loading" ? "조회 중..." : "데이터 없음"}</div>
-            ) : (() => {
-              const maxSale = Math.max(1, ...categoryRanking.map((z) => z.sale));
+            {/* 2026-10-11 · 사용자 지시 · 미분류 항목 제거 */}
+            {(() => {
+              const filtered = categoryRanking.filter(z => z.cat !== "미분류");
+              if (filtered.length === 0) {
+                return <div className="h-[120px] flex items-center justify-center text-[14px] text-slate-400">{status === "loading" ? "조회 중..." : "데이터 없음"}</div>;
+              }
+              const maxSale = Math.max(1, ...filtered.map((z) => z.sale));
               return (
                 <ul className="flex flex-col gap-1.5">
-                  {categoryRanking.map((z) => {
+                  {filtered.map((z) => {
                     const pct = (z.sale / maxSale) * 100;
                     return (
                       <li key={z.cat} className="flex items-center gap-3 text-[14px]">
@@ -544,19 +574,24 @@ export const SalesStatus: React.FC = () => {
               <div className="h-[120px] flex items-center justify-center text-[14px] text-slate-400">{status === "loading" ? "조회 중..." : "데이터 없음"}</div>
             ) : (() => {
               const maxSale = Math.max(1, ...zoneRanking.map((z) => z.sale));
+              // 2026-10-11 · 사용자 지시 · 좌우 2단 구성 (가로 길이 축소 · 한번에 모든 매대 보임) + 매대 이름
               return (
-                <ul className="flex flex-col gap-1.5">
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5">
                   {zoneRanking.map((z) => {
                     const pct = (z.sale / maxSale) * 100;
+                    const locKey = String(z.loc ?? "").trim().toUpperCase();
+                    const label = locationToLabel.get(locKey) ?? "";
                     return (
-                      <li key={z.loc} className="flex items-center gap-3 text-[14px]">
-                        <span className="shrink-0 w-24 font-semibold text-ink tabular-nums truncate" title={z.loc}>{z.loc}</span>
+                      <li key={z.loc} className="flex items-center gap-2 text-[14px] min-w-0">
+                        <div className="shrink-0 flex items-center gap-1.5 w-32 min-w-0">
+                          <span className="inline-flex items-center justify-center shrink-0 min-w-[32px] h-5 px-1 rounded-[5px] bg-indigo-50 text-indigo-700 text-[12px] font-bold tabular-nums leading-none">{z.loc}</span>
+                          <span className="text-[13px] font-medium text-ink truncate" title={label || z.loc}>{label || "-"}</span>
+                        </div>
                         <div className="flex-1 min-w-0 bg-slate-100 rounded-sm h-6 relative overflow-hidden">
                           <div className="absolute inset-y-0 left-0 bg-indigo-500/85 rounded-sm" style={{ width: `${pct}%` }} />
-                          <span className="absolute inset-y-0 right-2 flex items-center text-[13px] font-semibold text-ink tabular-nums">{fmtWonShort(z.sale)}원</span>
+                          <span className="absolute inset-y-0 right-2 flex items-center text-[12px] font-semibold text-ink tabular-nums">{fmtWonShort(z.sale)}원</span>
                         </div>
-                        <span className="shrink-0 w-20 text-right text-[13px] text-slate-500 tabular-nums">{fmtNum(z.qty)}개</span>
-                        <span className="shrink-0 w-16 text-right text-[12px] text-slate-400 tabular-nums">{z.count}종</span>
+                        <span className="shrink-0 w-14 text-right text-[12px] text-slate-500 tabular-nums">{fmtNum(z.qty)}개</span>
                       </li>
                     );
                   })}
