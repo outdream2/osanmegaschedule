@@ -24,8 +24,8 @@ import { formatDisplayLocation } from "../../lib/formatDisplayLocation";
 import { OverviewInnerTabs, type OverviewInnerTab } from "./overviews/OverviewHeader";
 // 2026-10-11 · 사용자 지시 · 구역별 판매 (요약) 에 매대 이름 · zone_defs 매핑
 import { useZoneDefs } from "../../hooks/useZoneDefs";
-// 2026-10-11 · 사용자 지시 · drawer 안 수량/판매 트렌드 bar chart
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+// 2026-10-11 · 사용자 지시 · drawer 안 "판매량 + 마진율" combo chart
+import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const CategoryTab = React.lazy(() => import("../OrderManagePage/CategoryTab").then((m) => ({ default: m.CategoryTab })));
 
@@ -575,16 +575,17 @@ export const SalesStatus: React.FC = () => {
           <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-4 md:p-5">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">구역별 판매 (요약)</h3>
-              <span className="text-[13px] text-slate-500 font-medium">전체 구역 · 상세는 상단 "구역별 판매현황" 탭</span>
+              <span className="text-[13px] text-slate-500 font-medium">TOP 10 · 상세는 상단 "구역별 판매현황" 탭</span>
             </div>
             {zoneRanking.length === 0 ? (
               <div className="h-[120px] flex items-center justify-center text-[14px] text-slate-400">{status === "loading" ? "조회 중..." : "데이터 없음"}</div>
             ) : (() => {
-              const maxSale = Math.max(1, ...zoneRanking.map((z) => z.sale));
-              // 2026-10-11 · 사용자 지시 · 좌우 2단 구성 (가로 길이 축소 · 한번에 모든 매대 보임) + 매대 이름
+              // 2026-10-11 · 사용자 지시 · 현황 탭 요약은 TOP 10 만 노출 (전체는 상단 "구역별 판매현황" 탭 CategoryTab)
+              const top10 = zoneRanking.slice(0, 10);
+              const maxSale = Math.max(1, ...top10.map((z) => z.sale));
               return (
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5">
-                  {zoneRanking.map((z) => {
+                  {top10.map((z) => {
                     const pct = (z.sale / maxSale) * 100;
                     const label =
                       locationToLabel.get(String(z.loc ?? "")) ??
@@ -700,15 +701,29 @@ export const SalesStatus: React.FC = () => {
                       <div><div className="text-[12px] text-slate-500 font-medium">당기 수량</div><div className="text-[18px] md:text-[20px] font-bold tabular-nums text-ink">{fmtNum(main.qty)}</div></div>
                       <div><div className="text-[12px] text-slate-500 font-medium">성장률</div><div className="text-[18px] md:text-[20px] font-bold tabular-nums text-emerald-600">+{prev > 0 ? Math.round(((main.qty - prev) / prev) * 100) : 0}%</div></div>
                     </div>
-                    {/* 2026-10-11 · 사용자 지시 "수량과 판매트렌드 차트로" · 전기 vs 당기 simple bar */}
-                    <div className="w-full" style={{ height: 80 }}>
+                    {/* 2026-10-11 · 사용자 지시 "판매량과 마진율 같이 나오는 차트" · ComposedChart · Bar(수량)+Line(마진율) · dual Y axis */}
+                    <div className="w-full" style={{ height: 120 }}>
                       <ResponsiveContainer>
-                        <BarChart data={[{ k: "전기", qty: prev, sale: 0 }, { k: "당기", qty: main.qty, sale: main.sale }]} margin={{ top: 4, right: 8, left: 0, bottom: 4 }}>
+                        <ComposedChart
+                          data={[
+                            { k: "전기", qty: prev, marginPct: null as number | null },
+                            { k: "당기", qty: main.qty, marginPct: main.sale > 0 ? Math.round((main.margin / main.sale) * 1000) / 10 : null },
+                          ]}
+                          margin={{ top: 8, right: 8, left: 0, bottom: 4 }}
+                        >
                           <XAxis dataKey="k" tick={{ fontSize: 12, fill: "#64748b" }} />
-                          <YAxis hide />
-                          <Tooltip formatter={(v: any, k: any) => k === "qty" ? [`${fmtNum(Number(v))}개`, "수량"] : [`${fmtWonShort(Number(v))}원`, "매출"]} contentStyle={{ fontSize: 12, borderRadius: 6, border: "1px solid #e2e8f0" }} />
-                          <Bar dataKey="qty" fill="#10b981" radius={[3, 3, 0, 0]} isAnimationActive={false} />
-                        </BarChart>
+                          <YAxis yAxisId="qty" tick={{ fontSize: 11, fill: "#64748b" }} width={34} />
+                          <YAxis yAxisId="margin" orientation="right" tick={{ fontSize: 11, fill: "#64748b" }} width={34} unit="%" />
+                          <Tooltip
+                            formatter={(v: any, k: any) => k === "qty"
+                              ? [`${fmtNum(Number(v))}개`, "판매량"]
+                              : v == null ? ["-", "마진율"] : [`${Number(v).toFixed(1)}%`, "마진율"]}
+                            contentStyle={{ fontSize: 12, borderRadius: 6, border: "1px solid #e2e8f0" }}
+                          />
+                          <Legend wrapperStyle={{ fontSize: 11 }} iconType="rect" iconSize={10} />
+                          <Bar yAxisId="qty" dataKey="qty" name="판매량" fill="#10b981" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+                          <Line yAxisId="margin" type="monotone" dataKey="marginPct" name="마진율" stroke="#4f46e5" strokeWidth={2} dot={{ r: 4 }} isAnimationActive={false} />
+                        </ComposedChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
