@@ -1,7 +1,7 @@
 {
   "created": "2026-10-11",
   "version": 1,
-  "totalViolations": 532,
+  "totalViolations": 533,
   "files": {
     "server/ocr/pipeline/stages/03-vendor-match.ts": {
       "lines": 684,
@@ -412,7 +412,7 @@
       "totalWeight": 6
     },
     "src/components/DisplayPage/overviews/InventoryDisplayOverview.tsx": {
-      "lines": 808,
+      "lines": 809,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -688,6 +688,16 @@
         }
       ],
       "totalWeight": 3
+    },
+    "src/components/DisplayPage/RevenuePage.SalesStatus.tsx": {
+      "lines": 726,
+      "violations": [
+        {
+          "ruleId": "prefer-modal-primitive",
+          "count": 1
+        }
+      ],
+      "totalWeight": 2
     },
     "src/components/NotificationBell.tsx": {
       "lines": 347,
