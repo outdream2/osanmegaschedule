@@ -453,7 +453,9 @@ export const FlowTab: React.FC = () => {
         </div>
       )}
 
-      {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · FlowFilterBar */}
+      {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · FlowFilterBar
+          2026-10-11 · 사용자 지시 · 홈 랜딩 톤 · px-4 sm:px-6 pt-3 wrapper 추가 (다른 overview 공식) */}
+      <div className="px-4 sm:px-6 pt-3">
       <FlowFilterBar
         filteredFlowCount={filteredFlow.length}
         flowSelectedMonths={flowSelectedMonths}
@@ -482,10 +484,12 @@ export const FlowTab: React.FC = () => {
         setFlowCategoryFilter={setFlowCategoryFilter}
         onFetchStockFlow={fetchStockFlow}
       />
+      </div>
 
       {/* 2026-10-11 · 사용자 지시 · 오른쪽 상세 패널 → slide drawer 전환 · split 레이아웃 폐기
-          좌측 리스트는 full-width · 상품 클릭 시 오른쪽에서 slide drawer 열림 */}
-      <div className="flex flex-col gap-2 lg:min-h-[520px]">
+          좌측 리스트는 full-width · 상품 클릭 시 오른쪽에서 slide drawer 열림
+          2026-10-11 · 사용자 지시 · 홈 랜딩 톤 · px-4 sm:px-6 wrapper + gap 통일 */}
+      <div className="px-4 sm:px-6 flex flex-col gap-2 lg:min-h-[520px]">
 
         {/* 좌측 (full-width) · 재고 리스트 */}
         <div className="min-h-0 w-full flex flex-col gap-3">
