@@ -93,20 +93,27 @@ export const SalesStatus: React.FC = () => {
   const { selectedMonths, setSelectedMonths } = useMonthFilter();
   const [classFilter, setClassFilter] = useState<ClassFilter>("all");
   // 2026-10-11 · 사용자 지시 · 구역별 판매 (요약) 매대 이름 매핑
+  //   · z.loc 은 fmtLoc 적용 포맷 ("벽 10", "진열대 1A" 등) · formatted key 도 추가
   const { zones: zoneDefsList } = useZoneDefs();
   const locationToLabel = useMemo(() => {
     const m = new Map<string, string>();
+    const putBoth = (rawKey: string, label: string) => {
+      const upper = rawKey.toUpperCase();
+      if (!m.has(upper)) m.set(upper, label);
+      const fmt = fmtLoc(rawKey);
+      if (fmt && !m.has(fmt)) m.set(fmt, label);
+    };
     for (const z of zoneDefsList) {
-      // A/B 분리된 side 가 있으면 각 location (예: 1A, 1B) 별로 매핑
-      if (z.__locationA && z.subA) m.set(z.__locationA.toUpperCase(), z.subA);
-      if (z.__locationB && z.subB) m.set(z.__locationB.toUpperCase(), z.subB);
+      // A/B 분리된 side 가 있으면 각 location (예: 1A, 1B) 별로 매핑 (서로 다른 label)
+      if (z.__locationA && z.subA) putBoth(z.__locationA, z.subA);
+      if (z.__locationB && z.subB) putBoth(z.__locationB, z.subB);
       // base (A/B 없음) 또는 location 단독
       if (z.__location && (z.category || z.label)) {
-        m.set(z.__location.toUpperCase(), z.category || z.label);
+        putBoth(z.__location, z.category || z.label);
       }
       // num 단독 fallback (예: "22", "35")
       if (!z.__location && (z.category || z.label)) {
-        m.set(String(z.num), z.category || z.label);
+        putBoth(String(z.num), z.category || z.label);
       }
     }
     return m;
@@ -579,13 +586,16 @@ export const SalesStatus: React.FC = () => {
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5">
                   {zoneRanking.map((z) => {
                     const pct = (z.sale / maxSale) * 100;
-                    const locKey = String(z.loc ?? "").trim().toUpperCase();
-                    const label = locationToLabel.get(locKey) ?? "";
+                    const label =
+                      locationToLabel.get(String(z.loc ?? "")) ??
+                      locationToLabel.get(String(z.loc ?? "").toUpperCase()) ??
+                      "";
                     return (
                       <li key={z.loc} className="flex items-center gap-2 text-[14px] min-w-0">
-                        <div className="shrink-0 flex items-center gap-1.5 w-32 min-w-0">
-                          <span className="inline-flex items-center justify-center shrink-0 min-w-[32px] h-5 px-1 rounded-[5px] bg-indigo-50 text-indigo-700 text-[12px] font-bold tabular-nums leading-none">{z.loc}</span>
-                          <span className="text-[13px] font-medium text-ink truncate" title={label || z.loc}>{label || "-"}</span>
+                        {/* 2026-10-11 · 사용자 "배지 쓰지마 깔끔한 텍스트 위주" · code pill 제거 · 텍스트만 */}
+                        <div className="shrink-0 flex items-baseline gap-1.5 w-32 min-w-0">
+                          <span className="shrink-0 text-[13px] font-semibold text-ink tabular-nums">{z.loc}</span>
+                          <span className="text-[13px] text-slate-600 truncate" title={label || z.loc}>{label || "-"}</span>
                         </div>
                         <div className="flex-1 min-w-0 bg-slate-100 rounded-sm h-6 relative overflow-hidden">
                           <div className="absolute inset-y-0 left-0 bg-indigo-500/85 rounded-sm" style={{ width: `${pct}%` }} />
@@ -642,6 +652,7 @@ export const SalesStatus: React.FC = () => {
               </table>
             </div>
           </section>
+          </>)}
         </div>
       )}
 
