@@ -14,7 +14,6 @@ import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
-import { useResizablePanel } from "../../hooks/useResizablePanel";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
@@ -40,6 +39,8 @@ import { OptimalStockNoteBanner } from "../common/OptimalStockNoteBanner";
 import { FlowTableHeader } from "./FlowTableHeader";
 import { FlowSummaryRow } from "./FlowSummaryRow";
 import { FlowClassFilterTabs } from "./FlowClassFilterTabs";
+// 2026-10-11 · 사용자 지시 · 홈 랜딩 톤 통일 (다른 overview 공식 복제)
+import { OverviewHero } from "../DisplayPage/overviews/OverviewHeader";
 
 // ─── FlowTab ─────────────────────────────────────────────────────────────────
 
@@ -130,6 +131,10 @@ export const FlowTab: React.FC = () => {
   // 데이터
   const [stockFlow, setStockFlow] = useState<StockFlowRow[]>([]);
   const [loading, setLoading] = useState(false);
+  // 2026-10-11 · 사용자 지시 · 상품 리스트 너무 많음 · 페이징 (50 per page)
+  const [flowPage, setFlowPage] = useState(1);
+  const FLOW_PAGE_SIZE = 50;
+  // 2026-10-11 · classFilter / 데이터 로드 변경 시 1 페이지로 reset
   // 2026-08-22 · dead code 제거 (availableSnapshots · snapshotPeriods · read 안 됨)
   const [flowPeriodType, setFlowPeriodType] = useState<string | null>(null);
   // 2026-08-31 · #30 root cause · stock_history 최신 스냅샷이 오래됐을 때 (예 · 34일 전) 기본 1개월 조회에 데이터 없음
@@ -170,13 +175,7 @@ export const FlowTab: React.FC = () => {
     } catch { /* cache load 실패 무시 */ }
   }, []);
 
-  // 2026-08-22 · 패널 폭 조절 · useResizablePanel 프레임워크 훅 재사용 (기존 inline resize 로직 제거)
-  const { width: flowPanelWidth, startResize: onFlowResizeStart } = useResizablePanel({
-    storageKey: "megatown_stockmanage_flow_w",
-    defaultWidth: typeof window !== "undefined" ? Math.floor(window.innerWidth * 0.6) : 800,
-    minWidth: 320,
-    maxWidth: 1000,
-  });
+  // 2026-10-11 · 사용자 지시 · 우측 상세 → slide drawer 전환 · useResizablePanel 제거 (split 폐기 · drawer 폭 고정)
 
   // 분류 맵 · 공용 훅 (vendorCategoryMap + findVendorByName 함께 사용)
   const { vendorCategoryMap, findVendorByName } = useVendors();
@@ -432,10 +431,16 @@ export const FlowTab: React.FC = () => {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col gap-2">
+    // 2026-10-11 · 사용자 지시 · 홈 랜딩 톤 통일 (다른 overview 공식 복제)
+    //   wrapper: gap-3 md:gap-4 + min-h-0 + pb-6 + bg-[#F4F7FA]
+    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
+      {/* 2026-10-11 · 상단 Hero · 다른 overview 공식 (3px tone bar + title + description) */}
+      <OverviewHero tone="rose" title="상품별 판매현황" description="재고 · 매입 · 판매 통합 현황" />
 
       {/* 2026-08-26 · 사용자 지시 · 적정재고 기준 일수 코멘트 */}
-      <OptimalStockNoteBanner compact className="self-start" />
+      <div className="px-4 sm:px-6">
+        <OptimalStockNoteBanner compact className="self-start" />
+      </div>
 
       {/* 2026-08-31 · #30 · 자동 확장 안내 배너 · 요청 기간에 데이터 없음 · 확장한 결과 표시 중 */}
       {flowAutoExpanded && (
@@ -478,14 +483,12 @@ export const FlowTab: React.FC = () => {
         onFetchStockFlow={fetchStockFlow}
       />
 
-      {/* 하단 · 좌우 split */}
-      <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
+      {/* 2026-10-11 · 사용자 지시 · 오른쪽 상세 패널 → slide drawer 전환 · split 레이아웃 폐기
+          좌측 리스트는 full-width · 상품 클릭 시 오른쪽에서 slide drawer 열림 */}
+      <div className="flex flex-col gap-2 lg:min-h-[520px]">
 
-        {/* 좌측: 재고리스트 */}
-        <div
-          className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
-          style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? flowPanelWidth : undefined }}
-        >
+        {/* 좌측 (full-width) · 재고 리스트 */}
+        <div className="min-h-0 w-full flex flex-col gap-3">
           <section className={`${CARD_BASE} p-4 flex-1 min-h-0 flex flex-col overflow-hidden`}>
             <div className="flex-1 min-h-0 flex flex-col">
               <FlowClassFilterTabs
@@ -552,12 +555,13 @@ export const FlowTab: React.FC = () => {
                           purchV={flowTotals.purchV}
                           amountV={flowTotals.amountV}
                         />
-                        {/* 2026-08-22 · Framework Phase 4 · FlowRow 별도 컴포넌트 이관 */}
-                        {filteredFlow.map((p, i) => (
+                        {/* 2026-08-22 · Framework Phase 4 · FlowRow 별도 컴포넌트 이관
+                            2026-10-11 · 사용자 지시 · 페이징 slice (너무 많음 fix) */}
+                        {filteredFlow.slice((flowPage - 1) * FLOW_PAGE_SIZE, flowPage * FLOW_PAGE_SIZE).map((p, i) => (
                           <FlowRow
                             key={`flow-${p.product_code}-${i}`}
                             p={p}
-                            i={i}
+                            i={(flowPage - 1) * FLOW_PAGE_SIZE + i}
                             selectedFlowCodes={selectedFlowCodes}
                             toggleSelectFlow={toggleSelectFlow}
                             loadFlowSelectedProduct={loadFlowSelectedProduct}
@@ -569,30 +573,67 @@ export const FlowTab: React.FC = () => {
                     </table>
                   </div>
                 )}
+                {/* 2026-10-11 · 사용자 지시 · 페이징 nav · 50개씩 · 홈 톤 */}
+                {filteredFlow.length > FLOW_PAGE_SIZE && (() => {
+                  const totalPages = Math.ceil(filteredFlow.length / FLOW_PAGE_SIZE);
+                  const canPrev = flowPage > 1;
+                  const canNext = flowPage < totalPages;
+                  return (
+                    <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-slate-100 bg-slate-50/40 text-[13px]">
+                      <span className="text-slate-500 tabular-nums">
+                        {(flowPage - 1) * FLOW_PAGE_SIZE + 1}~{Math.min(flowPage * FLOW_PAGE_SIZE, filteredFlow.length)} / {filteredFlow.length.toLocaleString()}
+                      </span>
+                      <div className="inline-flex items-center gap-1">
+                        <button type="button" onClick={() => setFlowPage(1)} disabled={!canPrev}
+                          className="h-7 px-2 rounded-md border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer tabular-nums">« 처음</button>
+                        <button type="button" onClick={() => setFlowPage(p => Math.max(1, p - 1))} disabled={!canPrev}
+                          className="h-7 px-2 rounded-md border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer">이전</button>
+                        <span className="h-7 inline-flex items-center px-2 text-slate-700 font-semibold tabular-nums">{flowPage} / {totalPages}</span>
+                        <button type="button" onClick={() => setFlowPage(p => Math.min(totalPages, p + 1))} disabled={!canNext}
+                          className="h-7 px-2 rounded-md border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer">다음</button>
+                        <button type="button" onClick={() => setFlowPage(totalPages)} disabled={!canNext}
+                          className="h-7 px-2 rounded-md border border-slate-200 bg-white text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 cursor-pointer tabular-nums">끝 »</button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </section>
         </div>
 
-        {/* 리사이즈 핸들 */}
-        <div onMouseDown={onFlowResizeStart}
-          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-zinc-200 hover:bg-zinc-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
-          title="드래그하여 폭 조절">
-          <span className="text-[15px] text-zinc-400 group-hover:text-white font-bold rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-        </div>
-
-        {/* 우측: 제품 정보 패널 */}
-        <ProductDetailRightPanel
-          selected={flowSelectedProduct}
-          onClose={() => setFlowSelectedProduct(null)}
-          onProductUpdate={(u) => setFlowSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
-          showChart={true}
-          context="stock-manage"
-          editable={true}
-          emptyMessage="리스트에서 상품을 클릭하세요"
-          emptySub="상세 정보 · 재고 현황 · 매입/판매가"
-          onSupplierInfoOpen={(nm) => openSupplierDetailModal(nm)}
-        />
+        {/* 2026-10-11 · 사용자 지시 · 우측 상세 → slide drawer · 리사이즈 핸들 삭제 (split 폐기)
+            상품 선택 시 drawer 열림 · 백드롭 클릭 or close 버튼으로 닫기 */}
+        {flowSelectedProduct && (
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/30"
+              onClick={() => setFlowSelectedProduct(null)}
+              aria-hidden
+            />
+            <aside
+              className="fixed inset-y-0 right-0 z-50 w-full sm:w-[560px] md:w-[720px] lg:w-[840px] bg-white shadow-2xl flex flex-col overflow-hidden"
+              style={{ animation: "flowtab-slide-in-right 0.2s ease-out" }}
+              role="dialog"
+              aria-label="상품 상세"
+            >
+              <style>{`@keyframes flowtab-slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <ProductDetailRightPanel
+                  selected={flowSelectedProduct}
+                  onClose={() => setFlowSelectedProduct(null)}
+                  onProductUpdate={(u) => setFlowSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
+                  showChart={true}
+                  context="stock-manage"
+                  editable={true}
+                  emptyMessage="리스트에서 상품을 클릭하세요"
+                  emptySub="상세 정보 · 재고 현황 · 매입/판매가"
+                  onSupplierInfoOpen={(nm) => openSupplierDetailModal(nm)}
+                />
+              </div>
+            </aside>
+          </>
+        )}
       </div>
 
       {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · SupplierDetailModal · HiddenManagerModal */}
