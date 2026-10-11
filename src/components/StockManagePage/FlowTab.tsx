@@ -20,7 +20,7 @@ import { matchClassFilter, type ClassFilter } from "../../utils/productClassify"
 import { EmptyState } from "../common/EmptyState";
 
 import { LoadingState } from "../common/LoadingState";
-import { CARD_BASE } from "../../styles/tokens";
+// 2026-10-11 · 사용자 지시 · 홈 랜딩 CARD 공식 인라인 적용 · CARD_BASE import 제거
 import { useColumnResize } from "../../hooks/useColumnResize";
 // 2026-08-21 · Framework Phase 3 · alert → useToast
 import { useToast, toastClass } from "../../hooks/useToast";
@@ -493,7 +493,8 @@ export const FlowTab: React.FC = () => {
 
         {/* 좌측 (full-width) · 재고 리스트 */}
         <div className="min-h-0 w-full flex flex-col gap-3">
-          <section className={`${CARD_BASE} p-4 flex-1 min-h-0 flex flex-col overflow-hidden`}>
+          {/* 2026-10-11 · 사용자 지시 · 홈 랜딩 CARD 공식 (border-slate-200 + rounded-[12px] + thin shadow) */}
+          <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-4 flex-1 min-h-0 flex flex-col overflow-hidden">
             <div className="flex-1 min-h-0 flex flex-col">
               <FlowClassFilterTabs
                 classFilter={classFilter}
@@ -610,13 +611,14 @@ export const FlowTab: React.FC = () => {
             상품 선택 시 drawer 열림 · 백드롭 클릭 or close 버튼으로 닫기 */}
         {flowSelectedProduct && (
           <>
+            {/* 2026-10-11 · 사용자 지시 · drawer 홈 톤 통일 (RequestsPage/SalesStatus drawer 공식 복제) */}
             <div
-              className="fixed inset-0 z-40 bg-black/30"
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-40"
               onClick={() => setFlowSelectedProduct(null)}
               aria-hidden
             />
             <aside
-              className="fixed inset-y-0 right-0 z-50 w-full sm:w-[560px] md:w-[720px] lg:w-[840px] bg-white shadow-2xl flex flex-col overflow-hidden"
+              className="fixed right-0 top-0 bottom-0 z-50 w-full md:w-[640px] lg:w-[760px] bg-[#F4F7FA] shadow-[-8px_0_32px_rgba(15,23,42,0.12)] flex flex-col overflow-hidden"
               style={{ animation: "flowtab-slide-in-right 0.2s ease-out" }}
               role="dialog"
               aria-label="상품 상세"
