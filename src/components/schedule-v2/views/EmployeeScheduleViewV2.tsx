@@ -195,8 +195,10 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
           </Card>
         ) : (
           <>
-            {/* 상단 · 사용자 지시 · subview tabs 를 직원 이름 바로 옆으로 (ml-auto 제거) */}
-            <div className="flex flex-wrap items-center gap-2 py-2 border-b border-line">
+            {/* 상단 · 사용자 지시 · subview tabs 를 직원 이름 바로 옆으로 (ml-auto 제거)
+                2026-10-11 · 사용자 "이름 위에 마우스 대면 아래 내용이 비쳐" ·
+                sticky + bg-white 추가 (스크롤 시 아래 content 비치는 투과 방지) */}
+            <div className="sticky top-0 z-20 bg-white flex flex-wrap items-center gap-2 py-2 px-1 border-b border-line">
               <h2 className="text-[18px] font-extrabold text-ink leading-tight tracking-tight shrink-0">{selectedEmployee.name}</h2>
               <div className="inline-flex rounded-lg border border-line bg-white overflow-hidden shrink-0">
                 {([
