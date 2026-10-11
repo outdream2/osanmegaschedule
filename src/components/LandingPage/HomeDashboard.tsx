@@ -1156,10 +1156,10 @@ const PurchaseOrderOverviewCard: React.FC<PurchaseOrderOverviewProps & {
   monthPurchases: Array<{ date: string; amount: number; count: number }>;
   monthOrders: Array<{ date: string; count: number }>;
 }> = ({ weekPurchases, weekOrders, monthPurchases, monthOrders, onOpenPurchase, onOpenOrder }) => {
-  const [tab, setTab] = useState<"purchase" | "order">("purchase");
+  // 2026-10-11 · 사용자 지시 · 매입/발주 tab 제거 · 두 정보 같이 노출 · 매입 상세로만 "전체" 네비
   const [period, setPeriod] = useState<"week" | "month">("week");
-  const isPurchase = tab === "purchase";
   const isWeek = period === "week";
+  void onOpenOrder;
 
   // 2026-10-11 · 사용자 지시 · 매입 + 발주 하나의 그래프 (매입 bar · 발주 line)
   //   · chartData · 두 series merge by date · 각 x축 label 당 purchase (매출액) + order (건수)
@@ -1180,49 +1180,27 @@ const PurchaseOrderOverviewCard: React.FC<PurchaseOrderOverviewProps & {
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([, v]) => v);
   }, [isWeek, weekPurchases, monthPurchases, weekOrders, monthOrders]);
 
-  // 2026-10-11 · summary 섹션용 · tab 에 따라 매입액 or 발주건수 노출 (기존 로직 호환)
-  const summarySeries = useMemo(() => {
-    if (isPurchase) return chartData.map(d => d.purchase);
-    return chartData.map(d => d.order);
-  }, [isPurchase, chartData]);
-
-  const total = summarySeries.reduce((a, v) => a + v, 0);
-  const todayVal = summarySeries.length > 0 ? summarySeries[summarySeries.length - 1] : 0;
-  const avg = summarySeries.length > 0 ? total / summarySeries.length : 0;
+  // 2026-10-11 · 사용자 지시 · 매입 + 발주 정보 같이 표시 (tab 제거)
+  const purchaseTotal = chartData.reduce((a, d) => a + d.purchase, 0);
+  const purchaseToday = chartData.length > 0 ? chartData[chartData.length - 1].purchase : 0;
+  const purchaseAvg = chartData.length > 0 ? purchaseTotal / chartData.length : 0;
+  const orderTotal = chartData.reduce((a, d) => a + d.order, 0);
+  const orderToday = chartData.length > 0 ? chartData[chartData.length - 1].order : 0;
+  const orderAvg = chartData.length > 0 ? orderTotal / chartData.length : 0;
   const periodDays = isWeek ? 7 : 30;
   const hasPurchase = chartData.some(d => d.purchase > 0);
   const hasOrder = chartData.some(d => d.order > 0);
 
-  const barColor = isPurchase ? "#8b5cf6" : "#f59e0b"; // violet / amber
-  const accentColor = isPurchase ? "bg-violet-500" : "bg-amber-500";
-  const onOpen = isPurchase ? onOpenPurchase : onOpenOrder;
-
   return (
     <div className={`${CARD} w-full flex flex-col`}>
-      {/* Header · accent bar + title + 매입/발주 tabs + 1주/1달 period + 전체 */}
+      {/* Header · accent bar + title + 1주/1달 period + 전체
+          2026-10-11 · 사용자 지시 · 매입/발주 tab 제거 (chart 안에 두 series 동시 노출) */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-slate-100 gap-2 flex-wrap">
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`w-[3px] h-[16px] rounded-full ${accentColor}`} />
+          <span className="w-[3px] h-[16px] rounded-full bg-violet-500" />
           <h3 className={T.sectionTitle}>매입·발주 현황</h3>
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
-          {/* 매입/발주 Tab */}
-          <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
-            <button
-              type="button"
-              onClick={() => setTab("purchase")}
-              className={`px-2.5 py-1 rounded-md text-[13px] font-medium transition-colors ${
-                isPurchase ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
-            >매입</button>
-            <button
-              type="button"
-              onClick={() => setTab("order")}
-              className={`px-2.5 py-1 rounded-md text-[13px] font-medium transition-colors ${
-                !isPurchase ? "bg-white text-amber-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
-            >발주</button>
-          </div>
           {/* 1주/1달 Period */}
           <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
             <button
@@ -1240,41 +1218,53 @@ const PurchaseOrderOverviewCard: React.FC<PurchaseOrderOverviewProps & {
               }`}
             >1달</button>
           </div>
-          <button type="button" onClick={onOpen} className="text-[13px] text-blue-600 font-semibold hover:underline cursor-pointer flex items-center gap-0.5 ml-1">
+          <button type="button" onClick={onOpenPurchase} className="text-[13px] text-blue-600 font-semibold hover:underline cursor-pointer flex items-center gap-0.5 ml-1">
             전체 <ChevronRight size={13} />
           </button>
         </div>
       </div>
 
-      {/* Summary (left 30%) + Chart (right 70%) */}
+      {/* Summary (left 30%) + Chart (right 70%)
+          2026-10-11 · 사용자 "깔끔한 텍스트 · 컬러포인트만 살짝 · 매입액 글씨 크게 X · 글씨 크기 리밸런싱" ·
+          매입 + 발주 동일 구조 · 숫자 text-[18px] 통일 · label 색상 subtle (violet-700 / amber-700 라벨만) */}
       <div className="grid grid-cols-1 md:grid-cols-10">
         <div className="md:col-span-3 px-5 py-4 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col gap-3">
-          <div>
-            <div className={T.kpiLabel}>{isWeek ? "1주" : "1달"} {isPurchase ? "매입액" : "발주건수"}</div>
-            <div
-              className="font-bold tabular-nums text-ink leading-tight tracking-tight mt-0.5"
-              style={T.salesAmount}
-            >
-              {isPurchase ? fmtWon(total) : `${total.toLocaleString("ko-KR")}건`}
+          {/* 매입 섹션 */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-[6px] h-[6px] rounded-full bg-violet-500 shrink-0" />
+              <span className="text-[13px] text-slate-500 font-medium">{isWeek ? "1주" : "1달"} 매입액</span>
+            </div>
+            <div className="text-[18px] md:text-[20px] font-bold tabular-nums text-ink leading-tight tracking-tight">{fmtWon(purchaseTotal)}</div>
+            <div className="flex items-baseline justify-between text-[13px]">
+              <span className="text-slate-500">오늘</span>
+              <span className="tabular-nums text-slate-700 font-medium">{fmtWon(purchaseToday)}</span>
+            </div>
+            <div className="flex items-baseline justify-between text-[13px]">
+              <span className="text-slate-500">일평균</span>
+              <span className="tabular-nums text-slate-700 font-medium">{fmtWon(purchaseAvg)}</span>
             </div>
           </div>
-          <div className="pt-2 border-t border-slate-100 flex flex-col gap-1.5">
-            <div className="flex items-baseline justify-between">
-              <span className={T.kpiLabel}>오늘</span>
-              <span className="text-[14px] md:text-[15px] font-semibold tabular-nums text-ink">
-                {isPurchase ? fmtWon(todayVal) : `${todayVal.toLocaleString("ko-KR")}건`}
-              </span>
+          {/* 발주 섹션 */}
+          <div className="pt-2 border-t border-slate-100 flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-[6px] h-[6px] rounded-full bg-amber-500 shrink-0" />
+              <span className="text-[13px] text-slate-500 font-medium">{isWeek ? "1주" : "1달"} 발주건수</span>
             </div>
-            <div className="flex items-baseline justify-between">
-              <span className={T.kpiLabel}>일평균</span>
-              <span className="text-[14px] md:text-[15px] font-semibold tabular-nums text-ink">
-                {isPurchase ? fmtWon(avg) : `${Math.round(avg).toLocaleString("ko-KR")}건`}
-              </span>
+            <div className="text-[18px] md:text-[20px] font-bold tabular-nums text-ink leading-tight tracking-tight">{orderTotal.toLocaleString("ko-KR")}<span className="text-[14px] text-slate-500 font-medium ml-0.5">건</span></div>
+            <div className="flex items-baseline justify-between text-[13px]">
+              <span className="text-slate-500">오늘</span>
+              <span className="tabular-nums text-slate-700 font-medium">{orderToday.toLocaleString("ko-KR")}건</span>
             </div>
-            <div className="flex items-baseline justify-between">
-              <span className={T.kpiLabel}>기간</span>
-              <span className="text-[14px] md:text-[15px] font-semibold tabular-nums text-ink">{periodDays}일</span>
+            <div className="flex items-baseline justify-between text-[13px]">
+              <span className="text-slate-500">일평균</span>
+              <span className="tabular-nums text-slate-700 font-medium">{Math.round(orderAvg).toLocaleString("ko-KR")}건</span>
             </div>
+          </div>
+          {/* 기간 */}
+          <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between text-[13px]">
+            <span className="text-slate-500">기간</span>
+            <span className="tabular-nums text-slate-700 font-medium">{periodDays}일</span>
           </div>
         </div>
         <div className="md:col-span-7 h-[180px] md:h-[220px] px-3 py-3">
