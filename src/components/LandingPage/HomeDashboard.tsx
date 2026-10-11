@@ -1228,44 +1228,29 @@ const PurchaseOrderOverviewCard: React.FC<PurchaseOrderOverviewProps & {
           2026-10-11 · 사용자 "깔끔한 텍스트 · 컬러포인트만 살짝 · 매입액 글씨 크게 X · 글씨 크기 리밸런싱" ·
           매입 + 발주 동일 구조 · 숫자 text-[18px] 통일 · label 색상 subtle (violet-700 / amber-700 라벨만) */}
       <div className="grid grid-cols-1 md:grid-cols-10">
-        <div className="md:col-span-3 px-5 py-4 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col gap-3">
-          {/* 매입 섹션 */}
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1.5">
-              <span className="w-[6px] h-[6px] rounded-full bg-violet-500 shrink-0" />
-              <span className="text-[13px] text-slate-500 font-medium">{isWeek ? "1주" : "1달"} 매입액</span>
+        {/* 2026-10-11 · 사용자 "최대한 공간 차지않게 · 인라인 · 길게 늘어지지 않게" ·
+            매입/발주 각 1줄 inline · 총액 + 오늘/평균 compact text */}
+        <div className="md:col-span-3 px-4 py-3 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col gap-2 justify-center">
+          {/* 매입 1줄 */}
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-baseline gap-1.5">
+              <span className="w-[6px] h-[6px] rounded-full bg-violet-500 shrink-0 self-center" />
+              <span className="text-[12px] text-slate-500 font-medium">매입액</span>
+              <span className="text-[14px] md:text-[15px] font-bold tabular-nums text-ink ml-auto">{fmtWon(purchaseTotal)}</span>
             </div>
-            <div className="text-[18px] md:text-[20px] font-bold tabular-nums text-ink leading-tight tracking-tight">{fmtWon(purchaseTotal)}</div>
-            <div className="flex items-baseline justify-between text-[13px]">
-              <span className="text-slate-500">오늘</span>
-              <span className="tabular-nums text-slate-700 font-medium">{fmtWon(purchaseToday)}</span>
-            </div>
-            <div className="flex items-baseline justify-between text-[13px]">
-              <span className="text-slate-500">일평균</span>
-              <span className="tabular-nums text-slate-700 font-medium">{fmtWon(purchaseAvg)}</span>
-            </div>
+            <div className="text-[11px] text-slate-400 tabular-nums text-right">오늘 {fmtWon(purchaseToday)} · 평균 {fmtWon(purchaseAvg)}</div>
           </div>
-          {/* 발주 섹션 */}
-          <div className="pt-2 border-t border-slate-100 flex flex-col gap-1">
-            <div className="flex items-center gap-1.5">
-              <span className="w-[6px] h-[6px] rounded-full bg-amber-500 shrink-0" />
-              <span className="text-[13px] text-slate-500 font-medium">{isWeek ? "1주" : "1달"} 발주건수</span>
+          {/* 발주 1줄 */}
+          <div className="flex flex-col gap-0.5 pt-1.5 border-t border-slate-100">
+            <div className="flex items-baseline gap-1.5">
+              <span className="w-[6px] h-[6px] rounded-full bg-amber-500 shrink-0 self-center" />
+              <span className="text-[12px] text-slate-500 font-medium">발주</span>
+              <span className="text-[14px] md:text-[15px] font-bold tabular-nums text-ink ml-auto">{orderTotal.toLocaleString("ko-KR")}건</span>
             </div>
-            <div className="text-[18px] md:text-[20px] font-bold tabular-nums text-ink leading-tight tracking-tight">{orderTotal.toLocaleString("ko-KR")}<span className="text-[14px] text-slate-500 font-medium ml-0.5">건</span></div>
-            <div className="flex items-baseline justify-between text-[13px]">
-              <span className="text-slate-500">오늘</span>
-              <span className="tabular-nums text-slate-700 font-medium">{orderToday.toLocaleString("ko-KR")}건</span>
-            </div>
-            <div className="flex items-baseline justify-between text-[13px]">
-              <span className="text-slate-500">일평균</span>
-              <span className="tabular-nums text-slate-700 font-medium">{Math.round(orderAvg).toLocaleString("ko-KR")}건</span>
-            </div>
+            <div className="text-[11px] text-slate-400 tabular-nums text-right">오늘 {orderToday.toLocaleString("ko-KR")}건 · 평균 {Math.round(orderAvg).toLocaleString("ko-KR")}건</div>
           </div>
-          {/* 기간 */}
-          <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between text-[13px]">
-            <span className="text-slate-500">기간</span>
-            <span className="tabular-nums text-slate-700 font-medium">{periodDays}일</span>
-          </div>
+          {/* 기간 · 작게 */}
+          <div className="text-[11px] text-slate-400 tabular-nums text-right pt-1 border-t border-slate-100">기간 {periodDays}일</div>
         </div>
         <div className="md:col-span-7 h-[180px] md:h-[220px] px-3 py-3">
           {chartData.length === 0 || (!hasPurchase && !hasOrder) ? (
