@@ -24,10 +24,16 @@ import { formatDisplayLocation } from "../../lib/formatDisplayLocation";
 import { OverviewInnerTabs, type OverviewInnerTab } from "./overviews/OverviewHeader";
 // 2026-10-11 · 사용자 지시 · 구역별 판매 (요약) 에 매대 이름 · zone_defs 매핑
 import { useZoneDefs } from "../../hooks/useZoneDefs";
+// 2026-10-11 · 공통 함수 (SSOT) · 포맷 무관 location → zone label 매칭
+import { getZoneLabelByLocation } from "../../lib/zoneClassification";
 // 2026-10-11 · 사용자 지시 · drawer 안 "판매량 + 마진율" combo chart
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const CategoryTab = React.lazy(() => import("../OrderManagePage/CategoryTab").then((m) => ({ default: m.CategoryTab })));
+// 2026-10-11 · 사용자 지시 재확정 "매장-판매현황-상품별 판매현황 탭에 판매 메뉴 아래의 상품별 판매현황 (= FlowTab) 그대로 embed"
+//   · 판매 메뉴 통계 > 상품현황 (= FlowTab · StockManagePage/FlowTab.tsx) 전체 재사용
+//   · lazy · 좌 리스트 + 중앙 재고·매입·판매 테이블 + 우 상세 drawer 자체 완결
+const FlowTab = React.lazy(() => import("../StockManagePage/FlowTab").then((m) => ({ default: m.FlowTab })));
 
 function fmtNum(n: number | null): string {
   if (n === null || !Number.isFinite(n)) return "-";
@@ -131,6 +137,15 @@ export const SalesStatus: React.FC = () => {
       ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
       : { key, dir: key === "name" ? "asc" : "desc" });
   };
+  // 2026-10-11 · 사용자 지시 · 공급사 Scorecard header 자동정렬
+  type SupSortKey = "name" | "skus" | "qty" | "sale" | "margin" | "stockValue" | "stockDays";
+  const [supSort, setSupSort] = useState<{ key: SupSortKey; dir: "asc" | "desc" }>({ key: "sale", dir: "desc" });
+  const toggleSupSort = (key: SupSortKey) => {
+    setSupSort((prev) => prev.key === key
+      ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
+      : { key, dir: key === "name" ? "asc" : "desc" });
+  };
+  const supSortArrow = (k: SupSortKey) => supSort.key === k ? (supSort.dir === "asc" ? "▲" : "▼") : "";
   // 2026-10-11 · 사용자 지시 · drawer 안 테이블 헤더 자동정렬
   type DrawerSortKey = "name" | "loc" | "qty" | "sale" | "margin";
   const [drawerSort, setDrawerSort] = useState<{ key: DrawerSortKey; dir: "asc" | "desc" }>({ key: "sale", dir: "desc" });
@@ -365,11 +380,30 @@ export const SalesStatus: React.FC = () => {
     return list;
   }, [filteredItems, filteredMetaEntries, nDays]);
 
+  // 2026-10-11 · 사용자 지시 · 공급사별 Scorecard header 자동정렬
+  const sortedSupplierScore = useMemo(() => {
+    const arr = [...supplierScore];
+    const mul = supSort.dir === "asc" ? 1 : -1;
+    const key = supSort.key;
+    arr.sort((a, b) => {
+      if (key === "name") return mul * String(a.sup).localeCompare(String(b.sup));
+      if (key === "skus") return mul * (a.skuCount - b.skuCount);
+      if (key === "qty") return mul * (a.qty - b.qty);
+      if (key === "sale") return mul * (a.sale - b.sale);
+      if (key === "margin") return mul * ((a.marginPct ?? -Infinity) - (b.marginPct ?? -Infinity));
+      if (key === "stockValue") return mul * (a.stockValue - b.stockValue);
+      if (key === "stockDays") return mul * (a.daysOfStock - b.daysOfStock);
+      return 0;
+    });
+    return arr;
+  }, [supplierScore, supSort]);
+
   const tabs: ReadonlyArray<OverviewInnerTab<InnerTabKey>> = [
     { k: "overview", label: "현황",              tone: "indigo",  count: null },
     { k: "zone",     label: "구역별 판매현황",   tone: "amber",   count: null },
     { k: "supplier", label: "공급사별 판매현황", tone: "emerald", count: supplierScore.length || null },
-    { k: "product",  label: "상품별 판매현황",   tone: "rose",    count: (topRising.length + topDead.length) || null },
+    // 2026-10-11 · product 탭 count · FlowTab 자체 집계 사용 · null
+    { k: "product",  label: "상품별 판매현황",   tone: "rose",    count: null },
   ];
 
   return (
@@ -410,9 +444,12 @@ export const SalesStatus: React.FC = () => {
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5">
                   {zoneRanking.map((z) => {
                     const pct = (z.sale / maxSale) * 100;
+                    // 2026-10-11 · 사용자 지시 · fmtLoc 포맷 ("벽 10") 과 raw ("10") 양쪽 작동 보장
+                    //   · 공통 함수 getZoneLabelByLocation (매대 번호 추출 → zone_defs lookup) 로 fallback
                     const label =
                       locationToLabel.get(String(z.loc ?? "")) ??
                       locationToLabel.get(String(z.loc ?? "").toUpperCase()) ??
+                      getZoneLabelByLocation(z.loc, zoneDefsList) ??
                       "";
                     const isActive = zoneDrawerKey === z.loc;
                     return (
@@ -476,19 +513,19 @@ export const SalesStatus: React.FC = () => {
               <table className="w-full text-[14px]">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[13px] font-medium">
                   <tr>
-                    <th className="text-left px-3 py-2">공급사</th>
-                    <th className="text-right px-3 py-2 w-16">품목</th>
-                    <th className="text-right px-3 py-2 w-16">수량</th>
-                    <th className="text-right px-3 py-2 w-24">매출</th>
-                    <th className="text-right px-3 py-2 w-16">마진</th>
-                    <th className="text-right px-3 py-2 w-24">재고가치</th>
-                    <th className="text-right px-3 py-2 w-16">재고일수</th>
+                    <th className="text-left px-3 py-2 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("name")}>공급사 {supSortArrow("name")}</th>
+                    <th className="text-right px-3 py-2 w-16 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("skus")}>품목 {supSortArrow("skus")}</th>
+                    <th className="text-right px-3 py-2 w-16 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("qty")}>수량 {supSortArrow("qty")}</th>
+                    <th className="text-right px-3 py-2 w-24 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("sale")}>매출 {supSortArrow("sale")}</th>
+                    <th className="text-right px-3 py-2 w-16 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("margin")}>마진 {supSortArrow("margin")}</th>
+                    <th className="text-right px-3 py-2 w-24 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("stockValue")}>재고가치 {supSortArrow("stockValue")}</th>
+                    <th className="text-right px-3 py-2 w-16 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("stockDays")}>재고일수 {supSortArrow("stockDays")}</th>
                     <th className="text-center px-3 py-2 w-16">상태</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {status === "loading" && supplierScore.length === 0 && (<tr><td colSpan={8} className="text-center py-8 text-slate-400 text-[14px]">조회 중...</td></tr>)}
-                  {supplierScore.map((s) => {
+                  {status === "loading" && sortedSupplierScore.length === 0 && (<tr><td colSpan={8} className="text-center py-8 text-slate-400 text-[14px]">조회 중...</td></tr>)}
+                  {sortedSupplierScore.map((s) => {
                     const p = statusToPill(s.st);
                     return (
                       <tr key={s.sup} onClick={() => setDrawerKey(`sup::${s.sup}`)}
@@ -535,70 +572,18 @@ export const SalesStatus: React.FC = () => {
             </div>
           </div>
 
-          {/* 2026-10-11 · 사용자 지시 · 상품별 판매현황 KPI 4-strip 제거 (총 판매수량·판매 활성 상품·활성 공급사·조치 필요) · 공간 낭비 */}
+          {/* 2026-10-11 · 사용자 지시 · product 탭 안 급상승 Top6 + 손실 Top6 섹션 제거
+              사유: "상품별 판매현황에 급상승 상품 내용은 들어가지 않아 · 급상승은 현황판에서 슬라이딩 drawer"
+              → 현황 탭 (overview) 에서만 현황판 drawer 로 노출 · product 탭은 FlowTab 전용 */}
 
-          {/* 2026-10-11 · 사용자 지시 "이건 현황판에 있어야지" · 급상승+손실 섹션 · 현황판(overview) + 상품별 탭 둘 다 노출 */}
-          {(innerTab === "overview" || innerTab === "product") && (
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-                <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">급상승 제품 Top 6</h3>
-                <span className="text-[12px] text-emerald-600 font-semibold">▲ 성장률</span>
-              </div>
-              <table className="w-full text-[14px]">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[13px] font-medium">
-                  <tr>
-                    <th className="text-left px-3 py-2 w-8">#</th>
-                    <th className="text-left px-3 py-2">상품명</th>
-                    <th className="text-right px-3 py-2">전기 → 당기</th>
-                    <th className="text-right px-3 py-2 w-20">성장률</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {status === "loading" && topRising.length === 0 && (<tr><td colSpan={4} className="text-center py-8 text-slate-400 text-[14px]">조회 중...</td></tr>)}
-                  {status === "success" && topRising.length === 0 && (<tr><td colSpan={4} className="text-center py-8 text-slate-400 text-[14px]">급상승 상품 없음</td></tr>)}
-                  {topRising.map((it, i) => (
-                    <tr key={it.key} onClick={() => setDrawerKey(it.key)}
-                      className="hover:bg-emerald-50/60 h-8 text-ink cursor-pointer transition-colors">
-                      <td className="px-3 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
-                      <td className="px-3 py-1.5 font-medium break-keep">{it.name ?? "-"}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums text-slate-600">{fmtNum(it.prevQty)} → <span className="text-ink font-semibold">{fmtNum(it.curQty)}</span></td>
-                      <td className="px-3 py-1.5 text-right tabular-nums font-semibold text-emerald-600">+{it.growthPct.toFixed(0)}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* 2026-10-11 · 사용자 지시 "매장-판매현황-상품별 판매현황 탭에 판매 메뉴 아래의 상품별 판매현황 (= FlowTab) 그대로 embed"
+              · FlowTab (StockManagePage/FlowTab) 자체 완결 · 좌 리스트 + 중앙 테이블 + 우 drawer */}
+          {innerTab === "product" && (
+            <div className="min-w-0 -mx-4 sm:-mx-6">
+              <React.Suspense fallback={<div className="flex items-center justify-center py-16 text-[14px] text-slate-500">상품별 판매현황 로딩 중...</div>}>
+                <FlowTab />
+              </React.Suspense>
             </div>
-
-            <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
-                <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">손실 많은 제품 Top 6</h3>
-                <span className="text-[12px] text-rose-600 font-semibold">▼ Dead Stock</span>
-              </div>
-              <table className="w-full text-[14px]">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[13px] font-medium">
-                  <tr>
-                    <th className="text-left px-3 py-2 w-8">#</th>
-                    <th className="text-left px-3 py-2">상품명</th>
-                    <th className="text-right px-3 py-2 w-16">재고</th>
-                    <th className="text-right px-3 py-2 w-24">재고가치</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {status === "loading" && topDead.length === 0 && (<tr><td colSpan={4} className="text-center py-8 text-slate-400 text-[14px]">조회 중...</td></tr>)}
-                  {status === "success" && topDead.length === 0 && (<tr><td colSpan={4} className="text-center py-8 text-slate-400 text-[14px]">Dead stock 없음</td></tr>)}
-                  {topDead.map((it, i) => (
-                    <tr key={it.pcode} className="hover:bg-slate-50/50 h-8 text-ink">
-                      <td className="px-3 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
-                      <td className="px-3 py-1.5 font-medium break-keep">{it.name ?? "-"}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums">{fmtNum(it.stock)}</td>
-                      <td className="px-3 py-1.5 text-right tabular-nums font-semibold text-rose-600">{fmtWonShort(it.value)}원</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
           )}
 
           {/* 2026-10-11 · overview 전용 섹션 (카테고리/구역/공급사 요약) · product 탭에서는 숨김 */}
@@ -608,21 +593,23 @@ export const SalesStatus: React.FC = () => {
           <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-4 md:p-5">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">구역별 판매 (요약)</h3>
-              <span className="text-[13px] text-slate-500 font-medium">TOP 10 · 상세는 상단 "구역별 판매현황" 탭</span>
+              <span className="text-[13px] text-slate-500 font-medium">전체 구역 · 매출 desc · 상세는 상단 "구역별 판매현황" 탭</span>
             </div>
             {zoneRanking.length === 0 ? (
               <div className="h-[120px] flex items-center justify-center text-[14px] text-slate-400">{status === "loading" ? "조회 중..." : "데이터 없음"}</div>
             ) : (() => {
-              // 2026-10-11 · 사용자 지시 · 현황 탭 요약은 TOP 10 만 노출 (전체는 상단 "구역별 판매현황" 탭 CategoryTab)
-              const top10 = zoneRanking.slice(0, 10);
-              const maxSale = Math.max(1, ...top10.map((z) => z.sale));
+              // 2026-10-11 · 사용자 지시 "왜 다 안나오지" · 전체 구역 노출 (slice 제거)
+              const maxSale = Math.max(1, ...zoneRanking.map((z) => z.sale));
               return (
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5">
-                  {top10.map((z) => {
+                  {zoneRanking.map((z) => {
                     const pct = (z.sale / maxSale) * 100;
+                    // 2026-10-11 · 사용자 지시 · fmtLoc 포맷 ("벽 10") 과 raw ("10") 양쪽 작동 보장
+                    //   · 공통 함수 getZoneLabelByLocation (매대 번호 추출 → zone_defs lookup) 로 fallback
                     const label =
                       locationToLabel.get(String(z.loc ?? "")) ??
                       locationToLabel.get(String(z.loc ?? "").toUpperCase()) ??
+                      getZoneLabelByLocation(z.loc, zoneDefsList) ??
                       "";
                     return (
                       <li key={z.loc} className="flex items-center gap-2 text-[14px] min-w-0">
@@ -644,40 +631,38 @@ export const SalesStatus: React.FC = () => {
             })()}
           </section>
 
-          <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+          {/* 2026-10-11 · 사용자 지시 · 공급사 Scorecard 단독 · 상품별 판매현황 (요약) 섹션 제거
+              사유: 상품별 판매현황은 상단 "product" 탭 (FlowTab) 에서 전용 노출 · 현황판 중복 X */}
+          <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 shrink-0">
               <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">공급사 Scorecard</h3>
-              <span className="text-[13px] text-slate-500 font-medium">정상 · 주의 · 위험 (재고일수·마진율)</span>
+              <span className="text-[13px] text-slate-500 font-medium">정상 · 주의 · 위험</span>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-[480px]">
               <table className="w-full text-[14px]">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[13px] font-medium">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[13px] font-medium sticky top-0 z-10">
                   <tr>
-                    <th className="text-left px-3 py-2">공급사</th>
-                    <th className="text-right px-3 py-2 w-16">품목</th>
-                    <th className="text-right px-3 py-2 w-16">수량</th>
-                    <th className="text-right px-3 py-2 w-24">매출</th>
-                    <th className="text-right px-3 py-2 w-16">마진</th>
-                    <th className="text-right px-3 py-2 w-24">재고가치</th>
-                    <th className="text-right px-3 py-2 w-16">재고일수</th>
-                    <th className="text-center px-3 py-2 w-16">상태</th>
+                    <th className="text-left px-3 py-2 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("name")}>공급사 {supSortArrow("name")}</th>
+                    <th className="text-right px-3 py-2 w-14 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("skus")}>품목 {supSortArrow("skus")}</th>
+                    <th className="text-right px-3 py-2 w-20 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("sale")}>매출 {supSortArrow("sale")}</th>
+                    <th className="text-right px-3 py-2 w-14 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("margin")}>마진 {supSortArrow("margin")}</th>
+                    <th className="text-right px-3 py-2 w-14 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("stockDays")}>재고일수 {supSortArrow("stockDays")}</th>
+                    <th className="text-center px-3 py-2 w-14">상태</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {status === "loading" && supplierScore.length === 0 && (<tr><td colSpan={8} className="text-center py-8 text-slate-400 text-[14px]">조회 중...</td></tr>)}
-                  {supplierScore.map((s) => {
+                  {status === "loading" && sortedSupplierScore.length === 0 && (<tr><td colSpan={6} className="text-center py-8 text-slate-400 text-[14px]">조회 중...</td></tr>)}
+                  {sortedSupplierScore.map((s) => {
                     const p = statusToPill(s.st);
                     return (
                       <tr key={s.sup} className="hover:bg-slate-50/50 h-8 text-ink">
-                        <td className="px-3 py-1.5 font-medium break-keep">{s.sup}</td>
+                        <td className="px-3 py-1.5 font-medium break-keep truncate max-w-[160px]" title={s.sup}>{s.sup}</td>
                         <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{fmtNum(s.skuCount)}</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{fmtNum(s.qty)}</td>
                         <td className="px-3 py-1.5 text-right tabular-nums font-semibold">{fmtWonShort(s.sale)}원</td>
                         <td className={`px-3 py-1.5 text-right tabular-nums font-semibold ${(s.marginPct ?? 0) >= 20 ? "text-emerald-600" : (s.marginPct ?? 0) >= 10 ? "text-slate-700" : "text-rose-600"}`}>{s.marginPct === null ? "-" : `${s.marginPct.toFixed(1)}%`}</td>
-                        <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{fmtWonShort(s.stockValue)}원</td>
                         <td className={`px-3 py-1.5 text-right tabular-nums font-semibold ${s.daysOfStock > 90 ? "text-rose-600" : s.daysOfStock > 45 ? "text-amber-600" : "text-emerald-600"}`}>{s.daysOfStock >= 999 ? "∞" : `${s.daysOfStock}일`}</td>
                         <td className="px-3 py-1.5 text-center">
-                          <span className={`inline-flex items-center justify-center min-w-[44px] h-6 px-2 rounded border text-[12px] font-semibold ${p.cls}`}>{p.label}</span>
+                          <span className={`inline-flex items-center justify-center min-w-[36px] h-6 px-1.5 rounded border text-[12px] font-semibold ${p.cls}`}>{p.label}</span>
                         </td>
                       </tr>
                     );
@@ -686,6 +671,9 @@ export const SalesStatus: React.FC = () => {
               </table>
             </div>
           </section>
+
+          {/* 2026-10-11 · 사용자 지시 · 공급사 옆 "상품별 판매현황" 요약 섹션 완전 삭제 (중복)
+              사유: product 탭 (= 상품별 판매현황) 에서 FlowTab 전체 노출 · 현황판 중복 금지 */}
           </>)}
         </div>
       )}
@@ -791,6 +779,9 @@ export const SalesStatus: React.FC = () => {
                         <tr>
                           <th className={thCls("left")} onClick={() => toggleDrawerSort("name")}>상품명{indicator("name")}</th>
                           <th className={`${thCls("left")} w-[80px]`} onClick={() => toggleDrawerSort("loc")}>위치{indicator("loc")}</th>
+                          {/* 2026-10-11 · 사용자 지시 · 공급사 drawer 안 테이블에 매입가·판매가 column 추가 */}
+                          <th className={`${thCls("right")} w-[72px]`}>매입가</th>
+                          <th className={`${thCls("right")} w-[72px]`}>판매가</th>
                           <th className={`${thCls("right")} w-[70px]`} onClick={() => toggleDrawerSort("qty")}>수량{indicator("qty")}</th>
                           <th className={`${thCls("right")} w-[90px]`} onClick={() => toggleDrawerSort("sale")}>매출{indicator("sale")}</th>
                           <th className={`${thCls("right")} w-[70px]`} onClick={() => toggleDrawerSort("margin")}>마진{indicator("margin")}</th>
@@ -802,13 +793,24 @@ export const SalesStatus: React.FC = () => {
                           const meta = p.pcode ? metaMap.get(p.pcode) : null;
                           // 2026-10-11 · 사용자 지시 "위치부분 공통함수" · fmtLoc 적용 (ERP raw → 깔끔한 포맷)
                           const loc = fmtLoc(p.location ?? meta?.display_location);
+                          const purchasePrice = meta?.purchase_price != null ? Number(meta.purchase_price) : null;
+                          // 2026-10-11 · 판매가 is not in meta slim · derive from margin / sale (근사치) · meta 에 없을 수 있음
+                          const salePrice = (meta as any)?.sale_price != null ? Number((meta as any).sale_price) : null;
+                          // 2026-10-11 · 사용자 지시 · 마진 음수 명시적 "-" prefix + 괄호 (시각 강조)
+                          const marginText = marginPct === null
+                            ? "-"
+                            : marginPct < 0
+                              ? `−${Math.abs(marginPct).toFixed(1)}%`
+                              : `${marginPct.toFixed(1)}%`;
                           return (
                             <tr key={`${p.pcode ?? p.name ?? i}`} className="hover:bg-slate-50/60 h-8 text-ink">
                               <td className="px-3 py-1.5 font-medium break-keep">{p.name ?? "-"}</td>
                               <td className="px-3 py-1.5 text-[13px] text-slate-600 tabular-nums">{loc || <span className="text-slate-300">-</span>}</td>
+                              <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{purchasePrice != null ? `${fmtNum(purchasePrice)}원` : <span className="text-slate-300">-</span>}</td>
+                              <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{salePrice != null ? `${fmtNum(salePrice)}원` : <span className="text-slate-300">-</span>}</td>
                               <td className="px-3 py-1.5 text-right tabular-nums font-semibold">{fmtNum(p.qty)}</td>
                               <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{fmtWonShort(p.sale)}원</td>
-                              <td className={`px-3 py-1.5 text-right tabular-nums font-semibold ${(marginPct ?? 0) >= 20 ? "text-emerald-600" : (marginPct ?? 0) >= 10 ? "text-slate-700" : "text-rose-600"}`}>{marginPct === null ? "-" : `${marginPct.toFixed(1)}%`}</td>
+                              <td className={`px-3 py-1.5 text-right tabular-nums font-semibold ${(marginPct ?? 0) >= 20 ? "text-emerald-600" : (marginPct ?? 0) >= 10 ? "text-slate-700" : "text-rose-600"}`}>{marginText}</td>
                             </tr>
                           );
                         })}
