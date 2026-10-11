@@ -4,13 +4,15 @@
 //   · edit mode 에서 cell click → ScheduleTypePopover
 //   · lock month 는 상위 editMode=false 로 전달되어 자동 비활성
 import React, { useEffect, useMemo, useRef } from "react";
-import type { Employee, Schedule } from "../../../../types";
+import type { Employee, Schedule, MonthlySummary } from "../../../../types";
 import type { ScheduleTypeEntry } from "../../../../hooks/useSettings";
 import { Card } from "../../../common/Card";
 import { getTypeHoursMap, weekdays } from "../../../SchedulePage/scheduleHelpers";
 // 2026-10-07 · 순환 import 제거 · scheduleCellContent 는 별도 모듈로 이관 (../MonthScheduleViewV2 → ./scheduleCellContent)
 import { scheduleCellContent } from "./scheduleCellContent";
 import { ScheduleTypePopover } from "./ScheduleTypePopover";
+// 2026-10-09 · 사용자 지시 · V1 참고 · 하단 필터별 합계행 (V1 FROZEN · import 만 재사용)
+import { SummaryRow } from "../../../SchedulePage/SummaryRow";
 
 interface GridProps {
   employees: Employee[];
@@ -30,6 +32,12 @@ interface GridProps {
   onEmployeeNameClick?: (employeeId: number) => void;
   /** 2026-10-08 · 사용자 지시 · 인건비 토글 활성 시 각 직원 월 인건비 표시 (sticky left cell 하단) */
   empLaborMap?: Map<number, number>;
+  /** 2026-10-09 · 사용자 지시 · V1 참고 · 필터된 직원들의 하단 합계행 (약사/사원/물류/창고/기타/근무인원) */
+  summaries?: MonthlySummary[];
+  /** 2026-10-09 · positionTab 필터 (약사/사원/매장/창고/기타/전체) · 합계행 조건부 노출 */
+  positionTab?: string;
+  /** 2026-10-11 · 사용자 지시 · 달력 아래 "같은 Card 안"에 추가 panel (예: 일괄등록) 삽입 */
+  children?: React.ReactNode;
 }
 
 export const MonthGridV2: React.FC<GridProps> = ({
@@ -38,6 +46,8 @@ export const MonthGridV2: React.FC<GridProps> = ({
   dimmedDates,
   onDateHeaderClick, onEmployeeNameClick,
   empLaborMap,
+  summaries, positionTab = "전체",
+  children,
 }) => {
   // 2026-10-09 · 사용자 지시 · 로딩 시 오늘 column 을 가로 중앙으로 scroll
   //   · todayStr 가 dateList 에 포함될 때만 scroll (다른 월 보고 있으면 noop)
@@ -80,10 +90,10 @@ export const MonthGridV2: React.FC<GridProps> = ({
         <thead>
           <tr>
             <th
-              className="sticky top-0 left-0 z-30 bg-zinc-50 border-r border-b border-line text-left px-3 py-2 text-[13px] font-bold text-ink-soft uppercase tracking-wide"
+              className="sticky top-0 left-0 z-40 bg-zinc-50 border-r border-b border-line text-left px-3 py-2 text-[13px] font-bold text-ink-soft tracking-tight"
               style={{ minWidth: 160 }}
             >
-              직원
+              성명
             </th>
             {dateList.map((d) => {
               const dateObj = new Date(d);
@@ -136,10 +146,13 @@ export const MonthGridV2: React.FC<GridProps> = ({
                   }`}
                   title={onEmployeeNameClick ? `${emp.name} · 개인 일정` : undefined}
                 >
-                  <div className="text-[14px] leading-tight">{emp.name}</div>
-                  <div className="text-[12px] text-ink-soft">{emp.position}</div>
+                  {/* 2026-10-09 · 사용자 지시 · 이름 + 직군 나란히 (horizontal · inline) · 인건비 진한 청색 */}
+                  <div className="flex items-baseline gap-1.5 leading-tight">
+                    <span className="text-[14px] font-semibold text-ink">{emp.name}</span>
+                    <span className="text-[11.5px] text-ink-soft font-medium">{emp.position}</span>
+                  </div>
                   {empLaborMap && empLaborMap.has(emp.id) && (
-                    <div className="text-[12px] font-bold text-brand-deep tabular-nums mt-0.5">
+                    <div className="text-[12px] font-bold text-blue-800 tabular-nums mt-0.5">
                       {(empLaborMap.get(emp.id) ?? 0).toLocaleString()}원
                     </div>
                   )}
@@ -191,8 +204,38 @@ export const MonthGridV2: React.FC<GridProps> = ({
               </tr>
             );
           })}
+          {/* 2026-10-09 · 사용자 지시 · V1 참고 · 필터된 사람들의 하단 합계행
+              · V1 ScheduleGrid.tsx:271-290 패턴 재사용
+              · positionTab 조건 · 활성 필터만 표시 · 전체 모드 땐 조건부 자동 노출 (물류/창고/기타)
+              · showMonthTotal=false · V2 는 월별 합계 column 없음 */}
+          {summaries && summaries.length > 0 && (
+            <>
+              {(positionTab === "전체" || positionTab === "약사") && (
+                <SummaryRow summaries={summaries} label="약사" showMonthTotal={false} />
+              )}
+              {(positionTab === "전체" || positionTab === "사원" || positionTab === "매장") && (
+                <SummaryRow summaries={summaries} label="사원" showMonthTotal={false} />
+              )}
+              {positionTab === "전체" && summaries.some(s => s.logisticsCount > 0) && (
+                <SummaryRow summaries={summaries} label="물류" showMonthTotal={false} />
+              )}
+              {(positionTab === "전체" || positionTab === "창고") && summaries.some(s => s.warehouseCount > 0) && (
+                <SummaryRow summaries={summaries} label="창고" showMonthTotal={false} />
+              )}
+              {(positionTab === "전체" || positionTab === "기타") && summaries.some(s => s.otherCount > 0) && (
+                <SummaryRow summaries={summaries} label="기타" showMonthTotal={false} />
+              )}
+              <SummaryRow summaries={summaries} label="근무인원" showMonthTotal={false} />
+            </>
+          )}
         </tbody>
       </table>
+      {/* 2026-10-11 · 사용자 지시 · 달력 바로 아래 같은 Card 안에 추가 panel (예: 일괄등록) */}
+      {children && (
+        <div className="border-t border-slate-200">
+          {children}
+        </div>
+      )}
     </Card>
   );
 };
