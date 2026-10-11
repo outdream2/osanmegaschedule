@@ -122,6 +122,23 @@ export const SalesStatus: React.FC = () => {
   const [err, setErr] = useState<string>("");
   // 2026-10-11 · 사용자 지시 · 급상승 제품 row 클릭 → 상세 slide drawer
   const [drawerKey, setDrawerKey] = useState<string | null>(null);
+  // 2026-10-11 · 사용자 지시 · 구역별 판매현황 · 매대 클릭 → 오른쪽 slide drawer (매대 상품 상세)
+  const [zoneDrawerKey, setZoneDrawerKey] = useState<string | null>(null);
+  type ZoneSortKey = "name" | "qty" | "sale" | "margin";
+  const [zoneDrawerSort, setZoneDrawerSort] = useState<{ key: ZoneSortKey; dir: "asc" | "desc" }>({ key: "sale", dir: "desc" });
+  const toggleZoneDrawerSort = (key: ZoneSortKey) => {
+    setZoneDrawerSort((prev) => prev.key === key
+      ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
+      : { key, dir: key === "name" ? "asc" : "desc" });
+  };
+  // 2026-10-11 · 사용자 지시 · drawer 안 테이블 헤더 자동정렬
+  type DrawerSortKey = "name" | "loc" | "qty" | "sale" | "margin";
+  const [drawerSort, setDrawerSort] = useState<{ key: DrawerSortKey; dir: "asc" | "desc" }>({ key: "sale", dir: "desc" });
+  const toggleDrawerSort = (key: DrawerSortKey) => {
+    setDrawerSort((prev) => prev.key === key
+      ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
+      : { key, dir: key === "name" || key === "loc" ? "asc" : "desc" });
+  };
 
   type ProdEntry = { pcode: string | null; name: string | null; supplier: string | null; location: string | null; cls: string | null; category: string | null; qty: number; sale: number; margin: number };
   const [prodAgg, setProdAgg] = useState<Map<string, ProdEntry>>(new Map());
@@ -207,7 +224,8 @@ export const SalesStatus: React.FC = () => {
     }
   }, [curDates, prevDates]);
 
-  useEffect(() => { if (innerTab === "overview") load(); }, [load, innerTab]);
+  // 2026-10-11 · 사용자 지시 "공급사별 월멀티선택 기간별 조회·로딩중" · zone 탭 제외 전부 load (overview/supplier/product · 월선택 변경 시 자동 재조회)
+  useEffect(() => { if (innerTab !== "zone") load(); }, [load, innerTab]);
 
   const nDays = curDates.length;
 
@@ -365,11 +383,62 @@ export const SalesStatus: React.FC = () => {
         tabs={tabs}
       />
 
+      {/* 2026-10-11 · 사용자 지시 · 통합 대시보드 (매대 리스트 + slide drawer)
+          좌측 매대 리스트 + 매대 row 클릭 → 우측 slide drawer (매대 상품 상세) */}
       {innerTab === "zone" ? (
-        <div className="min-w-0 px-4 sm:px-6 pt-3">
-          <React.Suspense fallback={<div className="flex items-center justify-center py-16 text-[14px] text-slate-500">구역별 로딩 중...</div>}>
-            <CategoryTab />
-          </React.Suspense>
+        <div className="min-w-0 px-4 sm:px-6 pt-3 flex flex-col gap-4">
+          {/* 상단 filter · 월 선택 + 기간 라벨 */}
+          <div className="flex items-start gap-3 flex-wrap">
+            <MonthToggleSelector selectedMonths={selectedMonths} onChange={setSelectedMonths} maxMonths={6} minOne />
+            <div className="text-[13px] text-slate-500 font-medium ml-auto whitespace-nowrap">
+              기간: <span className="tabular-nums text-ink">{periodLabel}</span>
+              <span className="ml-2 text-slate-400 tabular-nums">· {nDays}일</span>
+            </div>
+          </div>
+
+          {/* 매대 리스트 CARD · 전체 (zoneRanking 전체) · row 클릭 → drawer */}
+          <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-4 md:p-5">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">구역별 매출 (전체)</h3>
+              <span className="text-[13px] text-slate-500 font-medium">row 클릭 → 매대 상품 상세</span>
+            </div>
+            {zoneRanking.length === 0 ? (
+              <div className="h-[120px] flex items-center justify-center text-[14px] text-slate-400">{status === "loading" ? "조회 중..." : "데이터 없음"}</div>
+            ) : (() => {
+              const maxSale = Math.max(1, ...zoneRanking.map((z) => z.sale));
+              return (
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5">
+                  {zoneRanking.map((z) => {
+                    const pct = (z.sale / maxSale) * 100;
+                    const label =
+                      locationToLabel.get(String(z.loc ?? "")) ??
+                      locationToLabel.get(String(z.loc ?? "").toUpperCase()) ??
+                      "";
+                    const isActive = zoneDrawerKey === z.loc;
+                    return (
+                      <li key={z.loc}>
+                        <button
+                          type="button"
+                          onClick={() => setZoneDrawerKey(z.loc)}
+                          className={`w-full flex items-center gap-2 text-[14px] min-w-0 rounded-md px-2 py-1 -mx-2 transition-colors cursor-pointer text-left ${isActive ? "bg-indigo-50" : "hover:bg-slate-50"}`}
+                        >
+                          <div className="shrink-0 flex items-baseline gap-1.5 w-32 min-w-0">
+                            <span className="shrink-0 text-[13px] font-semibold text-ink tabular-nums">{z.loc}</span>
+                            <span className="text-[13px] text-slate-600 truncate" title={label || z.loc}>{label || "-"}</span>
+                          </div>
+                          <div className="flex-1 min-w-0 bg-slate-100 rounded-sm h-6 relative overflow-hidden">
+                            <div className="absolute inset-y-0 left-0 bg-indigo-500/85 rounded-sm" style={{ width: `${pct}%` }} />
+                            <span className="absolute inset-y-0 right-2 flex items-center text-[12px] font-semibold text-ink tabular-nums">{fmtWonShort(z.sale)}원</span>
+                          </div>
+                          <span className="shrink-0 w-14 text-right text-[12px] text-slate-500 tabular-nums">{fmtNum(z.qty)}개</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              );
+            })()}
+          </section>
         </div>
       ) : innerTab === "supplier" ? (
         /* 2026-10-11 · 사용자 지시 · 공급사별 판매현황 탭 (현황판과 동일 톤) · 공급사 scorecard full view · 클릭 시 상세 drawer
@@ -466,15 +535,10 @@ export const SalesStatus: React.FC = () => {
             </div>
           </div>
 
-          <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Kpi label="총 판매수량" value={status === "loading" ? "..." : fmtNum(kpi.totalQty)} suffix="개" />
-            <Kpi label="판매 활성 상품" value={status === "loading" ? "..." : fmtNum(kpi.activeProducts)} suffix="종" />
-            <Kpi label="활성 공급사" value={status === "loading" ? "..." : fmtNum(kpi.activeSuppliers)} suffix="개" />
-            <Kpi label="조치 필요" value={status === "loading" ? "..." : fmtNum(kpi.action)} suffix="건" tone={kpi.action > 0 ? "risk" : "good"} />
-          </section>
+          {/* 2026-10-11 · 사용자 지시 · 상품별 판매현황 KPI 4-strip 제거 (총 판매수량·판매 활성 상품·활성 공급사·조치 필요) · 공간 낭비 */}
 
-          {/* 2026-10-11 · 사용자 지시 "일루 내용 이동" · 급상승+손실 섹션은 "상품별 판매현황" 탭에서만 노출 (overview 에서 제거) */}
-          {innerTab === "product" && (
+          {/* 2026-10-11 · 사용자 지시 "이건 현황판에 있어야지" · 급상승+손실 섹션 · 현황판(overview) + 상품별 탭 둘 다 노출 */}
+          {(innerTab === "overview" || innerTab === "product") && (
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
@@ -539,38 +603,7 @@ export const SalesStatus: React.FC = () => {
 
           {/* 2026-10-11 · overview 전용 섹션 (카테고리/구역/공급사 요약) · product 탭에서는 숨김 */}
           {innerTab === "overview" && (<>
-          <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-4 md:p-5">
-            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">카테고리별 판매 (중분류)</h3>
-              <span className="text-[13px] text-slate-500 font-medium">전체 카테고리 · 매출 desc</span>
-            </div>
-            {/* 2026-10-11 · 사용자 지시 · 미분류 항목 제거 */}
-            {(() => {
-              const filtered = categoryRanking.filter(z => z.cat !== "미분류");
-              if (filtered.length === 0) {
-                return <div className="h-[120px] flex items-center justify-center text-[14px] text-slate-400">{status === "loading" ? "조회 중..." : "데이터 없음"}</div>;
-              }
-              const maxSale = Math.max(1, ...filtered.map((z) => z.sale));
-              return (
-                <ul className="flex flex-col gap-1.5">
-                  {filtered.map((z) => {
-                    const pct = (z.sale / maxSale) * 100;
-                    return (
-                      <li key={z.cat} className="flex items-center gap-3 text-[14px]">
-                        <span className="shrink-0 w-28 font-semibold text-ink truncate" title={z.cat}>{z.cat}</span>
-                        <div className="flex-1 min-w-0 bg-slate-100 rounded-sm h-6 relative overflow-hidden">
-                          <div className="absolute inset-y-0 left-0 bg-teal-500/85 rounded-sm" style={{ width: `${pct}%` }} />
-                          <span className="absolute inset-y-0 right-2 flex items-center text-[13px] font-semibold text-ink tabular-nums">{fmtWonShort(z.sale)}원</span>
-                        </div>
-                        <span className="shrink-0 w-20 text-right text-[13px] text-slate-500 tabular-nums">{fmtNum(z.qty)}개</span>
-                        <span className="shrink-0 w-16 text-right text-[12px] text-slate-400 tabular-nums">{z.count}종</span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              );
-            })()}
-          </section>
+          {/* 2026-10-11 · 사용자 지시 · "카테고리별 판매 (중분류)" 섹션 제거 (데이터 없음 · 공간 낭비) */}
 
           <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-4 md:p-5">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -662,11 +695,27 @@ export const SalesStatus: React.FC = () => {
         const isSupplier = drawerKey.startsWith("sup::");
         const title = isSupplier ? drawerKey.slice(5) : (prodAgg.get(drawerKey)?.name ?? drawerKey);
         const subtitle = isSupplier ? "공급사 판매 상품" : "급상승 제품 상세";
-        // 공급사 drawer · 필터된 당기 판매 상품 리스트
-        const items = isSupplier
+        // 공급사 drawer · 필터된 당기 판매 상품 리스트 · drawerSort 적용
+        const itemsRaw = isSupplier
           ? filteredItems.filter((x) => (x.supplier ?? "-") === drawerKey.slice(5))
-                         .sort((a, b) => b.sale - a.sale)
           : [prodAgg.get(drawerKey)!].filter(Boolean);
+        const items = isSupplier ? [...itemsRaw].sort((a, b) => {
+          const dir = drawerSort.dir === "asc" ? 1 : -1;
+          if (drawerSort.key === "name") return String(a.name ?? "").localeCompare(String(b.name ?? ""), "ko") * dir;
+          if (drawerSort.key === "loc") {
+            const la = fmtLoc(a.location ?? (a.pcode ? metaMap.get(a.pcode)?.display_location : null));
+            const lb = fmtLoc(b.location ?? (b.pcode ? metaMap.get(b.pcode)?.display_location : null));
+            return la.localeCompare(lb, "ko", { numeric: true }) * dir;
+          }
+          if (drawerSort.key === "qty") return (a.qty - b.qty) * dir;
+          if (drawerSort.key === "sale") return (a.sale - b.sale) * dir;
+          if (drawerSort.key === "margin") {
+            const ma = a.sale > 0 ? a.margin / a.sale : -1;
+            const mb = b.sale > 0 ? b.margin / b.sale : -1;
+            return (ma - mb) * dir;
+          }
+          return 0;
+        }) : itemsRaw;
         if (items.length === 0 && !isSupplier) return null;
         // 급상승 전용 수치
         const main = isSupplier ? null : prodAgg.get(drawerKey) ?? null;
@@ -731,35 +780,152 @@ export const SalesStatus: React.FC = () => {
                 {/* 공급사: 상품 리스트 full */}
                 {items.length === 0 ? (
                   <div className="py-10 text-center text-[14px] text-slate-400">상품 없음</div>
-                ) : (
-                  <table className="w-full text-[14px]">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[13px] font-medium sticky top-0 z-10">
-                      <tr>
-                        <th className="text-left px-3 py-2">상품명</th>
-                        <th className="text-left px-3 py-2 w-[80px]">위치</th>
-                        <th className="text-right px-3 py-2 w-[70px]">수량</th>
-                        <th className="text-right px-3 py-2 w-[90px]">매출</th>
-                        <th className="text-right px-3 py-2 w-[70px]">마진</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {items.map((p, i) => {
-                        const marginPct = p.sale > 0 ? (p.margin / p.sale) * 100 : null;
-                        const meta = p.pcode ? metaMap.get(p.pcode) : null;
-                        const loc = p.location ?? meta?.display_location ?? null;
-                        return (
-                          <tr key={`${p.pcode ?? p.name ?? i}`} className="hover:bg-slate-50/60 h-8 text-ink">
-                            <td className="px-3 py-1.5 font-medium break-keep">{p.name ?? "-"}</td>
-                            <td className="px-3 py-1.5 text-[13px] text-slate-600 tabular-nums">{loc || <span className="text-slate-300">-</span>}</td>
-                            <td className="px-3 py-1.5 text-right tabular-nums font-semibold">{fmtNum(p.qty)}</td>
-                            <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{fmtWonShort(p.sale)}원</td>
-                            <td className={`px-3 py-1.5 text-right tabular-nums font-semibold ${(marginPct ?? 0) >= 20 ? "text-emerald-600" : (marginPct ?? 0) >= 10 ? "text-slate-700" : "text-rose-600"}`}>{marginPct === null ? "-" : `${marginPct.toFixed(1)}%`}</td>
+                ) : (() => {
+                  // 2026-10-11 · 사용자 지시 · 헤더 자동정렬 · 각 th 클릭 시 toggle · 위치는 fmtLoc 공통함수 적용
+                  const indicator = (k: DrawerSortKey) => drawerSort.key !== k ? "" : drawerSort.dir === "asc" ? " ▲" : " ▼";
+                  const thCls = (align: "left" | "right") =>
+                    `px-3 py-2 cursor-pointer select-none hover:text-ink transition-colors text-${align}`;
+                  return (
+                    <table className="w-full text-[14px]">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[13px] font-medium sticky top-0 z-10">
+                        <tr>
+                          <th className={thCls("left")} onClick={() => toggleDrawerSort("name")}>상품명{indicator("name")}</th>
+                          <th className={`${thCls("left")} w-[80px]`} onClick={() => toggleDrawerSort("loc")}>위치{indicator("loc")}</th>
+                          <th className={`${thCls("right")} w-[70px]`} onClick={() => toggleDrawerSort("qty")}>수량{indicator("qty")}</th>
+                          <th className={`${thCls("right")} w-[90px]`} onClick={() => toggleDrawerSort("sale")}>매출{indicator("sale")}</th>
+                          <th className={`${thCls("right")} w-[70px]`} onClick={() => toggleDrawerSort("margin")}>마진{indicator("margin")}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {items.map((p, i) => {
+                          const marginPct = p.sale > 0 ? (p.margin / p.sale) * 100 : null;
+                          const meta = p.pcode ? metaMap.get(p.pcode) : null;
+                          // 2026-10-11 · 사용자 지시 "위치부분 공통함수" · fmtLoc 적용 (ERP raw → 깔끔한 포맷)
+                          const loc = fmtLoc(p.location ?? meta?.display_location);
+                          return (
+                            <tr key={`${p.pcode ?? p.name ?? i}`} className="hover:bg-slate-50/60 h-8 text-ink">
+                              <td className="px-3 py-1.5 font-medium break-keep">{p.name ?? "-"}</td>
+                              <td className="px-3 py-1.5 text-[13px] text-slate-600 tabular-nums">{loc || <span className="text-slate-300">-</span>}</td>
+                              <td className="px-3 py-1.5 text-right tabular-nums font-semibold">{fmtNum(p.qty)}</td>
+                              <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{fmtWonShort(p.sale)}원</td>
+                              <td className={`px-3 py-1.5 text-right tabular-nums font-semibold ${(marginPct ?? 0) >= 20 ? "text-emerald-600" : (marginPct ?? 0) >= 10 ? "text-slate-700" : "text-rose-600"}`}>{marginPct === null ? "-" : `${marginPct.toFixed(1)}%`}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  );
+                })()}
+              </div>
+            </aside>
+          </>
+        );
+      })()}
+
+      {/* 2026-10-11 · 사용자 지시 · 구역별 판매현황 매대 클릭 → 오른쪽 slide drawer (매대 상품 상세) */}
+      {zoneDrawerKey && (() => {
+        const label =
+          locationToLabel.get(String(zoneDrawerKey)) ??
+          locationToLabel.get(String(zoneDrawerKey).toUpperCase()) ??
+          "";
+        // 이 매대 소속 상품 집계 · fmtLoc 매칭
+        const items = Array.from(prodAgg.values()).filter((p) => {
+          const meta = p.pcode ? metaMap.get(p.pcode) : null;
+          const raw = p.location ?? meta?.display_location ?? "";
+          return fmtLoc(raw) === zoneDrawerKey;
+        });
+        // 정렬
+        const sorted = [...items].sort((a, b) => {
+          const mul = zoneDrawerSort.dir === "asc" ? 1 : -1;
+          if (zoneDrawerSort.key === "name") return mul * String(a.name ?? "").localeCompare(String(b.name ?? ""));
+          if (zoneDrawerSort.key === "qty") return mul * (a.qty - b.qty);
+          if (zoneDrawerSort.key === "margin") return mul * (a.margin - b.margin);
+          return mul * (a.sale - b.sale);
+        });
+        const totalSale = items.reduce((s, p) => s + p.sale, 0);
+        const totalQty = items.reduce((s, p) => s + p.qty, 0);
+        const totalMargin = items.reduce((s, p) => s + p.margin, 0);
+        const marginRate = totalSale > 0 ? (totalMargin / totalSale) * 100 : 0;
+        const sortArrow = (k: ZoneSortKey) => zoneDrawerSort.key === k ? (zoneDrawerSort.dir === "asc" ? "▲" : "▼") : "";
+        return (
+          <>
+            <style>{`
+              @keyframes zoneDrawerSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+              @keyframes zoneDrawerFadeIn { from { opacity: 0; } to { opacity: 1; } }
+            `}</style>
+            <div
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-40"
+              style={{ animation: "zoneDrawerFadeIn 200ms ease-out" }}
+              onClick={() => setZoneDrawerKey(null)}
+              aria-hidden
+            />
+            <aside
+              className="fixed right-0 top-0 bottom-0 w-full md:w-[640px] lg:w-[760px] bg-[#F4F7FA] z-50 shadow-[-8px_0_32px_rgba(15,23,42,0.12)] flex flex-col"
+              style={{ animation: "zoneDrawerSlideIn 250ms ease-out" }}
+              role="dialog"
+              aria-modal="true"
+            >
+              <header className="sticky top-0 z-10 flex items-center gap-2 px-3 py-2.5 md:px-4 md:py-3 border-b border-slate-200 bg-white">
+                <span className="inline-flex items-center justify-center w-7 h-7 rounded-[8px] bg-indigo-50 text-indigo-700 shrink-0 text-[13px] font-bold tabular-nums">
+                  {zoneDrawerKey}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight truncate leading-tight">
+                    {label || zoneDrawerKey}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setZoneDrawerKey(null)}
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-[8px] text-slate-500 hover:text-ink hover:bg-slate-100 transition-colors cursor-pointer"
+                  aria-label="닫기"
+                  title="닫기"
+                >
+                  ✕
+                </button>
+              </header>
+
+              <div className="flex-1 overflow-y-auto p-3 md:p-4 flex flex-col gap-3 md:gap-4">
+                {/* 요약 KPI · 매대 합계 */}
+                <section className="grid grid-cols-3 gap-2">
+                  <Kpi label="매출" value={status === "loading" ? "..." : fmtWonShort(totalSale)} suffix="원" />
+                  <Kpi label="수량" value={status === "loading" ? "..." : fmtNum(totalQty)} suffix="개" />
+                  <Kpi label="마진율" value={status === "loading" ? "..." : `${marginRate.toFixed(1)}`} suffix="%" />
+                </section>
+
+                {/* 상품 테이블 · 정렬 가능 */}
+                <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+                    <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">상품 ({fmtNum(items.length)}종)</h3>
+                    <span className="text-[13px] text-slate-500 font-medium">header 클릭 → 정렬</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[14px]">
+                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[13px] font-medium">
+                        <tr>
+                          <th className="text-left px-3 py-2 cursor-pointer hover:text-ink" onClick={() => toggleZoneDrawerSort("name")}>상품명 {sortArrow("name")}</th>
+                          <th className="text-right px-3 py-2 w-16 cursor-pointer hover:text-ink" onClick={() => toggleZoneDrawerSort("qty")}>수량 {sortArrow("qty")}</th>
+                          <th className="text-right px-3 py-2 w-24 cursor-pointer hover:text-ink" onClick={() => toggleZoneDrawerSort("sale")}>매출 {sortArrow("sale")}</th>
+                          <th className="text-right px-3 py-2 w-20 cursor-pointer hover:text-ink" onClick={() => toggleZoneDrawerSort("margin")}>마진 {sortArrow("margin")}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {sorted.length === 0 && (<tr><td colSpan={4} className="text-center py-8 text-slate-400 text-[14px]">{status === "loading" ? "조회 중..." : "상품 없음"}</td></tr>)}
+                        {sorted.map((p, idx) => (
+                          <tr key={`${p.pcode ?? p.name ?? idx}`} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="px-3 py-2 text-ink leading-tight">
+                              <div className="line-clamp-1" title={p.name ?? ""}>{p.name ?? "-"}</div>
+                              {p.supplier && <div className="text-[12px] text-slate-400 line-clamp-1">{p.supplier}</div>}
+                            </td>
+                            <td className="text-right px-3 py-2 text-slate-600 tabular-nums">{fmtNum(p.qty)}</td>
+                            <td className="text-right px-3 py-2 font-semibold text-ink tabular-nums">{fmtWonShort(p.sale)}</td>
+                            <td className="text-right px-3 py-2 text-slate-600 tabular-nums">{fmtWonShort(p.margin)}</td>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                )}
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
               </div>
             </aside>
           </>
