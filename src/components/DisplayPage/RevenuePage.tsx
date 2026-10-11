@@ -147,10 +147,9 @@ export const RevenuePage: React.FC<RevenuePageProps> = ({ initialTab = "revenue"
 
       {topTab === "revenue" ? (
         <>
-          {/* 2026-10-10 · A안 · 사용자 "똑바로 조사 · 최신트렌드 · 맞춰" ·
-              pill-content wrap 제거 → pill 과 content 를 wrapper 직접 자식으로 (섹션 리듬 통일)
-              매출 하위 탭 · pill 디자인 유지 (사용자 "매출 하위 탭은 손대지마") */}
-          <div className="px-4 sm:px-6 shrink-0">
+          {/* 2026-10-10 · A안 · pill-content wrap 제거 → wrapper 직접 자식 (섹션 리듬 통일)
+              2026-10-11 · 사용자 "발주반품현황 여백이 마음에 들어" · nav 아래 pt-3 추가 (OverviewToolbar 리듬 복제) */}
+          <div className="px-4 sm:px-6 pt-3 shrink-0">
             <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
               {([
                 { k: "hourly" as const,  label: "시간대별" },
@@ -171,8 +170,9 @@ export const RevenuePage: React.FC<RevenuePageProps> = ({ initialTab = "revenue"
           </div>
         </>
       ) : (
-        /* 판매현황 대시보드 · 2026-10-10 · #13 · SalesStatus (급상승 + 손실 + 구역별 + 공급사 scorecard) */
-        <div className="px-4 sm:px-6">
+        /* 판매현황 대시보드 · 2026-10-10 · #13 · SalesStatus
+           2026-10-11 · 사용자 "발주반품현황 여백 마음에 들어" · pt-3 추가 */
+        <div className="px-4 sm:px-6 pt-3">
           <React.Suspense fallback={<div className="flex items-center justify-center py-16 text-[14px] text-slate-500">판매현황 로딩 중...</div>}>
             <SalesStatus />
           </React.Suspense>

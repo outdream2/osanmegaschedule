@@ -5,7 +5,7 @@
 //   · row click → ProductInventoryDetailModal (domain-specific · Shelf SSOT 보호)
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { Package, Storefront, Clock, ListChecks, Warehouse, MapPin, CaretRight, CaretDown } from "@phosphor-icons/react";
+import { Package, Storefront, Clock, ListChecks, Warehouse, MapPin, CaretRight, CaretDown, X } from "@phosphor-icons/react";
 import {
   OverviewPageHeader, OverviewToolbar, OverviewSection, OverviewKpi, OverviewTable,
   type OverviewTableColumn,
@@ -68,6 +68,9 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   const [innerTab, setInnerTab] = useState<InnerTab>("overview");
   // 2026-10-10 · 구역도 inner-inner tab · 매장 기본
   const [mapInnerTab, setMapInnerTab] = useState<MapInnerTab>("store");
+  // 2026-10-11 · 사용자 지시 · 일반약 섹션 5개 → 탭으로 전환 (좌우 2단 안 우측 영역)
+  type GeneralSubTab = "topWall" | "center22" | "bottomWall" | "wing" | "counter";
+  const [generalSubTab, setGeneralSubTab] = useState<GeneralSubTab>("topWall");
   // 2026-10-10 · 사용자 지시 · 매대 클릭 시 하단 상품 리스트 아코디언 expand
   const [expandedZone, setExpandedZone] = useState<string | null>(null);
   // 2026-10-10 · products.display_location + purchase_price 매칭용 cache
@@ -289,24 +292,12 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
         description="재고 / 실재고 / 유통기한 / 진열 업무"
       />
 
-      {/* 2026-10-10 · 사용자 지시 · inner tab · 현황 / 구역도 · 공통 모듈 OverviewInnerTabs (nav border-b + underline) */}
-      <OverviewInnerTabs<InnerTab>
-        ariaLabel="재고·진열 inner tabs"
-        active={innerTab}
-        onChange={setInnerTab}
-        tabs={[
-          { k: "overview", label: "현황",   tone: "violet", count: null },
-          { k: "map",      label: "구역도", tone: "violet", count: null },
-        ] as const satisfies ReadonlyArray<OverviewInnerTab<InnerTab>>}
-      />
+      {/* 2026-10-10 · 사용자 지시 · 현황 탭 삭제 · 구역도 → 현황 단일 뷰 (UI-11 Step 1) */}
 
-      {/* ═════════ 구역도 탭 · 세로탭 + 매대 리스트 + 상품 아코디언 ═════════
-          · 사용자 지시 "세로탭 · 매대별 제품수+재고자산 · 클릭 → 제품들 · 실재고 기준 · 정렬 · 보기 좋게"
-          · 왼쪽 세로 nav (매장/창고1/창고2) + 오른쪽 매대 리스트 테이블
-          · 매대 row 클릭 → 아래로 expand (그 매대 상품 리스트)
-          · 실재고(inventory_checks) + products.purchase_price 집계 · 재고자산 = Σ stock × purchase_price */}
-      {innerTab === "map" && (
-        <div className="px-4 sm:px-6 flex flex-col gap-3 md:gap-4">
+      {/* ═════════ 구역도 (= 현황) · 세로탭 + 매대 리스트 + 상품 아코디언 ═════════
+          2026-10-11 · 사용자 "발주반품현황 여백이 마음에 들어" · nav 아래 pt-3 추가 (OverviewToolbar 리듬 복제) */}
+      {true && (
+        <div className="px-4 sm:px-6 pt-3 flex flex-col gap-3 md:gap-4">
           {/* 요약 KPI 라인 */}
           <section className={`${CARD} px-3 py-2 md:px-4 md:py-2.5`}>
             <div className="flex items-center gap-x-3 gap-y-1 flex-wrap leading-tight">
@@ -374,31 +365,51 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
 
             {/* 우측 content · 매대 리스트 or 창고 상품 리스트 */}
             <section className={`${CARD} overflow-hidden flex flex-col`}>
-              {/* 매장 · 섹션별 그룹 + 매대 리스트 + 클릭 expand */}
+              {/* 매장 · 좌(상비약) · 우(일반약) 2단 · 2026-10-11 사용자 지시 "왼쪽 상비약 오른쪽 일반약 한 번에 보이게" */}
               {mapInnerTab === "store" && (
                 <>
                   <ZoneListHeader icon={Storefront} tone="sky" title="매장 매대" count={emergencyChips.length + generalChips.length} />
-                  <ZoneListTable>
-                    <ZoneListGroup title="상비약" subtitle="중앙 진열대 1~9" tone="rose" chips={emergencyChips} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} />
-                    {storeSections.topWall.length > 0 && (
-                      <ZoneListGroup title="일반약" subtitle="상단 벽 10~21" tone="sky" chips={storeSections.topWall} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} />
-                    )}
-                    {storeSections.center22.length > 0 && (
-                      <ZoneListGroup title="일반약" subtitle="중앙 22" tone="sky" chips={storeSections.center22} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} />
-                    )}
-                    {storeSections.bottomWall.length > 0 && (
-                      <ZoneListGroup title="일반약" subtitle="하단 벽 23~27" tone="sky" chips={storeSections.bottomWall} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} />
-                    )}
-                    {storeSections.wing.length > 0 && (
-                      <ZoneListGroup title="일반약" subtitle="윙 28~40" tone="sky" chips={storeSections.wing} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} />
-                    )}
-                    {storeSections.counter.length > 0 && (
-                      <ZoneListGroup title="일반약" subtitle="카운터 41~46" tone="sky" chips={storeSections.counter} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} />
-                    )}
-                    {storeZones.length === 0 && (
-                      <tr><td colSpan={4} className="py-6 text-center text-[14px] text-slate-400">매장 구역 데이터를 불러오는 중...</td></tr>
-                    )}
-                  </ZoneListTable>
+                  {storeZones.length === 0 ? (
+                    <div className="py-6 text-center text-[14px] text-slate-400">매장 구역 데이터를 불러오는 중...</div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-3 lg:p-3">
+                      {/* 좌 · 상비약 */}
+                      <ZoneListTable>
+                        <ZoneListGroup title="상비약" subtitle="중앙 진열대 1~9" tone="rose" chips={emergencyChips} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} />
+                      </ZoneListTable>
+                      {/* 우 · 일반약 (탭으로 전환 · 2026-10-11 사용자 지시) */}
+                      <div className="min-w-0 flex flex-col">
+                        {(() => {
+                          const allTabs: Array<{ k: GeneralSubTab; label: string; chips: StoreChipItem[]; subtitle: string }> = [
+                            { k: "topWall",    label: "상단 벽 10~21",   chips: storeSections.topWall,    subtitle: "상단 벽 10~21" },
+                            { k: "center22",   label: "중앙 22",         chips: storeSections.center22,   subtitle: "중앙 22" },
+                            { k: "bottomWall", label: "하단 벽 23~27",  chips: storeSections.bottomWall, subtitle: "하단 벽 23~27" },
+                            { k: "wing",       label: "윙 28~40",        chips: storeSections.wing,       subtitle: "윙 28~40" },
+                            { k: "counter",    label: "카운터 41~46",   chips: storeSections.counter,    subtitle: "카운터 41~46" },
+                          ];
+                          const generalTabs = allTabs.filter(t => t.chips.length > 0);
+                          const activeTab = generalTabs.find(t => t.k === generalSubTab) ?? generalTabs[0];
+                          return (
+                            <>
+                              <div className="inline-flex flex-wrap items-center gap-0.5 bg-slate-100 border border-slate-200 rounded-md p-0.5 self-start mb-2">
+                                {generalTabs.map(t => (
+                                  <button key={t.k} type="button" onClick={() => setGeneralSubTab(t.k)}
+                                    className={`px-3 h-7 rounded text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${generalSubTab === t.k ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-ink"}`}>
+                                    {t.label}
+                                  </button>
+                                ))}
+                              </div>
+                              {activeTab && (
+                                <ZoneListTable>
+                                  <ZoneListGroup title="일반약" subtitle={activeTab.subtitle} tone="sky" chips={activeTab.chips} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} />
+                                </ZoneListTable>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -422,8 +433,10 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
         </div>
       )}
 
-      {/* ═════════ 현황 탭 · 기존 KPI + 섹션들 ═════════ */}
-      {innerTab === "overview" && (<>
+      {/* ═════════ 현황 탭 (삭제됨 · UI-11 Step 1 · 구역도 가 현황 역할) ═════════
+          · 아래 블록은 기존 KPI/섹션 · 사용자 지시 · 숨김 (false 조건) · 추후 cleanup 삭제
+          · ProductInventoryDetailModal 등 참조 유지 위해 블록 보존 · dead render */}
+      {false && (<>
       <OverviewToolbar search={search} onSearch={setSearch} placeholder="상품명·코드 검색"
         right={
           <button type="button" onClick={() => setRefreshKey(k => k + 1)}
@@ -472,6 +485,73 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
       </>)}
 
       <ProductInventoryDetailModal open={detail != null} onClose={() => setDetail(null)} row={detail} />
+
+      {/* 2026-10-11 · 사용자 지시 · 매대 클릭 시 상세 drawer (slide-in right) · 위치 · 상품정보 · 단가 · 판매가 · 수량 */}
+      {expandedZone && (() => {
+        const agg = storeZoneAggs.get(expandedZone);
+        if (!agg) return null;
+        return (
+          <>
+            <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setExpandedZone(null)} aria-hidden />
+            <aside className="fixed inset-y-0 right-0 z-50 w-full sm:w-[480px] md:w-[560px] bg-white shadow-2xl flex flex-col animate-[slide-in-right_0.2s_ease-out]"
+              style={{ animation: "slide-in-right 0.2s ease-out" }}>
+              <style>{`@keyframes slide-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
+              <header className="flex items-start justify-between gap-3 px-4 py-3 border-b border-slate-200">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center min-w-[32px] h-[22px] px-1.5 rounded-md bg-sky-50 text-sky-700 text-[13px] font-bold tabular-nums">{agg.code}</span>
+                    <h3 className="text-[15px] md:text-[16px] font-semibold text-ink truncate" title={agg.label}>{agg.label}</h3>
+                  </div>
+                  <div className="mt-1 text-[13px] text-slate-500 font-medium">
+                    제품수 <span className="text-ink font-semibold tabular-nums">{agg.productCount}</span>
+                    <span className="mx-2 text-slate-300">·</span>
+                    재고자산 <span className="text-ink font-semibold tabular-nums">{fmtWon(agg.assetValue)}</span>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setExpandedZone(null)}
+                  className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-ink cursor-pointer" aria-label="닫기">
+                  <X size={16} />
+                </button>
+              </header>
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                {agg.products.length === 0 ? (
+                  <div className="py-10 text-center text-[14px] text-slate-400">상품 데이터 없음</div>
+                ) : (
+                  <table className="w-full text-[14px]">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[13px] font-medium sticky top-0 z-10">
+                      <tr>
+                        <th className="text-left px-3 py-2">상품명</th>
+                        <th className="text-left px-3 py-2 w-[80px]">위치</th>
+                        <th className="text-right px-3 py-2 w-[70px]">재고</th>
+                        <th className="text-right px-3 py-2 w-[80px]">단가</th>
+                        <th className="text-right px-3 py-2 w-[80px]">판매가</th>
+                        <th className="text-right px-3 py-2 w-[90px]">자산</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {agg.products.map((p) => {
+                        const meta = productsMap[p.code] as any;
+                        const salePrice = Number(meta?.sale_price ?? 0);
+                        const loc = meta?.display_location ?? meta?.location ?? null;
+                        return (
+                          <tr key={p.code} className="hover:bg-slate-50/60 h-8 text-ink">
+                            <td className="px-3 py-1.5 font-medium break-keep">{p.name}</td>
+                            <td className="px-3 py-1.5 text-[13px] text-slate-600 tabular-nums">{loc || <span className="text-slate-300">-</span>}</td>
+                            <td className="px-3 py-1.5 text-right tabular-nums font-semibold">{p.stock.toLocaleString("ko-KR")}</td>
+                            <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{p.unitPrice > 0 ? fmtWon(p.unitPrice) : <span className="text-slate-300">-</span>}</td>
+                            <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{salePrice > 0 ? fmtWon(salePrice) : <span className="text-slate-300">-</span>}</td>
+                            <td className="px-3 py-1.5 text-right tabular-nums font-bold">{p.assetValue > 0 ? fmtWon(p.assetValue) : <span className="text-slate-300 font-medium">-</span>}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </aside>
+          </>
+        );
+      })()}
     </div>
   );
 };
@@ -597,13 +677,7 @@ const ZoneListGroup: React.FC<{
                 {asset > 0 ? fmtWon(asset) : <span className="text-slate-300 font-medium">-</span>}
               </td>
             </tr>
-            {isExpanded && agg && (
-              <tr className="bg-slate-50/40">
-                <td colSpan={4} className="px-3 md:px-4 py-3">
-                  <ProductSubList products={agg.products} fmtWon={fmtWon} />
-                </td>
-              </tr>
-            )}
+            {/* 2026-10-11 · 사용자 지시 · 아코디언 inline 삭제 · drawer 로 이동 */}
           </React.Fragment>
         );
       })}

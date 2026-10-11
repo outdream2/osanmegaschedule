@@ -7,6 +7,8 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Package, Warning, Scales } from "@phosphor-icons/react";
 import type { DpSubTabKey } from "../DisplayPage.types";
 import { api } from "../../../lib/apiClient";
+// 2026-10-09 · UI-4 · 공통 모듈
+import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "./OverviewHeader";
 // 2026-10-09 · 사용자 지시 · 실재고테이블 페이지 옮겨와서 현황 옆 inner tab 으로 통합
 import { RealStockTablePage } from "../RealStockTablePage";
 
@@ -187,50 +189,36 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   const maxDaily = Math.max(1, ...daily.map(d => d.amount));
 
   return (
-    <div className="flex flex-col gap-5 min-h-0 pb-6 bg-[#F4F7FA]">
-      {/* 2026-10-09 · 사용자 지시 · 발주반품현황 상단 디자인 적용 · compact inline hero */}
-      <section className="flex items-center gap-2 py-0.5 px-4 sm:px-6 pt-4">
-        <span className="w-[3px] h-[14px] bg-sky-500 rounded-full shrink-0" />
-        <span className="text-[14px] md:text-[15px] text-slate-700">
-          <strong className="font-semibold text-ink">매입 재고현황</strong> · 매입이력 · 일별 매입금액 · 매입이상 · 실재고 vs ERP 재고자산 비교
-        </span>
-        <select value={period} onChange={(e) => setPeriod(e.target.value as any)}
-          className="ml-auto h-8 px-2.5 text-[13px] font-semibold text-ink border border-slate-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer">
-          <option value="7">최근 7일</option><option value="14">최근 14일</option><option value="30">최근 30일</option>
-        </select>
-      </section>
-
-      {/* 2026-10-09 · 사용자 지시 · inner tab bar · OrderReturnOverview 패턴 (count badge + 활성 bottom bar · 프로세스 connector X) */}
-      <div className="px-4 sm:px-6">
-        <nav className="flex items-stretch border-b border-slate-200 overflow-x-auto -mb-px" aria-label="매입 재고 inner tabs">
-          {([
-            { k: "overview",   label: "현황",         tone: { bar: "bg-sky-500",    soft: "bg-sky-50" },    count: null },
-            { k: "real-stock", label: "실재고테이블", tone: { bar: "bg-violet-500", soft: "bg-violet-50" }, count: null },
-          ] as { k: InnerTabKey; label: string; tone: { bar: string; soft: string }; count: number | null }[]).map(t => {
-            const active = innerTab === t.k;
-            return (
-              <button key={t.k} type="button" onClick={() => setInnerTab(t.k)}
-                className={`relative shrink-0 px-2.5 h-10 text-[14px] md:text-[15px] font-medium transition-colors cursor-pointer inline-flex items-baseline gap-1.5 whitespace-nowrap ${
-                  active ? "text-ink font-semibold" : "text-slate-500 hover:text-ink"
-                }`}
-              >
-                <span>{t.label}</span>
-                {t.count != null && (
-                  <span className={`text-[13px] md:text-[14px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full ${active ? t.tone.soft + " text-ink" : "bg-slate-100 text-slate-500"}`}>{t.count.toLocaleString()}</span>
-                )}
-                {active && <span className={`absolute left-0 right-0 -bottom-px h-[2px] ${t.tone.bar} rounded-full`} />}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
+      {/* 2026-10-09 · UI-4 · 공통 모듈 OverviewHero + OverviewInnerTabs */}
+      <OverviewHero
+        tone="sky"
+        title="매입 재고현황"
+        description="매입이력 · 일별 매입금액 · 매입이상 · 실재고 vs ERP 재고자산 비교"
+        right={
+          <select value={period} onChange={(e) => setPeriod(e.target.value as any)}
+            className="h-8 px-2.5 text-[13px] font-semibold text-ink border border-slate-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer">
+            <option value="7">최근 7일</option><option value="14">최근 14일</option><option value="30">최근 30일</option>
+          </select>
+        }
+      />
+      <OverviewInnerTabs<InnerTabKey>
+        ariaLabel="매입 재고 inner tabs"
+        active={innerTab}
+        onChange={setInnerTab}
+        tabs={[
+          { k: "overview",   label: "현황",         tone: "sky",    count: null },
+          { k: "real-stock", label: "실재고테이블", tone: "violet", count: null },
+        ] as const satisfies ReadonlyArray<OverviewInnerTab<InnerTabKey>>}
+      />
 
       {innerTab === "real-stock" ? (
         <div className="px-4 sm:px-6"><RealStockTablePage /></div>
       ) : (<>
 
-      {/* 상단 요약 · 단일 라인 inline text (사용자 지시 · KPI card 배지 폐기 · 공간 절약) */}
-      <div className="px-4 sm:px-6">
+      {/* 상단 요약 · 단일 라인 inline text (사용자 지시 · KPI card 배지 폐기 · 공간 절약)
+          2026-10-11 · 사용자 "발주반품현황 여백이 마음에 들어" · nav 아래 pt-3 추가 (OverviewToolbar 리듬 복제) */}
+      <div className="px-4 sm:px-6 pt-3">
         <div className="flex items-baseline gap-x-6 gap-y-1.5 flex-wrap text-[14px]">
           <span className="text-slate-500">{period}일 매입액 <b className="text-brand-deep tabular-nums ml-1">{fmt(totalAmount)}</b>원</span>
           <span className="text-slate-500">건수 <b className="text-ink tabular-nums ml-1">{fmt(totalCount)}</b>건</span>
