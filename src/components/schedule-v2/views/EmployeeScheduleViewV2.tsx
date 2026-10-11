@@ -261,17 +261,31 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
                   로드 실패 · {error}
                 </div>
               ) : subview === "calendar" ? (
-                <MonthGridV2
-                  employees={selectedAsArray}
-                  dateList={dateList}
-                  todayStr={todayStr}
-                  scheduleTypes={scheduleTypes}
-                  editMode={effectiveEditMode}
-                  editTarget={editTarget}
-                  onOpenEdit={openEdit}
-                  onCloseEdit={closeEdit}
-                  onTypeSelect={handleTypeSelect}
-                />
+                /* 2026-10-11 · 사용자 지시 · 달력 탭 아래 공간에 일괄등록 panel 동반 노출
+                   (전에는 달력만 · 지금은 달력 + 일괄등록 세로 스택) */
+                <div className="flex-1 min-h-0 flex flex-col gap-3 overflow-y-auto">
+                  <MonthGridV2
+                    employees={selectedAsArray}
+                    dateList={dateList}
+                    todayStr={todayStr}
+                    scheduleTypes={scheduleTypes}
+                    editMode={effectiveEditMode}
+                    editTarget={editTarget}
+                    onOpenEdit={openEdit}
+                    onCloseEdit={closeEdit}
+                    onTypeSelect={handleTypeSelect}
+                  />
+                  <EmployeeBulkPanel
+                    employee={selectedEmployee}
+                    year={year}
+                    month={month}
+                    scheduleTypes={scheduleTypes}
+                    isLocked={isMonthLocked}
+                    canEdit={canEdit}
+                    showNotification={showNotification}
+                    onApplied={() => fetchScheduleData(dateList, true)}
+                  />
+                </div>
               ) : subview === "bulk" ? (
                 <EmployeeBulkPanel
                   employee={selectedEmployee}
