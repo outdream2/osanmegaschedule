@@ -25,6 +25,8 @@ import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { spawn } from "node:child_process";
 import * as path from "node:path";
 import { asyncHandler } from "../../middleware/asyncHandler";
+// 2026-10-13 · 보안 fix S-4 · authorize(3) · ERP 매출/마진 데이터 vendor(level=0) 차단
+import { authorize } from "../../middleware/requireAuth";
 import logger from "../../lib/logger";
 import { supabase } from "../../../src/supabase/client";
 import { classifyProduct, type ProductClass } from "../../../src/utils/productClassify";
@@ -178,6 +180,12 @@ interface DaySaleProductItem {
   marginPct: number | null;
   location: string | null;     // products.location (JOIN · 없으면 null)
   class: ProductClass;         // classifyProduct(location)
+  // 2026-10-12 · 사용자 지시 "ERP 호출 후 상품코드 연결해서 매입가 사입가 가져올 수 있잖아"
+  //   · products JOIN · pcode 1:1 · 매번 fresh (별도 /api/products-map 호출 제거)
+  supplier: string | null;
+  purchasePrice: number | null;
+  salePrice: number | null;
+  lastPurchaseDate: string | null;
 }
 
 interface ClassGroupStats {
@@ -219,7 +227,7 @@ function aggregateGroup(items: DaySaleProductItem[]): ClassGroupStats {
   };
 }
 
-router.get("/api/erp/sale-day-products", asyncHandler(async (req, res) => {
+router.get("/api/erp/sale-day-products", authorize(3), asyncHandler(async (req, res) => {
   const date = String(req.query.date ?? "").trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return res.json({ ok: false, error: "date 필수 (YYYY-MM-DD)" });
@@ -270,7 +278,8 @@ router.get("/api/erp/sale-day-products", asyncHandler(async (req, res) => {
 
     // 상품 row normalize · subtotal/aggregate row 제외 (PCode 없는 것)
     //   · PCode 있으면 상품 row · 없으면 subtotal → skip
-    const normalizedRows: Array<Omit<DaySaleProductItem, "location" | "class">> = [];
+    //   · 2026-10-13 · supplier/purchasePrice/salePrice/lastPurchaseDate 는 아래 products JOIN 뒤 채워짐 → Omit 에 포함
+    const normalizedRows: Array<Omit<DaySaleProductItem, "location" | "class" | "supplier" | "purchasePrice" | "salePrice" | "lastPurchaseDate">> = [];
     for (const r of rawRows) {
       const pcode = (r.PCode === undefined || r.PCode === null) ? null : String(r.PCode).trim() || null;
       const productName = (r.ProductName === undefined || r.ProductName === null)
@@ -300,7 +309,14 @@ router.get("/api/erp/sale-day-products", asyncHandler(async (req, res) => {
     //     · 아래로 수정 · display_location 만 조회 · classifyProduct() 가 첫 segment 숫자 파싱
     //   · 매치 안 되는 pcode (서버-ERP 불일치) 는 location=null → class="unknown" (fallback 생성 금지)
     const pcodes = Array.from(new Set(normalizedRows.map((r) => r.pcode).filter((p): p is string => !!p)));
-    const locationMap = new Map<string, string | null>();
+    interface MetaRow {
+      location: string | null;
+      supplier: string | null;
+      purchasePrice: number | null;
+      salePrice: number | null;
+      lastPurchaseDate: string | null;
+    }
+    const metaMap = new Map<string, MetaRow>();
     let joinMatched = 0;
     if (pcodes.length > 0) {
       const CHUNK = 1000;
@@ -308,17 +324,21 @@ router.get("/api/erp/sale-day-products", asyncHandler(async (req, res) => {
         const chunk = pcodes.slice(i, i + CHUNK);
         const { data, error } = await supabase
           .from("products")
-          .select("pcode, display_location")
+          .select("pcode, display_location, supplier, purchase_price, sale_price, last_purchase_date")
           .in("pcode", chunk);
         if (error) {
           logger.warn(`[sale-day-products] products JOIN 실패 (chunk ${i}) · ${error.message}`);
           continue;
         }
-        for (const row of data ?? []) {
+        for (const row of (data ?? []) as Array<Record<string, unknown>>) {
           if (!row.pcode) continue;
           const d = (row.display_location ?? null) as string | null;
-          const resolved = d && String(d).trim() ? String(d).trim() : null;
-          locationMap.set(String(row.pcode), resolved);
+          const location = d && String(d).trim() ? String(d).trim() : null;
+          const supplier = row.supplier != null && String(row.supplier).trim() ? String(row.supplier).trim() : null;
+          const purchasePrice = Number.isFinite(Number(row.purchase_price)) ? Number(row.purchase_price) : null;
+          const salePrice = Number.isFinite(Number(row.sale_price)) ? Number(row.sale_price) : null;
+          const lpd = row.last_purchase_date != null && String(row.last_purchase_date).trim() ? String(row.last_purchase_date).trim() : null;
+          metaMap.set(String(row.pcode), { location, supplier, purchasePrice, salePrice, lastPurchaseDate: lpd });
           joinMatched++;
         }
       }
@@ -326,12 +346,17 @@ router.get("/api/erp/sale-day-products", asyncHandler(async (req, res) => {
     logger.info(`[sale-day-products] products JOIN · requested=${pcodes.length} matched=${joinMatched}`);
 
     const items: DaySaleProductItem[] = normalizedRows.map((r) => {
-      const location = r.pcode ? (locationMap.get(r.pcode) ?? null) : null;
+      const meta = r.pcode ? metaMap.get(r.pcode) : undefined;
+      const location = meta?.location ?? null;
       return {
         ...r,
         marginPct: computeMarginPct(r.margin, r.saleTotal),
         location,
         class: classifyProduct(location),
+        supplier: meta?.supplier ?? null,
+        purchasePrice: meta?.purchasePrice ?? null,
+        salePrice: meta?.salePrice ?? null,
+        lastPurchaseDate: meta?.lastPurchaseDate ?? null,
       };
     });
 

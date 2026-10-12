@@ -10,6 +10,8 @@ import { supabase } from "../../../src/supabase/client";
 import { authorize } from "../../middleware/requireAuth";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError, unauthorized } from "../../middleware/errorHandler";
+// 2026-10-13 · 보안 fix S-3 · PostgREST .or() filter 인젝션 방어
+import { sanitizeOrValue } from "../../utils/sanitize";
 import { getSession } from "../../middleware/requireAuth";
 import { validateBody } from "../../middleware/zodValidate";
 import {
@@ -166,7 +168,7 @@ router.get("/api/borrowings/parties", authorize(1), asyncHandler(async (req, res
   const vendorParties: any[] = [];
   try {
     let vq = supabase.from("vendors").select("id, company_name, contact_name, phone, email").order("company_name").limit(200);
-    if (q) vq = vq.or(`company_name.ilike.%${q}%,contact_name.ilike.%${q}%`);
+    if (q) { const sq = sanitizeOrValue(q); vq = vq.or(`company_name.ilike.%${sq}%,contact_name.ilike.%${sq}%`); }
     const { data: vendorRows } = await vq;
     for (const v of (vendorRows ?? []) as any[]) {
       vendorParties.push({
@@ -194,7 +196,7 @@ router.get("/api/borrowings/parties", authorize(1), asyncHandler(async (req, res
       .select("id, party_type, vendor_id, employee_id, name, contact_name, contact_phone, contact_email, address, memo")
       .order("created_at", { ascending: false })
       .limit(50);
-    if (q) extQuery = extQuery.or(`name.ilike.%${q}%,contact_name.ilike.%${q}%`);
+    if (q) { const sq = sanitizeOrValue(q); extQuery = extQuery.or(`name.ilike.%${sq}%,contact_name.ilike.%${sq}%`); }
     const { data: extRows, error: extErr } = await extQuery;
     if (extErr && !/relation .* does not exist/i.test(extErr.message)) {
       throw new HttpError(500, extErr.message);

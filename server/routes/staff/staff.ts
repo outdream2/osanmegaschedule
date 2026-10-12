@@ -7,6 +7,8 @@ import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { badRequest, HttpError } from "../../middleware/errorHandler";
+// 2026-10-13 · 보안 fix S-2 · authorize(1) · 직원 스케줄 조회 vendor(level=0) 차단
+import { authorize } from "../../middleware/requireAuth";
 import { isOffType } from "../../../src/shared/schedule/offTypes";
 
 const router = Router();
@@ -57,7 +59,7 @@ async function loadReservationStaffList(): Promise<Array<{ id: number; name: str
     .filter((r): r is { id: number; name: string; rank: string | null } => Boolean(r));
 }
 
-router.get("/api/staff-availability", asyncHandler(async (req, res) => {
+router.get("/api/staff-availability", authorize(1), asyncHandler(async (req, res) => {
   const { date } = req.query;
   if (!date || typeof date !== "string") throw badRequest("date query param required");
   const staffList = await loadReservationStaffList();
@@ -86,7 +88,7 @@ router.get("/api/staff-availability", asyncHandler(async (req, res) => {
   res.json(result);
 }));
 
-router.get("/api/staff-monthly", asyncHandler(async (req, res) => {
+router.get("/api/staff-monthly", authorize(1), asyncHandler(async (req, res) => {
   const { year, month } = req.query;
   if (!year || !month) throw badRequest("year and month required");
   const staffList = await loadReservationStaffList();

@@ -52,7 +52,9 @@ router.post("/api/upload-vendors", authorize(9), express.raw({ type: "applicatio
     throw badRequest("파일이 없습니다");
   }
   let authorized = false;
-  if (adminKey && adminKey === (process.env.ADMIN_PIN ?? "1234")) {
+  // 2026-10-13 · 보안 fix S-1 · ADMIN_PIN 기본값 "1234" 제거 · env 미설정 시 adminKey 경로 전면 차단
+  const adminPin = process.env.ADMIN_PIN;
+  if (adminKey && adminPin && adminKey === adminPin) {
     authorized = true;
   } else if (managerId) {
     const { data: emp } = await supabase.from("employees").select("level").eq("id", Number(managerId)).maybeSingle();
