@@ -6,12 +6,15 @@
 //   · 수정 가능 (슬라이딩 윈도우에서 inline edit 지원)
 //   · 2026-10-12 · 직군(position) · 계약유형(contract_type) → <select> 드롭다운 (settings 연동)
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowSquareOut, PencilSimple, FloppyDisk, X as XIcon, Check } from "@phosphor-icons/react";
+import { ArrowSquareOut, PencilSimple, FloppyDisk, X as XIcon, Check, Calendar } from "@phosphor-icons/react";
 import type { Employee } from "../../../../types";
 import { updateEmployee, type EmployeeUpdatePayload } from "../../../../lib/employeeApi";
 import { useToast, toastClass } from "../../../../hooks/useToast";
 import { useSettings } from "../../../../hooks/useSettings";
-import { CONTRACT_TYPES } from "../../../StaffManagePage/types";
+import { CONTRACT_TYPES, GENDERS, PERFORMANCE_RATINGS } from "../../../StaffManagePage/types";
+// 2026-10-12 · 사용자 지시 · "Timeofftab 직원관리슬라이딩에 나오게" + "원래 직원관리탭에 있던 것들 통합해서 카드로"
+//   · useLeaveManager 재사용 (StaffManagePage 와 동일 소스) · drawer 열림 시 연차 lazy load
+import { useLeaveManager } from "../../../../hooks/useLeaveManager";
 
 // HR 확장 필드 (Employee type 에 없는 nullable 확장)
 type EmployeeExt = Employee & {
@@ -19,6 +22,30 @@ type EmployeeExt = Employee & {
   contract_start?: string | null;
   contract_end?: string | null;
   birth_date?: string | null;
+  // 2026-10-12 · old 직원상세 전체 field 복제 (사용자 지시 "old 직원상세내용 그대로 가져와 · 내용만")
+  working_hours_per_week?: number | null;
+  break_time_minutes?: number | null;
+  break_apply_paid?: boolean | null;
+  weekly_holiday?: string | null;
+  work_location?: string | null;
+  job_duties?: string | null;
+  wage_calc_type?: string | null;
+  wage_amount?: number | null;
+  wage_pay_day?: string | null;
+  wage_pay_method?: string | null;
+  bank_name?: string | null;
+  bank_account_no?: string | null;
+  insurance_nps_date?: string | null;
+  insurance_nhis_date?: string | null;
+  insurance_ei_date?: string | null;
+  insurance_wcia_date?: string | null;
+  insurance_excluded?: boolean | null;
+  pharmacist_license_no?: string | null;
+  health_check_expiry?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  emergency_contact_rel?: string | null;
+  performance_rating?: string | null;
 };
 
 interface Props {
@@ -29,9 +56,15 @@ interface Props {
 }
 
 type FieldKey =
-  | "employee_number" | "position" | "rank" | "employmentType" | "workplace"
+  | "employee_number" | "position" | "rank" | "employmentType" | "workplace" | "gender"
   | "phone" | "email" | "address"
   | "contract_type" | "contract_start" | "contract_end" | "birth_date" | "annual_leave_days"
+  | "working_hours_per_week" | "break_time_minutes" | "break_apply_paid" | "weekly_holiday" | "work_location" | "job_duties"
+  | "wage_calc_type" | "wage_amount" | "wage_pay_day" | "wage_pay_method" | "bank_name" | "bank_account_no"
+  | "insurance_nps_date" | "insurance_nhis_date" | "insurance_ei_date" | "insurance_wcia_date" | "insurance_excluded"
+  | "pharmacist_license_no" | "health_check_expiry"
+  | "emergency_contact_name" | "emergency_contact_phone" | "emergency_contact_rel"
+  | "performance_rating"
   | "description";
 
 type FormValue = string;
@@ -43,6 +76,7 @@ const toForm = (e: EmployeeExt): Form => ({
   rank: e.rank ?? "",
   employmentType: e.employmentType ?? "",
   workplace: e.workplace ?? "",
+  gender: e.gender ?? "",
   phone: e.phone ?? "",
   email: e.email ?? "",
   address: e.address ?? "",
@@ -51,6 +85,29 @@ const toForm = (e: EmployeeExt): Form => ({
   contract_end: e.contract_end ?? "",
   birth_date: e.birth_date ?? "",
   annual_leave_days: e.annual_leave_days != null ? String(e.annual_leave_days) : "",
+  working_hours_per_week: e.working_hours_per_week != null ? String(e.working_hours_per_week) : "",
+  break_time_minutes: e.break_time_minutes != null ? String(e.break_time_minutes) : "",
+  break_apply_paid: e.break_apply_paid === true ? "true" : e.break_apply_paid === false ? "false" : "",
+  weekly_holiday: e.weekly_holiday ?? "",
+  work_location: e.work_location ?? "",
+  job_duties: e.job_duties ?? "",
+  wage_calc_type: e.wage_calc_type ?? "",
+  wage_amount: e.wage_amount != null ? String(e.wage_amount) : "",
+  wage_pay_day: e.wage_pay_day ?? "",
+  wage_pay_method: e.wage_pay_method ?? "",
+  bank_name: e.bank_name ?? "",
+  bank_account_no: e.bank_account_no ?? "",
+  insurance_nps_date: e.insurance_nps_date ?? "",
+  insurance_nhis_date: e.insurance_nhis_date ?? "",
+  insurance_ei_date: e.insurance_ei_date ?? "",
+  insurance_wcia_date: e.insurance_wcia_date ?? "",
+  insurance_excluded: e.insurance_excluded === true ? "true" : e.insurance_excluded === false ? "false" : "",
+  pharmacist_license_no: e.pharmacist_license_no ?? "",
+  health_check_expiry: e.health_check_expiry ?? "",
+  emergency_contact_name: e.emergency_contact_name ?? "",
+  emergency_contact_phone: e.emergency_contact_phone ?? "",
+  emergency_contact_rel: e.emergency_contact_rel ?? "",
+  performance_rating: e.performance_rating ?? "",
   description: e.description ?? "",
 });
 
@@ -92,6 +149,19 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
   const [editingField, setEditingField] = useState<FieldKey | null>(null);
   const [draft, setDraft] = useState<string>("");
   const [saving, setSaving] = useState(false);
+
+  // 2026-10-12 · 사용자 지시 · Timeoff 카드 · useLeaveManager lazy load
+  //   · confirm mock (drawer 안에서는 삭제 액션 노출 X · 요약 카드만)
+  const confirmNoop = useCallback(async () => "neutral" as const, []);
+  const leaveMgr = useLeaveManager(emp.id, confirmNoop);
+  useEffect(() => {
+    if (!emp.id) return;
+    void leaveMgr.loadUsedLeaves(emp.id, leaveMgr.currentYearNow);
+  }, [emp.id, leaveMgr.currentYearNow]);
+  const timeoffTotalDays = Number(emp.annual_leave_days ?? 15);
+  const timeoffUsedDays = leaveMgr.usedLeaves.reduce((sum, l) => sum + (Number(l.weight) || 0), 0);
+  const timeoffRemainDays = Math.max(0, timeoffTotalDays - timeoffUsedDays);
+  const fmtDays = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
   // 다른 직원 선택되면 reset
   useEffect(() => {
@@ -145,20 +215,54 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
       showError("연차 일수가 올바른 숫자가 아닙니다.");
       return;
     }
+    const numOrNull = (s: string): number | null => {
+      const t = s.trim();
+      if (t === "") return null;
+      const n = Number(t);
+      return Number.isFinite(n) ? n : null;
+    };
+    const strOrNull = (s: string): string | null => s.trim() === "" ? null : s.trim();
+    const boolOrNull = (s: string): boolean | null => s === "true" ? true : s === "false" ? false : null;
+
     const patch: EmployeeUpdatePayload = {
       position: form.position.trim(),
-      rank: form.rank.trim() === "" ? null : form.rank.trim(),
+      rank: strOrNull(form.rank),
       employmentType: form.employmentType.trim(),
       workplace: form.workplace.trim(),
-      employee_number: form.employee_number.trim() === "" ? null : form.employee_number.trim(),
-      phone: form.phone.trim() === "" ? null : form.phone.trim(),
-      email: form.email.trim() === "" ? null : form.email.trim(),
-      address: form.address.trim() === "" ? null : form.address.trim(),
-      contract_type: form.contract_type.trim() === "" ? null : form.contract_type.trim(),
-      contract_start: form.contract_start.trim() === "" ? null : form.contract_start.trim(),
-      contract_end: form.contract_end.trim() === "" ? null : form.contract_end.trim(),
-      birth_date: form.birth_date.trim() === "" ? null : form.birth_date.trim(),
+      gender: strOrNull(form.gender),
+      employee_number: strOrNull(form.employee_number),
+      phone: strOrNull(form.phone),
+      email: strOrNull(form.email),
+      address: strOrNull(form.address),
+      contract_type: strOrNull(form.contract_type),
+      contract_start: strOrNull(form.contract_start),
+      contract_end: strOrNull(form.contract_end),
+      birth_date: strOrNull(form.birth_date),
       annual_leave_days: annualNum,
+      // 2026-10-12 · old 직원상세 전체 필드 복제
+      working_hours_per_week: numOrNull(form.working_hours_per_week),
+      break_time_minutes: numOrNull(form.break_time_minutes),
+      break_apply_paid: boolOrNull(form.break_apply_paid),
+      weekly_holiday: strOrNull(form.weekly_holiday),
+      work_location: strOrNull(form.work_location),
+      job_duties: strOrNull(form.job_duties),
+      wage_calc_type: strOrNull(form.wage_calc_type),
+      wage_amount: numOrNull(form.wage_amount),
+      wage_pay_day: strOrNull(form.wage_pay_day),
+      wage_pay_method: strOrNull(form.wage_pay_method),
+      bank_name: strOrNull(form.bank_name),
+      bank_account_no: strOrNull(form.bank_account_no),
+      insurance_nps_date: strOrNull(form.insurance_nps_date),
+      insurance_nhis_date: strOrNull(form.insurance_nhis_date),
+      insurance_ei_date: strOrNull(form.insurance_ei_date),
+      insurance_wcia_date: strOrNull(form.insurance_wcia_date),
+      insurance_excluded: boolOrNull(form.insurance_excluded),
+      pharmacist_license_no: strOrNull(form.pharmacist_license_no),
+      health_check_expiry: strOrNull(form.health_check_expiry),
+      emergency_contact_name: strOrNull(form.emergency_contact_name),
+      emergency_contact_phone: strOrNull(form.emergency_contact_phone),
+      emergency_contact_rel: strOrNull(form.emergency_contact_rel),
+      performance_rating: strOrNull(form.performance_rating),
       description: form.description,
     };
     setSaving(true);
@@ -260,6 +364,12 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
           <InlineRow label="생년월일" fieldKey="birth_date" form={form} editingField={editingField} draft={draft}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             type="date" />
+          <InlineRow label="성별" fieldKey="gender" form={form} editingField={editingField} draft={draft}
+            onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
+            options={GENDERS.map(g => ({ value: g, label: g }))} placeholder="성별 선택" />
+          <InlineRow label="평가 등급" fieldKey="performance_rating" form={form} editingField={editingField} draft={draft}
+            onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
+            options={PERFORMANCE_RATINGS} placeholder="평가 등급 선택" />
         </Section>
 
         {/* 섹션 · 연락처 */}
@@ -288,6 +398,70 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
           <InlineRow label="휴가 일수" fieldKey="annual_leave_days" form={form} editingField={editingField} draft={draft}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             inputMode="numeric" suffix="일" />
+        </Section>
+
+        {/* 2026-10-12 · 사용자 지시 · old 직원상세 필드 전체 복제 */}
+        <Section title="근로조건">
+          <InlineRow label="주 소정근로시간" fieldKey="working_hours_per_week" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="numeric" suffix="시간" />
+          <InlineRow label="휴게시간" fieldKey="break_time_minutes" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="numeric" suffix="분" />
+          <InlineRow label="휴게 유급 적용" fieldKey="break_apply_paid" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} options={[{ value: "true", label: "유급" }, { value: "false", label: "무급" }]} placeholder="유급/무급" />
+          <InlineRow label="주휴일" fieldKey="weekly_holiday" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} placeholder="예: 일요일" />
+          <InlineRow label="근무 장소" fieldKey="work_location" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
+          <InlineRow label="종사 업무" fieldKey="job_duties" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
+        </Section>
+
+        <Section title="임금 / 계좌">
+          <InlineRow label="임금 유형" fieldKey="wage_calc_type" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} options={[{ value: "hourly", label: "시급" }, { value: "daily", label: "일급" }, { value: "monthly", label: "월급" }, { value: "annual", label: "연봉" }]} placeholder="임금 유형 선택" />
+          <InlineRow label="임금액" fieldKey="wage_amount" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="numeric" suffix="원" />
+          <InlineRow label="지급일" fieldKey="wage_pay_day" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} placeholder="예: 매월 25일" />
+          <InlineRow label="지급 방법" fieldKey="wage_pay_method" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} placeholder="예: 통장 입금" />
+          <InlineRow label="은행" fieldKey="bank_name" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
+          <InlineRow label="계좌번호" fieldKey="bank_account_no" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="numeric" />
+        </Section>
+
+        <Section title="4대보험">
+          <InlineRow label="제외 대상" fieldKey="insurance_excluded" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} options={[{ value: "true", label: "제외" }, { value: "false", label: "가입" }]} placeholder="가입/제외" />
+          <InlineRow label="국민연금 가입" fieldKey="insurance_nps_date" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
+          <InlineRow label="건강보험 가입" fieldKey="insurance_nhis_date" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
+          <InlineRow label="고용보험 가입" fieldKey="insurance_ei_date" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
+          <InlineRow label="산재보험 가입" fieldKey="insurance_wcia_date" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
+        </Section>
+
+        <Section title="약국 특수 자격">
+          <InlineRow label="약사 면허번호" fieldKey="pharmacist_license_no" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
+          <InlineRow label="보건증 만료일" fieldKey="health_check_expiry" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
+        </Section>
+
+        <Section title="비상연락처">
+          <InlineRow label="이름" fieldKey="emergency_contact_name" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
+          <InlineRow label="전화번호" fieldKey="emergency_contact_phone" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="tel" placeholder="010-0000-0000" />
+          <InlineRow label="관계" fieldKey="emergency_contact_rel" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} placeholder="예: 배우자·부모" />
+        </Section>
+
+        {/* 2026-10-12 · 사용자 지시 · Timeoff 카드 · 직원관리 Time Off 탭 통합 · 요약 카드 */}
+        <Section title="Time Off">
+          <div className="grid grid-cols-3 gap-2">
+            <TimeoffCard label="총 연차" value={fmtDays(timeoffTotalDays)} suffix="일" tone="indigo" />
+            <TimeoffCard label="사용" value={leaveMgr.leaveLoading ? "..." : fmtDays(timeoffUsedDays)} suffix="일" tone="rose" />
+            <TimeoffCard label="잔여" value={leaveMgr.leaveLoading ? "..." : fmtDays(timeoffRemainDays)} suffix="일" tone="emerald" emphasize />
+          </div>
+          <div className="flex items-center gap-1.5 mt-2.5 text-[12px] text-slate-500">
+            <Calendar size={11} weight="bold" className="text-slate-400" />
+            <span className="tabular-nums">{leaveMgr.currentYearNow}년 기준 · 사용 내역 {leaveMgr.usedLeaves.length}건</span>
+            {onOpenManagement && (
+              <button
+                type="button"
+                onClick={() => onOpenManagement(emp.id)}
+                className="ml-auto text-[12px] font-semibold text-brand-deep hover:underline cursor-pointer"
+                title="직원관리 Time Off 탭에서 상세 이력·추가·삭제"
+              >
+                상세 이력 →
+              </button>
+            )}
+          </div>
+          {leaveMgr.leaveError && (
+            <p className="mt-2 text-[12px] text-rose-600 font-semibold">연차 로드 실패: {leaveMgr.leaveError}</p>
+          )}
         </Section>
 
         {/* 섹션 · 메모 */}
@@ -363,6 +537,23 @@ const QuickFact: React.FC<{ label: string; value: string; tone?: "rose" | "amber
     <div className="px-4 py-3 flex flex-col gap-0.5 border-r border-slate-100 last:border-r-0">
       <span className="text-[11px] text-slate-500 font-medium">{label}</span>
       <span className={`text-[14px] md:text-[15px] font-bold tabular-nums tracking-tight ${toneCls}`}>{value}</span>
+    </div>
+  );
+};
+
+// 2026-10-12 · 사용자 지시 · Timeoff 요약 카드 (총/사용/잔여 3-mini) · 홈 랜딩 톤
+const TimeoffCard: React.FC<{ label: string; value: string; suffix?: string; tone: "indigo" | "rose" | "emerald"; emphasize?: boolean }> = ({ label, value, suffix, tone, emphasize }) => {
+  const toneCls =
+    tone === "indigo" ? "text-indigo-700 bg-indigo-50/60 border-indigo-100" :
+    tone === "rose" ? "text-rose-600 bg-rose-50/60 border-rose-100" :
+    "text-emerald-700 bg-emerald-50/60 border-emerald-100";
+  return (
+    <div className={`rounded-[10px] border px-3 py-2.5 flex flex-col gap-0.5 ${toneCls}`}>
+      <span className="text-[11px] text-slate-500 font-medium">{label}</span>
+      <div className="flex items-baseline gap-1">
+        <span className={`${emphasize ? "text-[20px] md:text-[22px]" : "text-[17px] md:text-[18px]"} font-bold tabular-nums tracking-tight`}>{value}</span>
+        {suffix && <span className="text-[12px] font-semibold text-slate-500">{suffix}</span>}
+      </div>
     </div>
   );
 };
