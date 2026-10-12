@@ -5,18 +5,15 @@
 // 2026-09-20 · 승인대기 · pending 배지 · 60초 폴링 + approval-count-updated 이벤트
 import React, { useState, useCallback, useEffect } from "react";
 import { Collapsible } from "radix-ui";
-import { LogOut } from "lucide-react";
 // 2026-08-12 · 접힘 아이콘 · CaretDown (Radix/shadcn 표준 · 부드러운 화살표)
 import { CaretDown } from "@phosphor-icons/react";
 import { useIsMobile } from "../../hooks/use-mobile";
 // 2026-08-23 · #188 · usePageVisibility · 사이드바 items · 뷰포트별 필터
 import { usePageVisibility } from "../../hooks/usePageVisibility";
-import { NotificationBell } from "../NotificationBell";
-// 2026-09-14 · #108 · NotificationToggle 제거 (사용자 결정 · 실사용 빈도 낮음)
+// 2026-10-08 · 사용자 지시 · footer 전체 제거 (NotificationBell · LogOut · SidebarFooter import 삭제)
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -27,7 +24,6 @@ import type { AuthSession } from "../../types";
 import {
   filterGroupsForSession,
   isItemActive,
-  DARK_COLOR_TONES,
   NAV_ACCENT,
   type SideNavGroup,
   type SideNavItem,
@@ -52,17 +48,9 @@ interface SideNavProps {
   onLogout?: () => void;
 }
 
-// ─── localStorage 헬퍼 ──────────────────────────────────────────────────────
-function readGroupOpen(groupId: string): boolean {
-  if (typeof window === "undefined") return true;
-  const raw = localStorage.getItem(`sidebar.groups.${groupId}`);
-  if (raw === "false") return false;
-  return true; // 기본값: 열림
-}
-
-function writeGroupOpen(groupId: string, open: boolean): void {
-  localStorage.setItem(`sidebar.groups.${groupId}`, String(open));
-}
+// 2026-10-08 · 사용자 지시 · accordion 모드로 전환 (단일 활성 그룹만 open)
+//   · 기존 localStorage 그룹별 open 상태 제거 (ephemeral)
+//   · SideNav 상위에서 openGroupId 단일 state 로 관리
 
 // 2026-09-27 · 네비게이션 SSOT · useActiveSubTab 훅 제거 · useActiveNav Context 로 통합
 
@@ -85,6 +73,9 @@ interface CollapsibleGroupProps {
   onNavigate: (page: AppNavPage) => void;
   isVendor: boolean;
   approvalBadge?: number;
+  // 2026-10-08 · accordion controlled · 상위에서 단일 활성 open 관리
+  open: boolean;
+  onOpenChange: (next: boolean) => void;
 }
 
 const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
@@ -94,17 +85,17 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   onNavigate,
   isVendor,
   approvalBadge,
+  open,
+  onOpenChange,
 }) => {
-  const [open, setOpen] = useState<boolean>(() => readGroupOpen(group.id));
   // 2026-09-27 · 네비게이션 SSOT · setActiveByPage · 그룹 클릭 시 activeNav 즉시 갱신
   const { setActiveByPage } = useActiveNav();
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
-      setOpen(next);
-      writeGroupOpen(group.id, next);
+      onOpenChange(next);
     },
-    [group.id],
+    [onOpenChange],
   );
 
   // 그룹 내 활성 항목 여부 (접힌 상태에서 헤더 accent 표시용)
@@ -112,8 +103,7 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
     isItemActive(item, activePage, activeSubTab),
   );
 
-  // 2026-08-17 · 사이드바 deep teal 배경 · DARK_COLOR_TONES 사용 (목업 톤)
-  const groupTone = DARK_COLOR_TONES[group.color];
+  // 2026-10-08 · 리디자인 · groupTone(DARK_COLOR_TONES) 참조 제거 (per-item 톤 통일 · NAV_ACCENT dot 만 사용)
 
   // 2026-09-27 · 네비게이션 SSOT · setActiveByPage 로 activeNav 통합
   //   · 이전 · localStorage + CustomEvent 사이드 채널 · 각 페이지 리슨 · 오매칭 리스크
@@ -141,77 +131,55 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
   return (
     <Collapsible.Root open={open} onOpenChange={handleOpenChange}>
 
-      {/* ── 그룹 헤더 · 2026-08-18 v5 · 컬러 dot + 심플 배경 (사용자 피드백 반영) ── */}
+      {/* ── 그룹 헤더 · 2026-10-08 · 최신 트렌드 (Linear/Vercel) · uppercase 섹션 라벨 톤
+             · 그룹명 = 섹션 캡션 역할 · 폰트 작게 · tracking wide · 뮤트 톤 · 클릭 토글 유지 ── */}
       <Collapsible.Trigger asChild>
         <button
           type="button"
           aria-label={`${group.label} 그룹 ${open ? "접기" : "펼치기"}`}
           className={[
-            // 2026-10-08 · 사용자 피드백 · 사이드바 폰트/아이콘 확대 · 직관적 가독성 우선
-            //   · 그룹 헤더 font 14→16px · padding 1.5→2 · 좀 더 명확한 섹션 구분
             "flex w-full items-center justify-between",
-            "px-2.5 py-2 mt-3 mb-0",
-            "rounded-lg",
-            "text-[16px] leading-none",
+            // 2026-10-08 · 리서치 반영 · 그룹 간 여백 축소 (mt-4 → mt-3) · 메인-서브 사이 mb 유지
+            "px-2.5 py-1.5 mt-3 mb-0",
+            "rounded-md",
             "transition-colors duration-150 ease-out",
             "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
-            hasActiveItem
-              ? [
-                  "bg-white/[0.06]",
-                  groupTone.activeText,    // text-white
-                  "font-semibold",
-                ].join(" ")
-              : [
-                  "text-[#B8CFE6]",       // 피드백 반영 · muted blue 더 밝게 (가독성)
-                  "hover:bg-white/[0.04] hover:text-white",
-                  "font-medium",
-                ].join(" "),
+            "hover:bg-white/[0.03]",
             "group-data-[collapsible=icon]:hidden",
+            "cursor-pointer",
           ].join(" ")}
         >
-          <span className="flex items-center gap-2 relative">
-            {/* 2026-10-07 · Batch 3 · 활성 accent · slim 2px · 3-layer glow 제거 · subtle visual signal 만 */}
-            {hasActiveItem && (
-              <span
-                className="absolute -left-2 top-1/2 -translate-y-1/2 w-[2px] h-[70%] rounded-r-full pointer-events-none group-data-[collapsible=icon]:hidden"
-                style={{ background: NAV_ACCENT[group.color].hex }}
-              />
-            )}
-            {/* 2026-10-08 · 사용자 피드백 · 아이콘 size 16→20 · 더 직관적 */}
-            {group.icon && (() => {
-              const GroupIcon = group.icon;
-              return (
-                <GroupIcon
-                  size={20}
-                  weight={hasActiveItem ? "fill" : "regular"}
-                  className={[
-                    "shrink-0 transition-colors duration-150 ease-out",
-                    hasActiveItem ? "text-white" : "text-[#A8BFD5]",
-                  ].join(" ")}
-                />
-              );
-            })()}
-            <span className="tracking-tight">{group.label}</span>
+          <span className="flex items-center gap-2">
+            {/* 그룹 role 컬러 dot · 메인메뉴 앞 · 8px (가시성) */}
+            <span
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ background: NAV_ACCENT[group.color].hex, opacity: hasActiveItem ? 1 : 0.6 }}
+              aria-hidden
+            />
+            <span
+              className={[
+                // 2026-10-08 · 사용자 피드백 · 메인메뉴 글씨 확대 (14→17 · 명확한 계층)
+                "text-[17px] font-semibold tracking-tight leading-none",
+                hasActiveItem ? "text-white" : "text-white/80",
+                "transition-colors duration-150 ease-out",
+              ].join(" ")}
+            >
+              {group.label}
+            </span>
           </span>
 
           {/* CaretDown · 닫힘 = -90도 (좌) · 열림 = 0도 (아래) · 부드러운 화살표 · 2026-08-17 · deep teal 톤 */}
           {/* 2026-08-17 v3 · chevron · 더 세련 · 부드러운 회전 + subtle hover */}
           <span
-            className={[
-              // 2026-10-07 · Batch 3 · chevron compact · scale hover 제거
-              "flex items-center justify-center",
-              "w-6 h-6 rounded-md",
-              "transition-colors duration-150 ease-out",
-              hasActiveItem ? "" : "hover:bg-white/[0.06]",
-            ].join(" ")}
+            className="flex items-center justify-center w-6 h-6 rounded-md transition-colors duration-150 ease-out"
             aria-hidden="true"
           >
             <CaretDown
-              size={14}
+              size={13}
               weight="bold"
               className={[
                 "shrink-0 transition-transform duration-200 ease-out",
-                hasActiveItem ? "text-white/85" : "text-white/55",
+                "text-white/50",
                 open ? "rotate-0" : "-rotate-90",
               ].join(" ")}
             />
@@ -229,7 +197,8 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
           "group-data-[collapsible=icon]:!hidden",
         ].join(" ")}
       >
-        <SidebarMenu className="gap-0 px-1 pt-0.5 pb-1">
+        {/* 2026-10-08 · 리서치 (Linear/Vercel 2026) · 하위 메뉴 density 강화 · gap 완전 제거 · 상하 패딩 최소 */}
+        <SidebarMenu className="gap-0 px-1 pt-0 pb-0.5">
           {group.items.map((item, itemIdx) => {
             // 2026-08-12 · 하위 메뉴 아이콘 = 그룹 아이콘 (공통헤더 탭 아이콘) 통일
             const Icon = group.icon || item.icon;
@@ -238,14 +207,6 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
 
             return (
               <SidebarMenuItem key={`${item.key}-${item.subTab ?? "_"}-${itemIdx}`} className="relative">
-                {/* 2026-10-07 · Batch 3 · 활성 표시 · slim 2px left accent 만 · 3-layer glow + 우측 dot 제거 */}
-                {active && (
-                  <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[70%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
-                    style={{ background: NAV_ACCENT[item.color].hex }}
-                  />
-                )}
-
                 <SidebarMenuButton
                   onClick={() => handleNavItem(item)}
                   isActive={active}
@@ -253,37 +214,38 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                   aria-current={active ? "page" : undefined}
                   aria-label={item.label}
                   className={[
-                    // 2026-10-08 · 사용자 피드백 · 폰트/row 확대 · 가독성 우선 (13→15, h-10→h-11)
+                    // 2026-10-08 · 리서치 반영 · Linear 2026 compact · row 36px (h-9) · 상하 여백 축소
+                    //   · 폰트 15px 유지 (가독성) · WCAG 24px 터치 타겟 충분
                     "group-data-[collapsible=icon]:pl-2 pl-3 pr-2",
-                    "h-11 rounded-lg",
+                    "h-9 rounded-lg",
                     "text-[15px]",
                     active
                       ? [
-                          "bg-white/[0.08]",
+                          "bg-white/[0.1]",
                           "text-white",
                           "font-semibold tracking-tight",
+                          "ring-1 ring-inset ring-white/[0.06]",
                         ].join(" ")
                       : [
                           "font-medium text-[#B8CFE6]",
-                          "hover:bg-white/[0.05] hover:text-white",
+                          "hover:bg-white/[0.04] hover:text-white",
                         ].join(" "),
-                    "transition-colors duration-150 ease-out",
+                    "transition-all duration-150 ease-out",
                   ].join(" ")}
                 >
-                  {/* 2026-10-08 · 사용자 피드백 · 아이콘 size 16→18 · 활성=white · 비활성=brighter muted */}
                   <Icon
                     size={18}
                     weight={active ? "fill" : "regular"}
                     className={[
                       "shrink-0 transition-colors duration-150 ease-out",
-                      active ? "text-white" : "text-[#A8BFD5]",
+                      active ? "text-white" : "text-[#9DB4CB]",
                     ].join(" ")}
                   />
-                  <span className="inline-flex items-center gap-1.5">
-                    {item.label}
+                  <span className="inline-flex items-center gap-1.5 flex-1 min-w-0">
+                    <span className="truncate">{item.label}</span>
                     {/* 2026-09-20 · P3-1 fix · 라벨 문자열 대신 · key+subTab 기반 판정 (라벨 변경 취약성 제거) */}
                     {item.key === "requests" && item.subTab === "leave" && (approvalBadge ?? 0) > 0 && (
-                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold tabular-nums leading-none shrink-0 group-data-[collapsible=icon]:hidden">
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold tabular-nums leading-none shrink-0 group-data-[collapsible=icon]:hidden ml-auto">
                         {(approvalBadge ?? 0) > 99 ? "99+" : approvalBadge}
                       </span>
                     )}
@@ -310,52 +272,52 @@ const SingleItemGroup: React.FC<SingleItemGroupProps> = ({ group, activePage, ac
   const active = isItemActive(item, activePage, activeSubTab);
   const Icon = item.icon;
   return (
-    <div className="relative">
-      {/* 2026-10-07 · Batch 3 · SingleItemGroup 활성 표시 · slim 2px left accent 만 */}
-      {active && (
-        <span
-          className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-[70%] rounded-r-full pointer-events-none z-[1] group-data-[collapsible=icon]:hidden"
-          style={{ background: NAV_ACCENT[group.color].hex }}
-        />
-      )}
-    <button
-      type="button"
-      onClick={() => onNavigate(item.key)}
-      aria-current={active ? "page" : undefined}
-      aria-label={group.label}
-      className={[
-        // 2026-10-08 · 사용자 피드백 · SingleItem 그룹 폰트/row 확대 (14→16, h-10→h-11)
-        "flex w-full items-center gap-2.5",
-        "px-2.5 h-11 mt-3 mb-0",
-        "rounded-lg",
-        "text-[16px] leading-none",
-        "transition-colors duration-150 ease-out",
-        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
-        active
-          ? [
-              "bg-white/[0.08]",
-              "text-white",
-              "font-semibold tracking-tight",
-            ].join(" ")
-          : [
-              "text-[#B8CFE6]",
-              "hover:bg-white/[0.05] hover:text-white",
-              "font-medium",
-            ].join(" "),
-        "group-data-[collapsible=icon]:justify-center",
-      ].join(" ")}
-    >
-      {/* 2026-10-08 · 사용자 피드백 · 아이콘 size 16→20 · 더 또렷 */}
-      <Icon
-        size={20}
-        weight={active ? "fill" : "regular"}
+    <div className="relative mt-3 first:mt-1">
+      {/* 2026-10-08 · 최신 트렌드 · SingleItemGroup · group role dot + filled chip 활성 */}
+      <button
+        type="button"
+        onClick={() => onNavigate(item.key)}
+        aria-current={active ? "page" : undefined}
+        aria-label={group.label}
         className={[
-          "shrink-0 transition-colors duration-150 ease-out",
-          active ? "text-white" : "text-[#A8BFD5]",
+          "flex w-full items-center gap-2.5",
+          // 2026-10-08 · 리서치 반영 · SingleItemGroup = 메인메뉴 tier · h-9 (서브와 동일 density)
+          "px-3 h-9",
+          "rounded-lg",
+          "text-[17px] leading-none",
+          "transition-all duration-150 ease-out",
+          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
+          active
+            ? [
+                "bg-white/[0.1]",
+                "text-white",
+                "font-semibold tracking-tight",
+                "ring-1 ring-inset ring-white/[0.06]",
+              ].join(" ")
+            : [
+                "text-white/80",
+                "hover:bg-white/[0.04] hover:text-white",
+                "font-semibold",
+              ].join(" "),
+          "group-data-[collapsible=icon]:justify-center",
         ].join(" ")}
-      />
-      <span className="group-data-[collapsible=icon]:hidden tracking-tight">{group.label}</span>
-    </button>
+      >
+        <Icon
+          size={19}
+          weight={active ? "fill" : "regular"}
+          className={[
+            "shrink-0 transition-colors duration-150 ease-out",
+            active ? "text-white" : "text-[#9DB4CB]",
+          ].join(" ")}
+        />
+        <span className="group-data-[collapsible=icon]:hidden tracking-tight">{group.label}</span>
+        {/* role dot · 통일 8px (CollapsibleGroup 과 매칭) */}
+        <span
+          className="ml-auto w-2 h-2 rounded-full shrink-0 group-data-[collapsible=icon]:hidden"
+          style={{ background: NAV_ACCENT[group.color].hex, opacity: active ? 1 : 0.5 }}
+          aria-hidden
+        />
+      </button>
     </div>
   );
 };
@@ -397,6 +359,10 @@ export const SideNav: React.FC<SideNavProps> = ({
   // 2026-09-27 · 네비게이션 SSOT · useActiveNav Context 기반 · 현재 페이지 활성 서브탭 tracking
   const { activeNav } = useActiveNav();
   const activeSubTab = activeNav?.itemKey === activePage ? (activeNav.subTab ?? null) : null;
+
+  // 2026-10-08 · 사용자 지시 · 사이드바 accordion 모드 · 단일 그룹 open · 기본 모두 닫힘
+  //   · 활성 페이지가 속한 그룹은 자동 open (UX)
+  const [openGroupId, setOpenGroupId] = useState<string | null>(null);
   // 2026-10-06 · 사용자 지시 · surface-specific hide 제거 (hideOnMobile)
   //   · PC/mobile/top nav 노출 통일 · DB app_settings.page_visibility 로 통일
   // 2026-08-16 · 페이지 숨김 반영 · 서버 perms 참조
@@ -513,55 +479,15 @@ export const SideNav: React.FC<SideNavProps> = ({
               onNavigate={onNavigate}
               isVendor={authSession?.role === "vendor"}
               approvalBadge={approvalBadge}
+              open={openGroupId === group.id}
+              onOpenChange={(next) => setOpenGroupId(next ? group.id : null)}
             />
           )
         ))}
       </SidebarContent>
 
-      {/* ── 하단: 구분선 + 알림 + 로그아웃 · 2026-08-17 v2 · gradient hairline · glass 세련 ── */}
-      {/* footer 상단 gradient hairline · fade edges · Attio/Linear 톤 */}
-      <div className="relative h-px shrink-0" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 50%, transparent)" }} aria-hidden />
-
-      <SidebarFooter className="relative px-2 py-1.5 gap-0.5 z-10">
-        {/* 2026-10-08 · 사용자 피드백 · footer user name 13→15 · 가독성 */}
-        {authSession && authSession.employeeName && (
-          <div className="px-2 py-1 group-data-[collapsible=icon]:hidden">
-            <span className="text-[15px] font-semibold text-white break-words whitespace-normal leading-tight">
-              {authSession.employeeName}
-            </span>
-          </div>
-        )}
-        {/* 2026-08-17 v3 · 종 아이콘 테두리 여백 반 (PC · 사용자 요청) · px-2 py-1 → px-1 py-0.5 */}
-        {/* 2026-08-20 · #174 · NotificationBell compact · 크기·테두리·그림자 축소 · 시각 균형 */}
-        {/* 2026-08-26 · 사용자 지시 · 사이드바 접힘 시 튀어나옴 방지 · 세로 stack + overflow-hidden */}
-        {authSession && (
-          <div className="flex items-center gap-0.5 px-0.5 py-0 rounded-md group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-1 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:w-full">
-            {/* 2026-09-14 · #108 · NotificationToggle 제거 · NotificationBell (알림 목록) 은 유지 */}
-            <NotificationBell authSession={authSession} onNavigate={onNavigate as unknown as (page: string) => void} compact />
-          </div>
-        )}
-        {authSession && onLogout && (
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={onLogout}
-                tooltip="로그아웃"
-                aria-label="로그아웃"
-                className={[
-                  // 2026-10-08 · 사용자 피드백 · logout 폰트 13→14 · h-9→h-10 · 아이콘 14→16
-                  "h-10 rounded-md pl-2.5",
-                  "text-[14px] font-medium",
-                  "text-[#B8CFE6] hover:bg-white/[0.05] hover:text-white",
-                  "transition-colors duration-150 ease-out",
-                ].join(" ")}
-              >
-                <LogOut size={16} strokeWidth={2} className="shrink-0" />
-                <span>로그아웃</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        )}
-      </SidebarFooter>
+      {/* 2026-10-08 · 사용자 지시 · 사이드바 footer 전체 제거 (user card + bell + logout)
+             · 모두 상단 헤더(AppNavHeader)로 통합 완료 · 중복 제거 · 사이드바 깔끔 유지 */}
 
       {/* PC 드래그 리사이즈 handle · warm 톤 */}
       <div

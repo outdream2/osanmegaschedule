@@ -1,0 +1,581 @@
+{
+  "summary": {
+    "erpTotal": 4007,
+    "matched": 3986,
+    "newInsert": 21
+  },
+  "perColumn": [
+    {
+      "erp": "ProductName",
+      "db": "product_name",
+      "transform": "str",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 2805,
+      "CHANGED": 1181,
+      "SKIP_ERP_EMPTY": 0,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15310",
+          "erp": "덴티포유 120정 (60정*2)",
+          "db": "덴티포유"
+        },
+        {
+          "pcode": "10016",
+          "erp": "포텐시에이터액 10ml * 40AMP 40",
+          "db": "포텐시에이터액 10ml * 40AMP"
+        },
+        {
+          "pcode": "10022",
+          "erp": "**티어젠(판매기록부) 30g",
+          "db": "티어젠(판매기록부) 30g"
+        },
+        {
+          "pcode": "10023",
+          "erp": "**오리더밀(판매기록부) 10g",
+          "db": "오리더밀(판매기록부) 10g"
+        },
+        {
+          "pcode": "10024",
+          "erp": "**오리존(판매기록부) 10ml",
+          "db": "오리존(판매기록부) 10ml"
+        }
+      ],
+      "erp_nonempty_in_matched": 3986
+    },
+    {
+      "erp": "CorpNameView",
+      "db": "supplier",
+      "transform": "str",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 987,
+      "CHANGED": 2997,
+      "SKIP_ERP_EMPTY": 2,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15310",
+          "erp": "로드팜",
+          "db": "대지인팜"
+        },
+        {
+          "pcode": "10014",
+          "erp": "동국제약",
+          "db": "동국제약(주)"
+        },
+        {
+          "pcode": "10015",
+          "erp": "동국제약",
+          "db": "동국제약(주)"
+        },
+        {
+          "pcode": "10128",
+          "erp": "제네틱스팜",
+          "db": "제네틱스팜(주)"
+        },
+        {
+          "pcode": "10142",
+          "erp": "동아제약",
+          "db": "동아제약(주)"
+        }
+      ],
+      "erp_nonempty_in_matched": 3984
+    },
+    {
+      "erp": "CtCode",
+      "db": "supplier_code",
+      "transform": "str",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 254,
+      "CHANGED": 3730,
+      "SKIP_ERP_EMPTY": 2,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15310",
+          "erp": "1008",
+          "db": "8"
+        },
+        {
+          "pcode": "10001",
+          "erp": "1134",
+          "db": "172"
+        },
+        {
+          "pcode": "10004",
+          "erp": "1134",
+          "db": "172"
+        },
+        {
+          "pcode": "10005",
+          "erp": "1092",
+          "db": "112"
+        },
+        {
+          "pcode": "10006",
+          "erp": "1092",
+          "db": "112"
+        }
+      ],
+      "erp_nonempty_in_matched": 3984
+    },
+    {
+      "erp": "UnitCode",
+      "db": "unit",
+      "transform": "str",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 256,
+      "CHANGED": 3730,
+      "SKIP_ERP_EMPTY": 0,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15310",
+          "erp": "EA",
+          "db": null
+        },
+        {
+          "pcode": "10001",
+          "erp": "EA",
+          "db": null
+        },
+        {
+          "pcode": "10004",
+          "erp": "EA",
+          "db": null
+        },
+        {
+          "pcode": "10005",
+          "erp": "EA",
+          "db": null
+        },
+        {
+          "pcode": "10006",
+          "erp": "EA",
+          "db": null
+        }
+      ],
+      "erp_nonempty_in_matched": 3986
+    },
+    {
+      "erp": "SaleStatusName",
+      "db": "sale_status",
+      "transform": "str",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 1660,
+      "CHANGED": 2326,
+      "SKIP_ERP_EMPTY": 0,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15310",
+          "erp": "판매중",
+          "db": null
+        },
+        {
+          "pcode": "10001",
+          "erp": "판매중",
+          "db": null
+        },
+        {
+          "pcode": "10004",
+          "erp": "판매중",
+          "db": null
+        },
+        {
+          "pcode": "10005",
+          "erp": "판매중",
+          "db": null
+        },
+        {
+          "pcode": "10006",
+          "erp": "판매중",
+          "db": null
+        }
+      ],
+      "erp_nonempty_in_matched": 3986
+    },
+    {
+      "erp": "Brand",
+      "db": "brand",
+      "transform": "str",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 0,
+      "CHANGED": 0,
+      "SKIP_ERP_EMPTY": 3986,
+      "NEW_INSERT": 21,
+      "examples": [],
+      "erp_nonempty_in_matched": 0
+    },
+    {
+      "erp": "Maker",
+      "db": "manufacturer",
+      "transform": "str",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 0,
+      "CHANGED": 0,
+      "SKIP_ERP_EMPTY": 3986,
+      "NEW_INSERT": 21,
+      "examples": [],
+      "erp_nonempty_in_matched": 0
+    },
+    {
+      "erp": "LastBuyDate",
+      "db": "last_purchase_date",
+      "transform": "str",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 199,
+      "CHANGED": 1649,
+      "SKIP_ERP_EMPTY": 2138,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15310",
+          "erp": "2026-09-29",
+          "db": null
+        },
+        {
+          "pcode": "10001",
+          "erp": "2026-09-29",
+          "db": null
+        },
+        {
+          "pcode": "10016",
+          "erp": "2026-09-24",
+          "db": null
+        },
+        {
+          "pcode": "10027",
+          "erp": "2026-09-18",
+          "db": null
+        },
+        {
+          "pcode": "10033",
+          "erp": "2026-09-18",
+          "db": null
+        }
+      ],
+      "erp_nonempty_in_matched": 1848
+    },
+    {
+      "erp": "LastSaleDate",
+      "db": "last_sale_date",
+      "transform": "str",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 236,
+      "CHANGED": 3032,
+      "SKIP_ERP_EMPTY": 718,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15310",
+          "erp": "2026-10-03",
+          "db": "2026-07-28"
+        },
+        {
+          "pcode": "10001",
+          "erp": "2026-10-01",
+          "db": null
+        },
+        {
+          "pcode": "10004",
+          "erp": "2026-10-02",
+          "db": "2026-07-28"
+        },
+        {
+          "pcode": "10014",
+          "erp": "2026-10-02",
+          "db": null
+        },
+        {
+          "pcode": "10015",
+          "erp": "2026-10-03",
+          "db": "2026-07-28"
+        }
+      ],
+      "erp_nonempty_in_matched": 3268
+    },
+    {
+      "erp": "NowStock",
+      "db": "current_stock",
+      "transform": "num",
+      "nullOverwrite": true,
+      "MATCHED": 3986,
+      "SAME": 285,
+      "CHANGED": 3701,
+      "SKIP_ERP_EMPTY": 0,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15310",
+          "erp": 9,
+          "db": null
+        },
+        {
+          "pcode": "10001",
+          "erp": 13,
+          "db": null
+        },
+        {
+          "pcode": "10004",
+          "erp": 5,
+          "db": null
+        },
+        {
+          "pcode": "10005",
+          "erp": 97,
+          "db": null
+        },
+        {
+          "pcode": "10006",
+          "erp": 0,
+          "db": null
+        }
+      ],
+      "erp_nonempty_in_matched": 3986
+    },
+    {
+      "erp": "LocationName",
+      "db": "display_location",
+      "transform": "loc",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 106,
+      "CHANGED": 3123,
+      "SKIP_ERP_EMPTY": 757,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15408",
+          "erp": "뷰티4번",
+          "db": null
+        },
+        {
+          "pcode": "15407",
+          "erp": "뷰티4번",
+          "db": null
+        },
+        {
+          "pcode": "15406",
+          "erp": "뷰티4번",
+          "db": null
+        },
+        {
+          "pcode": "15405",
+          "erp": "뷰티4번",
+          "db": null
+        },
+        {
+          "pcode": "15404",
+          "erp": "뷰티4번",
+          "db": null
+        }
+      ],
+      "erp_nonempty_in_matched": 3229
+    },
+    {
+      "erp": "CostPrice",
+      "db": "purchase_price",
+      "transform": "num",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 198,
+      "CHANGED": 3788,
+      "SKIP_ERP_EMPTY": 0,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15431",
+          "erp": 1767.7,
+          "db": null
+        },
+        {
+          "pcode": "15430",
+          "erp": 3311,
+          "db": null
+        },
+        {
+          "pcode": "15429",
+          "erp": 9834,
+          "db": null
+        },
+        {
+          "pcode": "15428",
+          "erp": 12962.4,
+          "db": null
+        },
+        {
+          "pcode": "15427",
+          "erp": 32200,
+          "db": null
+        }
+      ],
+      "erp_nonempty_in_matched": 3986
+    },
+    {
+      "erp": "PriceA",
+      "db": "sale_price",
+      "transform": "num",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 3542,
+      "CHANGED": 444,
+      "SKIP_ERP_EMPTY": 0,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15431",
+          "erp": 2900,
+          "db": null
+        },
+        {
+          "pcode": "15430",
+          "erp": 5000,
+          "db": null
+        },
+        {
+          "pcode": "15429",
+          "erp": 14900,
+          "db": null
+        },
+        {
+          "pcode": "15428",
+          "erp": 25000,
+          "db": null
+        },
+        {
+          "pcode": "15427",
+          "erp": 70000,
+          "db": null
+        }
+      ],
+      "erp_nonempty_in_matched": 3986
+    },
+    {
+      "erp": "McateName",
+      "db": "category",
+      "transform": "str",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 0,
+      "CHANGED": 3982,
+      "SKIP_ERP_EMPTY": 4,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15431",
+          "erp": "약국",
+          "db": null
+        },
+        {
+          "pcode": "15430",
+          "erp": "약국3",
+          "db": null
+        },
+        {
+          "pcode": "15429",
+          "erp": "약국3",
+          "db": null
+        },
+        {
+          "pcode": "15428",
+          "erp": "약국",
+          "db": null
+        },
+        {
+          "pcode": "15427",
+          "erp": "약국",
+          "db": null
+        }
+      ],
+      "erp_nonempty_in_matched": 3982
+    },
+    {
+      "erp": "RegDate",
+      "db": "registered_at",
+      "transform": "ts",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 0,
+      "CHANGED": 3986,
+      "SKIP_ERP_EMPTY": 0,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15431",
+          "erp": "2026-10-02T17:19:56+09:00",
+          "db": null
+        },
+        {
+          "pcode": "15430",
+          "erp": "2026-09-30T15:31:02+09:00",
+          "db": null
+        },
+        {
+          "pcode": "15429",
+          "erp": "2026-09-30T15:25:36+09:00",
+          "db": null
+        },
+        {
+          "pcode": "15428",
+          "erp": "2026-09-29T17:01:38+09:00",
+          "db": null
+        },
+        {
+          "pcode": "15427",
+          "erp": "2026-09-29T15:50:02+09:00",
+          "db": null
+        }
+      ],
+      "erp_nonempty_in_matched": 3986
+    },
+    {
+      "erp": "EditDate",
+      "db": "last_modified_at",
+      "transform": "ts",
+      "nullOverwrite": false,
+      "MATCHED": 3986,
+      "SAME": 0,
+      "CHANGED": 561,
+      "SKIP_ERP_EMPTY": 3425,
+      "NEW_INSERT": 21,
+      "examples": [
+        {
+          "pcode": "15431",
+          "erp": "2026-10-02T17:27:06+09:00",
+          "db": null
+        },
+        {
+          "pcode": "15430",
+          "erp": "2026-09-30T15:52:31+09:00",
+          "db": null
+        },
+        {
+          "pcode": "15429",
+          "erp": "2026-09-30T15:53:13+09:00",
+          "db": null
+        },
+        {
+          "pcode": "15425",
+          "erp": "2026-09-29T15:43:10+09:00",
+          "db": null
+        },
+        {
+          "pcode": "15424",
+          "erp": "2026-09-29T15:43:18+09:00",
+          "db": null
+        }
+      ],
+      "erp_nonempty_in_matched": 561
+    }
+  ]
+}

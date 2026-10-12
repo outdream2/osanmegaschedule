@@ -63,6 +63,8 @@ export interface ProductBasicInfoPanelProps {
   optimalDays?: number;
   /** 컴팩트 · 카드 padding·라벨 크기 축소 (모바일·모달 안) */
   compact?: boolean;
+  /** 2026-10-09 · 사용자 지시 · 모달 title 이 상품명 표시 시 · panel 내부 상품명 field 숨김 (중복 방지) */
+  hideProductName?: boolean;
   className?: string;
 }
 
@@ -101,6 +103,7 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
   onSupplierClick,
   optimalDays = 30,
   compact = false,
+  hideProductName = false,
   className = "",
 }) => {
   // 2026-08-28 · 사용자 지시 · [수정] 버튼 · 편집 모드 진입 · 진열위치·판매상태 함께 편집
@@ -176,15 +179,17 @@ export const ProductBasicInfoPanel: React.FC<ProductBasicInfoPanelProps> = ({
         {/* 2026-09-03 · 사용자 지시 · 우선순위 재배치 · 수량·단가·바코드·판매상태·구역 우선 */}
         {/* Row 1 · 핵심 · 상품명 | 바코드(=상품코드) | 판매상태 | 진열위치 */}
         {/* 2026-09-08 · barcode 컬럼 제거 · product_code 자체가 바코드값 (13자리 EAN) */}
-        <Field label="상품명" className="col-span-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className={valueCls + " break-keep"} title={product.product_name ?? undefined}>
-              {product.product_name || "-"}
-            </span>
-            {/* 2026-09-13 · #91 · 유통기한 임박 배지 · 상품 조회 위치 */}
-            <ExpiryBadge expiryDate={product.expiry_date} size="sm" />
-          </div>
-        </Field>
+        {!hideProductName && (
+          <Field label="상품명" className="col-span-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={valueCls + " break-keep"} title={product.product_name ?? undefined}>
+                {product.product_name || "-"}
+              </span>
+              {/* 2026-09-13 · #91 · 유통기한 임박 배지 · 상품 조회 위치 */}
+              <ExpiryBadge expiryDate={product.expiry_date} size="sm" />
+            </div>
+          </Field>
+        )}
         <Field label="바코드" icon={<Barcode size={11} />}>
           <span className={valueCls + " tabular-nums break-all"} title={product.product_code ?? undefined}>
             {product.product_code || <span className="text-zinc-300">-</span>}

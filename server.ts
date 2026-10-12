@@ -120,6 +120,28 @@ async function startServer() {
   //   · 로컬은 proxy 없음 · 영향 없음
   app.set("trust proxy", 1);
 
+  // 2026-10-07 · PERF · Early port bind · Fiddler/브라우저 ConnectionRefused (0x274d) 완화
+  //   · 이전: Vite dev middleware · helmet · 모든 route · supabase 등을 전부 init 후 listen() →
+  //            포트 3000 bind 까지 5-15초 · 그 사이 모든 요청 거부
+  //   · 이후: /api/health 를 최우선 등록 + httpServer 를 즉시 listen · 나머지 setup 은 백그라운드로
+  //           → 포트 bind 1-2초 · health ping 즉시 응답 · 아직 미등록 route 는 404 (거부 아님)
+  //   · Vite 가 뜨기 전 SPA / API 요청 → 등록된 route 없으면 503 fallback (잠시 후 새로고침 안내)
+  //   · Vite + 모든 route 가 등록되면 자동으로 그쪽이 먼저 처리 (Express middleware 순서)
+
+  let serverReady = false;
+  // Health endpoint · DB 접근 없음 · 즉시 응답 (apiClient 서버다운 감지 ping 과 호환)
+  app.get("/api/health", (_req, res) => {
+    res.json({ ok: true, ready: serverReady, ts: new Date().toISOString() });
+  });
+
+  const earlyHttp = http.createServer(app);
+  earlyHttp.listen(PORT, "0.0.0.0", () => {
+    console.log(`[Server] Early bind · http://localhost:${PORT} · 포트 열림 · 로딩 계속...`);
+  });
+
+  // httpServer 를 아래 Vite HMR · 기존 코드와 호환되도록 재사용
+  const httpServer = earlyHttp;
+
   // 2026-09-14 · real_map 컬럼 존재 check 제거 (2026-09-08 DROP 완료 · stale warning)
 
   if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -355,8 +377,8 @@ async function startServer() {
     }
   });
 
-  const httpServer = http.createServer(app);
-
+  // 2026-10-07 · PERF · httpServer 는 위에서 earlyHttp 로 이미 listen 중 (early bind)
+  //   · Vite dev middleware 는 HMR 용 WebSocket upgrade 를 earlyHttp 에 bind 하면 됨
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true, hmr: { server: httpServer } },
@@ -385,9 +407,11 @@ async function startServer() {
   //   · 서버 부팅 즉시 1회 · 그 후 매일 자정 실행
   scheduleOptimalStockRefill();
 
-  httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Server] Megatown schedule service running on http://localhost:${PORT}`);
-  });
+  // 2026-10-07 · PERF · 모든 route + Vite 등록 완료 · ready 플래그 ON
+  //   · /api/health · ready: true 로 응답 전환 · 클라이언트 재시도 trigger
+  //   · earlyHttp 는 이미 listen 중 · 추가 listen 호출 없음 (중복 bind 방지)
+  serverReady = true;
+  console.log(`[Server] Megatown schedule service fully ready on http://localhost:${PORT}`);
 }
 
 // 2026-09-08 · 적정재고 매일 자동 refill CRON · 서버 부팅 후 시작

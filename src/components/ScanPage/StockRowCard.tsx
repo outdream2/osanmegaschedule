@@ -32,6 +32,12 @@ import { resolveWarehouseVisibility, classifyArrivalSlot } from "../../lib/wareh
 import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 // 2026-09-09 · 사용자 지시 · 관리자만 슬롯 상세구역 편집 모달 · 매장 추가/삭제
 import { ShelfPositionsEditModal } from "../common/ShelfPositionsEditModal";
+// 2026-10-12 · 사용자 지시 대원칙 · "모든 SQL 위치 → zone_defs DB join 필수"
+//   · getZoneLabelByLocation · 매대 번호 추출 → zone_defs 매칭 → category/subA/subB label
+//   · cleanLocationString · ">전체" 토큰 제거 (fallback)
+//   · useZoneDefs · realtime zonesList (broadcast)
+import { cleanLocationString, getZoneLabelByLocation } from "../../lib/zoneClassification";
+import { useZoneDefs } from "../../hooks/useZoneDefs";
 
 // ─── 5-slot 정의 (창고2 · 매장3) ─────────────────────────────────
 interface SlotDef {
@@ -49,12 +55,15 @@ interface SlotDef {
 
 // 2026-08-25 · 사용자 지시 · 톤 통일 · 창고 (창1·창2) 같은 cyan · 매장 (매1·매2·매3) 같은 violet
 //   · product_storage.png 톤 · WAREHOUSE_TONE / STORE_TONE 통일
+// 2026-10-12 · 사용자 지시 · 홈 랜딩 톤 적용 (BEHAVIOR DELTA = 0)
+//   · softBg (bg-cyan-50/60 / bg-violet-50/60) → bg-slate-50/50 통일 (홈 톤 subtle)
+//   · slot 식별 = 좌측 dot (cyan/violet) 로 유지 · text 는 레거시 유지 (수량 색 identity)
 const SLOTS: readonly SlotDef[] = [
-  { key: "w1", label: "창1", full: "창고1", addKey: "warehouse1AddQty", prevKey: "prevWarehouse1Qty",                          shelfCode: "warehouse1", dot: "bg-cyan-500",   text: "text-cyan-700",   softBg: "bg-cyan-50/60"   },
-  { key: "w2", label: "창2", full: "창고2", addKey: "warehouse2AddQty", prevKey: "prevWarehouse2Qty",                          shelfCode: "warehouse2", dot: "bg-cyan-500",   text: "text-cyan-700",   softBg: "bg-cyan-50/60"   },
-  { key: "s1", label: "매1", full: "매장1", addKey: "store1AddQty",     prevKey: "prevStore1Qty",     zoneKey: "store1Zone",   shelfCode: "store1",     dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50/60" },
-  { key: "s2", label: "매2", full: "매장2", addKey: "store2AddQty",     prevKey: "prevStore2Qty",     zoneKey: "store2Zone",   shelfCode: "store2",     dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50/60" },
-  { key: "s3", label: "매3", full: "매장3", addKey: "store3AddQty",     prevKey: "prevStore3Qty",     zoneKey: "store3Zone",   shelfCode: "store3",     dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-violet-50/60" },
+  { key: "w1", label: "창1", full: "창고1", addKey: "warehouse1AddQty", prevKey: "prevWarehouse1Qty",                          shelfCode: "warehouse1", dot: "bg-cyan-500",   text: "text-cyan-700",   softBg: "bg-slate-50/50" },
+  { key: "w2", label: "창2", full: "창고2", addKey: "warehouse2AddQty", prevKey: "prevWarehouse2Qty",                          shelfCode: "warehouse2", dot: "bg-cyan-500",   text: "text-cyan-700",   softBg: "bg-slate-50/50" },
+  { key: "s1", label: "매1", full: "매장1", addKey: "store1AddQty",     prevKey: "prevStore1Qty",     zoneKey: "store1Zone",   shelfCode: "store1",     dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-slate-50/50" },
+  { key: "s2", label: "매2", full: "매장2", addKey: "store2AddQty",     prevKey: "prevStore2Qty",     zoneKey: "store2Zone",   shelfCode: "store2",     dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-slate-50/50" },
+  { key: "s3", label: "매3", full: "매장3", addKey: "store3AddQty",     prevKey: "prevStore3Qty",     zoneKey: "store3Zone",   shelfCode: "store3",     dot: "bg-violet-500", text: "text-violet-700", softBg: "bg-slate-50/50" },
 ] as const;
 
 const WARN_THRESHOLD = 100;
@@ -68,11 +77,17 @@ const StepperInput = CommonStepperInput;
 // 2026-09-15 · #61 B안 · 사용자 원칙 · "지정 위치 = 진열위치(products.location)" 만 사용
 //   · products.spec 참조 완전 제거 (spec 은 원래 규격 컬럼 · 위치 표시로 부적절)
 //   · 진열구역 (zone) + 상세구역 (shelf_positions) 두 소스만 · 정합성 100%
+// 2026-10-12 · 사용자 지시 대원칙 · zone_defs DB join 적용 · zonesList prop 전달 받음
 const ZoneInline: React.FC<{
   value: string | null;
   onChange: (v: string | null) => void;
-}> = ({ value, onChange }) => {
+  zonesList: readonly import("../../constants/displayZones").ZoneDef[];
+}> = ({ value, onChange, zonesList }) => {
   const filled = value != null && value.trim().length > 0;
+  // 2026-10-12 · zone_defs 매칭 label (예: "6매대>Ａ>1열>전체" → "종합감기약") · fallback cleanLocationString
+  const zoneLabel = filled ? getZoneLabelByLocation(value, zonesList) : "";
+  const cleaned = filled ? cleanLocationString(value) : "";
+  const displayText = zoneLabel || cleaned || value || "매장구역 선택";
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -105,7 +120,8 @@ const ZoneInline: React.FC<{
         title={filled ? `매장구역: ${value} · 클릭 시 변경` : "클릭 · 매장구역 선택"}
       >
         <MapPin size={13} fill={filled ? "currentColor" : "none"} className={filled ? "text-brand-deep" : "text-zinc-400"} />
-        <span>{filled ? value : "매장구역 선택"}</span>
+        {/* 2026-10-12 · 사용자 지시 대원칙 · zone_defs join label 표시 · raw string 금지 */}
+        <span title={filled && value ? value : undefined}>{displayText}</span>
       </button>
 
       {/* autosave flash · Notion-style · brief "저장됨" */}
@@ -180,6 +196,8 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
   row, isRecent, requestingKey, onPatch, onRemove, onHistory, onRequestDisplay,
   onSaveRow, onToggleExpiry, canManage = false,
 }) => {
+  // 2026-10-12 · 사용자 지시 대원칙 · zone_defs DB join · ZoneInline label 변환용
+  const { zones: zonesList } = useZoneDefs();
   // 2026-09-09 · 사용자 지시 · 슬롯 구역 옆 상세구역 · shelfMap 훅 · 최신 값 (편집 반영)
   const shelfPositionsMap = useShelfPositionsMap();
   const rowShelfPositions = shelfPositionsMap[row.code]
@@ -318,18 +336,18 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
               : "border-slate-200",
       ].join(" ")}
     >
-      {/* ─── 헤더 · 탭하면 접힘 토글 · 2026-10-09 패딩 축소 py-3 → py-2 */}
-      <div className="w-full flex items-start gap-2.5 px-3 py-2">
+      {/* ─── 헤더 · 탭하면 접힘 토글 · 2026-10-11 모바일 한눈 · 공간 압축 */}
+      <div className="w-full flex items-start gap-2 px-2.5 py-1.5">
         {/* 좌측 · 상품명 · 코드 · 현재고/추가/합계 요약 */}
         <button
           type="button"
           onClick={() => setManuallyExpanded(v => !v)}
-          className="flex-1 min-w-0 flex flex-col gap-1 text-left cursor-pointer"
+          className="flex-1 min-w-0 flex flex-col gap-0.5 text-left cursor-pointer"
         >
           {/* Row 1: 상품분류코드 · 2026-09-17 · 사용자 지시 · 코드 상단 (배지 오른쪽) */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="inline-flex items-center gap-1 text-[14px] font-mono
-              text-zinc-500 bg-zinc-100/70 rounded px-1.5 py-0.5">
+          <div className="flex items-center gap-1 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-[13px] font-mono
+              text-zinc-500 bg-zinc-100/70 rounded px-1.5 py-0">
               <Hash size={9} className="text-zinc-400" />
               {row.code}
             </span>
@@ -337,7 +355,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             {hasExpiryFlag && <StatusPill tone="rose" size="xs">유통기한 임박</StatusPill>}
           </div>
           {/* Row 2: 상품명 · 2026-09-17 · 사용자 지시 · 코드 다음줄 · spec 숫자만 표시 제거 (현재고 중복) */}
-          <h4 className="text-[16px] font-bold text-ink tracking-tight leading-snug break-keep">
+          <h4 className="text-[15px] font-bold text-ink tracking-tight leading-snug break-keep">
             {row.product.name}
           </h4>
           {/* Row 3: ERP현재고 · 실재고 · 손실 */}
@@ -347,30 +365,28 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             const hasActual = actualQty > 0;
             const lossQty = erpQty - actualQty;
             return (
-              // 2026-10-09 · #9 Phase 5 · ERP/실재고/손실 compact pill (가로 inline · 공간 축소)
-              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                <span className="inline-flex items-center gap-1 h-6 px-1.5 rounded border border-amber-200 bg-amber-50 text-[12px]" title="현재고 (ERP)">
-                  <span className="font-semibold text-amber-600">현재고</span>
-                  <span className={`font-bold tabular-nums ${erpQty > 0 ? "text-amber-800" : "text-amber-300"}`}>{erpQty}</span>
+              // 2026-10-11 · 사용자 지시 "0 배지 제거 · 깔끔한 텍스트 · 최대한 공간 차지 않게"
+              //   · pill border/bg 제거 · inline text + dot(·) separator
+              //   · lossQty === 0 일 때 "일치" 만 (숫자 0 생략)
+              <div className="flex items-center gap-2 mt-1 flex-wrap text-[14px] text-slate-600">
+                <span className="tabular-nums">
+                  현재고 <b className={erpQty > 0 ? "text-slate-800" : "text-slate-400"}>{erpQty}</b>
                 </span>
-                <span className="text-slate-300 text-[11px]">vs</span>
-                <span className="inline-flex items-center gap-1 h-6 px-1.5 rounded border border-sky-200 bg-sky-50 text-[12px]">
-                  <span className="font-semibold text-sky-600">실재고</span>
-                  <span className={`font-bold tabular-nums ${actualQty > 0 ? "text-sky-700" : "text-slate-300"}`}>{actualQty > 0 ? actualQty : "-"}</span>
+                <span className="text-slate-300">·</span>
+                <span className="tabular-nums">
+                  실재고 <b className={actualQty > 0 ? "text-sky-700" : "text-slate-400"}>{actualQty > 0 ? actualQty : "-"}</b>
                 </span>
                 {hasActual && (
                   <>
-                    <span className="text-slate-300 text-[11px]">=</span>
-                    <span className={`inline-flex items-center gap-1 h-6 px-1.5 rounded border text-[12px] ${
-                      lossQty < 0 ? "border-rose-200 bg-rose-50" : lossQty > 0 ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"
-                    }`}>
-                      <span className={`font-semibold ${lossQty < 0 ? "text-rose-600" : lossQty > 0 ? "text-amber-600" : "text-emerald-600"}`}>
-                        {lossQty < 0 ? "손실" : lossQty > 0 ? "이상" : "일치"}
+                    <span className="text-slate-300">·</span>
+                    {lossQty === 0 ? (
+                      <span className="font-semibold text-emerald-600">일치</span>
+                    ) : (
+                      <span className={`font-semibold ${lossQty < 0 ? "text-rose-600" : "text-amber-600"}`}>
+                        {lossQty < 0 ? "손실" : "이상"}{" "}
+                        <b className="tabular-nums">{lossQty > 0 ? `+${lossQty}` : lossQty}</b>
                       </span>
-                      <span className={`font-bold tabular-nums ${lossQty < 0 ? "text-rose-700" : lossQty > 0 ? "text-amber-700" : "text-emerald-700"}`}>
-                        {lossQty > 0 ? `+${lossQty}` : lossQty}
-                      </span>
-                    </span>
+                    )}
                   </>
                 )}
               </div>
@@ -494,8 +510,10 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
           const canRemoveSlot = isStore && !isPrimaryStore;
 
           return (
-            // 2026-10-09 · #9 Phase 6 · 슬롯 축소 · rounded-md · p-2 · gap-1.5
-            <div key={s.key} className={`relative rounded-md border ${s.softBg} border-slate-200 p-2 flex flex-col gap-1.5`}>
+            // 2026-10-12 · 사용자 지시 · 최신 트렌드 (Linear/Attio/Notion 2026) 톤 적용
+            //   · rounded-md → rounded-[10px] · border-slate-200 유지 · bg-white default + hover:bg-slate-50/40
+            //   · gap-1.5 → gap-2 (넉넉한 호흡) · group 추가 (hover reveal X 버튼)
+            <div key={s.key} className="group relative rounded-[10px] border border-slate-200 bg-white hover:bg-slate-50/30 p-2.5 flex flex-col gap-2 transition-colors">
               {/* 매장2·3 · 슬롯 삭제 버튼 (storeCount 축소) · 입력값 있어도 제거 가능 */}
               {canRemoveSlot && (
                 <button
@@ -504,11 +522,11 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                     clearSlot();
                     setStoreCount(c => Math.max(1, c - 1));
                   }}
-                  className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/80 hover:bg-rose-50 border border-zinc-200 hover:border-rose-300 text-zinc-400 hover:text-rose-600 transition cursor-pointer active:scale-90"
+                  className="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 bg-white border border-slate-200 hover:bg-rose-50 hover:border-rose-300 text-slate-400 hover:text-rose-600 transition-all cursor-pointer"
                   title={`${s.full} 슬롯 제거`}
                   aria-label={`${s.full} 슬롯 제거`}
                 >
-                  <span className="text-[16px] font-bold leading-none">×</span>
+                  <X size={11} strokeWidth={2.5} />
                 </button>
               )}
               {/* 매장 슬롯 (값·구역만 초기화 · 슬롯 유지) · 창고 슬롯에는 표시 안 함 */}
@@ -516,42 +534,47 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                 <button
                   type="button"
                   onClick={clearSlot}
-                  className="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-full bg-white/90 border border-zinc-300 hover:bg-rose-500 hover:border-rose-600 hover:text-white text-zinc-500 transition cursor-pointer shadow-sm"
+                  className="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 bg-white border border-slate-200 hover:bg-rose-50 hover:border-rose-300 text-slate-400 hover:text-rose-600 transition-all cursor-pointer"
                   title="입력값·구역 초기화"
                   aria-label="슬롯 초기화"
                 >
                   <X size={11} strokeWidth={2.5} />
                 </button>
               )}
-              {/* 슬롯 헤더: 위치명 · 2026-10-09 축소 · 폰트 16 → 14 · bar 축소 */}
-              <div className="flex items-baseline gap-1.5 min-w-0 flex-wrap">
-                <span className={`w-1 h-5 rounded-full ${s.dot} shrink-0 self-center`} />
-                <span className={`text-[14px] font-semibold ${s.text} truncate`}>{s.full}</span>
+              {/* 2026-10-12 · 사용자 지시 · 홈 톤 공식 strip accent · w-[3px] h-[14px] · 폰트 15 */}
+              <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
+                <span className={`w-[3px] h-[14px] rounded-full ${s.dot} shrink-0 self-center`} aria-hidden />
+                <span className="text-[15px] font-semibold text-ink tracking-tight truncate">{s.full}</span>
                 {prev != null && prev !== (add !== "" ? Number(add) : prev) && (
-                  <span className="text-[13px] text-zinc-400 tabular-nums">이전 {prev}</span>
+                  <span className="text-[12px] text-slate-400 tabular-nums font-medium">이전 {prev}</span>
                 )}
               </div>
-              {/* 구역 + 상세구역 · 넓으면 옆에 · 좁으면 위아래 · 관리자만 상세 편집 · 2026-09-09 · 사용자 지시 */}
+              {/* 구역 + 상세구역 · 넓으면 옆에 · 좁으면 위아래 · 관리자만 상세 편집 · 2026-09-09 · 사용자 지시
+                  · 2026-10-10 · 사용자 지시 · "창고는 매장구역 선택 없어야" · 매장 slot (s prefix) 에서만 ZoneInline 노출
+                  · 창고 (w prefix) 는 매장구역 pill 숨김 · 상세구역 (shelf code) 는 그대로 유지 */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
-                {warehouseZoneKey ? (
+                {s.key.startsWith("s") && (warehouseZoneKey ? (
                   <ZoneInline
                     value={currentZone}
                     onChange={v => onPatch(row.key, { [warehouseZoneKey]: v } as Partial<StockRow>)}
+                    zonesList={zonesList}
                   />
                 ) : (s.zoneKey && (
                   <ZoneInline
                     value={currentZone}
                     onChange={v => onPatch(row.key, { [s.zoneKey!]: v } as Partial<StockRow>)}
+                    zonesList={zonesList}
                   />
-                ))}
+                )))}
+                {/* 2026-10-12 · 사용자 지시 · 최신 트렌드 · "상세" chip 톤 subtle 축소
+                    · h-9 rounded-full border-2 bold → h-7 rounded-md border semibold (Attio/Linear 패턴)
+                    · hasDetail: slate-50 subtle · empty: dashed border 유지 (placeholder 의도) */}
                 {(() => {
                   const detail = rowShelfPositions?.[s.shelfCode];
                   const hasDetail = typeof detail === "string" && detail.length === 3;
-                  const isStoreSlot = s.key.startsWith("s");
-                  const toneCls = isStoreSlot
-                    ? (hasDetail ? "bg-indigo-50 border-indigo-300 text-indigo-700" : "bg-zinc-50 border-dashed border-zinc-300 text-zinc-400")
-                    : (hasDetail ? "bg-cyan-50 border-cyan-200 text-cyan-700" : "bg-zinc-50 border-dashed border-zinc-300 text-zinc-400");
-                  const subCls  = isStoreSlot ? "text-indigo-500" : "text-cyan-500";
+                  const toneCls = hasDetail
+                    ? "bg-slate-50 border-slate-200 text-ink"
+                    : "bg-white border-dashed border-slate-200 text-slate-400";
                   const label = hasDetail ? `${detail[0]}-${detail[1]}-${detail[2]}` : "비어있음";
                   const clickable = canManage;
                   const Cmp: any = clickable ? "button" : "span";
@@ -560,13 +583,13 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                       type={clickable ? "button" : undefined}
                       onClick={clickable ? () => setShelfEditCode(s.shelfCode) : undefined}
                       className={[
-                        "inline-flex items-center gap-1 h-9 rounded-full px-2.5 border-2 text-[14px] font-bold tabular-nums tracking-tight",
+                        "inline-flex items-center gap-1.5 h-7 rounded-md px-2 border text-[13px] font-semibold tabular-nums",
                         toneCls,
-                        clickable ? "cursor-pointer hover:opacity-80 transition" : "",
+                        clickable ? "cursor-pointer hover:border-slate-300 transition-colors" : "",
                       ].join(" ")}
                       title={clickable ? `${s.full} 상세구역 · 클릭하여 편집` : undefined}
                     >
-                      <span className={`text-[11px] font-semibold uppercase tracking-wide ${hasDetail ? subCls : "text-zinc-400"}`}>상세</span>
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-slate-400">상세</span>
                       {label}
                     </Cmp>
                   );
@@ -589,7 +612,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
         const s3Slot = visibleSlots.find(s => s.key === "s3");
         const STORE_IDX: Record<string, number> = { s1: 0, s2: 1, s3: 2 };
         return (
-          <div className="border-t border-line/60 px-4 py-3 flex flex-col gap-2.5">
+          <div className="border-t border-slate-100 px-4 py-3 flex flex-col gap-2.5">
             {/* 완전 미지정 신규 상품 · 구역 먼저 선택 → 자동 슬롯 배정 */}
             {!slotVis.anyAssigned && (
               <AutoZonePicker onAssign={handleAutoZoneAssign} />
@@ -614,7 +637,7 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
               <button
                 type="button"
                 onClick={() => setStoreCount(c => Math.min(3, c + 1))}
-                className="inline-flex items-center gap-1.5 self-start h-8 px-3 rounded-lg text-[14px] font-bold text-violet-700 bg-violet-50 border border-violet-200 hover:bg-violet-100 hover:border-violet-300 transition cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1.5 self-start h-8 px-3 rounded-md text-[13px] font-semibold text-slate-600 bg-white border border-dashed border-slate-300 hover:border-slate-400 hover:text-ink hover:bg-slate-50 transition-colors cursor-pointer"
                 title={`매장${visibleStoreCount + 1} 추가`}
               >
                 + 매장 추가 ({visibleStoreCount}/3)
@@ -628,21 +651,22 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             )}
 
           {/* 액션 · 개별 [저장] 버튼 + StockActionsCell */}
-          <div className="mt-1 pt-2 border-t border-line/50 flex items-center justify-between gap-2 flex-wrap">
+          <div className="mt-1 pt-2 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
             {onSaveRow ? (
               <button
                 type="button"
                 onClick={handleSaveClick}
                 disabled={saving || !hasAdd}
                 className={[
-                  "inline-flex items-center gap-1 h-8 px-3 rounded-lg text-[14px] font-bold cursor-pointer transition",
+                  // 2026-10-12 · 사용자 지시 · 최신 트렌드 (Linear primary) · brand-deep → indigo + rounded-md
+                  "inline-flex items-center gap-1 h-8 px-3 rounded-md text-[13px] font-semibold cursor-pointer transition-colors",
                   saving
-                    ? "bg-zinc-100 text-zinc-400 cursor-wait"
+                    ? "bg-slate-100 text-slate-400 cursor-wait"
                     : savedThisSession
                       ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
                       : hasAdd
-                        ? "bg-brand-deep text-white hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm"
-                        : "bg-zinc-100 text-zinc-400 cursor-not-allowed",
+                        ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+                        : "bg-slate-100 text-slate-400 cursor-not-allowed",
                 ].join(" ")}
                 title={hasAdd ? (savedThisSession ? "저장됨 · 다시 저장 (덮어쓰기)" : "이 행만 저장") : "입력값이 있어야 저장 가능"}
                 aria-label={savedThisSession ? "다시 저장" : "이 행만 저장"}

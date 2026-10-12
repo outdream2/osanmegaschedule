@@ -26,6 +26,8 @@ const DP_SUBTAB_META: Record<DpSubTabKey, DpSubTabMeta> = {
   "purchase":       { icon: Package,          color: "amber"   },
   "statistics":     { icon: BarChart2,        color: "indigo"  },
   "revenue":        { icon: CircleDollarSign, color: "emerald" },
+  // 2026-10-10 · #12 · 판매현황 (RevenuePage 재사용 · initialTab="sales")
+  "sales":          { icon: BarChart2,        color: "indigo"  },
   "payment":        { icon: Wallet,           color: "teal"    },
   "return":         { icon: RotateCcw,        color: "rose"    },
   "stock-arrivals": { icon: Bell,             color: "orange"  },

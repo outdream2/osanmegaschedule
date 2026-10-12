@@ -866,8 +866,20 @@ router.get("/api/products/:code", asyncHandler(async (req, res) => {
   // 2026-10-05 · PROJECT RULE Section 4·6 · DB exact match only · alias 변형 fallback 금지
   //   · UI/내부 navigation 은 canonical product_code 만 넘기도록 보장 (RULE 참조)
   //   · OCR/Scanner 가 alias code 로 입력받은 경우 · lookupProductByAnyCode() 로 canonical 변환 후 전달
-  const { data, error } = await supabase.from("products").select("*").eq("product_code", code).maybeSingle();
+  // 2026-10-09 · 사용자 지시 · ERP sale 데이터 pcode (products.pcode primary identity) 로도 조회 가능
+  //   · pcode 2단계 JOIN · fallback 아닌 DB identity resolution (feedback_no_fallback_db_first_2026-10-06)
+  //   · 1차 product_code 매칭 실패 → 2차 pcode 매칭 → canonical product_code 로 전체 row 재조회
+  let data: any = null;
+  let error: any = null;
+  ({ data, error } = await supabase.from("products").select("*").eq("product_code", code).maybeSingle());
   if (error) throw new HttpError(500, error.message);
+  if (!data) {
+    // 2차 · pcode 로 재조회 (ERP PCode primary identity · project_pcode_primary_identity_2026-10-04)
+    const { data: byPcode, error: pcodeErr } = await supabase
+      .from("products").select("*").eq("pcode", code).maybeSingle();
+    if (pcodeErr) throw new HttpError(500, pcodeErr.message);
+    if (byPcode) data = byPcode;
+  }
   if (!data) throw new HttpError(404, "상품을 찾을 수 없습니다");
   const productCode = data.product_code; // 반드시 DB canonical
 

@@ -310,9 +310,10 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
               · 대체공휴일(광복절)·(개천절) 등 · 원본 명절 이름 포함된 것 · 원본 있으면 hide */}
           {eventsToday.length > 0 && (() => {
             const eventNames = new Set(eventsToday.map(e => (e.name ?? "").replace(/\s+/g, "")));
+            // 2026-10-09 · 사용자 지시 · 명절(holiday) 제외 · 날짜 compact · 상품등록 외부 노출
             const dedupedEvents = eventsToday.filter(e => {
+              if (e.type === "holiday") return false;
               const nm = String(e.name ?? "");
-              // 대체공휴일 · 괄호 안 원본 이벤트가 이미 리스트에 있으면 skip
               const m = nm.match(/^대체공휴일\s*\(\s*([^)]+)\s*\)/);
               if (m) {
                 const original = m[1].trim().replace(/\s+/g, "");
@@ -322,8 +323,14 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
             });
             const expandableCount = dedupedEvents.filter(ev => (ev.products?.length ?? ev.product_count ?? 0) > 0).length;
             const allExpanded = expandableCount > 0 && expandedEvents.size >= expandableCount;
+            // compact date formatter · 2026-11-01 → 11/01
+            const fmtMD = (s?: string | null): string => {
+              if (!s) return "";
+              const m = String(s).match(/^\d{4}-(\d{2})-(\d{2})/);
+              return m ? `${Number(m[1])}/${Number(m[2])}` : String(s);
+            };
             return (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-1.5 pb-1.5 border-b border-line">
                 <Sparkles size={14} className="text-brand-deep" />
                 <span className="text-[16px] font-bold text-ink">진행중·임박 이벤트</span>
@@ -340,73 +347,63 @@ export const SalesRecommendationPanel: React.FC<Props> = ({
                   </button>
                 )}
               </div>
-              {/* 2026-10-09 · 사용자 지시 · 안내 compact · 1줄 요약 */}
-              <div className="text-[13px] text-zinc-500 px-1">
-                이벤트 클릭 → 등록 상품 표시 · <span className="font-semibold text-brand-deep">[상품추가]</span> 로 발주 등록 · 미등록 이벤트는 <span className="font-semibold text-brand-deep">통계설정</span> 에서 상품 추가.
-              </div>
               {dedupedEvents.map(ev => {
-                const tone = TYPE_TONE[ev.type] ?? TYPE_TONE.custom;
-                const d = dayDiff(ev.start_date);
-                // 2026-09-24 · E-014 · isSoon·isNow 배지 제거 · d 만 사용 안 함 (leave declarations 사용 X)
-                void d;
                 const evProducts = ev.products ?? [];
                 const productCount = evProducts.length || ev.product_count || 0;
                 const isExpanded = expandedEvents.has(ev.id);
-                const canExpand = productCount > 0;
+                const dateLabel = ev.end_date && ev.end_date !== ev.start_date
+                  ? `${fmtMD(ev.start_date)}~${fmtMD(ev.end_date)}`
+                  : fmtMD(ev.start_date);
                 return (
-                  <div key={ev.id} className="flex flex-col gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => canExpand && toggleEventExpand(ev.id)}
-                      disabled={!canExpand}
-                      className={`flex items-center gap-2 flex-wrap px-2.5 py-1.5 rounded-lg border ${tone.cls} ${canExpand ? "cursor-pointer hover:brightness-95 transition" : "cursor-default"}`}
-                    >
-                      <span className="text-[13px] font-bold px-1.5 py-0.5 rounded-md bg-white/60 border border-current/20 shrink-0">
-                        {tone.label}
-                      </span>
-                      <span className="text-[16px] font-bold shrink-0">{ev.name}</span>
-                      {ev.start_date && (
-                        <span className="inline-flex items-center gap-1 text-[14px] shrink-0">
-                          <Calendar size={11} />
-                          {ev.start_date}
-                          {ev.end_date && ev.end_date !== ev.start_date && ` ~ ${ev.end_date}`}
-                        </span>
-                      )}
-                      {/* 2026-09-24 · E-014 · 사용자 지시 · 진행중·D-N 배지 제거 (필요없음) */}
-                      {productCount > 0 && (
-                        <span className="ml-auto inline-flex items-center gap-1 text-[14px] font-semibold tabular-nums">
-                          상품 {productCount}개
-                          {canExpand && (
-                            isExpanded
-                              ? <ChevronDown size={13} strokeWidth={2.5} className="transition-transform duration-200" />
-                              : <ChevronRight size={13} strokeWidth={2.5} className="transition-transform duration-200" />
-                          )}
-                        </span>
-                      )}
-                    </button>
-                    {/* 2026-09-24 · 사용자 지시 · 이벤트와 상품추가 · 아코디언 안에 통합
-                        · 이전 · 버튼 헤더 옆 (self-start · 항상 노출) + 상품 리스트 (별도 아코디언 섹션)
-                        · 이후 · 하나의 아코디언 · 이벤트 클릭 시 · 버튼 + 상품 리스트 · 함께 열림 */}
-                    {isExpanded && (
-                      <div className="flex flex-col gap-1.5 pl-2 border-l-2 border-brand-tint/60 ml-2">
-                        {/* 상품추가 버튼 · 아코디언 최상단 */}
-                        {onRequestProduct && (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); openProductAddModal(ev); }}
-                            className="self-start inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[14px] font-bold shadow-sm transition cursor-pointer"
-                            title={productCount > 0 ? "이 이벤트 상품 · 다중 선택 · 발주필요 추가" : "이 이벤트에 등록된 상품 없음 · 통계설정에서 등록"}
-                          >
-                            <Plus size={12} strokeWidth={2.5} />
-                            상품추가 {productCount === 0 && <span className="text-[12px] opacity-75">(등록없음)</span>}
-                          </button>
+                  <div key={ev.id} className="rounded-lg border border-line bg-white hover:border-brand-tint transition-colors overflow-hidden">
+                    {/* 핵심 3요소 · 이벤트명 · 날짜 · 상품등록 버튼 */}
+                    <div className="flex items-center gap-2 px-2.5 py-1.5">
+                      <button
+                        type="button"
+                        onClick={() => toggleEventExpand(ev.id)}
+                        className="flex items-center gap-2 flex-1 min-w-0 text-left cursor-pointer"
+                        title="클릭 · 등록 상품 보기"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-brand-deep shrink-0" aria-hidden />
+                        <span className="text-[15px] font-bold text-ink truncate">{ev.name}</span>
+                        {dateLabel && (
+                          <span className="text-[13px] text-ink-soft/80 tabular-nums font-medium shrink-0">{dateLabel}</span>
                         )}
+                        {productCount > 0 && (
+                          <span className="text-[12px] font-bold text-brand-deep bg-brand-tint/40 px-1.5 rounded-md tabular-nums shrink-0">
+                            상품 {productCount}
+                          </span>
+                        )}
+                      </button>
+                      {onRequestProduct && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); openProductAddModal(ev); }}
+                          className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] text-white text-[12.5px] font-bold shrink-0 transition-colors cursor-pointer"
+                          title={productCount > 0 ? "이 이벤트 상품 · 다중 선택 · 발주필요 추가" : "통계설정에서 등록"}
+                        >
+                          <Plus size={11} strokeWidth={2.5} />
+                          상품등록
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => toggleEventExpand(ev.id)}
+                        className="shrink-0 text-ink-soft/60 hover:text-ink p-0.5 cursor-pointer transition-colors"
+                        aria-label={isExpanded ? "접기" : "펼치기"}
+                      >
+                        {isExpanded
+                          ? <ChevronDown size={13} strokeWidth={2.5} />
+                          : <ChevronRight size={13} strokeWidth={2.5} />}
+                      </button>
+                    </div>
+                    {isExpanded && (
+                      <div className="border-t border-line/60 px-2.5 py-2 flex flex-col gap-1 bg-slate-50/40">
                         {productCount === 0 && (
-                          <div className="text-[14px] text-zinc-400 italic px-1">
-                            등록된 상품 없음 · [상품추가] 로 통계설정에서 등록·발주필요에 추가
+                          <div className="text-[13px] text-zinc-400 italic">
+                            등록된 상품 없음 · [상품등록] 으로 통계설정에서 등록
                           </div>
                         )}
-                        {/* 등록된 상품 리스트 · 있을 때만 · 하단에 이어짐 */}
                         {evProducts.length > 0 && (
                           <div className="flex flex-col gap-1">
                         {evProducts.map(p => {

@@ -117,49 +117,55 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
         {/* 2026-08-26 · 사용자 지시 · 최근 스캔 · 하나 → 다수 리스트 · 최근 것 맨 위
               · rows 는 이미 [newRow, ...prev] 로 최신순 정렬됨 · 그대로 렌더
               · 참고 props · lastProduct/lastCode/requestingKey/onRequestDisplay · 하위 호환 유지 */}
+        {/* 2026-10-12 · 사용자 지시 · 홈 랜딩 톤 적용 (BEHAVIOR DELTA = 0 · UI only)
+            · rounded-2xl 큰 shadow + StatusPill → CARD rounded-[12px] + 좌측 strip accent header */}
         {rows.length > 0 && (
-          <div className="flex flex-col rounded-2xl overflow-hidden bg-white border border-line shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_16px_rgba(10,46,74,0.08)]">
-            <div className="flex items-center gap-2 px-3.5 py-2.5 bg-zinc-50/60 border-b border-line">
-              <StatusPill tone="emerald" size="sm" dot>최근 스캔</StatusPill>
-              <span className="ml-auto text-[15px] text-ink-soft tabular-nums">{rows.length}건 · 최신순</span>
+          <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+            <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-slate-100">
+              <span className="w-[3px] h-[14px] bg-emerald-500 rounded-full shrink-0" aria-hidden />
+              <span className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight">최근 스캔</span>
+              <span className="ml-auto text-[12.5px] text-slate-500 font-medium tabular-nums">{rows.length}건 · 최신순</span>
             </div>
-            <div className="divide-y divide-line max-h-[360px] overflow-y-auto">
+            <div className="divide-y divide-slate-100 max-h-[360px] overflow-y-auto">
               {rows.slice(0, 20).map((r, idx) => {
                 const isLatest = idx === 0;
                 return (
                   <div
                     key={r.key}
-                    className={`px-3.5 py-2 flex flex-col gap-0.5 hover:bg-zinc-50/70 transition-colors ${isLatest ? "bg-emerald-50/40" : ""}`}
+                    className={`px-3.5 py-2 flex flex-col gap-0.5 hover:bg-slate-50/60 transition-colors ${isLatest ? "bg-emerald-50/30" : ""}`}
                   >
                     <div className="flex items-baseline gap-2 min-w-0">
-                      {isLatest && <span className="shrink-0 text-[14px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 rounded px-1 py-0.5 leading-none">NEW</span>}
-                      <p className="text-[14px] sm:text-[15px] font-bold text-zinc-900 break-words whitespace-normal leading-snug flex-1 min-w-0">
+                      {isLatest && <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 rounded px-1 py-0.5 leading-none">NEW</span>}
+                      <p className="text-[14px] sm:text-[15px] font-semibold text-ink break-words whitespace-normal leading-snug flex-1 min-w-0">
                         {r.product.name || "-"}
                       </p>
-                      <span className="shrink-0 text-[14px] font-mono tabular-nums text-ink-soft/70">{r.code}</span>
+                      <span className="shrink-0 text-[12px] font-mono tabular-nums text-slate-400">{r.code}</span>
                     </div>
-                    <div className="flex items-baseline gap-2 flex-wrap text-[14px]">
+                    <div className="flex items-baseline gap-2 flex-wrap text-[13px]">
                       {/* 2026-09-17 · 사용자 지시 · 규격(spec) → 진열구역(location) 표시 정정 · 실무 · 위치 확인 */}
                       {(() => {
                         const loc = ((r.product as any).location ?? (r.product as any).display_location) as string | null | undefined;
-                        return loc && String(loc).trim() ? (
+                        // 2026-10-11 · 사용자 지시 · ">전체" 토큰 제거 (대원칙) · "벽>10>2열>전체" → "벽 10 2열"
+                        const clean = (raw: string): string => raw.split(">").map(s => s.trim()).filter(s => s && s !== "전체").join(" ");
+                        const shown = loc && String(loc).trim() ? clean(String(loc)) : "";
+                        return shown ? (
                           <span className="inline-flex items-baseline gap-1">
-                            <span className="text-zinc-400 font-semibold">진열구역</span>
-                            <span className="text-violet-700 font-bold">{loc}</span>
+                            <span className="text-slate-400 font-medium">진열구역</span>
+                            <span className="text-ink font-semibold" title={String(loc)}>{shown}</span>
                           </span>
                         ) : null;
                       })()}
                       {/* 2026-09-14 · 현재고 · products.current_stock · 실재고 입력 참고용 */}
                       {(r.product as any).current_stock != null && (
                         <span className="inline-flex items-baseline gap-1">
-                          <span className="text-zinc-400 font-semibold">현재고</span>
-                          <span className="text-amber-700 font-bold tabular-nums">{Number((r.product as any).current_stock).toLocaleString()}<span className="text-[12px] font-semibold text-amber-500/80 ml-0.5">개</span></span>
+                          <span className="text-slate-400 font-medium">현재고</span>
+                          <span className="text-ink font-semibold tabular-nums">{Number((r.product as any).current_stock).toLocaleString()}<span className="text-[11px] font-medium text-slate-400 ml-0.5">개</span></span>
                         </span>
                       )}
                       {(r.product as any).supplier && (
                         <span className="inline-flex items-baseline gap-1 min-w-0">
-                          <span className="text-zinc-400 font-semibold">공급사</span>
-                          <span className="text-sky-700 font-bold truncate max-w-[140px]">{(r.product as any).supplier}</span>
+                          <span className="text-slate-400 font-medium">공급사</span>
+                          <span className="text-slate-600 font-semibold truncate max-w-[140px]">{(r.product as any).supplier}</span>
                         </span>
                       )}
                     </div>
@@ -167,7 +173,7 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
                 );
               })}
               {rows.length > 20 && (
-                <div className="px-3.5 py-1.5 text-center text-[14px] text-zinc-400 bg-zinc-50/40">
+                <div className="px-3.5 py-1.5 text-center text-[12px] text-slate-400 font-medium bg-slate-50/40">
                   전체 {rows.length}건 중 최근 20건 표시
                 </div>
               )}
@@ -196,82 +202,77 @@ export const SaveCard: React.FC<SaveCardProps> = ({
   rows, saveStatus, savedCount, saveError, onReview, onReset,
 }) => {
   if (rows.length === 0) return null;
+  // 2026-10-12 · 사용자 지시 · 깔끔한 정보전달 + 컬러포인트 + 반응형 최적화
+  //   · 좌측 strip accent (indigo-500 → emerald-500 저장 완료) = 컬러포인트
+  //   · 긴 안내문 제거 · 핵심 수치만 (리스트 compact)
+  //   · 저장 버튼 indigo primary (홈 톤 통일) + rounded-md
+  //   · 반응형 · 모바일 자연 스택 · 데스크톱 좌측 패널 sticky 상속
+  const stripTone = saveStatus === "done" ? "bg-emerald-500" : saveStatus === "error" ? "bg-rose-500" : "bg-indigo-500";
   return (
-    // 2026-10-09 · #9 Phase 7 · 홈 톤 CARD · 공간 축소
     <div className={`bg-white rounded-[12px] overflow-hidden transition-colors border shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${
-      saveStatus === "done" ? "border-emerald-300" : "border-slate-200"
+      saveStatus === "done" ? "border-emerald-200" : "border-slate-200"
     }`}>
+      {/* Header · 좌측 strip accent 컬러포인트 + 핵심 수치 */}
       <div className={`px-4 py-2.5 border-b border-slate-100 flex items-center gap-2 ${
         saveStatus === "done" ? "bg-emerald-50/40" : "bg-white"
       }`}>
-        <SaveAll size={16} className={`shrink-0 ${saveStatus === "done" ? "text-emerald-600" : "text-slate-500"}`} />
+        <span className={`w-[3px] h-[14px] ${stripTone} rounded-full shrink-0 transition-colors`} aria-hidden />
+        <SaveAll size={14} className={`shrink-0 ${saveStatus === "done" ? "text-emerald-600" : "text-slate-500"}`} />
         <span className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight">전체 등록</span>
-        <span className="text-[12.5px] text-slate-500 font-medium tabular-nums">· {rows.length}건</span>
+        <span className="ml-auto text-[12px] text-slate-500 font-medium tabular-nums">{rows.length}건</span>
       </div>
 
       <div className="px-4 py-3 flex flex-col gap-2.5">
-        {/* 2026-08-23 · #202 · 사용자 지시 · 전체 등록 버튼 바로 위 · 등록 준비 요약 리스트 */}
-        <div className="rounded-lg border border-line/70 bg-zinc-50/50 divide-y divide-zinc-100 overflow-hidden">
-          <div className="px-3 py-2 flex items-center gap-2 bg-white/60 border-b border-line/60">
-            <span className="text-[14px] font-bold text-ink tracking-tight">등록 준비 요약</span>
-            <span className="ml-auto text-[14px] text-zinc-500 tabular-nums font-medium">{rows.length}건</span>
-          </div>
-          <ul className="max-h-[36vh] overflow-auto">
-            {rows.map((r, idx) => {
-              const sl = (v: number | "") => v !== "" ? Number(v) : 0;
-              const wh = sl(r.warehouse1AddQty) + sl(r.warehouse2AddQty);
-              const st = sl(r.store1AddQty) + sl(r.store2AddQty) + sl(r.store3AddQty);
-              const total = calcRowTotal(r);
-              const w1zone = r.warehouse1Zone;
-              const w2zone = r.warehouse2Zone;
-              const s1zone = r.store1Zone;
-              return (
-                <li key={r.key} className="px-3 py-1.5 flex items-center gap-2 text-[14px] hover:bg-white/60 transition-colors">
-                  <span className="w-5 h-5 shrink-0 rounded bg-brand-tint text-brand-deep inline-flex items-center justify-center text-[13px] font-bold tabular-nums">
-                    {idx + 1}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate font-semibold text-ink">{r.product.name}</span>
-                  <div className="shrink-0 flex items-center gap-1 tabular-nums text-[14px]">
-                    {wh > 0 && (
-                      <span className="inline-flex items-baseline gap-0.5 px-1.5 py-0.5 rounded bg-cyan-50 border border-cyan-200 text-cyan-800 font-bold" title={[w1zone, w2zone].filter(Boolean).join("/") || "창고"}>
-                        <span className="text-[13px] font-semibold text-cyan-600">창고</span>
-                        {wh}
-                      </span>
-                    )}
-                    {st > 0 && (
-                      <span className="inline-flex items-baseline gap-0.5 px-1.5 py-0.5 rounded bg-violet-50 border border-violet-200 text-violet-800 font-bold" title={s1zone || "매장"}>
-                        <span className="text-[13px] font-semibold text-violet-600">매장</span>
-                        {st}
-                      </span>
-                    )}
-                    <span className="inline-flex items-baseline gap-0.5 px-1.5 py-0.5 rounded bg-brand-tint border border-brand-deep/20 text-brand-deep font-bold">
-                      <span className="text-[13px] font-semibold text-brand-deep/70">합</span>
-                      {total}
-                    </span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        {/* 등록 준비 요약 · compact · divide-y 간결 */}
+        <ul className="rounded-[10px] border border-slate-200 bg-white divide-y divide-slate-100 overflow-hidden max-h-[36vh] overflow-y-auto">
+          {rows.map((r, idx) => {
+            const sl = (v: number | "") => v !== "" ? Number(v) : 0;
+            const wh = sl(r.warehouse1AddQty) + sl(r.warehouse2AddQty);
+            const st = sl(r.store1AddQty) + sl(r.store2AddQty) + sl(r.store3AddQty);
+            const total = calcRowTotal(r);
+            const curStock = Number((r.product as any).current_stock ?? 0);
+            return (
+              <li key={r.key} className="px-3 py-2 flex items-center gap-2 text-[13px] hover:bg-slate-50/50 transition-colors">
+                <span className="shrink-0 text-[11px] text-slate-400 tabular-nums w-4 text-right font-medium">{idx + 1}</span>
+                <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-ink">{r.product.name}</span>
+                <div className="shrink-0 flex items-center gap-1.5 tabular-nums text-slate-500">
+                  <span className="text-[12px]">현 <b className={curStock > 0 ? "text-ink font-semibold" : "text-slate-400 font-medium"}>{curStock}</b></span>
+                  {wh > 0 && (
+                    <>
+                      <span className="text-slate-300">·</span>
+                      {/* 창고 컬러포인트 cyan */}
+                      <span className="text-[12px]">창 <b className="text-cyan-700 font-semibold">{wh}</b></span>
+                    </>
+                  )}
+                  {st > 0 && (
+                    <>
+                      <span className="text-slate-300">·</span>
+                      {/* 매장 컬러포인트 violet */}
+                      <span className="text-[12px]">매 <b className="text-violet-700 font-semibold">{st}</b></span>
+                    </>
+                  )}
+                  <span className="text-slate-300">·</span>
+                  {/* 합계 컬러포인트 indigo (primary) */}
+                  <span className="text-[13px] text-indigo-700 font-bold">{total}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
 
-        <p className="text-[14px] text-zinc-500 leading-relaxed">
-          리스트의 모든 항목을 한 번에 저장합니다.
-          창고1·2 · 매장1·2·3 수량과 구역을 확인한 뒤 아래 버튼을 누르세요.
-        </p>
-
+        {/* 저장 버튼 · indigo primary · 홈 톤 통일 · 2026 Linear 톤 */}
         <button
           onClick={onReview}
           disabled={saveStatus === "saving" || saveStatus === "done" || rows.length === 0}
           className={[
-            "w-full h-11 rounded-md font-semibold text-[14px] text-white transition-colors cursor-pointer disabled:cursor-not-allowed",
+            "w-full h-11 rounded-md font-semibold text-[14px] text-white transition-colors cursor-pointer disabled:cursor-not-allowed shadow-sm",
             saveStatus === "done"
               ? "bg-emerald-500"
               : saveStatus === "error"
                 ? "bg-rose-500 hover:bg-rose-600"
                 : saveStatus === "saving"
                   ? "bg-slate-400"
-                  : "bg-brand-deep hover:bg-[#0d3a5c]",
+                  : "bg-indigo-600 hover:bg-indigo-700",
           ].join(" ")}
         >
           <span className="flex items-center justify-center gap-2">

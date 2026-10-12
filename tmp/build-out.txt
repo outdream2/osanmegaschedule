@@ -1,0 +1,89 @@
+﻿
+> megatown-staff-scheduler@0.0.0 build
+> vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs
+
+[36mvite v6.4.3 [32mbuilding for production...[36m[39m
+transforming...
+node.exe : [33mnode_modules/zod/v4/cor
+e/util.js (400:0): A comment
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpeci 
+   fied: ([33mnode_modul...0:0): A c  
+  omment:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCo 
+   mmandError
+ 
+
+"// Wrapped in a `@__PURE__` IIFE: esbu
+ild never tree-shakes a top-level initi
+alizer that contains a member access on
+ `Number`, so the bare object literal s
+urvived into every bundle."
+
+in "node_modules/zod/v4/core/util.js" c
+ontains an annotation that Rollup canno
+t interpret due to the position of the 
+comment. The comment will be removed to
+ avoid issues.[39m
+[33mnode_modules/zod/v4/core/regexes.j
+s (74:0): A comment
+
+"/** Anchors a pattern source. The inte
+rpolation lives here rather than at the
+ call site because
+ * esbuild will not drop a `@__PURE__` 
+call whose own argument interpolates a 
+variable, but it
+ * will drop `anchor(dateSource)`. Keep
+ing it inline pinned `date` into every 
+bundle. */"
+
+in "node_modules/zod/v4/core/regexes.js
+" contains an annotation that Rollup ca
+nnot interpret due to the position of t
+he comment. The comment will be removed
+ to avoid issues.[39m
+[32m✓[39m 8337 modules transformed.
+[31m✗[39m Build failed in 46.58s
+[31merror during build:
+Error: ENOENT: no such file or director
+y, scandir 'D:\antigravity_projects\meg
+atown-staff-scheduler\dist\assets'
+    at Object.readdirSync (node:fs:1569
+:26)
+    at readAllFile (file:///D:/antigrav
+ity_projects/megatown-staff-scheduler/n
+ode_modules/vite-plugin-compression/dis
+t/index.mjs:17:26)
+    at file:///D:/antigravity_projects/
+megatown-staff-scheduler/node_modules/v
+ite-plugin-compression/dist/index.mjs:1
+9:21
+    at Array.forEach (<anonymous>)
+    at readAllFile (file:///D:/antigrav
+ity_projects/megatown-staff-scheduler/n
+ode_modules/vite-plugin-compression/dis
+t/index.mjs:18:15)
+    at Object.closeBundle (file:///D:/a
+ntigravity_projects/megatown-staff-sche
+duler/node_modules/vite-plugin-compress
+ion/dist/index.mjs:79:19)
+    at Object.handler (file:///D:/antig
+ravity_projects/megatown-staff-schedule
+r/node_modules/vite/dist/node/chunks/de
+p-Dm0c1Wj2.js:46688:15)
+    at file:///D:/antigravity_projects/
+megatown-staff-scheduler/node_modules/r
+ollup/dist/es/shared/node-entry.js:2345
+6:40
+    at async Promise.all (index 0)
+    at async PluginDriver.hookParallel 
+(file:///D:/antigravity_projects/megato
+wn-staff-scheduler/node_modules/rollup/
+dist/es/shared/node-entry.js:23366:9)[
+39m
+

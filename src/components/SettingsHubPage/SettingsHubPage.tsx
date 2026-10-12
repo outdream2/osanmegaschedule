@@ -1,19 +1,18 @@
 // src/components/SettingsHubPage/SettingsHubPage.tsx
 // 2026-09-07 · 사용자 지시 · 설정 허브 페이지 · 모든 설정 통합 진입점
-//   · 목업 (UI_MOCKUP_2026-08-21) 톤 · 카드 그리드 · 시인성 최우선
-//   · 각 카드 · 아이콘타일 + 제목 + 설명 + 카테고리 배지 + 상태 표시
+// 2026-10-11 · 사용자 지시 · 매장 overview 패턴 복제 · 홈 랜딩 톤 전면 재작성
+//   · OverviewHero + OverviewInnerTabs · 현황 탭 default + 요약 카드 7개
+//   · CARD rounded-[12px] + border-slate-200 + subtle shadow · 좌측 strip accent + 작은 아이콘
+//   · 각 카드 클릭 → onNavigate(key) · 매장 메뉴 overview 와 동일 UX
 
-// 2026-10-06 · BREADCRUMB SSOT CLEANUP · 자체 하드코드 breadcrumb 제거
-//   · AppNavHeader 글로벌 (buildBreadcrumbFromNav) 유일 · 중복 2개 → 1개
-//   · House · dead import 제거 (CaretRight 는 카드 chevron 용으로 유지)
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Lock, CalendarBlank, Buildings, Calendar, Gear, Truck,
-  CaretRight,
+  Lock, CalendarBlank, Buildings, Calendar, Gear, Truck, Database, CaretRight,
 } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import type { AuthSession } from "../../types";
 import { useActiveNav } from "../../contexts/ActiveNavContext";
+import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "../DisplayPage/overviews/OverviewHeader";
 
 interface Props {
   authSession: AuthSession | null;
@@ -27,9 +26,8 @@ interface SettingsCard {
   title: string;
   description: string;
   icon: React.ElementType;
-  category: "권한" | "조직" | "운영" | "시스템";
-  categoryColor: string;
-  accent: string; // gradient tailwind classes
+  stripTone: string;
+  iconColor: string;
 }
 
 const CARDS: SettingsCard[] = [
@@ -38,65 +36,74 @@ const CARDS: SettingsCard[] = [
     title: "메뉴 설정",
     description: "페이지별 권한 · 직원 레벨 · 직군 관리 · 사이드바 표시",
     icon: Lock,
-    category: "권한",
-    categoryColor: "bg-rose-50 text-rose-700 border-rose-200",
-    accent: "from-rose-500 to-rose-600",
+    stripTone: "bg-rose-500",
+    iconColor: "text-rose-600",
   },
   {
     key: "schedule-settings",
     title: "스케줄 설정",
     description: "직군별 기본 연차일수 · 근무 규칙",
     icon: CalendarBlank,
-    category: "조직",
-    categoryColor: "bg-sky-50 text-sky-700 border-sky-200",
-    accent: "from-sky-500 to-sky-600",
+    stripTone: "bg-amber-500",
+    iconColor: "text-amber-600",
   },
   {
     key: "company-info",
     title: "회사·브랜드",
     description: "사업자 정보 · 로고·색상 · 대표 연락처 · 도장 매핑",
     icon: Buildings,
-    category: "조직",
-    categoryColor: "bg-sky-50 text-sky-700 border-sky-200",
-    accent: "from-indigo-500 to-indigo-600",
+    stripTone: "bg-sky-500",
+    iconColor: "text-sky-600",
   },
   {
     key: "season-settings",
     title: "통계 설정",
-    description: "계절 정의 (봄·여름·가을·겨울) · 적정재고 산정 기간 · 판매중 필터",
+    description: "계절 정의 · 적정재고 산정 기간 · 판매중 필터",
     icon: Calendar,
-    category: "운영",
-    categoryColor: "bg-amber-50 text-amber-700 border-amber-200",
-    accent: "from-amber-500 to-orange-500",
-  },
-  {
-    key: "order-settings",
-    title: "발주 설정",
-    description: "발주 이메일 (SMTP) · 테스트 발송 · 발주 규칙·템플릿",
-    icon: Truck,
-    category: "운영",
-    categoryColor: "bg-amber-50 text-amber-700 border-amber-200",
-    accent: "from-emerald-500 to-teal-600",
+    stripTone: "bg-emerald-500",
+    iconColor: "text-emerald-600",
   },
   {
     key: "system-settings",
     title: "시스템 설정",
-    description: "DB·인증 · AI/OCR · 알림톡·SMS · 이미지 CDN · Web Push · 데이터 업로드",
+    description: "DB·인증 · AI/OCR · 알림톡 · 이미지 CDN · Web Push",
     icon: Gear,
-    category: "시스템",
-    categoryColor: "bg-zinc-100 text-zinc-700 border-zinc-300",
-    accent: "from-brand-deep to-brand",
+    stripTone: "bg-slate-500",
+    iconColor: "text-slate-600",
+  },
+  {
+    key: "order-settings",
+    title: "발주 설정",
+    description: "SMTP 이메일 · 테스트 발송 · 발주 규칙·템플릿",
+    icon: Truck,
+    stripTone: "bg-indigo-500",
+    iconColor: "text-indigo-600",
+  },
+  {
+    key: "admin-initial-build",
+    title: "ERP 초기 구축",
+    description: "ERP 데이터 DRY-RUN Preview · 관리자 전용",
+    icon: Database,
+    stripTone: "bg-violet-500",
+    iconColor: "text-violet-600",
   },
 ];
 
+type InnerTabKey = "overview";
+
 export const SettingsHubPage: React.FC<Props> = ({ authSession, onBack, onNavigate, onLogout }) => {
-  // 2026-10-06 · BREADCRUMB SSOT CLEANUP · 그룹 루트 page · activeNav 세팅
-  //   · settings-hub 는 "설정" 그룹의 overview page · 표시는 "홈 > 설정" 2 depth
-  //   · buildBreadcrumbFromNav 가 settings-hub itemKey 를 그룹 루트로 특수 처리
+  // 2026-10-06 · BREADCRUMB SSOT CLEANUP · activeNav 세팅
   const { setActiveNav } = useActiveNav();
   useEffect(() => {
     setActiveNav({ groupId: "settings", itemKey: "settings-hub" as AppNavPage, subTab: null, nested: null });
   }, [setActiveNav]);
+
+  // 2026-10-11 · 사용자 지시 · 매장 overview 패턴 · 현황 탭 default · 추후 확장 slot
+  const [innerTab, setInnerTab] = useState<InnerTabKey>("overview");
+
+  const tabs: ReadonlyArray<OverviewInnerTab<InnerTabKey>> = [
+    { k: "overview", label: "현황", tone: "slate", count: CARDS.length },
+  ];
 
   return (
     <div className="min-h-screen bg-[#F4F7FA] flex flex-col">
@@ -107,90 +114,57 @@ export const SettingsHubPage: React.FC<Props> = ({ authSession, onBack, onNaviga
         onNavigate={onNavigate}
         onLogout={onLogout}
       />
-      <main className="flex-1 max-w-[1360px] w-[85%] mx-auto px-4 py-5 flex flex-col gap-5">
-        {/* 2026-10-06 · BREADCRUMB SSOT CLEANUP · 자체 breadcrumb 제거 · AppNavHeader 글로벌 유일 */}
+      <main className="flex-1 max-w-[1360px] w-[90%] mx-auto flex flex-col gap-3 md:gap-4 pb-6">
+        {/* OverviewHero · 매장 overview 공식 복제 */}
+        <OverviewHero
+          tone="slate"
+          title="설정 통합 대시보드"
+          description="권한·조직·운영·시스템 · 7개 설정 한눈에"
+        />
 
-        {/* Header · 목업 톤 (SettingsPageShell 와 동일 시각 스타일) */}
-        <header className="relative overflow-hidden bg-white border border-line rounded-2xl shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_12px_-4px_rgba(10,46,74,0.06)]">
-          <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-brand-deep via-brand to-[#3E7CB1]" />
-          <div className="px-5 pt-5 pb-4 flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-deep to-brand shadow-[0_2px_8px_-1px_rgba(10,46,74,0.25)] flex items-center justify-center shrink-0">
-              <Gear size={20} weight="fill" className="text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-[22px] font-extrabold text-ink leading-tight tracking-tight">설정 · 시스템 관리 허브</h1>
-              <p className="text-[15px] text-ink-soft mt-1 leading-relaxed">
-                권한·조직·운영·시스템 관련 모든 설정을 한 곳에서 관리합니다. 카테고리별로 정리된 카드를 클릭하여 각 설정으로 진입하세요.
-              </p>
-            </div>
-          </div>
-        </header>
+        {/* OverviewInnerTabs · 현황 default · 추후 확장 (예: 로그·변경이력) */}
+        <OverviewInnerTabs<InnerTabKey>
+          ariaLabel="설정 inner tabs"
+          active={innerTab}
+          onChange={setInnerTab}
+          tabs={tabs}
+        />
 
-        {/* 카테고리별 카드 그룹 */}
-        {(["권한", "조직", "운영", "시스템"] as const).map((cat) => {
-          const items = CARDS.filter(c => c.category === cat);
-          if (items.length === 0) return null;
-          return (
-            <section key={cat} className="flex flex-col gap-3">
-              <div className="flex items-center gap-2 px-1">
-                <span className="inline-block w-[3px] h-4 rounded-sm bg-gradient-to-b from-brand-soft to-brand-deep" />
-                <h2 className="text-[15px] font-bold text-ink tracking-tight">{cat}</h2>
-                <span className="text-[13px] font-semibold text-ink-soft tabular-nums">{items.length}</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {items.map((c) => {
-                  const Icon = c.icon;
-                  return (
-                    <button
-                      key={c.key}
-                      type="button"
-                      onClick={() => onNavigate?.(c.key)}
-                      className="group relative overflow-hidden text-left bg-white border border-line rounded-2xl p-4
-                        shadow-[0_1px_2px_rgba(10,46,74,0.04),0_4px_12px_-4px_rgba(10,46,74,0.06)]
-                        hover:shadow-[0_2px_8px_rgba(10,46,74,0.08),0_12px_28px_-8px_rgba(10,46,74,0.18)]
-                        hover:-translate-y-0.5 hover:border-brand-deep/30
-                        transition-all duration-200 cursor-pointer"
-                    >
-                      {/* 3px top accent · 카테고리별 그라디언트 */}
-                      <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${c.accent} opacity-90`} />
-                      <div className="flex items-start gap-3">
-                        <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${c.accent} shadow-[0_2px_8px_-1px_rgba(10,46,74,0.25)] flex items-center justify-center shrink-0`}>
-                          <Icon size={20} weight="fill" className="text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md border tracking-tight ${c.categoryColor}`}>
-                              {c.category}
-                            </span>
-                          </div>
-                          <h3 className="text-[16px] font-bold text-ink tracking-tight leading-tight">{c.title}</h3>
-                          <p className="text-[13px] text-ink-soft leading-relaxed mt-1.5 line-clamp-2">{c.description}</p>
-                        </div>
-                        <CaretRight
-                          size={16}
-                          weight="bold"
-                          className="text-zinc-300 group-hover:text-brand-deep transition-colors shrink-0 mt-1"
-                        />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+        {/* 현황 탭 content · 7개 설정 요약 카드 grid */}
+        {innerTab === "overview" && (
+          <div className="min-w-0 px-4 sm:px-6 pt-1 flex flex-col gap-4">
+            {/* 요약 카드 grid · 홈 랜딩 톤 (매장 overview 와 동일) */}
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+              {CARDS.map((c) => {
+                const Icon = c.icon;
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => onNavigate?.(c.key)}
+                    className="group bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-4 text-left hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col gap-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`w-[3px] h-[14px] ${c.stripTone} rounded-full shrink-0`} aria-hidden />
+                      <Icon size={14} className={c.iconColor} weight="fill" />
+                      <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight flex-1 min-w-0 truncate">
+                        {c.title}
+                      </h3>
+                      <CaretRight size={13} className="text-slate-300 group-hover:text-slate-500 transition-colors shrink-0" />
+                    </div>
+                    <p className="text-[13px] text-slate-500 leading-relaxed line-clamp-2 pl-[11px]">
+                      {c.description}
+                    </p>
+                    <div className="mt-auto pl-[11px] text-[12px] text-slate-400 font-medium flex items-center gap-1 group-hover:text-slate-600 transition-colors">
+                      설정 열기
+                      <CaretRight size={11} weight="bold" />
+                    </div>
+                  </button>
+                );
+              })}
             </section>
-          );
-        })}
-
-        {/* 도움말 · 목업 톤 */}
-        <section className="bg-brand-tint/40 border border-brand-deep/15 rounded-2xl p-4 flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-brand-deep/10 flex items-center justify-center shrink-0">
-            <Gear size={16} weight="bold" className="text-brand-deep" />
           </div>
-          <div className="text-[14px] text-ink leading-relaxed">
-            <span className="font-bold text-brand-deep">TIP.</span>{" "}
-            시스템 설정 항목 중 일부는 저장 후 서버 재시작이 필요할 수 있습니다.
-            발주 설정의 SMTP · 세션 타임아웃 · 자동 임포트 등은 즉시 반영됩니다.
-          </div>
-        </section>
+        )}
       </main>
     </div>
   );

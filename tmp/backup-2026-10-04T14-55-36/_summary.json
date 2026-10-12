@@ -1,0 +1,225 @@
+{
+  "backupDir": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36",
+  "backupAt": "2026-10-04T14:55:36.876Z",
+  "totalRows": 91547,
+  "totalBytes": 5426611,
+  "results": [
+    {
+      "table": "products",
+      "status": "OK",
+      "rows": 7332,
+      "bytes": 781098,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 7332,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/products.json.gz"
+    },
+    {
+      "table": "purchase_details",
+      "status": "OK",
+      "rows": 15862,
+      "bytes": 768272,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 15862,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/purchase_details.json.gz"
+    },
+    {
+      "table": "stock_history",
+      "status": "OK",
+      "rows": 61655,
+      "bytes": 3720475,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 61655,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/stock_history.json.gz"
+    },
+    {
+      "table": "inventory_checks",
+      "status": "OK",
+      "rows": 3400,
+      "bytes": 116545,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 3400,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/inventory_checks.json.gz"
+    },
+    {
+      "table": "order_requests",
+      "status": "OK",
+      "rows": 7,
+      "bytes": 1065,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 7,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/order_requests.json.gz"
+    },
+    {
+      "table": "vendors",
+      "status": "OK",
+      "rows": 156,
+      "bytes": 5730,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 156,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/vendors.json.gz"
+    },
+    {
+      "table": "supplier_payments",
+      "status": "OK",
+      "rows": 3,
+      "bytes": 370,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 3,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/supplier_payments.json.gz"
+    },
+    {
+      "table": "employees",
+      "status": "OK",
+      "rows": 19,
+      "bytes": 2295,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 19,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/employees.json.gz"
+    },
+    {
+      "table": "contracts",
+      "status": "ERROR",
+      "rows": 0,
+      "bytes": 0,
+      "error": "Could not find the table 'public.contracts' in the schema cache"
+    },
+    {
+      "table": "schedules",
+      "status": "OK",
+      "rows": 2690,
+      "bytes": 20008,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 2690,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/schedules.json.gz"
+    },
+    {
+      "table": "zone_assignments",
+      "status": "OK",
+      "rows": 65,
+      "bytes": 517,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 65,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/zone_assignments.json.gz"
+    },
+    {
+      "table": "zone_labels",
+      "status": "OK",
+      "rows": 50,
+      "bytes": 356,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 50,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/zone_labels.json.gz"
+    },
+    {
+      "table": "borrowings",
+      "status": "OK",
+      "rows": 0,
+      "bytes": 22,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 0,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/borrowings.json.gz"
+    },
+    {
+      "table": "notifications",
+      "status": "OK",
+      "rows": 208,
+      "bytes": 4822,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 208,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/notifications.json.gz"
+    },
+    {
+      "table": "return_requests",
+      "status": "OK",
+      "rows": 0,
+      "bytes": 22,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 0,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/return_requests.json.gz"
+    },
+    {
+      "table": "credit_cards",
+      "status": "OK",
+      "rows": 2,
+      "bytes": 253,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 2,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/credit_cards.json.gz"
+    },
+    {
+      "table": "loss_tracking_daily",
+      "status": "ERROR",
+      "rows": 0,
+      "bytes": 0,
+      "error": "Could not find the table 'public.loss_tracking_daily' in the schema cache"
+    },
+    {
+      "table": "sync_log",
+      "status": "ERROR",
+      "rows": 0,
+      "bytes": 0,
+      "error": "Could not find the table 'public.sync_log' in the schema cache"
+    },
+    {
+      "table": "stock_import_log",
+      "status": "ERROR",
+      "rows": 0,
+      "bytes": 0,
+      "error": "Could not find the table 'public.stock_import_log' in the schema cache"
+    },
+    {
+      "table": "ocr_supplier_aliases",
+      "status": "OK",
+      "rows": 10,
+      "bytes": 465,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 10,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/ocr_supplier_aliases.json.gz"
+    },
+    {
+      "table": "ocr_templates",
+      "status": "OK",
+      "rows": 49,
+      "bytes": 2170,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 49,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/ocr_templates.json.gz"
+    },
+    {
+      "table": "ocr_synonyms",
+      "status": "OK",
+      "rows": 39,
+      "bytes": 2126,
+      "verifyOk": true,
+      "countStable": true,
+      "recount": 39,
+      "path": "D:/antigravity_projects/megatown-staff-scheduler/tmp/backup-2026-10-04T14-55-36/ocr_synonyms.json.gz"
+    }
+  ],
+  "pcodeNullCount": 1000,
+  "refCounts": {
+    "purchase_details": 192,
+    "stock_history": 678,
+    "inventory_checks": 582,
+    "order_requests": 3
+  },
+  "refProducts": 627,
+  "unrefProducts": 373
+}

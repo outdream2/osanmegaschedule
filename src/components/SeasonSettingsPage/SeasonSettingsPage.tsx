@@ -24,6 +24,8 @@ import { TabBar, type TabDef } from "../common/TabBar";
 import { EventsSection } from "./EventsSection";
 // 2026-09-18 · 계절 정의 탭 · 계절별 추천 상품 매핑 accordion
 import { SeasonProductsAccordion } from "./SeasonProductsAccordion";
+// 2026-10-09 · 사용자 지시 · 추천 규칙 탭 · 시스템설정에서 통계설정으로 이관
+import { EventCategoryRulesEditor } from "../SystemSettingsPage/EventCategoryRulesEditor";
 
 interface Props {
   onBack: () => void;
@@ -33,11 +35,13 @@ interface Props {
 }
 
 // 2026-09-13 · #88 · 탭 정의 · #52·#54 · 이벤트 관리 탭 추가
-type StatsTab = "season" | "filters" | "events";
+// 2026-10-09 · 사용자 지시 · 추천 규칙 탭 추가 (시스템설정에서 이관)
+type StatsTab = "season" | "filters" | "events" | "reco-rules";
 const STATS_TABS: TabDef<StatsTab>[] = [
-  { key: "season",  label: "계절 정의",       icon: Snowflake, color: "sky" },
-  { key: "filters", label: "재고·판매 필터",  icon: Package,   color: "emerald" },
-  { key: "events",  label: "이벤트 관리",     icon: Sparkle,   color: "violet" },
+  { key: "season",     label: "계절 정의",       icon: Snowflake, color: "sky" },
+  { key: "filters",    label: "재고·판매 필터",  icon: Package,   color: "emerald" },
+  { key: "events",     label: "이벤트 관리",     icon: Sparkle,   color: "violet" },
+  { key: "reco-rules", label: "추천 규칙",       icon: Sparkle,   color: "amber" },
 ];
 
 const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
@@ -55,7 +59,7 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
   const [statsTab, setStatsTab] = useState<StatsTab>(() => {
     try {
       const raw = localStorage.getItem("statsSettings.tab");
-      if (raw === "filters" || raw === "events") return raw as StatsTab;
+      if (raw === "filters" || raw === "events" || raw === "reco-rules") return raw as StatsTab;
       return "season";
     } catch { return "season"; }
   });
@@ -162,6 +166,22 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
                   계절·명절·수험생·커스텀 이벤트 · 발주필요 판매추천에 자동 반영
                 </p>
                 <EventsSection />
+              </div>
+            </section>
+          )}
+          {/* 2026-10-09 · 사용자 지시 · 추천 규칙 탭 (시스템설정에서 이관) */}
+          {statsTab === "reco-rules" && (
+            <section
+              className="bg-white rounded-2xl border border-line overflow-hidden"
+              style={{ boxShadow: "0 1px 2px rgba(10,46,74,0.04), 0 4px 12px -4px rgba(10,46,74,0.06)" }}
+            >
+              <div className="h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500" />
+              <div className="p-5">
+                <h3 className="text-[21px] font-extrabold text-ink tracking-tight leading-tight mb-1">추천 규칙</h3>
+                <p className="text-[16px] text-ink-soft leading-relaxed mb-4">
+                  발주·판매 추천 규칙 · 이벤트 카테고리별 적용 조건 · 관리자 전용
+                </p>
+                <EventCategoryRulesEditor canEdit={level >= 9} />
               </div>
             </section>
           )}

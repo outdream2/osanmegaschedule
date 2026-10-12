@@ -1,5 +1,5 @@
 {
-  "created": "2026-10-11",
+  "created": "2026-10-12",
   "version": 1,
   "totalViolations": 535,
   "files": {
@@ -84,7 +84,7 @@
       "totalWeight": 25
     },
     "src/components/DisplayPage/overviews/OrderReturnOverview.tsx": {
-      "lines": 2313,
+      "lines": 2365,
       "violations": [
         {
           "ruleId": "large-file-critical",
@@ -237,6 +237,34 @@
       ],
       "totalWeight": 9
     },
+    "src/components/DisplayPage/overviews/InventoryDisplayOverview.tsx": {
+      "lines": 1035,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        },
+        {
+          "ruleId": "prefer-modal-primitive",
+          "count": 1
+        }
+      ],
+      "totalWeight": 8
+    },
+    "src/components/DisplayPage/RevenuePage.SalesStatus.tsx": {
+      "lines": 1188,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        },
+        {
+          "ruleId": "prefer-modal-primitive",
+          "count": 1
+        }
+      ],
+      "totalWeight": 8
+    },
     "server/ocr/parsing/preprocess.ts": {
       "lines": 159,
       "violations": [
@@ -302,7 +330,7 @@
       "totalWeight": 7
     },
     "src/components/LandingPage/HomeDashboard.tsx": {
-      "lines": 1334,
+      "lines": 1368,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -410,34 +438,6 @@
         }
       ],
       "totalWeight": 6
-    },
-    "src/components/DisplayPage/overviews/InventoryDisplayOverview.tsx": {
-      "lines": 843,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        },
-        {
-          "ruleId": "prefer-modal-primitive",
-          "count": 1
-        }
-      ],
-      "totalWeight": 5
-    },
-    "src/components/DisplayPage/RevenuePage.SalesStatus.tsx": {
-      "lines": 955,
-      "violations": [
-        {
-          "ruleId": "large-file-warn",
-          "count": 1
-        },
-        {
-          "ruleId": "prefer-modal-primitive",
-          "count": 1
-        }
-      ],
-      "totalWeight": 5
     },
     "server/lib/auditLogger.ts": {
       "lines": 79,
@@ -564,6 +564,16 @@
       "totalWeight": 4
     },
     "src/components/DisplayPage/DisplayPage.tsx": {
+      "lines": 818,
+      "violations": [
+        {
+          "ruleId": "large-file-warn",
+          "count": 1
+        }
+      ],
+      "totalWeight": 3
+    },
+    "src/components/DisplayPage/overviews/PurchaseArrivalOverview.tsx": {
       "lines": 816,
       "violations": [
         {
@@ -604,7 +614,7 @@
       "totalWeight": 3
     },
     "src/components/OrderManagePage/ReturnListPanel.tsx": {
-      "lines": 821,
+      "lines": 823,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -634,7 +644,7 @@
       "totalWeight": 3
     },
     "src/components/RequestsPage/RequestsPage.tsx": {
-      "lines": 826,
+      "lines": 830,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -644,7 +654,7 @@
       "totalWeight": 3
     },
     "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 956,
+      "lines": 965,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -715,16 +725,6 @@
     },
     "src/components/OrderManagePage/EventProductAddModal.tsx": {
       "lines": 103,
-      "violations": [
-        {
-          "ruleId": "prefer-modal-primitive",
-          "count": 1
-        }
-      ],
-      "totalWeight": 2
-    },
-    "src/components/StockManagePage/FlowTab.tsx": {
-      "lines": 627,
       "violations": [
         {
           "ruleId": "prefer-modal-primitive",

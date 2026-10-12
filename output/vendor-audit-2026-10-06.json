@@ -1,0 +1,2295 @@
+{
+  "erpTotalRows": 108,
+  "dbTotalVendors": 156,
+  "erpColumnCount": 74,
+  "colAudit": [
+    {
+      "name": "CorpCode",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "30009"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP tenant code · 전 row 동일 상수"
+    },
+    {
+      "name": "CtCode",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 108,
+      "samples": [
+        "1143",
+        "1142",
+        "1141"
+      ],
+      "classification": "CANONICAL",
+      "target": "ct_code",
+      "renameFrom": "-",
+      "reason": "ERP 거래처 canonical identity · unique"
+    },
+    {
+      "name": "pCtCode",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "parent CtCode · 전부 null 추정"
+    },
+    {
+      "name": "IsUserGubun",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "2"
+      ],
+      "classification": "DO_NOT_MAP",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 내부 코드"
+    },
+    {
+      "name": "UserGubunName",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "사업자"
+      ],
+      "classification": "DO_NOT_MAP",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 내부 분류명"
+    },
+    {
+      "name": "CorpBizNo",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 6,
+      "samples": [
+        "297-86-02718",
+        "313-87-03729",
+        "857-81-00666"
+      ],
+      "classification": "RENAME",
+      "target": "corp_biz_no",
+      "renameFrom": "business_number",
+      "reason": "사업자번호 · 10자리 normalize"
+    },
+    {
+      "name": "CorpNo",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "ADD",
+      "target": "corp_no",
+      "renameFrom": "-",
+      "reason": "법인번호"
+    },
+    {
+      "name": "TaxTypeName",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "과세"
+      ],
+      "classification": "ADD",
+      "target": "tax_type_name",
+      "renameFrom": "-",
+      "reason": "ERP 과세유형 · WEB vat_included 와 의미 다름 (금지)"
+    },
+    {
+      "name": "IsBuyerType",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 2,
+      "samples": [
+        "B",
+        "1"
+      ],
+      "classification": "DO_NOT_MAP",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 내부 코드 · IGNORE 가능"
+    },
+    {
+      "name": "BuyerTypeName",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 2,
+      "samples": [
+        "일반매입",
+        "판매분수수료"
+      ],
+      "classification": "ADD",
+      "target": "buyer_type_name",
+      "renameFrom": "-",
+      "reason": "매입처 유형"
+    },
+    {
+      "name": "StorageGubunName",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "본사"
+      ],
+      "classification": "ADD",
+      "target": "storage_gubun_name",
+      "renameFrom": "-",
+      "reason": "본사/매장 구분"
+    },
+    {
+      "name": "IsAlcohol",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "2"
+      ],
+      "classification": "DO_NOT_MAP",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "주류 여부 · 운영 미사용 가능성 (조사 필요)"
+    },
+    {
+      "name": "CorpNameView",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 107,
+      "samples": [
+        "뉴트리션메이트",
+        "본어스",
+        "케이비약품"
+      ],
+      "classification": "RENAME",
+      "target": "corp_name_view",
+      "renameFrom": "company_name",
+      "reason": "WEB company_name 과 완전 동일 의미"
+    },
+    {
+      "name": "CCorpName",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 107,
+      "samples": [
+        "뉴트리션메이트",
+        "본어스",
+        "케이비약품"
+      ],
+      "classification": "ADD",
+      "target": "ccorp_name",
+      "renameFrom": "-",
+      "reason": "법인명 전체 (CorpNameView 축약 보완)"
+    },
+    {
+      "name": "CorpBranch",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "ADD",
+      "target": "corp_branch",
+      "renameFrom": "-",
+      "reason": "본/지점 구분"
+    },
+    {
+      "name": "President",
+      "type": "System.String",
+      "nonNull": 102,
+      "nonNullPct": 94,
+      "distinct": 2,
+      "samples": [
+        "서영준",
+        "미지정"
+      ],
+      "classification": "ADD",
+      "target": "president",
+      "renameFrom": "-",
+      "reason": "대표자 · WEB contact_name(담당자) 과 의미 다름"
+    },
+    {
+      "name": "Svc",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 내부 서비스코드"
+    },
+    {
+      "name": "Item",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 내부 품목코드"
+    },
+    {
+      "name": "Phone",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "RENAME",
+      "target": "phone",
+      "renameFrom": "phone",
+      "reason": "대표 전화 · 이름 그대로 유지"
+    },
+    {
+      "name": "Fax",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "ADD",
+      "target": "fax",
+      "renameFrom": "-",
+      "reason": "팩스"
+    },
+    {
+      "name": "Mobile",
+      "type": "System.String",
+      "nonNull": 1,
+      "nonNullPct": 1,
+      "distinct": 1,
+      "samples": [
+        "010-7488-4990"
+      ],
+      "classification": "ADD",
+      "target": "mobile",
+      "renameFrom": "-",
+      "reason": "대표 휴대폰 · WEB manager_phone 과 의미 다름"
+    },
+    {
+      "name": "ZipCode",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "ADD",
+      "target": "zip_code",
+      "renameFrom": "-",
+      "reason": "우편번호"
+    },
+    {
+      "name": "Address1",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "ADD",
+      "target": "address1",
+      "renameFrom": "-",
+      "reason": "주소 · WEB region 과 의미 다름"
+    },
+    {
+      "name": "Address2",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "ADD",
+      "target": "address2",
+      "renameFrom": "-",
+      "reason": "상세주소"
+    },
+    {
+      "name": "Email",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "RENAME",
+      "target": "email",
+      "renameFrom": "email",
+      "reason": "ERP email + WEB email 완전 일치"
+    },
+    {
+      "name": "IsEmail",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "1"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 내부 flag"
+    },
+    {
+      "name": "Lcate",
+      "type": "System.Int32",
+      "nonNull": 68,
+      "nonNullPct": 63,
+      "distinct": 2,
+      "samples": [
+        "1",
+        "0"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "code · *Name 에 녹아있음"
+    },
+    {
+      "name": "Mcate",
+      "type": "System.Int32",
+      "nonNull": 68,
+      "nonNullPct": 63,
+      "distinct": 2,
+      "samples": [
+        "2",
+        "0"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "code · *Name 에 녹아있음"
+    },
+    {
+      "name": "Scate",
+      "type": "System.Int32",
+      "nonNull": 68,
+      "nonNullPct": 63,
+      "distinct": 2,
+      "samples": [
+        "0",
+        "3"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "code · *Name 에 녹아있음"
+    },
+    {
+      "name": "Dcate",
+      "type": "System.Int32",
+      "nonNull": 68,
+      "nonNullPct": 63,
+      "distinct": 1,
+      "samples": [
+        "0"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "code · *Name 에 녹아있음"
+    },
+    {
+      "name": "LcateName",
+      "type": "System.String",
+      "nonNull": 2,
+      "nonNullPct": 2,
+      "distinct": 1,
+      "samples": [
+        "코스트팜"
+      ],
+      "classification": "ADD",
+      "target": "lcate_name",
+      "renameFrom": "-",
+      "reason": "대분류 (약국/뷰티 등)"
+    },
+    {
+      "name": "McateName",
+      "type": "System.String",
+      "nonNull": 2,
+      "nonNullPct": 2,
+      "distinct": 1,
+      "samples": [
+        "약국"
+      ],
+      "classification": "ADD",
+      "target": "mcate_name",
+      "renameFrom": "-",
+      "reason": "중분류"
+    },
+    {
+      "name": "ScateName",
+      "type": "System.String",
+      "nonNull": 1,
+      "nonNullPct": 1,
+      "distinct": 1,
+      "samples": [
+        "케이비약품"
+      ],
+      "classification": "RENAME",
+      "target": "scate_name",
+      "renameFrom": "category",
+      "reason": "공급사 소분류 (약품/의료기 등)"
+    },
+    {
+      "name": "DcateName",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "ADD",
+      "target": "dcate_name",
+      "renameFrom": "-",
+      "reason": "세분류"
+    },
+    {
+      "name": "StCode",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "000"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "매장코드 · vendors 와 무관"
+    },
+    {
+      "name": "StorageName",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "용인점"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "매장명 · vendors 와 무관"
+    },
+    {
+      "name": "StorageGubun",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "A"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "flag · *Name 에 녹아있음"
+    },
+    {
+      "name": "pStorageGubun",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "parent flag"
+    },
+    {
+      "name": "JoinDate",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 6,
+      "samples": [
+        "2026-09-12",
+        "2026-09-10",
+        "2026-09-08"
+      ],
+      "classification": "ADD",
+      "target": "join_date",
+      "renameFrom": "-",
+      "reason": "거래 시작일"
+    },
+    {
+      "name": "IsStatus",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "1"
+      ],
+      "classification": "DO_NOT_MAP",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 내부 flag · BuyerStatusName 에 녹아있음"
+    },
+    {
+      "name": "BuyerStatusName",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "거래"
+      ],
+      "classification": "ADD",
+      "target": "buyer_status_name",
+      "renameFrom": "-",
+      "reason": "ERP 거래상태 · WEB approval_status 와 의미 다름"
+    },
+    {
+      "name": "CorpUserID",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 내부 user"
+    },
+    {
+      "name": "CorpUserIName",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 내부 user name"
+    },
+    {
+      "name": "IsGuarantee",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "부(안함)"
+      ],
+      "classification": "DO_NOT_MAP",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "담보 사용 여부 flag · 사업 운영상 필요 시 ADD 재검토"
+    },
+    {
+      "name": "GuaranteeType",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "DO_NOT_MAP",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "담보 유형"
+    },
+    {
+      "name": "GuaranteePrice",
+      "type": "System.Decimal",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "0"
+      ],
+      "classification": "DO_NOT_MAP",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "담보 금액 · 운영상 필요 시 ADD"
+    },
+    {
+      "name": "GuaranteeStartDate",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "DO_NOT_MAP",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "담보 시작일"
+    },
+    {
+      "name": "GuaranteeEndDate",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "DO_NOT_MAP",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "담보 종료일"
+    },
+    {
+      "name": "PaymentTypeName",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 2,
+      "samples": [
+        "현금",
+        "카드(주류)"
+      ],
+      "classification": "ADD",
+      "target": "payment_type_name",
+      "renameFrom": "-",
+      "reason": "결제유형 (현금/카드 등)"
+    },
+    {
+      "name": "Deadline",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "ADD",
+      "target": "payment_deadline",
+      "renameFrom": "-",
+      "reason": "결제 마감"
+    },
+    {
+      "name": "PaymentGubunName",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 4,
+      "samples": [
+        "당월결제",
+        "즉시결제",
+        "익월결제"
+      ],
+      "classification": "ADD",
+      "target": "payment_gubun_name",
+      "renameFrom": "-",
+      "reason": "결제구분 (당월결제 등)"
+    },
+    {
+      "name": "PaymentDate",
+      "type": "System.Int32",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 5,
+      "samples": [
+        "0",
+        "20",
+        "5"
+      ],
+      "classification": "ADD",
+      "target": "payment_date",
+      "renameFrom": "-",
+      "reason": "결제일"
+    },
+    {
+      "name": "BankName",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "ADD",
+      "target": "bank_name",
+      "renameFrom": "-",
+      "reason": "거래은행"
+    },
+    {
+      "name": "BankNumber",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "ADD",
+      "target": "bank_number",
+      "renameFrom": "-",
+      "reason": "계좌번호 · 민감정보"
+    },
+    {
+      "name": "BankUserName",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "ADD",
+      "target": "bank_user_name",
+      "renameFrom": "-",
+      "reason": "예금주"
+    },
+    {
+      "name": "UseCredit",
+      "type": "System.Int32",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "0"
+      ],
+      "classification": "ADD",
+      "target": "use_credit",
+      "renameFrom": "-",
+      "reason": "여신한도"
+    },
+    {
+      "name": "EtcTxtField1",
+      "type": "System.String",
+      "nonNull": 102,
+      "nonNullPct": 94,
+      "distinct": 102,
+      "samples": [
+        "0002",
+        "0004",
+        "0005"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 확장 필드 · 데이터 보면 결정"
+    },
+    {
+      "name": "EtcTxtField2",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 확장 필드"
+    },
+    {
+      "name": "EtcTxtField3",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 확장 필드"
+    },
+    {
+      "name": "EtcTxtField4",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 확장 필드"
+    },
+    {
+      "name": "EtcTxtField5",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 확장 필드"
+    },
+    {
+      "name": "EtcIntField1",
+      "type": "System.Int32",
+      "nonNull": 68,
+      "nonNullPct": 63,
+      "distinct": 1,
+      "samples": [
+        "0"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 확장 필드"
+    },
+    {
+      "name": "EtcIntField2",
+      "type": "System.Int32",
+      "nonNull": 68,
+      "nonNullPct": 63,
+      "distinct": 1,
+      "samples": [
+        "0"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 확장 필드"
+    },
+    {
+      "name": "EtcIntField3",
+      "type": "System.Int32",
+      "nonNull": 68,
+      "nonNullPct": 63,
+      "distinct": 1,
+      "samples": [
+        "0"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 확장 필드"
+    },
+    {
+      "name": "Remark",
+      "type": "System.String",
+      "nonNull": 0,
+      "nonNullPct": 0,
+      "distinct": 0,
+      "samples": [],
+      "classification": "RENAME",
+      "target": "remark",
+      "renameFrom": "note",
+      "reason": "비고"
+    },
+    {
+      "name": "SearchWord",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 108,
+      "samples": [
+        "1143,,뉴트리션메이트,,,2978602718,,,,,,,",
+        "1142,,본어스,,,3138703729,,,,,,,",
+        "1141,케이비약품,,,8578100666,,,,,,,"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 내부 search 보조 · derived from other fields"
+    },
+    {
+      "name": "UserID",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 2,
+      "samples": [
+        "101",
+        "admin"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 등록자 · ADD 재검토 가능 (erp_user_id)"
+    },
+    {
+      "name": "UserName",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 2,
+      "samples": [
+        "공용(허가 필요)",
+        "관리자"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 등록자명 · ADD 재검토 가능"
+    },
+    {
+      "name": "RegDate",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 7,
+      "samples": [
+        "2026-09-12 13:03:32",
+        "2026-09-10 16:50:41",
+        "2026-09-08 10:24:29"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 등록일 · ADD 재검토 가능 (erp_reg_date)"
+    },
+    {
+      "name": "EditUserID",
+      "type": "System.String",
+      "nonNull": 64,
+      "nonNullPct": 59,
+      "distinct": 2,
+      "samples": [
+        "101",
+        "111"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 수정자"
+    },
+    {
+      "name": "EditUserName",
+      "type": "System.String",
+      "nonNull": 64,
+      "nonNullPct": 59,
+      "distinct": 2,
+      "samples": [
+        "공용(허가 필요)",
+        "강서은"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 수정자명"
+    },
+    {
+      "name": "EditDate",
+      "type": "System.String",
+      "nonNull": 64,
+      "nonNullPct": 59,
+      "distinct": 64,
+      "samples": [
+        "2026-09-08 10:29:59",
+        "2026-09-14 17:23:34",
+        "2026-09-14 17:54:45"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "ERP 수정일"
+    },
+    {
+      "name": "JoinStorageName",
+      "type": "System.String",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 1,
+      "samples": [
+        "용인점"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "매장 join · vendors 와 무관"
+    },
+    {
+      "name": "ROWNUM",
+      "type": "System.Int64",
+      "nonNull": 108,
+      "nonNullPct": 100,
+      "distinct": 108,
+      "samples": [
+        "1",
+        "2",
+        "3"
+      ],
+      "classification": "IGNORE",
+      "target": "-",
+      "renameFrom": "-",
+      "reason": "pagination 순번 · 저장 無의미"
+    }
+  ],
+  "erpIdentityStats": {
+    "ctCodeTotal": 108,
+    "ctCodeDistinct": 108,
+    "ctCodeDupes": 0,
+    "biznoValidCount": 5,
+    "biznoDistinct": 5,
+    "biznoMultiCtCount": 0,
+    "biznoMultiCt": [],
+    "nameValidCount": 108,
+    "nameDistinct": 107,
+    "nameMultiCtCount": 1,
+    "nameMultiCt": [
+      {
+        "nm": "코리아헬스",
+        "ctList": [
+          {
+            "ct": "1034",
+            "name": "코리아헬스"
+          },
+          {
+            "ct": "1091",
+            "name": "코리아헬스"
+          }
+        ]
+      }
+    ]
+  },
+  "dbInternalDupes": {
+    "biznoDupeGroups": 2,
+    "nameDupeGroups": 1,
+    "biznoSamples": [
+      {
+        "bz": "5848801771",
+        "vendors": [
+          {
+            "id": 151,
+            "name": "(주)엘앤바이오랩",
+            "bz": "5848801771"
+          },
+          {
+            "id": 126,
+            "name": "앤바이오",
+            "bz": "5848801771"
+          }
+        ]
+      },
+      {
+        "bz": "1318151063",
+        "vendors": [
+          {
+            "id": 48,
+            "name": "경방신약(주)",
+            "bz": "1318151063"
+          },
+          {
+            "id": 31,
+            "name": "광동제약",
+            "bz": "1318151063"
+          }
+        ]
+      }
+    ],
+    "nameSamples": [
+      {
+        "nm": "코리아헬스",
+        "vendors": [
+          {
+            "id": 131,
+            "name": "코리아헬스",
+            "bz": null
+          },
+          {
+            "id": 64,
+            "name": "코리아헬스(주)",
+            "bz": null
+          }
+        ]
+      }
+    ]
+  },
+  "matchDryRun": {
+    "exactBizno": 0,
+    "exactName": 66,
+    "normalizedName": 31,
+    "newFromErp": 11,
+    "webOnlyExisting": 59,
+    "ambiguous": 0,
+    "conflict": 0,
+    "classification": {
+      "EXACT_BIZNO": [],
+      "EXACT_NAME": [
+        {
+          "ct": "1002",
+          "erpName": "광동제약",
+          "db": {
+            "id": 31,
+            "name": "광동제약",
+            "bz": "1318151063"
+          }
+        },
+        {
+          "ct": "1004",
+          "erpName": "바로팜(익수제약)(vat미포함)",
+          "db": {
+            "id": 33,
+            "name": "바로팜(익수제약)(vat미포함)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1008",
+          "erpName": "로드팜",
+          "db": {
+            "id": 37,
+            "name": "로드팜",
+            "bz": "4598802227"
+          }
+        },
+        {
+          "ct": "1011",
+          "erpName": "동성제약",
+          "db": {
+            "id": 40,
+            "name": "동성제약",
+            "bz": "3128509139"
+          }
+        },
+        {
+          "ct": "1014",
+          "erpName": "대원제약",
+          "db": {
+            "id": 43,
+            "name": "대원제약",
+            "bz": "8181843636"
+          }
+        },
+        {
+          "ct": "1016",
+          "erpName": "일양약품(vat미포함)",
+          "db": {
+            "id": 45,
+            "name": "일양약품(vat미포함)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1017",
+          "erpName": "중외제약(vat미포함)",
+          "db": {
+            "id": 46,
+            "name": "중외제약(vat미포함)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1018",
+          "erpName": "펫팜",
+          "db": {
+            "id": 47,
+            "name": "펫팜",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1020",
+          "erpName": "유유제약",
+          "db": {
+            "id": 49,
+            "name": "유유제약",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1025",
+          "erpName": "삼진제약 주식회사",
+          "db": {
+            "id": 54,
+            "name": "삼진제약 주식회사",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1028",
+          "erpName": "온라인팜",
+          "db": {
+            "id": 58,
+            "name": "온라인팜",
+            "bz": "1248730363"
+          }
+        },
+        {
+          "ct": "1029",
+          "erpName": "백제약품",
+          "db": {
+            "id": 59,
+            "name": "백제약품",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1030",
+          "erpName": "제이프로젝트",
+          "db": {
+            "id": 60,
+            "name": "제이프로젝트",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1031",
+          "erpName": "아워팜",
+          "db": {
+            "id": 61,
+            "name": "아워팜",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1032",
+          "erpName": "닥터초사이언스랩",
+          "db": {
+            "id": 62,
+            "name": "닥터초사이언스랩",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1033",
+          "erpName": "약국2",
+          "db": {
+            "id": 63,
+            "name": "약국2",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1034",
+          "erpName": "코리아헬스",
+          "db": {
+            "id": 131,
+            "name": "코리아헬스",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1035",
+          "erpName": "바로팜(코오롱제약)",
+          "db": {
+            "id": 65,
+            "name": "바로팜(코오롱제약)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1037",
+          "erpName": "유한양행",
+          "db": {
+            "id": 67,
+            "name": "유한양행",
+            "bz": "1188100601"
+          }
+        },
+        {
+          "ct": "1038",
+          "erpName": "비알피랩스(아워팜)",
+          "db": {
+            "id": 68,
+            "name": "비알피랩스(아워팜)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1041",
+          "erpName": "제일헬스사이언스",
+          "db": {
+            "id": 71,
+            "name": "제일헬스사이언스",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1042",
+          "erpName": "동화약품",
+          "db": {
+            "id": 72,
+            "name": "동화약품",
+            "bz": "1108100102"
+          }
+        },
+        {
+          "ct": "1043",
+          "erpName": "약국",
+          "db": {
+            "id": 73,
+            "name": "약국",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1045",
+          "erpName": "태극제약",
+          "db": {
+            "id": 75,
+            "name": "태극제약",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1049",
+          "erpName": "현대약품",
+          "db": {
+            "id": 79,
+            "name": "현대약품",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1057",
+          "erpName": "더팜(에프앤디넷)",
+          "db": {
+            "id": 88,
+            "name": "더팜(에프앤디넷)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1063",
+          "erpName": "다나팜(한국코와)",
+          "db": {
+            "id": 94,
+            "name": "다나팜(한국코와)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1067",
+          "erpName": "유진약품",
+          "db": {
+            "id": 97,
+            "name": "유진약품",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1068",
+          "erpName": "링티",
+          "db": {
+            "id": 98,
+            "name": "링티",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1069",
+          "erpName": "제이웰팜(온라인팜)",
+          "db": {
+            "id": 99,
+            "name": "제이웰팜(온라인팜)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1070",
+          "erpName": "유림티에이치씨(헬씨허그)",
+          "db": {
+            "id": 100,
+            "name": "유림티에이치씨(헬씨허그)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1072",
+          "erpName": "명인제약",
+          "db": {
+            "id": 103,
+            "name": "명인제약",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1075",
+          "erpName": "바이오가이아",
+          "db": {
+            "id": 107,
+            "name": "바이오가이아",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1076",
+          "erpName": "박카스",
+          "db": {
+            "id": 108,
+            "name": "박카스",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1079",
+          "erpName": "더유제약",
+          "db": {
+            "id": 111,
+            "name": "더유제약",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1080",
+          "erpName": "매일유업",
+          "db": {
+            "id": 113,
+            "name": "매일유업",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1083",
+          "erpName": "옵투스",
+          "db": {
+            "id": 119,
+            "name": "옵투스",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1085",
+          "erpName": "한독",
+          "db": {
+            "id": 121,
+            "name": "한독",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1086",
+          "erpName": "유니템아이(온라인팜)",
+          "db": {
+            "id": 122,
+            "name": "유니템아이(온라인팜)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1089",
+          "erpName": "KJD바이오",
+          "db": {
+            "id": 129,
+            "name": "KJD바이오",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1090",
+          "erpName": "기타",
+          "db": {
+            "id": 130,
+            "name": "기타",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1091",
+          "erpName": "코리아헬스",
+          "db": {
+            "id": 131,
+            "name": "코리아헬스",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1092",
+          "erpName": "대지인팜",
+          "db": {
+            "id": 132,
+            "name": "대지인팜",
+            "bz": "2068600204"
+          }
+        },
+        {
+          "ct": "1093",
+          "erpName": "성진메디칼",
+          "db": {
+            "id": 133,
+            "name": "성진메디칼",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1094",
+          "erpName": "제일헬스케어(온라인팜) hmp몰",
+          "db": {
+            "id": 134,
+            "name": "제일헬스케어(온라인팜) hmp몰",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1096",
+          "erpName": "비알피랩스(한독)",
+          "db": {
+            "id": 136,
+            "name": "비알피랩스(한독)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1099",
+          "erpName": "더굿팜(한국코와)",
+          "db": {
+            "id": 140,
+            "name": "더굿팜(한국코와)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1100",
+          "erpName": "(주)비타바이오",
+          "db": {
+            "id": 141,
+            "name": "(주)비타바이오",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1102",
+          "erpName": "비젼메디칼",
+          "db": {
+            "id": 143,
+            "name": "비젼메디칼",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1104",
+          "erpName": "익수제약",
+          "db": {
+            "id": 145,
+            "name": "익수제약",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1110",
+          "erpName": "부광약품",
+          "db": {
+            "id": 2,
+            "name": "부광약품",
+            "bz": "1188100450"
+          }
+        },
+        {
+          "ct": "1111",
+          "erpName": "지오영(용인)",
+          "db": {
+            "id": 3,
+            "name": "지오영(용인)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1112",
+          "erpName": "성진메딕",
+          "db": {
+            "id": 4,
+            "name": "성진메딕",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1113",
+          "erpName": "카롤",
+          "db": {
+            "id": 5,
+            "name": "카롤",
+            "bz": "1337900209"
+          }
+        },
+        {
+          "ct": "1115",
+          "erpName": "제이에스에이치",
+          "db": {
+            "id": 8,
+            "name": "제이에스에이치",
+            "bz": "2821302008"
+          }
+        },
+        {
+          "ct": "1118",
+          "erpName": "라이온코리아",
+          "db": {
+            "id": 11,
+            "name": "라이온코리아",
+            "bz": "1218170248"
+          }
+        },
+        {
+          "ct": "1119",
+          "erpName": "삼일제약",
+          "db": {
+            "id": 12,
+            "name": "삼일제약",
+            "bz": "1348500765"
+          }
+        },
+        {
+          "ct": "1122",
+          "erpName": "네이처가든",
+          "db": {
+            "id": 16,
+            "name": "네이처가든",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1124",
+          "erpName": "옐로우스마일(후코이단)",
+          "db": {
+            "id": 18,
+            "name": "옐로우스마일(후코이단)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1125",
+          "erpName": "리틀약사",
+          "db": {
+            "id": 19,
+            "name": "리틀약사",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1126",
+          "erpName": "비알피랩스(켄뷰)",
+          "db": {
+            "id": 20,
+            "name": "비알피랩스(켄뷰)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1127",
+          "erpName": "척척바이오랩",
+          "db": {
+            "id": 21,
+            "name": "척척바이오랩",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1128",
+          "erpName": "제이와이인터메디",
+          "db": {
+            "id": 22,
+            "name": "제이와이인터메디",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1133",
+          "erpName": "제이컴퍼니",
+          "db": {
+            "id": 27,
+            "name": "제이컴퍼니",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1134",
+          "erpName": "라라컴퍼니",
+          "db": {
+            "id": 28,
+            "name": "라라컴퍼니",
+            "bz": "7658701505"
+          }
+        },
+        {
+          "ct": "1135",
+          "erpName": "데일리헬스",
+          "db": {
+            "id": 29,
+            "name": "데일리헬스",
+            "bz": "1328802695"
+          }
+        }
+      ],
+      "NORMALIZED_NAME": [
+        {
+          "ct": "1139",
+          "erpName": "제너럴라이프",
+          "nmNorm": "제너럴라이프",
+          "db": {
+            "id": 14,
+            "name": "(주)제너럴라이프",
+            "bz": "5228600881"
+          }
+        },
+        {
+          "ct": "1005",
+          "erpName": "녹십자",
+          "nmNorm": "녹십자",
+          "db": {
+            "id": 34,
+            "name": "(주)녹십자",
+            "bz": "3038117108"
+          }
+        },
+        {
+          "ct": "1006",
+          "erpName": "동아제약",
+          "nmNorm": "동아제약",
+          "db": {
+            "id": 35,
+            "name": "동아제약(주)",
+            "bz": "3101805493"
+          }
+        },
+        {
+          "ct": "1009",
+          "erpName": "마더스팜",
+          "nmNorm": "마더스팜",
+          "db": {
+            "id": 38,
+            "name": "(주)마더스팜",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1015",
+          "erpName": "신신제약(vat미포함)",
+          "nmNorm": "신신제약vat미포함",
+          "db": {
+            "id": 44,
+            "name": "신신제약(주)(vat미포함)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1019",
+          "erpName": "경방신약",
+          "nmNorm": "경방신약",
+          "db": {
+            "id": 48,
+            "name": "경방신약(주)",
+            "bz": "1318151063"
+          }
+        },
+        {
+          "ct": "1021",
+          "erpName": "한국신약",
+          "nmNorm": "한국신약",
+          "db": {
+            "id": 50,
+            "name": "(주)한국신약",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1022",
+          "erpName": "종근당",
+          "nmNorm": "종근당",
+          "db": {
+            "id": 51,
+            "name": "(주)종근당",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1023",
+          "erpName": "쥴릭파마코리아",
+          "nmNorm": "쥴릭파마코리아",
+          "db": {
+            "id": 52,
+            "name": "쥴릭파마코리아(주)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1026",
+          "erpName": "보령컨슈머헬스케어",
+          "nmNorm": "보령컨슈머헬스케어",
+          "db": {
+            "id": 55,
+            "name": "보령컨슈머헬스케어 주식회사",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1027",
+          "erpName": "경남제약",
+          "nmNorm": "경남제약",
+          "db": {
+            "id": 56,
+            "name": "경남제약(주)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1036",
+          "erpName": "한풍제약",
+          "nmNorm": "한풍제약",
+          "db": {
+            "id": 158,
+            "name": "(유)한풍제약",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1040",
+          "erpName": "대웅제약",
+          "nmNorm": "대웅제약",
+          "db": {
+            "id": 70,
+            "name": "(주)대웅제약",
+            "bz": "1248601143"
+          }
+        },
+        {
+          "ct": "1046",
+          "erpName": "동국제약",
+          "nmNorm": "동국제약",
+          "db": {
+            "id": 76,
+            "name": "동국제약(주)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1048",
+          "erpName": "일동제약(vat미포함)",
+          "nmNorm": "일동제약vat미포함",
+          "db": {
+            "id": 78,
+            "name": "일동제약(주)(vat미포함)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1052",
+          "erpName": "신일제약(vat 미포함)",
+          "nmNorm": "신일제약vat미포함",
+          "db": {
+            "id": 83,
+            "name": "신일제약(주)(vat 미포함)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1053",
+          "erpName": "나음케어(vat미포함)",
+          "nmNorm": "나음케어vat미포함",
+          "db": {
+            "id": 84,
+            "name": "주식회사 나음케어(vat미포함)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1054",
+          "erpName": "셀로닉스",
+          "nmNorm": "셀로닉스",
+          "db": {
+            "id": 85,
+            "name": "주식회사 셀로닉스",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1055",
+          "erpName": "지엠메딕",
+          "nmNorm": "지엠메딕",
+          "db": {
+            "id": 86,
+            "name": "(주)지엠메딕",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1058",
+          "erpName": "조아제약(vat미포함)",
+          "nmNorm": "조아제약vat미포함",
+          "db": {
+            "id": 89,
+            "name": "조아제약(주)(vat미포함)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1059",
+          "erpName": "천호바이오",
+          "nmNorm": "천호바이오",
+          "db": {
+            "id": 90,
+            "name": "주식회사 천호바이오",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1062",
+          "erpName": "고려제약(vat미포함)",
+          "nmNorm": "고려제약vat미포함",
+          "db": {
+            "id": 93,
+            "name": "고려제약(주)(vat미포함)",
+            "bz": "1268104796"
+          }
+        },
+        {
+          "ct": "1065",
+          "erpName": "원광제약",
+          "nmNorm": "원광제약",
+          "db": {
+            "id": 96,
+            "name": "원광제약(주)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1105",
+          "erpName": "찬슬",
+          "nmNorm": "찬슬",
+          "db": {
+            "id": 146,
+            "name": "주식회사 찬슬",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1114",
+          "erpName": "코스트메틱",
+          "nmNorm": "코스트메틱",
+          "db": {
+            "id": 6,
+            "name": "(주)코스트메틱",
+            "bz": "7988103383"
+          }
+        },
+        {
+          "ct": "1120",
+          "erpName": "아이월드제약",
+          "nmNorm": "아이월드제약",
+          "db": {
+            "id": 13,
+            "name": "(주)아이월드제약",
+            "bz": "1318199577"
+          }
+        },
+        {
+          "ct": "1123",
+          "erpName": "이메디",
+          "nmNorm": "이메디",
+          "db": {
+            "id": 17,
+            "name": "(주)이메디",
+            "bz": "1238650791"
+          }
+        },
+        {
+          "ct": "1129",
+          "erpName": "쥬퍼",
+          "nmNorm": "쥬퍼",
+          "db": {
+            "id": 23,
+            "name": "주식회사 쥬퍼",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1130",
+          "erpName": "휘샘",
+          "nmNorm": "휘샘",
+          "db": {
+            "id": 24,
+            "name": "주식회사 휘샘",
+            "bz": "1298618431"
+          }
+        },
+        {
+          "ct": "1131",
+          "erpName": "제네틱스팜",
+          "nmNorm": "제네틱스팜",
+          "db": {
+            "id": 25,
+            "name": "제네틱스팜(주)",
+            "bz": null
+          }
+        },
+        {
+          "ct": "1132",
+          "erpName": "익스트림",
+          "nmNorm": "익스트림",
+          "db": {
+            "id": 26,
+            "name": "(주)익스트림",
+            "bz": "1708701032"
+          }
+        }
+      ],
+      "NEW_FROM_ERP": [
+        {
+          "ct": "1143",
+          "erpName": "뉴트리션메이트",
+          "bz": "2978602718"
+        },
+        {
+          "ct": "1142",
+          "erpName": "본어스",
+          "bz": "3138703729"
+        },
+        {
+          "ct": "1141",
+          "erpName": "케이비약품",
+          "bz": "8578100666"
+        },
+        {
+          "ct": "1140",
+          "erpName": "오디에스오",
+          "bz": "7078802766"
+        },
+        {
+          "ct": "1138",
+          "erpName": "아주헬스케어",
+          "bz": "1498103349"
+        },
+        {
+          "ct": "1066",
+          "erpName": "켄뷰",
+          "bz": null
+        },
+        {
+          "ct": "1074",
+          "erpName": "주식회사 소연",
+          "bz": null
+        },
+        {
+          "ct": "1116",
+          "erpName": "다원엠디(코드프리)",
+          "bz": null
+        },
+        {
+          "ct": "1117",
+          "erpName": "파마폰티스",
+          "bz": null
+        },
+        {
+          "ct": "1121",
+          "erpName": "헬스앤소울=비타플러스",
+          "bz": null
+        },
+        {
+          "ct": "1137",
+          "erpName": "메가헬스케어",
+          "bz": null
+        }
+      ],
+      "AMBIGUOUS": [],
+      "CONFLICT": []
+    },
+    "webOnlyVendorsSample": [
+      {
+        "id": 151,
+        "name": "(주)엘앤바이오랩",
+        "bz": "5848801771",
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 160,
+        "name": "테스트2",
+        "bz": "1234567890",
+        "phone": "01011112222",
+        "email": "iris35137@gmail.com"
+      },
+      {
+        "id": 66,
+        "name": "테스트3",
+        "bz": "2222233333",
+        "phone": "01011112223",
+        "email": "bibop73@naver.com"
+      },
+      {
+        "id": 159,
+        "name": "테스트",
+        "bz": "1111111111",
+        "phone": "01011112221",
+        "email": "irumdev77@gmail.com"
+      },
+      {
+        "id": 7,
+        "name": "더말코드",
+        "bz": "1141578567",
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 9,
+        "name": "(주)다원엠디",
+        "bz": "1278651152",
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 15,
+        "name": "헬스앤소울",
+        "bz": "1766400667",
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 30,
+        "name": "다올약품",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 32,
+        "name": "케이팜",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 101,
+        "name": "구)헬시메이드",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 102,
+        "name": "광주태전",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 104,
+        "name": "(주)티제이팜",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 106,
+        "name": "비타플러스",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 39,
+        "name": "브이티코스메틱(광동)",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 41,
+        "name": "헬시메이드",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 42,
+        "name": "지엠팜",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 53,
+        "name": "디자인농부",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 57,
+        "name": "경동제약",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 109,
+        "name": "한신약품 주식회사",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 110,
+        "name": "(주)인천약품",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 10,
+        "name": "(주)파마폰타스",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 114,
+        "name": "(주)그린파마",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 137,
+        "name": "주식회사 나음케어",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 69,
+        "name": "(주)디알에스",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 80,
+        "name": "앰비션",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 81,
+        "name": "지피팜",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 82,
+        "name": "제이메디칼라트너스(온라인팜)",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 87,
+        "name": "피플스토리",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 92,
+        "name": "얼티밋포텐셜",
+        "bz": null,
+        "phone": null,
+        "email": null
+      },
+      {
+        "id": 95,
+        "name": "(주)서울약업",
+        "bz": null,
+        "phone": null,
+        "email": null
+      }
+    ]
+  }
+}

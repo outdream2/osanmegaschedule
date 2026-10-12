@@ -71,7 +71,13 @@ export function OverviewInnerTabs<K extends string>({
 }) {
   return (
     <div className="px-4 sm:px-6">
-      <nav className="flex items-stretch border-b border-slate-200 overflow-x-auto -mb-px" aria-label={ariaLabel}>
+      {/* 2026-10-12 · 사용자 리포트 · "탭 메뉴에 스크롤 왜 생기는거야" fix
+          · overflow-x-auto 유지 (모바일 긴 탭 대응) · scrollbar 는 숨김 (webkit + firefox + IE) */}
+      <nav
+        className="flex items-stretch border-b border-slate-200 overflow-x-auto -mb-px [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ msOverflowStyle: "none" }}
+        aria-label={ariaLabel}
+      >
         {tabs.map(t => {
           const isActive = active === t.k;
           return (

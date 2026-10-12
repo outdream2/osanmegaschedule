@@ -50,6 +50,8 @@ import {
 import { ExceptionNoteModal } from "../../OrderManagePage/ExceptionNoteModal";
 // 2026-10-12 · 사용자 지시 · 매입이상 공통 Card (매입재고현황과 "병합")
 import { PurchaseExceptionCard } from "./PurchaseExceptionCard";
+// 2026-10-12 · 사용자 지시 · 매입/발주 overlay chart (bar + line)
+import { PurchaseOrderOverlayChart, type PurchaseOrderOverlayDatum } from "./PurchaseOrderOverlayChart";
 import { ApiError } from "../../../lib/apiClient";
 import { getErrorMessage } from "../../../lib/errorMessage";
 import { shortDate } from "../../../lib/dateFormat";
@@ -187,6 +189,41 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
     }).catch(() => { if (alive) setHistory([]); });
     return () => { alive = false; };
   }, [refreshKey]);
+  // 2026-10-12 · 사용자 지시 · 매입금액 overlay (purchase-details fetch · period 범위)
+  const [purchases, setPurchases] = useState<AnyRow[]>([]);
+  useEffect(() => {
+    let alive = true;
+    const to = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
+    const from = (() => { const d = new Date(); d.setDate(d.getDate() - (Number(period) - 1)); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
+    api.get<{ rows?: AnyRow[] }>(`/api/purchase-details?from=${from}&to=${to}&no_cycle=1&per_page=5000`)
+      .then(({ data }) => { if (alive) setPurchases(Array.isArray(data?.rows) ? data.rows : []); })
+      .catch(() => { if (alive) setPurchases([]); });
+    return () => { alive = false; };
+  }, [refreshKey, period]);
+
+  // 2026-10-12 · 사용자 지시 · 발주(bar) + 매입(line overlay) 통합 데이터
+  const orderOverlayChartData: PurchaseOrderOverlayDatum[] = useMemo(() => {
+    const n = Number(period);
+    const ymd = (daysAgo: number): string => {
+      const d = new Date(); d.setDate(d.getDate() - daysAgo);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+    const orderMap = new Map<string, number>();
+    const purchaseMap = new Map<string, number>();
+    for (let i = n - 1; i >= 0; i--) { const k = ymd(i); orderMap.set(k, 0); purchaseMap.set(k, 0); }
+    for (const r of (history ?? [])) {
+      const d = String(r.order_date ?? r.created_at ?? "").slice(0, 10);
+      if (!d || !orderMap.has(d)) continue;
+      orderMap.set(d, (orderMap.get(d) ?? 0) + Number(r.total_amount ?? 0));
+    }
+    for (const p of purchases) {
+      const d = String(p.purchase_date ?? "").slice(0, 10);
+      if (!d || !purchaseMap.has(d)) continue;
+      purchaseMap.set(d, (purchaseMap.get(d) ?? 0) + Number(p.amount ?? 0));
+    }
+    const dates = Array.from(orderMap.keys()).sort();
+    return dates.map(date => ({ date, primary: orderMap.get(date) ?? 0, overlay: purchaseMap.get(date) ?? 0 }));
+  }, [history, purchases, period]);
   useEffect(() => { let alive = true;
     api.get<AnyRow>(`/api/order-purchase-match?days=${period}`).then(({ data }) => {
       if (alive) setMatch(data ?? {});
@@ -479,7 +516,7 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
         return {
           when: String(r.order_date ?? r.sent_at ?? "").slice(0, 10) || "-",
           order_no: r.order_number ?? r.order_no ?? "-",
-          product: (<div className="flex flex-col"><span className="font-semibold text-ink">{r.product_name ?? "-"}</span><span className="text-[16px] text-ink-soft tabular-nums">{r.product_code ?? ""}</span></div>),
+          product: (<div className="flex flex-col"><span className="font-semibold text-ink">{r.product_name ?? "-"}</span><span className="text-[13px] text-slate-500 tabular-nums">{r.product_code ?? ""}</span></div>),
           supplier: r.supplier ?? "-",
           order_qty: oq.toLocaleString(),
           purchase_qty: (<span className={diff === 0 ? "" : "text-rose-600 font-bold"}>{pq.toLocaleString()}{diff !== 0 && <span className="ml-1 text-[16px]">({diff > 0 ? "+" : ""}{diff})</span>}</span>),
@@ -490,11 +527,11 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
       case "return-need":
       case "return-done":
         return {
-          product: (<div className="flex flex-col"><span className="font-semibold text-ink">{r.product_name ?? "-"}</span><span className="text-[16px] text-ink-soft tabular-nums">{r.product_code ?? ""}</span></div>),
+          product: (<div className="flex flex-col"><span className="font-semibold text-ink">{r.product_name ?? "-"}</span><span className="text-[13px] text-slate-500 tabular-nums">{r.product_code ?? ""}</span></div>),
           supplier: r.supplier ?? r.supplier_name ?? "-",
-          reason: <span className="text-[16px] text-ink-soft truncate">{r.reason ?? "-"}</span>,
+          reason: <span className="text-[13px] text-slate-500 truncate">{r.reason ?? "-"}</span>,
           qty: <span className="font-semibold tabular-nums">{r.qty ?? r.quantity ?? "-"}</span>,
-          when: <span className="text-[16px] tabular-nums text-ink-soft">{String(r.created_at ?? r.requested_at ?? "").slice(5, 10) || "-"}</span>,
+          when: <span className="text-[13px] tabular-nums text-slate-500">{String(r.created_at ?? r.requested_at ?? "").slice(5, 10) || "-"}</span>,
           __onClick: () => openOrderDetailFromRow(r),
         };
     }
@@ -697,7 +734,7 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
           product: (
             <div className="flex flex-col min-w-0">
               <span className="truncate font-semibold text-ink text-[16px]">{r.product_name ?? "-"}</span>
-              <span className="truncate text-[16px] text-ink-soft">{r.supplier ?? "-"}</span>
+              <span className="truncate text-[13px] text-slate-500">{r.supplier ?? "-"}</span>
             </div>
           ),
           stock: (
@@ -705,14 +742,14 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
               <span className={`text-[16px] font-bold ${stock <= 0 ? "text-rose-600" : stock < opt ? "text-amber-600" : "text-ink"}`}>
                 {Number.isFinite(stock) ? stock.toLocaleString() : "-"}
               </span>
-              <span className="text-[16px] text-ink-soft">/{Number.isFinite(opt) && opt > 0 ? opt.toLocaleString() : "-"}</span>
+              <span className="text-[13px] text-slate-500">/{Number.isFinite(opt) && opt > 0 ? opt.toLocaleString() : "-"}</span>
             </div>
           ),
         };
       }
       if (k === "order-history") {
         return {
-          when: <span className="text-[16px] tabular-nums text-ink-soft font-medium">{String(r.order_date ?? r.created_at ?? "").slice(5, 10) || "-"}</span>,
+          when: <span className="text-[13px] tabular-nums text-slate-500 font-medium">{String(r.order_date ?? r.created_at ?? "").slice(5, 10) || "-"}</span>,
           supplier: <span className="truncate text-[16px] font-semibold text-ink">{r.supplier ?? r.supplier_name ?? "-"}</span>,
           amount: <span className="text-[16px] font-bold text-ink tabular-nums">{r.total_amount != null ? Number(r.total_amount).toLocaleString() : "-"}</span>,
         };
@@ -767,7 +804,7 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
           onClick={(e) => e.stopPropagation()}
         >
           {preview.length === 0 ? (
-            <div className="min-h-[120px] flex items-center justify-center text-[16px] italic text-ink-soft/60">
+            <div className="min-h-[120px] flex items-center justify-center text-[13px] italic text-slate-400">
               {count == null ? "불러오는 중..." : "항목 없음"}
             </div>
           ) : (
@@ -927,7 +964,17 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
           <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 items-stretch">
             {/* LEFT · 주요 콘텐츠 세로 스택 · 하단 라인 정렬 (flex-1 + h-full) */}
             <div className="flex flex-col gap-4 h-full">
-              <DailyOrderBarChart rows={historyRows} period={Number(period)} />
+              {/* 2026-10-12 · 사용자 지시 · 발주(bar) + 매입금액(line overlay) 통합 chart */}
+              <PurchaseOrderOverlayChart
+                title="일별 발주금액"
+                periodLabel={`최근 ${period}일`}
+                data={orderOverlayChartData}
+                primaryLabel="발주금액"
+                overlayLabel="매입금액"
+                barColor="#0A4F44"
+                lineColor="#E11D48"
+                stripColor="bg-sky-500"
+              />
               {/* 공급사별 발주비중 + 이상품목 (flex-1 로 확장) · 2026-10-12 · 사용자 "병합" · 공통 Card 사용 (현재고 column 포함) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch flex-1 min-h-0">
                 <SupplierPieChart rows={historyRows} />
@@ -1551,7 +1598,7 @@ const OrderRequestGroupedView: React.FC<{
                           <span className={`text-[14px] font-bold text-slate-400 transition-transform shrink-0 ${isCollapsed ? "-rotate-90" : ""}`}>▾</span>
                           {/* 2026-10-09 · 사용자 지시 · 공급사 분류 (위탁/선결제/60회전/90회전/기타) · 공급사명 앞에 */}
                           <span className="shrink-0 self-center"><VendorCategoryBadge category={getVendorCategory(supplier)} /></span>
-                          <span className="text-[16px] font-semibold text-ink tracking-tight truncate">{supplier}</span>
+                          <span className="text-[15px] font-semibold text-ink tracking-tight truncate">{supplier}</span>
                           <span className="text-[14px] text-slate-500 tabular-nums shrink-0">{items.length}건</span>
                           {subtotalQty > 0 && (
                             <span className="text-[14px] text-slate-500 tabular-nums shrink-0">· 합계 {subtotalQty.toLocaleString()}</span>
@@ -1752,14 +1799,15 @@ const OrderHistoryExpandableBoard: React.FC<{
       <div className="px-2 pb-2 overflow-y-auto max-h-[65vh]">
         <table className="w-full text-[13px]">
           <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_rgba(226,232,240,1)]">
+            {/* 2026-10-12 · 폰트 리밸런싱 · 테이블 헤더 12 → 13 (사용자 "폰트 작게 금지" 원칙 · tiny 하한 상향) */}
             <tr className="border-b border-slate-200 bg-slate-50/60">
-              <th className="py-1.5 px-2.5 text-[12px] font-semibold text-ink-soft text-left w-[32px]"></th>
-              <th className="py-1.5 px-2.5 text-[12px] font-semibold text-ink-soft text-left whitespace-nowrap w-[108px]">일시</th>
-              <th className="py-1.5 px-2.5 text-[12px] font-semibold text-ink-soft text-left whitespace-nowrap">발주번호</th>
-              <th className="py-1.5 px-2.5 text-[12px] font-semibold text-ink-soft text-left">공급사</th>
-              <th className="py-1.5 px-2.5 text-[12px] font-semibold text-ink-soft text-right">품목</th>
-              <th className="py-1.5 px-2.5 text-[12px] font-semibold text-ink-soft text-right">금액</th>
-              <th className="py-1.5 px-2.5 text-[12px] font-semibold text-ink-soft text-center">상태</th>
+              <th className="py-2 px-2.5 text-[13px] font-semibold text-slate-500 text-left w-[32px]"></th>
+              <th className="py-2 px-2.5 text-[13px] font-semibold text-slate-500 text-left whitespace-nowrap w-[108px]">일시</th>
+              <th className="py-2 px-2.5 text-[13px] font-semibold text-slate-500 text-left whitespace-nowrap">발주번호</th>
+              <th className="py-2 px-2.5 text-[13px] font-semibold text-slate-500 text-left">공급사</th>
+              <th className="py-2 px-2.5 text-[13px] font-semibold text-slate-500 text-right">품목</th>
+              <th className="py-2 px-2.5 text-[13px] font-semibold text-slate-500 text-right">금액</th>
+              <th className="py-2 px-2.5 text-[13px] font-semibold text-slate-500 text-center">상태</th>
             </tr>
           </thead>
           <tbody>
@@ -1949,7 +1997,7 @@ const NeedProductDrawer: React.FC<{
                 <div className="text-[12px] font-semibold uppercase tracking-wider text-slate-400 mb-2">재고</div>
                 <div className="flex items-baseline gap-3 flex-wrap">
                   <div className="flex items-baseline gap-1">
-                    <span className={`text-[17px] md:text-[18px] font-semibold tabular-nums ${stock <= 0 ? "text-rose-600" : "text-ink"}`}>{stock.toLocaleString()}</span>
+                    <span className={`text-[16px] font-semibold tabular-nums ${stock <= 0 ? "text-rose-600" : "text-ink"}`}>{stock.toLocaleString()}</span>
                     <span className="text-[13px] text-slate-500">/ {opt > 0 ? opt.toLocaleString() : "-"}</span>
                   </div>
                   <span className={`text-[14px] font-semibold ${statusCls}`}>{statusLabel}</span>
@@ -2072,38 +2120,38 @@ const OrderDetailDrawerBody: React.FC<{ order: OrderDetailRow; onClose: () => vo
           <Package size={22} weight="fill" className="text-brand-deep shrink-0 mt-0.5" />
           <div>
             <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight leading-tight">발주·매입 상세</h3>
-            <p className="text-[16px] font-medium text-ink-soft mt-1">row 클릭 상세 정보</p>
+            <p className="text-[13px] font-medium text-slate-500 mt-1">row 클릭 상세 정보</p>
           </div>
         </div>
         <button type="button" onClick={onClose}
-          className="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-[16px] font-semibold text-ink-soft hover:bg-slate-100 transition-colors cursor-pointer">
+          className="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-[13px] font-semibold text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer">
           <X size={14} /> 닫기
         </button>
       </header>
       <div className="p-5 space-y-4">
         <section className="grid grid-cols-2 lg:grid-cols-5 gap-x-4 gap-y-3 text-[16px]">
           <div>
-            <div className="text-[16px] text-ink-soft font-medium">발주번호</div>
+            <div className="text-[13px] text-slate-500 font-medium">발주번호</div>
             <div className="font-semibold text-ink tabular-nums mt-0.5">{orderNo}</div>
           </div>
           <div>
-            <div className="text-[16px] text-ink-soft font-medium">공급사</div>
+            <div className="text-[13px] text-slate-500 font-medium">공급사</div>
             <div className="font-semibold text-ink mt-0.5 flex items-center gap-1"><Buildings size={13} />{supplier}</div>
           </div>
           <div>
-            <div className="text-[16px] text-ink-soft font-medium">요청일시</div>
+            <div className="text-[13px] text-slate-500 font-medium">요청일시</div>
             <div className="font-semibold text-ink tabular-nums mt-0.5 flex items-center gap-1"><Calendar size={13} />{orderDate}</div>
           </div>
           <div>
-            <div className="text-[16px] text-ink-soft font-medium">담당자</div>
+            <div className="text-[13px] text-slate-500 font-medium">담당자</div>
             <div className="font-semibold text-ink mt-0.5">{staff}</div>
           </div>
           <div>
-            <div className="text-[16px] text-ink-soft font-medium">입고상태</div>
+            <div className="text-[13px] text-slate-500 font-medium">입고상태</div>
             <div className="mt-0.5"><StoreStatusBadge status={status} tone={statusTone(status)} /></div>
           </div>
         </section>
-        <section className="border border-slate-200 rounded-xl overflow-hidden">
+        <section className="border border-slate-200 rounded-[12px] overflow-hidden">
           <header className="px-4 py-2.5 bg-slate-50 border-b border-slate-200">
             <h4 className="text-[16px] font-semibold text-ink">발주 상품 목록</h4>
           </header>
@@ -2111,18 +2159,18 @@ const OrderDetailDrawerBody: React.FC<{ order: OrderDetailRow; onClose: () => vo
             <table className="w-full text-[16px]">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="py-2.5 px-3 text-left text-[16px] font-semibold text-ink-soft">상품코드</th>
-                  <th className="py-2.5 px-3 text-left text-[16px] font-semibold text-ink-soft">상품명</th>
-                  <th className="py-2.5 px-3 text-right text-[16px] font-semibold text-ink-soft">주문수량</th>
-                  <th className="py-2.5 px-3 text-right text-[16px] font-semibold text-ink-soft">입고수량</th>
-                  <th className="py-2.5 px-3 text-right text-[16px] font-semibold text-ink-soft">단가</th>
-                  <th className="py-2.5 px-3 text-right text-[16px] font-semibold text-ink-soft">금액</th>
-                  <th className="py-2.5 px-3 text-center text-[16px] font-semibold text-ink-soft">상태</th>
+                  <th className="py-2.5 px-3 text-left text-[13px] font-semibold text-slate-500">상품코드</th>
+                  <th className="py-2.5 px-3 text-left text-[13px] font-semibold text-slate-500">상품명</th>
+                  <th className="py-2.5 px-3 text-right text-[13px] font-semibold text-slate-500">주문수량</th>
+                  <th className="py-2.5 px-3 text-right text-[13px] font-semibold text-slate-500">입고수량</th>
+                  <th className="py-2.5 px-3 text-right text-[13px] font-semibold text-slate-500">단가</th>
+                  <th className="py-2.5 px-3 text-right text-[13px] font-semibold text-slate-500">금액</th>
+                  <th className="py-2.5 px-3 text-center text-[13px] font-semibold text-slate-500">상태</th>
                 </tr>
               </thead>
               <tbody>
                 {items.length === 0 ? (
-                  <tr><td colSpan={7} className="py-8 text-center text-[16px] text-ink-soft/70">상품 정보가 없습니다</td></tr>
+                  <tr><td colSpan={7} className="py-8 text-center text-[13px] text-slate-500">상품 정보가 없습니다</td></tr>
                 ) : items.map((it, i) => (
                   <tr key={i} className="border-b border-slate-100 hover:bg-slate-50/60">
                     <td className="py-2.5 px-3 text-ink tabular-nums">{it.product_code ?? "-"}</td>
@@ -2139,7 +2187,7 @@ const OrderDetailDrawerBody: React.FC<{ order: OrderDetailRow; onClose: () => vo
           </div>
         </section>
         {order.reconciliation && (
-          <section className="border border-slate-200 rounded-xl p-4">
+          <section className="border border-slate-200 rounded-[12px] p-4">
             <h4 className="text-[16px] font-semibold text-ink mb-3">발주·매입 대조 요약</h4>
             <div className="grid grid-cols-3 gap-x-6 gap-y-1 text-[16px]">
               <div><span className="text-ink-soft">발주금액</span> <span className="font-semibold text-ink tabular-nums ml-1">{fmtNum(order.reconciliation.order_amount)}</span></div>
@@ -2149,8 +2197,8 @@ const OrderDetailDrawerBody: React.FC<{ order: OrderDetailRow; onClose: () => vo
           </section>
         )}
         {order.note && (
-          <section className="border border-slate-200 rounded-xl p-4 text-[16px]">
-            <div className="text-[16px] font-semibold text-ink-soft mb-1">비고</div>
+          <section className="border border-slate-200 rounded-[12px] p-4 text-[16px]">
+            <div className="text-[13px] font-semibold text-slate-500 mb-1">비고</div>
             <div className="text-ink whitespace-pre-wrap">{order.note}</div>
           </section>
         )}

@@ -2,14 +2,14 @@
 // 2026-08-23 · #252 · 세션 만료 시간 · 설정에서 관리자 편집 가능 (분 단위)
 //   · 기존 · IDLE_TIMEOUT_MS = 30분 하드코딩 (useAuth.ts)
 //   · 개선 · 서버 KV `session_idle_timeout_minutes` · 관리자 lv9 편집
-//   · 범위 · 5분 ~ 480분 (8시간) · 기본 30분
+//   · 2026-10-08 · 사용자 지시 · 범위 변경 1일 ~ 7일 (1440 ~ 10080분) · 기본 1일
 //   · 소비처 · useAuth (IDLE_TIMEOUT_MS 대체) · SessionTimeoutWarning · 관리자 설정 UI
 
 import { useKvSetting } from "./useKvSetting";
 
-export const SESSION_TIMEOUT_DEFAULT_MINUTES = 30;
-export const SESSION_TIMEOUT_MIN_MINUTES = 5;
-export const SESSION_TIMEOUT_MAX_MINUTES = 480;
+export const SESSION_TIMEOUT_DEFAULT_MINUTES = 1440;  // 1일
+export const SESSION_TIMEOUT_MIN_MINUTES = 1440;      // 1일
+export const SESSION_TIMEOUT_MAX_MINUTES = 10080;     // 7일
 
 function sanitize(raw: unknown): number | null {
   const n = typeof raw === "number" ? raw : Number(raw);

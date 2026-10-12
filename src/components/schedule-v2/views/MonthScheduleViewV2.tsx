@@ -13,6 +13,7 @@ import { useScheduleData, type CellUpdateData } from "../../SchedulePage/useSche
 import { useSettings } from "../../../hooks/useSettings";
 import {
   buildDateList, getTodayStr, getTypeHoursMap, getEmpMonthStats,
+  getCalculatedSummary,
 } from "../../SchedulePage/scheduleHelpers";
 // 2026-10-08 · V2 자체 UI · V1 ScheduleFilterBar UI 제거 · V2 자체 toolbar
 //   · 기능 로직은 V1 재사용 (buildFilteredEmployees · usePositionCategories 등) · UI 만 신규
@@ -89,15 +90,21 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
   const visibleEmployees = useMemo(() => {
     let list = employees;
     // 1. position filter (exact · settings.positions SSOT)
+    // 2026-10-09 · fix · "기타" 가 settings.positions 에 등록된 일반 label 일 수 있음
+    //   · 이전 · positionTab === "기타" 는 무조건 "미등록 position" 특수 처리 →
+    //            설정에 "기타" 가 있으면 exact-match 직원이 미등록으로 간주되어 filter out (pills=1, 결과=0 mismatch)
+    //   · 이후 · settings 에 "기타" 가 있으면 exact-match, 없을 때만 "미등록" 특수 처리
     if (positionTab === "전체") {
       // no filter
-    } else if (positionTab === "기타") {
+    } else if (positionTab === "기타" && !positionSet.has("기타")) {
+      // "기타" 가 settings 에 없을 때만 "미등록 position" (공란 + 설정 외) 처리
       list = list.filter(e => {
         const pos = (e.position ?? "").trim();
         if (!pos) return true;
         return !positionSet.has(pos);
       });
     } else {
+      // 일반 exact match (positionTab 이 settings 에 있는 경우 · "기타" 포함)
       list = list.filter(e => (e.position ?? "").trim() === positionTab);
     }
     // 2. search
@@ -158,23 +165,31 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
   // 2026-10-08 · 사용자 지시 · 필터별 합계 pills · settings.positions 동적 + 인건비 toggle
   //   · "총 N명" + settings.positions 각 직군 count + "기타" (positions 외 직원 수) + (toggle 시) "인건비 N원"
   //   · 인건비 · V1 getEmpMonthStats 재사용 · 사용자 지시 "v1 기능 있으면 만들어야해"
+  // 2026-10-09 · fix · 사용자 리포트 "선택된 필터 외에 다 0으로 나와"
+  //   · 원인 · pills 가 visibleEmployees (position + search 둘 다 적용) 로 count → position 선택 시 다른 position = 0
+  //   · 해결 · search 만 적용된 리스트로 count (position pill 은 "클릭해서 필터 전환" 용도이므로 전체 분포 표시)
   const monthKey = useMemo(() => `${year}-${String(month).padStart(2, "0")}`, [year, month]);
+  const searchFilteredEmployees = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return employees;
+    return employees.filter(e => (e.name ?? "").toLowerCase().includes(q));
+  }, [employees, searchQuery]);
   const summaryCounts = useMemo(() => {
-    const total = visibleEmployees.length;
+    const total = searchFilteredEmployees.length;
     const perPos: { label: string; count: number }[] = [];
     for (const p of settingsPositions ?? []) {
       const label = (p ?? "").trim();
       if (!label) continue;
-      perPos.push({ label, count: visibleEmployees.filter(e => (e.position ?? "").trim() === label).length });
+      perPos.push({ label, count: searchFilteredEmployees.filter(e => (e.position ?? "").trim() === label).length });
     }
-    const etc = visibleEmployees.filter(e => {
+    const etc = searchFilteredEmployees.filter(e => {
       const pos = (e.position ?? "").trim();
       if (!pos) return true;
       return !positionSet.has(pos);
     }).length;
     if (etc > 0) perPos.push({ label: "기타", count: etc });
     return { total, perPos };
-  }, [visibleEmployees, settingsPositions, positionSet]);
+  }, [searchFilteredEmployees, settingsPositions, positionSet]);
 
   // 인건비 · 사용자 지시 "각 직원별로 인건비 계산"
   //   · showLabor === true 때만 compute (V1 getEmpMonthStats 재사용 · 동일 공식)
@@ -190,6 +205,14 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
     }
     return { totalLabor: sum, empLaborMap: map };
   }, [showLabor, visibleEmployees, monthKey, scheduleTypes, wageRates, employeeWageOverrides]);
+
+  // 2026-10-09 · 사용자 지시 · V1 참고 · 필터된 직원 하단 합계행 (약사/사원/물류/창고/기타/근무인원)
+  //   · V1 getCalculatedSummary 재사용 · V1 FROZEN 유지 · helper 그대로 import
+  //   · visibleEmployees (positionTab + search 적용 후) + dateList 기준
+  const currentSummaryList = useMemo(
+    () => getCalculatedSummary(visibleEmployees, dateList),
+    [visibleEmployees, dateList]
+  );
 
   const canEdit = !isMonthLocked || level >= 9;
 
@@ -421,6 +444,8 @@ export const MonthScheduleViewV2: React.FC<Props> = ({
           onDateHeaderClick={onOpenDay}
           onEmployeeNameClick={onOpenEmployee}
           empLaborMap={empLaborMap}
+          summaries={currentSummaryList}
+          positionTab={positionTab}
         />
       )}
     </div>

@@ -9,7 +9,6 @@ import { saveInventoryCheck, listInventoryChecks } from "../../lib/inventoryChec
 import { createOrderRequest } from "../../lib/orderRequestsApi";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { useConfirm } from "../../hooks/useConfirm";
-import { Card } from "../common/Card";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
 import { PurchaseHistorySection } from "./PurchaseHistorySection";
@@ -40,6 +39,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   sections,
   editable,
   onProductUpdate,
+  hideProductName = false,
 }) => {
   const confirm = useConfirm();
   // 2026-09-08 · 상세 진열위치 · 이 상품의 위치별 3자리 (매장/창고)
@@ -288,11 +288,14 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             onLocationChange={handleBasicLocationChange}
             onSaleStatusChange={handleBasicSaleStatusChange}
             compact
+            hideProductName={hideProductName}
           />
         </div>
       )}
 
-      <Card padding="none" topAccent className="p-3.5">
+      {/* 2026-10-12 · 사용자 지시 · 홈 랜딩 톤 적용 (BEHAVIOR DELTA = 0 · UI only)
+          · Card primitive (레거시 rounded-xl + 다층 shadow) → 홈 톤 CARD (rounded-[12px] + thin shadow) 직접 적용 */}
+      <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-3.5">
         {S.header && (
           <ProductInfoHeader
             product={product}
@@ -376,7 +379,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             {...editProps}
           />
         )}
-      </Card>
+      </div>
 
       {S.purchaseHistory && <PurchaseHistorySection productCode={product.code} productName={product.name} />}
 

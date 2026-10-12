@@ -4,13 +4,22 @@ import type { AuthSession } from "../types";
 // 2026-08-25 · 프레임워크 · raw fetch 제거 · apiClient 사용
 import { api } from "../lib/apiClient";
 import { SK_AUTH_SESSION, SK_KV_SESSION_IDLE_TIMEOUT } from "../lib/storageKeys";
+// 2026-10-09 · fix · SSOT · useSessionTimeoutSetting 과 상수 공유
+//   · 이전 · useAuth 는 하드코딩 5~480분 범위 · useSessionTimeoutSetting 은 1440~10080분
+//     → 범위 미스매치 · 사용자가 1440분 설정해도 useAuth 가 "범위 초과" 로 간주 → 30분 fallback → 조기 로그아웃
+//   · 이후 · 공유 상수로 양쪽 범위 일치 (DRY · 1 Source of Truth)
+import {
+  SESSION_TIMEOUT_DEFAULT_MINUTES,
+  SESSION_TIMEOUT_MIN_MINUTES,
+  SESSION_TIMEOUT_MAX_MINUTES,
+} from "./useSessionTimeoutSetting";
 
 const STORAGE_KEY = SK_AUTH_SESSION;
 
-/** 30 minutes in ms — idle timeout · 2026-08-23 · #252 · KV `session_idle_timeout_minutes` 로 동적 조회 (fallback 30분) */
-const IDLE_TIMEOUT_DEFAULT_MS = 30 * 60 * 1000;
-const IDLE_TIMEOUT_MIN_MS = 5 * 60 * 1000;
-const IDLE_TIMEOUT_MAX_MS = 480 * 60 * 1000;
+/** idle timeout · 2026-08-23 · #252 · KV `session_idle_timeout_minutes` 로 동적 조회 (fallback DEFAULT) */
+const IDLE_TIMEOUT_DEFAULT_MS = SESSION_TIMEOUT_DEFAULT_MINUTES * 60 * 1000;
+const IDLE_TIMEOUT_MIN_MS = SESSION_TIMEOUT_MIN_MINUTES * 60 * 1000;
+const IDLE_TIMEOUT_MAX_MS = SESSION_TIMEOUT_MAX_MINUTES * 60 * 1000;
 /** useKvSetting 이 localStorage 에 캐시 · 매 tick 최신 값 조회 · 관리자 편집 즉시 반영 */
 function getEffectiveIdleTimeoutMs(): number {
   try {
@@ -20,7 +29,15 @@ function getEffectiveIdleTimeoutMs(): number {
     const n = typeof parsed === "number" ? parsed : Number(parsed);
     if (!Number.isFinite(n)) return IDLE_TIMEOUT_DEFAULT_MS;
     const ms = Math.round(n) * 60 * 1000;
-    if (ms < IDLE_TIMEOUT_MIN_MS || ms > IDLE_TIMEOUT_MAX_MS) return IDLE_TIMEOUT_DEFAULT_MS;
+    if (ms < IDLE_TIMEOUT_MIN_MS || ms > IDLE_TIMEOUT_MAX_MS) {
+      // 2026-10-09 · 범위 초과 시 조용히 fallback 하지 말고 로그 (설정 미스매치 즉시 감지)
+      console.warn("[useAuth] session_idle_timeout_minutes 범위 초과", {
+        rawKv: raw, parsedMinutes: n, calculatedMs: ms,
+        minAllowedMs: IDLE_TIMEOUT_MIN_MS, maxAllowedMs: IDLE_TIMEOUT_MAX_MS,
+        usingDefaultMs: IDLE_TIMEOUT_DEFAULT_MS,
+      });
+      return IDLE_TIMEOUT_DEFAULT_MS;
+    }
     return ms;
   } catch {
     return IDLE_TIMEOUT_DEFAULT_MS;
@@ -75,11 +92,26 @@ function isExpired(session: AuthSession, now: number): boolean {
   //   · legacy · 기존 세션의 rememberMe 필드는 · 여기서 무시 (backward compat 존재만 유지)
   // Absolute timeout: 로그인 후 최대 유지 시간 (24h)
   if (session.loginAt !== undefined && now - session.loginAt > ABSOLUTE_TIMEOUT_MS) {
+    // 2026-10-09 · 로그 · 어떤 timeout 으로 만료됐는지 (ABSOLUTE 24h · 설정과 무관)
+    console.warn("[useAuth][isExpired] ABSOLUTE timeout 24h", {
+      loginAt: new Date(session.loginAt).toISOString(),
+      elapsedMs: now - session.loginAt,
+      capMs: ABSOLUTE_TIMEOUT_MS,
+    });
     return true;
   }
   // Idle timeout: 마지막 활동 이후 · 기본 30분 (KV 설정으로 조정 가능)
   const lastActivity = session.lastActiveAt ?? session.loginAt;
-  if (lastActivity !== undefined && now - lastActivity > getEffectiveIdleTimeoutMs()) {
+  const effectiveTimeout = getEffectiveIdleTimeoutMs();
+  if (lastActivity !== undefined && now - lastActivity > effectiveTimeout) {
+    // 2026-10-09 · 로그 · IDLE 만료 상세 (설정 미스매치 또는 실제 idle)
+    console.warn("[useAuth][isExpired] IDLE timeout", {
+      lastActivity: new Date(lastActivity).toISOString(),
+      elapsedMs: now - lastActivity,
+      effectiveTimeoutMs: effectiveTimeout,
+      effectiveTimeoutMinutes: Math.round(effectiveTimeout / 60000),
+      rawKv: typeof localStorage !== "undefined" ? localStorage.getItem(SK_KV_SESSION_IDLE_TIMEOUT) : null,
+    });
     return true;
   }
   return false;

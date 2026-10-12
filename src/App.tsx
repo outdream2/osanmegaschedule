@@ -13,6 +13,8 @@ import { LandingPage } from "./components/LandingPage";
 import { VendorStockPage } from "./components/LandingPage/VendorStockPage";
 // 2026-09-24 · #352 · 거래처 로그인 · 자기 발주이력 확인 페이지 (신규)
 import { VendorOrderHistoryPage } from "./components/LandingPage/VendorOrderHistoryPage";
+// 2026-10-12 · #13 · 거래처 그룹 현황판
+const VendorOverviewPage = React.lazy(() => import("./components/VendorOverviewPage/VendorOverviewPage").then(m => ({ default: m.VendorOverviewPage })));
 import { ReservationPage } from "./components/ReservationPage";
 import { DisplayPage } from "./components/DisplayPage";
 import { ScanPage } from "./components/ScanPage/ScanPage";
@@ -41,6 +43,8 @@ import type { AuthSession } from "./types";
 import type { AppNavPage } from "./components/layout/AppNavHeader";
 import { useAppNavigation } from "./hooks/useAppNavigation";
 import type { Page } from "./hooks/useAppNavigation";
+// 2026-10-09 · fix · 뒤로가기 subTab/nested 복원 · popstate ↔ ActiveNav 브리지
+import { useActiveNav } from "./contexts/ActiveNavContext";
 import { prefetchProducts } from "./lib/productsCache";
 import { loadZoneLabelsFromServer } from "./constants/zoneLabels";
 // 2026-08-11 · 사이드바 V2 · feature flag (VITE_SIDEBAR_V2=true) · OFF 면 기존 헤더 그대로
@@ -109,6 +113,9 @@ export default function App() {
     extendSession,
   } = useAuth();
 
+  // 2026-10-09 · fix · ActiveNav bridge · popstate 시 subTab/nested 복원
+  const { setActiveByPage } = useActiveNav();
+
   // 2026-09-20 · Option C · Navigation Helpers 훅 (page state · popstate · navigate 등 이관)
   const {
     page, setPage,
@@ -120,7 +127,16 @@ export default function App() {
     navigateInner,
     navigateInnerWithOptions,
     goBack,
-  } = useAppNavigation({ authSession, pagePerms, setAuthSession });
+  } = useAppNavigation({
+    authSession,
+    pagePerms,
+    setAuthSession,
+    onPopNav: (p, subTab, nested) => {
+      if (p !== "landing") {
+        setActiveByPage(p as import("./components/layout/AppNavHeader").AppNavPage, subTab, nested);
+      }
+    },
+  });
 
   // 2026-08-29 · #174 · SSO · 새 브라우저에서 ?sso={token} 감지 시 · 정식 쿠키 발급 · 자동 로그인
   //   · sso-consume 성공 시 · authSession 세팅 · URL 쿼리 정리
@@ -368,6 +384,8 @@ export default function App() {
     "vendor-order-history": () => (
       <VendorOrderHistoryPage {...commonProps} />
     ),
+    // 2026-10-12 · #13 · 거래처 그룹 현황판 (방문예약 drawer + 공급사정보/재고확인/발주이력 탭 통합)
+    "vendor-overview": () => <Lazy Component={VendorOverviewPage} />,
     "zone-labels": () => (
       <React.Suspense fallback={<PageFallback />}>
         <ZoneLabelsEditor authSession={authSession!} onBack={goBack} />

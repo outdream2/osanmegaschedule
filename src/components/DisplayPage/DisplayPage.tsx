@@ -126,7 +126,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const dpHiddenSubs = React.useMemo(() => {
     const set = new Set<DpSubTabKey>();
     // 2026-10-05 · 사용자 지시 · "product" 제거
-    const subs: DpSubTabKey[] = ["purchase-order", "purchase", "payment", "statistics", "revenue", "return", "stock-arrivals", "store", "vendor-manage", "product-scan"];
+    const subs: DpSubTabKey[] = ["purchase-order", "purchase", "payment", "statistics", "revenue", "sales", "return", "stock-arrivals", "store", "vendor-manage", "product-scan"];
     for (const s of subs) {
       const perm = (dpPerms as any)[`display:${s}`];
       if (perm?.hidden === true) set.add(s);
@@ -583,6 +583,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     "statistics": dpCanSeeStockManage && !dpHiddenSubs.has("statistics"),
     // 2026-10-05 · 매출 (ERP Sales_Days_TimeReport 기반 · 시간대/월별)
     "revenue": dpCanSeeStockManage && !dpHiddenSubs.has("revenue"),
+    // 2026-10-10 · #12 · 판매현황 (RevenuePage 재사용 · initialTab="sales")
+    "sales": dpCanSeeStockManage && !dpHiddenSubs.has("sales"),
     // 2026-08-25 · 반품 신규 · dpCanSeeStockManage 조건 사용 (통계와 동일 레벨)
     "return": dpCanSeeStockManage && !dpHiddenSubs.has("return"),
     "stock-arrivals": dpCanSeeStockArrivals && !dpHiddenSubs.has("stock-arrivals"),
@@ -645,7 +647,16 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       ) : dpSubTab === "revenue" && dpCanSeeStockManage ? (
         <main className="flex-1 flex flex-col min-h-0">
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="매출 로딩 중..." size={14} tone="brand" /></div>}>
-            <RevenuePage />
+            {/* 2026-10-12 · 버그 fix "매출현황→판매현황 이동 안됨" · key 분리로 재마운트 강제 (useState initialTab prop 재적용 안되는 문제) */}
+            <RevenuePage key="revenue" initialTab="revenue" />
+          </React.Suspense>
+        </main>
+      ) : dpSubTab === "sales" && dpCanSeeStockManage ? (
+        // 2026-10-10 · #12 · 판매현황 메뉴 · RevenuePage 재사용 · initialTab="sales"
+        <main className="flex-1 flex flex-col min-h-0">
+          <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="판매 로딩 중..." size={14} tone="brand" /></div>}>
+            {/* 2026-10-12 · 버그 fix "매출현황→판매현황 이동 안됨" · key 분리 */}
+            <RevenuePage key="sales" initialTab="sales" />
           </React.Suspense>
         </main>
       ) : dpSubTab === "return" && dpCanSeeStockManage ? (

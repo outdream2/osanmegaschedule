@@ -1,0 +1,687 @@
+◇ injected env (31) from .env // tip: ⌘ enable debugging { debug: true }
+{
+  "generatedAt": "2026-10-07T02:05:44.285Z",
+  "sections": {
+    "s1_tableProbe": {
+      "employees": {
+        "exists": true,
+        "count": 19,
+        "status": 200
+      },
+      "schedules": {
+        "exists": true,
+        "count": 3279,
+        "status": 206
+      },
+      "leave_requests": {
+        "exists": true,
+        "count": 13,
+        "status": 200
+      },
+      "employee_contracts": {
+        "exists": true,
+        "count": 0,
+        "status": 200
+      },
+      "resignation_requests": {
+        "exists": true,
+        "count": 0,
+        "status": 200
+      },
+      "app_settings": {
+        "exists": true,
+        "count": 19,
+        "status": 200
+      },
+      "reservations": {
+        "exists": true,
+        "count": 0,
+        "status": 200
+      },
+      "attendance": {
+        "exists": true,
+        "count": null,
+        "status": 204
+      }
+    },
+    "s2_columnShape": {
+      "employees": {
+        "columns": [
+          "id",
+          "name",
+          "position",
+          "hireDate",
+          "description",
+          "workplace",
+          "employmentType",
+          "annual_leave_days",
+          "phone",
+          "password_hash",
+          "is_manager",
+          "level",
+          "rank",
+          "gender",
+          "contract_file_url",
+          "push_subscription",
+          "retireDate",
+          "working_hours_per_week",
+          "wage_calc_type",
+          "wage_amount",
+          "insurance_nps_date",
+          "pharmacist_license_no",
+          "health_check_expiry",
+          "address",
+          "break_time_minutes",
+          "break_apply_paid",
+          "performance_rating",
+          "resume_url",
+          "contract_type",
+          "contract_start",
+          "contract_end",
+          "probation_end_date",
+          "bankbook_image_url",
+          "employee_number",
+          "birth_date",
+          "emergency_contact_name",
+          "emergency_contact_phone",
+          "emergency_contact_rel",
+          "schedule_type",
+          "work_area",
+          "work_location",
+          "job_duties",
+          "weekly_holiday",
+          "wage_pay_day",
+          "wage_pay_method",
+          "bank_name",
+          "bank_account_no",
+          "insurance_nhis_date",
+          "insurance_ei_date",
+          "insurance_wcia_date",
+          "insurance_excluded",
+          "careers",
+          "educations",
+          "certifications"
+        ]
+      },
+      "schedules": {
+        "columns": [
+          "id",
+          "employeeId",
+          "date",
+          "type",
+          "workingHours",
+          "actualHours",
+          "memo",
+          "source_leave_id"
+        ]
+      },
+      "leave_requests": {
+        "columns": [
+          "id",
+          "employee_id",
+          "employee_name",
+          "leave_type",
+          "start_date",
+          "end_date",
+          "reason",
+          "status",
+          "reviewer_note",
+          "created_at",
+          "reviewed_at"
+        ]
+      },
+      "employee_contracts": {
+        "columns": [
+          "id",
+          "employee_id",
+          "employee_name",
+          "start_date",
+          "end_date",
+          "contract_type",
+          "storage_path",
+          "created_at"
+        ],
+        "note": "probed via SELECT limit(0) · table empty"
+      },
+      "resignation_requests": {
+        "columns": [
+          "id",
+          "employee_id",
+          "employee_name",
+          "status",
+          "reason",
+          "approved_at",
+          "approved_by",
+          "handover_notes",
+          "created_at"
+        ],
+        "note": "probed via SELECT limit(0) · table empty"
+      },
+      "app_settings": {
+        "columns": [
+          "key",
+          "value",
+          "updated_at"
+        ]
+      },
+      "reservations": {
+        "columns": [
+          "id",
+          "date",
+          "time",
+          "assigned_employee_id",
+          "employee_name_snapshot",
+          "vendor_id",
+          "purpose",
+          "company",
+          "contact_name",
+          "phone",
+          "note",
+          "created_at"
+        ],
+        "note": "probed via SELECT limit(0) · table empty"
+      },
+      "attendance": {
+        "error": "Could not find the table 'public.attendance' in the schema cache"
+      }
+    },
+    "s2_schemaGaps": {
+      "schedules_has_created_at": false,
+      "schedules_has_updated_at": false,
+      "leave_requests_has_half_day_type": false,
+      "leave_requests_has_request_type": false,
+      "resignation_has_effective_date": false,
+      "app_settings_has_created_at": false
+    },
+    "s3_counts": {
+      "employees": 19,
+      "employees_retireDate_null": 19,
+      "employees_retireDate_empty": 0,
+      "employees_retireDate_notnull": 0,
+      "schedules": 3279,
+      "schedules_future": 475,
+      "schedules_past": 2804,
+      "leave_requests": 13,
+      "leave_approved": 7,
+      "leave_pending": 3,
+      "leave_rejected": 3,
+      "leave_cancelled": 0,
+      "employee_contracts": 0,
+      "resignation_requests": 0,
+      "reservations": 0,
+      "app_settings": 19
+    },
+    "s4_master": {
+      "totalEmployees": 19,
+      "duplicateIds": [],
+      "nullIds": 0,
+      "retireStates": {
+        "ACTIVE_NULL": 19,
+        "ACTIVE_EMPTY": 0,
+        "RETIRED_PAST": 0,
+        "RETIRE_FUTURE": 0
+      }
+    },
+    "s5_scheduleOrphan": {
+      "totalSchedules": 3279,
+      "employeeIdNull": 0,
+      "orphanTotal": 0,
+      "orphanCurrentOrFuture": 0,
+      "orphanSamples": []
+    },
+    "s6_park": {
+      "preservedRow": {
+        "id": "297371b0-c0fb-4706-b783-7a42414c299c",
+        "employee_id": 3,
+        "employee_name": "박부장",
+        "leave_type": "연차",
+        "start_date": "2026-07-02",
+        "end_date": "2026-07-02",
+        "reason": "",
+        "status": "approved",
+        "reviewer_note": "",
+        "created_at": "2026-07-02T15:30:44.858689+00:00",
+        "reviewed_at": "2026-07-02T21:32:15.565+00:00"
+      },
+      "employee3Exists": false,
+      "employee3": null,
+      "otherRefs": {
+        "schedules": 0,
+        "leaves_total": 1,
+        "contracts": 0,
+        "resignations": 0,
+        "reservations": 0
+      }
+    },
+    "s7_leaveOrphan": {
+      "totalLeaves": 13,
+      "orphanTotal": 1,
+      "newOrphan": 0,
+      "orphanSamples": [
+        {
+          "id": "297371b0-c0fb-4706-b783-7a42414c299c",
+          "employee_id": 3,
+          "employee_name": "박부장",
+          "leave_type": "연차",
+          "status": "approved",
+          "start_date": "2026-07-02",
+          "end_date": "2026-07-02",
+          "reason": "",
+          "reviewer_note": "",
+          "reviewed_at": "2026-07-02T21:32:15.565+00:00",
+          "created_at": "2026-07-02T15:30:44.858689+00:00"
+        }
+      ]
+    },
+    "s8_sourceLeave": {
+      "nonNullCount": 3,
+      "nullCount": 3276,
+      "dangling": 0,
+      "danglingSamples": [],
+      "overProjectedCount": 0,
+      "overProjectedSamples": []
+    },
+    "s9_leaveProjection": {
+      "approvedNoProjectionCount": 4,
+      "approvedNoProjectionSamples": [
+        {
+          "id": "f81b31b1-1f5a-4c6f-99be-998d0b1e8e0c",
+          "employee_id": 2,
+          "name": "강남규",
+          "start": "2026-06-29",
+          "end": "2026-06-29",
+          "leave_type": "연차"
+        },
+        {
+          "id": "297371b0-c0fb-4706-b783-7a42414c299c",
+          "employee_id": 3,
+          "name": "박부장",
+          "start": "2026-07-02",
+          "end": "2026-07-02",
+          "leave_type": "연차"
+        },
+        {
+          "id": "f5b95457-e31c-4eea-8fb5-fea52db8c61a",
+          "employee_id": 2,
+          "name": "강남규",
+          "start": "2026-09-11",
+          "end": "2026-09-11",
+          "leave_type": "연차"
+        },
+        {
+          "id": "f89ec3e1-e142-4d26-8fad-d499beaa836d",
+          "employee_id": 2,
+          "name": "강남규",
+          "start": "2026-09-11",
+          "end": "2026-09-11",
+          "leave_type": "연차"
+        }
+      ],
+      "workingOnApprovedLeaveCount": 1,
+      "workingOnApprovedLeaveSamples": [
+        {
+          "leaveId": "f81b31b1-1f5a-4c6f-99be-998d0b1e8e0c",
+          "employeeId": 2,
+          "date": "2026-06-29",
+          "leaveType": "연차",
+          "scheduleId": 1715,
+          "scheduleType": "오픈",
+          "workingHours": "09:30-18:30"
+        }
+      ],
+      "terminatedButProjectedCount": 0,
+      "terminatedButProjectedSamples": [],
+      "legacyNullSourceButLeaveTypeCount": 5,
+      "legacyNullSourceButLeaveTypeSamples": [
+        {
+          "id": 282,
+          "employeeId": 2,
+          "date": "2026-05-15",
+          "type": "월차"
+        },
+        {
+          "id": 285,
+          "employeeId": 5,
+          "date": "2026-05-15",
+          "type": "월차"
+        },
+        {
+          "id": 17237,
+          "employeeId": 2,
+          "date": "2026-09-11",
+          "type": "월차"
+        },
+        {
+          "id": 585,
+          "employeeId": 5,
+          "date": "2026-05-30",
+          "type": "월차"
+        },
+        {
+          "id": 902,
+          "employeeId": 2,
+          "date": "2026-06-15",
+          "type": "월차"
+        }
+      ]
+    },
+    "s10_duplicate": {
+      "duplicateByEmpDateCount": 0,
+      "duplicateByEmpDateSamples": [],
+      "duplicateByEmpDateTypeCount": 0,
+      "duplicateByEmpDateTypeSamples": []
+    },
+    "s11_dateIntegrity": {
+      "schedulesNullDate": 0,
+      "schedulesInvalidDateCount": 0,
+      "schedulesInvalidDateSamples": [],
+      "schedulesOutOfRangeCount": 0,
+      "schedulesOutOfRangeSamples": [],
+      "leaveReversedCount": 0,
+      "leaveReversedSamples": []
+    },
+    "s12_workingHours": {
+      "nullOrEmptyCount": 944,
+      "malformedCount": 0,
+      "malformedSamples": [],
+      "workingTypeWithoutWhCount": 0,
+      "workingTypeWithoutWhSamples": [],
+      "reversedCount": 0,
+      "reversedSamples": []
+    },
+    "s13_scheduleTypes": {
+      "distribution": [
+        {
+          "type": "오픈",
+          "cnt": 1602
+        },
+        {
+          "type": "휴무",
+          "cnt": 934
+        },
+        {
+          "type": "마감",
+          "cnt": 663
+        },
+        {
+          "type": "오픈마감",
+          "cnt": 53
+        },
+        {
+          "type": "미들",
+          "cnt": 17
+        },
+        {
+          "type": "월차",
+          "cnt": 8
+        },
+        {
+          "type": "지정휴무",
+          "cnt": 2
+        }
+      ],
+      "canonical": [
+        "{\"type\":\"오픈\",\"color\":\"#fef08a\",\"hours\":\"09:30-18:30\",\"pharmHours\":\"10:00-19:00\",\"partTimeHours\":\"\",\"logisticsHours\":\"\"}",
+        "{\"type\":\"미들\",\"color\":\"#dbeafe\",\"hours\":\"11:00-18:00\",\"pharmHours\":\"12:00-18.30\",\"partTimeHours\":\"\",\"logisticsHours\":\"\"}",
+        "{\"type\":\"마감\",\"color\":\"#a7f3d0\",\"hours\":\"11:10-20:10\",\"pharmHours\":\"11:00-20:00\",\"partTimeHours\":\"\",\"logisticsHours\":\"\"}",
+        "{\"type\":\"휴무\",\"color\":\"#fecdd3\",\"hours\":\"\",\"pharmHours\":\"\",\"partTimeHours\":\"\",\"logisticsHours\":\"\"}",
+        "{\"type\":\"월차\",\"color\":\"#fbbf24\",\"hours\":\"\",\"pharmHours\":\"\",\"partTimeHours\":\"\",\"logisticsHours\":\"\"}",
+        "{\"type\":\"오픈마감\",\"color\":\"#ceb4fd\",\"hours\":\"10:00-20:00\",\"pharmHours\":\"10:00-20:00\",\"partTimeHours\":\"\",\"logisticsHours\":\"\"}"
+      ],
+      "offTypesShared": [
+        "휴무",
+        "월차",
+        "지정휴무",
+        "결근"
+      ],
+      "halfDayTypesShared": [
+        "오전반차",
+        "오후반차"
+      ],
+      "unmappedCount": 4,
+      "unmappedSamples": [
+        {
+          "type": "오픈",
+          "cnt": 1602
+        },
+        {
+          "type": "마감",
+          "cnt": 663
+        },
+        {
+          "type": "오픈마감",
+          "cnt": 53
+        },
+        {
+          "type": "미들",
+          "cnt": 17
+        }
+      ]
+    },
+    "s14_taxonomy": {
+      "position": {
+        "canon": [
+          "약사",
+          "물류",
+          "임원",
+          "매장",
+          "창고",
+          "기타",
+          "거래처",
+          "알바",
+          "물류팀장",
+          "진열팀장"
+        ],
+        "matched": [
+          {
+            "val": "매장",
+            "cnt": 9
+          },
+          {
+            "val": "약사",
+            "cnt": 5
+          },
+          {
+            "val": "창고",
+            "cnt": 4
+          },
+          {
+            "val": "기타",
+            "cnt": 1
+          }
+        ],
+        "unmapped": []
+      },
+      "rank": {
+        "canon": [
+          "대표",
+          "부장",
+          "팀장",
+          "과장",
+          "대리",
+          "사원"
+        ],
+        "matched": [
+          {
+            "val": "사원",
+            "cnt": 16
+          },
+          {
+            "val": "대표",
+            "cnt": 1
+          },
+          {
+            "val": "팀장",
+            "cnt": 1
+          }
+        ],
+        "unmapped": [
+          {
+            "val": "이사",
+            "cnt": 1
+          }
+        ]
+      },
+      "workplace": {
+        "canon": [
+          "매장",
+          "창고"
+        ],
+        "matched": [
+          {
+            "val": "매장",
+            "cnt": 14
+          },
+          {
+            "val": "창고",
+            "cnt": 5
+          }
+        ],
+        "unmapped": []
+      },
+      "employmentType": {
+        "canon": [
+          "정직원",
+          "계약직",
+          "알바"
+        ],
+        "matched": [
+          {
+            "val": "계약직",
+            "cnt": 8
+          },
+          {
+            "val": "정직원",
+            "cnt": 9
+          }
+        ],
+        "unmapped": [
+          {
+            "val": "대표",
+            "cnt": 1
+          },
+          {
+            "val": "임원",
+            "cnt": 1
+          }
+        ]
+      }
+    },
+    "s15_wage": {
+      "wageRatesPresent": true,
+      "wageRatesKeys": [
+        "기타",
+        "매장",
+        "물류",
+        "약사",
+        "창고",
+        "캐셔"
+      ],
+      "wageRates": {
+        "기타": {
+          "weekday": 10030,
+          "weekend": 11000
+        },
+        "매장": {
+          "weekday": 10030,
+          "weekend": 11000
+        },
+        "물류": {
+          "weekday": 11000,
+          "weekend": 12000
+        },
+        "약사": {
+          "weekday": 35000,
+          "weekend": 40000
+        },
+        "창고": {
+          "weekday": 10030,
+          "weekend": 11000
+        },
+        "캐셔": {
+          "weekday": 10240,
+          "weekend": 11240
+        }
+      },
+      "overrides": {
+        "count": 0,
+        "orphan": 0,
+        "orphanSamples": []
+      },
+      "activeEmployeeCount": 19,
+      "unconfiguredActiveCount": 0,
+      "unconfiguredActiveSamples": []
+    },
+    "s16_lock": {
+      "totalLockKeys": 2,
+      "invalidKeyCount": 0,
+      "invalidKeys": [],
+      "duplicateKeyCount": 0,
+      "duplicateKeys": [],
+      "locks": [
+        {
+          "key": "schedule_lock_2026-06",
+          "value": true,
+          "locked": true,
+          "updated_at": "2026-07-02T21:34:34.383+00:00"
+        },
+        {
+          "key": "schedule_lock_2026-07",
+          "value": false,
+          "locked": false,
+          "updated_at": "2026-07-04T06:02:23.172+00:00"
+        }
+      ]
+    },
+    "s17_lockedMonthMutations": {
+      "rowLevelTrackingPossible": false,
+      "note": "schedules.updated_at 컬럼 없음 → 잠긴 월 수정 흔적 row-level 추적 불가. server-side guard (scheduleLock.ts) 가 유일한 방어선.",
+      "anomalyCount": null
+    },
+    "s18_contracts": {
+      "total": 0,
+      "note": "empty table"
+    },
+    "s19_resignations": {
+      "total": 0,
+      "note": "empty table · nothing to audit"
+    },
+    "s20_reservations": {
+      "total": 0,
+      "note": "empty table"
+    },
+    "s21_settings": {
+      "totalKeys": 19,
+      "keyDuplicateCount": 0,
+      "keyDuplicate": [],
+      "allSettingsPresent": true,
+      "allSettingsKeys": [
+        "ranks",
+        "positions",
+        "wageRates",
+        "workplaces",
+        "scheduleTypes",
+        "employmentTypes",
+        "underConstruction",
+        "defaultAnnualLeave",
+        "employeeWageOverrides"
+      ],
+      "missingTopLevelCriticalKeys": [],
+      "allSettingsUpdatedAt": "2026-09-16T07:37:38.482+00:00"
+    }
+  },
+  "gate": {
+    "scheduleOrphanCurrentFuture": 0,
+    "danglingSourceLeave": 0,
+    "duplicateByEmpDateCount": 0,
+    "lockKeyInvalid": 0,
+    "lockKeyDuplicate": 0,
+    "newOrphanLeavesCount": 0,
+    "parkPreserved": true,
+    "workingOnApprovedLeaveCount": 1,
+    "terminatedButProjectedCount": 0,
+    "whReversedCount": 0,
+    "overrideOrphanCount": 0,
+    "PASS": true
+  }
+}

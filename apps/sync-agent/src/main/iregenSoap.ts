@@ -1374,3 +1374,16 @@ export async function querySaleStatus(opts?: { startDate?: string; endDate?: str
   console.log("[iregen:sale] SOAP OK ·", soapMs, "ms · response bytes:", soapRes.xml.length);
   return decodeResponseToResult(soapRes.xml, t0, soapMs);
 }
+
+// 2026-10-10 · build fix · queryVendorList stub (erpAutoScheduler import 복구용)
+//   · 실제 ERP vendor endpoint 구현은 vendor sync 작업 진행 중 (별도 세션)
+//   · 지금은 build 통과 목적 · runtime 호출 시 명확한 에러 반환
+//   · 구현 완료 시 이 stub 교체 (querySaleStatus 패턴 참조)
+export async function queryVendorList(_opts?: { pageSize?: number }): Promise<ErpInventoryResult> {
+  void _opts;
+  return {
+    ok: false,
+    stage: "config",
+    error: "queryVendorList · 아직 미구현 · vendor sync 작업 진행 중 (iregenSoap.ts stub)",
+  };
+}

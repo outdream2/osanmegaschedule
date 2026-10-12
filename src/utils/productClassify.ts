@@ -1,28 +1,29 @@
 // src/utils/productClassify.ts
-// 상비약 / 일반약 / 뷰티 / 미분류 · 공용 분류 유틸
+// 상비약 / 일반약 / 뷰티 / 냉장고 / 물약 / 미분류 · 공용 분류 유틸
 // 2026-08-03 · 통계 메뉴 상비약/일반약/전체 필터 도입
 // 2026-10-07 v3 · 사용자 지시 · includes 기반 유연 매칭 + 라벨 "뷰티" 로 변경
+// 2026-10-08 v4 · 사용자 지시 · "냉장고" / "물약" 신규 분류 추가 (미분류에서 분리)
 //
-// 규칙 (2026-10-07 v3):
+// 규칙 (2026-10-08 v4):
 //   · "뷰티" 포함 (어디든)          → 뷰티 (cosmetics)
 //     예: "뷰티>2번>전체>전체" · "뷰티1" · "프리미엄뷰티"
+//   · "냉장고" 포함                  → 냉장고 (fridge)
+//     예: "냉장고>전체>전체>전체"
+//   · "물약" 포함                    → 물약 (liquid)
+//     예: "물약"
 //   · "벽" 포함 (어디든)            → 일반약 (general)
 //     사용자 지시 "위치에 벽 들어가면 일반약"
 //     예: "벽" · "벽>21>전체>전체" · "A매대/벽7"
 //   · N매대 (N=1~9, 섹터 무관)       → 상비약 (stationery)
-//     사용자 지시 "조건 추가" · A/B 제한 완화
-//     예: "1매대>C>...", "9매대>뒤>...", "5매대"
-//     Transformed "1A", "9B" 등도 포함 (전각 Ａ/Ｂ 정규화 후)
 //   · N매대 (N≥10, 섹터 무관)        → 일반약 (general)
-//     예: "10매대>...", "22매대>..."
 //   · Transformed 숫자단독           → N≥10 일반약 · 1-9 상비약
-//   · 그 외 (냉장고 / 물약 / null)    → 미분류 (unknown)
+//   · 그 외                          → 미분류 (unknown)
 //
-// 우선순위: 뷰티 > 벽 > 매대 > 숫자단독 (사용자 지시 "위치에 OO 들어가면" includes 매칭)
+// 우선순위: 뷰티 > 냉장고 > 물약 > 벽 > 매대 > 숫자단독
 
-export type ProductClass = "stationery" | "general" | "cosmetics" | "unknown";
-// 2026-10-07 · "cosmetics" 추가 · 전체·상비약·일반약·뷰티·미분류 5-tab
-export type ClassFilter = "all" | "stationery" | "general" | "cosmetics" | "unknown";
+export type ProductClass = "stationery" | "general" | "cosmetics" | "fridge" | "liquid" | "unknown";
+// 2026-10-08 · fridge / liquid 추가 · 전체·상비약·일반약·뷰티·냉장고·물약·미분류 7-tab
+export type ClassFilter = "all" | "stationery" | "general" | "cosmetics" | "fridge" | "liquid" | "unknown";
 
 export const REAL_MAP_ZONE_REGEX = /^(\d+)/;
 const PRIMARY_SPLIT_REGEX = /[\/\-_\s]/;
@@ -43,6 +44,10 @@ export function classifyProduct(location: string | null | undefined): ProductCla
 
   // 1) "뷰티" 포함 → 뷰티 (어디에 나와도 최우선)
   if (s.includes("뷰티")) return "cosmetics";
+
+  // 2026-10-08 · 사용자 지시 · "냉장고" / "물약" 신규 분류 추가
+  if (s.includes("냉장고")) return "fridge";
+  if (s.includes("물약")) return "liquid";
 
   // 2) "벽" 포함 → 일반약 (사용자 지시 "위치에 벽 들어가면 일반약")
   if (s.includes("벽")) return "general";
@@ -90,6 +95,8 @@ export const CLASS_FILTER_LABEL: Record<ClassFilter, string> = {
   stationery: "상비약",
   general: "일반약",
   cosmetics: "뷰티",
+  fridge: "냉장고",
+  liquid: "물약",
   unknown: "미분류",
 };
 
@@ -99,6 +106,8 @@ export function getClassFilterRange(cls: ClassFilter): string {
   if (cls === "all") return "";
   if (cls === "stationery") return "(1-9매대)";
   if (cls === "cosmetics") return "";
+  if (cls === "fridge") return "";
+  if (cls === "liquid") return "";
   if (cls === "unknown") return "";
   // general · 벽/10+매대
   const maps = getZoneMappings();
@@ -113,5 +122,7 @@ export const CLASS_FILTER_RANGE: Record<ClassFilter, string> = {
   stationery: "(1-9매대)",
   general: "(벽/10+)",
   cosmetics: "",
+  fridge: "",
+  liquid: "",
   unknown: "",
 };

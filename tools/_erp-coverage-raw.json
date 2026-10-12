@@ -1,0 +1,1046 @@
+[
+  {
+    "col": "StCode",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "000"
+    ]
+  },
+  {
+    "col": "PCode",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "15431",
+      "15430",
+      "15429"
+    ]
+  },
+  {
+    "col": "ProductName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "제놀원 카타플라스마 6매",
+      "스킨애플 유자C버블 클렌징워터",
+      "그린토마토 더블클렌징 오일"
+    ]
+  },
+  {
+    "col": "Specification",
+    "type": "System.String",
+    "nonEmpty": 1,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": [
+      "40"
+    ]
+  },
+  {
+    "col": "GoodsName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "제놀원 카타플라스마 6매",
+      "스킨애플 유자C버블 클렌징워터",
+      "그린토마토 더블클렌징 오일"
+    ]
+  },
+  {
+    "col": "GoodsSubName",
+    "type": "System.String",
+    "nonEmpty": 47,
+    "total": 4007,
+    "pct": "1.2",
+    "samples": [
+      "300정",
+      "150포",
+      "200정"
+    ]
+  },
+  {
+    "col": "ProductName_pop",
+    "type": "System.String",
+    "nonEmpty": 1,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": [
+      " 40"
+    ]
+  },
+  {
+    "col": "ProductTypeName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "단품"
+    ]
+  },
+  {
+    "col": "ProductGubunName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "상품"
+    ]
+  },
+  {
+    "col": "OptionViewTypeName",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "IsWeight",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1"
+    ]
+  },
+  {
+    "col": "WeightName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "수량"
+    ]
+  },
+  {
+    "col": "WeightCode",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "StockName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "사용"
+    ]
+  },
+  {
+    "col": "TaxName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "과세",
+      "면세"
+    ]
+  },
+  {
+    "col": "IsStock",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1"
+    ]
+  },
+  {
+    "col": "TaxPercent",
+    "type": "System.Int16",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "10",
+      "0"
+    ]
+  },
+  {
+    "col": "UnitCode",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "EA",
+      "병",
+      "구"
+    ]
+  },
+  {
+    "col": "UnitStock",
+    "type": "System.Int32",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1"
+    ]
+  },
+  {
+    "col": "WeightCostUnit",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "IsProductType",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1"
+    ]
+  },
+  {
+    "col": "IsBottle",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "2",
+      "1"
+    ]
+  },
+  {
+    "col": "BottlePrice",
+    "type": "System.Int16",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0"
+    ]
+  },
+  {
+    "col": "NowStock",
+    "type": "System.Int64",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "120",
+      "20",
+      "10"
+    ]
+  },
+  {
+    "col": "CostPrice",
+    "type": "System.Decimal",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1767.70",
+      "3311.00",
+      "9834.00"
+    ]
+  },
+  {
+    "col": "CtCode",
+    "type": "System.String",
+    "nonEmpty": 4005,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1005",
+      "1137",
+      "1008"
+    ]
+  },
+  {
+    "col": "CorpNameView",
+    "type": "System.String",
+    "nonEmpty": 4005,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "녹십자",
+      "메가헬스케어",
+      "로드팜"
+    ]
+  },
+  {
+    "col": "PriceA",
+    "type": "System.Decimal",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "2900.00",
+      "5000.00",
+      "14900.00"
+    ]
+  },
+  {
+    "col": "PriceB",
+    "type": "System.Decimal",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0.00"
+    ]
+  },
+  {
+    "col": "PriceC",
+    "type": "System.Decimal",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0.00"
+    ]
+  },
+  {
+    "col": "PriceD",
+    "type": "System.Decimal",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0.00"
+    ]
+  },
+  {
+    "col": "IsSalesStore",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1"
+    ]
+  },
+  {
+    "col": "EvCostUnit",
+    "type": "System.Decimal",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0.00"
+    ]
+  },
+  {
+    "col": "EvSaleUnit",
+    "type": "System.Decimal",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0.00"
+    ]
+  },
+  {
+    "col": "IsPriceLock",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "2"
+    ]
+  },
+  {
+    "col": "Horizontal",
+    "type": "System.Int32",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0"
+    ]
+  },
+  {
+    "col": "Vertical",
+    "type": "System.Int32",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0"
+    ]
+  },
+  {
+    "col": "Height",
+    "type": "System.Decimal",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0.00"
+    ]
+  },
+  {
+    "col": "Volume",
+    "type": "System.Int32",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0"
+    ]
+  },
+  {
+    "col": "WeightPriceUnit",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "LcateName",
+    "type": "System.String",
+    "nonEmpty": 4004,
+    "total": 4007,
+    "pct": "99.9",
+    "samples": [
+      "코스트팜약국"
+    ]
+  },
+  {
+    "col": "McateName",
+    "type": "System.String",
+    "nonEmpty": 4003,
+    "total": 4007,
+    "pct": "99.9",
+    "samples": [
+      "약국",
+      "약국3",
+      "약국2"
+    ]
+  },
+  {
+    "col": "ScateName",
+    "type": "System.String",
+    "nonEmpty": 3999,
+    "total": 4007,
+    "pct": "99.8",
+    "samples": [
+      "(주)녹십자",
+      "메가헬스케어",
+      "로드팜"
+    ]
+  },
+  {
+    "col": "DcateName",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "CateGubunOneName",
+    "type": "System.String",
+    "nonEmpty": 100,
+    "total": 4007,
+    "pct": "2.5",
+    "samples": [
+      "마그네슘",
+      "기타",
+      "화장품"
+    ]
+  },
+  {
+    "col": "CateGubunTwoName",
+    "type": "System.String",
+    "nonEmpty": 96,
+    "total": 4007,
+    "pct": "2.4",
+    "samples": [
+      "건강기능식품",
+      "기타"
+    ]
+  },
+  {
+    "col": "Maker",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "Brand",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "Orgin",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "IsStandingPoint",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1"
+    ]
+  },
+  {
+    "col": "ProductFee",
+    "type": "System.Decimal",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0.00"
+    ]
+  },
+  {
+    "col": "KeepingRuleName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "상온"
+    ]
+  },
+  {
+    "col": "BuseoCode",
+    "type": "System.Int32",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1826"
+    ]
+  },
+  {
+    "col": "BuseoName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "기타"
+    ]
+  },
+  {
+    "col": "Damdang",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "DamdangName",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "DamdangSub",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "DamdangSubName",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "IsPoint",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "2",
+      "1"
+    ]
+  },
+  {
+    "col": "IsAddPoint",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1",
+      "2"
+    ]
+  },
+  {
+    "col": "PointAdd",
+    "type": "System.Int32",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0"
+    ]
+  },
+  {
+    "col": "IsOrderType",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1"
+    ]
+  },
+  {
+    "col": "LimitTime",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0"
+    ]
+  },
+  {
+    "col": "IsDevDayType",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1"
+    ]
+  },
+  {
+    "col": "DevDDay",
+    "type": "System.Int32",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1"
+    ]
+  },
+  {
+    "col": "DevMonday",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "2"
+    ]
+  },
+  {
+    "col": "DevTuesday",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "2"
+    ]
+  },
+  {
+    "col": "DevWednesday",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "2"
+    ]
+  },
+  {
+    "col": "DevThursday",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "2"
+    ]
+  },
+  {
+    "col": "DevFriday",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "2"
+    ]
+  },
+  {
+    "col": "DevSaturday",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "2"
+    ]
+  },
+  {
+    "col": "DevSunday",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "2"
+    ]
+  },
+  {
+    "col": "MakeDayName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "안함"
+    ]
+  },
+  {
+    "col": "ExpiryDayName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "안함"
+    ]
+  },
+  {
+    "col": "IdentificationName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "안함"
+    ]
+  },
+  {
+    "col": "UniPassName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "안함"
+    ]
+  },
+  {
+    "col": "EtcTxtField1",
+    "type": "System.String",
+    "nonEmpty": 3879,
+    "total": 4007,
+    "pct": "96.8",
+    "samples": [
+      "8806452023343",
+      "18806418032225",
+      "8809356623305"
+    ]
+  },
+  {
+    "col": "EtcTxtField2",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "EtcTxtField3",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "EtcTxtField4",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "EtcTxtField5",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "EtcTxtField6",
+    "type": "System.String",
+    "nonEmpty": 0,
+    "total": 4007,
+    "pct": "0.0",
+    "samples": []
+  },
+  {
+    "col": "EtcIntField1",
+    "type": "System.Int32",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0"
+    ]
+  },
+  {
+    "col": "EtcIntField2",
+    "type": "System.Int32",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0"
+    ]
+  },
+  {
+    "col": "EtcIntField3",
+    "type": "System.Int32",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0"
+    ]
+  },
+  {
+    "col": "IsAutoCostUpdate",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1"
+    ]
+  },
+  {
+    "col": "LastBuyDate",
+    "type": "System.String",
+    "nonEmpty": 1862,
+    "total": 4007,
+    "pct": "46.5",
+    "samples": [
+      "2026-10-02",
+      "2026-09-30",
+      "2026-09-29"
+    ]
+  },
+  {
+    "col": "LastSaleDate",
+    "type": "System.String",
+    "nonEmpty": 3287,
+    "total": 4007,
+    "pct": "82.0",
+    "samples": [
+      "2026-10-03",
+      "2026-09-29",
+      "2026-09-27"
+    ]
+  },
+  {
+    "col": "BarCode",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "0108806436049338",
+      "8809470605539",
+      "8800253028927"
+    ]
+  },
+  {
+    "col": "BuyStatusName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "매입중"
+    ]
+  },
+  {
+    "col": "SaleStatusName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "판매중"
+    ]
+  },
+  {
+    "col": "LocationName",
+    "type": "System.String",
+    "nonEmpty": 3246,
+    "total": 4007,
+    "pct": "81.0",
+    "samples": [
+      "뷰티>4번>전체>전체",
+      "뷰티>3번>전체>전체",
+      "벽>14>전체>전체"
+    ]
+  },
+  {
+    "col": "IsPopName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "안함"
+    ]
+  },
+  {
+    "col": "Memo",
+    "type": "System.String",
+    "nonEmpty": 77,
+    "total": 4007,
+    "pct": "1.9",
+    "samples": [
+      "품절",
+      "10/1일자 제약사 사정으로 품절",
+      "품절>11월 / 차용+20"
+    ]
+  },
+  {
+    "col": "UserID",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "101",
+      "111",
+      "admin"
+    ]
+  },
+  {
+    "col": "UserName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "공용(허가 필요)",
+      "강서은",
+      "관리자"
+    ]
+  },
+  {
+    "col": "RegDate",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "2026-10-02 17:19:56",
+      "2026-09-30 15:31:02",
+      "2026-09-30 15:25:36"
+    ]
+  },
+  {
+    "col": "EditUserID",
+    "type": "System.String",
+    "nonEmpty": 581,
+    "total": 4007,
+    "pct": "14.5",
+    "samples": [
+      "107",
+      "117",
+      "101"
+    ]
+  },
+  {
+    "col": "EditUserName",
+    "type": "System.String",
+    "nonEmpty": 581,
+    "total": 4007,
+    "pct": "14.5",
+    "samples": [
+      "박상욱",
+      "김세희",
+      "공용(허가 필요)"
+    ]
+  },
+  {
+    "col": "EditDate",
+    "type": "System.String",
+    "nonEmpty": 581,
+    "total": 4007,
+    "pct": "14.5",
+    "samples": [
+      "2026-10-02 17:27:06",
+      "2026-09-30 15:52:31",
+      "2026-09-30 15:53:13"
+    ]
+  },
+  {
+    "col": "RegStorageName",
+    "type": "System.String",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "용인점"
+    ]
+  },
+  {
+    "col": "ROWNUM",
+    "type": "System.Int64",
+    "nonEmpty": 4007,
+    "total": 4007,
+    "pct": "100.0",
+    "samples": [
+      "1",
+      "2",
+      "3"
+    ]
+  }
+]

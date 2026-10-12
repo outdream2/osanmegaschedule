@@ -177,7 +177,8 @@ export const OverviewTable: React.FC<{
   <div className="w-full overflow-x-auto">
     {/* 2026-10-09 · 사용자 지시 · 전체 밸런싱 · padding compact (py-2.5/py-3 → py-1.5) · font 13 */}
     <table className="w-full text-[13px]">
-      <thead>
+      {/* 2026-10-09 · 사용자 지시 · 스크롤 시 헤더 고정 (sticky) */}
+      <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_rgba(226,232,240,1)]">
         <tr className="border-b border-slate-200 bg-slate-50/60">
           {columns.map(col => (
             <th

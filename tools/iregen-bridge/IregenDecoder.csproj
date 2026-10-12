@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- 2026-10-03 · net8.0 BinaryFormatter 'Invalid read type request 28' 실패
+         Iregen (.NET Framework) 와 동일 환경 · net48 로 변경 · 완전 호환 -->
+    <TargetFramework>net48</TargetFramework>
+    <RootNamespace>IregenBridge</RootNamespace>
+    <AssemblyName>iregen-decoder</AssemblyName>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- System.Data (DataSet) · System.Xml.Linq · System.Runtime.Serialization.Formatters.Binary · 기본 포함 -->
+    <Reference Include="System.Data.DataSetExtensions" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,276 @@
+[
+  {
+    "col": "col_i",
+    "exists": true,
+    "non_null": 5714,
+    "samples": [
+      "과직",
+      "과직",
+      "과직"
+    ]
+  },
+  {
+    "col": "product_type",
+    "exists": true,
+    "non_null": 5713,
+    "samples": [
+      "일반",
+      "일반",
+      "일반"
+    ]
+  },
+  {
+    "col": "delivery_price",
+    "exists": true,
+    "non_null": 5683,
+    "samples": [
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  {
+    "col": "delivery_profit_rate",
+    "exists": true,
+    "non_null": 5683,
+    "samples": [
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  {
+    "col": "delivery_margin_rate",
+    "exists": true,
+    "non_null": 5713,
+    "samples": [
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  {
+    "col": "app_registered",
+    "exists": true,
+    "non_null": 5683,
+    "samples": [
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  {
+    "col": "image_registered",
+    "exists": true,
+    "non_null": 5683,
+    "samples": [
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  {
+    "col": "preset_registered",
+    "exists": true,
+    "non_null": 5683,
+    "samples": [
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  {
+    "col": "preset_group",
+    "exists": true,
+    "non_null": 152,
+    "samples": [
+      "병",
+      "병",
+      "봉투"
+    ]
+  },
+  {
+    "col": "promotion_name",
+    "exists": true,
+    "non_null": 0,
+    "samples": []
+  },
+  {
+    "col": "promotion_priority",
+    "exists": true,
+    "non_null": 0,
+    "samples": []
+  },
+  {
+    "col": "promotion_purchase_price",
+    "exists": true,
+    "non_null": 0,
+    "samples": []
+  },
+  {
+    "col": "promotion_sale_price",
+    "exists": true,
+    "non_null": 0,
+    "samples": []
+  },
+  {
+    "col": "promotion_profit_rate",
+    "exists": true,
+    "non_null": 0,
+    "samples": []
+  },
+  {
+    "col": "promotion_discount_rate",
+    "exists": true,
+    "non_null": 0,
+    "samples": []
+  },
+  {
+    "col": "supplier_type",
+    "exists": true,
+    "non_null": 5709,
+    "samples": [
+      "온라인팜",
+      "(주)녹십자",
+      "동아제약(주)"
+    ]
+  },
+  {
+    "col": "management_group",
+    "exists": true,
+    "non_null": 0,
+    "samples": []
+  },
+  {
+    "col": "unit_type",
+    "exists": true,
+    "non_null": 0,
+    "samples": []
+  },
+  {
+    "col": "stock_amount",
+    "exists": true,
+    "non_null": 3931,
+    "samples": [
+      "148005",
+      "194436",
+      "36300"
+    ]
+  },
+  {
+    "col": "operator",
+    "exists": true,
+    "non_null": 5713,
+    "samples": [
+      "박상욱.물류",
+      "MIGCOPY",
+      "박상욱.물류"
+    ]
+  },
+  {
+    "col": "point_rate",
+    "exists": true,
+    "non_null": 5713,
+    "samples": [
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  {
+    "col": "sales_commission",
+    "exists": true,
+    "non_null": 5713,
+    "samples": [
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  {
+    "col": "total_volume",
+    "exists": true,
+    "non_null": 5713,
+    "samples": [
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  {
+    "col": "unit_volume",
+    "exists": true,
+    "non_null": 5713,
+    "samples": [
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  {
+    "col": "individual_quantity",
+    "exists": true,
+    "non_null": 5713,
+    "samples": [
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  {
+    "col": "last_modified_at",
+    "exists": true,
+    "non_null": 5713,
+    "samples": [
+      "2026-07-25",
+      "2026-06-01",
+      "2026-07-11"
+    ]
+  },
+  {
+    "col": "registered_at",
+    "exists": true,
+    "non_null": 5838,
+    "samples": [
+      "2026-06-01",
+      "2026-06-01",
+      "2026-06-01"
+    ]
+  },
+  {
+    "col": "wholesale_price1",
+    "exists": true,
+    "non_null": 5843,
+    "samples": [
+      "0",
+      "0",
+      "0"
+    ]
+  },
+  {
+    "col": "individual_code",
+    "exists": true,
+    "non_null": 162,
+    "samples": [
+      "8806429010024",
+      "108806427035128",
+      "8806534060327"
+    ]
+  },
+  {
+    "col": "connection_type",
+    "exists": true,
+    "non_null": 162,
+    "samples": [
+      "동일상품연결",
+      "BOX내상품",
+      "BOX내상품"
+    ]
+  },
+  {
+    "col": "unit_price",
+    "exists": true,
+    "non_null": 0,
+    "samples": []
+  }
+]

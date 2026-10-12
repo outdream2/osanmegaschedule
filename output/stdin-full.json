@@ -1,0 +1,114 @@
+{
+  "datasetName": "NewDataSet",
+  "tableCount": 1,
+  "tables": [
+    {
+      "name": "Table",
+      "rowCount": 5,
+      "columns": [
+        {
+          "name": "CorpCode",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "SaleDate",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "SaleTime",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "CustomerCnt",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "ChargeTotal",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        },
+        {
+          "name": "AvgChargeTotal",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        },
+        {
+          "name": "Margin",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        },
+        {
+          "name": "SaleTotal",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        },
+        {
+          "name": "MarginRate",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        }
+      ],
+      "rows": [
+        {
+          "CorpCode": "30009",
+          "SaleDate": "2026-10-05",
+          "SaleTime": "09",
+          "CustomerCnt": "15",
+          "ChargeTotal": "398600.00",
+          "AvgChargeTotal": "26573.333333",
+          "Margin": "125422.23",
+          "SaleTotal": "398600.00",
+          "MarginRate": "31.500000"
+        },
+        {
+          "CorpCode": "30009",
+          "SaleDate": "2026-10-05",
+          "SaleTime": "10",
+          "CustomerCnt": "76",
+          "ChargeTotal": "4211700.00",
+          "AvgChargeTotal": "55417.105263",
+          "Margin": "1176429.17",
+          "SaleTotal": "4211700.00",
+          "MarginRate": "27.900000"
+        },
+        {
+          "CorpCode": "30009",
+          "SaleDate": "2026-10-05",
+          "SaleTime": "11",
+          "CustomerCnt": "103",
+          "ChargeTotal": "6270400.00",
+          "AvgChargeTotal": "60877.669902",
+          "Margin": "1966881.02",
+          "SaleTotal": "6270400.00",
+          "MarginRate": "31.400000"
+        },
+        {
+          "CorpCode": "30009",
+          "SaleDate": "2026-10-05",
+          "SaleTime": "12",
+          "CustomerCnt": "105",
+          "ChargeTotal": "5386200.00",
+          "AvgChargeTotal": "51297.142857",
+          "Margin": "1644687.69",
+          "SaleTotal": "5386200.00",
+          "MarginRate": "30.500000"
+        },
+        {
+          "CorpCode": "30009",
+          "SaleDate": "2026-10-05",
+          "SaleTime": "13",
+          "CustomerCnt": "62",
+          "ChargeTotal": "3427800.00",
+          "AvgChargeTotal": "55287.096774",
+          "Margin": "1149397.89",
+          "SaleTotal": "3427800.00",
+          "MarginRate": "33.500000"
+        }
+      ]
+    }
+  ]
+}

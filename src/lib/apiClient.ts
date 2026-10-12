@@ -175,15 +175,47 @@ async function request<T = unknown>(config: RequestOptions<T>): Promise<{ data: 
   } catch (err: any) {
     const status: number = err?.response?.status ?? 0;
     const url: string = String(cfg.url ?? "");
+    // 2026-10-09 · 디버그 로그 · 사용자 지시 "원인철저분석" · schedule-v2 즉시 로그아웃 추적
+    //   · 모든 401 응답 상세 로그 (어느 API 가 로그아웃 유발하는지 특정)
+    if (status === 401) {
+      // eslint-disable-next-line no-console
+      console.error("[apiClient][401]", {
+        method: cfg.method, url,
+        responseData: err?.response?.data,
+        serverCode: err?.response?.data?.code,
+        serverError: err?.response?.data?.error,
+        willRetry: !cfg.__retried && !config.skipRefresh && !url.startsWith("/api/auth/"),
+        __retried: cfg.__retried,
+        skipRefresh: config.skipRefresh,
+      });
+    }
     // 401 자동 refresh + 재시도 (login/refresh 자체엔 skip)
+    // 2026-10-09 · 미로그인 상태 (localStorage 세션 없음) + 로그인 화면 · refresh/fire 전부 skip
+    //   · 이유 · 로그인 화면에서도 useVendors/useSettings 등이 fetch 시도 → 401 → refresh → unauthorized → fireSessionExpired N회
+    //     → App.tsx guard 가 로그 "이미 로그인 화면 · 무시" N회 반복 발행
+    //   · 미로그인 + 로그인 화면이면 할 일 자체 없음 · 원 에러만 전파 (console 소음 제거)
     if (status === 401 && !cfg.__retried && !config.skipRefresh && !url.startsWith("/api/auth/")) {
-      cfg.__retried = true;
-      const result = await refreshAccessToken();
-      if (result.ok) {
-        return request<T>({ ...config, __retried: true } as RequestOptions<T> & { __retried: boolean });
+      const stored = typeof localStorage !== "undefined" ? localStorage.getItem(SK_AUTH_SESSION) : null;
+      const atLoginScreen = typeof window !== "undefined" && (window.location.pathname === "/" || window.location.pathname === "");
+      if (!stored && atLoginScreen) {
+        // 미로그인 + 로그인 화면 · refresh / fire 전부 skip (loop/noise 방지)
+      } else {
+        cfg.__retried = true;
+        // eslint-disable-next-line no-console
+        console.warn("[apiClient][401] refresh 시도 중...", url);
+        const result = await refreshAccessToken();
+        // eslint-disable-next-line no-console
+        console.warn("[apiClient][401] refresh 결과:", result, "원 요청:", url);
+        if (result.ok) {
+          return request<T>({ ...config, __retried: true } as RequestOptions<T> & { __retried: boolean });
+        }
+        // 2026-10-05 · 네트워크/서버 오류는 세션만료 발화 X · 원 에러만 전파 (재로그인 유도 X)
+        if (result.reason === "unauthorized") {
+          // eslint-disable-next-line no-console
+          console.error("[apiClient][401] refresh unauthorized → fireSessionExpired → 로그아웃 유도", url);
+          fireSessionExpired();
+        }
       }
-      // 2026-10-05 · 네트워크/서버 오류는 세션만료 발화 X · 원 에러만 전파 (재로그인 유도 X)
-      if (result.reason === "unauthorized") fireSessionExpired();
     }
     // 2026-08-31 · 서버 다운 감지 · /api/health 및 /api/auth/ 는 skip (재귀 방지)
     if (!url.startsWith("/api/health") && !url.startsWith("/api/auth/")) {

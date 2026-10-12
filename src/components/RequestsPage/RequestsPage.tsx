@@ -53,11 +53,13 @@ interface RequestsPageProps {
   authSession?: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  // 2026-10-11 · #14 X안 · 경영 > 업무요청 흡수 · 자체 AppNavHeader skip + 외부 wrapper 생략
+  embedded?: boolean;
 }
 
 const fmtDate = fmtDateMD;
 
-export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
+export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession, onNavigate, onLogout, embedded = false }) => {
   const confirm = useConfirm();
   // 2026-08-21 · Framework Phase 3 · alert → useToast
   const { toast, showError } = useToast();
@@ -547,23 +549,26 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F4F7FA]">
-      {/* Shared App Nav Header */}
-      <AppNavHeader
-        activePage="requests"
-        authSession={authSession ?? null}
-        onBack={onBack}
-        onNavigate={onNavigate}
-        onLogout={onLogout}
-      />
+    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen flex flex-col bg-[#F4F7FA]"}>
+      {/* Shared App Nav Header · 2026-10-11 · #14 X안 · embedded 모드에서 skip (BusinessManagePage 가 render) */}
+      {!embedded && (
+        <AppNavHeader
+          activePage="requests"
+          authSession={authSession ?? null}
+          onBack={onBack}
+          onNavigate={onNavigate}
+          onLogout={onLogout}
+        />
+      )}
 
       {/* 2026-10-10 · 사용자 지시 · 상단 2개 그룹 탭 (현황 / 서류작성)
           · description · topGroup 별 context-aware */}
       <OperationsPageTemplate
         title="업무 요청"
+        // 2026-10-10 · 사용자 지시 · 서류작성 탭에서 description 중복 공간 차지 X · 빈 문자열로 (DocumentWriterPage 내부 탭이 역할 대신)
         description={
           topGroup === "overview"  ? "승인·요청·서류 종합 현황" :
-          topGroup === "document"  ? "근로계약서·사직서 작성" :
+          topGroup === "document"  ? "" :
           "통합 요청·결재 센터"
         }
         tabs={

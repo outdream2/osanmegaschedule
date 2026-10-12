@@ -2,7 +2,7 @@
 // 2026-09-20 · App.tsx Option C · Navigation Helpers 훅 추출 (사용자 지시)
 //   · page state · popstate handler · navigate / handleNavigate / navigateInner / navigateInnerWithOptions · isHiddenPage
 //   · App.tsx 에서 ~50 라인 제거 · 이 훅으로 이관
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import type { AuthSession } from "../types";
 import type { PagePermissions } from "../types";
 import type { AppNavPage } from "../components/layout/AppNavHeader";
@@ -19,6 +19,8 @@ export type Page =
   | "order-settings" | "settings-hub"
   // 2026-09-24 · #352 · 거래처 발주이력 확인 페이지
   | "vendor-order-history"
+  // 2026-10-12 · #13 · 거래처 그룹 현황판 (방문예약 drawer + 공급사/재고/발주이력 탭 통합)
+  | "vendor-overview"
   // 2026-10-03 저녁 · Phase 2 · ERP 초기 데이터 구축 (관리자 lv9 · DRY-RUN 전용)
   | "admin-initial-build"
   // 2026-10-07 · 스케줄 V2 평가용 workspace (기존 "schedule" 과 병행)
@@ -28,6 +30,8 @@ interface UseAppNavigationOpts {
   authSession: AuthSession | null;
   pagePerms: PagePermissions;
   setAuthSession: (s: AuthSession) => void;
+  // 2026-10-09 · fix · 뒤로가기 subTab/nested 복원 · popstate 시 ActiveNavContext 로 전달
+  onPopNav?: (page: Page, subTab: string | null, nested: string | null) => void;
 }
 
 export interface UseAppNavigationReturn {
@@ -39,7 +43,7 @@ export interface UseAppNavigationReturn {
   setBmInitialEmployeeId: React.Dispatch<React.SetStateAction<number | null>>;
   bmInitialFromPage: Page | null;
   setBmInitialFromPage: React.Dispatch<React.SetStateAction<Page | null>>;
-  navigate: (next: Page) => void;
+  navigate: (next: Page, subTab?: string | null, nested?: string | null) => void;
   handleNavigate: (next: Exclude<Page, "landing">, auth?: AuthSession) => void;
   navigateInner: (next: AppNavPage) => void;
   navigateInnerWithOptions: (next: AppNavPage, options?: { employeeId?: number | null; fromPage?: AppNavPage | null }) => void;
@@ -47,34 +51,45 @@ export interface UseAppNavigationReturn {
   isHiddenPage: (pageKey: string) => boolean;
 }
 
-export function useAppNavigation({ authSession, pagePerms, setAuthSession }: UseAppNavigationOpts): UseAppNavigationReturn {
+export function useAppNavigation({ authSession, pagePerms, setAuthSession, onPopNav }: UseAppNavigationOpts): UseAppNavigationReturn {
   const [page, setPage] = useState<Page>("landing");
   const [pendingEditEmpId, setPendingEditEmpId] = useState<number | null>(null);
   // 2026-08-10 · A · 스케쥴 [수정] 라우팅 · business-manage 진입 시 · staff-manage 서브탭 + 이 직원 선택
   const [bmInitialEmployeeId, setBmInitialEmployeeId] = useState<number | null>(null);
   const [bmInitialFromPage, setBmInitialFromPage] = useState<Page | null>(null);
 
+  // 2026-10-09 · fix · onPopNav 를 ref 로 보관 (deps 바뀌어도 listener 유지)
+  const onPopNavRef = React.useRef(onPopNav);
+  useEffect(() => { onPopNavRef.current = onPopNav; }, [onPopNav]);
+
   // Sync page state with browser History API so the back button works
   useEffect(() => {
     // Stamp the initial entry so popstate can always return here
-    history.replaceState({ page: "landing" }, "");
+    try { history.replaceState({ page: "landing", subTab: null, nested: null }, ""); } catch { /* noop */ }
 
     const onPop = (e: PopStateEvent) => {
-      const p = (e.state as { page?: Page } | null)?.page;
-      setPage(p ?? "landing");
+      const s = (e.state as { page?: Page; subTab?: string | null; nested?: string | null } | null) ?? null;
+      const p: Page = s?.page ?? "landing";
+      setPage(p);
+      // 2026-10-09 · subTab/nested 복원 · ActiveNavContext 에 전달 (App.tsx bridge)
+      if (onPopNavRef.current) onPopNavRef.current(p, s?.subTab ?? null, s?.nested ?? null);
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   // Push a history entry whenever we move to a non-landing page
-  const navigate = useCallback((next: Page) => {
+  // 2026-10-09 · fix · subTab/nested 지원 (history 에 전부 저장 · back 시 복원)
+  const navigate = useCallback((next: Page, subTab?: string | null, nested?: string | null) => {
     setPage(next);
-    if (next === "landing") {
-      history.replaceState({ page: "landing" }, "");
-    } else {
-      history.pushState({ page: next }, "");
-    }
+    const state = { page: next, subTab: subTab ?? null, nested: nested ?? null };
+    try {
+      if (next === "landing") {
+        history.replaceState(state, "");
+      } else {
+        history.pushState(state, "");
+      }
+    } catch { /* noop */ }
   }, []);
 
   // 2026-08-17 · #131 · hidden 페이지 · nav+render 차단 (사용자 지시 · "안보이기 선택하면 메뉴와 페이지 모두 안보여야")

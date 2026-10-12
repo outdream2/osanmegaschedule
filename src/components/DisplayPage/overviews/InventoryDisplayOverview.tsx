@@ -14,11 +14,18 @@ import {
 import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "./OverviewHeader";
 import { listExpiryImminentProducts } from "../../../lib/productsApi";
 import { listInventoryChecks } from "../../../lib/inventoryChecksApi";
+import { Spinner } from "../../common/Spinner";
+// 2026-10-12 · 사용자 지시 · 월 멀티 선택기 + 매대별 판매 집계 · 공통 모듈 재사용
+import { MonthToggleSelector, dateRangesFromMonths } from "../../common/MonthToggleSelector";
+import { useMonthFilter } from "../../../hooks/useMonthFilter";
 import { ProductInventoryDetailModal, type ProductInventoryDetailRow } from "./ProductInventoryDetailModal";
 // 2026-10-10 · 사용자 지시 · 구역도 세로탭 + 매대 리스트 + 매대 클릭 → 상품 리스트 아코디언
 //   · 홈 랜딩 톤 (HomeDashboard SSOT · CARD rounded-[12px] + border-slate-200 + thin shadow)
 //   · 실재고(inventory_checks) + products.purchase_price 로 매대별 제품수·재고자산 집계
 import { useZoneDefs } from "../../../hooks/useZoneDefs";
+// 2026-10-11 · 사용자 지시 · 매장구역 편집 모달 (텍스트 리스트 · 홈 랜딩 톤)
+import { StoreZoneTextEditor } from "../../common/StoreZoneTextEditor";
+import { Pencil } from "@phosphor-icons/react";
 import { useKvSetting } from "../../../hooks/useKvSetting";
 import { getProductsMap, type ProductInfo } from "../../../lib/productsCache";
 import {
@@ -26,6 +33,12 @@ import {
   WAREHOUSE_ZONES_KEY,
   type WarehouseZonesConfig,
 } from "../../../constants/warehouseZoneDefaults";
+// 2026-10-11 · 사용자 지시 "실재고 테이블에서 가져와" · RealStockTable 과 동일 zone 매칭 로직
+import { assignZonesToSlots } from "../../../lib/warehouseZoneMap";
+// 2026-10-11 · 사용자 지시 · getProductsMap(/products.json) 에 category_code/display_location 없을 수 있음 · 실재고 테이블처럼 /api/products-map 직접 호출
+import { api } from "../../../lib/apiClient";
+// 2026-10-11 · 사용자 지시 · ERP 위치 → zone 분류 공통 함수 (SSOT · src/lib/zoneClassification)
+import { classifyByZoneDefs, type ZoneClass } from "../../../lib/zoneClassification";
 
 export interface InventoryDisplayOverviewProps { onSelectSubTab: (sub: any) => void; }
 
@@ -71,19 +84,47 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   // 2026-10-11 · 사용자 지시 · 일반약 섹션 5개 → 탭으로 전환 (좌우 2단 안 우측 영역)
   type GeneralSubTab = "topWall" | "center22" | "bottomWall" | "wing" | "counter";
   const [generalSubTab, setGeneralSubTab] = useState<GeneralSubTab>("topWall");
+  // 2026-10-11 · 사용자 지시 · 왼쪽 카드 · 상비약/뷰티/미분류 3탭 (ERP 위치 + zone_defs.category 기반 공통 함수)
+  const [emerSubTab, setEmerSubTab] = useState<ZoneClass>("상비약");
   // 2026-10-10 · 사용자 지시 · 매대 클릭 시 하단 상품 리스트 아코디언 expand
   const [expandedZone, setExpandedZone] = useState<string | null>(null);
   // 2026-10-10 · products.display_location + purchase_price 매칭용 cache
   const [productsMap, setProductsMap] = useState<Record<string, ProductInfo>>({});
+  // 2026-10-12 · 사용자 지시 · 로딩 중 spinner 노출 (fetch 완료 전 render skip)
+  const [productsMapLoaded, setProductsMapLoaded] = useState<boolean>(false);
+  const [checksLoaded, setChecksLoaded] = useState<boolean>(false);
+  // 2026-10-12 · 사용자 지시 · 판매수·재고수·재고자산 한눈에 노출 · 월 멀티 선택기 (sales 패턴 재사용)
+  //   · 매대 chip 에 (판매수 / 재고수 / 재고자산) 3개 수치 노출
+  //   · 판매 데이터는 pcode별 집계 → 매대별 소계 자동 산출
+  const [saleQtyByCode, setSaleQtyByCode] = useState<Map<string, number>>(new Map());
+  const { selectedMonths, setSelectedMonths } = useMonthFilter();
+  // 2026-10-12 · 사용자 지시 · 기간 필터 pill (오늘·7일·14일·한달) · null = 월 선택기 사용
+  type QuickRange = "today" | "7d" | "14d" | "30d" | null;
+  const [quickRange, setQuickRange] = useState<QuickRange>(null);
 
   useEffect(() => {
     let alive = true;
-    getProductsMap().then(m => { if (alive) setProductsMap(m); }).catch(() => { if (alive) setProductsMap({}); });
+    // 2026-10-11 · 사용자 지시 "실재고 테이블에서 가져와" · RealStockTablePage 와 동일 소스 · /api/products-map 직접 호출
+    //   · getProductsMap(/products.json) 는 category_code/display_location 보장 안 됨
+    //   · ProductInfo 는 [key:string]: any 포함 · any 배열 OK
+    api.get<Record<string, any>>("/api/products-map?fields=slim&include_inactive=1")
+      .then(r => {
+        if (!alive) return;
+        setProductsMap((r.data ?? {}) as any);
+        setProductsMapLoaded(true);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setProductsMap({});
+        setProductsMapLoaded(true);
+      });
     return () => { alive = false; };
   }, []);
 
   // 2026-10-10 · 구역도 데이터 · 매장 zone_defs + 창고 KV (readonly)
-  const { zones: storeZones } = useZoneDefs();
+  const { zones: storeZones, zonesRaw, updateZoneRaw } = useZoneDefs();
+  // 2026-10-11 · 사용자 지시 · 매장구역 편집 모달 (텍스트 리스트)
+  const [zoneEditorOpen, setZoneEditorOpen] = useState<boolean>(false);
   const { value: whZones } = useKvSetting<WarehouseZonesConfig>({
     key: WAREHOUSE_ZONES_KEY,
     defaultValue: DEFAULT_WAREHOUSE_ZONES,
@@ -135,54 +176,94 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   //   · 매장 매대 = products.display_location 그룹 (매대 코드 매칭)
   //   · 창고 매대 = warehouseZones KV (상품 매핑 X · code+label 노출)
   //   · 재고자산 = Σ (store1+store2+store3+warehouse1+warehouse2) × purchase_price
-  interface ZoneProduct { code: string; name: string; stock: number; unitPrice: number; assetValue: number; }
+  interface ZoneProduct { code: string; name: string; stock: number; unitPrice: number; assetValue: number; saleQty: number; }
   interface ZoneAgg {
     code: string;
     label: string;
     productCount: number;
     assetValue: number;
+    // 2026-10-12 · 사용자 지시 · 판매수·재고수·재고자산 한눈
+    totalStock: number;   // 재고수 (store*_stock 합)
+    totalSale: number;    // 판매수 (ERP sale 집계)
     products: ZoneProduct[];
   }
 
-  // 매장 매대 집계 (display_location 기준)
+  // 매장 매대 집계 · 2026-10-12 사용자 지시 재조립
+  //   · 수량 = inventory_checks (실재고 테이블에 데이터 다 들어있음)
+  //   · 매대 매칭 = ERP products.display_location → zone_defs (store*_zone 이 "-" 로 비어있음 보완)
+  //   · 재고자산 = (store1+store2+store3) × products.purchase_price
+  //   · 판매 = ERP saleQtyByCode
   const storeZoneAggs = useMemo((): Map<string, ZoneAgg> => {
     const agg = new Map<string, ZoneAgg>();
     const safeChecks = Array.isArray(checks) ? checks : [];
-    for (const chk of safeChecks) {
-      const code = String(chk.product_code ?? "");
-      if (!code) continue;
-      const prod = productsMap[code];
-      const loc = String(prod?.display_location ?? "").trim();
-      if (!loc) continue;
-      const s1 = Number(chk.store1_stock ?? 0);
-      const s2 = Number(chk.store2_stock ?? 0);
-      const s3 = Number(chk.store3_stock ?? 0);
-      const w1 = Number(chk.warehouse1_stock ?? 0);
-      const w2 = Number(chk.warehouse2_stock ?? 0);
-      const totalStock = s1 + s2 + s3 + w1 + w2;
-      const unitPrice = Number((prod as any)?.purchase_price ?? 0);
-      const asset = totalStock * unitPrice;
-      if (!agg.has(loc)) {
-        // zone label 매칭 (zoneDefs 에서 category)
-        const zd = storeZones.find(z => z.__location === loc || String(z.num) === loc || z.__locationA === loc || z.__locationB === loc);
+    const pushTo = (zoneCode: string, code: string, name: string, stock: number, unitPrice: number, saleQty: number) => {
+      if (!zoneCode || stock <= 0) return;
+      const asset = stock * unitPrice;
+      if (!agg.has(zoneCode)) {
+        const zd = storeZones.find(zn =>
+          zn.__location === zoneCode || String(zn.num) === zoneCode ||
+          zn.__locationA === zoneCode || zn.__locationB === zoneCode
+        );
         const zoneLabel = zd?.category || zd?.subA || zd?.subB || zd?.label || "-";
-        agg.set(loc, { code: loc, label: zoneLabel, productCount: 0, assetValue: 0, products: [] });
+        agg.set(zoneCode, { code: zoneCode, label: zoneLabel, productCount: 0, assetValue: 0, totalStock: 0, totalSale: 0, products: [] });
       }
-      const g = agg.get(loc)!;
-      g.products.push({ code, name: String(chk.product_name ?? prod?.name ?? code), stock: totalStock, unitPrice, assetValue: asset });
+      const g = agg.get(zoneCode)!;
+      g.products.push({ code, name, stock, unitPrice, assetValue: asset, saleQty });
       g.productCount += 1;
       g.assetValue += asset;
+      g.totalStock += stock;
+      g.totalSale += saleQty;
+    };
+    // 2026-10-12 · 매대 번호 추출 helper · "5A 1열"/"21"/"벽>21>전체>전체" 등 다양한 포맷 지원
+    //   · 앞부분 숫자+A/B 패턴 (예: "5A", "21", "1B") 매칭
+    const extractZoneCode = (loc: string): string | null => {
+      if (!loc) return null;
+      // 1) 전체 숫자+AB (예: "5A", "21")
+      const m1 = /^([0-9]+[ABab]?)/.exec(loc.trim());
+      if (m1?.[1]) return m1[1].toUpperCase();
+      // 2) "벽>21>...", "5매대>A>..." 포맷 안 숫자+AB 추출
+      const m2 = /([0-9]+)(?:매대)?(?:>([ABab]))?/.exec(loc);
+      if (m2?.[1]) return (m2[1] + (m2[2] ?? "")).toUpperCase();
+      return null;
+    };
+    for (const chk of safeChecks) {
+      const pcode = String(chk.product_code ?? "").trim();
+      if (!pcode) continue;
+      // 매장 총 수량 (store1+2+3) · 창고는 아래 warehouseAggs 가 처리
+      const storeStock = Number(chk.store1_stock ?? 0) + Number(chk.store2_stock ?? 0) + Number(chk.store3_stock ?? 0);
+      if (storeStock <= 0) continue;
+      const prod = productsMap[pcode] as any;
+      const unitPrice = Number(prod?.purchase_price ?? 0);
+      const saleQty = saleQtyByCode.get(pcode) ?? 0;
+      const name = String(chk.product_name ?? prod?.product_name ?? prod?.name ?? pcode);
+      // 매대 매칭 · ERP products.display_location → extract code → zone_defs
+      const loc = String(prod?.display_location ?? prod?.location ?? "").trim();
+      const extracted = extractZoneCode(loc);
+      if (!extracted) continue; // 추출 실패 → skip
+      // zone_defs 와 match (__locationA/B 또는 __location 또는 num 과 비교)
+      const zd = storeZones.find(zn =>
+        zn.__location === extracted || String(zn.num) === extracted ||
+        zn.__locationA === extracted || zn.__locationB === extracted ||
+        // num 만 추출된 경우 ("21") num 자체 매칭
+        String(zn.num) === extracted.replace(/[ABab]$/, "")
+      );
+      if (!zd) continue;
+      const zoneCode = zd.__locationA === extracted ? zd.__locationA
+        : zd.__locationB === extracted ? zd.__locationB
+        : zd.__location ?? String(zd.num);
+      pushTo(zoneCode, pcode, name, storeStock, unitPrice, saleQty);
     }
-    // 각 매대 products 재고자산 큰 순 정렬
     for (const z of agg.values()) z.products.sort((a, b) => b.assetValue - a.assetValue);
     return agg;
-  }, [checks, productsMap, storeZones]);
+  }, [checks, productsMap, storeZones, saleQtyByCode]);
 
   // 창고별 전체 집계 (매대 매핑 없음 · 창고1/2 각 상품 리스트)
   const warehouseAggs = useMemo((): { wh1: ZoneAgg; wh2: ZoneAgg } => {
     const build = (filter: "1" | "2"): ZoneAgg => {
       const products: ZoneProduct[] = [];
       let assetTotal = 0;
+      let stockTotal = 0;
+      let saleTotal = 0;
       const safeChecks = Array.isArray(checks) ? checks : [];
       for (const chk of safeChecks) {
         const code = String(chk.product_code ?? "");
@@ -192,14 +273,18 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
         const prod = productsMap[code];
         const unitPrice = Number((prod as any)?.purchase_price ?? 0);
         const asset = stock * unitPrice;
-        products.push({ code, name: String(chk.product_name ?? prod?.name ?? code), stock, unitPrice, assetValue: asset });
+        // 2026-10-12 · 사용자 지시 · 창고에도 판매수 노출 · pcode별 매칭 (창고 판매 비율 안분은 생략 · 전량)
+        const saleQty = saleQtyByCode.get(code) ?? 0;
+        products.push({ code, name: String(chk.product_name ?? prod?.name ?? code), stock, unitPrice, assetValue: asset, saleQty });
         assetTotal += asset;
+        stockTotal += stock;
+        saleTotal += saleQty;
       }
       products.sort((a, b) => b.assetValue - a.assetValue);
-      return { code: filter === "1" ? "창고1" : "창고2", label: filter === "1" ? "창고 1" : "창고 2", productCount: products.length, assetValue: assetTotal, products };
+      return { code: filter === "1" ? "창고1" : "창고2", label: filter === "1" ? "창고 1" : "창고 2", productCount: products.length, assetValue: assetTotal, totalStock: stockTotal, totalSale: saleTotal, products };
     };
     return { wh1: build("1"), wh2: build("2") };
-  }, [checks, productsMap]);
+  }, [checks, productsMap, saleQtyByCode]);
 
   // 통화 포맷
   const fmtWon = (n: number): string => {
@@ -221,9 +306,66 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
 
   useEffect(() => {
     let alive = true;
-    listInventoryChecks().then((r: any) => { if (alive) setChecks(Array.isArray(r) ? r : []); }).catch(() => { if (alive) setChecks([]); });
+    listInventoryChecks()
+      .then((r: any) => {
+        if (!alive) return;
+        setChecks(Array.isArray(r) ? r : []);
+        setChecksLoaded(true);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setChecks([]);
+        setChecksLoaded(true);
+      });
     return () => { alive = false; };
   }, [refreshKey]);
+
+  // 2026-10-12 · 사용자 지시 · 기간 필터 pill (오늘·7일·14일·한달) · quickRange 우선 · null 이면 월 선택기 사용
+  //   · 월 선택기 (dateRangesFromMonths) → chunked fetch
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const addDay = (ymd: string, delta: number): string => {
+        const d = new Date(ymd + "T00:00:00");
+        d.setDate(d.getDate() + delta);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      };
+      const dates: string[] = [];
+      if (quickRange) {
+        const dayCount = quickRange === "today" ? 1 : quickRange === "7d" ? 7 : quickRange === "14d" ? 14 : 30;
+        const endC = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
+        const startC = addDay(endC, -(dayCount - 1));
+        for (let d = startC; d <= endC; d = addDay(d, 1)) dates.push(d);
+      } else {
+        const ranges = dateRangesFromMonths(selectedMonths);
+        for (const r of ranges) {
+          for (let d = r.startDate; d <= r.endDate; d = addDay(d, 1)) dates.push(d);
+        }
+      }
+      if (dates.length === 0) {
+        if (alive) setSaleQtyByCode(new Map());
+        return;
+      }
+      const CHUNK = 5;
+      const saleMap = new Map<string, number>();
+      for (let i = 0; i < dates.length; i += CHUNK) {
+        if (!alive) return;
+        const batch = dates.slice(i, i + CHUNK);
+        const results = await Promise.all(batch.map(d =>
+          api.get<any>(`/api/erp/sale-day-products?date=${d}`).then(r => r.data).catch(() => ({ ok: false }))
+        ));
+        for (const res of results) {
+          for (const it of (res?.items ?? [])) {
+            const key = String(it.pcode ?? "").trim();
+            if (!key) continue;
+            saleMap.set(key, (saleMap.get(key) ?? 0) + (Number(it.totalStock) || 0));
+          }
+        }
+      }
+      if (alive) setSaleQtyByCode(saleMap);
+    })();
+    return () => { alive = false; };
+  }, [selectedMonths, quickRange, refreshKey]);
 
   const q = search.trim().toLowerCase();
   const expiryRows = useMemo(() => {
@@ -283,6 +425,9 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
     __onClick: () => openDetail(r),
   }));
 
+  // 2026-10-12 · 사용자 지시 · 로딩 중 spinner · productsMap + checks fetch 완료 전까지 skeleton
+  const dataLoading = !productsMapLoaded || !checksLoaded;
+
   return (
     <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
       {/* 2026-10-10 · 사용자 지시 · 공통 모듈 OverviewHero (발주반품현황·매출현황 패턴 통일) */}
@@ -290,14 +435,71 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
         tone="violet"
         title="재고·진열 현황"
         description="재고 / 실재고 / 유통기한 / 진열 업무"
+        right={
+          <button
+            type="button"
+            onClick={() => setZoneEditorOpen(true)}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-ink text-[13.5px] font-semibold cursor-pointer transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+            title="매장구역 편집 · 매대 code 와 카테고리 매칭"
+          >
+            <Pencil size={13} weight="fill" />
+            구역 편집
+          </button>
+        }
       />
+      {/* 2026-10-11 · 사용자 지시 · 매장구역 편집 모달 · 텍스트 리스트 · 홈 랜딩 톤 */}
+      <StoreZoneTextEditor
+        open={zoneEditorOpen}
+        onClose={() => setZoneEditorOpen(false)}
+        zonesRaw={zonesRaw}
+        onUpdate={updateZoneRaw}
+      />
+
+      {/* 2026-10-12 · 사용자 지시 · 데이터 로딩 중 spinner (실재고 테이블 fetch 완료 전) */}
+      {dataLoading && (
+        <div className="px-4 sm:px-6 pt-3">
+          <div className={`${CARD} flex items-center justify-center py-16`}>
+            <Spinner label="재고·진열 데이터 로딩 중..." size={16} tone="brand" />
+          </div>
+        </div>
+      )}
 
       {/* 2026-10-10 · 사용자 지시 · 현황 탭 삭제 · 구역도 → 현황 단일 뷰 (UI-11 Step 1) */}
 
       {/* ═════════ 구역도 (= 현황) · 세로탭 + 매대 리스트 + 상품 아코디언 ═════════
           2026-10-11 · 사용자 "발주반품현황 여백이 마음에 들어" · nav 아래 pt-3 추가 (OverviewToolbar 리듬 복제) */}
-      {true && (
+      {!dataLoading && (
         <div className="px-4 sm:px-6 pt-3 flex flex-col gap-3 md:gap-4">
+          {/* 2026-10-12 · 월 선택기 + 기간 필터 pill (오늘·7일·14일·한달) */}
+          <section className={`${CARD} px-3 py-2 md:px-4 md:py-2.5 flex items-center gap-3 flex-wrap`}>
+            <MonthToggleSelector selectedMonths={selectedMonths} onChange={setSelectedMonths} maxMonths={6} minOne />
+            <div className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-md p-0.5" role="tablist" aria-label="기간 필터">
+              {([
+                { k: null,    label: "월별" },
+                { k: "today" as const, label: "오늘" },
+                { k: "7d"    as const, label: "7일" },
+                { k: "14d"   as const, label: "14일" },
+                { k: "30d"   as const, label: "한달" },
+              ]).map(p => (
+                <button
+                  key={String(p.k)}
+                  type="button"
+                  onClick={() => setQuickRange(p.k)}
+                  className={`h-7 px-2.5 rounded-sm text-[13px] font-semibold tabular-nums transition-colors cursor-pointer ${
+                    quickRange === p.k ? "bg-white text-brand-deep shadow-sm" : "text-slate-500 hover:text-ink"
+                  }`}
+                  aria-selected={quickRange === p.k}
+                  role="tab"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <span className="text-[13px] text-slate-500 font-medium ml-auto">
+              집계 매대 <b className="text-ink tabular-nums">{storeZoneAggs.size}</b>곳 · 판매 상품 <b className="text-ink tabular-nums">{saleQtyByCode.size}</b>건
+            </span>
+          </section>
+
           {/* 요약 KPI 라인 */}
           <section className={`${CARD} px-3 py-2 md:px-4 md:py-2.5`}>
             <div className="flex items-center gap-x-3 gap-y-1 flex-wrap leading-tight">
@@ -313,8 +515,25 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
               <span className="text-slate-300 text-[13px]" aria-hidden>·</span>
               <ZoneKpi label="창고 2" value={warehouseAggs.wh2.productCount} tone="violet" />
               <span className="text-slate-300 text-[13px]" aria-hidden>·</span>
+              {/* 2026-10-12 · 사용자 지시 · 판매수·재고수·재고자산 한눈 */}
               <div className="flex items-baseline gap-1 leading-none">
-                <span className="text-[14px] text-slate-500 font-medium">총 재고자산</span>
+                <span className="text-[14px] text-slate-500 font-medium">판매</span>
+                <span className="text-[16px] font-bold tabular-nums text-emerald-700">
+                  {(Array.from(storeZoneAggs.values()).reduce((s, g) => s + g.totalSale, 0)
+                    + warehouseAggs.wh1.totalSale + warehouseAggs.wh2.totalSale).toLocaleString("ko-KR")}
+                </span>
+              </div>
+              <span className="text-slate-300 text-[13px]" aria-hidden>·</span>
+              <div className="flex items-baseline gap-1 leading-none">
+                <span className="text-[14px] text-slate-500 font-medium">재고</span>
+                <span className="text-[16px] font-bold tabular-nums text-ink">
+                  {(Array.from(storeZoneAggs.values()).reduce((s, g) => s + g.totalStock, 0)
+                    + warehouseAggs.wh1.totalStock + warehouseAggs.wh2.totalStock).toLocaleString("ko-KR")}
+                </span>
+              </div>
+              <span className="text-slate-300 text-[13px]" aria-hidden>·</span>
+              <div className="flex items-baseline gap-1 leading-none">
+                <span className="text-[14px] text-slate-500 font-medium">재고자산</span>
                 <span className="text-[16px] font-bold tabular-nums text-ink">
                   {fmtWon(
                     Array.from(storeZoneAggs.values()).reduce((s, g) => s + g.assetValue, 0)
@@ -372,11 +591,45 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
                   {storeZones.length === 0 ? (
                     <div className="py-6 text-center text-[14px] text-slate-400">매장 구역 데이터를 불러오는 중...</div>
                   ) : (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-3 lg:p-3">
-                      {/* 좌 · 상비약 */}
-                      <ZoneListTable>
-                        <ZoneListGroup title="상비약" subtitle="중앙 진열대 1~9" tone="rose" chips={emergencyChips} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} />
-                      </ZoneListTable>
+                    // 2026-10-11 · 사용자 지시 "좌우로 보기좋게" · lg → md breakpoint 로 조정 · 좁은 화면에서도 2 column
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3">
+                      {/* 좌 · 상비약/뷰티/미분류 3탭 (2026-10-11 사용자 지시 · ERP 위치 + zone_defs 공통 함수) */}
+                      <div className="min-w-0 flex flex-col">
+                        {(() => {
+                          // 매대 1~9 chip 들을 category 로 분류 (classifyByZoneDefs · zoneClassification SSOT)
+                          const emerClassified: Record<ZoneClass, StoreChipItem[]> = { "상비약": [], "뷰티": [], "미분류": [] };
+                          for (const chip of emergencyChips) {
+                            const cls = classifyByZoneDefs(chip.code, storeZones);
+                            emerClassified[cls].push(chip);
+                          }
+                          // 2026-10-12 · 사용자 지시 · "ERP category = 상비약 없어 · 진열위치 가져와서 zone db 매칭하고 거기서 카테고리 가져오는거야"
+                          //   · ERP products 에는 category 없음 · products.display_location → zone_defs.category 매칭 결과 사용
+                          //   · classifyByZoneDefs(code, storeZones) 가 그 매칭 로직 (SSOT)
+                          const emerTabs: Array<{ k: ZoneClass; label: string; subtitle: string }> = [
+                            { k: "상비약", label: "상비약", subtitle: "진열위치 → zone_defs 매칭 category" },
+                            { k: "뷰티",   label: "뷰티",   subtitle: "진열위치 → zone_defs 매칭 category" },
+                            { k: "미분류", label: "미분류", subtitle: "zone_defs 매칭 실패 매대"   },
+                          ];
+                          const activeChips = emerClassified[emerSubTab];
+                          const activeTabMeta = emerTabs.find(t => t.k === emerSubTab);
+                          return (
+                            <>
+                              <div className="inline-flex flex-wrap items-center gap-0.5 bg-slate-100 border border-slate-200 rounded-md p-0.5 self-start mb-2">
+                                {emerTabs.map(t => (
+                                  <button key={t.k} type="button" onClick={() => setEmerSubTab(t.k)}
+                                    className={`inline-flex items-baseline gap-1 px-3 h-7 rounded text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${emerSubTab === t.k ? "bg-white text-rose-700 shadow-sm" : "text-slate-500 hover:text-ink"}`}>
+                                    <span>{t.label}</span>
+                                    <span className="text-[11.5px] text-slate-400 tabular-nums">({emerClassified[t.k].length})</span>
+                                  </button>
+                                ))}
+                              </div>
+                              <ZoneListTable>
+                                <ZoneListGroup title={emerSubTab} subtitle={activeTabMeta?.subtitle ?? ""} tone="rose" chips={activeChips} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} />
+                              </ZoneListTable>
+                            </>
+                          );
+                        })()}
+                      </div>
                       {/* 우 · 일반약 (탭으로 전환 · 2026-10-11 사용자 지시) */}
                       <div className="min-w-0 flex flex-col">
                         {(() => {
@@ -522,6 +775,8 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
                       <tr>
                         <th className="text-left px-3 py-2">상품명</th>
                         <th className="text-left px-3 py-2 w-[80px]">위치</th>
+                        {/* 2026-10-12 · 사용자 지시 · 판매 (갯수) column · 월 멀티 선택기 기반 ERP sale 집계 */}
+                        <th className="text-right px-3 py-2 w-[72px]" title={`선택 월(${selectedMonths.length}개월) 판매 수량`}>판매</th>
                         <th className="text-right px-3 py-2 w-[70px]">재고</th>
                         <th className="text-right px-3 py-2 w-[80px]">단가</th>
                         <th className="text-right px-3 py-2 w-[80px]">판매가</th>
@@ -533,10 +788,14 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
                         const meta = productsMap[p.code] as any;
                         const salePrice = Number(meta?.sale_price ?? 0);
                         const loc = meta?.display_location ?? meta?.location ?? null;
+                        const saleQty = saleQtyByCode.get(p.code);
                         return (
                           <tr key={p.code} className="hover:bg-slate-50/60 h-8 text-ink">
                             <td className="px-3 py-1.5 font-medium break-keep">{p.name}</td>
                             <td className="px-3 py-1.5 text-[13px] text-slate-600 tabular-nums">{loc || <span className="text-slate-300">-</span>}</td>
+                            <td className="px-3 py-1.5 text-right tabular-nums font-semibold text-emerald-700">
+                              {saleQty != null && saleQty > 0 ? saleQty.toLocaleString("ko-KR") : <span className="text-slate-300">0</span>}
+                            </td>
                             <td className="px-3 py-1.5 text-right tabular-nums font-semibold">{p.stock.toLocaleString("ko-KR")}</td>
                             <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{p.unitPrice > 0 ? fmtWon(p.unitPrice) : <span className="text-slate-300">-</span>}</td>
                             <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{salePrice > 0 ? fmtWon(salePrice) : <span className="text-slate-300">-</span>}</td>
@@ -596,7 +855,8 @@ const ZoneListHeader: React.FC<{
   );
 };
 
-/** 테이블 wrapper · 공통 그리드 (코드 · 매대명 · 제품수 · 재고자산) */
+/** 테이블 wrapper · 공통 그리드 (코드 · 매대명 · 제품수 · 판매수 · 재고자산)
+ *  2026-10-12 · 사용자 지시 · 판매수 column 추가 */
 const ZoneListTable: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="overflow-x-auto">
     <table className="w-full text-left">
@@ -604,7 +864,8 @@ const ZoneListTable: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <tr className="text-[13px] text-slate-500 font-medium border-b border-slate-100 bg-slate-50/40">
           <th className="px-3 md:px-4 py-2 w-[90px]">코드</th>
           <th className="px-3 py-2">매대명</th>
-          <th className="px-3 py-2 text-right w-[90px]">제품수</th>
+          <th className="px-3 py-2 text-right w-[80px]">제품수</th>
+          <th className="px-3 py-2 text-right w-[80px]">판매수</th>
           <th className="px-3 md:px-4 py-2 text-right w-[130px]">재고자산</th>
         </tr>
       </thead>
@@ -621,7 +882,8 @@ const ZoneListGroup: React.FC<{
   subtitle: string;
   tone: Tone;
   chips: StoreChipItem[];
-  aggs: Map<string, { code: string; label: string; productCount: number; assetValue: number; products: Array<{ code: string; name: string; stock: number; unitPrice: number; assetValue: number }> }>;
+  // 2026-10-12 · 사용자 지시 · 판매수 column 추가 · totalSale/totalStock 포함
+  aggs: Map<string, { code: string; label: string; productCount: number; assetValue: number; totalSale: number; totalStock: number; products: Array<{ code: string; name: string; stock: number; unitPrice: number; assetValue: number }> }>;
   expanded: string | null;
   onToggle: (code: string | null) => void;
   fmtWon: (n: number) => string;
@@ -629,6 +891,7 @@ const ZoneListGroup: React.FC<{
   const t = TONE[tone];
   const sectionAssetTotal = chips.reduce((s, c) => s + (aggs.get(c.code)?.assetValue ?? 0), 0);
   const sectionProductTotal = chips.reduce((s, c) => s + (aggs.get(c.code)?.productCount ?? 0), 0);
+  const sectionSaleTotal = chips.reduce((s, c) => s + (aggs.get(c.code)?.totalSale ?? 0), 0);
   return (
     <>
       <tr className="bg-slate-50/60">
@@ -640,6 +903,7 @@ const ZoneListGroup: React.FC<{
           </div>
         </td>
         <td className="px-3 py-1.5 text-right text-[13px] text-slate-500 font-semibold tabular-nums">{sectionProductTotal}</td>
+        <td className="px-3 py-1.5 text-right text-[13px] text-slate-500 font-semibold tabular-nums">{sectionSaleTotal > 0 ? sectionSaleTotal.toLocaleString() : "-"}</td>
         <td className="px-3 md:px-4 py-1.5 text-right text-[13px] text-slate-600 font-semibold tabular-nums">{fmtWon(sectionAssetTotal)}</td>
       </tr>
       {chips.map(c => {
@@ -672,6 +936,10 @@ const ZoneListGroup: React.FC<{
               </td>
               <td className="px-3 py-2 text-right text-[14px] font-semibold text-ink tabular-nums">
                 {count > 0 ? count : <span className="text-slate-300">0</span>}
+              </td>
+              {/* 2026-10-12 · 사용자 지시 · 판매수 column 추가 */}
+              <td className="px-3 py-2 text-right text-[14px] font-semibold text-ink tabular-nums">
+                {(agg?.totalSale ?? 0) > 0 ? agg!.totalSale.toLocaleString() : <span className="text-slate-300">-</span>}
               </td>
               <td className="px-3 md:px-4 py-2 text-right text-[14px] font-bold text-ink tabular-nums">
                 {asset > 0 ? fmtWon(asset) : <span className="text-slate-300 font-medium">-</span>}

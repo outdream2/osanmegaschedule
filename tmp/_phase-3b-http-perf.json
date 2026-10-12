@@ -1,0 +1,215 @@
+{
+  "generatedAt": "2026-10-07T07:46:24.949Z",
+  "base": "http://localhost:3000",
+  "notes": "3-run median after warm-up · dev Express server",
+  "probes": [
+    {
+      "label": "GET /api/schedules current · lv1",
+      "url": "http://localhost:3000/api/schedules?year=2026&month=10",
+      "status": 200,
+      "median_ms": 210,
+      "runs_ms": [
+        195,
+        210,
+        242
+      ],
+      "bytes": 91332,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/schedules current · lv9",
+      "url": "http://localhost:3000/api/schedules?year=2026&month=10",
+      "status": 200,
+      "median_ms": 197,
+      "runs_ms": [
+        193,
+        197,
+        201
+      ],
+      "bytes": 92888,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/schedules prev · lv1",
+      "url": "http://localhost:3000/api/schedules?year=2026&month=9",
+      "status": 200,
+      "median_ms": 195,
+      "runs_ms": [
+        190,
+        195,
+        197
+      ],
+      "bytes": 88501,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/schedules next · lv1",
+      "url": "http://localhost:3000/api/schedules?year=2026&month=11",
+      "status": 200,
+      "median_ms": 190,
+      "runs_ms": [
+        185,
+        190,
+        203
+      ],
+      "bytes": 8047,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/leave-stats",
+      "url": "http://localhost:3000/api/leave-stats?year=2026",
+      "status": 200,
+      "median_ms": 94,
+      "runs_ms": [
+        93,
+        94,
+        97
+      ],
+      "bytes": 19,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/leave-requests all=true · lv9",
+      "url": "http://localhost:3000/api/leave-requests?all=true",
+      "status": 200,
+      "median_ms": 92,
+      "runs_ms": [
+        91,
+        92,
+        97
+      ],
+      "bytes": 3964,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/leave-requests emp=1 · lv1 self",
+      "url": "http://localhost:3000/api/leave-requests?employeeId=1",
+      "status": 200,
+      "median_ms": 95,
+      "runs_ms": [
+        95,
+        95,
+        110
+      ],
+      "bytes": 631,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/leave-balance emp=1 · lv1 self",
+      "url": "http://localhost:3000/api/leave-balance?employeeId=1",
+      "status": 200,
+      "median_ms": 92,
+      "runs_ms": [
+        91,
+        92,
+        98
+      ],
+      "bytes": 34,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/settings?key=all_settings · lv1",
+      "url": "http://localhost:3000/api/settings?key=all_settings",
+      "status": 200,
+      "median_ms": 95,
+      "runs_ms": [
+        91,
+        95,
+        100
+      ],
+      "bytes": 1379,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/settings?key=schedule_lock_cur · lv1",
+      "url": "http://localhost:3000/api/settings?key=schedule_lock_2026-10",
+      "status": 200,
+      "median_ms": 93,
+      "runs_ms": [
+        92,
+        93,
+        110
+      ],
+      "bytes": 14,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/upcoming-leaves · lv9",
+      "url": "http://localhost:3000/api/upcoming-leaves?days=14",
+      "status": 200,
+      "median_ms": 95,
+      "runs_ms": [
+        93,
+        95,
+        103
+      ],
+      "bytes": 12,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/leave-requests/pending-count · lv9",
+      "url": "http://localhost:3000/api/leave-requests/pending-count",
+      "status": 200,
+      "median_ms": 123,
+      "runs_ms": [
+        121,
+        123,
+        124
+      ],
+      "bytes": 11,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/employees · lv1",
+      "url": "http://localhost:3000/api/employees",
+      "status": 200,
+      "median_ms": 119,
+      "runs_ms": [
+        93,
+        119,
+        119
+      ],
+      "bytes": 3539,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/employees/1 · lv1 self",
+      "url": "http://localhost:3000/api/employees/1",
+      "status": 200,
+      "median_ms": 96,
+      "runs_ms": [
+        90,
+        96,
+        100
+      ],
+      "bytes": 1621,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "GET /api/settings/season-ranges (public)",
+      "url": "http://localhost:3000/api/settings/season-ranges",
+      "status": 200,
+      "median_ms": 93,
+      "runs_ms": [
+        90,
+        93,
+        93
+      ],
+      "bytes": 72,
+      "content_type": "application/json; charset=utf-8"
+    },
+    {
+      "label": "UNAUTH 401 baseline · /api/schedules",
+      "url": "http://localhost:3000/api/schedules",
+      "status": 401,
+      "median_ms": 1,
+      "runs_ms": [
+        1,
+        1,
+        1
+      ],
+      "bytes": 90,
+      "content_type": "application/json; charset=utf-8"
+    }
+  ]
+}

@@ -42,6 +42,8 @@ import { ScanLeftPanel, SaveCard, HistoryModal, ReviewSheet } from "./ScanPage.p
 import { needsDisplayRequest, hasExpiry } from "./ScanPage.filters";
 // 2026-08-25 · Framework Phase 4 · 우측 패널 이관
 import { ScanRightPanel } from "./ScanRightPanel";
+// 2026-10-11 · UI-12 · 사용자 지시 "실재고확인 오른쪽 상세정보 매입가·판매가·공급사·현재고·판매상태 위" · 요약 CARD
+import { ScanProductSummary } from "./ScanProductSummary";
 // 2026-08-23 · #179 · 미등록 상품 즉시 등록 · ProductCreateModal 재사용
 import { ProductCreateModal } from "../ProductInfoPage/ProductCreateModal";
 // 2026-08-25 · 유통기한 임박 모달 (입력날짜 + 유통기한) · inventory_checks 저장
@@ -765,24 +767,46 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           leftClassName="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start max-h-none"
           mobileRightAsModal={false}
           left={(
-            <ScanLeftPanel
-              mapLoading={mapLoading}
-              autoIncOn={autoIncOn}
-              onToggleAutoInc={toggleAutoInc}
-              notFoundCode={notFoundCode}
-              lastProduct={lastProduct}
-              lastCode={lastCode}
-              requestingKey={requestingKey}
-              rows={rows}
-              onOpenScanner={() => setScannerOpen(true)}
-              onScan={handleScan}
-              onRequestDisplay={requestDisplay}
-              canManageProducts={canManageProducts}
-              onOpenCreate={openUnregisteredCreate}
-            />
+            // 2026-10-12 · 사용자 지시 · "전체 등록 왼쪽" + 반응형 최적화
+            //   · ScanLeftPanel (스캔+검색+최근) 위 · SaveCard (전체 등록) 아래
+            //   · 모바일: 자연 스택 · 데스크톱: 좌측 패널 lg:sticky top-4 상속
+            //   · SaveCard 는 자체 홈 톤 CARD · 좌측 strip accent 로 컬러 포인트
+            <>
+              <ScanLeftPanel
+                mapLoading={mapLoading}
+                autoIncOn={autoIncOn}
+                onToggleAutoInc={toggleAutoInc}
+                notFoundCode={notFoundCode}
+                lastProduct={lastProduct}
+                lastCode={lastCode}
+                requestingKey={requestingKey}
+                rows={rows}
+                onOpenScanner={() => setScannerOpen(true)}
+                onScan={handleScan}
+                onRequestDisplay={requestDisplay}
+                canManageProducts={canManageProducts}
+                onOpenCreate={openUnregisteredCreate}
+              />
+              {/* 2026-10-12 · 사용자 지시 · 전체 등록 좌측 이동 · 리서치 2026 best practice (사용자 피드백 일치) */}
+              <SaveCard
+                rows={rows}
+                saveStatus={saveStatus}
+                savedCount={savedCount}
+                saveError={saveError}
+                onReview={() => setReviewOpen(true)}
+                onReset={() => {
+                  setRows([]);
+                  setLastAddedKey(null);
+                  setSaveStatus("idle");
+                  setSaveError(null);
+                }}
+              />
+            </>
           )}
           right={(
             <div className="flex flex-col gap-4">
+              {/* 2026-10-11 · UI-12 · 최근 스캔 상품 상세 요약 · 매입가·판매가·공급사·현재고·판매상태 상단 · 나머지 (위치·적정재고·재고자산) 하단 */}
+              <ScanProductSummary product={lastProduct} />
               {/* 2026-08-25 · Framework Phase 4 · 우측 패널 · ScanRightPanel 이관 */}
               <ScanRightPanel
                 rows={rows} filteredRows={filteredRows} lastCode={lastCode} lastAddedKey={lastAddedKey}
@@ -792,21 +816,6 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 handleSaveRow={handleSaveRow} toggleExpiry={toggleExpiry}
                 canManage={canManageProducts}
               />
-
-          {/* 2026-08-22 · Framework Phase 4 · 별도 컴포넌트 이관 · SaveCard */}
-          <SaveCard
-            rows={rows}
-            saveStatus={saveStatus}
-            savedCount={savedCount}
-            saveError={saveError}
-            onReview={() => setReviewOpen(true)}
-            onReset={() => {
-              setRows([]);
-              setLastAddedKey(null);
-              setSaveStatus("idle");
-              setSaveError(null);
-            }}
-          />
             </div>
           )}
         />

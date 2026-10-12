@@ -5,7 +5,7 @@
 //   · dead code 5개 (showCreateArrival · newArrivalTitle · newArrivalBody · createLoading · handleCreateArrival) 삭제
 
 import React, { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, ChevronRight } from "lucide-react";
 import { Package } from "@phosphor-icons/react";
 import { api, ApiError } from "../../lib/apiClient";
 import { getErrorMessage } from "../../lib/errorMessage";
@@ -21,9 +21,13 @@ import { listStockArrivals, type StockArrival } from "../../lib/stockArrivalsApi
 
 interface StockArrivalListProps {
   isVendor: boolean;
+  // 2026-10-08 · compact mode · HomeDashboard Quick Actions 옆 slot 용 (3 items · CARD 톤 통일)
+  compact?: boolean;
+  // 2026-10-08 · 사용자 지시 · 입고알림 입력 페이지 바로가기
+  onOpenInputPage?: () => void;
 }
 
-export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) => {
+export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor, compact = false, onOpenInputPage }) => {
   const { toast, showError } = useToast();
   const [stockArrivals, setStockArrivals] = useState<StockArrival[]>([]);
   const [arrivalsLoading, setArrivalsLoading] = useState(true);
@@ -76,73 +80,147 @@ export const StockArrivalList: React.FC<StockArrivalListProps> = ({ isVendor }) 
 
   if (isVendor) return null;
 
+  // 2026-10-08 · compact mode · HomeDashboard 톤 통일 (bg-white border-slate-200 rounded-[12px])
+  const CARD_CLASS = "bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]";
+  const MAX_ITEMS = compact ? 3 : 5;
+
   return (
     <>
-      <div className="w-full mb-6 mt-2">
-        {/* 2026-08-17 · SectionLabel + right slot (알림 받기 / 구독 중) · 최신 트렌드 · 딥네이비 톤 */}
-        <SectionLabel tone="sky" right={
-          !pushSubscribed ? (
-            <button
-              onClick={handleAnonSubscribe}
-              disabled={pushLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[14px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition-colors disabled:opacity-40 cursor-pointer"
-            >
-              <Bell size={13} fill="currentColor" />알림 받기
-            </button>
+      {compact ? (
+        // ─── compact · Quick Actions 옆 slot 용 · HomeDashboard 톤 ───
+        <div className={`${CARD_CLASS} w-full flex flex-col min-h-[0]`}>
+          <div className="flex items-center justify-between px-3 pt-2.5 pb-2 border-b border-slate-100">
+            {onOpenInputPage ? (
+              <button
+                type="button"
+                onClick={onOpenInputPage}
+                className="flex items-center gap-1.5 hover:underline underline-offset-[3px] decoration-slate-300 cursor-pointer"
+              >
+                <span className="w-[3px] h-[14px] bg-sky-500 rounded-full" />
+                <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">입고 알림</h3>
+                <ChevronRight size={14} className="text-slate-400" />
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <span className="w-[3px] h-[14px] bg-sky-500 rounded-full" />
+                <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">입고 알림</h3>
+              </div>
+            )}
+            {!pushSubscribed ? (
+              <button
+                onClick={handleAnonSubscribe}
+                disabled={pushLoading}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[14px] font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 transition-colors disabled:opacity-40 cursor-pointer"
+              >
+                <Bell size={12} fill="currentColor" />알림 받기
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[14px] text-sky-700 font-semibold bg-sky-50 rounded-md px-2 py-1">
+                <Bell size={12} fill="currentColor" /> 구독 중
+              </span>
+            )}
+          </div>
+          {arrivalsLoading && stockArrivals.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center py-6"><Spinner tone="zinc" size={14} label="로딩 중..." labelSize={13} /></div>
+          ) : !arrivalsLoading && stockArrivals.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-[14px] md:text-[15px] text-slate-400 py-6">알림이 없습니다</div>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-[14px] text-brand-deep font-semibold bg-brand-tint border border-brand/15 rounded-full px-3 py-1.5">
-              <Bell size={13} fill="currentColor" /> 구독 중
-            </span>
-          )
-        }>입고 알림</SectionLabel>
-        {arrivalsLoading && stockArrivals.length > 0 && (
-          <div className="flex items-center justify-center py-1.5 mb-1 bg-brand-tint border border-brand/15 rounded-lg sticky top-0 z-10"><Spinner tone="brand" size={13} label="새로 불러오는 중..." labelSize={13} /></div>
-        )}
-        {arrivalsLoading && stockArrivals.length === 0 ? (
-          <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={16} label="로딩 중..." labelSize={14} /></div>
-        ) : !arrivalsLoading && stockArrivals.length === 0 ? (
-          <Card variant="flat" padding="none" className="text-center text-[14px] text-ink-soft py-8">데이터 없음</Card>
-        ) : (
-          /* 2026-08-24 · 최신 트렌드 · UI 대원칙 · Linear/Vercel/Attio 2026 */
-          <Card clip padding="none" className={`relative divide-y divide-line/70 ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-            <GradientAccent />
-            {stockArrivals.slice(0, 5).map(a => {
-              const createdMs = new Date(a.created_at).getTime();
-              const diffMin = Math.floor((Date.now() - createdMs) / 60000);
-              const isNew = diffMin < 60;
-              const timeLabel = diffMin < 1 ? "방금"
-                : diffMin < 60 ? `${diffMin}분 전`
-                : diffMin < 60 * 24 ? `${Math.floor(diffMin / 60)}시간 전`
-                : new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
-              return (
-                <button
-                  key={a.id}
-                  type="button"
-                  onClick={() => setArrivalDetail(a)}
-                  className="group relative w-full text-left flex items-center gap-2.5 px-4 py-3.5 hover:bg-brand-tint/30 focus:outline-none focus-visible:bg-brand-tint/40 transition-all duration-200 cursor-pointer"
-                >
-                  <span className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full bg-brand-deep opacity-0 group-hover:opacity-100 transition-opacity duration-200" aria-hidden />
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand-deep shrink-0" aria-hidden />
-                  <div className="flex-1 min-w-0 flex items-baseline gap-2 min-w-0">
-                    <span className="text-[18px] font-semibold text-ink break-words whitespace-normal tracking-tight group-hover:text-brand-deep transition-colors duration-200 shrink-0 max-w-[60%]">{a.title}</span>
-                    {a.body && (
-                      <span className="text-[14px] font-normal text-ink-soft/70 break-words whitespace-normal min-w-0">· {a.body}</span>
-                    )}
+            <div className={`divide-y divide-slate-100 flex-1 ${arrivalsLoading ? "opacity-40 pointer-events-none" : ""}`}>
+              {stockArrivals.slice(0, MAX_ITEMS).map(a => {
+                const createdMs = new Date(a.created_at).getTime();
+                const diffMin = Math.floor((Date.now() - createdMs) / 60000);
+                const isNew = diffMin < 60;
+                const timeLabel = diffMin < 1 ? "방금"
+                  : diffMin < 60 ? `${diffMin}분 전`
+                  : diffMin < 60 * 24 ? `${Math.floor(diffMin / 60)}시간 전`
+                  : new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setArrivalDetail(a)}
+                    className="w-full text-left flex items-center gap-2 px-3 py-1.5 hover:bg-slate-50/70 transition-colors cursor-pointer"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0" aria-hidden />
+                    <span className="flex-1 min-w-0 text-[14px] md:text-[15px] font-medium text-ink truncate">{a.title}</span>
                     {isNew && (
-                      <span className="shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-[13px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 ring-1 ring-emerald-500/25">
+                      <span className="shrink-0 inline-flex items-center h-[18px] px-1.5 rounded text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 ring-1 ring-emerald-500/25">
                         NEW
                       </span>
                     )}
-                  </div>
-                  <span className="text-[14px] font-medium text-ink-soft shrink-0 whitespace-nowrap tabular-nums group-hover:text-brand-deep/70 transition-colors duration-200" title={new Date(a.created_at).toLocaleString("ko-KR")}>
-                    {timeLabel}
-                  </span>
-                </button>
-              );
-            })}
-          </Card>
-        )}
-      </div>
+                    <span className="text-[13px] md:text-[14px] font-medium text-slate-500 shrink-0 whitespace-nowrap tabular-nums">{timeLabel}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        // ─── 기본 (full-width) · 기존 UI 유지 ───
+        <div className="w-full mb-6 mt-2">
+          <SectionLabel tone="sky" right={
+            !pushSubscribed ? (
+              <button
+                onClick={handleAnonSubscribe}
+                disabled={pushLoading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[14px] font-semibold text-white bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] shadow-sm transition-colors disabled:opacity-40 cursor-pointer"
+              >
+                <Bell size={13} fill="currentColor" />알림 받기
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-[14px] text-brand-deep font-semibold bg-brand-tint border border-brand/15 rounded-full px-3 py-1.5">
+                <Bell size={13} fill="currentColor" /> 구독 중
+              </span>
+            )
+          }>입고 알림</SectionLabel>
+          {arrivalsLoading && stockArrivals.length > 0 && (
+            <div className="flex items-center justify-center py-1.5 mb-1 bg-brand-tint border border-brand/15 rounded-lg sticky top-0 z-10"><Spinner tone="brand" size={13} label="새로 불러오는 중..." labelSize={13} /></div>
+          )}
+          {arrivalsLoading && stockArrivals.length === 0 ? (
+            <div className="flex items-center justify-center py-10"><Spinner tone="zinc" size={16} label="로딩 중..." labelSize={14} /></div>
+          ) : !arrivalsLoading && stockArrivals.length === 0 ? (
+            <Card variant="flat" padding="none" className="text-center text-[14px] text-ink-soft py-8">데이터 없음</Card>
+          ) : (
+            <Card clip padding="none" className={`relative divide-y divide-line/70 ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+              <GradientAccent />
+              {stockArrivals.slice(0, MAX_ITEMS).map(a => {
+                const createdMs = new Date(a.created_at).getTime();
+                const diffMin = Math.floor((Date.now() - createdMs) / 60000);
+                const isNew = diffMin < 60;
+                const timeLabel = diffMin < 1 ? "방금"
+                  : diffMin < 60 ? `${diffMin}분 전`
+                  : diffMin < 60 * 24 ? `${Math.floor(diffMin / 60)}시간 전`
+                  : new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setArrivalDetail(a)}
+                    className="group relative w-full text-left flex items-center gap-2.5 px-4 py-3.5 hover:bg-brand-tint/30 focus:outline-none focus-visible:bg-brand-tint/40 transition-all duration-200 cursor-pointer"
+                  >
+                    <span className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full bg-brand-deep opacity-0 group-hover:opacity-100 transition-opacity duration-200" aria-hidden />
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-deep shrink-0" aria-hidden />
+                    <div className="flex-1 min-w-0 flex items-baseline gap-2 min-w-0">
+                      <span className="text-[18px] font-semibold text-ink break-words whitespace-normal tracking-tight group-hover:text-brand-deep transition-colors duration-200 shrink-0 max-w-[60%]">{a.title}</span>
+                      {a.body && (
+                        <span className="text-[14px] font-normal text-ink-soft/70 break-words whitespace-normal min-w-0">· {a.body}</span>
+                      )}
+                      {isNew && (
+                        <span className="shrink-0 inline-flex items-center h-[22px] px-2 rounded-md text-[13px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 ring-1 ring-emerald-500/25">
+                          NEW
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[14px] font-medium text-ink-soft shrink-0 whitespace-nowrap tabular-nums group-hover:text-brand-deep/70 transition-colors duration-200" title={new Date(a.created_at).toLocaleString("ko-KR")}>
+                      {timeLabel}
+                    </span>
+                  </button>
+                );
+              })}
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* 2026-08-24 · 입고 알림 상세 모달 · Modal 프리미티브 */}
       <Modal

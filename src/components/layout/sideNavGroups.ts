@@ -126,6 +126,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     // 2026-10-06 · 사용자 지시 · surface-specific hide 제거
     //   · PC/mobile/top nav 노출 통일 · 숨김 필요 시 DB app_settings.page_visibility 로 설정
     items: [
+      // 2026-10-12 · #13 · 거래처 그룹 현황판 (맨 위 · 통합 overview) · 방문예약 drawer + 각 탭 상세
+      { key: "vendor-overview", label: "거래처 현황",  icon: Buildings,    color: "emerald" },
       { key: "reservation", label: "방문예약",       icon: CalendarDots, color: "emerald" },
       { key: "display",     label: "공급사 정보",     icon: Buildings,    color: "emerald", subTab: "vendor-manage" },
       { key: "vendor-stock", label: "공급사 재고확인", icon: Package,      color: "emerald" },

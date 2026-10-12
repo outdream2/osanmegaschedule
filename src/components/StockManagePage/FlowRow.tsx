@@ -54,7 +54,11 @@ export const FlowRow: React.FC<FlowRowProps> = ({
   })();
 
   return (
-    <tr key={`flow-${p.product_code}-${i}`} className={`transition ${selectedFlowCodes.has(String(p.product_code)) ? "bg-zinc-50" : "hover:bg-zinc-50/70"}`}>
+    <tr
+      key={`flow-${p.product_code}-${i}`}
+      onClick={() => loadFlowSelectedProduct(p)}
+      className={`transition cursor-pointer ${selectedFlowCodes.has(String(p.product_code)) ? "bg-zinc-50" : "hover:bg-zinc-50/70"}`}
+    >
       <td className="text-center px-1 py-2 align-top" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
         <div className="flex items-center justify-center gap-1.5">
           <span onClick={(e) => { e.stopPropagation(); toggleSelectFlow(String(p.product_code)); }}

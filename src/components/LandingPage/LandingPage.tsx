@@ -356,7 +356,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       </div>
 
       {/* ── Main content ── */}
-      <div className="flex-1 flex flex-col items-center px-4 sm:px-6 relative overflow-hidden pt-8 pb-12">
+      <div className="flex-1 flex flex-col items-center px-4 sm:px-6 relative overflow-hidden pt-3 pb-12">
 
         {/* 2026-08-17 · Ambient background · 세련 · 3-layer aurora · 딥네이비 · sky · violet · 저채도 */}
         <div className="absolute top-[-80px] left-1/2 -translate-x-1/2 w-[900px] h-[420px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(10,46,74,0.09) 0%, transparent 70%)", filter: "blur(30px)" }} />
@@ -366,8 +366,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
         <div className="relative z-10 flex flex-col items-center w-full max-w-3xl md:max-w-4xl xl:max-w-6xl">
 
-          {/* Hero brand area · 로그인 사용자 표시는 헤더 탭 아래 [이름 직급] 로 통일 */}
-          <div className="w-full mb-3 px-1" />
+          {/* 2026-10-08 · 사용자 지시 · Hero 공백 spacer 제거 (greeting 위 여백 축소) */}
 
           {/* 2026-10-07 · HomeDashboard VISUAL POLISH · Home 영역 안 giant search 제거
                 · Global search 는 AppShell 영역 (deferred to Global UI agent)
@@ -566,8 +565,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             );
           })()}
 
-          {/* ── 입고 알림 · 2026-10-07 · admin/manager 홈 clean (레퍼런스 매칭) · vendor/employee만 표시 ── */}
-          {!isManagerOrAdmin && <StockArrivalList isVendor={isVendor} />}
+          {/* ── 입고 알림 · 2026-10-08 · HomeDashboard 내부 compact 로 이관 (non-vendor)
+                · vendor 로그인 시엔 별도 노출 유지 (StockArrivalList 는 isVendor=true 시 null 반환이므로 숨김)
+                · 중복 노출 제거 완료 ── */}
 
         </div>
       </div>

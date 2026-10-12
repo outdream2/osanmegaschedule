@@ -14,31 +14,33 @@ import { Spinner } from "../common/Spinner";
 import {
   useSessionTimeoutSettingEditor,
   SESSION_TIMEOUT_DEFAULT_MINUTES,
-  SESSION_TIMEOUT_MIN_MINUTES,
-  SESSION_TIMEOUT_MAX_MINUTES,
 } from "../../hooks/useSessionTimeoutSetting";
 
-// 프리셋 · 흔한 시간 · 원클릭 적용
+// 2026-10-08 · 사용자 지시 · 1~7일 범위 · 프리셋 재구성
 const PRESETS: Array<{ minutes: number; label: string; tone: "rose" | "amber" | "brand" | "emerald" | "zinc" }> = [
-  { minutes: 5,   label: "5분",   tone: "rose"    },
-  { minutes: 15,  label: "15분",  tone: "amber"   },
-  { minutes: 30,  label: "30분",  tone: "brand"   },
-  { minutes: 60,  label: "1시간", tone: "emerald" },
-  { minutes: 120, label: "2시간", tone: "emerald" },
-  { minutes: 240, label: "4시간", tone: "zinc"    },
-  { minutes: 480, label: "8시간", tone: "zinc"    },
+  { minutes: 1440,  label: "1일", tone: "rose"    },
+  { minutes: 2880,  label: "2일", tone: "amber"   },
+  { minutes: 4320,  label: "3일", tone: "brand"   },
+  { minutes: 7200,  label: "5일", tone: "emerald" },
+  { minutes: 10080, label: "7일", tone: "zinc"    },
 ];
+
+// 2026-10-08 · 분 → 사람이 읽기 좋은 문자열 (1~7일 범위)
+function formatDuration(minutes: number): string {
+  const days = Math.floor(minutes / 1440);
+  const remainMin = minutes % 1440;
+  const hours = Math.floor(remainMin / 60);
+  const mins = remainMin % 60;
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}일`);
+  if (hours > 0) parts.push(`${hours}시간`);
+  if (mins > 0) parts.push(`${mins}분`);
+  return parts.length ? parts.join(" ") : "0분";
+}
 
 export const SessionTimeoutSection: React.FC = () => {
   const { value: minutes, setValue: setMinutes, loaded, saveState } = useSessionTimeoutSettingEditor();
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const n = Number(e.target.value);
-    if (!Number.isFinite(n)) return;
-    const clamped = Math.max(SESSION_TIMEOUT_MIN_MINUTES, Math.min(SESSION_TIMEOUT_MAX_MINUTES, Math.round(n)));
-    setMinutes(clamped);
-  };
-
+  // 2026-10-08 · 사용자 지시 · 1~7일 범위 · handleChange 는 inline (일 단위)
   const current = loaded ? minutes : SESSION_TIMEOUT_DEFAULT_MINUTES;
 
   return (
@@ -61,20 +63,19 @@ export const SessionTimeoutSection: React.FC = () => {
         </div>
       </div>
 
-      {/* 현재값 카드 · 큰 숫자 · 시각 강조 */}
+      {/* 현재값 카드 · 큰 숫자 · 시각 강조 · 2026-10-08 · 일 단위 표시 */}
       <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-3 items-stretch">
         <div className="rounded-xl border border-brand-deep/20 bg-gradient-to-br from-brand-tint to-white p-4 min-w-[180px]">
           <div className="text-[14px] font-bold text-brand-deep/70 uppercase tracking-wider">현재 설정</div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-[36px] font-extrabold text-brand-deep tabular-nums leading-none tracking-tighter">{current}</span>
-            <span className="text-[15px] font-bold text-brand-deep/60">분</span>
+            <span className="text-[36px] font-extrabold text-brand-deep tabular-nums leading-none tracking-tighter">
+              {Math.round(current / 1440 * 10) / 10}
+            </span>
+            <span className="text-[15px] font-bold text-brand-deep/60">일</span>
           </div>
           <div className="mt-2 text-[15px] text-ink-soft flex items-center gap-1">
             <Clock size={13} className="text-brand-deep/60" />
-            <span>
-              {current < 60 ? `${current}분` : `${Math.floor(current/60)}시간${current%60 ? ` ${current%60}분` : ""}`}
-              {" 후 자동 로그아웃"}
-            </span>
+            <span>{formatDuration(current)} 후 자동 로그아웃</span>
           </div>
         </div>
 
@@ -104,36 +105,41 @@ export const SessionTimeoutSection: React.FC = () => {
             })}
           </div>
 
-          {/* 수동 입력 */}
+          {/* 수동 입력 · 2026-10-08 · 일 단위 입력으로 변경 */}
           <div className="mt-2 flex items-center gap-2 flex-wrap">
-            <label htmlFor="session-timeout-minutes" className="text-[15px] font-semibold text-ink-soft">
+            <label htmlFor="session-timeout-days" className="text-[15px] font-semibold text-ink-soft">
               직접 입력
             </label>
             <input
-              id="session-timeout-minutes"
+              id="session-timeout-days"
               type="number"
-              min={SESSION_TIMEOUT_MIN_MINUTES}
-              max={SESSION_TIMEOUT_MAX_MINUTES}
+              min={1}
+              max={7}
               step={1}
-              value={current}
-              onChange={handleChange}
+              value={Math.round(current / 1440)}
+              onChange={(e) => {
+                const days = Number(e.target.value);
+                if (!Number.isFinite(days)) return;
+                const clampedDays = Math.max(1, Math.min(7, Math.round(days)));
+                setMinutes(clampedDays * 1440);
+              }}
               disabled={!loaded}
-              className="w-24 h-9 px-2.5 text-[15px] font-bold text-ink text-right border border-line rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
+              className="w-20 h-9 px-2.5 text-[15px] font-bold text-ink text-right border border-line rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep disabled:opacity-40 tabular-nums"
             />
-            <span className="text-[15px] text-ink-soft">분</span>
+            <span className="text-[15px] text-ink-soft">일</span>
             <span className="text-[14px] text-zinc-400">
-              (범위 {SESSION_TIMEOUT_MIN_MINUTES}분 ~ {SESSION_TIMEOUT_MAX_MINUTES}분 · 기본 {SESSION_TIMEOUT_DEFAULT_MINUTES}분)
+              (범위 1일 ~ 7일 · 기본 {Math.round(SESSION_TIMEOUT_DEFAULT_MINUTES / 1440)}일)
             </span>
           </div>
         </div>
       </div>
 
-      {/* 안내 · 아이콘 tile + 3열 grid · Linear/Attio 톤 */}
+      {/* 안내 · 2026-10-08 · 1~7일 톤 재구성 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {[
-          { tone: "rose",    label: "짧게 · 5~15분",  desc: "보안 강화 · 재로그인 잦음 · 민감 데이터 환경" },
-          { tone: "brand",   label: "표준 · 30분",     desc: "일반 사무 환경 · 이 앱 기본값 (권장)" },
-          { tone: "emerald", label: "길게 · 60분~",    desc: "편의성 우선 · 신뢰 환경 · 장시간 세션 유지" },
+          { tone: "rose",    label: "짧게 · 1~2일", desc: "보안 강화 · 재로그인 잦음 · 민감 데이터 환경" },
+          { tone: "brand",   label: "표준 · 3일",   desc: "일반 사무 환경 · 이 앱 기본값 (권장)" },
+          { tone: "emerald", label: "길게 · 5~7일", desc: "편의성 우선 · 신뢰 환경 · 장시간 세션 유지" },
         ].map((tip, i) => {
           const cls = tip.tone === "rose"    ? "border-rose-200 bg-rose-50/40"
                     : tip.tone === "brand"   ? "border-brand-deep/20 bg-brand-tint/40"

@@ -1,24 +1,19 @@
 // src/components/ApprovalCenterPage/ApprovalCenterPage.tsx
-// 승인대기 통합 wrapper · 2026-08-03 · #180
-// - 내부 2탭: 연차승인 (LeavePage embed) · 사직서승인 (ResignationApprovalPage)
-// - 각 탭 라벨 옆 · pending 갯수 rose 배지
-// - approval-count-updated CustomEvent 로 실시간 갱신
-//   · 60초 폴링 fallback (동일 세션 · 다른 탭 처리 반영)
-//
-// 2026-08-03 (#183) · 공통 TabBar 로 리팩터 · duplicate 스타일 흡수
-// 2026-08-05 · 관리자(level>=8) long-press 드래그 재정렬 (useSortableTabs · tabOrder.approvalCenter)
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDots, SignOut } from "@phosphor-icons/react";
+// 2026-10-08 · 사용자 지시 · 승인 센터 통합 대시보드 (최신 트렌드 홈 톤)
+//   · 기존 2탭 (연차/사직서) TabBar 완전 제거
+//   · default view = ApprovalDashboard (3-card 홈 톤 · 연차·거래처·사직서)
+//   · 각 카드 "전체보기 →" → 해당 상세 뷰 전환 (내부 state)
+//   · 상세 뷰 → "← 대시보드" 뒤로가기 버튼 (헤더 최상단)
+//   · 부모(BusinessManagePage) 서브탭 배지는 ApprovalDashboard 가 onCountsChange 로 알림
+
+import React, { Suspense, useCallback, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { Spinner } from "../common/Spinner";
 import { LeavePage } from "../LeavePage/LeavePage";
+import { VendorApprovalPanel } from "../RequestsPage/VendorApprovalPanel";
+import { ApprovalDashboard, type ApprovalDetailView } from "./ApprovalDashboard";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
-import { TabBar, type TabDef } from "../common/TabBar";
-import { useSortableTabs } from "../../hooks/useSortableTabs";
-// 2026-08-21 · Framework Phase 3 · fetch → apiClient
-// 2026-09-14 · leaveApi · resignationsApi 프리미티브
-import { getLeavePendingCount } from "../../lib/leaveApi";
-import { getResignationPendingCount } from "../../lib/resignationsApi";
 
 const ResignationApprovalPage = React.lazy(() => import("../ResignationApprovalPage/ResignationApprovalPage"));
 
@@ -28,83 +23,78 @@ interface ApprovalCenterPageProps {
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
   embedded?: boolean;
-  /** 부모(BusinessManagePage) 서브탭 라벨 배지에 반영하기 위한 콜백 */
-  onCountsChange?: (counts: { leave: number; resignation: number }) => void;
+  /** 부모(BusinessManagePage) 서브탭 라벨 배지 · 2026-10-08 · vendor 포함 3-way */
+  onCountsChange?: (counts: { leave: number; resignation: number; vendor?: number }) => void;
 }
-
-type ACTab = "leave" | "resignation";
 
 const ApprovalCenterPage: React.FC<ApprovalCenterPageProps> = (props) => {
   const { onCountsChange } = props;
-  const [tab, setTab] = useState<ACTab>("leave");
-  const [leaveCount, setLeaveCount] = useState<number>(0);
-  const [resignCount, setResignCount] = useState<number>(0);
+  const [view, setView] = useState<ApprovalDetailView | null>(null);
 
-  const loadCounts = useCallback(async () => {
-    try {
-      // 2026-09-14 · leaveApi · resignationsApi 프리미티브 통합
-      const [lc, rc] = await Promise.all([
-        getLeavePendingCount().catch(() => 0),
-        getResignationPendingCount().catch(() => 0),
-      ]);
-      setLeaveCount(lc);
-      setResignCount(rc);
-      onCountsChange?.({ leave: lc, resignation: rc });
-    } catch {
-      // no-op
-    }
-  }, [onCountsChange]);
+  const handleDashboardCounts = useCallback(
+    (c: { leave: number; resignation: number; vendor: number }) => {
+      onCountsChange?.({ leave: c.leave, resignation: c.resignation, vendor: c.vendor });
+    },
+    [onCountsChange],
+  );
 
-  // 초기 로드 · 60초 폴링 · CustomEvent 실시간
-  useEffect(() => {
-    loadCounts();
-    const iv = setInterval(loadCounts, 60_000);
-    const handler = () => loadCounts();
-    window.addEventListener("approval-count-updated", handler);
-    return () => {
-      clearInterval(iv);
-      window.removeEventListener("approval-count-updated", handler);
+  const goBack = () => setView(null);
+
+  // 상세 뷰 (연차 · 거래처 · 사직서)
+  if (view !== null) {
+    const titleMap: Record<ApprovalDetailView, string> = {
+      leave: "연차 승인",
+      vendor: "거래처 승인",
+      resignation: "사직서 승인",
     };
-  }, [loadCounts]);
+    return (
+      <div className="flex flex-col flex-1 min-h-0">
+        {/* 뒤로가기 바 */}
+        <div className="flex items-center gap-2 px-3 md:px-4 py-2 border-b border-slate-200 bg-white">
+          <button
+            type="button"
+            onClick={goBack}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-[14px] font-semibold text-slate-600 hover:text-ink hover:bg-slate-100 transition-colors cursor-pointer"
+          >
+            <ArrowLeft size={15} /> 대시보드
+          </button>
+          <span className="text-slate-300">·</span>
+          <span className="text-[14px] md:text-[15px] font-semibold text-ink">{titleMap[view]}</span>
+        </div>
 
-  const TABS: TabDef<ACTab>[] = useMemo(() => [
-    { key: "leave",       label: "연차승인",   icon: CalendarDots, color: "teal", badge: leaveCount  },
-    { key: "resignation", label: "사직서승인", icon: SignOut,      color: "rose", badge: resignCount },
-  ], [leaveCount, resignCount]);
-
-  const isAdmin = (props.authSession?.level ?? 0) >= 8;
-  const sortable = useSortableTabs<TabDef<ACTab>>("tabOrder.approvalCenter", TABS, isAdmin);
-
-  return (
-    <div className="flex flex-col flex-1 min-h-0">
-      {/* ── 내부 2탭 바 · 공통 TabBar (level 2) · rose 배지 · 관리자 long-press 재정렬 ── */}
-      <TabBar<ACTab>
-        level={2}
-        tabs={sortable.tabs}
-        activeKey={tab}
-        onSelect={setTab}
-        badgeColor="rose"
-        maxWidth={1400}
-        sortable={{ getTabProps: sortable.getTabProps, isDragging: sortable.isDragging }}
-      />
-
-      {/* ── 내부 탭 컨텐츠 ── */}
-      <div className="flex-1 min-h-0 flex flex-col">
-        {tab === "leave" && (
-          <LeavePage
-            onBack={props.onBack}
-            authSession={props.authSession}
-            onNavigate={props.onNavigate}
-            onLogout={props.onLogout}
-            embedded
-          />
-        )}
-        {tab === "resignation" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="사직서 승인 로딩 중..." size={16} tone="brand" /></div>}>
-            <ResignationApprovalPage authSession={props.authSession} />
-          </Suspense>
-        )}
+        {/* 상세 컨텐츠 */}
+        <div className="flex-1 min-h-0 flex flex-col">
+          {view === "leave" && (
+            <LeavePage
+              onBack={props.onBack}
+              authSession={props.authSession}
+              onNavigate={props.onNavigate}
+              onLogout={props.onLogout}
+              embedded
+            />
+          )}
+          {view === "resignation" && (
+            <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="사직서 승인 로딩 중..." size={16} tone="brand" /></div>}>
+              <ResignationApprovalPage authSession={props.authSession} />
+            </Suspense>
+          )}
+          {view === "vendor" && (
+            <div className="flex-1 min-h-0 overflow-y-auto p-3 md:p-4">
+              <VendorApprovalPanel />
+            </div>
+          )}
+        </div>
       </div>
+    );
+  }
+
+  // 대시보드 (default)
+  return (
+    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+      <ApprovalDashboard
+        onOpenDetail={setView}
+        onCountsChange={handleDashboardCounts}
+      />
     </div>
   );
 };

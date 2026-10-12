@@ -101,6 +101,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   initialTopTab,
   hideTopTabs = false,
   initialPurchaseSubTab,
+  initialPurchaseOrderSubTab,
   hideSubTabs = false,
 }) => {
   const { vendorCategories: dbVendorCategories } = useReferenceValues();
@@ -119,7 +120,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // Level-2 서브탭 상태
   // 2026-09-23 · 대원칙 · 페이지 기본화면 = 첫 탭메뉴 · #350 재확인 · 발주요청 first
   // 2026-09-25 · #1 · 사용자 지시 · match·exception 신규 추가 (사용자 클릭 시 진입)
-  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history" | "match" | "exception">("order");
+  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "critical" | "history" | "match" | "exception">(initialPurchaseOrderSubTab ?? "order");
   // 2026-10-05 · 사용자 지시 · productinfo·productarrival·scan 3개 매장>상품 → 매입 아래로 복귀 · 거래명세서(receipt) 숨김
   //   · default · purchase-history (매입이력 · 사용자 유지 요청)
   //   · return 은 매장>반품 서브탭에 그대로 유지 (여기서는 skip)

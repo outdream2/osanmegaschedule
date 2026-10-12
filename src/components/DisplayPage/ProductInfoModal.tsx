@@ -6,11 +6,7 @@ import React from "react";
 import { Package } from "lucide-react";
 import { Modal } from "../common/Modal";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
-import { ProductBasicInfoPanel } from "../common/ProductBasicInfoPanel";
-import { api } from "../../lib/apiClient";
 import type { ProductInfo } from "../../lib/productsCache";
-// 2026-09-08 · 상세 진열위치 · 매장·창고별 3자리 위치
-import { useShelfPositionsMap } from "../../hooks/useShelfPositionsMap";
 
 interface ProductInfoModalProps {
   product: ProductInfo;
@@ -24,75 +20,38 @@ export const ProductInfoModal: React.FC<ProductInfoModalProps> = ({
   onProductUpdate,
 }) => {
   const code = String(product.code ?? (product as any).product_code ?? "");
-  // 2026-09-08 · 상세 진열위치 · 이 상품의 위치별 3자리
-  const shelfMap = useShelfPositionsMap();
-  const shelfPositions = shelfMap[code] ?? null;
 
-  // 진열위치 편집 · PATCH /api/products/:code · location 필드
-  const handleLocationChange = async (newLocation: string | null) => {
-    if (!code) return;
-    await api.patch(`/api/products/${encodeURIComponent(code)}`, { location: newLocation, display_location: newLocation });
-    onProductUpdate({ location: newLocation, display_location: newLocation } as unknown as Partial<ProductInfo>);
-  };
-  // 판매상태 편집 · PATCH /api/products/:code · sale_status 필드
-  const handleSaleStatusChange = async (newStatus: string) => {
-    if (!code) return;
-    await api.patch(`/api/products/${encodeURIComponent(code)}`, { sale_status: newStatus });
-    onProductUpdate({ sale_status: newStatus } as unknown as Partial<ProductInfo>);
-  };
-
+  // 2026-10-09 · 사용자 지시 · 홈 랜딩 톤 재디자인 · 상품명 중복 제거
+  //   · title header = 상품명 + #code · plain icon · slate 중립 · 2-tier typography
+  //   · 외부 ProductBasicInfoPanel/handler 폐기 · ProductInfoCard 내부에서 all handling (중복 X)
   return (
     <Modal
       open
       onClose={onClose}
       size="md"
       title={
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-md">
-            <Package size={18} className="text-white" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-base font-bold text-zinc-800 truncate">{product.name ?? (product as any).product_name}</div>
-            <div className="text-[15px] font-mono text-zinc-500 mt-0.5">#{code}</div>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Package size={18} className="text-emerald-600 shrink-0" strokeWidth={2.2} />
+          <div className="min-w-0 flex items-baseline gap-2 flex-wrap">
+            <span className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight leading-tight truncate">
+              {product.name ?? (product as any).product_name ?? "(상품명 없음)"}
+            </span>
+            <span className="text-[13px] md:text-[14px] font-mono text-slate-400 tabular-nums shrink-0">#{code}</span>
           </div>
         </div>
       }
-      headerTint
       className="max-h-[98vh] sm:max-h-[92vh]"
     >
-      <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-zinc-50 space-y-3">
-        {/* 2026-08-28 · 사용자 지시 · 13컬럼 통일 기본정보 · 인라인 편집 (진열위치·판매상태) */}
-        <ProductBasicInfoPanel
-          product={{
-            product_code: code,
-            category_code: (product as any).category_code,
-            category: (product as any).category,
-            product_name: product.name ?? (product as any).product_name ?? null,
-            supplier: product.supplier ?? null,
-            location: (product as any).location ?? (product as any).display_location ?? null,
-            display_location: (product as any).display_location ?? null,
-            sale_status: (product as any).sale_status ?? null,
-            current_stock: (product as any).current_stock ?? null,
-            warehouse_stock: (product as any).warehouse_stock ?? null,
-            store_stock: (product as any).store_stock ?? null,
-            purchase_price: (product as any).purchase_price ?? null,
-            sale_price: (product as any).sale_price ?? null,
-            profit_rate: (product as any).profit_rate ?? null,
-            optimal_stock: (product as any).optimal_stock ?? null,
-            last_purchase_date: (product as any).last_purchase_date ?? null,
-            shelf_positions: shelfPositions,
-          }}
-          editable
-          onLocationChange={handleLocationChange}
-          onSaleStatusChange={handleSaleStatusChange}
-          compact
-        />
-        {/* 기존 상세 카드 (매입이력 · 재고 편집 등) · 하위 세부 정보 · 유지 */}
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 bg-slate-50 space-y-3">
+        {/* 2026-10-09 · 사용자 지시 · 상품정보 중복 제거
+             · 외부 ProductBasicInfoPanel 폐기 · ProductInfoCard 내부 panel 만 사용
+             · hideProductName · modal title 이 상품명 표시 → 내부 panel 상품명 field 숨김 */}
         <ProductInfoCard
           product={product}
           context="stock-manage"
           editable
           onProductUpdate={onProductUpdate}
+          hideProductName
         />
       </div>
     </Modal>

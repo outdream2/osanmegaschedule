@@ -1,0 +1,1747 @@
+{
+  "mode": "DRY_RUN",
+  "stageAApplied": false,
+  "erpTotal": 108,
+  "dbTotal": 156,
+  "stats": {
+    "exactCode": 0,
+    "matchBizno": 0,
+    "matchName": 95,
+    "new": 11,
+    "ambiguous": 2,
+    "codeConflict": 0,
+    "unchanged": 0
+  },
+  "totalExplained": 108,
+  "dummyBiznoCount": 103,
+  "dbDupes": [
+    {
+      "key": "5848801771",
+      "kind": "BIZNO",
+      "ids": [
+        151,
+        126
+      ]
+    },
+    {
+      "key": "1318151063",
+      "kind": "BIZNO",
+      "ids": [
+        48,
+        31
+      ]
+    },
+    {
+      "key": "코리아헬스",
+      "kind": "NAME",
+      "ids": [
+        131,
+        64
+      ]
+    }
+  ],
+  "insertsCount": 11,
+  "updatesCount": 95,
+  "entries": [
+    {
+      "ct": "1143",
+      "erp_name": "뉴트리션메이트",
+      "kind": "NEW"
+    },
+    {
+      "ct": "1142",
+      "erp_name": "본어스",
+      "kind": "NEW"
+    },
+    {
+      "ct": "1141",
+      "erp_name": "케이비약품",
+      "kind": "NEW"
+    },
+    {
+      "ct": "1140",
+      "erp_name": "오디에스오",
+      "kind": "NEW"
+    },
+    {
+      "ct": "1139",
+      "erp_name": "제너럴라이프",
+      "kind": "MATCH_NAME",
+      "dbId": 14,
+      "changed": [
+        "corp_name_view",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1138",
+      "erp_name": "아주헬스케어",
+      "kind": "NEW"
+    },
+    {
+      "ct": "1002",
+      "erp_name": "광동제약",
+      "kind": "MATCH_NAME",
+      "dbId": 31,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1004",
+      "erp_name": "바로팜(익수제약)(vat미포함)",
+      "kind": "MATCH_NAME",
+      "dbId": 33,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1005",
+      "erp_name": "녹십자",
+      "kind": "MATCH_NAME",
+      "dbId": 34,
+      "changed": [
+        "corp_name_view",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1006",
+      "erp_name": "동아제약",
+      "kind": "MATCH_NAME",
+      "dbId": 35,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1008",
+      "erp_name": "로드팜",
+      "kind": "MATCH_NAME",
+      "dbId": 37,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1009",
+      "erp_name": "마더스팜",
+      "kind": "MATCH_NAME",
+      "dbId": 38,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1011",
+      "erp_name": "동성제약",
+      "kind": "MATCH_NAME",
+      "dbId": 40,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1014",
+      "erp_name": "대원제약",
+      "kind": "MATCH_NAME",
+      "dbId": 43,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1015",
+      "erp_name": "신신제약(vat미포함)",
+      "kind": "MATCH_NAME",
+      "dbId": 44,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1016",
+      "erp_name": "일양약품(vat미포함)",
+      "kind": "MATCH_NAME",
+      "dbId": 45,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1017",
+      "erp_name": "중외제약(vat미포함)",
+      "kind": "MATCH_NAME",
+      "dbId": 46,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1018",
+      "erp_name": "펫팜",
+      "kind": "MATCH_NAME",
+      "dbId": 47,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1019",
+      "erp_name": "경방신약",
+      "kind": "MATCH_NAME",
+      "dbId": 48,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1020",
+      "erp_name": "유유제약",
+      "kind": "MATCH_NAME",
+      "dbId": 49,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1021",
+      "erp_name": "한국신약",
+      "kind": "MATCH_NAME",
+      "dbId": 50,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1022",
+      "erp_name": "종근당",
+      "kind": "MATCH_NAME",
+      "dbId": 51,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1023",
+      "erp_name": "쥴릭파마코리아",
+      "kind": "MATCH_NAME",
+      "dbId": 52,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1025",
+      "erp_name": "삼진제약 주식회사",
+      "kind": "MATCH_NAME",
+      "dbId": 54,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1026",
+      "erp_name": "보령컨슈머헬스케어",
+      "kind": "MATCH_NAME",
+      "dbId": 55,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1027",
+      "erp_name": "경남제약",
+      "kind": "MATCH_NAME",
+      "dbId": 56,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1028",
+      "erp_name": "온라인팜",
+      "kind": "MATCH_NAME",
+      "dbId": 58,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1029",
+      "erp_name": "백제약품",
+      "kind": "MATCH_NAME",
+      "dbId": 59,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1030",
+      "erp_name": "제이프로젝트",
+      "kind": "MATCH_NAME",
+      "dbId": 60,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1031",
+      "erp_name": "아워팜",
+      "kind": "MATCH_NAME",
+      "dbId": 61,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1032",
+      "erp_name": "닥터초사이언스랩",
+      "kind": "MATCH_NAME",
+      "dbId": 62,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1033",
+      "erp_name": "약국2",
+      "kind": "MATCH_NAME",
+      "dbId": 63,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1034",
+      "erp_name": "코리아헬스",
+      "kind": "AMBIGUOUS",
+      "reason": "name \"코리아헬스\" 매칭 2개",
+      "candidates": [
+        {
+          "id": 131,
+          "name": "코리아헬스"
+        },
+        {
+          "id": 64,
+          "name": "코리아헬스(주)"
+        }
+      ]
+    },
+    {
+      "ct": "1035",
+      "erp_name": "바로팜(코오롱제약)",
+      "kind": "MATCH_NAME",
+      "dbId": 65,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1036",
+      "erp_name": "한풍제약",
+      "kind": "MATCH_NAME",
+      "dbId": 158,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1037",
+      "erp_name": "유한양행",
+      "kind": "MATCH_NAME",
+      "dbId": 67,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1038",
+      "erp_name": "비알피랩스(아워팜)",
+      "kind": "MATCH_NAME",
+      "dbId": 68,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1040",
+      "erp_name": "대웅제약",
+      "kind": "MATCH_NAME",
+      "dbId": 70,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1041",
+      "erp_name": "제일헬스사이언스",
+      "kind": "MATCH_NAME",
+      "dbId": 71,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1042",
+      "erp_name": "동화약품",
+      "kind": "MATCH_NAME",
+      "dbId": 72,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1043",
+      "erp_name": "약국",
+      "kind": "MATCH_NAME",
+      "dbId": 73,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1045",
+      "erp_name": "태극제약",
+      "kind": "MATCH_NAME",
+      "dbId": 75,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1046",
+      "erp_name": "동국제약",
+      "kind": "MATCH_NAME",
+      "dbId": 76,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1048",
+      "erp_name": "일동제약(vat미포함)",
+      "kind": "MATCH_NAME",
+      "dbId": 78,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1049",
+      "erp_name": "현대약품",
+      "kind": "MATCH_NAME",
+      "dbId": 79,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1052",
+      "erp_name": "신일제약(vat 미포함)",
+      "kind": "MATCH_NAME",
+      "dbId": 83,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1053",
+      "erp_name": "나음케어(vat미포함)",
+      "kind": "MATCH_NAME",
+      "dbId": 84,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1054",
+      "erp_name": "셀로닉스",
+      "kind": "MATCH_NAME",
+      "dbId": 85,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1055",
+      "erp_name": "지엠메딕",
+      "kind": "MATCH_NAME",
+      "dbId": 86,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1057",
+      "erp_name": "더팜(에프앤디넷)",
+      "kind": "MATCH_NAME",
+      "dbId": 88,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1058",
+      "erp_name": "조아제약(vat미포함)",
+      "kind": "MATCH_NAME",
+      "dbId": 89,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1059",
+      "erp_name": "천호바이오",
+      "kind": "MATCH_NAME",
+      "dbId": 90,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1062",
+      "erp_name": "고려제약(vat미포함)",
+      "kind": "MATCH_NAME",
+      "dbId": 93,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1063",
+      "erp_name": "다나팜(한국코와)",
+      "kind": "MATCH_NAME",
+      "dbId": 94,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1065",
+      "erp_name": "원광제약",
+      "kind": "MATCH_NAME",
+      "dbId": 96,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1066",
+      "erp_name": "켄뷰",
+      "kind": "NEW"
+    },
+    {
+      "ct": "1067",
+      "erp_name": "유진약품",
+      "kind": "MATCH_NAME",
+      "dbId": 97,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1068",
+      "erp_name": "링티",
+      "kind": "MATCH_NAME",
+      "dbId": 98,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1069",
+      "erp_name": "제이웰팜(온라인팜)",
+      "kind": "MATCH_NAME",
+      "dbId": 99,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1070",
+      "erp_name": "유림티에이치씨(헬씨허그)",
+      "kind": "MATCH_NAME",
+      "dbId": 100,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1072",
+      "erp_name": "명인제약",
+      "kind": "MATCH_NAME",
+      "dbId": 103,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1074",
+      "erp_name": "주식회사 소연",
+      "kind": "NEW"
+    },
+    {
+      "ct": "1075",
+      "erp_name": "바이오가이아",
+      "kind": "MATCH_NAME",
+      "dbId": 107,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1076",
+      "erp_name": "박카스",
+      "kind": "MATCH_NAME",
+      "dbId": 108,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1079",
+      "erp_name": "더유제약",
+      "kind": "MATCH_NAME",
+      "dbId": 111,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1080",
+      "erp_name": "매일유업",
+      "kind": "MATCH_NAME",
+      "dbId": 113,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1083",
+      "erp_name": "옵투스",
+      "kind": "MATCH_NAME",
+      "dbId": 119,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1085",
+      "erp_name": "한독",
+      "kind": "MATCH_NAME",
+      "dbId": 121,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1086",
+      "erp_name": "유니템아이(온라인팜)",
+      "kind": "MATCH_NAME",
+      "dbId": 122,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1089",
+      "erp_name": "KJD바이오",
+      "kind": "MATCH_NAME",
+      "dbId": 129,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1090",
+      "erp_name": "기타",
+      "kind": "MATCH_NAME",
+      "dbId": 130,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1091",
+      "erp_name": "코리아헬스",
+      "kind": "AMBIGUOUS",
+      "reason": "name \"코리아헬스\" 매칭 2개",
+      "candidates": [
+        {
+          "id": 131,
+          "name": "코리아헬스"
+        },
+        {
+          "id": 64,
+          "name": "코리아헬스(주)"
+        }
+      ]
+    },
+    {
+      "ct": "1092",
+      "erp_name": "대지인팜",
+      "kind": "MATCH_NAME",
+      "dbId": 132,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1093",
+      "erp_name": "성진메디칼",
+      "kind": "MATCH_NAME",
+      "dbId": 133,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1094",
+      "erp_name": "제일헬스케어(온라인팜) hmp몰",
+      "kind": "MATCH_NAME",
+      "dbId": 134,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1096",
+      "erp_name": "비알피랩스(한독)",
+      "kind": "MATCH_NAME",
+      "dbId": 136,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1099",
+      "erp_name": "더굿팜(한국코와)",
+      "kind": "MATCH_NAME",
+      "dbId": 140,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1100",
+      "erp_name": "(주)비타바이오",
+      "kind": "MATCH_NAME",
+      "dbId": 141,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1102",
+      "erp_name": "비젼메디칼",
+      "kind": "MATCH_NAME",
+      "dbId": 143,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1104",
+      "erp_name": "익수제약",
+      "kind": "MATCH_NAME",
+      "dbId": 145,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1105",
+      "erp_name": "찬슬",
+      "kind": "MATCH_NAME",
+      "dbId": 146,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1110",
+      "erp_name": "부광약품",
+      "kind": "MATCH_NAME",
+      "dbId": 2,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1111",
+      "erp_name": "지오영(용인)",
+      "kind": "MATCH_NAME",
+      "dbId": 3,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1112",
+      "erp_name": "성진메딕",
+      "kind": "MATCH_NAME",
+      "dbId": 4,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1113",
+      "erp_name": "카롤",
+      "kind": "MATCH_NAME",
+      "dbId": 5,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1114",
+      "erp_name": "코스트메틱",
+      "kind": "MATCH_NAME",
+      "dbId": 6,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1115",
+      "erp_name": "제이에스에이치",
+      "kind": "MATCH_NAME",
+      "dbId": 8,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1116",
+      "erp_name": "다원엠디(코드프리)",
+      "kind": "NEW"
+    },
+    {
+      "ct": "1117",
+      "erp_name": "파마폰티스",
+      "kind": "NEW"
+    },
+    {
+      "ct": "1118",
+      "erp_name": "라이온코리아",
+      "kind": "MATCH_NAME",
+      "dbId": 11,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1119",
+      "erp_name": "삼일제약",
+      "kind": "MATCH_NAME",
+      "dbId": 12,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1120",
+      "erp_name": "아이월드제약",
+      "kind": "MATCH_NAME",
+      "dbId": 13,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1121",
+      "erp_name": "헬스앤소울=비타플러스",
+      "kind": "NEW"
+    },
+    {
+      "ct": "1122",
+      "erp_name": "네이처가든",
+      "kind": "MATCH_NAME",
+      "dbId": 16,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1123",
+      "erp_name": "이메디",
+      "kind": "MATCH_NAME",
+      "dbId": 17,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1124",
+      "erp_name": "옐로우스마일(후코이단)",
+      "kind": "MATCH_NAME",
+      "dbId": 18,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1125",
+      "erp_name": "리틀약사",
+      "kind": "MATCH_NAME",
+      "dbId": 19,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1126",
+      "erp_name": "비알피랩스(켄뷰)",
+      "kind": "MATCH_NAME",
+      "dbId": 20,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1127",
+      "erp_name": "척척바이오랩",
+      "kind": "MATCH_NAME",
+      "dbId": 21,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1128",
+      "erp_name": "제이와이인터메디",
+      "kind": "MATCH_NAME",
+      "dbId": 22,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1129",
+      "erp_name": "쥬퍼",
+      "kind": "MATCH_NAME",
+      "dbId": 23,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1130",
+      "erp_name": "휘샘",
+      "kind": "MATCH_NAME",
+      "dbId": 24,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1131",
+      "erp_name": "제네틱스팜",
+      "kind": "MATCH_NAME",
+      "dbId": 25,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1132",
+      "erp_name": "익스트림",
+      "kind": "MATCH_NAME",
+      "dbId": 26,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1133",
+      "erp_name": "제이컴퍼니",
+      "kind": "MATCH_NAME",
+      "dbId": 27,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1134",
+      "erp_name": "라라컴퍼니",
+      "kind": "MATCH_NAME",
+      "dbId": 28,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1135",
+      "erp_name": "데일리헬스",
+      "kind": "MATCH_NAME",
+      "dbId": 29,
+      "changed": [
+        "corp_name_view",
+        "president",
+        "join_date",
+        "buyer_type_name",
+        "buyer_status_name",
+        "payment_type_name",
+        "payment_gubun_name",
+        "payment_date"
+      ],
+      "connectCt": true
+    },
+    {
+      "ct": "1137",
+      "erp_name": "메가헬스케어",
+      "kind": "NEW"
+    }
+  ]
+}

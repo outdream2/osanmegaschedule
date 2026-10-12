@@ -35,37 +35,38 @@ interface Holiday {
 }
 
 // ─────────────────────────────────────────────────
-// in-memory cache · year → { data, at }
-// TTL 24h · 공휴일은 연중 거의 불변 (지정 공휴일 늦게 확정될 수는 있음)
+// 2026-10-08 · 사용자 지시 · 캐시 완전 제거 · 매 요청 실시간 API 호출
+//   · 과거 캐시로 인한 공휴일 누락 재발 방지
 // ─────────────────────────────────────────────────
-const holidayCache = new Map<number, { data: Holiday[]; at: number }>();
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
 
 // ─────────────────────────────────────────────────
-// 특일정보 API 호출 (연 단위 · 12개월 반복)
+// 특일정보 API 호출 (연 단위 · 2026-10-08 · fix · month 반복 → year 1회 · 2개 엔드포인트 merge)
+//   · getRestDeInfo (공휴일 + 대체공휴일 superset) + getHoliDeInfo (법정 15개 공휴일 보강)
+//   · month-by-month 반복 시 특정 월 fetch 실패 → 홀수 공휴일(예: 한글날) 누락 사례 fix
+//   · numOfRows=100 (연 전체 수용 · 대체공휴일 포함 최대 20여개)
+//   · 2026-10-08 · 캐시 완전 제거 · 매 호출 실시간 조회
 // ─────────────────────────────────────────────────
 async function fetchHolidays(year: number): Promise<Holiday[]> {
-  const cached = holidayCache.get(year);
-  if (cached && Date.now() - cached.at < CACHE_TTL) return cached.data;
-
   const apiKey = process.env.HOLIDAY_API_KEY;
   if (!apiKey || apiKey.trim() === "") {
     throw new HttpError(500, "HOLIDAY_API_KEY 환경변수 미설정 · .env 파일 확인 필요", "ENV_MISSING");
   }
 
-  const holidays: Holiday[] = [];
-  for (let m = 1; m <= 12; m++) {
+  // 2개 엔드포인트 (getRestDeInfo 우선 · getHoliDeInfo 보강) · year 단위 1회 호출
+  const endpoints = ["getRestDeInfo", "getHoliDeInfo"] as const;
+  const byDate = new Map<string, Holiday>(); // date → Holiday (중복 제거 · 첫 매치 우선)
+
+  for (const ep of endpoints) {
     const url =
-      `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo` +
+      `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/${ep}` +
       `?serviceKey=${encodeURIComponent(apiKey)}` +
       `&solYear=${year}` +
-      `&solMonth=${String(m).padStart(2, "0")}` +
-      `&_type=json&numOfRows=50`;
+      `&_type=json&numOfRows=100`;
 
     try {
       const resp = await fetch(url);
       if (!resp.ok) {
-        logger.warn(`[holidays] fetch fail · year=${year} month=${m} · status=${resp.status}`);
+        logger.warn(`[holidays] ${ep} fetch fail · year=${year} · status=${resp.status}`);
         continue;
       }
       const json: any = await resp.json();
@@ -77,16 +78,25 @@ async function fetchHolidays(year: number): Promise<Holiday[]> {
         const date = `${locdate.slice(0, 4)}-${locdate.slice(4, 6)}-${locdate.slice(6, 8)}`;
         const name = String(it?.dateName ?? "").trim();
         if (!name) continue;
-        const isHoliday = String(it?.isHoliday ?? "N") === "Y";
-        holidays.push({ date, name, is_holiday: isHoliday });
+        // getHoliDeInfo 는 모두 공휴일 (isHoliday 필드 없거나 Y)
+        // getRestDeInfo 는 isHoliday 명시 (Y/N) · N 포함할 수 있음 (예: 기념일)
+        const isHoliday = ep === "getHoliDeInfo" ? true : String(it?.isHoliday ?? "N") === "Y";
+        if (!byDate.has(date)) {
+          byDate.set(date, { date, name, is_holiday: isHoliday });
+        } else if (isHoliday && !byDate.get(date)!.is_holiday) {
+          // 보강 endpoint 가 is_holiday=true 로 승격 (예: 기념일 → 공휴일 승격)
+          byDate.set(date, { date, name, is_holiday: true });
+        }
       }
+      logger.info(`[holidays] ${ep} year=${year} · items=${list.length}`);
     } catch (e: any) {
-      logger.warn(`[holidays] fetch error · year=${year} month=${m} · ${e?.message ?? e}`);
-      // 개별 월 실패는 전체 실패 X · 다음 월 계속
+      logger.warn(`[holidays] ${ep} fetch error · year=${year} · ${e?.message ?? e}`);
     }
   }
 
-  holidayCache.set(year, { data: holidays, at: Date.now() });
+  const holidays = Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+  // 2026-10-08 · 사용자 지시 · 캐시 저장 제거 (실시간 조회만)
+  logger.info(`[holidays] year=${year} · total=${holidays.length} · public=${holidays.filter(h => h.is_holiday).length}`);
   return holidays;
 }
 
@@ -101,6 +111,8 @@ router.get("/api/holidays", asyncHandler(async (req, res) => {
   if (!Number.isFinite(year) || year < 1900 || year > 2100) {
     throw badRequest("year 파라미터 유효하지 않음 (1900~2100)");
   }
+  // 2026-10-08 · 사용자 지시 · 캐시 완전 제거 · 실시간 조회 · no-store 헤더
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   const holidays = await fetchHolidays(year);
   res.json({ year, holidays });
 }));

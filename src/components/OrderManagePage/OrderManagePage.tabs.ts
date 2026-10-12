@@ -74,7 +74,8 @@ export const PAYMENT_DEFAULT_TABS: SubTabDef<PaymentKey>[] = [
 export const STAT_DEFAULT_TABS: SubTabDef<StatKey>[] = [
   { key: "trending",  label: "급상승",       icon: TrendingUp,    color: "indigo"  },
   { key: "category",  label: "구역현황",     icon: PieChart,      color: "amber"   },
-  { key: "flow",      label: "상품현황",     icon: Boxes,         color: "sky"     },
+  // 2026-10-11 · 사용자 지시 · 상품현황 → 상품별 판매현황 라벨 변경
+  { key: "flow",      label: "상품별 판매현황", icon: Boxes,         color: "sky"     },
   { key: "supplier",  label: "공급사별현황", icon: Building2,     color: "emerald" },
   { key: "diff",      label: "손실추적",     icon: AlertTriangle, color: "rose"    },
 ];

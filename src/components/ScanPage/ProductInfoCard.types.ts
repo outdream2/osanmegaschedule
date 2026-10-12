@@ -31,13 +31,17 @@ export interface ProductInfoCardProps {
   editable?: boolean;
   /** 상품 필드 업데이트 후 콜백 (부모 state 동기화용) */
   onProductUpdate?: (updates: Partial<ProductInfo>) => void;
+  /** 2026-10-09 · 사용자 지시 · 모달 title 이 상품명 표시 시 · 내부 ProductBasicInfoPanel 상품명 field 숨김 */
+  hideProductName?: boolean;
 }
 
 // 컨텍스트별 default 섹션
 export const SECTION_PRESETS: Record<NonNullable<ProductInfoCardProps["context"]>, ProductInfoSections> = {
   scan: {
+    // 2026-10-11 · 사용자 지시 · 실재고확인 오른쪽 상세정보 · 매입가·판매가·현재수량 추가 (financial=true)
+    //   · 매입이력 유지 (purchaseHistory=true) · UI 톤 홈 랜딩 개선은 별도 작업 (TASKS)
     header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
-    orderRequest: true, productMeta: true, financial: false, extraInfo: false,
+    orderRequest: true, productMeta: true, financial: true, extraInfo: false,
     purchaseHistory: true,
   },
   "stock-manage": {

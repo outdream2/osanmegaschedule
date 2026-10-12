@@ -197,18 +197,29 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession,
              · unread 는 semantic status 유지 (rose solid) */}
       <button
         onClick={() => { setOpen((v) => !v); if (!open) fetchNotifications(); }}
-        className={`relative flex items-center justify-center rounded-md border transition-colors cursor-pointer ${
-          compact ? "w-7 h-7" : "w-9 h-9 rounded-lg"
-        } ${
-          hasUnread
-            ? "bg-rose-500/95 hover:bg-rose-600 border-rose-400 text-white"
-            : "bg-transparent hover:bg-white/[0.08] border-white/10 hover:border-white/20 text-white/85 hover:text-white"
-        } ${justArrived ? "notif-bell-shake" : ""}`}
+        // 2026-10-08 · 사용자 지시 · 배지 숫자 알림종 옆 (inline · overlay 아님)
+        className={[
+          "inline-flex items-center cursor-pointer gap-1",
+          "rounded-full transition-colors duration-150",
+          compact ? "h-7 px-1.5" : "h-9 px-2",
+          "hover:bg-white/[0.06]",
+          hasUnread ? "text-rose-300" : "text-white/80 hover:text-white",
+          justArrived ? "notif-bell-shake" : "",
+        ].join(" ")}
         title={hasUnread ? `미확인 알림 ${unreadCount}건` : "알림"}
+        aria-label={hasUnread ? `알림 ${unreadCount}건` : "알림"}
       >
-        <Bell size={compact ? 18 : 22} strokeWidth={hasUnread ? 2.4 : 2.2} className={hasUnread ? "animate-pulse" : ""} />
+        <Bell size={compact ? 17 : 19} strokeWidth={1.75} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[13px] font-bold flex items-center justify-center leading-none shadow-sm ring-2 ring-white tabular-nums">
+          <span
+            className={[
+              "inline-flex items-center justify-center",
+              "h-[18px] min-w-[18px] px-[5px]",
+              "rounded-full",
+              "bg-rose-500 text-white",
+              "text-[11px] font-bold leading-none tabular-nums tracking-tight",
+            ].join(" ")}
+          >
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

@@ -87,10 +87,17 @@ describe("classifyProduct · v3 규칙 (2026-10-07)", () => {
       expect(classifyProduct(undefined)).toBe("unknown");
       expect(classifyProduct("")).toBe("unknown");
     });
-    it("냉장고 · 물약 · 기타 → unknown", () => {
-      expect(classifyProduct("냉장고")).toBe("unknown");
-      expect(classifyProduct("냉장고>1>전체>전체")).toBe("unknown");
-      expect(classifyProduct("물약")).toBe("unknown");
+    // 2026-10-08 · 사용자 지시 · "냉장고" / "물약" 신규 분류로 이동 (unknown 아님)
+    it("냉장고 → fridge", () => {
+      expect(classifyProduct("냉장고")).toBe("fridge");
+      expect(classifyProduct("냉장고>1>전체>전체")).toBe("fridge");
+      expect(classifyProduct("냉장고>전체>전체>전체")).toBe("fridge");
+    });
+    it("물약 → liquid", () => {
+      expect(classifyProduct("물약")).toBe("liquid");
+      expect(classifyProduct("물약>전체")).toBe("liquid");
+    });
+    it("기타 매칭 안되는 문자열 → unknown", () => {
       expect(classifyProduct("기타")).toBe("unknown");
     });
     it("숫자 없음 · 매대·벽·뷰티 없음 → unknown", () => {

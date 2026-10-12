@@ -486,43 +486,42 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       emptyText="조건에 맞는 반품필요 상품 없음"
       emptyHint="매입주기·판매 기준을 조정해보세요"
       filters={
+        /* 2026-10-12 · TASKS #16 Step 1 · 홈 랜딩 톤 compact 재배치
+           · 조건 inline (매입주기↑ / 1M판매↓ / 3M판매↓) · label 간결화 · 폰트 14 · 간격 축소 */
         <div className="flex flex-col gap-2">
-          {/* 조건 입력 + 판매중 필터 */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
-              <span className="font-medium text-zinc-500">매입주기</span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <label className="inline-flex items-center gap-1 text-[14px] text-slate-600 shrink-0">
+              <span className="font-medium text-slate-500">매입주기</span>
               <input
                 type="number"
                 value={returnCycleMin}
                 onChange={e => setReturnCycleMin(Math.max(0, Number(e.target.value) || 0))}
-                className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
+                className="w-12 h-7 px-1.5 text-[14px] border border-slate-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
               />
-              <span className="text-zinc-500 whitespace-nowrap">일 ↑</span>
+              <span className="text-slate-500 whitespace-nowrap text-[13px]">일 ↑</span>
             </label>
-            {/* 2026-09-11 · #100 · 판매량 · 이하 검색 · ↓ 표기 (↑ 오표기 fix) */}
-            <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
-              <span className="font-medium text-zinc-500">1M판매</span>
+            <label className="inline-flex items-center gap-1 text-[14px] text-slate-600 shrink-0">
+              <span className="font-medium text-slate-500">1M판매</span>
               <input
                 type="number"
                 value={returnSalesMax}
                 onChange={e => setReturnSalesMax(Math.max(0, Number(e.target.value) || 0))}
-                className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
+                className="w-12 h-7 px-1.5 text-[14px] border border-slate-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
               />
-              <span className="text-zinc-500 whitespace-nowrap">개 ↓</span>
+              <span className="text-slate-500 whitespace-nowrap text-[13px]">개 ↓</span>
             </label>
-            <label className="inline-flex items-center gap-1 text-[15px] text-zinc-600 shrink-0">
-              <span className="font-medium text-zinc-500">3M판매</span>
+            <label className="inline-flex items-center gap-1 text-[14px] text-slate-600 shrink-0">
+              <span className="font-medium text-slate-500">3M판매</span>
               <input
                 type="number"
                 value={returnSalesQuarterMax}
                 onChange={e => setReturnSalesQuarterMax(Math.max(0, Number(e.target.value) || 0))}
-                className="w-11 h-7 px-1.5 text-[15px] border border-line rounded-md outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
+                className="w-12 h-7 px-1.5 text-[14px] border border-slate-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums text-right transition"
               />
-              <span className="text-zinc-500 whitespace-nowrap">개 ↓</span>
+              <span className="text-slate-500 whitespace-nowrap text-[13px]">개 ↓</span>
             </label>
             <SaleStatusFilter value={saleFilter} onChange={setSaleFilter} size="sm" />
           </div>
-          {/* 카테고리 칩 */}
           <CategoryChips
             value={returnCategoryFilter}
             onChange={(v) => setReturnCategoryFilter(String(v))}
@@ -534,15 +533,18 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       }
       headerActions={
         <div className="flex items-center gap-1.5">
+          {/* 2026-10-12 · 사용자 지시 "반품확정 누르면 발주화면처럼 반품요청서 보내기 나오고 발주요청서와 똑같은 구조"
+              · 메인 액션: "반품확정" → openBulkReturnModal (ReturnRequestModal · OrderModal 톤 · 공급사별 그룹 · PDF · sms/email 알림)
+              · 보조 액션: "즉시 확정" (레이블 명확화 · 모달 없이 즉시 done · 긴급용) */}
           <Button
             variant="danger"
             size="sm"
             icon={<Truck size={13} strokeWidth={2.5} />}
             onClick={openBulkReturnModal}
             disabled={returnSelected.size === 0}
-            title={returnSelected.size > 0 ? `선택된 ${returnSelected.size}개 상품 일괄 반품 신청` : "체크박스로 상품을 선택하세요"}
+            title={returnSelected.size > 0 ? `선택된 ${returnSelected.size}개 반품요청서 작성 모달 열기` : "체크박스로 상품을 선택하세요"}
           >
-            일괄 반품 ({returnSelected.size})
+            반품확정 ({returnSelected.size})
           </Button>
           <Button
             variant="primary"
@@ -551,10 +553,10 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
             onClick={bulkConfirmReturn}
             disabled={returnSelected.size === 0}
             loading={bulkConfirming}
-            title={returnSelected.size > 0 ? `선택된 ${returnSelected.size}개 상품 일괄 반품확정 (즉시 done)` : "체크박스로 상품을 선택하세요"}
+            title={returnSelected.size > 0 ? `선택된 ${returnSelected.size}개 즉시 확정 (모달 없이 · done 상태 저장)` : "체크박스로 상품을 선택하세요"}
             style={{ backgroundColor: returnSelected.size > 0 ? "#059669" : undefined, borderColor: returnSelected.size > 0 ? "#059669" : undefined }}
           >
-            {bulkConfirming ? "확정 중..." : `일괄 확정 (${returnSelected.size})`}
+            {bulkConfirming ? "확정 중..." : `즉시 확정 (${returnSelected.size})`}
           </Button>
         </div>
       }

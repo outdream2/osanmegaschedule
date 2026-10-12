@@ -5,7 +5,10 @@
 //   각 서브탭 · 기존 페이지 임베드 (embedded prop 전달 → 자체 AppNavHeader skip)
 // 2026-09-27 · 네비게이션 SSOT · useActiveNav Context 로 이관 (localStorage · CustomEvent 제거)
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { UserGear, CalendarDots, ForkKnife, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
+// 2026-10-11 · #14 · 통합 대시보드 + 업무요청 흡수 아이콘 추가 (SquaresFour · CheckSquare)
+// 2026-10-11 · #14 X안 · CalendarDots · ForkKnife 제거 (승인대기·점심불참 탭 삭제됨)
+// 2026-10-11 · #14-P3 · 사용자 지시 · inner tab 재편 · L2 TabBar 아이콘 2개만 (SquaresFour · FileText)
+import { FileText, SquaresFour, type Icon as PhIcon } from "@phosphor-icons/react";
 // 2026-09-27 · 네비게이션 SSOT · useActiveNav Context
 import { useActiveNav } from "../../contexts/ActiveNavContext";
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
@@ -13,7 +16,7 @@ import { useSidebarEnabled } from "../../hooks/useSidebar";
 import { useIsMobile } from "../../hooks/use-mobile";
 // 2026-08-17 · #131 · 페이지 안보이기 · 내부 subtab 필터
 import { usePagePermissions } from "../../hooks/usePagePermissions";
-import { LunchPage } from "../LunchPage/LunchPage";
+// 2026-10-11 · #14-P3 · LunchPage · subTab 제거됨 (경영현황 Overview 안 inner tab 외 render 안함)
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import type { AuthSession } from "../../types";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
@@ -26,14 +29,12 @@ import { getLeavePendingCount } from "../../lib/leaveApi";
 import { getResignationPendingCount } from "../../lib/resignationsApi";
 import { Spinner } from "../common/Spinner";
 
-// StaffManagePage · props 없음 · lazy 로드 (초기 진입 시에만 필요)
-const StaffManagePage = React.lazy(() => import("../StaffManagePage/StaffManagePage"));
 // 2026-08-03 · 각종 양식 페이지 · lazy 로드 (초기 진입 시에만 필요)
 const HrFormsPage = React.lazy(() => import("../HrFormsPage/HrFormsPage"));
-// 2026-08-03 · 서류작성 · 근로계약서·사직서 2탭 wrapper · lazy 로드
-const DocumentWriterPage = React.lazy(() => import("../DocumentWriterPage/DocumentWriterPage"));
-// 2026-08-03 · #180 · 승인대기 wrapper (연차승인 · 사직서승인 2탭 · pending 배지)
-const ApprovalCenterPage = React.lazy(() => import("../ApprovalCenterPage/ApprovalCenterPage"));
+// 2026-10-11 · #14-P3 · 경영현황 Overview · 매장 overview 공통 UI (OverviewHero + OverviewInnerTabs)
+//   · 5-way inner tabs 조립 (현황/직원관리/업무요청/인건비분석/근로계약서작성)
+//   · 기존 Dashboard/StaffManagePage/DocumentWriterPage/RequestsPage/WageAnalysis 는 Overview 안에서 lazy embed
+const BusinessOverview = React.lazy(() => import("./BusinessManagePage.Overview"));
 
 interface BusinessManagePageProps {
   onBack: () => void;
@@ -46,8 +47,11 @@ interface BusinessManagePageProps {
   initialFromPage?: AppNavPage | null;
 }
 
-// 2026-08-03 · "leave" 는 하위 호환 · 실제 렌더는 "approval-center" 로 리다이렉트
-type BmSubTab = "staff-manage" | "approval-center" | "lunch" | "hr-forms" | "document-writer";
+// 2026-10-11 · #14-P3 · L2 subTab 2개로 축소 (dashboard · hr-forms)
+//   · 다른 subTab 값들 (staff-manage · requests · document-writer · wage-analysis) 은 BusinessOverview 안 innerTab 으로 흡수
+//   · 하위 호환 · 기존 subTab 값 → dashboard + initialInnerTab 매핑
+type BmSubTab = "dashboard" | "hr-forms";
+type BmInnerKey = "overview" | "staff-manage" | "requests" | "wage-analysis" | "contract";
 
 // 색상 · 공통 TabBar 프리셋 (COLOR_MAP · TabBar.tsx 내부)
 type TabColor = "sky" | "amber" | "violet" | "teal" | "indigo" | "rose" | "emerald" | "orange" | "slate";
@@ -62,11 +66,10 @@ interface TabDef {
 
 // 2026-08-17 · 사용자 지시 · 점심불참 · 승인요청 그룹으로 이관 완료 · 경영 tab bar 에서 제거
 //   · lunch subtab · ApprovalRequestPage 로 노출 · BusinessManagePage 에서 중복 제거
+// 2026-10-11 · #14-P3 · L2 TabBar 2개로 축소 · 경영현황 안에서 inner tab 5개 (OverviewInnerTabs)
 const TABS: TabDef[] = [
-  { key: "staff-manage",     label: "직원관리",  icon: UserGear,       color: "emerald" },
-  { key: "approval-center",  label: "승인대기",  icon: CalendarDots,   color: "teal"    },
-  { key: "hr-forms",         label: "각종양식",  icon: FileText,       color: "amber"   },
-  { key: "document-writer",  label: "서류작성",  icon: NotePencil,     color: "indigo"  },
+  { key: "dashboard", label: "경영현황", icon: SquaresFour, color: "violet" },
+  { key: "hr-forms",  label: "각종양식", icon: FileText,    color: "amber"  },
 ];
 
 const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
@@ -79,16 +82,28 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
 }) => {
   // 2026-09-27 · 네비게이션 SSOT · useActiveNav · activeNav 로 initial 결정
   const { activeNav, setActiveByPage } = useActiveNav();
-  const initialBmSubTab: BmSubTab = (() => {
+  // 2026-10-11 · #14-P3 · 하위 호환 · 이전 subTab 값들 → dashboard + innerTab 매핑
+  //   · leave/approval-center/requests → innerTab=requests
+  //   · staff-manage → innerTab=staff-manage
+  //   · document-writer → innerTab=contract
+  //   · wage-analysis → innerTab=wage-analysis
+  //   · hr-forms 만 L2 subTab 으로 유지
+  const { initialBmSubTab, initialInnerTab } = (() => {
     const raw = activeNav?.itemKey === "business-manage" ? activeNav.subTab : null;
-    // 하위 호환 · 이전 저장값 "leave" → "approval-center"
-    const mapped: string | null | undefined =
-      raw === "leave" ? "approval-center" : raw;
-    if (mapped === "staff-manage" || mapped === "approval-center" || mapped === "hr-forms" ||
-        mapped === "document-writer" || mapped === "lunch") return mapped;
-    return "staff-manage";
+    if (raw === "hr-forms") return { initialBmSubTab: "hr-forms" as BmSubTab, initialInnerTab: null as BmInnerKey | null };
+    if (raw === "staff-manage") return { initialBmSubTab: "dashboard" as BmSubTab, initialInnerTab: "staff-manage" as BmInnerKey };
+    if (raw === "leave" || raw === "approval-center" || raw === "requests") {
+      return { initialBmSubTab: "dashboard" as BmSubTab, initialInnerTab: "requests" as BmInnerKey };
+    }
+    if (raw === "document-writer" || raw === "document-writer:contract") {
+      return { initialBmSubTab: "dashboard" as BmSubTab, initialInnerTab: "contract" as BmInnerKey };
+    }
+    if (raw === "wage-analysis") return { initialBmSubTab: "dashboard" as BmSubTab, initialInnerTab: "wage-analysis" as BmInnerKey };
+    return { initialBmSubTab: "dashboard" as BmSubTab, initialInnerTab: null as BmInnerKey | null };
   })();
   const [subTab, _setSubTab] = useState<BmSubTab>(initialBmSubTab);
+  // 2026-10-11 · #14-P3 · innerTab state (경영현황 안 5-way inner tab)
+  const [innerTab, setInnerTab] = useState<BmInnerKey>(initialInnerTab ?? "overview");
   // 2026-09-27 · 네비게이션 SSOT · setSubTab · activeNav 즉시 갱신
   const setSubTab = React.useCallback((next: BmSubTab) => {
     _setSubTab(next);
@@ -101,9 +116,9 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   const { perms: bmPerms } = usePagePermissions();
   const bmHiddenSubs = useMemo(() => {
     const set = new Set<BmSubTab>();
-    const subs: BmSubTab[] = ["staff-manage", "approval-center", "hr-forms", "document-writer"];
+    const subs: BmSubTab[] = ["dashboard", "hr-forms"];
     for (const s of subs) {
-      const perm = (bmPerms as any)[`business-manage:${s}`] || (bmPerms as any)[`business-manage:${s}:contract`];
+      const perm = (bmPerms as any)[`business-manage:${s}`];
       if (perm?.hidden === true) set.add(s);
     }
     return set;
@@ -111,15 +126,18 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   // 현재 subtab hidden 시 · 첫번째 visible 로 이동
   useEffect(() => {
     if (bmHiddenSubs.has(subTab)) {
-      const priority: BmSubTab[] = ["staff-manage", "approval-center", "hr-forms", "document-writer"];
+      const priority: BmSubTab[] = ["dashboard", "hr-forms"];
       const next = priority.find(k => !bmHiddenSubs.has(k));
       if (next) setSubTab(next);
     }
   }, [subTab, bmHiddenSubs]);
 
-  // 2026-08-10 · A · 스케쥴 [수정] 라우팅 · initialEmployeeId 진입 시 · staff-manage 강제 이동
+  // 2026-08-10 · A · 스케쥴 [수정] 라우팅 · initialEmployeeId 진입 시 · dashboard + innerTab=staff-manage 강제 이동
   useEffect(() => {
-    if (initialEmployeeId != null) setSubTab("staff-manage");
+    if (initialEmployeeId != null) {
+      setSubTab("dashboard");
+      setInnerTab("staff-manage");
+    }
   }, [initialEmployeeId]);
 
   // 2026-08-03 · 관리자(level>=8) 전용 · long-press 드래그 재정렬
@@ -128,17 +146,31 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   const sortable = useSortableTabs<TabDef>("tabOrder.business", TABS, isAdmin);
 
   // 2026-09-27 · 네비게이션 SSOT · activeNav 변화 감지 · 사이드바 재클릭 대응
-  //   · CustomEvent 리스너 제거 · activeNav.subTab 변화 감지 하나로 통합
+  //   · 2026-10-11 · #14-P3 · 하위호환 · raw 가 inner key 면 dashboard + innerTab 로 매핑
   useEffect(() => {
     if (activeNav?.itemKey !== "business-manage") return;
     const raw = activeNav.subTab;
-    const mapped: BmSubTab | null =
-      raw === "leave" ? "approval-center"
-      : (raw === "staff-manage" || raw === "approval-center" || raw === "hr-forms"
-         || raw === "document-writer" || raw === "lunch") ? raw
-      : null;
-    if (mapped && mapped !== subTab) {
-      _setSubTab(mapped);
+    if (raw === "hr-forms") {
+      if (subTab !== "hr-forms") _setSubTab("hr-forms");
+      return;
+    }
+    if (raw === "dashboard") {
+      if (subTab !== "dashboard") _setSubTab("dashboard");
+      return;
+    }
+    // inner tab 매핑 (dashboard + innerTab)
+    const innerMap: Record<string, BmInnerKey> = {
+      "staff-manage": "staff-manage",
+      "leave": "requests",
+      "approval-center": "requests",
+      "requests": "requests",
+      "document-writer": "contract",
+      "document-writer:contract": "contract",
+      "wage-analysis": "wage-analysis",
+    };
+    if (raw && innerMap[raw]) {
+      if (subTab !== "dashboard") _setSubTab("dashboard");
+      setInnerTab(innerMap[raw]);
     }
   }, [activeNav, subTab]);
 
@@ -201,10 +233,9 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
         onLogout={onLogout}
       />
 
-      {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · L2 TabBar는 모바일에서만 (사이드바 모드 중복 방지) */}
+      {/* 2026-10-11 · #14-P3 · L2 TabBar 축소 (경영현황 / 각종양식) · 내부 inner tabs 는 Overview 안에서 */}
+      {/* 2026-10-12 · 사용자 지시 · 상단 큰제목 "경영관리 · 경영현황 · 각종 양식" 제거 (중복 · 사이드바/inner tab 에 이미 라벨 존재) · PageTemplate 는 title/description null 이면 header 전부 skip */}
       <OperationsPageTemplate
-        title="경영관리"
-        description="직원관리 · 승인대기 · 계약서 작성 · 각종 양식"
         tabs={!(SIDEBAR_ENABLED && !isBmMobile) ? (
           <TabBar<BmSubTab>
             level={2}
@@ -213,7 +244,8 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
               label: t.label,
               icon: t.icon,
               color: t.color,
-              badge: (t.key === "approval-center" && showApprovalBadge) ? approvalPending : undefined,
+              // 2026-10-11 · pending 뱃지 (연차+사직서) · 경영현황 라벨 옆
+              badge: (t.key === "dashboard" && showApprovalBadge) ? approvalPending : undefined,
             }))}
             activeKey={subTab}
             onSelect={setSubTab}
@@ -226,34 +258,24 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
         ) : undefined}
       >
       <main className="flex-1 flex flex-col min-h-0">
-        {subTab === "staff-manage" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="직원관리 로딩 중..." size={16} tone="brand" /></div>}>
-            <StaffManagePage
-              onWriteContract={() => setSubTab("document-writer")}
-              initialSelectedId={initialEmployeeId ?? null}
-              onBackToSchedule={initialFromPage === "schedule" && onNavigate ? () => onNavigate("schedule") : undefined}
+        {/* 2026-10-11 · #14-P3 · 경영현황 Overview (OverviewHero + 5-way OverviewInnerTabs) */}
+        {subTab === "dashboard" && (
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="경영현황 로딩 중..." size={16} tone="brand" /></div>}>
+            <BusinessOverview
+              authSession={authSession}
+              onBack={onBack}
+              onNavigate={onNavigate}
+              onLogout={onLogout}
+              initialEmployeeId={initialEmployeeId}
+              initialFromPage={initialFromPage}
+              activeInnerTab={innerTab}
+              onInnerTabChange={setInnerTab}
             />
           </Suspense>
-        )}
-        {subTab === "approval-center" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="승인대기 로딩 중..." size={16} tone="brand" /></div>}>
-            <ApprovalCenterPage
-              {...commonSubPageProps}
-              onCountsChange={(c) => setApprovalPending(c.leave + c.resignation)}
-            />
-          </Suspense>
-        )}
-        {subTab === "lunch" && (
-          <LunchPage {...commonSubPageProps} />
         )}
         {subTab === "hr-forms" && (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="각종 양식 로딩 중..." size={16} tone="brand" /></div>}>
             <HrFormsPage {...commonSubPageProps} />
-          </Suspense>
-        )}
-        {subTab === "document-writer" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="근로계약서 로딩 중..." size={16} tone="brand" /></div>}>
-            <DocumentWriterPage {...commonSubPageProps} allowedTabs={["contract", "settings"]} />
           </Suspense>
         )}
       </main>

@@ -38,9 +38,28 @@ const VIEW_TABS: { key: ScheduleV2View; label: string; icon: React.ElementType }
 ];
 
 export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout, onNavigate, onEditEmployeeAtStaffManage }) => {
+  // 2026-10-09 · 디버그 · 사용자 지시 "원인철저분석" · schedule-v2 진입 즉시 로그아웃 추적
+  //   · render 가 호출됐는지 · mount 완료됐는지 · unmount 되는지 · 각 단계 식별
+  // eslint-disable-next-line no-console
+  console.log("[ScheduleV2Page] RENDER", { hasAuthSession: !!authSession, role: authSession?.role, pathname: typeof window !== "undefined" ? window.location.pathname : "SSR" });
   // 2026-10-07 · activeNav 등록 · AppNavHeader breadcrumb 정확
-  const { setActiveByPage } = useActiveNav();
-  useEffect(() => { setActiveByPage("schedule-v2" as AppNavPage); }, [setActiveByPage]);
+  // 2026-10-09 · fix · remount 루프 방지 · 이미 active 면 skip
+  //   · 원인 · useEffect 가 setActiveByPage 호출 → activeNav state 변경 → consumer re-render → remount → 반복
+  //   · 해결 · activeNav.itemKey 가 이미 "schedule-v2" 면 skip (idempotent · 더 이상 state 변경 X)
+  const { activeNav, setActiveByPage } = useActiveNav();
+  useEffect(() => {
+    if (activeNav?.itemKey === "schedule-v2") {
+      // 이미 active · state 변경 skip (loop 방지)
+      return;
+    }
+    // eslint-disable-next-line no-console
+    console.log("[ScheduleV2Page] MOUNTED · setActiveByPage(schedule-v2)", { prevItemKey: activeNav?.itemKey });
+    setActiveByPage("schedule-v2" as AppNavPage);
+    return () => {
+      // eslint-disable-next-line no-console
+      console.log("[ScheduleV2Page] UNMOUNTING");
+    };
+  }, [activeNav?.itemKey, setActiveByPage]);
 
   // 월간/주간/일간/직원별 전환
   const [view, setView] = useState<ScheduleV2View>("month");
@@ -172,7 +191,14 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F4F7FA] flex flex-col">
+    // 2026-10-09 · 사용자 지시 · "초고해상도" · 글씨 선명도 + GPU 가속 + Pretendard 피쳐 ON
+    //   · antialiased · 서브픽셀 블러링 OFF (글씨 또렷)
+    //   · text-rendering optimizeLegibility · 리가쳐·커닝 최적화
+    //   · font-feature-settings · Pretendard "cv11" (일/점 구분) + "ss10" (한글 가독)
+    //   · transform translateZ(0) · GPU layer promote (스크롤·sticky 선명도)
+    <div
+      className="min-h-screen bg-[#F4F7FA] flex flex-col antialiased [text-rendering:optimizeLegibility] [font-feature-settings:'cv11','ss10','tnum'] [transform:translateZ(0)] [-webkit-font-smoothing:antialiased] [-moz-osx-font-smoothing:grayscale]"
+    >
       <AppNavHeader
         activePage={"schedule-v2" as AppNavPage}
         authSession={authSession}
@@ -195,7 +221,7 @@ export const ScheduleV2Page: React.FC<Props> = ({ authSession, onBack, onLogout,
                   key={t.key}
                   type="button"
                   onClick={() => setView(t.key)}
-                  className={`relative inline-flex items-center gap-1.5 px-4 py-2 text-[14px] font-semibold tracking-tight transition cursor-pointer ${
+                  className={`relative inline-flex items-center gap-1.5 px-4 py-2 text-[15px] md:text-[16px] font-semibold tracking-tight transition cursor-pointer ${
                     active
                       ? "text-brand-deep"
                       : "text-zinc-500 hover:text-ink"

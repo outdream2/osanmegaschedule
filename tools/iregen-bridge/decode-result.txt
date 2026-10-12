@@ -1,0 +1,538 @@
+﻿iregen-decoder.exe : [iregen-decoder] 파일 입력 · samples\inventory-response-full.xml
+At line:1 char:86
++ ... ; $output = & ".\bin\Debug\net48\iregen-decoder.exe" -f "samples\inve ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([iregen-decoder...sponse-full.xml:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[iregen-decoder]   파일 크기 · 312088 bytes
+[iregen-decoder]   읽은 문자 · 312088 chars
+
+[STEP 1] XML 무결성 검증
+  XML parse · OK
+  <Inventory_StatusResult> · 발견
+  Base64 추출 · 311712 chars
+  </Inventory_StatusResult> · OK
+  </soap:Envelope> · OK
+  → D:\antigravity_projects\megatown-staff-scheduler\tools\iregen-bridge\debug\inventory-full-base64.txt
+
+[STEP 2] Base64 decode
+  byte length · 233784
+  SHA-256     · 71ba93348ca3b682f460d0521eb213070bb14a8e26a92f4118fd9daff6420c98
+  first 64    · EC-DD-07-94-1C-C5-15-FF-7B-C5-9F-02-49-E4-9C-73-56-57-55-27-32-88-1C-05-22-27-B1-48-0B-2C-48-5A-B1-BB-02-04-36-39-83-C9
+-39-E7-9C-73-0E-36-39-07-93-83-C1-C6-64-63-72-0E-AF-7A-B6-BE-96-58-EF-4C
+  last 64     · 50-02-A0-D0-DC-05-94-00-28-34-77-05-25-00-0A-CD-55-A0-04-40-A1-B9-1A-94-00-28-34-77-03-25-00-0A-CD-DD-41-09-80-42-73-0F
+-50-02-A0-D0-DC-13-94-00-28-34-F7-02-25-00-0A-CD-87-81-12-00-85-2D-FE-3F
+  → D:\antigravity_projects\megatown-staff-scheduler\tools\iregen-bridge\debug\inventory-full-compressed.bin
+
+[STEP 3] Deflate decompress (ServiceCommon.DecompressDataSet 재현)
+  byte length · 1618882
+  SHA-256     · f8eaa7ee15aaf656c3d050fc6f16d1d4727b2d615d71d6da9463c0a46f1577fd
+  first 64    · 00-01-00-00-00-FF-FF-FF-FF-01-00-00-00-00-00-00-00-0C-02-00-00-00-4E-53-79-73-74-65-6D-2E-44-61-74-61-2C-20-56-65-72-73
+-69-6F-6E-3D-34-2E-30-2E-30-2E-30-2C-20-43-75-6C-74-75-72-65-3D-6E-65-75
+  last 64     · 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
+-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-0B
+  → D:\antigravity_projects\megatown-staff-scheduler\tools\iregen-bridge\debug\inventory-full-decompressed.bin
+
+[STEP 4] BinaryFormatter.Deserialize
+  Object Type · System.Data.DataSet
+  DataSetName · NewDataSet
+  Tables.Count · 1
+
+[STEP 5] Schema 분석
+
+  Table 1 · Table
+    Rows.Count    · 4070
+    Columns.Count · 42
+    Columns:
+      · PPCode : String (AllowDBNull=True)
+      · PCode : String (AllowDBNull=True)
+      · ProductName : String (AllowDBNull=True)
+      · IsTax : String (AllowDBNull=True)
+      · TaxPercent : Int16 (AllowDBNull=True)
+      · UnitCode : String (AllowDBNull=True)
+      · StCode : String (AllowDBNull=True)
+      · StorageName : String (AllowDBNull=True)
+      · IsSaleStatusName : String (AllowDBNull=True)
+      · CtCode : String (AllowDBNull=True)
+      · CCorpName : String (AllowDBNull=True)
+      · IsBuyerType : String (AllowDBNull=True)
+      · LcateName : String (AllowDBNull=True)
+      · McateName : String (AllowDBNull=True)
+      · ScateName : String (AllowDBNull=True)
+      · DcateName : String (AllowDBNull=True)
+      · LocationName : String (AllowDBNull=True)
+      · CostPrice : Decimal (AllowDBNull=True)
+      · CostPrice1 : Decimal (AllowDBNull=True)
+      · ConfirmDate1 : DateTime (AllowDBNull=True)
+      · CostPrice2 : Decimal (AllowDBNull=True)
+      · ConfirmDate2 : DateTime (AllowDBNull=True)
+      · CostPrice3 : Decimal (AllowDBNull=True)
+      · ConfirmDate3 : DateTime (AllowDBNull=True)
+      · CostPrice4 : Decimal (AllowDBNull=True)
+      · PrvStock : Decimal (AllowDBNull=True)
+      · BuyStock : Int32 (AllowDBNull=True)
+      · BuyReturnStock : Int32 (AllowDBNull=True)
+      · StorageMoveIn : Int32 (AllowDBNull=True)
+      · StorageMoveOut : Int32 (AllowDBNull=True)
+      · StorageMoveAutoIn : Int32 (AllowDBNull=True)
+      · StorageMoveAutoOut : Int32 (AllowDBNull=True)
+      · SaleStock : Int32 (AllowDBNull=True)
+      · SaleReturnStock : Int32 (AllowDBNull=True)
+      · ProductUseStock : Int32 (AllowDBNull=True)
+      · ProductReturnUseStock : Int32 (AllowDBNull=True)
+      · ProductBadStock : Int32 (AllowDBNull=True)
+      · ProductReturnBadStock : Int32 (AllowDBNull=True)
+      · PlusStock : Decimal (AllowDBNull=True)
+      · MinusStock : Decimal (AllowDBNull=True)
+      · SubdivisionMinus : Int32 (AllowDBNull=True)
+      · SubdivisionPlus : Int32 (AllowDBNull=True)
+
+  전체 DataSet JSON · D:\antigravity_projects\megatown-staff-scheduler\tools\iregen-bridge\output\inventory-full-full.json
+{
+  "source": "inventory-response-full",
+  "datasetName": "NewDataSet",
+  "tableCount": 1,
+  "tables": [
+    {
+      "tableName": "Table",
+      "rowCount": 4070,
+      "columnCount": 42,
+      "columns": [
+        {
+          "name": "PPCode",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "PCode",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "ProductName",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "IsTax",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "TaxPercent",
+          "type": "System.Int16",
+          "allowDBNull": true
+        },
+        {
+          "name": "UnitCode",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "StCode",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "StorageName",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "IsSaleStatusName",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "CtCode",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "CCorpName",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "IsBuyerType",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "LcateName",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "McateName",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "ScateName",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "DcateName",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "LocationName",
+          "type": "System.String",
+          "allowDBNull": true
+        },
+        {
+          "name": "CostPrice",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        },
+        {
+          "name": "CostPrice1",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        },
+        {
+          "name": "ConfirmDate1",
+          "type": "System.DateTime",
+          "allowDBNull": true
+        },
+        {
+          "name": "CostPrice2",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        },
+        {
+          "name": "ConfirmDate2",
+          "type": "System.DateTime",
+          "allowDBNull": true
+        },
+        {
+          "name": "CostPrice3",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        },
+        {
+          "name": "ConfirmDate3",
+          "type": "System.DateTime",
+          "allowDBNull": true
+        },
+        {
+          "name": "CostPrice4",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        },
+        {
+          "name": "PrvStock",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        },
+        {
+          "name": "BuyStock",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "BuyReturnStock",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "StorageMoveIn",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "StorageMoveOut",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "StorageMoveAutoIn",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "StorageMoveAutoOut",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "SaleStock",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "SaleReturnStock",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "ProductUseStock",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "ProductReturnUseStock",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "ProductBadStock",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "ProductReturnBadStock",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "PlusStock",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        },
+        {
+          "name": "MinusStock",
+          "type": "System.Decimal",
+          "allowDBNull": true
+        },
+        {
+          "name": "SubdivisionMinus",
+          "type": "System.Int32",
+          "allowDBNull": true
+        },
+        {
+          "name": "SubdivisionPlus",
+          "type": "System.Int32",
+          "allowDBNull": true
+        }
+      ],
+      "sampleRows": [
+        {
+          "PPCode": null,
+          "PCode": "10001",
+          "ProductName": "삼양연고 100g",
+          "IsTax": "과세",
+          "TaxPercent": "10",
+          "UnitCode": "EA",
+          "StCode": "000",
+          "StorageName": "용인점",
+          "IsSaleStatusName": "판매중",
+          "CtCode": "1134",
+          "CCorpName": "라라컴퍼니",
+          "IsBuyerType": "일반매입",
+          "LcateName": "코스트팜약국",
+          "McateName": "약국2",
+          "ScateName": "라라컴퍼니",
+          "DcateName": null,
+          "LocationName": "벽>21>전체>전체",
+          "CostPrice": "5243.0000000000000",
+          "CostPrice1": "5243.0000000000000",
+          "ConfirmDate1": "2026-09-29T16:39:59.0000000",
+          "CostPrice2": null,
+          "ConfirmDate2": null,
+          "CostPrice3": null,
+          "ConfirmDate3": null,
+          "CostPrice4": null,
+          "PrvStock": "15.00",
+          "BuyStock": "0",
+          "BuyReturnStock": "0",
+          "StorageMoveIn": "0",
+          "StorageMoveOut": "0",
+          "StorageMoveAutoIn": "0",
+          "StorageMoveAutoOut": "0",
+          "SaleStock": "2",
+          "SaleReturnStock": "0",
+          "ProductUseStock": "0",
+          "ProductReturnUseStock": "0",
+          "ProductBadStock": "0",
+          "ProductReturnBadStock": "0",
+          "PlusStock": "0.00",
+          "MinusStock": "0.00",
+          "SubdivisionMinus": "0",
+          "SubdivisionPlus": "0"
+        },
+        {
+          "PPCode": null,
+          "PCode": "10004",
+          "ProductName": "밀프로정 dog",
+          "IsTax": "과세",
+          "TaxPercent": "10",
+          "UnitCode": "EA",
+          "StCode": "000",
+          "StorageName": "용인점",
+          "IsSaleStatusName": "판매중",
+          "CtCode": "1134",
+          "CCorpName": "라라컴퍼니",
+          "IsBuyerType": "일반매입",
+          "LcateName": "코스트팜약국",
+          "McateName": "약국2",
+          "ScateName": "라라컴퍼니",
+          "DcateName": null,
+          "LocationName": "벽>21>전체>전체",
+          "CostPrice": "21000.0000000000000",
+          "CostPrice1": null,
+          "ConfirmDate1": null,
+          "CostPrice2": null,
+          "ConfirmDate2": null,
+          "CostPrice3": null,
+          "ConfirmDate3": null,
+          "CostPrice4": null,
+          "PrvStock": "7.00",
+          "BuyStock": "0",
+          "BuyReturnStock": "0",
+          "StorageMoveIn": "0",
+          "StorageMoveOut": "0",
+          "StorageMoveAutoIn": "0",
+          "StorageMoveAutoOut": "0",
+          "SaleStock": "1",
+          "SaleReturnStock": "0",
+          "ProductUseStock": "0",
+          "ProductReturnUseStock": "0",
+          "ProductBadStock": "0",
+          "ProductReturnBadStock": "0",
+          "PlusStock": "0.00",
+          "MinusStock": "0.00",
+          "SubdivisionMinus": "0",
+          "SubdivisionPlus": "0"
+        },
+        {
+          "PPCode": null,
+          "PCode": "10005",
+          "ProductName": "대지실리콘뒷꿈치보습풋패드(검정)",
+          "IsTax": "과세",
+          "TaxPercent": "10",
+          "UnitCode": "EA",
+          "StCode": "000",
+          "StorageName": "용인점",
+          "IsSaleStatusName": "판매중",
+          "CtCode": "1092",
+          "CCorpName": "대지인팜",
+          "IsBuyerType": "일반매입",
+          "LcateName": "코스트팜약국",
+          "McateName": "약국2",
+          "ScateName": "대지인팜",
+          "DcateName": null,
+          "LocationName": null,
+          "CostPrice": "4091.0000000000000",
+          "CostPrice1": null,
+          "ConfirmDate1": null,
+          "CostPrice2": null,
+          "ConfirmDate2": null,
+          "CostPrice3": null,
+          "ConfirmDate3": null,
+          "CostPrice4": null,
+          "PrvStock": "97.00",
+          "BuyStock": "0",
+          "BuyReturnStock": "0",
+          "StorageMoveIn": "0",
+          "StorageMoveOut": "0",
+          "StorageMoveAutoIn": "0",
+          "StorageMoveAutoOut": "0",
+          "SaleStock": "0",
+          "SaleReturnStock": "0",
+          "ProductUseStock": "0",
+          "ProductReturnUseStock": "0",
+          "ProductBadStock": "0",
+          "ProductReturnBadStock": "0",
+          "PlusStock": "0.00",
+          "MinusStock": "0.00",
+          "SubdivisionMinus": "0",
+          "SubdivisionPlus": "0"
+        },
+        {
+          "PPCode": null,
+          "PCode": "10006",
+          "ProductName": "일양펭귄시트로넬라썸머링블루1EA",
+          "IsTax": "과세",
+          "TaxPercent": "10",
+          "UnitCode": "EA",
+          "StCode": "000",
+          "StorageName": "용인점",
+          "IsSaleStatusName": "판매중",
+          "CtCode": "1092",
+          "CCorpName": "대지인팜",
+          "IsBuyerType": "일반매입",
+          "LcateName": "코스트팜약국",
+          "McateName": "약국2",
+          "ScateName": "대지인팜",
+          "DcateName": null,
+          "LocationName": null,
+          "CostPrice": "3300.0000000000000",
+          "CostPrice1": null,
+          "ConfirmDate1": null,
+          "CostPrice2": null,
+          "ConfirmDate2": null,
+          "CostPrice3": null,
+          "ConfirmDate3": null,
+          "CostPrice4": null,
+          "PrvStock": "0.00",
+          "BuyStock": "0",
+          "BuyReturnStock": "0",
+          "StorageMoveIn": "0",
+          "StorageMoveOut": "0",
+          "StorageMoveAutoIn": "0",
+          "StorageMoveAutoOut": "0",
+          "SaleStock": "0",
+          "SaleReturnStock": "0",
+          "ProductUseStock": "0",
+          "ProductReturnUseStock": "0",
+          "ProductBadStock": "0",
+          "ProductReturnBadStock": "0",
+          "PlusStock": "0.00",
+          "MinusStock": "0.00",
+          "SubdivisionMinus": "0",
+          "SubdivisionPlus": "0"
+        },
+        {
+          "PPCode": null,
+          "PCode": "10007",
+          "ProductName": "일양펭귄시트로넬라썸머링핑크1EA",
+          "IsTax": "과세",
+          "TaxPercent": "10",
+          "UnitCode": "EA",
+          "StCode": "000",
+          "StorageName": "용인점",
+          "IsSaleStatusName": "판매중",
+          "CtCode": "1092",
+          "CCorpName": "대지인팜",
+          "IsBuyerType": "일반매입",
+          "LcateName": "코스트팜약국",
+          "McateName": "약국2",
+          "ScateName": "대지인팜",
+          "DcateName": null,
+          "LocationName": null,
+          "CostPrice": "3300.0000000000000",
+          "CostPrice1": null,
+          "ConfirmDate1": null,
+          "CostPrice2": null,
+          "ConfirmDate2": null,
+          "CostPrice3": null,
+          "ConfirmDate3": null,
+          "CostPrice4": null,
+          "PrvStock": "25.00",
+          "BuyStock": "0",
+          "BuyReturnStock": "0",
+          "StorageMoveIn": "0",
+          "StorageMoveOut": "0",
+          "StorageMoveAutoIn": "0",
+          "StorageMoveAutoOut": "0",
+          "SaleStock": "0",
+          "SaleReturnStock": "0",
+          "ProductUseStock": "0",
+          "ProductReturnUseStock": "0",
+          "ProductBadStock": "0",
+          "ProductReturnBadStock": "0",
+          "PlusStock": "0.00",
+          "MinusStock": "0.00",
+          "SubdivisionMinus": "0",
+          "SubdivisionPlus": "0"
+        }
+      ]
+    }
+  ]
+}
+

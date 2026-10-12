@@ -1,0 +1,186 @@
+{
+  "generatedAt": "2026-10-07T07:41:43.682Z",
+  "notes": "READ-ONLY · 3-run median after warm-up · supabase-js direct (no HTTP server)",
+  "probes": [
+    {
+      "label": "employees · narrowed(18 cols)",
+      "median_ms": 110,
+      "runs_ms": [
+        97,
+        110,
+        114
+      ],
+      "rows": 19,
+      "payload_bytes": 7051,
+      "warm_err": null
+    },
+    {
+      "label": "employees · SELECT *",
+      "median_ms": 97,
+      "runs_ms": [
+        97,
+        97,
+        105
+      ],
+      "rows": 19,
+      "payload_bytes": 24977,
+      "warm_err": null
+    },
+    {
+      "label": "schedules · like date 2026-10-%",
+      "median_ms": 101,
+      "runs_ms": [
+        93,
+        101,
+        104
+      ],
+      "rows": 589,
+      "payload_bytes": 83168,
+      "warm_err": null
+    },
+    {
+      "label": "schedules · like date 2026-09-%",
+      "median_ms": 100,
+      "runs_ms": [
+        92,
+        100,
+        103
+      ],
+      "rows": 570,
+      "payload_bytes": 80415,
+      "warm_err": null
+    },
+    {
+      "label": "schedules · like date 2026-11-%",
+      "median_ms": 95,
+      "runs_ms": [
+        88,
+        95,
+        116
+      ],
+      "rows": 0,
+      "payload_bytes": 2,
+      "warm_err": null
+    },
+    {
+      "label": "schedules · all rows",
+      "median_ms": 98,
+      "runs_ms": [
+        97,
+        98,
+        99
+      ],
+      "rows": 1000,
+      "payload_bytes": 138089,
+      "warm_err": null
+    },
+    {
+      "label": "leave_requests · all · select narrow",
+      "median_ms": 91,
+      "runs_ms": [
+        90,
+        91,
+        94
+      ],
+      "rows": 13,
+      "payload_bytes": 3964,
+      "warm_err": null
+    },
+    {
+      "label": "leave_requests · emp=1 · select narrow",
+      "median_ms": 94,
+      "runs_ms": [
+        93,
+        94,
+        101
+      ],
+      "rows": 2,
+      "payload_bytes": 631,
+      "warm_err": null
+    },
+    {
+      "label": "leave_requests · emp=1 approved for balance",
+      "median_ms": 90,
+      "runs_ms": [
+        90,
+        90,
+        101
+      ],
+      "rows": 0,
+      "payload_bytes": 2,
+      "warm_err": null
+    },
+    {
+      "label": "leave_requests · pending count head",
+      "median_ms": 117,
+      "runs_ms": [
+        100,
+        117,
+        119
+      ],
+      "rows": null,
+      "payload_bytes": 82,
+      "warm_err": null
+    },
+    {
+      "label": "schedules · upcoming leaves 2026-10-07..2026-10-21",
+      "median_ms": 115,
+      "runs_ms": [
+        113,
+        115,
+        116
+      ],
+      "rows": 0,
+      "payload_bytes": 2,
+      "warm_err": null
+    },
+    {
+      "label": "schedules · year 2026 월차 count path",
+      "median_ms": 103,
+      "runs_ms": [
+        91,
+        103,
+        116
+      ],
+      "rows": 8,
+      "payload_bytes": 137,
+      "warm_err": null
+    },
+    {
+      "label": "app_settings · key=all_settings",
+      "median_ms": 94,
+      "runs_ms": [
+        88,
+        94,
+        96
+      ],
+      "rows": 1,
+      "payload_bytes": 1379,
+      "warm_err": null
+    },
+    {
+      "label": "app_settings · key=schedule_lock_2026-10",
+      "median_ms": 95,
+      "runs_ms": [
+        88,
+        95,
+        111
+      ],
+      "rows": null,
+      "payload_bytes": 85,
+      "warm_err": null
+    },
+    {
+      "label": "employees · retireDate (F9 batch)",
+      "median_ms": 93,
+      "runs_ms": [
+        89,
+        93,
+        97
+      ],
+      "rows": 15,
+      "payload_bytes": 1055,
+      "warm_err": null
+    }
+  ]
+}

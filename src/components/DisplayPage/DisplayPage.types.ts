@@ -13,6 +13,7 @@ export type DpSubTabKey =
   | "payment"
   | "statistics"
   | "revenue"         // 2026-10-05 · 사용자 지시 · 매장 아래 매출 페이지 (ERP sales 기반 신규)
+  | "sales"           // 2026-10-10 · #12 · 판매현황 (RevenuePage 재사용 · initialTab="sales")
   | "return"          // 2026-08-25 · 사용자 지시 · 반품 (신규)
   | "stock-arrivals"
   | "store"
