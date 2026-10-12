@@ -15,6 +15,8 @@ import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "../Displ
 import { Spinner } from "../common/Spinner";
 
 const StaffManagePage = React.lazy(() => import("../StaffManagePage/StaffManagePage"));
+// 2026-10-12 · 사용자 지시 · 상세 drawer 는 리스트 X · 상세정보만 (EmployeeInfoPanel · inline edit)
+const EmployeeInfoPanel = React.lazy(() => import("../schedule-v2/views/employee/EmployeeInfoPanel").then(m => ({ default: m.EmployeeInfoPanel })));
 const DocumentWriterPage = React.lazy(() => import("../DocumentWriterPage/DocumentWriterPage"));
 const RequestsPage = React.lazy(() => import("../RequestsPage/RequestsPage").then(m => ({ default: m.RequestsPage })));
 const WageAnalysisTab = React.lazy(() => import("./BusinessManagePage.WageAnalysis"));
@@ -246,47 +248,49 @@ export const BusinessOverview: React.FC<BusinessOverviewProps> = ({
         )}
       </div>
 
-      {/* 2026-10-12 · 사용자 지시 "클릭 시 슬라이딩 윈도우 · 편집 가능" · 직원 상세 slide drawer
-          · 우측 slide-in · StaffManagePage lazy embed (상세 영역 재사용) · overlay click close */}
-      {drawerEmpId != null && (
-        <div
-          className="fixed inset-0 z-50 bg-black/30 flex justify-end animate-in fade-in duration-150"
-          onClick={() => setDrawerEmpId(null)}
-          role="dialog"
-          aria-modal="true"
-        >
+      {/* 2026-10-12 · 사용자 지시 "직원상세편집이 아직도 리스트로 · 상세정보만"
+          · drawer · 리스트 포함 StaffManagePage → EmployeeInfoPanel (상세 전용 · flat sections + inline edit)
+          · 폭 축소 (560px · schedule-v2 drawer 와 동일) · 상세 집중 */}
+      {drawerEmpId != null && (() => {
+        const drawerEmp = employees.find(e => e.id === drawerEmpId);
+        return (
           <div
-            className="w-full md:w-[72%] lg:w-[60%] bg-white h-full shadow-2xl overflow-y-auto flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-            style={{ animation: "slideInRight 180ms ease-out" }}
+            className="fixed inset-0 z-50 bg-black/30 flex justify-end animate-in fade-in duration-150"
+            onClick={() => setDrawerEmpId(null)}
+            role="dialog"
+            aria-modal="true"
           >
-            <header className="sticky top-0 bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between z-10">
-              <div className="flex items-center gap-2">
-                <span className="w-[3px] h-[14px] bg-indigo-500 rounded-full" aria-hidden />
-                <h2 className="text-[15px] md:text-[16px] font-semibold text-ink">직원 상세 · 편집</h2>
-              </div>
+            <div
+              className="w-full sm:w-[560px] bg-white h-full shadow-2xl flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+              style={{ animation: "slideInRight 180ms ease-out" }}
+            >
               <button
                 type="button"
                 onClick={() => setDrawerEmpId(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-slate-100 cursor-pointer text-slate-500 text-[18px]"
+                className="absolute top-3 right-3 z-20 w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-100 cursor-pointer text-slate-500 text-[16px]"
                 aria-label="닫기"
                 title="닫기 (Esc)"
               >
                 ✕
               </button>
-            </header>
-            <div className="flex-1 min-h-0">
-              <Suspense fallback={<FallbackSpinner label="직원 상세 로딩 중..." />}>
-                <StaffManagePage
-                  initialSelectedId={drawerEmpId}
-                  onWriteContract={() => { setDrawerEmpId(null); setInnerTab("contract"); }}
-                />
-              </Suspense>
+              {drawerEmp ? (
+                <Suspense fallback={<FallbackSpinner label="직원 상세 로딩 중..." />}>
+                  <EmployeeInfoPanel
+                    employee={drawerEmp}
+                    onSaved={(updated) => setEmployees(prev => prev.map(e => (e.id === updated.id ? { ...e, ...updated } as EmployeeExt : e)))}
+                  />
+                </Suspense>
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <FallbackSpinner label="직원 정보 로딩 중..." />
+                </div>
+              )}
             </div>
+            <style>{`@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
           </div>
-          <style>{`@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
@@ -373,7 +377,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({
             title="미승인 요청"
             count={pendingTotal}
             unit="건"
-            meta={pendingTotal === 0 ? "대기 중인 요청 없음" : `연차 ${leavePending}건 · 사직서 ${resignPending}건`}
+            meta={pendingTotal === 0 ? "대기 중인 요청 없음" : `휴가 ${leavePending}건 · 사직서 ${resignPending}건`}
             onClick={() => onOpenTab("requests")}
             tone={pendingTotal > 0 ? "indigo" : "slate"}
           />
@@ -457,7 +461,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({
                   className="py-2 flex items-center gap-3 hover:bg-slate-50 -mx-2 px-2 rounded cursor-pointer">
                 <span className="w-14 text-[12px] text-slate-500 shrink-0 tabular-nums">{String(r.created_at ?? "").slice(5, 10)}</span>
                 <span className="text-[14px] md:text-[15px] text-ink font-medium shrink-0">{r.employee_name}</span>
-                <span className="text-[12px] px-1.5 py-[1px] rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200 font-medium shrink-0">{r.leave_type ?? "연차"}</span>
+                <span className="text-[12px] px-1.5 py-[1px] rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200 font-medium shrink-0">{r.leave_type ?? "휴가"}</span>
                 <span className="text-[13px] text-slate-500 tabular-nums shrink-0">
                   {String(r.start_date ?? "").slice(5, 10)}
                   {r.end_date && r.end_date !== r.start_date && (
