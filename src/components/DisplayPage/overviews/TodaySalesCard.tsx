@@ -22,6 +22,7 @@ interface DaySaleProductItem {
   purchasePrice?: number | null;
   salePrice?: number | null;
   supplier?: string | null;
+  lastPurchaseDate?: string | null;
 }
 interface DayProductApiResponse { ok: boolean; items?: DaySaleProductItem[]; error?: string; }
 
@@ -34,7 +35,7 @@ const todayYmd = (): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-interface ProductMeta { purchase_price: number | null; sale_price: number | null }
+interface ProductMeta { purchase_price: number | null; sale_price: number | null; supplier: string | null; last_purchase_date: string | null }
 
 // 마진율 bucket · 음수/저/중/고 · 사용자 관심 "마진 적은데 수량 많음 or 음수"
 interface MarginBucket { k: string; label: string; min: number; max: number; color: string; }
@@ -62,18 +63,20 @@ export const TodaySalesCard: React.FC = () => {
       const today = todayYmd();
       const [salesR, metaR] = await Promise.all([
         api.get<DayProductApiResponse>(`/api/erp/sale-day-products?date=${today}`),
-        api.get<Record<string, { purchase_price?: number | null; sale_price?: number | null }>>(
+        api.get<Record<string, { supplier?: string | null; purchase_price?: number | null; sale_price?: number | null; last_purchase_date?: string | null }>>(
           "/api/products-map?fields=slim&include_inactive=1&include_hidden=1",
         ).catch(() => ({ data: {} })),
       ]);
       if (!salesR.data.ok) throw new Error(salesR.data.error ?? "오늘 판매 조회 실패");
       setItems(salesR.data.items ?? []);
       const m = new Map<string, ProductMeta>();
-      const rec = (metaR.data ?? {}) as Record<string, { purchase_price?: number | null; sale_price?: number | null }>;
+      const rec = (metaR.data ?? {}) as Record<string, { supplier?: string | null; purchase_price?: number | null; sale_price?: number | null; last_purchase_date?: string | null }>;
       Object.entries(rec).forEach(([pcode, p]) => {
         m.set(pcode, {
+          supplier: p?.supplier ?? null,
           purchase_price: p?.purchase_price != null ? Number(p.purchase_price) : null,
           sale_price: p?.sale_price != null ? Number(p.sale_price) : null,
+          last_purchase_date: p?.last_purchase_date ?? null,
         });
       });
       setProductsMeta(m);
@@ -318,7 +321,27 @@ export const TodaySalesCard: React.FC = () => {
                     <td className="px-3 py-1.5">
                       <div className="flex flex-col min-w-0">
                         <span className="text-ink font-medium truncate" title={r.productName ?? ""}>{r.productName ?? "—"}</span>
-                        <span className="text-[11.5px] text-slate-400 tabular-nums truncate">{r.pcode ?? ""}</span>
+                        {(() => {
+                          const fb = r.pcode ? productsMeta.get(r.pcode) : null;
+                          const supplier = r.supplier ?? fb?.supplier ?? null;
+                          const lastP = r.lastPurchaseDate ?? fb?.last_purchase_date ?? null;
+                          const parts: Array<React.ReactNode> = [];
+                          if (r.pcode) parts.push(<span key="pc" className="tabular-nums">{r.pcode}</span>);
+                          if (supplier) parts.push(<span key="sp" className="truncate">{supplier}</span>);
+                          if (pp != null) parts.push(<span key="pp" className="tabular-nums">매입 {fmt(pp)}원</span>);
+                          if (sp != null) parts.push(<span key="sl" className="tabular-nums">판매 {fmt(sp)}원</span>);
+                          if (lastP) parts.push(<span key="lp" className="tabular-nums">최근매입 {String(lastP).slice(5)}</span>);
+                          return (
+                            <div className="flex flex-wrap items-center gap-x-1.5 text-[11.5px] text-slate-400 min-w-0">
+                              {parts.map((p, idx) => (
+                                <React.Fragment key={idx}>
+                                  {idx > 0 && <span className="text-slate-300">·</span>}
+                                  {p}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </td>
                     <td className="px-3 py-1.5 text-right">
