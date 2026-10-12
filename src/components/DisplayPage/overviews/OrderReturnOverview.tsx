@@ -52,6 +52,8 @@ import { ExceptionNoteModal } from "../../OrderManagePage/ExceptionNoteModal";
 import { PurchaseExceptionCard } from "./PurchaseExceptionCard";
 // 2026-10-12 · 사용자 지시 · 매입/발주 overlay chart (bar + line)
 import { PurchaseOrderOverlayChart, type PurchaseOrderOverlayDatum } from "./PurchaseOrderOverlayChart";
+// 2026-10-12 · 사용자 지시 · 조회기간 필터 전체 통일 · 공통 QuickRangePills 적용
+import { QuickRangePills, type QuickRangeKey } from "../../common/OverviewPeriodFilter";
 import { ApiError } from "../../../lib/apiClient";
 import { getErrorMessage } from "../../../lib/errorMessage";
 import { shortDate } from "../../../lib/dateFormat";
@@ -118,7 +120,11 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
   const [returnsPending, setReturnsPending] = useState<AnyRow[] | null>(null);
   const [returnsDone, setReturnsDone] = useState<AnyRow[] | null>(null);
   const [search, setSearch] = useState("");
-  const [period, setPeriod] = useState<"7" | "14" | "30">("14");
+  // 2026-10-12 · 공통 QuickRangePills · "today"/"7d"/"14d"/"30d" · default "14d"
+  //   · 기존 period "7"/"14"/"30" 호환 위해 periodDays (effective days) 로 변환해서 사용
+  const [quickRange, setQuickRange] = useState<QuickRangeKey>("14d");
+  const periodDays = quickRange === "today" ? 1 : quickRange === "7d" ? 7 : quickRange === "14d" ? 14 : quickRange === "30d" ? 30 : 14;
+  const period = String(periodDays) as "1" | "7" | "14" | "30";
   const [orderDetail, setOrderDetail] = useState<OrderDetailRow | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   // 2026-10-09 · 사용자 지시 · 적정재고 미달만 보기 토글 · uncheck 시 전체 상품 검색
@@ -961,28 +967,8 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
       <OverviewToolbar search={search} onSearch={setSearch} placeholder="상품·코드·공급사·발주번호 검색"
         right={
           <>
-            {/* 2026-10-12 · 사용자 지시 "재고진열현황 필터 가져와" · InventoryDisplayOverview 패턴 복제
-                · 기간 필터 pill (오늘·7일·14일·한달) · h-7 · text-[13px] · rounded-md · active bg-white */}
-            <div className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-md p-0.5" role="tablist" aria-label="기간 필터">
-              {([
-                { k: "7"  as const, label: "7일" },
-                { k: "14" as const, label: "14일" },
-                { k: "30" as const, label: "한달" },
-              ]).map(p => (
-                <button
-                  key={p.k}
-                  type="button"
-                  onClick={() => setPeriod(p.k)}
-                  className={`h-7 px-2.5 rounded-sm text-[13px] font-semibold tabular-nums transition-colors cursor-pointer ${
-                    period === p.k ? "bg-white text-brand-deep shadow-sm" : "text-slate-500 hover:text-ink"
-                  }`}
-                  aria-selected={period === p.k}
-                  role="tab"
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
+            {/* 2026-10-12 · 사용자 지시 · 조회기간 필터 전체 통일 · 공통 QuickRangePills · 월별 생략 (API 호환) */}
+            <QuickRangePills value={quickRange} onChange={setQuickRange} showMonthMode={false} />
             <button type="button" onClick={refresh}
               className="h-7 px-2.5 text-[13px] font-semibold text-slate-600 border border-slate-200 rounded-md bg-white hover:bg-slate-50 cursor-pointer transition-colors">새로고침</button>
           </>

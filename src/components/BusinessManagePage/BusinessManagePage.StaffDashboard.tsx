@@ -7,10 +7,11 @@
 //   참고 · StaffManagePage 는 유지 (딥링크/다른 라우팅 호환) · 이 대시보드는 inner tab 전용
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { X as XIcon } from "@phosphor-icons/react";
-import { listEmployees } from "../../lib/employeeApi";
+import { X as XIcon, PencilSimple as PencilIcon, FloppyDisk as SaveIcon } from "@phosphor-icons/react";
+import { listEmployees, updateEmployee, type EmployeeUpdatePayload } from "../../lib/employeeApi";
 import type { Employee } from "../../types";
 import { Spinner } from "../common/Spinner";
+import { useToast, toastClass } from "../../hooks/useToast";
 
 const CARD = "bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]";
 
@@ -246,6 +247,9 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onOpenFullStaffM
           emp={selectedEmp}
           onClose={() => setSelectedId(null)}
           onOpenFullStaffManage={() => onOpenFullStaffManage(selectedEmp.id)}
+          onSaved={(updated) => {
+            setEmployees(prev => prev.map(e => (e.id === updated.id ? { ...e, ...updated } as EmployeeExt : e)));
+          }}
         />
       )}
     </div>
@@ -260,19 +264,98 @@ interface StaffQuickDrawerProps {
   emp: EmployeeExt;
   onClose: () => void;
   onOpenFullStaffManage: () => void;
+  onSaved?: (updated: Employee) => void;
 }
 
-const StaffQuickDrawer: React.FC<StaffQuickDrawerProps> = ({ emp, onClose, onOpenFullStaffManage }) => {
-  // ESC 닫기
+type EditForm = {
+  position: string;
+  rank: string;
+  employmentType: string;
+  phone: string;
+  email: string;
+  address: string;
+  annual_leave_days: string;
+  description: string;
+};
+
+const toEditForm = (e: EmployeeExt): EditForm => ({
+  position: e.position ?? "",
+  rank: e.rank ?? "",
+  employmentType: e.employmentType ?? "",
+  phone: e.phone ?? "",
+  email: e.email ?? "",
+  address: e.address ?? "",
+  annual_leave_days: e.annual_leave_days != null ? String(e.annual_leave_days) : "",
+  description: e.description ?? "",
+});
+
+const StaffQuickDrawer: React.FC<StaffQuickDrawerProps> = ({ emp, onClose, onOpenFullStaffManage, onSaved }) => {
+  const { toast, showSuccess, showError } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<EditForm>(() => toEditForm(emp));
+  const [saving, setSaving] = useState(false);
+
+  // 다른 직원 선택되면 form 초기화 · edit 모드 해제
   useEffect(() => {
-    const onKey = (ev: KeyboardEvent) => { if (ev.key === "Escape") onClose(); };
+    setForm(toEditForm(emp));
+    setEditing(false);
+  }, [emp]);
+
+  // ESC 닫기 · 편집 중이면 편집 취소만
+  useEffect(() => {
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key !== "Escape") return;
+      if (editing) {
+        setEditing(false);
+        setForm(toEditForm(emp));
+      } else {
+        onClose();
+      }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, editing, emp]);
 
   const today = todayYmd();
   const tenureMonths = monthsBetween(emp.hireDate ?? "", today);
   const tenureLabel = `${Math.floor(tenureMonths / 12)}년 ${tenureMonths % 12}개월`;
+
+  const handleChange = (k: keyof EditForm, v: string) => setForm(prev => ({ ...prev, [k]: v }));
+
+  const handleSave = async () => {
+    const annualLeaveNum = form.annual_leave_days.trim() === "" ? null : Number(form.annual_leave_days);
+    if (annualLeaveNum != null && !Number.isFinite(annualLeaveNum)) {
+      showError("연차 일수가 올바른 숫자가 아닙니다.");
+      return;
+    }
+    const patch: EmployeeUpdatePayload = {
+      position: form.position.trim(),
+      rank: form.rank.trim() === "" ? null : form.rank.trim(),
+      employmentType: form.employmentType.trim(),
+      phone: form.phone.trim() === "" ? null : form.phone.trim(),
+      email: form.email.trim() === "" ? null : form.email.trim(),
+      address: form.address.trim() === "" ? null : form.address.trim(),
+      annual_leave_days: annualLeaveNum,
+      description: form.description,
+    };
+    setSaving(true);
+    try {
+      const updated = await updateEmployee(emp as Employee, patch);
+      showSuccess("저장되었습니다.");
+      onSaved?.(updated);
+      setEditing(false);
+    } catch (err) {
+      console.error("[StaffQuickDrawer] save failed", err);
+      showError(err instanceof Error ? err.message : "저장 실패");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setForm(toEditForm(emp));
+    setEditing(false);
+  };
 
   return (
     <>
@@ -299,14 +382,27 @@ const StaffQuickDrawer: React.FC<StaffQuickDrawerProps> = ({ emp, onClose, onOpe
               </span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded hover:bg-slate-100 text-slate-500"
-            aria-label="닫기"
-          >
-            <XIcon size={16} weight="bold" />
-          </button>
+          <div className="flex items-center gap-1">
+            {!editing && (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="h-7 px-2 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[13px] text-ink font-medium flex items-center gap-1"
+                aria-label="편집"
+              >
+                <PencilIcon size={13} weight="bold" />
+                편집
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1 rounded hover:bg-slate-100 text-slate-500"
+              aria-label="닫기"
+            >
+              <XIcon size={16} weight="bold" />
+            </button>
+          </div>
         </header>
 
         {/* body */}
@@ -314,14 +410,35 @@ const StaffQuickDrawer: React.FC<StaffQuickDrawerProps> = ({ emp, onClose, onOpe
           <InfoBlock label="기본">
             <InfoRow k="입사일" v={emp.hireDate ?? "—"} />
             <InfoRow k="근속" v={tenureLabel} />
-            <InfoRow k="고용형태" v={emp.employmentType ?? "—"} />
-            <InfoRow k="직급" v={emp.rank ?? "—"} />
+            {editing ? (
+              <>
+                <EditRow k="고용형태" value={form.employmentType} onChange={(v) => handleChange("employmentType", v)} placeholder="예: 정규직" />
+                <EditRow k="직급" value={form.rank} onChange={(v) => handleChange("rank", v)} placeholder="예: 과장" />
+                <EditRow k="직군" value={form.position} onChange={(v) => handleChange("position", v)} placeholder="예: 매장" />
+              </>
+            ) : (
+              <>
+                <InfoRow k="고용형태" v={emp.employmentType ?? "—"} />
+                <InfoRow k="직급" v={emp.rank ?? "—"} />
+                <InfoRow k="직군" v={emp.position ?? "—"} />
+              </>
+            )}
           </InfoBlock>
 
           <InfoBlock label="연락처">
-            <InfoRow k="전화번호" v={emp.phone ?? "—"} />
-            <InfoRow k="이메일" v={emp.email ?? "—"} />
-            <InfoRow k="주소" v={emp.address ?? "—"} />
+            {editing ? (
+              <>
+                <EditRow k="전화번호" value={form.phone} onChange={(v) => handleChange("phone", v)} inputMode="tel" placeholder="010-0000-0000" />
+                <EditRow k="이메일" value={form.email} onChange={(v) => handleChange("email", v)} inputMode="email" placeholder="name@example.com" />
+                <EditRow k="주소" value={form.address} onChange={(v) => handleChange("address", v)} />
+              </>
+            ) : (
+              <>
+                <InfoRow k="전화번호" v={emp.phone ?? "—"} />
+                <InfoRow k="이메일" v={emp.email ?? "—"} />
+                <InfoRow k="주소" v={emp.address ?? "—"} />
+              </>
+            )}
           </InfoBlock>
 
           <InfoBlock label="계약">
@@ -330,26 +447,63 @@ const StaffQuickDrawer: React.FC<StaffQuickDrawerProps> = ({ emp, onClose, onOpe
             <InfoRow k="계약 유형" v={emp.contract_type ?? "—"} />
           </InfoBlock>
 
-          <InfoBlock label="연차">
-            <InfoRow k="부여" v={emp.annual_leave_days != null ? `${emp.annual_leave_days}일` : "—"} />
+          <InfoBlock label="휴가">
+            {editing ? (
+              <EditRow k="부여" value={form.annual_leave_days} onChange={(v) => handleChange("annual_leave_days", v)} inputMode="numeric" placeholder="일 수" suffix="일" />
+            ) : (
+              <InfoRow k="부여" v={emp.annual_leave_days != null ? `${emp.annual_leave_days}일` : "—"} />
+            )}
           </InfoBlock>
 
           <InfoBlock label="메모">
-            <p className="text-[14px] md:text-[15px] text-slate-700 whitespace-pre-wrap">{emp.description || "—"}</p>
+            {editing ? (
+              <textarea
+                value={form.description}
+                onChange={(ev) => handleChange("description", ev.target.value)}
+                rows={4}
+                className="w-full text-[14px] md:text-[15px] text-ink border border-slate-200 rounded-md px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-violet-200 resize-none"
+                placeholder="메모 입력"
+              />
+            ) : (
+              <p className="text-[14px] md:text-[15px] text-slate-700 whitespace-pre-wrap">{emp.description || "—"}</p>
+            )}
           </InfoBlock>
         </div>
 
-        {/* footer · 상세 편집 열기 */}
+        {/* footer · 편집 시 저장/취소 · 평상시 상세 편집 */}
         <footer className="border-t border-slate-200 p-3 shrink-0">
-          <button
-            type="button"
-            onClick={onOpenFullStaffManage}
-            className="w-full h-10 rounded-md bg-violet-600 text-white text-[14px] md:text-[15px] font-semibold hover:bg-violet-700 transition-colors"
-          >
-            상세 편집 열기 (전체 직원관리)
-          </button>
+          {editing ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={saving}
+                className="flex-1 h-10 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[14px] md:text-[15px] font-semibold text-ink disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-[2] h-10 rounded-md bg-violet-600 text-white text-[14px] md:text-[15px] font-semibold hover:bg-violet-700 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-60"
+              >
+                <SaveIcon size={15} weight="bold" />
+                {saving ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenFullStaffManage}
+              className="w-full h-10 rounded-md bg-violet-600 text-white text-[14px] md:text-[15px] font-semibold hover:bg-violet-700 transition-colors"
+            >
+              상세 편집 열기 (전체 직원관리)
+            </button>
+          )}
         </footer>
       </aside>
+      {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
     </>
   );
 };
@@ -372,6 +526,32 @@ const InfoRow: React.FC<{ k: string; v: string }> = ({ k, v }) => (
   <div className="flex items-start justify-between gap-3 text-[14px] md:text-[15px]">
     <span className="text-slate-500 shrink-0">{k}</span>
     <span className="text-ink text-right min-w-0 truncate tabular-nums">{v}</span>
+  </div>
+);
+
+interface EditRowProps {
+  k: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  suffix?: string;
+}
+
+const EditRow: React.FC<EditRowProps> = ({ k, value, onChange, placeholder, inputMode, suffix }) => (
+  <div className="flex items-center justify-between gap-3 text-[14px] md:text-[15px]">
+    <span className="text-slate-500 shrink-0">{k}</span>
+    <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
+      <input
+        type="text"
+        value={value}
+        onChange={(ev) => onChange(ev.target.value)}
+        placeholder={placeholder}
+        inputMode={inputMode}
+        className="w-full max-w-[220px] text-right text-[14px] md:text-[15px] text-ink border border-slate-200 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-violet-200 tabular-nums"
+      />
+      {suffix && <span className="text-slate-500 shrink-0">{suffix}</span>}
+    </div>
   </div>
 );
 

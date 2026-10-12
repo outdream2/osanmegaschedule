@@ -22,6 +22,8 @@ import { PurchasePriceVariationCard } from "./PurchasePriceVariationCard";
 import { PurchaseOrderOverlayChart, type PurchaseOrderOverlayDatum } from "./PurchaseOrderOverlayChart";
 // 2026-10-12 · 사용자 지시 · 재고·진열 현황 → 매입재고진열현황 inner tab 으로 이동
 import { InventoryDisplayOverview } from "./InventoryDisplayOverview";
+// 2026-10-12 · 사용자 지시 · 조회기간 필터 전체 통일 · 공통 QuickRangePills + MonthPills
+import { QuickRangePills, MonthPills, type QuickRangeKey } from "../../common/OverviewPeriodFilter";
 
 export interface PurchaseArrivalOverviewProps { onSelectSubTab: (sub: DpSubTabKey) => void; }
 
@@ -74,7 +76,11 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   const PAGE_STEP = 10;
   // 2026-10-09 · 사용자 지시 · 위치별 bar 클릭 → 해당 위치 상품 리스트 drawer
   const [locDrawer, setLocDrawer] = useState<{ key: LocationKey; label: string } | null>(null);
-  const [period, setPeriod] = useState<"7" | "14" | "30">("14");
+  // 2026-10-12 · 공통 QuickRangePills · "today"/"7d"/"14d"/"30d" (default 14d)
+  //   · 호환 periodDays (effective days) 유지 (match API · 라벨용)
+  const [quickRange, setQuickRange] = useState<QuickRangeKey>("14d");
+  const periodDays = quickRange === "today" ? 1 : quickRange === "7d" ? 7 : quickRange === "14d" ? 14 : quickRange === "30d" ? 30 : 14;
+  const period = String(periodDays) as "1" | "7" | "14" | "30";
   // 2026-10-12 · 사용자 지시 · 일별 매입금액 chart · 일별/주간/월별 3-way 토글
   const [chartMode, setChartMode] = useState<"daily" | "weekly" | "monthly">("daily");
   const [purchases, setPurchases] = useState<PurchaseRow[] | null>(null);
@@ -477,8 +483,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   const [priceAnomalies, setPriceAnomalies] = useState<AnomalyRow[]>([]);
   const [priceAnomaliesTotal, setPriceAnomaliesTotal] = useState<number>(0);
   const [priceAnomaliesLoading, setPriceAnomaliesLoading] = useState<boolean>(false);
-  // 2026-10-12 · 사용자 지시 · "전품목 검색" 체크박스 · check 시 page_size 상한 (200)
-  const [priceAnomaliesAll, setPriceAnomaliesAll] = useState<boolean>(false);
+  // 2026-10-12 · 사용자 지시 · "전품목 검색은 탭 페이지에서만" · 현황판 compact · page_size 50 고정
 
   // months_list · selectedMonths 있으면 그것, 없으면 현재 월 (period 는 월 단위 API 와 매칭 X)
   const monthsListParam = useMemo(() => {
@@ -493,8 +498,8 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
     const params = new URLSearchParams();
     params.set("months_list", monthsListParam);
     params.set("sort", "rate");          // 변화율 desc
-    // 2026-10-12 · 사용자 지시 · 체크 시 전품목 (API max 200) · 미체크 default 50 (상위만)
-    params.set("page_size", priceAnomaliesAll ? "200" : "50");
+    // 2026-10-12 · 사용자 지시 · 현황판 compact · page_size 50 고정 (전품목 검색은 탭 페이지로 이관)
+    params.set("page_size", "50");
     api.get<any>(`/api/purchases/price-variance?${params}`)
       .then(({ data }) => {
         if (!alive) return;
@@ -518,7 +523,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
       .catch(() => { if (alive) { setPriceAnomalies([]); setPriceAnomaliesTotal(0); } })
       .finally(() => { if (alive) setPriceAnomaliesLoading(false); });
     return () => { alive = false; };
-  }, [monthsListParam, priceAnomaliesAll]);
+  }, [monthsListParam]);
 
   // 2026-10-12 · drawer · row 클릭 → 상세 매입 timeline (별도 history API 호출)
   const [priceDrawerCode, setPriceDrawerCode] = useState<number | null>(null); // purchaseDetailId
@@ -619,21 +624,9 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
         description="매입이력 · 일별 매입금액 · 매입이상 · 실재고 vs ERP 재고자산 비교"
         right={
           <div className="flex items-center gap-2 flex-wrap">
-            <MonthToggleSelector
-              selectedMonths={selectedMonths}
-              onChange={setSelectedMonths}
-              maxMonths={6}
-              minOne={false}
-            />
-            <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value as any)}
-              disabled={selectedMonths.length > 0}
-              className="h-8 px-2.5 text-[13px] font-semibold text-ink border border-slate-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              title={selectedMonths.length > 0 ? "월 선택 중 · 기간 선택 비활성" : "기간 선택"}
-            >
-              <option value="7">최근 7일</option><option value="14">최근 14일</option><option value="30">최근 30일</option>
-            </select>
+            {/* 2026-10-12 · 사용자 지시 · 조회기간 필터 전체 통일 · MonthPills + QuickRangePills (pill 포맷) */}
+            <MonthPills selectedMonths={selectedMonths} onChange={setSelectedMonths} monthCount={6} />
+            <QuickRangePills value={quickRange} onChange={setQuickRange} showMonthMode={false} />
           </div>
         }
       />
@@ -1017,26 +1010,27 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
             onViewAll={() => { try { sessionStorage.setItem("overview-order-return.innerTab", "match"); } catch {} onSelectSubTab("overview-order-return"); }}
           />
 
-          {/* 2026-10-12 · 사용자 지시 · 매입이상 아래 "매입단가 이상" 카드
-              · 매입이력 (period 적용) 중 같은 상품 단가 변화 있는 것만 리스트업 · 변화율 desc */}
-          <section className={`${CARD} overflow-hidden`}>
+          {/* 2026-10-12 · 사용자 지시 · "현황판 섹션 클릭 → 매입단가이상 페이지 (price-variation 탭) 이동"
+              · section header 또는 "전체보기 →" 버튼 클릭 시 setInnerTab("price-variation") */}
+          <section
+            className={`${CARD} overflow-hidden cursor-pointer hover:border-rose-300 transition-colors`}
+            onClick={() => setInnerTab("price-variation")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setInnerTab("price-variation"); } }}
+            title="클릭 · 매입단가이상 탭으로 이동"
+          >
             <header className="flex items-center gap-2.5 px-5 pt-4 pb-3 border-b border-slate-100 flex-wrap">
               <span className="w-[3px] h-[16px] bg-rose-500 rounded-full shrink-0" aria-hidden />
               <Warning size={18} weight="fill" className="text-rose-500" />
-              <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">매입단가 변동 품목</h3>
+              <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight flex items-center gap-1.5">
+                매입단가 변동 품목
+                <span className="text-[12px] text-slate-400 font-medium">→</span>
+              </h3>
               <span className="text-[13px] text-slate-500 font-medium tabular-nums">
                 · {priceAnomalies.length} / {priceAnomaliesTotal}건 · {effectiveRange.from} ~ {effectiveRange.to}
               </span>
-              {/* 2026-10-12 · 사용자 지시 · "전품목 검색" 체크박스 · check 시 page_size 200 */}
-              <label className="ml-auto inline-flex items-center gap-1.5 cursor-pointer select-none text-[12.5px] font-medium text-slate-600 hover:text-ink transition-colors">
-                <input
-                  type="checkbox"
-                  checked={priceAnomaliesAll}
-                  onChange={(e) => setPriceAnomaliesAll(e.target.checked)}
-                  className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
-                />
-                전품목 검색
-              </label>
+              <span className="ml-auto text-[12px] text-rose-600 font-semibold">전체보기 →</span>
             </header>
             <div className="max-h-[320px] overflow-y-auto">
               {priceAnomaliesLoading && priceAnomalies.length === 0 ? (
