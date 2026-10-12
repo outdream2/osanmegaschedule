@@ -5,8 +5,8 @@
 //   · 하단 (적정한 곳) · 진열위치 / 적정재고 / 재고자산
 //   · 홈 랜딩 톤 · rounded-[12px] + border-slate-200 + thin shadow · 2-tier typography
 
-import React from "react";
-import { Package } from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Package, Camera } from "lucide-react";
 import type { ProductInfo } from "../../lib/productsCache";
 import { formatDisplayLocation } from "../../lib/formatDisplayLocation";
 
@@ -27,6 +27,19 @@ const Field: React.FC<{ label: string; value: string; emphasize?: boolean }> = (
 );
 
 export const ScanProductSummary: React.FC<ScanProductSummaryProps> = ({ product }) => {
+  // 2026-10-12 · UI-11-SCAN · 사용자 지시 "사진 찍어서 넣을 수 있는 구조" ·
+  //   · camera input (file accept image/* + capture environment · 모바일 카메라 바로 열림)
+  //   · 로컬 base64 preview · Phase 2 · Supabase storage upload API
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(typeof reader.result === "string" ? reader.result : null);
+    reader.readAsDataURL(file);
+  };
+
   if (!product) {
     return (
       <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] px-4 py-5">
@@ -56,8 +69,30 @@ export const ScanProductSummary: React.FC<ScanProductSummaryProps> = ({ product 
 
   return (
     <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] px-4 py-3">
-      {/* 상단 header · 상품명 + 바코드 */}
-      <div className="flex items-start gap-2 mb-3 pb-2.5 border-b border-slate-100">
+      {/* 상단 header · 상품 사진 + 상품명 + 바코드 + 카메라 input (UI-11-SCAN) */}
+      <div className="flex items-start gap-3 mb-3 pb-2.5 border-b border-slate-100">
+        {/* 상품 사진 thumbnail + 카메라 input */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          className="shrink-0 w-14 h-14 rounded-[8px] border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center hover:border-slate-300 hover:bg-slate-100 cursor-pointer transition-colors"
+          title="사진 촬영 / 선택"
+          aria-label="상품 사진 촬영"
+        >
+          {imagePreview ? (
+            <img src={imagePreview} alt="상품" className="w-full h-full object-cover" />
+          ) : (
+            <Camera size={18} className="text-slate-400" />
+          )}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileChange}
+          className="hidden"
+        />
         <span className="w-[3px] h-[14px] mt-1 bg-indigo-500 rounded-full shrink-0" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="text-[15px] md:text-[16px] font-bold text-ink leading-snug break-words">
