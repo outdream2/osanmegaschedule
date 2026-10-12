@@ -97,6 +97,13 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
   const [subview, setSubviewRaw] = useState<EmpSubView>(initialSubview ?? "calendar");
   // 2026-10-12 · 사용자 지시 · 기본정보 subview → slide drawer 로 전환 · subview 변경 X
   const [infoDrawerOpen, setInfoDrawerOpen] = useState<boolean>(false);
+  // 2026-10-12 · ESC 로 drawer 닫기
+  useEffect(() => {
+    if (!infoDrawerOpen) return;
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === "Escape") setInfoDrawerOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [infoDrawerOpen]);
   const setSubview = useCallback((next: EmpSubView) => {
     // "info" 는 subview 변경하지 않고 drawer 로 열기
     if (next === "info") {
@@ -145,8 +152,9 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
 
   return (
     <div className="flex-1 min-h-0 flex gap-3">
-      {/* 좌측 · 직원 리스트 */}
-      <Card variant="sm" padding="none" rounded="xl" className="w-[240px] shrink-0 flex flex-col min-h-0 overflow-hidden">
+      {/* 좌측 · 직원 리스트 · 2026-10-12 사용자 지시 "줄바꿈 없게 · 폭 자동 조정"
+          · min-w ~ max-w · 긴 이름 수용 · 둘째 줄 nowrap + truncate */}
+      <Card variant="sm" padding="none" rounded="xl" className="min-w-[200px] max-w-[320px] w-fit shrink-0 flex flex-col min-h-0 overflow-hidden">
         <div className="px-3 py-2 border-b border-line">
           <div className="relative">
             <MagnifyingGlass size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-ink-soft" />
@@ -174,15 +182,16 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
                 <li key={`emp-${emp.id}`}>
                   <button
                     type="button"
-                    onClick={() => { setSelectedId(emp.id); setEditTarget(null); }}
+                    onClick={() => { setSelectedId(emp.id); setEditTarget(null); setInfoDrawerOpen(true); }}
                     className={`w-full text-left px-3 py-2 transition cursor-pointer ${
                       active ? "bg-brand-tint/60 border-l-2 border-brand-deep" : "hover:bg-zinc-50 border-l-2 border-transparent"
                     }`}
                   >
-                    <div className={`text-[13px] font-semibold leading-tight ${active ? "text-brand-deep" : "text-ink"}`}>
+                    {/* 2026-10-12 · 사용자 지시 · 왼쪽 리스트 "줄바꿈 없게 · 폭 자동" · whitespace-nowrap + truncate */}
+                    <div className={`text-[15px] font-semibold leading-tight whitespace-nowrap ${active ? "text-brand-deep" : "text-ink"}`}>
                       {emp.name}
                     </div>
-                    <div className="text-[11px] text-ink-soft">{emp.position} · {emp.employmentType ?? ""}</div>
+                    <div className="text-[13px] text-ink-soft mt-0.5 whitespace-nowrap truncate">{emp.position} · {emp.employmentType ?? ""}</div>
                   </button>
                 </li>
               );
@@ -309,7 +318,8 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
                 />
               ) : null}
             </div>
-            {/* 2026-10-12 · 사용자 지시 · 기본정보 slide drawer (오른쪽) */}
+            {/* 2026-10-12 · 사용자 지시 · 직원 리스트 click → slide drawer 자동 열림
+                · UI 교체 · EmployeeInfoPanel 안에 sticky header/footer 포함 (padding 제거) */}
             {infoDrawerOpen && (
               <>
                 <div className="fixed inset-0 bg-slate-900/30 z-40" onClick={() => setInfoDrawerOpen(false)} aria-hidden />
@@ -318,22 +328,20 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
                   aria-label={`${selectedEmployee.name} 기본정보`}
                   className="fixed top-0 right-0 bottom-0 w-full sm:w-[560px] bg-white shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-200"
                 >
-                  <header className="flex items-center justify-between px-4 py-3 border-b border-slate-200 shrink-0">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="w-[3px] h-[14px] bg-brand-deep rounded-full shrink-0" />
-                      <h2 className="text-[16px] md:text-[17px] font-semibold text-ink truncate">{selectedEmployee.name} · 기본정보</h2>
-                    </div>
-                    <button type="button" onClick={() => setInfoDrawerOpen(false)}
-                      className="p-1 rounded hover:bg-slate-100 text-slate-500 text-[14px] font-semibold" aria-label="닫기">
-                      ✕
-                    </button>
-                  </header>
-                  <div className="flex-1 overflow-y-auto p-3">
-                    <EmployeeInfoPanel
-                      employee={selectedEmployee}
-                      onOpenManagement={onEmployeeManagement}
-                    />
-                  </div>
+                  {/* 닫기 버튼 · overlay 상단 우측 (header 안쪽에 추가) */}
+                  <button
+                    type="button"
+                    onClick={() => setInfoDrawerOpen(false)}
+                    className="absolute top-3 right-3 z-20 h-7 w-7 rounded hover:bg-slate-100 text-slate-500 flex items-center justify-center"
+                    aria-label="닫기"
+                    title="닫기 (Esc)"
+                  >
+                    ✕
+                  </button>
+                  <EmployeeInfoPanel
+                    employee={selectedEmployee}
+                    onOpenManagement={onEmployeeManagement}
+                  />
                 </aside>
               </>
             )}
