@@ -48,6 +48,8 @@ import {
   type FilterKey,
 } from "../../OrderManagePage/OrderPurchaseMatchTab.types";
 import { ExceptionNoteModal } from "../../OrderManagePage/ExceptionNoteModal";
+// 2026-10-12 · 사용자 지시 · 매입이상 공통 Card (매입재고현황과 "병합")
+import { PurchaseExceptionCard } from "./PurchaseExceptionCard";
 import { ApiError } from "../../../lib/apiClient";
 import { getErrorMessage } from "../../../lib/errorMessage";
 import { shortDate } from "../../../lib/dateFormat";
@@ -429,13 +431,13 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
               className="w-4 h-4 cursor-pointer accent-brand-deep"
               aria-label="발주요청 대상 선택" />
           ) : null,
-          product: (<div className="flex flex-col"><span className="text-[14.5px] font-semibold text-ink">{r.product_name ?? "-"}</span><span className="text-[13px] text-ink-soft tabular-nums">{r.product_code ?? ""}</span></div>),
+          product: (<div className="flex flex-col"><span className="text-[15px] font-semibold text-ink">{r.product_name ?? "-"}</span><span className="text-[13px] text-ink-soft tabular-nums">{r.product_code ?? ""}</span></div>),
           supplier: <span className="text-[14px] text-ink">{r.supplier ?? "-"}</span>,
-          stock: Number.isFinite(stock) ? <span className={`text-[14.5px] tabular-nums ${stock <= 0 ? "text-rose-600 font-bold" : "text-ink"}`}>{stock.toLocaleString()}</span> : "-",
-          optimal: <span className="text-[14.5px] tabular-nums text-ink">{Number.isFinite(opt) && opt > 0 ? opt.toLocaleString() : "-"}</span>,
-          need: short > 0 ? <span className="text-[14.5px] font-bold text-brand-deep tabular-nums">{short.toLocaleString()}</span> : "-",
+          stock: Number.isFinite(stock) ? <span className={`text-[15px] tabular-nums ${stock <= 0 ? "text-rose-600 font-bold" : "text-ink"}`}>{stock.toLocaleString()}</span> : "-",
+          optimal: <span className="text-[15px] tabular-nums text-ink">{Number.isFinite(opt) && opt > 0 ? opt.toLocaleString() : "-"}</span>,
+          need: short > 0 ? <span className="text-[15px] font-bold text-brand-deep tabular-nums">{short.toLocaleString()}</span> : "-",
           // 발주필요 전용 cells · 폰트 리밸런싱 (사용자 지시)
-          status: k === "order-need" ? <span className={`text-[13.5px] ${statusCls}`}>{statusLabel}</span> : null,
+          status: k === "order-need" ? <span className={`text-[14px] ${statusCls}`}>{statusLabel}</span> : null,
           qty: k === "order-need" ? (
             <div onClick={(e) => e.stopPropagation()} className="inline-flex justify-end [&_input]:!text-[14px] [&_input]:!h-7 [&_button]:!h-7 [&_button]:!w-6">
               <StepperInput value={curQty} size="xs" autoSize
@@ -446,12 +448,12 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
             </div>
           ) : null,
           unit: k === "order-need" ? (
-            <span className="text-[14.5px] tabular-nums text-slate-700">
+            <span className="text-[15px] tabular-nums text-slate-700">
               {unitPrice > 0 ? unitPrice.toLocaleString() : <span className="text-slate-400">-</span>}
             </span>
           ) : null,
           amount: k === "order-need" ? (
-            <span className="text-[14.5px] tabular-nums font-semibold text-ink">
+            <span className="text-[15px] tabular-nums font-semibold text-ink">
               {amount > 0 ? amount.toLocaleString() : <span className="text-slate-400 font-normal">-</span>}
             </span>
           ) : null,
@@ -720,13 +722,13 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
       const diff = pq - oq;
       // 2026-10-09 · 사용자 지시 · 공급사·상품명 나란히 (분리된 column) · 세로 늘어짐 방지 · info 많이
       return {
-        when: <span className="text-[13.5px] tabular-nums text-ink-soft">{String(r.order_date ?? r.sent_at ?? "").slice(5, 10) || "-"}</span>,
+        when: <span className="text-[14px] tabular-nums text-ink-soft">{String(r.order_date ?? r.sent_at ?? "").slice(5, 10) || "-"}</span>,
         product: <span className="truncate font-semibold text-ink text-[15px]">{r.product_name ?? "-"}</span>,
-        supplier: <span className="truncate text-[13.5px] text-ink-soft">{r.supplier ?? "-"}</span>,
+        supplier: <span className="truncate text-[14px] text-ink-soft">{r.supplier ?? "-"}</span>,
         variance: (
           <div className="flex items-baseline justify-end gap-0.5 tabular-nums">
-            <span className="text-[13.5px] text-ink-soft">{oq.toLocaleString()}</span>
-            <span className="text-[13.5px] text-ink-soft/60">/</span>
+            <span className="text-[14px] text-ink-soft">{oq.toLocaleString()}</span>
+            <span className="text-[14px] text-ink-soft/60">/</span>
             <span className={`text-[15px] font-bold ${diff === 0 ? "text-ink" : "text-rose-600"}`}>{pq.toLocaleString()}</span>
           </div>
         ),
@@ -799,7 +801,9 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
                   return (
                     <tr key={i} className="border-b border-slate-50 last:border-b-0 hover:bg-slate-50/40 transition-colors">
                       {cols.map(c => (
-                        <td key={c.key} className={`py-1 px-2 align-middle ${c.align === "right" ? "text-right" : "text-left"} ${c.w ?? ""}`}>
+                        /* 2026-10-12 · 사용자 지시 · 글씨 삐져나옴 fix · overflow-hidden + truncate (table-fixed 지원) */
+                        <td key={c.key} className={`py-1 px-2 align-middle overflow-hidden text-ellipsis whitespace-nowrap ${c.align === "right" ? "text-right" : "text-left"} ${c.w ?? ""}`}
+                          title={typeof row[c.key] === "string" ? String(row[c.key]) : undefined}>
                           {row[c.key] ?? "-"}
                         </td>
                       ))}
@@ -881,19 +885,19 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
               <React.Fragment key={`${t.k}-${idx}`}>
                 {groupStart && <span className="shrink-0 w-4" aria-hidden />}
                 {showConnector && (
-                  <span className="shrink-0 self-center flex items-center px-1 pointer-events-none" aria-hidden>
+                  <span className="shrink-0 inline-flex items-center h-10 px-1 pointer-events-none" aria-hidden>
                     <span className="inline-block w-4 h-[1.5px] bg-slate-300" />
                     <span className="inline-block w-0 h-0 border-y-[3.5px] border-y-transparent border-l-[5px] border-l-slate-400" />
                   </span>
                 )}
                 <button type="button" onClick={() => setInnerTab(t.k)}
-                  className={`relative shrink-0 px-2.5 h-10 text-[14px] md:text-[15px] font-medium transition-colors cursor-pointer inline-flex items-baseline gap-1.5 whitespace-nowrap ${
+                  className={`relative shrink-0 px-2.5 h-10 text-[14px] md:text-[15px] font-medium transition-colors cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap ${
                     active ? "text-ink font-semibold" : "text-slate-500 hover:text-ink"
                   }`}
                 >
                   <span>{t.label}</span>
                   {count != null && (
-                    <span className={`text-[13px] md:text-[14px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full ${active ? tone.soft + " text-ink" : "bg-slate-100 text-slate-500"}`}>{count.toLocaleString()}</span>
+                    <span className={`text-[13px] md:text-[14px] font-semibold tabular-nums leading-none px-1.5 py-0.5 rounded-full ${active ? tone.soft + " text-ink" : "bg-slate-100 text-slate-500"}`}>{count.toLocaleString()}</span>
                   )}
                   {active && <span className={`absolute left-0 right-0 -bottom-px h-[2px] ${tone.bar} rounded-full`} />}
                 </button>
@@ -924,10 +928,10 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
             {/* LEFT · 주요 콘텐츠 세로 스택 · 하단 라인 정렬 (flex-1 + h-full) */}
             <div className="flex flex-col gap-4 h-full">
               <DailyOrderBarChart rows={historyRows} period={Number(period)} />
-              {/* 공급사별 발주비중 + 이상품목 (flex-1 로 확장) */}
+              {/* 공급사별 발주비중 + 이상품목 (flex-1 로 확장) · 2026-10-12 · 사용자 "병합" · 공통 Card 사용 (현재고 column 포함) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch flex-1 min-h-0">
                 <SupplierPieChart rows={historyRows} />
-                <Board k="mismatch" rowCount={999} />
+                <PurchaseExceptionCard period={Number(period)} onViewAll={() => setInnerTab("exception")} />
               </div>
               {/* 발주요청대기 + 발주이력 (flex-1 로 확장) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch flex-1 min-h-0">
@@ -1516,7 +1520,8 @@ const OrderRequestGroupedView: React.FC<{
               </th>
               <th className="px-3 py-2 text-left text-[14px] font-semibold text-slate-500 uppercase tracking-wider">상품 / 코드</th>
               <th className="px-3 py-2 text-left text-[14px] font-semibold text-slate-500 uppercase tracking-wider w-[112px]">요청일</th>
-              <th className="px-3 py-2 text-right text-[14px] font-semibold text-slate-500 uppercase tracking-wider w-[160px]">재고 (창1·창2·매1·매2·매3)</th>
+              {/* 2026-10-09 · 사용자 지시 · 발주요청대기 재고 = ERP 현재고 (products.current_stock) · 실재고 분해(창1~매3) 금지 */}
+              <th className="px-3 py-2 text-right text-[14px] font-semibold text-slate-500 uppercase tracking-wider w-[96px]">현재고</th>
               <th className="px-3 py-2 text-right text-[14px] font-semibold text-slate-500 uppercase tracking-wider w-[112px]">현재 / 적정</th>
               <th className="px-3 py-2 text-right text-[14px] font-semibold text-slate-500 uppercase tracking-wider w-[128px]">발주량</th>
               <th className="px-3 pr-5 py-2 text-right text-[14px] font-semibold text-slate-500 uppercase tracking-wider w-[108px]">예상금액</th>
@@ -1598,26 +1603,20 @@ const OrderRequestGroupedView: React.FC<{
                         </td>
                         <td className="pl-2 pr-3 py-2 align-middle">
                           <div className="flex flex-col min-w-0">
-                            <span className="text-[14.5px] font-medium text-ink truncate leading-tight">{r.product_name ?? "-"}</span>
-                            <span className="text-[12.5px] text-slate-500 tabular-nums truncate leading-tight mt-0.5">{r.product_code ?? "-"}</span>
+                            <span className="text-[15px] font-medium text-ink truncate leading-tight">{r.product_name ?? "-"}</span>
+                            <span className="text-[13px] text-slate-500 tabular-nums truncate leading-tight mt-0.5">{r.product_code ?? "-"}</span>
                           </div>
                         </td>
-                        <td className="px-3 py-2 align-middle text-[13.5px] tabular-nums text-slate-500">
+                        <td className="px-3 py-2 align-middle text-[14px] tabular-nums text-slate-500">
                           {String(r.requested_at ?? "").slice(0, 10) || "-"}
                         </td>
-                        {/* 재고 분해 (창1 · 창2 · 매1 · 매2 · 매3) */}
-                        <td className="px-3 py-2 align-middle text-right text-[13px] tabular-nums text-slate-500 whitespace-nowrap">
-                          {(() => {
-                            const anyR = r as any;
-                            const parts = [anyR.warehouse1_stock, anyR.warehouse2_stock, anyR.store1_stock, anyR.store2_stock, anyR.store3_stock];
-                            if (parts.every(v => v == null)) return <span className="text-slate-300">-</span>;
-                            return parts.map((v, i) => (
-                              <React.Fragment key={i}>
-                                {i > 0 && <span className="text-slate-300 mx-0.5">·</span>}
-                                <span className={v != null && Number(v) > 0 ? "text-ink font-medium" : "text-slate-400"}>{v != null ? Number(v) : "-"}</span>
-                              </React.Fragment>
-                            ));
-                          })()}
+                        {/* 2026-10-09 · 사용자 지시 · ERP 현재고 (products.current_stock) · 실재고 분해 금지 (3분법 원칙) */}
+                        <td className="px-3 py-2 align-middle text-right text-[14px] tabular-nums whitespace-nowrap">
+                          {r.current_stock != null ? (
+                            <span className={low ? "text-rose-500 font-semibold" : warn ? "text-amber-600 font-semibold" : "text-ink font-medium"}>
+                              {Number(r.current_stock).toLocaleString()}
+                            </span>
+                          ) : <span className="text-slate-300">-</span>}
                         </td>
                         <td className="px-3 py-2 align-middle text-right text-[15px] tabular-nums whitespace-nowrap">
                           <span className={`font-medium ${low ? "text-rose-500" : warn ? "text-amber-600" : "text-ink"}`}>{cur.toLocaleString()}</span>
@@ -1803,16 +1802,16 @@ const OrderHistoryExpandableBoard: React.FC<{
                             <div className="text-[12px] text-ink-soft/70 py-3 text-center">상세품목이 없습니다</div>
                           ) : (
                             <div className="rounded-md border border-slate-200 bg-white overflow-hidden">
-                              <table className="w-full text-[12.5px]">
+                              <table className="w-full text-[13px]">
                                 <thead>
                                   <tr className="border-b border-slate-200 bg-slate-50">
-                                    <th className="py-1.5 px-2.5 text-[11.5px] font-semibold text-ink-soft text-left">상품명</th>
-                                    <th className="py-1.5 px-2.5 text-[11.5px] font-semibold text-ink-soft text-left whitespace-nowrap w-[108px]">상품코드</th>
-                                    <th className="py-1.5 px-2.5 text-[11.5px] font-semibold text-ink-soft text-right w-[72px]">발주량</th>
-                                    <th className="py-1.5 px-2.5 text-[11.5px] font-semibold text-ink-soft text-right w-[88px]">단가</th>
-                                    <th className="py-1.5 px-2.5 text-[11.5px] font-semibold text-ink-soft text-right w-[112px]">금액</th>
-                                    <th className="py-1.5 px-2.5 text-[11.5px] font-semibold text-ink-soft text-right w-[72px]">현재고</th>
-                                    <th className="py-1.5 px-2.5 text-[11.5px] font-semibold text-ink-soft text-right w-[80px]">적정재고</th>
+                                    <th className="py-1.5 px-2.5 text-[13px] font-semibold text-ink-soft text-left">상품명</th>
+                                    <th className="py-1.5 px-2.5 text-[13px] font-semibold text-ink-soft text-left whitespace-nowrap w-[108px]">상품코드</th>
+                                    <th className="py-1.5 px-2.5 text-[13px] font-semibold text-ink-soft text-right w-[72px]">발주량</th>
+                                    <th className="py-1.5 px-2.5 text-[13px] font-semibold text-ink-soft text-right w-[88px]">단가</th>
+                                    <th className="py-1.5 px-2.5 text-[13px] font-semibold text-ink-soft text-right w-[112px]">금액</th>
+                                    <th className="py-1.5 px-2.5 text-[13px] font-semibold text-ink-soft text-right w-[72px]">현재고</th>
+                                    <th className="py-1.5 px-2.5 text-[13px] font-semibold text-ink-soft text-right w-[80px]">적정재고</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -1933,7 +1932,7 @@ const NeedProductDrawer: React.FC<{
                 <div className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight leading-tight mt-0.5 break-words">
                   {p.product_name ?? "-"}
                 </div>
-                <div className="text-[12.5px] text-slate-500 tabular-nums mt-1">
+                <div className="text-[13px] text-slate-500 tabular-nums mt-1">
                   {p.product_code ?? "-"}{p.barcode ? ` · ${p.barcode}` : ""}
                 </div>
               </div>
@@ -1969,7 +1968,7 @@ const NeedProductDrawer: React.FC<{
                   <div className="grid grid-cols-5 gap-2">
                     {stockParts.map((s, i) => (
                       <div key={i} className="bg-slate-50 border border-slate-100 rounded-md px-2 py-2 text-center">
-                        <div className="text-[11.5px] text-slate-500 font-medium">{s.label}</div>
+                        <div className="text-[13px] text-slate-500 font-medium">{s.label}</div>
                         <div className={`text-[14px] font-semibold tabular-nums mt-0.5 ${s.v != null && Number(s.v) > 0 ? "text-ink" : "text-slate-400"}`}>
                           {s.v != null ? Number(s.v).toLocaleString() : "-"}
                         </div>
