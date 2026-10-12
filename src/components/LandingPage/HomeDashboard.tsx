@@ -1208,13 +1208,17 @@ const TodaySalesTable: React.FC<TodaySalesTableProps> = ({ loading, error, items
                 >
                   <span className="inline-flex items-center gap-1 justify-end w-full whitespace-nowrap">마진율 {sortIndicator("margin")}</span>
                 </th>
+                {/* 2026-10-12 · 사용자 지시 · 컬럼 추가 · 매입가 · 판매가 · 전체금액 */}
+                <th className={`${T.tableHeader} text-right px-3 py-2 w-24 whitespace-nowrap`}>매입가</th>
+                <th className={`${T.tableHeader} text-right px-3 py-2 w-24 whitespace-nowrap`}>판매가</th>
                 <th
-                  className={`${T.tableHeader} text-right pl-3 pr-4 py-2 w-20 cursor-pointer select-none hover:bg-slate-100 transition-colors ${thActiveBg("qty")}`}
+                  className={`${T.tableHeader} text-right px-3 py-2 w-20 cursor-pointer select-none hover:bg-slate-100 transition-colors ${thActiveBg("qty")}`}
                   onClick={() => handleSort("qty")}
                   aria-sort={sortKey === "qty" ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
                 >
                   <span className="inline-flex items-center gap-1 justify-end w-full whitespace-nowrap">수량 {sortIndicator("qty")}</span>
                 </th>
+                <th className={`${T.tableHeader} text-right pl-3 pr-4 py-2 w-28 whitespace-nowrap`}>전체금액</th>
               </tr>
             </thead>
             {/* 2026-10-08 · fix · tbody key = sort state → sort 변경 시 강제 remount (DOM 재사용 이슈 방지) */}
@@ -1270,7 +1274,26 @@ const TodaySalesTable: React.FC<TodaySalesTableProps> = ({ loading, error, items
                     <td className={`px-3 py-2 tabular-nums text-right align-top font-semibold ${marginRate >= 30 ? "text-emerald-600" : marginRate >= 15 ? "text-slate-700" : "text-slate-400"}`}>
                       {sale > 0 ? `${marginRate.toFixed(1)}%` : "-"}
                     </td>
-                    <td className="pl-3 pr-4 py-2 tabular-nums text-right align-top text-ink whitespace-nowrap">{qty.toLocaleString("ko-KR")}</td>
+                    {/* 2026-10-12 · 사용자 지시 · 매입가 · 판매가 · 전체금액 신규 컬럼 */}
+                    {(() => {
+                      const meta = it.pcode ? productsMeta?.get(it.pcode) : null;
+                      const purchase = meta?.purchase_price != null ? Math.round(Number(meta.purchase_price)) : null;
+                      const salePrice = meta?.sale_price != null ? Math.round(Number(meta.sale_price)) : null;
+                      return (
+                        <>
+                          <td className="px-3 py-2 tabular-nums text-right align-top text-slate-600 whitespace-nowrap">
+                            {purchase != null ? `${purchase.toLocaleString("ko-KR")}원` : "-"}
+                          </td>
+                          <td className="px-3 py-2 tabular-nums text-right align-top text-slate-700 whitespace-nowrap">
+                            {salePrice != null ? `${salePrice.toLocaleString("ko-KR")}원` : "-"}
+                          </td>
+                        </>
+                      );
+                    })()}
+                    <td className="px-3 py-2 tabular-nums text-right align-top text-ink whitespace-nowrap">{qty.toLocaleString("ko-KR")}</td>
+                    <td className="pl-3 pr-4 py-2 tabular-nums text-right align-top font-bold text-ink whitespace-nowrap">
+                      {sale > 0 ? `${Math.round(sale).toLocaleString("ko-KR")}원` : "-"}
+                    </td>
                   </tr>
                 );
               })}
