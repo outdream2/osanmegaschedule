@@ -813,8 +813,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           )}
           right={(
             <div className="flex flex-col gap-4">
-              {/* 2026-10-12 · UI-11-SCAN Phase 2 Step 2 · 스크린샷 7c2d9aa8 반영 · KPI 7-col + 수량(scanned) + 전체금액 · rows prop 전달 */}
-              <ScanProductSummary product={lastProduct} rows={rows} />
+              {/* 2026-10-12 · UI-11-SCAN Phase 2 Step 3 · 스크린샷 재분석 반영 · KPI 6-col · 판매상태 header pill · 전체금액=재고자산 */}
+              <ScanProductSummary product={lastProduct} />
               {/* 2026-08-25 · Framework Phase 4 · 우측 패널 · ScanRightPanel 이관 */}
               <ScanRightPanel
                 rows={rows} filteredRows={filteredRows} lastCode={lastCode} lastAddedKey={lastAddedKey} scanLoading={scanLoading}

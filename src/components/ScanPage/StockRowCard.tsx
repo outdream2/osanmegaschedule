@@ -545,6 +545,24 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
               <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
                 <span className={`w-[3px] h-[14px] rounded-full ${s.dot} shrink-0 self-center`} aria-hidden />
                 <span className="text-[15px] font-semibold text-ink tracking-tight truncate">{s.full}</span>
+                {/* 2026-10-12 · 사용자 지시 · "매장1에 구역이름 카테고리" · 매장 slot 에만 구역/카테고리 chip 표시 */}
+                {isStore && currentZone && (() => {
+                  const catLabel = getZoneLabelByLocation(currentZone, zonesList);
+                  const cleanLabel = cleanLocationString(currentZone);
+                  const zoneText = cleanLabel || currentZone;
+                  return (
+                    <span
+                      className="inline-flex items-center gap-1 h-5 px-1.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 text-[11.5px] font-semibold tabular-nums"
+                      title={`구역: ${currentZone}${catLabel ? ` · ${catLabel}` : ""}`}
+                    >
+                      <MapPin size={10} />
+                      {zoneText}
+                      {catLabel && catLabel !== zoneText && (
+                        <span className="text-indigo-500 font-medium">· {catLabel}</span>
+                      )}
+                    </span>
+                  );
+                })()}
                 {prev != null && prev !== (add !== "" ? Number(add) : prev) && (
                   <span className="text-[12px] text-slate-400 tabular-nums font-medium">이전 {prev}</span>
                 )}
@@ -617,16 +635,16 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
             {!slotVis.anyAssigned && (
               <AutoZonePicker onAssign={handleAutoZoneAssign} />
             )}
-            {/* Row 1 · 창고(1 혹은 2) + 매장1 나란히 · w1 없으면 w2가 Row 1 왼쪽 */}
-            <div className="grid grid-cols-2 gap-2">
-              {w1Slot
-                ? renderSlot(w1Slot, 0, false)
-                : w2Slot
-                  ? renderSlot(w2Slot, 1, false)
-                  : <div />}
-              {s1Slot ? renderSlot(s1Slot, STORE_IDX["s1"], true) : <div />}
-            </div>
-            {/* Row 2 · 매장2 + 매장3 (있을 때만 · 항상 2칸으로 매장1과 너비 동일) */}
+            {/* 2026-10-12 · 사용자 지시 · "매장추가는 창고1 위에 나와야" · 섹션 순서 재배치
+                · 매장 섹션 (매장1 → 매장2+3 → [+매장추가]) 상단
+                · 창고 섹션 (창고1 + 창고2) 하단 */}
+
+            {/* 매장 섹션 · 상단 */}
+            {s1Slot && (
+              <div className="grid grid-cols-1">
+                {renderSlot(s1Slot, STORE_IDX["s1"], true)}
+              </div>
+            )}
             {(s2Slot || s3Slot) && (
               <div className="grid grid-cols-2 gap-2">
                 {s2Slot ? renderSlot(s2Slot, STORE_IDX["s2"], true) : <div />}
@@ -643,10 +661,12 @@ export const StockRowCard: React.FC<StockRowCardProps> = React.memo(({
                 + 매장 추가 ({visibleStoreCount}/3)
               </button>
             )}
-            {/* Row 3 · 창고2 · w1과 w2 둘 다 있을 때만 별도 행 */}
-            {w1Slot && w2Slot && (
-              <div className="grid grid-cols-1">
-                {renderSlot(w2Slot, 1, false)}
+
+            {/* 창고 섹션 · 하단 · 2-col grid · w1 or w2 하나만 있으면 그것만 */}
+            {(w1Slot || w2Slot) && (
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100/70">
+                {w1Slot ? renderSlot(w1Slot, 0, false) : <div />}
+                {w2Slot ? renderSlot(w2Slot, 1, false) : <div />}
               </div>
             )}
 
