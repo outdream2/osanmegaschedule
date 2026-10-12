@@ -36,9 +36,8 @@ import { TrendingTab } from "./TrendingTab";
 import { FlowTab } from "../StockManagePage/FlowTab";
 import { DiffTab } from "../StockManagePage/DiffTab";
 import { SupplierTab } from "../StockManagePage/SupplierTab";
-import { ReturnListPanel } from "./ReturnListPanel";
-// 2026-08-25 · 사용자 지시 · 반품확정 페이지 · 반품 서브탭 이너 탭 (반품필요/반품확정)
-import { ReturnConfirmedPanel } from "./ReturnConfirmedPanel";
+// 2026-10-12 · #16 · 반품 통합 재설계 완료 · 호출처 OrderReturnOverview 로 전면 이관 (ReturnUnifiedPanel/ReturnGroupedView)
+// · 과거 ReturnListPanel/ReturnConfirmedPanel import 제거 (사이드바 #9에서 반품 메뉴 제거된 상태 · JSX 사용 없음)
 import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
 // 2026-08-25 · Framework Phase 4 · 서브탭 정의 이관
 import {
