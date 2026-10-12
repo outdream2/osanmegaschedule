@@ -667,12 +667,15 @@ export const LeavePage: React.FC<LeavePageProps> = ({
   const pdfCaptureRef = useRef<HTMLDivElement | null>(null);
   const [pdfCaptureData, setPdfCaptureData] = useState<LeaveRequestPdfData | null>(null);
 
-  // 직원 상세 정보 (PDF용)
+  // 직원 상세 정보 (PDF용 + 계약만료 D-day)
   const [employeeDetail, setEmployeeDetail] = useState<{
     employee_number?: string | null;
     position?: string | null;
     hire_date?: string | null;
     phone?: string | null;
+    // 2026-10-12 · 사용자 지시 · 계약직 계약만료 D-day 표시
+    employmentType?: string | null;
+    contract_end?: string | null;
   } | null>(null);
 
   // ── Manager state ───────────────────────────────────────────────────────────
@@ -759,6 +762,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({
         position: data?.position ?? null,
         hire_date: data?.hireDate ?? data?.hire_date ?? null,
         phone: data?.phone ?? null,
+        employmentType: data?.employmentType ?? data?.employment_type ?? null,
+        contract_end: data?.contract_end ?? null,
       });
     } catch { /* silent */ }
   }, [employeeId]);
@@ -1030,6 +1035,26 @@ export const LeavePage: React.FC<LeavePageProps> = ({
               const monthRejected = monthMine.filter(r => r.status === "rejected").length;
               const usedPct = balance && balance.total > 0 ? Math.min(100, Math.round((balance.used / balance.total) * 100)) : 0;
               const curMonth = now.getMonth() + 1;
+              // 2026-10-12 · 사용자 지시 · 계약직 계약만료 D-day
+              const isContract = String(employeeDetail?.employmentType ?? "").includes("계약");
+              const contractEnd = employeeDetail?.contract_end;
+              let contractDday: number | null = null;
+              if (isContract && contractEnd) {
+                const d1 = new Date(contractEnd + "T00:00:00").getTime();
+                const d0 = new Date(now.getFullYear() + "-" + String(curMonth).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0") + "T00:00:00").getTime();
+                contractDday = Math.round((d1 - d0) / 86400000);
+              }
+              const contractTone =
+                contractDday == null ? "" :
+                contractDday < 0 ? "bg-slate-50 text-slate-500 border-slate-200" :
+                contractDday <= 30 ? "bg-rose-50 text-rose-600 border-rose-100" :
+                contractDday <= 90 ? "bg-amber-50 text-amber-700 border-amber-100" :
+                "bg-emerald-50 text-emerald-700 border-emerald-100";
+              const contractLabel =
+                contractDday == null ? "" :
+                contractDday < 0 ? `만료 (${-contractDday}일 경과)` :
+                contractDday === 0 ? "오늘 만료" :
+                `D-${contractDday}`;
               return (
                 <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
                   {/* 통합 header · 좌 아이콘·타이틀 · 우 관리자 라벨 */}
@@ -1079,6 +1104,17 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                           <div className={`text-[16px] font-bold tabular-nums mt-0.5 ${monthRejected > 0 ? "text-rose-600" : "text-slate-400"}`}>{monthRejected}건</div>
                         </div>
                       </div>
+                      {/* 2026-10-12 · 사용자 지시 · 계약직 계약만료 D-day pill (계약직 + contract_end 둘 다 있을 때만) */}
+                      {isContract && contractEnd && contractDday != null && (
+                        <div className={`flex items-center justify-between gap-2 px-3 py-2 border rounded-md ${contractTone}`}>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <Clock size={13} className="shrink-0" />
+                            <span className="text-[12px] font-semibold tracking-tight">계약 만료</span>
+                            <span className="text-[11.5px] opacity-80 tabular-nums shrink-0">· {contractEnd}</span>
+                          </div>
+                          <span className="text-[13px] font-bold tabular-nums shrink-0">{contractLabel}</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* ── RIGHT · 신규 신청 폼 (컴팩트) ── */}
