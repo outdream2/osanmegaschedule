@@ -108,7 +108,10 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
   };
 
   return (
-    <Card variant="sm" padding="md" rounded="xl" className="flex-1 min-h-0 overflow-auto">
+    // 2026-10-12 · 사용자 지시 · 달력 아래 shrink-0 wrapper 안에서 height=0 bug fix
+    //   · flex-1 min-h-0 overflow-auto → w-full 자연 height (shrink-0 환경 호환)
+    //   · bulk 단독 subview 도 natural height 로 작동 (parent flex-col 안에서 자체 content height)
+    <Card variant="sm" padding="md" rounded="xl" className="w-full">
       {isLocked && (
         <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[13px] font-semibold">
           <span>이 월({month}월)은 확정됨 · 편집 불가</span>
