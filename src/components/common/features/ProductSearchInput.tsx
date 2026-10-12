@@ -33,6 +33,10 @@ interface ProductSearchInputProps {
   className?: string;
   /** 최근 검색어 scope · 페이지별 격리 · 기본 "productSearch" */
   recentScope?: string;
+  /** 2026-10-12 · 사용자 지시 · 판매중지 상품도 포함 (ScanPage 실재고 작업) · default false */
+  includeInactive?: boolean;
+  /** 숨김 상품도 포함 · default false */
+  includeHidden?: boolean;
 }
 
 const ACCENT_MAP = {
@@ -49,8 +53,10 @@ export function ProductSearchInput({
   accent = "teal",
   className = "",
   recentScope = "productSearch",
+  includeInactive = false,
+  includeHidden = false,
 }: ProductSearchInputProps) {
-  const { query, setQuery, results, setResults, selected, setSelected } = useProductInfoSearch();
+  const { query, setQuery, results, setResults, selected, setSelected } = useProductInfoSearch({ includeInactive, includeHidden });
   const [loading, setLoading] = useState(false);
   // 2026-08-09 · 사용자 요청 · 리스트 숨김 flag · 선택 or 확인 시 true · 다시 타이핑 시 false
   const [hideList, setHideList] = useState(false);

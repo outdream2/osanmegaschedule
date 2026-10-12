@@ -54,6 +54,7 @@ import { PurchaseExceptionCard } from "./PurchaseExceptionCard";
 import { PurchaseOrderOverlayChart, type PurchaseOrderOverlayDatum } from "./PurchaseOrderOverlayChart";
 // 2026-10-12 · 사용자 지시 · 조회기간 필터 전체 통일 · 공통 QuickRangePills 적용
 import { QuickRangePills, type QuickRangeKey } from "../../common/OverviewPeriodFilter";
+import { Spinner } from "../../common/Spinner";
 import { ApiError } from "../../../lib/apiClient";
 import { getErrorMessage } from "../../../lib/errorMessage";
 import { shortDate } from "../../../lib/dateFormat";
@@ -963,6 +964,16 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
           })}
         </nav>
       </div>
+
+      {/* 2026-10-12 · 사용자 지시 · "현황판 spinner 안나오는 부분 전수조사" fix
+          · lowStock/history/match/returns 전체 로딩 중 상단 banner 노출 */}
+      {(lowStock === null || history === null || match === null || returnsPending === null || returnsDone === null) && (
+        <div className="px-4 sm:px-6">
+          <div className="flex items-center justify-center gap-2 py-2 bg-amber-50 border border-amber-100 rounded-md">
+            <Spinner size={12} tone="amber" label="현황판 데이터 불러오는 중..." labelSize={13} />
+          </div>
+        </div>
+      )}
 
       <OverviewToolbar search={search} onSearch={setSearch} placeholder="상품·코드·공급사·발주번호 검색"
         right={

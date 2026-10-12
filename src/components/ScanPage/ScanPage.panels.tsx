@@ -74,6 +74,8 @@ export const ScanLeftPanel: React.FC<ScanLeftPanelProps> = ({
           accent="teal"
           placeholder="상품명·코드 검색"
           onSelect={(code, p) => onScan(code, p)}
+          includeInactive
+          includeHidden
         />
 
         <label className="flex items-center gap-2 text-[15px] text-zinc-600 font-semibold cursor-pointer select-none">

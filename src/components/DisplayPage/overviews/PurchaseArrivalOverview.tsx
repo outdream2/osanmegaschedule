@@ -24,6 +24,7 @@ import { PurchaseOrderOverlayChart, type PurchaseOrderOverlayDatum } from "./Pur
 import { InventoryDisplayOverview } from "./InventoryDisplayOverview";
 // 2026-10-12 · 사용자 지시 · 조회기간 필터 전체 통일 · 공통 QuickRangePills + MonthPills
 import { QuickRangePills, MonthPills, type QuickRangeKey } from "../../common/OverviewPeriodFilter";
+import { Spinner } from "../../common/Spinner";
 
 export interface PurchaseArrivalOverviewProps { onSelectSubTab: (sub: DpSubTabKey) => void; }
 
@@ -87,6 +88,8 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   const [matchData, setMatchData] = useState<any>(null);
   const [invChecks, setInvChecks] = useState<InvCheckRow[] | null>(null);
   const [productsMap, setProductsMap] = useState<Map<string, ProductRow>>(new Map());
+  // 2026-10-12 · 사용자 지시 · 현황판 Spinner 전수 fix · productsMap 로딩 추적 (Map 은 null 체크 X)
+  const [productsMapLoading, setProductsMapLoading] = useState<boolean>(true);
   // 2026-10-12 · 사용자 지시 · 재고·진열 현황 패턴 복제 · 월 멀티 선택기
   //   · selectedMonths 비어있으면 period (7/14/30일) · 아니면 선택 월 범위
   const { selectedMonths, setSelectedMonths } = useMonthFilter();
@@ -152,6 +155,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   // 4. products map (current_stock + purchase_price join)
   useEffect(() => {
     let alive = true;
+    setProductsMapLoading(true);
     api.get<Record<string, ProductRow>>("/api/products-map?fields=slim&include_inactive=1&include_hidden=1")
       .then(({ data }) => {
         if (!alive) return;
@@ -161,7 +165,8 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
         }
         setProductsMap(m);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { if (alive) setProductsMapLoading(false); });
     return () => { alive = false; };
   }, []);
 
@@ -630,6 +635,16 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
           </div>
         }
       />
+      {/* 2026-10-12 · 사용자 지시 · "현황판 spinner 안나오는 부분 전수조사" fix
+          · purchases/matchData/invChecks/productsMap 로딩 중 상단 banner */}
+      {(purchases === null || matchData === null || invChecks === null || productsMapLoading) && (
+        <div className="px-4 sm:px-6">
+          <div className="flex items-center justify-center gap-2 py-2 bg-amber-50 border border-amber-100 rounded-md">
+            <Spinner size={12} tone="amber" label="현황판 데이터 불러오는 중..." labelSize={13} />
+          </div>
+        </div>
+      )}
+
       <OverviewInnerTabs<InnerTabKey>
         ariaLabel="매입 재고 inner tabs"
         active={innerTab}

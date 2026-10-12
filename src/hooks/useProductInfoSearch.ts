@@ -30,19 +30,33 @@ export interface ProductInfoSearch {
   runSearch: () => Promise<void>;
 }
 
-export function useProductInfoSearch(): ProductInfoSearch {
+// 2026-10-12 · 사용자 지시 · ScanPage 등 실재고 작업 시 판매중지·숨김 상품도 검색 가능하도록
+//   · 기존 호출처 (SalesTrend, FlowTab 등) 는 default (false) 로 영향 없음
+export interface UseProductInfoSearchOptions {
+  /** 판매중지 상품도 포함 · default false */
+  includeInactive?: boolean;
+  /** 숨김 상품도 포함 · default false */
+  includeHidden?: boolean;
+}
+
+export function useProductInfoSearch(options?: UseProductInfoSearchOptions): ProductInfoSearch {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ProductSearchResult[]>([]);
   const [selected, setSelected] = useState<ProductSearchResult | null>(null);
+  const includeInactive = options?.includeInactive ?? false;
+  const includeHidden = options?.includeHidden ?? false;
 
   const runSearch = useCallback(async () => {
     const q = query.trim();
     if (!q) { setResults([]); return; }
     try {
-      const { data } = await api.get<unknown>(`/api/products-search?q=${encodeURIComponent(q)}`);
+      const params = new URLSearchParams({ q });
+      if (includeInactive) params.set("include_inactive", "1");
+      if (includeHidden) params.set("include_hidden", "1");
+      const { data } = await api.get<unknown>(`/api/products-search?${params.toString()}`);
       setResults(Array.isArray(data) ? data as ProductSearchResult[] : []);
     } catch { setResults([]); }
-  }, [query]);
+  }, [query, includeInactive, includeHidden]);
 
   // 자동 검색 (250ms debounce · 이미 선택된 상품과 동일하면 재검색 안 함)
   useEffect(() => {
