@@ -39,10 +39,9 @@ export const StaffInfoModal: React.FC<StaffInfoModalProps> = ({
   // Modal title ReactNode · 원본 헤더 내부 구조 그대로 · -my-3 py-5 로 modal-header py-3 보정
   const headerTitle = (
     <div className="-my-3 py-5 flex-1 flex items-start justify-between gap-3 min-w-0">
+      {/* 2026-10-13 · 보안/UI fix U-3 · 이니셜 원 제거 (대원칙 금지) · accent bar 교체 */}
       <div className="flex items-center gap-3 min-w-0">
-        <div className="w-14 h-14 rounded-full bg-white/[0.18] flex items-center justify-center text-[16px] font-semibold text-white shrink-0 ring-1 ring-white/25">
-          {employee.name.slice(0, 2)}
-        </div>
+        <span className="w-[4px] h-[40px] bg-white/50 rounded-full shrink-0" aria-hidden />
         <div className="min-w-0">
           <div className="text-xl font-bold text-white leading-tight">{employee.name}</div>
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">

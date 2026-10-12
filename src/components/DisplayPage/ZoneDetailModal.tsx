@@ -104,10 +104,9 @@ export const ZoneDetailModal: React.FC<ZoneDetailModalProps> = ({
             const assignedStaff = employees.find((e) => e.id === draftStaffId) ?? null;
             const isLogistics = assignedStaff?.position.includes("물류");
             return assignedStaff ? (
-              <div className="flex items-center gap-3 px-3 py-3 rounded-xl border-2 border-indigo-200 bg-indigo-50">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-[15px] font-semibold shrink-0 bg-brand-tint text-brand-deep">
-                  {assignedStaff.name.slice(0, 2)}
-                </div>
+              // 2026-10-13 · 보안/UI fix U-3 · 이니셜 원 제거 (대원칙 금지) · accent bar 교체
+              <div className="flex items-center gap-3 px-3 py-3 rounded-xl border border-slate-200 bg-slate-50/60">
+                <span className="w-[3px] h-[32px] bg-indigo-500 rounded-full shrink-0" aria-hidden />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-bold text-zinc-900">{assignedStaff.name}</div>
                   <div className="flex items-center gap-1.5 mt-0.5">

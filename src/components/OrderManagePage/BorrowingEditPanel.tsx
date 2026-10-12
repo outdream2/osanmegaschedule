@@ -264,7 +264,7 @@ export const BorrowingEditPanel: React.FC<BorrowingEditPanelProps> = ({
         if (openPdf === true) {
           // 새 창으로 PDF 보기 페이지 open (BorrowingPage · pdf preview URL 파라미터)
           try {
-            window.open(`/borrowing/${created.id}/pdf`, "_blank", "noopener");
+            window.open(`/borrowing/${created.id}/pdf`, "_blank", "noopener,noreferrer");
           } catch { /* silent */ }
         }
       } else if (isEdit && mode?.kind === "edit") {

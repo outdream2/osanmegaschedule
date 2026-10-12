@@ -373,6 +373,8 @@ export const EmployeeProfileCard: React.FC<Props> = ({ employee, onEmployeeChang
                 src={localEmployee.contract_file_url}
                 className="w-full h-full border-0"
                 title="근로계약서"
+                sandbox="allow-same-origin allow-scripts allow-popups"
+                referrerPolicy="no-referrer"
               />
             ) : (
               <img

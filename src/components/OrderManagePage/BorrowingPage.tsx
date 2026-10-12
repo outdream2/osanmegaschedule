@@ -237,7 +237,7 @@ export const BorrowingPage: React.FC<BorrowingPageProps> = ({ authSession }) => 
               onAction={(action) => {
                 // 2026-09-10 · #47 · 사용자 지시 · 이력 리스트 · PDF 보기 액션
                 if (action === "pdf") {
-                  try { window.open(`/borrowing/${r.id}/pdf`, "_blank", "noopener"); } catch { /* silent */ }
+                  try { window.open(`/borrowing/${r.id}/pdf`, "_blank", "noopener,noreferrer"); } catch { /* silent */ }
                 }
               }}
             />
