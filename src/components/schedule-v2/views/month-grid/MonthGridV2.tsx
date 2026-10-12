@@ -90,7 +90,7 @@ export const MonthGridV2: React.FC<GridProps> = ({
         <thead>
           <tr>
             <th
-              className="sticky top-0 left-0 z-40 bg-zinc-50 border-r border-b border-line text-left px-3 py-2 text-[13px] font-bold text-ink-soft tracking-tight"
+              className="sticky top-0 left-0 z-40 bg-zinc-50 border-r border-b border-line text-left px-3 py-2 text-[14px] font-bold text-ink-soft tracking-tight"
               style={{ minWidth: 160 }}
             >
               성명
@@ -108,7 +108,7 @@ export const MonthGridV2: React.FC<GridProps> = ({
                   key={`h-${d}`}
                   ref={isToday ? todayHeaderRef : undefined}
                   onClick={dateClickable ? () => onDateHeaderClick!(d) : undefined}
-                  className={`sticky top-0 z-30 border-r border-b border-line px-1 py-1.5 text-center text-[12px] font-semibold tabular-nums relative ${
+                  className={`sticky top-0 z-30 border-r border-b border-line px-1 py-1.5 text-center text-[14px] font-semibold tabular-nums relative ${
                     isToday
                       ? "bg-rose-50 text-rose-700"
                       : isSun ? "bg-rose-50/60 text-rose-700" : isSat ? "bg-sky-50/60 text-sky-700" : "bg-zinc-50 text-ink"
@@ -123,8 +123,8 @@ export const MonthGridV2: React.FC<GridProps> = ({
                       · Linear/Vercel/Google calendar · today column 전체에 vertical rail (inset ring 2px)
                       · V1 parity 유지 (붉은 테두리) · ring 두께·색상 그대로 */}
                   <div className="leading-tight flex flex-col items-center">
-                    <div className={`${isToday ? "text-[16px] font-extrabold" : "text-[15px] font-bold"}`}>{dayNum}</div>
-                    <div className={`text-[11px] ${isToday ? "font-semibold" : "opacity-70"}`}>{dow}</div>
+                    <div className={`${isToday ? "text-[17px] font-extrabold" : "text-[16px] font-bold"}`}>{dayNum}</div>
+                    <div className={`text-[13px] ${isToday ? "font-semibold" : "opacity-70"}`}>{dow}</div>
                   </div>
                 </th>
               );
@@ -148,11 +148,11 @@ export const MonthGridV2: React.FC<GridProps> = ({
                 >
                   {/* 2026-10-09 · 사용자 지시 · 이름 + 직군 나란히 (horizontal · inline) · 인건비 진한 청색 */}
                   <div className="flex items-baseline gap-1.5 leading-tight">
-                    <span className="text-[14px] font-semibold text-ink">{emp.name}</span>
-                    <span className="text-[11.5px] text-ink-soft font-medium">{emp.position}</span>
+                    <span className="text-[15px] font-semibold text-ink">{emp.name}</span>
+                    <span className="text-[13px] text-ink-soft font-medium">{emp.position}</span>
                   </div>
                   {empLaborMap && empLaborMap.has(emp.id) && (
-                    <div className="text-[12px] font-bold text-blue-800 tabular-nums mt-0.5">
+                    <div className="text-[13px] font-bold text-blue-800 tabular-nums mt-0.5">
                       {(empLaborMap.get(emp.id) ?? 0).toLocaleString()}원
                     </div>
                   )}
