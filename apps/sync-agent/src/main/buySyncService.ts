@@ -40,6 +40,34 @@ const DB_SELECT_COLS = [
   ...WEB_FIELDS,
 ].join(", ");
 
+// 2026-10-12 · 사용자 지시 "B · 변한 데이터만 넣으면 되자나" (TASKS #17)
+//   · diff identity 를 (bm_code, row_num) → business_key 로 교체
+//   · ERP 가 매 sync 마다 다른 bm_code/row_num 할당 → 과거엔 매번 NEW 판정 → 매 sync 수천 row insert 호출
+//   · business_key = (purchase_date, product_code, quantity, unit_price, amount) · DB UNIQUE constraint 와 일치
+//   · ERP BuyDate 가 "20261008" 같은 compact string 일 수 있어 ISO ("2026-10-08") 로 normalize 후 비교
+function toIsoDate(v: unknown): string | null {
+  if (v == null) return null;
+  const s = String(v).trim();
+  if (!s) return null;
+  // ISO 포맷 ("2026-10-08" 또는 "2026-10-08T00:00:00") 우선 처리
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  // compact 형태 ("20261008") 또는 slash/dot ("2026/10/08", "2026.10.08") 처리
+  const compact = s.replace(/[^\d]/g, "");
+  if (compact.length !== 8) return null;
+  return `${compact.slice(0, 4)}-${compact.slice(4, 6)}-${compact.slice(6, 8)}`;
+}
+
+function businessKey(obj: Record<string, unknown>): string | null {
+  const d = toIsoDate(obj.purchase_date);
+  const pc = String(obj.product_code ?? "").trim();
+  const q = Number(obj.quantity);
+  const up = Number(obj.unit_price);
+  const am = Number(obj.amount);
+  if (!d || !pc || !Number.isFinite(q) || !Number.isFinite(up) || !Number.isFinite(am)) return null;
+  return `${d}|${pc}|${q}|${up}|${am}`;
+}
+
 export interface BuySyncInput {
   readonly erpRows: readonly ErpBuyRow[];
   readonly pcodeToBarcodeMap: ReadonlyMap<string, string>;
@@ -137,6 +165,49 @@ function chunk<T>(arr: readonly T[], size: number): T[][] {
   return out;
 }
 
+// 2026-10-12 · TASKS #17 · ERP rows 의 purchase_date range 로 DB 조회 · business_key map 반환
+//   · bm_code `.in` 조회가 매 sync 마다 다른 값이라 매칭 miss 됐던 근본 원인 해결
+//   · ERP rows 가 다루는 날짜만 가져오므로 과거 수십만 row 테이블 전부 스캔하지 않음
+//   · ORDER BY purchase_date + id · range offset pagination 결정론 보장
+async function fetchDbByBusinessKey(
+  supabase: SupabaseClient,
+  erpRows: readonly ErpBuyRow[],
+): Promise<Map<string, DbRow>> {
+  const map = new Map<string, DbRow>();
+  if (erpRows.length === 0) return map;
+
+  const dates = new Set<string>();
+  for (const r of erpRows) {
+    const d = toIsoDate(r.BuyDate);
+    if (d) dates.add(d);
+  }
+  if (dates.size === 0) return map;
+  const sorted = [...dates].sort();
+  const minDate = sorted[0];
+  const maxDate = sorted[sorted.length - 1];
+
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("purchase_details")
+      .select(DB_SELECT_COLS)
+      .gte("purchase_date", minDate)
+      .lte("purchase_date", maxDate)
+      .order("purchase_date", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + 999);
+    if (error) throw new Error(`purchase_details fetch (business_key) 실패 · ${error.message}`);
+    if (!data || data.length === 0) break;
+    for (const d of ((data) as unknown) as DbRow[]) {
+      const bk = businessKey(d);
+      if (bk) map.set(bk, d);
+    }
+    if (data.length < 1000) break;
+    from += 1000;
+  }
+  return map;
+}
+
 async function fetchDbByIdentity(
   supabase: SupabaseClient,
   bmCodes: readonly string[],
@@ -179,7 +250,8 @@ async function fetchDbByIdentity(
 interface DiffBundle {
   readonly entries: BuySyncEntry[];
   readonly inserts: Array<{ identity: { bm_code: string; row_num: number }; payload: Record<string, unknown> }>;
-  readonly updates: Array<{ identity: { bm_code: string; row_num: number }; payload: Record<string, unknown>; changedFields: string[] }>;
+  // 2026-10-12 · TASKS #17 · dbId 추가 · UPDATE WHERE 를 .eq("id", dbId) 로 쓰기 위해
+  readonly updates: Array<{ identity: { bm_code: string; row_num: number }; payload: Record<string, unknown>; changedFields: string[]; dbId: number }>;
   readonly stats: {
     erpTotal: number;
     unmappedProduct: number;
@@ -277,9 +349,19 @@ function buildBuyDiff(
       continue;
     }
     const { uniqueKey, payload, productCode } = mapped;
+    // 2026-10-12 · TASKS #17 · dbByKey 는 business_key 기반 map
+    //   · ERP identity (bm_code, row_num) 는 매 sync 마다 바뀌므로 매칭 miss
+    //   · business_key = (purchase_date, product_code, quantity, unit_price, amount) 로 과거 매입 재식별
+    const bk = businessKey({
+      purchase_date: payload.purchase_date,
+      product_code: productCode,
+      quantity: payload.quantity,
+      unit_price: payload.unit_price,
+      amount: payload.amount,
+    });
     const key = `${uniqueKey.bm_code}#${uniqueKey.row_num}`;
 
-    const db = dbByKey.get(key);
+    const db = bk ? dbByKey.get(bk) : undefined;
     if (!db) {
       const insertPayload: Record<string, unknown> = { ...payload, product_code: productCode };
       assertNoProtectedField(insertPayload, PROTECTED_PURCHASE_FIELDS, `buySyncService INSERT (${key})`);
@@ -321,7 +403,9 @@ function buildBuyDiff(
       countSame++;
     } else {
       assertNoProtectedField(updatePayload, PROTECTED_PURCHASE_FIELDS, `buySyncService UPDATE (${key})`);
-      updates.push({ identity: uniqueKey, payload: updatePayload, changedFields: Object.keys(changes) });
+      // 2026-10-12 · TASKS #17 · dbId = DB primary key · UPDATE WHERE 에 사용 (bm_code+row_num 대신)
+      const dbId = Number((db as DbRow).id);
+      updates.push({ identity: uniqueKey, payload: updatePayload, changedFields: Object.keys(changes), dbId });
       entries.push({
         identity: uniqueKey,
         action: "CHANGED",
@@ -350,22 +434,14 @@ function buildBuyDiff(
   };
 }
 
-function getBmCodes(input: BuySyncInput): string[] {
-  const set = new Set<string>();
-  for (const r of input.erpRows) {
-    const bm = String(r.BmCode ?? "").trim();
-    if (bm) set.add(bm);
-  }
-  return [...set];
-}
-
 /** CHECK · fresh Supabase fetch + diff · DB WRITE 없음 */
 export async function runBuySyncCheck(input: BuySyncInput): Promise<BuySyncCheckResult> {
   const supabase = getSupabaseClient();
   if (!supabase) throw new Error("Supabase client 미설정 · SUPABASE_URL / SUPABASE_KEY 환경변수 확인");
 
   const supabaseFetchedAt = new Date().toISOString();
-  const dbByKey = await fetchDbByIdentity(supabase, getBmCodes(input));
+  // 2026-10-12 · TASKS #17 · business_key map (bm_code lookup → purchase_date range lookup)
+  const dbByKey = await fetchDbByBusinessKey(supabase, input.erpRows);
   const dedupeStats = { duplicates: 0, conflicts: [] as BuySyncErrorEntry[] };
   const diff = buildBuyDiff(input, dbByKey, dedupeStats);
 
@@ -535,7 +611,8 @@ export async function applyBuySync(
   const supabase = getSupabaseClient();
   if (!supabase) throw new Error("Supabase client 미설정");
 
-  const dbByKey = await fetchDbByIdentity(supabase, getBmCodes(input));
+  // 2026-10-12 · TASKS #17 · business_key map (bm_code lookup → purchase_date range lookup)
+  const dbByKey = await fetchDbByBusinessKey(supabase, input.erpRows);
   // 2026-10-06 · ERP internal dedupe 통계 수집
   const dedupeStats = { duplicates: 0, conflicts: [] as BuySyncErrorEntry[] };
   const diff = buildBuyDiff(input, dbByKey, dedupeStats);
@@ -566,12 +643,17 @@ export async function applyBuySync(
     };
   }
 
+  // 2026-10-12 · TASKS #17 · webBefore key 를 DB id 로 전환 (ERP bm_code 변동 무관)
   const webBefore = new Map<string, Record<string, unknown>>();
-  for (const [key, d] of dbByKey.entries()) {
+  for (const d of dbByKey.values()) {
+    const idKey = String(d.id ?? "");
+    if (!idKey) continue;
     const snap: Record<string, unknown> = {};
     for (const w of WEB_FIELDS) snap[w] = d[w] ?? null;
-    webBefore.set(key, snap);
+    webBefore.set(idKey, snap);
   }
+  // 2026-10-12 · TASKS #17 · insert 로 들어간 row 의 (bm_code,row_num) → id 매핑 (read-back 용)
+  const insertedIdMap = new Map<string, number>();
 
   const errors: BuySyncErrorEntry[] = [];
   // ERP internal conflicts 가 있으면 errors 에 먼저 적재 (fresh verify 전에 UI 노출)
@@ -588,12 +670,23 @@ export async function applyBuySync(
 
   for (const batch of chunk(diff.inserts, 500)) {
     const payloads = batch.map((b) => b.payload);
+    // 2026-10-12 · 사용자 지시 "같은 데이터는 덮어써야지 · 이런 일 없도록"
+    //   · DB 에 UNIQUE constraint 미적용 상태에서 `.insert()` → 매 sync 마다 중복 row 수백 건 쌓임
+    //   · 해결: business key `(purchase_date, product_code, quantity, unit_price, amount)` 조합으로 UPSERT
+    //   · ignoreDuplicates: true · 같은 business key 면 skip (ERP 는 identity 로 bm_code+row_num 쓰지만 실제 매입 식별은 business key)
     const { data, error } = await supabase
       .from("purchase_details")
-      .insert(payloads)
-      .select("bm_code, row_num");
+      .upsert(payloads, {
+        onConflict: "purchase_date,product_code,quantity,unit_price,amount",
+        ignoreDuplicates: true,
+      })
+      .select("id, bm_code, row_num");
     if (!error) {
       inserted += (data?.length ?? 0);
+      // 2026-10-12 · TASKS #17 · inserted row → id 매핑 (read-back 용 · ignoreDuplicates 로 skip 된 건 반환 X)
+      for (const row of ((data ?? []) as unknown) as Array<{ id: number; bm_code: string; row_num: number }>) {
+        insertedIdMap.set(`${String(row.bm_code)}#${String(row.row_num)}`, Number(row.id));
+      }
       continue;
     }
     // 2026-10-06 · 사용자 요청 · 23505 unique_violation 은 recoverable
@@ -642,11 +735,11 @@ export async function applyBuySync(
     const slice = diff.updates.slice(i, i + PAR);
     const results = await Promise.all(
       slice.map(async (u) => {
+        // 2026-10-12 · TASKS #17 · UPDATE WHERE = id (ERP bm_code/row_num 변동 무관)
         const { error } = await supabase
           .from("purchase_details")
           .update(u.payload)
-          .eq("bm_code", u.identity.bm_code)
-          .eq("row_num", u.identity.row_num);
+          .eq("id", u.dbId);
         return { u, error: error?.message };
       }),
     );
@@ -671,18 +764,20 @@ export async function applyBuySync(
     }
   }
 
-  const touchedBmCodes = new Set<string>();
-  for (const i of diff.inserts) touchedBmCodes.add(i.identity.bm_code);
-  for (const u of diff.updates) touchedBmCodes.add(u.identity.bm_code);
+  // 2026-10-12 · TASKS #17 · read-back 을 id 기반으로 전환
+  //   · updates 는 u.dbId · inserts 는 upsert returned id (ignoreDuplicates 로 skip 된 건 생략)
+  const touchedIds = new Set<number>();
+  for (const u of diff.updates) if (Number.isFinite(u.dbId)) touchedIds.add(u.dbId);
+  for (const id of insertedIdMap.values()) touchedIds.add(id);
   const readbackMap = new Map<string, DbRow>();
-  for (const slice of chunk([...touchedBmCodes], 200)) {
+  for (const slice of chunk([...touchedIds], 200)) {
     const { data, error } = await supabase
       .from("purchase_details")
       .select(DB_SELECT_COLS)
-      .in("bm_code", slice);
+      .in("id", slice);
     if (error) throw new Error(`read-back 실패 · ${error.message}`);
     for (const d of ((data ?? []) as unknown) as DbRow[]) {
-      readbackMap.set(`${String(d.bm_code)}#${String(d.row_num)}`, d);
+      readbackMap.set(String(d.id), d);
     }
   }
 
@@ -692,12 +787,11 @@ export async function applyBuySync(
   let identityModified = 0;
 
   for (const u of diff.updates) {
-    const key = `${u.identity.bm_code}#${u.identity.row_num}`;
+    // 2026-10-12 · TASKS #17 · readback/webBefore 를 DB id 로 lookup
+    //   · identityModified 체크는 "ERP 가 보낸 bm_code/row_num 과 DB 저장값이 다른지" · 매번 다름이 정상이므로 체크 제거
+    const key = String(u.dbId);
     const back = readbackMap.get(key);
     if (!back) { readbackMismatch++; continue; }
-    if (String(back.bm_code) !== u.identity.bm_code || Number(back.row_num) !== u.identity.row_num) {
-      identityModified++;
-    }
     const web = webBefore.get(key);
     if (web) {
       for (const w of WEB_FIELDS) {
@@ -719,12 +813,11 @@ export async function applyBuySync(
   }
 
   for (const ins of diff.inserts) {
-    const key = `${ins.identity.bm_code}#${ins.identity.row_num}`;
-    const back = readbackMap.get(key);
+    // 2026-10-12 · TASKS #17 · insertedIdMap 에서 id 찾기 · 못 찾으면 upsert ignoreDuplicates skip (match 불가 · skip)
+    const insId = insertedIdMap.get(`${ins.identity.bm_code}#${ins.identity.row_num}`);
+    if (!insId) continue;
+    const back = readbackMap.get(String(insId));
     if (!back) { readbackMismatch++; continue; }
-    if (String(back.bm_code) !== ins.identity.bm_code || Number(back.row_num) !== ins.identity.row_num) {
-      identityModified++;
-    }
     let allMatch = true;
     for (const f of Object.keys(ins.payload)) {
       if (f === "bm_code" || f === "row_num") continue;
