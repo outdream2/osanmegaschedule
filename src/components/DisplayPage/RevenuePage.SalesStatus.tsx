@@ -41,6 +41,9 @@ const MonthlyReportTab = React.lazy(() => import("./RevenuePage").then((m) => ({
 //   · 판매 메뉴 통계 > 상품현황 (= FlowTab · StockManagePage/FlowTab.tsx) 전체 재사용
 //   · lazy · 좌 리스트 + 중앙 재고·매입·판매 테이블 + 우 상세 drawer 자체 완결
 const FlowTab = React.lazy(() => import("../StockManagePage/FlowTab").then((m) => ({ default: m.FlowTab })));
+// 2026-10-12 · 사용자 지시 "이 페이지는 상품판매현황리스트가 나와야지 · UI교체"
+//   · FlowTab (상품현황 리스트 · 복잡) 대신 ProductSalesListPanel (판매 중심 compact 리스트) 사용
+const ProductSalesListPanel = React.lazy(() => import("./overviews/ProductSalesListPanel").then((m) => ({ default: m.ProductSalesListPanel })));
 // 2026-10-12 · 사용자 지시 "판매-손실추적도 판매현황 이너탭으로 이동" · 판매 메뉴 아래 손실추적 탭 (= LossTrackerTab) 재사용
 const LossTrackerTab = React.lazy(() => import("../SalesTrendPage/LossTrackerTab").then((m) => ({ default: m.LossTrackerTab })));
 
@@ -505,7 +508,7 @@ export const SalesStatus: React.FC = () => {
             <React.Suspense fallback={<div className="flex items-center justify-center py-10 text-[14px] text-slate-500">매출현황 로딩 중...</div>}>
               {revenueSubTab === "hourly" ? <HourlyReportTab />
                 : revenueSubTab === "monthly" ? <MonthlyReportTab />
-                : <div className="min-w-0 -mx-4 sm:-mx-6"><FlowTab /></div>}
+                : <ProductSalesListPanel />}
             </React.Suspense>
           </div>
         </div>
@@ -673,12 +676,13 @@ export const SalesStatus: React.FC = () => {
               사유: "상품별 판매현황에 급상승 상품 내용은 들어가지 않아 · 급상승은 현황판에서 슬라이딩 drawer"
               → 현황 탭 (overview) 에서만 현황판 drawer 로 노출 · product 탭은 FlowTab 전용 */}
 
-          {/* 2026-10-11 · 사용자 지시 "매장-판매현황-상품별 판매현황 탭에 판매 메뉴 아래의 상품별 판매현황 (= FlowTab) 그대로 embed"
-              · FlowTab (StockManagePage/FlowTab) 자체 완결 · 좌 리스트 + 중앙 테이블 + 우 drawer */}
+          {/* 2026-10-12 · 사용자 지시 "이 페이지는 상품판매현황리스트가 나와야지 · 오늘의 판매현황이랑 연결 · 판매데이터 가져와서 보여주기 · 기간 공통 필터 · UI교체"
+              · 기존 FlowTab (복잡 통합 리스트) 제거 → ProductSalesListPanel (판매 중심 compact 리스트)
+              · 공통 OverviewPeriodFilter (MonthPills + QuickRangePills) · top-sales API 호출 */}
           {innerTab === "product" && (
-            <div className="min-w-0 -mx-4 sm:-mx-6">
+            <div className="min-w-0 px-4 sm:px-6">
               <React.Suspense fallback={<div className="flex items-center justify-center py-16 text-[14px] text-slate-500">상품별 판매현황 로딩 중...</div>}>
-                <FlowTab />
+                <ProductSalesListPanel />
               </React.Suspense>
             </div>
           )}
