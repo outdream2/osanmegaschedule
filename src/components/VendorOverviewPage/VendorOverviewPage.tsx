@@ -69,8 +69,9 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
     api.get<any[]>("/api/vendors").then(({ data }) => {
       if (!alive) return;
       const list = Array.isArray(data) ? data : [];
+      // 2026-10-12 · fix · 실제 field 는 company_name (useVendors Vendor interface) · name/vendor_name 은 fallback
       const found = list.find((v: any) =>
-        String(v?.name ?? v?.vendor_name ?? "").trim() === vendorName.trim()
+        String(v?.company_name ?? v?.name ?? v?.vendor_name ?? "").trim() === vendorName.trim()
       );
       setMyVendor(found ?? null);
     }).catch(() => { if (alive) setMyVendor(null); });
@@ -269,7 +270,7 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
                           {vendorName ? `"${vendorName}" 공급사 정보 없음` : "로그인 정보 없음"}
                         </div>
                       ) : (() => {
-                        const name = myVendor.name ?? myVendor.vendor_name ?? "-";
+                        const name = myVendor.company_name ?? myVendor.name ?? myVendor.vendor_name ?? "-";
                         const manager = myVendor.manager ?? myVendor.contact_name ?? "";
                         const phone = myVendor.phone ?? myVendor.contact_phone ?? "";
                         const email = myVendor.email ?? "";
