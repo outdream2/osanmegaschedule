@@ -11,6 +11,8 @@ export interface ContractPrefill {
   hireDate?: string;
   position?: string;
   employmentType?: string;
+  /** 2026-10-12 · 사용자 지시 · 계약유형 enum (regular/fixed_term/part_time/daily/intern) · EmployeeInfoPanel 저장값 inject */
+  contractType?: string;
   annualLeaveDays?: number | null;
   gender?: string;
   rank?: string;

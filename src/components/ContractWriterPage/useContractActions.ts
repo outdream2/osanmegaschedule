@@ -134,6 +134,13 @@ export function useContractActions({
         return pos && pos !== "약사" ? pos : prev.employeeCategoryCustom;
       })(),
       contractType: (() => {
+        // 2026-10-12 · 사용자 지시 · 계약유형 ↔ 근로계약서 단방향 연동
+        //   · 1차 · employee.contract_type (enum · EmployeeInfoPanel 신규 저장값 · regular/fixed_term/part_time/daily/intern)
+        //   · 2차 fallback · employmentType (레거시 · "정직원"/"계약직"/"알바")
+        const ct = String((emp as any).contract_type || "").trim();
+        if (ct === "regular")    return "정규직";
+        if (ct === "fixed_term") return "계약직";
+        if (ct === "part_time" || ct === "daily" || ct === "intern") return "알바";
         const et = (emp.employmentType || "").trim();
         if (et.includes("정")) return "정규직";
         if (et.includes("계약")) return "계약직";

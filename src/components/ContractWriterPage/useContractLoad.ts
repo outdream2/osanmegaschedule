@@ -86,9 +86,13 @@ export function useContractLoad({ form, setForm }: UseContractLoadProps) {
         if (!t) return { cat: "기타", custom: "" };
         return { cat: "기타", custom: t };
       };
+      // 2026-10-12 · 사용자 지시 · 계약유형 단방향 연동 · enum (regular/fixed_term/...) 우선 매핑
       const mapContractType = (et: string, fallback: string): string => {
         const t = String(et ?? "").trim();
         if (!t) return fallback;
+        if (t === "regular")    return "정규직";
+        if (t === "fixed_term") return "계약직";
+        if (t === "part_time" || t === "daily" || t === "intern") return "알바";
         if (t.includes("정")) return "정규직";
         if (t.includes("계약")) return "계약직";
         if (t.includes("알바") || t.includes("파트")) return "알바";
@@ -134,7 +138,13 @@ export function useContractLoad({ form, setForm }: UseContractLoadProps) {
           annualLeaveDays: nextAnnual,
           employeeCategory: cat,
           employeeCategoryCustom: custom || prev.employeeCategoryCustom,
-          contractType: mapContractType(typeof p.employmentType === "string" ? p.employmentType : "", prev.contractType),
+          // 2026-10-12 · 사용자 지시 · 계약유형 단방향 연동
+          //   · 1차 · p.contractType (enum · EmployeeInfoPanel 저장값)
+          //   · 2차 fallback · p.employmentType (레거시 label)
+          contractType: mapContractType(
+            typeof p.contractType === "string" && p.contractType ? p.contractType : (typeof p.employmentType === "string" ? p.employmentType : ""),
+            prev.contractType,
+          ),
           startDate: typeof p.hireDate === "string" && p.hireDate ? p.hireDate : prev.startDate,
           weekdayHourly: wd,
           weekendHourly: we,
