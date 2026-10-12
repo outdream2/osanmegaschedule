@@ -144,6 +144,19 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
     () => CONTRACT_TYPES.map(c => ({ value: c.value, label: c.label })),
     [],
   );
+  // 2026-10-12 · 사용자 지시 "DB에 있는건 드롭박스로" · settings 저장 enum → select 전환
+  const ranksOptions = useMemo(
+    () => (settings?.ranks ?? []).map((r: string) => ({ value: r, label: r })),
+    [settings],
+  );
+  const employmentTypesOptions = useMemo(
+    () => (settings?.employmentTypes ?? []).map((t: string) => ({ value: t, label: t })),
+    [settings],
+  );
+  const workplacesOptions = useMemo(
+    () => (settings?.workplaces ?? []).map((w: string) => ({ value: w, label: w })),
+    [settings],
+  );
   const initialRef = useRef<Form>(toForm(emp));
   const [form, setForm] = useState<Form>(initialRef.current);
   const [editingField, setEditingField] = useState<FieldKey | null>(null);
@@ -354,13 +367,13 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
             options={positionOptions.map(p => ({ value: p, label: p }))} placeholder="직군 선택" />
           <InlineRow label="직급" fieldKey="rank" form={form} editingField={editingField} draft={draft}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
-            placeholder="예: 과장" />
+            options={ranksOptions} placeholder="직급 선택" />
           <InlineRow label="고용형태" fieldKey="employmentType" form={form} editingField={editingField} draft={draft}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
-            placeholder="정규직·계약직·알바" />
+            options={employmentTypesOptions} placeholder="고용형태 선택" />
           <InlineRow label="근무지" fieldKey="workplace" form={form} editingField={editingField} draft={draft}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
-            placeholder="매장·창고" />
+            options={workplacesOptions} placeholder="근무지 선택" />
           <InlineRow label="생년월일" fieldKey="birth_date" form={form} editingField={editingField} draft={draft}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             type="date" />
@@ -653,7 +666,12 @@ const InlineRow: React.FC<InlineRowProps> = ({
           <span className={`text-[13px] md:text-[14px] tabular-nums text-right ${displayValue ? "text-ink" : "text-slate-400 italic"}`}>
             {displayValue ? (suffix ? `${displayValue}${suffix}` : displayValue) : (placeholder || "—")}
           </span>
-          <PencilSimple size={11} weight="bold" className="text-slate-400 opacity-60 group-hover/btn:opacity-100 shrink-0 transition-opacity" />
+          {/* 2026-10-12 · 사용자 지시 "드롭박스엔 연필 X" · options 있는 select 필드는 연필 숨김 (chevron 으로 암시) */}
+          {options ? (
+            <span className="text-slate-400 opacity-60 group-hover/btn:opacity-100 shrink-0 transition-opacity text-[11px] font-bold leading-none">▾</span>
+          ) : (
+            <PencilSimple size={11} weight="bold" className="text-slate-400 opacity-60 group-hover/btn:opacity-100 shrink-0 transition-opacity" />
+          )}
         </button>
       )}
     </div>
