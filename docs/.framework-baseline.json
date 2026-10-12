@@ -84,7 +84,7 @@
       "totalWeight": 25
     },
     "src/components/DisplayPage/overviews/OrderReturnOverview.tsx": {
-      "lines": 2396,
+      "lines": 2368,
       "violations": [
         {
           "ruleId": "large-file-critical",
@@ -94,7 +94,7 @@
       "totalWeight": 24
     },
     "src/components/DisplayPage/RevenuePage.tsx": {
-      "lines": 2598,
+      "lines": 2605,
       "violations": [
         {
           "ruleId": "large-file-critical",
@@ -152,7 +152,7 @@
       "totalWeight": 16
     },
     "server/routes/purchase/purchase.ts": {
-      "lines": 771,
+      "lines": 791,
       "violations": [
         {
           "ruleId": "no-any-server",
@@ -252,7 +252,7 @@
       "totalWeight": 8
     },
     "src/components/DisplayPage/overviews/PurchaseArrivalOverview.tsx": {
-      "lines": 1407,
+      "lines": 1416,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -266,7 +266,7 @@
       "totalWeight": 8
     },
     "src/components/DisplayPage/RevenuePage.SalesStatus.tsx": {
-      "lines": 1192,
+      "lines": 1286,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -344,7 +344,7 @@
       "totalWeight": 7
     },
     "src/components/LandingPage/HomeDashboard.tsx": {
-      "lines": 1486,
+      "lines": 1528,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -354,7 +354,7 @@
       "totalWeight": 6
     },
     "src/components/LeavePage/LeavePage.tsx": {
-      "lines": 1453,
+      "lines": 1550,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -648,7 +648,7 @@
       "totalWeight": 3
     },
     "src/components/RequestsPage/RequestsPage.tsx": {
-      "lines": 834,
+      "lines": 839,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -658,7 +658,7 @@
       "totalWeight": 3
     },
     "src/components/ScanPage/ScanPage.tsx": {
-      "lines": 965,
+      "lines": 973,
       "violations": [
         {
           "ruleId": "large-file-warn",
@@ -717,8 +717,8 @@
       ],
       "totalWeight": 3
     },
-    "src/components/BusinessManagePage/BusinessManagePage.Overview.tsx": {
-      "lines": 581,
+    "src/components/BusinessManagePage/common/EmployeeDrawer.tsx": {
+      "lines": 104,
       "violations": [
         {
           "ruleId": "prefer-modal-primitive",

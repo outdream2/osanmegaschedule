@@ -13,10 +13,9 @@ import { getLeavePendingCount, listLeaveRequests, type LeaveRequestRow } from ".
 import { getResignationPendingCount } from "../../lib/resignationsApi";
 import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "../DisplayPage/overviews/OverviewHeader";
 import { Spinner } from "../common/Spinner";
+import { EmployeeDrawer } from "./common/EmployeeDrawer";
 
 const StaffManagePage = React.lazy(() => import("../StaffManagePage/StaffManagePage"));
-// 2026-10-12 · 사용자 지시 · 상세 drawer 는 리스트 X · 상세정보만 (EmployeeInfoPanel · inline edit)
-const EmployeeInfoPanel = React.lazy(() => import("../schedule-v2/views/employee/EmployeeInfoPanel").then(m => ({ default: m.EmployeeInfoPanel })));
 const DocumentWriterPage = React.lazy(() => import("../DocumentWriterPage/DocumentWriterPage"));
 const RequestsPage = React.lazy(() => import("../RequestsPage/RequestsPage").then(m => ({ default: m.RequestsPage })));
 const WageAnalysisTab = React.lazy(() => import("./BusinessManagePage.WageAnalysis"));
@@ -248,49 +247,19 @@ export const BusinessOverview: React.FC<BusinessOverviewProps> = ({
         )}
       </div>
 
-      {/* 2026-10-12 · 사용자 지시 "직원상세편집이 아직도 리스트로 · 상세정보만"
-          · drawer · 리스트 포함 StaffManagePage → EmployeeInfoPanel (상세 전용 · flat sections + inline edit)
-          · 폭 축소 (560px · schedule-v2 drawer 와 동일) · 상세 집중 */}
-      {drawerEmpId != null && (() => {
-        const drawerEmp = employees.find(e => e.id === drawerEmpId);
-        return (
-          <div
-            className="fixed inset-0 z-50 bg-black/30 flex justify-end animate-in fade-in duration-150"
-            onClick={() => setDrawerEmpId(null)}
-            role="dialog"
-            aria-modal="true"
-          >
-            <div
-              className="w-full sm:w-[560px] bg-white h-full shadow-2xl flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-              style={{ animation: "slideInRight 180ms ease-out" }}
-            >
-              <button
-                type="button"
-                onClick={() => setDrawerEmpId(null)}
-                className="absolute top-3 right-3 z-20 w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-100 cursor-pointer text-slate-500 text-[16px]"
-                aria-label="닫기"
-                title="닫기 (Esc)"
-              >
-                ✕
-              </button>
-              {drawerEmp ? (
-                <Suspense fallback={<FallbackSpinner label="직원 상세 로딩 중..." />}>
-                  <EmployeeInfoPanel
-                    employee={drawerEmp}
-                    onSaved={(updated) => setEmployees(prev => prev.map(e => (e.id === updated.id ? { ...e, ...updated } as EmployeeExt : e)))}
-                  />
-                </Suspense>
-              ) : (
-                <div className="flex-1 flex items-center justify-center">
-                  <FallbackSpinner label="직원 정보 로딩 중..." />
-                </div>
-              )}
-            </div>
-            <style>{`@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
-          </div>
-        );
-      })()}
+      {/* 공용 EmployeeDrawer · EmployeeInfoPanel slide drawer */}
+      <EmployeeDrawer
+        employeeId={drawerEmpId}
+        employees={employees}
+        onClose={() => setDrawerEmpId(null)}
+        onSaved={(updated) => setEmployees(prev => prev.map(e => (e.id === updated.id ? { ...e, ...updated } as EmployeeExt : e)))}
+        onOpenManagement={(id) => {
+          setDrawerEmpId(null);
+          setStaffSelectedId(id);
+          setStaffMode("edit");
+          setInnerTab("staff-manage");
+        }}
+      />
     </div>
   );
 };

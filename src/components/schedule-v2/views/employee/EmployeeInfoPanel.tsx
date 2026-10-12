@@ -4,11 +4,14 @@
 //   · Enter 저장 · Esc 취소 · dirty tracking · footer sticky 저장/취소
 //   · 섹션: Header → Quick Facts → 기본정보 → 연락처 → 계약 → 메모
 //   · 수정 가능 (슬라이딩 윈도우에서 inline edit 지원)
+//   · 2026-10-12 · 직군(position) · 계약유형(contract_type) → <select> 드롭다운 (settings 연동)
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowSquareOut, PencilSimple, FloppyDisk, X as XIcon, Check } from "@phosphor-icons/react";
 import type { Employee } from "../../../../types";
 import { updateEmployee, type EmployeeUpdatePayload } from "../../../../lib/employeeApi";
 import { useToast, toastClass } from "../../../../hooks/useToast";
+import { useSettings } from "../../../../hooks/useSettings";
+import { CONTRACT_TYPES } from "../../../StaffManagePage/types";
 
 // HR 확장 필드 (Employee type 에 없는 nullable 확장)
 type EmployeeExt = Employee & {
@@ -73,6 +76,17 @@ const todayYmd = (): string => {
 export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement, onSaved }) => {
   const emp = employee as EmployeeExt;
   const { toast, showSuccess, showError } = useToast();
+  const { settings } = useSettings();
+  // 직군 목록 · settings 에서 가져옴 (없으면 기본 목록)
+  const positionOptions = useMemo(
+    () => settings?.positions?.length ? settings.positions : ["약사", "매장", "창고", "캐셔", "물류", "알바", "기타"],
+    [settings],
+  );
+  // 계약유형 목록 · CONTRACT_TYPES 상수 (StaffManagePage/types.ts)
+  const contractTypeOptions = useMemo(
+    () => CONTRACT_TYPES.map(c => ({ value: c.value, label: c.label })),
+    [],
+  );
   const initialRef = useRef<Form>(toForm(emp));
   const [form, setForm] = useState<Form>(initialRef.current);
   const [editingField, setEditingField] = useState<FieldKey | null>(null);
@@ -229,7 +243,7 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
             placeholder="예: EMP-001" />
           <InlineRow label="직군" fieldKey="position" form={form} editingField={editingField} draft={draft}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
-            placeholder="예: 약사·캐셔·매장" />
+            options={positionOptions.map(p => ({ value: p, label: p }))} placeholder="직군 선택" />
           <InlineRow label="직급" fieldKey="rank" form={form} editingField={editingField} draft={draft}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             placeholder="예: 과장" />
@@ -260,7 +274,7 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
         <Section title="계약">
           <InlineRow label="계약 유형" fieldKey="contract_type" form={form} editingField={editingField} draft={draft}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
-            placeholder="정규·계약·수습" />
+            options={contractTypeOptions} placeholder="계약유형 선택" />
           <InlineRow label="계약 시작" fieldKey="contract_start" form={form} editingField={editingField} draft={draft}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             type="date" />
@@ -352,6 +366,8 @@ const QuickFact: React.FC<{ label: string; value: string; tone?: "rose" | "amber
 // ─────────────────────────────────────────────────────────────────
 // InlineRow · field hover reveal pencil · click → input · Enter/Esc
 // ─────────────────────────────────────────────────────────────────
+interface SelectOption { value: string; label: string }
+
 interface InlineRowProps {
   label: string;
   fieldKey: FieldKey;
@@ -367,40 +383,70 @@ interface InlineRowProps {
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   placeholder?: string;
   suffix?: string;
+  /** 선택지가 있으면 <select> 드롭다운으로 전환 */
+  options?: SelectOption[];
 }
 
 const InlineRow: React.FC<InlineRowProps> = ({
   label, fieldKey, form, editingField, draft,
   onEdit, onDraftChange, onCommit, onCancel, onKeyDown,
-  type = "text", inputMode, placeholder, suffix,
+  type = "text", inputMode, placeholder, suffix, options,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const selectRef = useRef<HTMLSelectElement>(null);
   const isEditing = editingField === fieldKey;
   const value = form[fieldKey];
 
   useEffect(() => {
-    if (isEditing) inputRef.current?.focus();
-  }, [isEditing]);
+    if (!isEditing) return;
+    if (options) selectRef.current?.focus();
+    else inputRef.current?.focus();
+  }, [isEditing, options]);
+
+  // display label: if options, resolve value → label
+  const displayValue = options
+    ? (options.find(o => o.value === value)?.label ?? value)
+    : value;
 
   return (
     <div className="group flex items-center justify-between gap-3 py-1.5 min-h-[32px]">
       <span className="text-[12.5px] md:text-[13px] text-slate-500 font-medium shrink-0 w-[90px]">{label}</span>
       {isEditing ? (
         <div className="flex items-center gap-1 flex-1 justify-end">
-          <input
-            ref={inputRef}
-            type={type}
-            value={draft}
-            onChange={e => onDraftChange(e.target.value)}
-            onKeyDown={onKeyDown}
-            onBlur={onCommit}
-            inputMode={inputMode}
-            placeholder={placeholder}
-            className="w-full max-w-[260px] h-7 px-2 text-[13px] md:text-[14px] text-ink border border-brand-deep rounded-md focus:outline-none focus:ring-2 focus:ring-brand-tint tabular-nums"
-          />
+          {options ? (
+            <select
+              ref={selectRef}
+              value={draft}
+              onChange={e => { onDraftChange(e.target.value); onCommit(); }}
+              onKeyDown={onKeyDown}
+              onBlur={onCommit}
+              className="w-full max-w-[260px] h-7 px-2 text-[13px] md:text-[14px] text-ink border border-brand-deep rounded-md focus:outline-none focus:ring-2 focus:ring-brand-tint bg-white"
+            >
+              <option value="">{placeholder ?? "선택"}</option>
+              {options.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              ref={inputRef}
+              type={type}
+              value={draft}
+              onChange={e => onDraftChange(e.target.value)}
+              onKeyDown={onKeyDown}
+              onBlur={onCommit}
+              inputMode={inputMode}
+              placeholder={placeholder}
+              className="w-full max-w-[260px] h-7 px-2 text-[13px] md:text-[14px] text-ink border border-brand-deep rounded-md focus:outline-none focus:ring-2 focus:ring-brand-tint tabular-nums"
+            />
+          )}
           {suffix && <span className="text-[12.5px] text-slate-500 shrink-0">{suffix}</span>}
-          <button type="button" onMouseDown={e => { e.preventDefault(); onCommit(); }} className="h-6 w-6 rounded hover:bg-emerald-50 text-emerald-600 flex items-center justify-center" aria-label="저장"><Check size={13} weight="bold" /></button>
-          <button type="button" onMouseDown={e => { e.preventDefault(); onCancel(); }} className="h-6 w-6 rounded hover:bg-rose-50 text-slate-400 flex items-center justify-center" aria-label="취소"><XIcon size={12} weight="bold" /></button>
+          {!options && (
+            <>
+              <button type="button" onMouseDown={e => { e.preventDefault(); onCommit(); }} className="h-6 w-6 rounded hover:bg-emerald-50 text-emerald-600 flex items-center justify-center" aria-label="저장"><Check size={13} weight="bold" /></button>
+              <button type="button" onMouseDown={e => { e.preventDefault(); onCancel(); }} className="h-6 w-6 rounded hover:bg-rose-50 text-slate-400 flex items-center justify-center" aria-label="취소"><XIcon size={12} weight="bold" /></button>
+            </>
+          )}
         </div>
       ) : (
         <button
@@ -409,8 +455,8 @@ const InlineRow: React.FC<InlineRowProps> = ({
           className="group/btn flex items-center gap-1.5 flex-1 justify-end px-1.5 py-0.5 rounded hover:bg-slate-50 transition-colors cursor-pointer"
           title="클릭하여 수정"
         >
-          <span className={`text-[13px] md:text-[14px] tabular-nums text-right ${value ? "text-ink" : "text-slate-400 italic"}`}>
-            {value ? (suffix ? `${value}${suffix}` : value) : (placeholder || "—")}
+          <span className={`text-[13px] md:text-[14px] tabular-nums text-right ${displayValue ? "text-ink" : "text-slate-400 italic"}`}>
+            {displayValue ? (suffix ? `${displayValue}${suffix}` : displayValue) : (placeholder || "—")}
           </span>
           <PencilSimple size={11} weight="bold" className="text-slate-400 opacity-60 group-hover/btn:opacity-100 shrink-0 transition-opacity" />
         </button>

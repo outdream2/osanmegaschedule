@@ -18,6 +18,8 @@ import { Spinner } from "../common/Spinner";
 // 2026-10-12 · 사용자 지시 "조치 필요 자리에 인건비 구성 + 클릭 시 직군별 세부" · wage resolver 통합
 import { useSettings } from "../../hooks/useSettings";
 import { resolveEmployeeWage } from "../../lib/wageResolver";
+import { StaffListTable } from "./common/StaffListTable";
+import type { EmployeeExt as StaffListEmployeeExt } from "./common/StaffListTable";
 
 const AVG_WEEKS_PER_MONTH = 4.345;
 const DEFAULT_HOURS_PER_WEEK = 40;
@@ -171,6 +173,26 @@ export const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ onOpenTab,
     return buckets;
   }, [activeEmps]);
 
+  // 2026-10-12 · 사용자 지시 "서류 미등록 · 이력서/근로계약서/사직서 작성해야하는 리스트"
+  //   · 재직자: 이력서(resume_url) 없음 OR 근로계약서(contract_type/contract_start) 없음
+  //   · 퇴직자: 사직서(resignation_file_url) 없음
+  const missingDocsEmps = useMemo(() => {
+    const list: Array<{ emp: EmployeeExt; missing: Array<"resume" | "contract" | "resignation"> }> = [];
+    for (const emp of employees) {
+      const ext = emp as EmployeeExt;
+      const missing: Array<"resume" | "contract" | "resignation"> = [];
+      const retired = !!emp.retireDate;
+      if (!retired) {
+        if (!ext.resume_url || !String(ext.resume_url).trim()) missing.push("resume");
+        if (!ext.contract_type && !ext.contract_start) missing.push("contract");
+      } else {
+        if (!(ext as any).resignation_file_url) missing.push("resignation");
+      }
+      if (missing.length > 0) list.push({ emp: ext, missing });
+    }
+    return list;
+  }, [employees]);
+
   const groupedByPosition = useMemo(() => {
     const map = new Map<string, EmployeeExt[]>();
     for (const e of activeEmps) {
@@ -237,9 +259,10 @@ export const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ onOpenTab,
         </div>
       </section>
 
-      {/* ── 2026-10-12 · 사용자 지시 "조치 필요 자리에 인건비 구성 · 직원 요약 아래로" · vertical stack */}
+      {/* ── 2026-10-12 · 사용자 지시 "인건비구성 왼쪽 · 오른쪽은 근로계약서 작성안한 직원 리스트" · 상단 2-col grid */}
       <div className="flex flex-col gap-4">
-        {/* 인건비 구성 (상단) · 조치 필요 교체 · 직군별 리스트 · 클릭 expand 세부 직원 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+        {/* 인건비 구성 (좌) · 직군별 리스트 · 클릭 expand 세부 직원 */}
         <section className={`${CARD} p-4 flex flex-col`}>
           <header className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="flex items-center gap-2">
@@ -307,84 +330,111 @@ export const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ onOpenTab,
           </ul>
         </section>
 
-        {/* 2026-10-12 · 사용자 지시 "직원리스트 3단 · 약사 / 매장 / 창고기타" · 3-column grid */}
+        {/* 2026-10-12 · 사용자 지시 "서류 미등록 · 어느 서류 · 계약직 여부 · 입사날짜" · 통합 리스트 */}
+        <section className={`${CARD} p-4 flex flex-col`}>
+          <header className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-[3px] h-[12px] bg-rose-500 rounded-full" aria-hidden />
+              <h2 className={T.sectionTitle}>서류 미등록</h2>
+              <span className="text-[13px] text-slate-500 tabular-nums">· {missingDocsEmps.length}명</span>
+            </div>
+            {missingDocsEmps.length > 0 && (
+              <button
+                type="button"
+                onClick={() => onOpenTab("staff-manage")}
+                className="text-[13px] text-rose-600 hover:text-rose-700 inline-flex items-center gap-1 font-semibold"
+              >
+                전체 보기 <CaretRight size={12} weight="bold" />
+              </button>
+            )}
+          </header>
+          <ul className="divide-y divide-slate-100 flex-1 overflow-y-auto max-h-[420px]">
+            {missingDocsEmps.length === 0 ? (
+              <li className="py-6 text-center text-[13px] text-slate-400">모든 서류 등록 완료 ✓</li>
+            ) : missingDocsEmps.map(({ emp, missing }) => {
+              const ext = emp;
+              const contractType = String(ext.contract_type ?? "").trim();
+              const isRegular = contractType.includes("정규") || contractType.includes("정직원");
+              const isTemp = contractType.includes("계약") || contractType.includes("수습");
+              const typeLabel = isRegular ? "정규" : isTemp ? "계약" : "미지정";
+              const typeCls = isRegular
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : isTemp
+                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                  : "bg-slate-50 text-slate-400 border-slate-200";
+              return (
+                <li
+                  key={ext.id}
+                  className="py-2 flex items-center gap-2 hover:bg-rose-50/40 -mx-2 px-2 rounded cursor-pointer transition-colors"
+                  onClick={() => onOpenEmployeeId?.(ext.id)}
+                  title="클릭 · 직원 상세 열기"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" aria-hidden />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[14px] text-ink font-medium truncate">{ext.name}</span>
+                      <span className="text-[12px] text-slate-500 shrink-0">{ext.position || "—"}</span>
+                      {/* 계약 유형 · 2026-10-12 사용자 지시 */}
+                      <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded border ${typeCls}`}>{typeLabel}</span>
+                    </div>
+                    <div className="text-[12px] text-slate-500 truncate tabular-nums mt-0.5">
+                      {/* 입사일 · 2026-10-12 사용자 지시 */}
+                      <span className="text-slate-400">입사 {ext.hireDate ? ext.hireDate.slice(0, 10) : "—"}</span>
+                    </div>
+                  </div>
+                  {/* 어느 서류가 미등록 · 2026-10-12 사용자 지시 */}
+                  <div className="shrink-0 flex items-center gap-1 flex-wrap justify-end max-w-[180px]">
+                    {missing.includes("resume") && (
+                      <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded border bg-sky-50 text-sky-700 border-sky-200" title="이력서 미등록">이력서</span>
+                    )}
+                    {missing.includes("contract") && (
+                      <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded border bg-indigo-50 text-indigo-700 border-indigo-200" title="근로계약서 미작성">계약서</span>
+                    )}
+                    {missing.includes("resignation") && (
+                      <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-200" title="사직서 미작성">사직서</span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+        </div>
+
+        {/* 2026-10-12 · 사용자 지시 "직원리스트 리스트형태 · 컬럼 상세" · 단일 테이블 (직군·계약유형·계약시작일·입사일·이력서·계약서) */}
         <section className={`${CARD} p-4 flex flex-col`}>
           <header className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="w-[3px] h-[12px] bg-violet-500 rounded-full" aria-hidden />
-              <h2 className={T.sectionTitle}>직원 요약</h2>
-              <span className="text-[13px] text-slate-500">· 약사 {grouped3.pharmacist.length} · 매장 {grouped3.store.length} · 창고/기타 {grouped3.warehouse_other.length}</span>
+              <h2 className={T.sectionTitle}>직원 리스트</h2>
+              <span className="text-[13px] text-slate-500 tabular-nums">· 약사 {grouped3.pharmacist.length} · 매장 {grouped3.store.length} · 창고/기타 {grouped3.warehouse_other.length} · 총 {activeEmps.length}명</span>
             </div>
-            <button
-              type="button"
-              onClick={() => onOpenTab("staff-manage")}
-              className="text-[13px] text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
-            >
-              전체 보기 <CaretRight size={12} weight="bold" />
-            </button>
+            {/* 2026-10-12 · 사용자 지시 "직원 리스트 옆에 신규등록 버튼 · 직원 등록" · 신규 + 전체 보기 2 버튼 */}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => onOpenTab("staff-manage")}
+                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md bg-brand-deep text-white text-[13px] font-semibold hover:bg-[#0d3a5c] transition-colors cursor-pointer"
+                title="직원관리 탭에서 신규 등록"
+              >
+                + 신규 등록
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenTab("staff-manage")}
+                className="text-[13px] text-slate-500 hover:text-slate-900 inline-flex items-center gap-1"
+              >
+                전체 보기 <CaretRight size={12} weight="bold" />
+              </button>
+            </div>
           </header>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {([
-              { key: "pharmacist" as const,       title: "약사",       tone: "bg-emerald-500", list: grouped3.pharmacist },
-              { key: "store" as const,            title: "매장",       tone: "bg-sky-500",     list: grouped3.store },
-              { key: "warehouse_other" as const,  title: "창고 / 기타", tone: "bg-slate-500",   list: grouped3.warehouse_other },
-            ]).map(group => (
-              <div key={group.key} className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-1.5 pb-1.5 border-b border-slate-200">
-                  <span className={`w-1.5 h-1.5 rounded-full ${group.tone}`} aria-hidden />
-                  <span className="text-[13px] font-semibold text-slate-700">{group.title}</span>
-                  <span className="text-[12px] text-slate-400 tabular-nums">· {group.list.length}명</span>
-                </div>
-                <ul className="divide-y divide-slate-100">
-                  {group.list.length === 0 ? (
-                    <li className="py-3 text-center text-[13px] text-slate-400">직원 없음</li>
-                  ) : group.list.map(e => {
-                    const ext = e as EmployeeExt;
-                    const hasResume = !!(ext.resume_url && String(ext.resume_url).trim());
-                    const hasContract = !!(ext.contract_type || ext.contract_start);
-                    const contractType = String(ext.contract_type ?? "").trim();
-                    const isRegular = contractType.includes("정규") || contractType.includes("정직원");
-                    const isTemp = contractType.includes("계약") || contractType.includes("수습");
-                    const typeLabel = isRegular ? "정규" : isTemp ? "계약" : "미지정";
-                    const typeCls = isRegular
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : isTemp
-                        ? "bg-amber-50 text-amber-700 border-amber-200"
-                        : "bg-slate-50 text-slate-400 border-slate-200";
-                    return (
-                      <li
-                        key={e.id}
-                        className="py-1.5 flex items-center gap-2 hover:bg-slate-50 -mx-1 px-1 rounded cursor-pointer transition-colors"
-                        onClick={() => onOpenEmployeeId?.(e.id)}
-                        title="클릭 · 직원 상세 열기"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[14px] text-ink font-medium truncate">{e.name}</div>
-                          <div className="text-[12px] text-slate-500 truncate">{e.position || "—"}</div>
-                        </div>
-                        <div className="shrink-0 flex items-center gap-1">
-                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${typeCls}`}>{typeLabel}</span>
-                          <span
-                            className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${hasResume ? "bg-sky-50 text-sky-700 border-sky-200" : "bg-slate-50 text-slate-400 border-slate-200"}`}
-                            title={hasResume ? "이력서 있음" : "이력서 없음"}
-                          >
-                            이력서 {hasResume ? "✓" : "✗"}
-                          </span>
-                          <span
-                            className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${hasContract ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-slate-50 text-slate-400 border-slate-200"}`}
-                            title={hasContract ? "근로계약서 작성됨" : "근로계약서 미작성"}
-                          >
-                            계약서 {hasContract ? "✓" : "✗"}
-                          </span>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
-          {/* 2026-10-12 · 사용자 지시 "클릭시 슬라이딩윈도우 편집 가능" · onOpenEmployeeId 는 상위 BusinessManagePage.Overview 가 slide drawer 로 처리 */}
+          {/* 공용 StaffListTable · 스크롤 + sticky thead */}
+          <StaffListTable
+            employees={activeEmps as StaffListEmployeeExt[]}
+            onRowClick={(id) => onOpenEmployeeId?.(id)}
+            maxHeight="max-h-[480px]"
+            showColumns={["name", "position", "contract_type", "contract_start", "hire_date", "resume", "contract_doc"]}
+          />
         </section>
       </div>
 
