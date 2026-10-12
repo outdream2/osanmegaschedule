@@ -112,9 +112,13 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
     setDraft(form[k]);
   }, [form]);
 
-  const commitDraft = useCallback(() => {
+  // 2026-10-12 · fix · select onChange → draft 비동기 setState → onCommit 시 stale closure 로
+  //   draft 가 빈 값인 상태에서 commit → form 미반영 (사용자 "직원상세 수정안돼")
+  //   → valueOverride 받아 즉시 반영 (select 는 override · input blur 는 draft 그대로)
+  const commitDraft = useCallback((valueOverride?: string) => {
     if (!editingField) return;
-    setForm(prev => ({ ...prev, [editingField]: draft }));
+    const next = valueOverride !== undefined ? valueOverride : draft;
+    setForm(prev => ({ ...prev, [editingField]: next }));
     setEditingField(null);
     setDraft("");
   }, [editingField, draft]);
@@ -281,7 +285,7 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
           <InlineRow label="계약 종료" fieldKey="contract_end" form={form} editingField={editingField} draft={draft}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             type="date" />
-          <InlineRow label="연차 일수" fieldKey="annual_leave_days" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="휴가 일수" fieldKey="annual_leave_days" form={form} editingField={editingField} draft={draft}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             inputMode="numeric" suffix="일" />
         </Section>
@@ -376,7 +380,7 @@ interface InlineRowProps {
   draft: string;
   onEdit: (k: FieldKey) => void;
   onDraftChange: (v: string) => void;
-  onCommit: () => void;
+  onCommit: (valueOverride?: string) => void;
   onCancel: () => void;
   onKeyDown: (ev: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
   type?: "text" | "date";
@@ -417,9 +421,9 @@ const InlineRow: React.FC<InlineRowProps> = ({
             <select
               ref={selectRef}
               value={draft}
-              onChange={e => { onDraftChange(e.target.value); onCommit(); }}
+              onChange={e => { const v = e.target.value; onDraftChange(v); onCommit(v); }}
               onKeyDown={onKeyDown}
-              onBlur={onCommit}
+              onBlur={() => onCommit()}
               className="w-full max-w-[260px] h-7 px-2 text-[13px] md:text-[14px] text-ink border border-brand-deep rounded-md focus:outline-none focus:ring-2 focus:ring-brand-tint bg-white"
             >
               <option value="">{placeholder ?? "선택"}</option>
@@ -434,7 +438,7 @@ const InlineRow: React.FC<InlineRowProps> = ({
               value={draft}
               onChange={e => onDraftChange(e.target.value)}
               onKeyDown={onKeyDown}
-              onBlur={onCommit}
+              onBlur={() => onCommit()}
               inputMode={inputMode}
               placeholder={placeholder}
               className="w-full max-w-[260px] h-7 px-2 text-[13px] md:text-[14px] text-ink border border-brand-deep rounded-md focus:outline-none focus:ring-2 focus:ring-brand-tint tabular-nums"
@@ -474,7 +478,7 @@ interface TextareaRowProps {
   draft: string;
   onEdit: () => void;
   onDraftChange: (v: string) => void;
-  onCommit: () => void;
+  onCommit: (valueOverride?: string) => void;
   onCancel: () => void;
   onKeyDown: (ev: React.KeyboardEvent<HTMLTextAreaElement>) => void;
 }
@@ -495,7 +499,7 @@ const TextareaRow: React.FC<TextareaRowProps> = ({ value, editing, draft, onEdit
       />
       <div className="flex justify-end gap-2">
         <button type="button" onClick={onCancel} className="h-7 px-2.5 rounded text-[12.5px] text-slate-500 hover:bg-slate-50">취소</button>
-        <button type="button" onClick={onCommit} className="h-7 px-3 rounded text-[12.5px] font-semibold bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1"><Check size={12} weight="bold" />확인</button>
+        <button type="button" onClick={() => onCommit()} className="h-7 px-3 rounded text-[12.5px] font-semibold bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1"><Check size={12} weight="bold" />확인</button>
       </div>
     </div>
   ) : (
