@@ -16,6 +16,8 @@ import { MonthToggleSelector, dateRangesFromMonths } from "../../common/MonthTog
 import { RealStockTablePage } from "../RealStockTablePage";
 // 2026-10-12 · 사용자 지시 · 매입이상 공통 Card (현재고 column 포함 · "병합")
 import { PurchaseExceptionCard } from "./PurchaseExceptionCard";
+// 2026-10-12 · 사용자 지시 · 매입단가이상 inner tab · 상품별 매입단가 변동 추적
+import { PurchasePriceVariationCard } from "./PurchasePriceVariationCard";
 // 2026-10-12 · 사용자 지시 · 매입/발주 overlay chart (bar + line)
 import { PurchaseOrderOverlayChart, type PurchaseOrderOverlayDatum } from "./PurchaseOrderOverlayChart";
 // 2026-10-12 · 사용자 지시 · 재고·진열 현황 → 매입재고진열현황 inner tab 으로 이동
@@ -60,7 +62,7 @@ type LocationKey = "warehouse1_stock" | "warehouse2_stock" | "store1_stock" | "s
 
 // 2026-10-12 · 사용자 지시 "실재고테이블옆에 매입이력만들어 · 현황판 매입이력 누르면 일루 이동"
 // 2026-10-12 · 사용자 지시 · 재고·진열 + 매입이상 inner tab 추가 (별도 메뉴 → 흡수)
-type InnerTabKey = "overview" | "real-stock" | "purchase-history" | "inventory-display" | "exception";
+type InnerTabKey = "overview" | "real-stock" | "purchase-history" | "inventory-display" | "exception" | "price-variation";
 
 export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = ({ onSelectSubTab }) => {
   // 2026-10-09 · 사용자 지시 · 현황 | 실재고테이블 inner tab
@@ -349,9 +351,34 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
       return next;
     });
   };
-  // 2026-10-12 · 사용자 지시 "헤더자동정렬" · 세부 row 정렬 (상품/수량/단가/금액)
-  type HistorySortKey = "product" | "qty" | "unit" | "amount";
-  const [historySort, setHistorySort] = useState<{ key: HistorySortKey; dir: "asc" | "desc" }>({ key: "amount", dir: "desc" });
+  // 2026-10-12 · 사용자 지시 "공급사에 나오는 데이터 위에 컬럼넣어서 정렬" · 공급사 수준 정렬
+  type SupplierSortKey = "lastDate" | "supplier" | "count" | "qty" | "stock" | "sale" | "margin" | "amount";
+  const [supplierSort, setSupplierSort] = useState<{ key: SupplierSortKey; dir: "asc" | "desc" }>({ key: "amount", dir: "desc" });
+  const toggleSupplierSort = (k: SupplierSortKey) => {
+    setSupplierSort(prev => prev.key === k ? { key: k, dir: prev.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "supplier" ? "asc" : "desc" });
+  };
+  const supplierArrow = (k: SupplierSortKey): string => supplierSort.key !== k ? " ⇅" : supplierSort.dir === "asc" ? " ▲" : " ▼";
+  const sortedSuppliers = useMemo(() => {
+    const arr = [...supplierBuckets];
+    const dir = supplierSort.dir === "asc" ? 1 : -1;
+    const key = supplierSort.key;
+    arr.sort((a, b) => {
+      if (key === "lastDate") return dir * String(a.lastPurchaseDate ?? "").localeCompare(String(b.lastPurchaseDate ?? ""));
+      if (key === "supplier") return dir * String(a.supplier).localeCompare(String(b.supplier), "ko");
+      if (key === "count") return dir * (a.count - b.count);
+      if (key === "qty") return dir * (a.totalQty - b.totalQty);
+      if (key === "stock") return dir * (a.stockSum - b.stockSum);
+      if (key === "sale") return dir * (a.avgSale - b.avgSale);
+      if (key === "margin") return dir * (a.avgMarginPct - b.avgMarginPct);
+      /* amount */
+      return dir * (a.totalAmount - b.totalAmount);
+    });
+    return arr;
+  }, [supplierBuckets, supplierSort]);
+
+  // 2026-10-12 · 사용자 지시 "헤더자동정렬 + 공급사 안쪽 날짜별 정렬 최근 먼저" · 세부 row (공급사 안쪽) default date desc
+  type HistorySortKey = "date" | "product" | "qty" | "unit" | "amount";
+  const [historySort, setHistorySort] = useState<{ key: HistorySortKey; dir: "asc" | "desc" }>({ key: "date", dir: "desc" });
   const toggleHistorySort = (k: HistorySortKey) => {
     setHistorySort(prev => prev.key === k ? { key: k, dir: prev.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "product" ? "asc" : "desc" });
   };
@@ -360,6 +387,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
     const dir = historySort.dir === "asc" ? 1 : -1;
     const key = historySort.key;
     return [...rows].sort((a, b) => {
+      if (key === "date") return dir * String(a.purchase_date ?? "").localeCompare(String(b.purchase_date ?? ""));
       if (key === "product") return dir * String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko");
       if (key === "qty") return dir * (Number(a.quantity ?? a.qty ?? 0) - Number(b.quantity ?? b.qty ?? 0));
       if (key === "unit") return dir * (Number(a.unit_price ?? 0) - Number(b.unit_price ?? 0));
@@ -586,6 +614,8 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
           { k: "inventory-display", label: "재고·진열",    tone: "amber",   count: null },
           // 2026-10-12 · 사용자 지시 · 매입이상 inner tab (매입단가 이상 full view)
           { k: "exception",         label: "매입이상",     tone: "rose",    count: exceptionRows.length || null },
+          // 2026-10-12 · 사용자 지시 · "매입이상 뒤에 매입단가이상 탭" · 상품별 매입단가 변동 품목
+          { k: "price-variation",   label: "매입단가이상", tone: "amber",   count: null },
         ] as const satisfies ReadonlyArray<OverviewInnerTab<InnerTabKey>>}
       />
 
@@ -602,6 +632,11 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
             onViewAll={() => { try { sessionStorage.setItem("overview-order-return.innerTab", "match"); } catch {} onSelectSubTab("overview-order-return"); }}
           />
         </div>
+      ) : innerTab === "price-variation" ? (
+        /* 2026-10-12 · 사용자 지시 · 매입단가이상 inner tab · 상품별 매입단가 변동 추적 */
+        <div className="px-4 sm:px-6 pt-3">
+          <PurchasePriceVariationCard />
+        </div>
       ) : innerTab === "purchase-history" ? (
         <div className="px-4 sm:px-6 pt-3">
           {/* 2026-10-12 · 사용자 지시 "매입이력 공급사별로 집계" · 공급사별 그룹 header (총 수량/금액/건수) + 접기/펼치기 세부 */}
@@ -614,78 +649,112 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
             </header>
             <div className="overflow-y-auto max-h-[70vh]">
               <table className="w-full text-[14px]">
-                {/* 2026-10-12 · 사용자 지시 "헤더자동정렬" · 상품/수량/단가/금액 column 클릭 정렬 (일자는 공급사 header 로 이동) */}
+                {/* 2026-10-12 · 사용자 지시 "공급사에 나오는 데이터 위에 컬럼넣어서 정렬" · 공급사 수준 column header (정렬) */}
                 <thead className="sticky top-0 bg-slate-100 z-10">
                   <tr className="border-b border-slate-200">
-                    <th className="pl-5 pr-3 py-2 text-left text-[13px] font-semibold text-slate-700 w-[48px]"></th>
-                    <th onClick={() => toggleHistorySort("product")} className="px-3 py-2 text-left text-[13px] font-semibold text-slate-700 cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
-                      상품{historyArrow("product")}
+                    <th onClick={() => toggleSupplierSort("lastDate")} className="pl-5 pr-2 py-2 text-left text-[13px] font-semibold text-slate-700 w-[90px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
+                      최근매입일{supplierArrow("lastDate")}
                     </th>
-                    <th onClick={() => toggleHistorySort("qty")} className="px-3 py-2 text-right text-[13px] font-semibold text-slate-700 w-[80px] cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
-                      수량{historyArrow("qty")}
+                    <th onClick={() => toggleSupplierSort("supplier")} className="px-2 py-2 text-left text-[13px] font-semibold text-slate-700 cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
+                      공급사{supplierArrow("supplier")}
                     </th>
-                    <th onClick={() => toggleHistorySort("unit")} className="px-3 py-2 text-right text-[13px] font-semibold text-slate-700 w-[100px] cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
-                      단가{historyArrow("unit")}
+                    <th onClick={() => toggleSupplierSort("count")} className="px-2 py-2 text-right text-[13px] font-semibold text-slate-700 w-[64px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
+                      건수{supplierArrow("count")}
                     </th>
-                    <th onClick={() => toggleHistorySort("amount")} className="px-3 pr-5 py-2 text-right text-[13px] font-semibold text-slate-700 w-[120px] cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
-                      금액{historyArrow("amount")}
+                    <th onClick={() => toggleSupplierSort("qty")} className="px-2 py-2 text-right text-[13px] font-semibold text-slate-700 w-[72px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
+                      수량{supplierArrow("qty")}
+                    </th>
+                    <th onClick={() => toggleSupplierSort("stock")} className="px-2 py-2 text-right text-[13px] font-semibold text-slate-700 w-[72px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
+                      현재고{supplierArrow("stock")}
+                    </th>
+                    <th onClick={() => toggleSupplierSort("sale")} className="px-2 py-2 text-right text-[13px] font-semibold text-slate-700 w-[90px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
+                      판매가{supplierArrow("sale")}
+                    </th>
+                    <th onClick={() => toggleSupplierSort("margin")} className="px-2 py-2 text-right text-[13px] font-semibold text-slate-700 w-[72px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
+                      마진율{supplierArrow("margin")}
+                    </th>
+                    <th onClick={() => toggleSupplierSort("amount")} className="px-2 pr-5 py-2 text-right text-[13px] font-semibold text-slate-700 w-[120px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
+                      매입금액{supplierArrow("amount")}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {supplierBuckets.length === 0 ? (
-                    <tr><td colSpan={5} className="py-10 text-center text-[13px] text-slate-500">{purchases == null ? "불러오는 중..." : "매입이력이 없습니다"}</td></tr>
-                  ) : supplierBuckets.map((b) => {
+                  {sortedSuppliers.length === 0 ? (
+                    <tr><td colSpan={8} className="py-10 text-center text-[13px] text-slate-500">{purchases == null ? "불러오는 중..." : "매입이력이 없습니다"}</td></tr>
+                  ) : sortedSuppliers.map((b) => {
                     // 2026-10-12 · 사용자 지시 "매입이력 접힌게 기본" · expanded set 반전 (default 접힘)
                     const expanded = expandedSuppliers.has(b.supplier);
                     return (
                       <React.Fragment key={b.supplier}>
                         {/* 2026-10-12 · 사용자 지시 "공급사 앞에 일자표시 · 현재고 마진율 수량 매입금액 판매가" 노출
                             · 최근매입일 (앞) · 공급사명 · 수량 · 매입금액 · 현재고 · 평균판매가 · 마진율 */}
+                        {/* 2026-10-12 · 사용자 지시 "공급사 컬러 포인트 · 차이 눈에 들어오게" · 왼쪽 4px indigo strip + bg-indigo-50 */}
+                        {/* 2026-10-12 · 공급사 bucket row · 각 column 분리 (thead 와 매칭) · 좌측 indigo strip · bg-indigo-50 */}
                         <tr
                           onClick={() => toggleSupplier(b.supplier)}
-                          className="border-b border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors sticky top-[36px] z-[5]"
+                          className="border-b-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 cursor-pointer transition-colors"
                           title={expanded ? "접기" : "펼치기"}
                         >
-                          <td colSpan={5} className="px-5 py-2.5">
-                            <div className="flex items-center gap-2 flex-wrap text-[13px] tabular-nums">
-                              <span className={`inline-block transition-transform text-slate-400 ${expanded ? "rotate-90" : ""}`} aria-hidden>▸</span>
-                              {/* 최근 매입일 (공급사 앞) */}
-                              <span className="font-semibold text-slate-500 whitespace-nowrap">{b.lastPurchaseDate || "-"}</span>
-                              <span className="text-slate-300">·</span>
-                              <span className="text-[15px] font-semibold text-ink">{b.supplier}</span>
-                              <span className="text-slate-500">· {b.count}건</span>
-                              <span className="text-slate-300 mx-0.5">·</span>
-                              <span className="text-slate-500">수량 <b className="text-ink">{fmt(b.totalQty)}</b></span>
-                              <span className="text-slate-300 mx-0.5">·</span>
-                              <span className="text-slate-500">현재고 <b className={b.stockSum > 0 ? "text-ink" : "text-slate-300"}>{fmt(b.stockSum)}</b></span>
-                              <span className="text-slate-300 mx-0.5">·</span>
-                              <span className="text-slate-500">판매가 <b className="text-ink">{b.avgSale > 0 ? fmt(b.avgSale) : "-"}</b></span>
-                              <span className="text-slate-300 mx-0.5">·</span>
-                              <span className="text-slate-500">마진율 <b className={b.avgMarginPct >= 20 ? "text-emerald-700" : b.avgMarginPct >= 10 ? "text-ink" : "text-rose-600"}>{b.avgMarginPct > 0 ? `${b.avgMarginPct.toFixed(1)}%` : "-"}</b></span>
-                              <span className="ml-auto text-[14px] font-bold text-ink">매입 {fmt(b.totalAmount)}원</span>
-                            </div>
+                          <td className="pl-5 pr-2 py-2.5 text-[13px] tabular-nums text-slate-600 whitespace-nowrap border-l-4 border-indigo-500">
+                            <span className={`inline-block transition-transform text-indigo-500 mr-1.5 ${expanded ? "rotate-90" : ""}`} aria-hidden>▸</span>
+                            <span className="font-semibold">{b.lastPurchaseDate || "-"}</span>
                           </td>
+                          <td className="px-2 py-2.5 text-[15px] font-semibold text-ink truncate">{b.supplier}</td>
+                          <td className="px-2 py-2.5 text-right text-[13px] tabular-nums text-slate-600">{fmt(b.count)}건</td>
+                          <td className="px-2 py-2.5 text-right text-[14px] tabular-nums font-semibold text-ink">{fmt(b.totalQty)}</td>
+                          <td className={`px-2 py-2.5 text-right text-[14px] tabular-nums font-semibold ${b.stockSum > 0 ? "text-ink" : "text-slate-300"}`}>{fmt(b.stockSum)}</td>
+                          <td className="px-2 py-2.5 text-right text-[14px] tabular-nums text-ink">{b.avgSale > 0 ? fmt(b.avgSale) : "-"}</td>
+                          <td className={`px-2 py-2.5 text-right text-[14px] tabular-nums font-semibold ${b.avgMarginPct >= 20 ? "text-emerald-700" : b.avgMarginPct >= 10 ? "text-ink" : b.avgMarginPct > 0 ? "text-rose-600" : "text-slate-300"}`}>{b.avgMarginPct > 0 ? `${b.avgMarginPct.toFixed(1)}%` : "-"}</td>
+                          <td className="px-2 pr-5 py-2.5 text-right text-[14px] tabular-nums font-bold text-ink">{fmt(b.totalAmount)}원</td>
                         </tr>
                         {/* 세부 매입 row · 펼친 상태 · 2026-10-12 사용자 지시 "페이징으로 다 보여줘"
                             · default 10 row 노출 + "+N 더 보기" / "모두 보기" 버튼 */}
-                        {expanded && b.rows.slice(0, getVisible(b.supplier)).map((r, i) => (
-                          <tr key={`${b.supplier}-${i}`} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60">
-                            <td className="pl-5 pr-3 py-2 text-[13px] tabular-nums text-slate-500 whitespace-nowrap">{String(r.purchase_date ?? "").slice(0, 10)}</td>
-                            <td className="px-3 py-2">
-                              <div className="flex flex-col">
-                                <span className="text-[14px] text-ink font-medium">{r.product_name ?? "-"}</span>
-                                <span className="text-[12px] text-slate-500 tabular-nums">{r.product_code ?? ""}</span>
-                              </div>
+                        {/* 2026-10-12 · 사용자 지시 "헤더자동정렬" 반영 · sortRows 적용 · 상품명 들여쓰기 (공급사와 차이) */}
+                        {/* 2026-10-12 · 세부 row · 공급사 column 과 매칭 X · colSpan=8 inner nested table (들여쓰기 공급사와 차이) */}
+                        {expanded && (
+                          <tr className="border-b border-indigo-100 bg-slate-50/40">
+                            <td colSpan={8} className="pl-12 pr-5 py-2 border-l-4 border-indigo-200">
+                              <table className="w-full text-[13px]">
+                                <thead>
+                                  <tr className="border-b border-slate-200">
+                                    <th onClick={() => toggleHistorySort("date")} className="pl-2 pr-3 py-1.5 text-left text-[12px] font-semibold text-slate-500 w-[70px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors">
+                                      일자{historyArrow("date")}
+                                    </th>
+                                    <th onClick={() => toggleHistorySort("product")} className="px-3 py-1.5 text-left text-[12px] font-semibold text-slate-500 cursor-pointer select-none hover:bg-slate-100 transition-colors">
+                                      상품{historyArrow("product")}
+                                    </th>
+                                    <th onClick={() => toggleHistorySort("qty")} className="px-3 py-1.5 text-right text-[12px] font-semibold text-slate-500 w-[72px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors">
+                                      수량{historyArrow("qty")}
+                                    </th>
+                                    <th onClick={() => toggleHistorySort("unit")} className="px-3 py-1.5 text-right text-[12px] font-semibold text-slate-500 w-[90px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors">
+                                      단가{historyArrow("unit")}
+                                    </th>
+                                    <th onClick={() => toggleHistorySort("amount")} className="pl-3 pr-2 py-1.5 text-right text-[12px] font-semibold text-slate-500 w-[108px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors">
+                                      금액{historyArrow("amount")}
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {sortRows(b.rows).slice(0, getVisible(b.supplier)).map((r, i) => (
+                                    <tr key={`${b.supplier}-${i}`} className="border-b border-slate-100 last:border-b-0 hover:bg-white/60 transition-colors">
+                                      <td className="pl-2 pr-3 py-1.5 text-[13px] tabular-nums text-slate-500 whitespace-nowrap">{String(r.purchase_date ?? "").slice(5, 10)}</td>
+                                      <td className="px-3 py-1.5">
+                                        <span className="text-[13px] text-ink font-medium">{r.product_name ?? "-"}</span>
+                                        <span className="text-[12px] text-slate-400 tabular-nums ml-1.5">{r.product_code ?? ""}</span>
+                                      </td>
+                                      <td className="px-3 py-1.5 text-right text-[13px] tabular-nums text-ink">{fmt(Number(r.quantity ?? r.qty ?? 0))}</td>
+                                      <td className="px-3 py-1.5 text-right text-[13px] tabular-nums text-slate-500">{fmt(Number(r.unit_price ?? 0))}</td>
+                                      <td className="pl-3 pr-2 py-1.5 text-right text-[13px] tabular-nums font-semibold text-ink">{fmt(Number((r as any).total ?? r.amount ?? 0))}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
                             </td>
-                            <td className="px-3 py-2 text-right text-[14px] tabular-nums text-ink">{fmt(Number(r.quantity ?? r.qty ?? 0))}</td>
-                            <td className="px-3 py-2 text-right text-[14px] tabular-nums text-slate-500">{fmt(Number(r.unit_price ?? 0))}</td>
-                            <td className="px-3 pr-5 py-2 text-right text-[14px] tabular-nums font-semibold text-ink">{fmt(Number((r as any).total ?? r.amount ?? 0))}</td>
                           </tr>
-                        ))}
+                        )}
                         {expanded && b.rows.length > getVisible(b.supplier) && (
                           <tr className="border-b border-slate-100 bg-slate-50/40">
-                            <td colSpan={5} className="px-5 py-2 text-center">
+                            <td colSpan={8} className="px-5 py-2 text-center">
                               <div className="inline-flex items-center gap-2.5 text-[13px]">
                                 <span className="text-slate-500 tabular-nums">
                                   {getVisible(b.supplier)}건 / 총 {b.rows.length}건

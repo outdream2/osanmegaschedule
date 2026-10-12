@@ -170,7 +170,9 @@ export const PurchaseExceptionCard: React.FC<PurchaseExceptionCardProps> = ({
                 <tr className="border-b border-slate-200">
                   <th className="pl-5 pr-2 py-1.5 text-left text-[13px] font-semibold text-slate-500 w-[80px] whitespace-nowrap">날짜</th>
                   <th className="px-2 py-1.5 text-left text-[13px] font-semibold text-slate-500">상품</th>
-                  <th className="px-2 py-1.5 text-right text-[13px] font-semibold text-slate-500 w-[96px] whitespace-nowrap">발주/매입</th>
+                  <th className="px-2 py-1.5 text-right text-[13px] font-semibold text-slate-500 w-[88px] whitespace-nowrap">수량 발주/매입</th>
+                  {/* 2026-10-12 · 사용자 지시 · 매입단가 비교 column 신규 */}
+                  <th className="px-2 py-1.5 text-right text-[13px] font-semibold text-slate-500 w-[128px] whitespace-nowrap">단가 발주/매입</th>
                   <th className="px-2 pr-5 py-1.5 text-left text-[13px] font-semibold text-slate-500 w-[108px] whitespace-nowrap">처리현황</th>
                 </tr>
               </thead>
@@ -194,26 +196,28 @@ export const PurchaseExceptionCard: React.FC<PurchaseExceptionCardProps> = ({
                       </td>
                       <td className="px-2 py-2 text-[14px] text-ink font-medium align-middle">
                         <div className="truncate">{r.product_name ?? r.product_code ?? "-"}</div>
-                        {/* 2026-10-12 · 사용자 지시 · 매입단가 이상 데이터 노출 · 단가 subtext (발주 vs 매입) */}
-                        {(r.auto_exception_type === "price_diff" || (r.unit_price != null && r.purchase_avg_price != null && r.unit_price !== r.purchase_avg_price)) && (
-                          <div className="text-[12px] text-slate-500 tabular-nums mt-0.5">
-                            단가 발주 <span className="text-ink font-semibold">{fmt(r.unit_price)}</span>
-                            <span className="text-slate-300 mx-0.5">/</span>
-                            <span className={`font-semibold ${r.price_diff_pct != null && Math.abs(r.price_diff_pct) >= 5 ? "text-rose-600" : "text-slate-700"}`}>
-                              매입 {fmt(r.purchase_avg_price)}
-                            </span>
-                            {r.price_diff_pct != null && (
-                              <span className={`ml-1 text-[11px] font-semibold ${Math.abs(r.price_diff_pct) >= 5 ? "text-rose-600" : "text-slate-500"}`}>
-                                ({r.price_diff_pct > 0 ? "+" : ""}{r.price_diff_pct.toFixed(1)}%)
-                              </span>
-                            )}
-                          </div>
-                        )}
                       </td>
                       <td className="px-2 py-2 text-right text-[14px] tabular-nums align-middle whitespace-nowrap">
                         <span className="font-semibold text-ink">{fmt(oq)}</span>
                         <span className="text-slate-300 mx-0.5">/</span>
                         <span className={`font-semibold ${diff === 0 ? "text-ink" : "text-rose-600"}`}>{fmt(pq)}</span>
+                      </td>
+                      {/* 2026-10-12 · 사용자 지시 · 매입단가 비교 전용 column (unit_price · purchase_avg_price · price_diff_pct) */}
+                      <td className="px-2 py-2 text-right text-[13px] tabular-nums align-middle whitespace-nowrap">
+                        {r.unit_price != null || r.purchase_avg_price != null ? (
+                          <>
+                            <span className="text-ink font-semibold">{r.unit_price != null ? fmt(r.unit_price) : "-"}</span>
+                            <span className="text-slate-300 mx-0.5">/</span>
+                            <span className={`font-semibold ${r.price_diff_pct != null && Math.abs(r.price_diff_pct) >= 5 ? "text-rose-600" : "text-ink"}`}>
+                              {r.purchase_avg_price != null ? fmt(r.purchase_avg_price) : "-"}
+                            </span>
+                            {r.price_diff_pct != null && Math.abs(r.price_diff_pct) >= 0.1 && (
+                              <div className={`text-[11px] font-semibold ${Math.abs(r.price_diff_pct) >= 5 ? "text-rose-600" : "text-slate-500"}`}>
+                                {r.price_diff_pct > 0 ? "+" : ""}{r.price_diff_pct.toFixed(1)}%
+                              </div>
+                            )}
+                          </>
+                        ) : <span className="text-slate-300">-</span>}
                       </td>
                       <td className={`px-2 pr-5 py-2 text-[13px] font-semibold align-middle whitespace-nowrap ${statusCls}`}>
                         {status}

@@ -254,27 +254,69 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
                   <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3 cursor-pointer hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all"
                     onClick={() => setInnerTab("vendor-info")}
                     role="button" tabIndex={0}>
+                    {/* 2026-10-12 · 사용자 지시 · 공급사 정보 UI 교체 · 2-section 레이아웃
+                        · 상단 · "내 정보" compact header (공급사명 + ERP 뱃지 + 핵심 연락처 1-line)
+                        · 하단 · field grid 2x3 (담당자/연락처/이메일/사업자번호/주소/계좌) · 미완성 field 빨강 라벨 */}
                     <div className="flex items-center gap-2">
                       <span className="w-[3px] h-[14px] bg-emerald-500 rounded-full shrink-0" />
                       <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">공급사 정보</h3>
                       {isAdmin && <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 font-semibold">관리자 · 테스트2</span>}
                       <span className="ml-auto text-[12px] text-slate-400">탭 상세 →</span>
                     </div>
-                    {/* 2026-10-12 · 실제 공급사 데이터 render */}
                     <div className="flex-1">
                       {myVendor === null ? (
                         <div className="h-[160px] flex items-center justify-center text-[13px] text-slate-400">
                           {vendorName ? `"${vendorName}" 공급사 정보 없음` : "로그인 정보 없음"}
                         </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
-                          <div><span className="text-slate-500">공급사명</span><div className="text-[15px] font-bold text-ink mt-0.5 truncate" title={myVendor.name ?? myVendor.vendor_name ?? "-"}>{myVendor.name ?? myVendor.vendor_name ?? "-"}</div></div>
-                          <div><span className="text-slate-500">담당자</span><div className="text-[14px] font-semibold text-ink mt-0.5 truncate">{myVendor.manager ?? myVendor.contact_name ?? "-"}</div></div>
-                          <div><span className="text-slate-500">연락처</span><div className="text-[14px] font-semibold text-ink tabular-nums mt-0.5 truncate">{myVendor.phone ?? myVendor.contact_phone ?? "-"}</div></div>
-                          <div><span className="text-slate-500">이메일</span><div className="text-[14px] font-semibold text-ink mt-0.5 truncate" title={myVendor.email ?? "-"}>{myVendor.email ?? "-"}</div></div>
-                          <div className="col-span-2"><span className="text-slate-500">주소</span><div className="text-[14px] font-semibold text-ink mt-0.5 truncate" title={myVendor.address ?? "-"}>{myVendor.address ?? "-"}</div></div>
-                        </div>
-                      )}
+                      ) : (() => {
+                        const name = myVendor.name ?? myVendor.vendor_name ?? "-";
+                        const manager = myVendor.manager ?? myVendor.contact_name ?? "";
+                        const phone = myVendor.phone ?? myVendor.contact_phone ?? "";
+                        const email = myVendor.email ?? "";
+                        const bizNum = myVendor.business_number ?? myVendor.biz_num ?? "";
+                        const address = myVendor.address ?? "";
+                        const account = myVendor.account ?? myVendor.bank_account ?? "";
+                        const isErp = !!myVendor.ct_code;
+                        const Field: React.FC<{ label: string; value: string; warn?: boolean }> = ({ label, value, warn }) => (
+                          <div className="min-w-0">
+                            <div className={`text-[11px] font-medium ${warn && !value ? "text-rose-500" : "text-slate-500"}`}>
+                              {label}{warn && !value ? " · 미입력" : ""}
+                            </div>
+                            <div className={`text-[13.5px] font-semibold tabular-nums mt-0.5 truncate ${value ? "text-ink" : "text-slate-300"}`} title={value || "-"}>
+                              {value || "-"}
+                            </div>
+                          </div>
+                        );
+                        return (
+                          <div className="flex flex-col gap-2.5">
+                            {/* 상단 header · 상호 + ERP 뱃지 + 담당자/전화 inline */}
+                            <div className="flex items-start gap-2 pb-2.5 border-b border-slate-100">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-[16px] md:text-[17px] font-bold text-ink truncate" title={name}>{name}</span>
+                                  <span className={`shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-sm text-[10px] font-bold tracking-wide ${
+                                    isErp ? "bg-sky-50 text-sky-700 border border-sky-200" : "bg-amber-50 text-amber-700 border border-amber-200"
+                                  }`}>
+                                    {isErp ? "ERP 연동" : "ERP 외"}
+                                  </span>
+                                </div>
+                                <div className="text-[12px] text-slate-500 mt-1 truncate" title={`${manager} / ${phone}`}>
+                                  {manager || <span className="text-rose-500">담당자 미입력</span>}
+                                  {" · "}
+                                  <span className="tabular-nums">{phone || <span className="text-rose-500">연락처 미입력</span>}</span>
+                                </div>
+                              </div>
+                            </div>
+                            {/* 하단 2x3 grid · 세부 field · 미입력 warn */}
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                              <Field label="이메일" value={email} />
+                              <Field label="사업자번호" value={bizNum} warn />
+                              <Field label="계좌" value={account} />
+                              <Field label="주소" value={address} />
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </section>
                 </div>
