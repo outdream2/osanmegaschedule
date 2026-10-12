@@ -165,8 +165,54 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
         <div className="px-4 sm:px-6 pt-3 flex-1 min-h-0 flex flex-col">
           <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={16} tone="brand" /></div>}>
             {innerTab === "overview" && (
-              // 2026-10-12 · Phase 5 · 상단 2-col + 하단 2-col · placeholder · Phase 6 데이터 fetch
+              // 2026-10-12 · Phase 6 · 상단 공급사 KPI 라인 (관리자 뷰) + 2-col 섹션들
               <div className="flex flex-col gap-4">
+                {/* 2026-10-12 · #13 Phase 6 Step 2 · 공급사 전체 집계 KPI 라인 (관리자만)
+                    Supabase vendors fetch (useVendors 캐시) · ERP marker (ct_code 유무) · 승인/저장 미완성 marker */}
+                {isAdmin && vendorStats.total > 0 && (
+                  <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] px-4 py-2.5 md:px-5 md:py-3 flex items-center gap-x-4 gap-y-1 flex-wrap leading-tight">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-[3px] h-[14px] bg-emerald-500 rounded-full shrink-0" />
+                      <span className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">공급사</span>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[14px] text-slate-500 font-medium">전체</span>
+                      <span className="text-[16px] font-bold tabular-nums text-ink">{vendorStats.total}</span>
+                    </div>
+                    <span className="text-slate-300 text-[13px]" aria-hidden>·</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-[14px] text-slate-500 font-medium">ERP</span>
+                      <span className="text-[16px] font-bold tabular-nums text-emerald-700">{vendorStats.erpCount}</span>
+                    </div>
+                    {vendorStats.nonErpCount > 0 && (
+                      <>
+                        <span className="text-slate-300 text-[13px]" aria-hidden>·</span>
+                        <div className="flex items-baseline gap-1" title="Supabase 에만 있고 ERP 에 없는 공급사">
+                          <span className="text-[14px] text-amber-700 font-semibold">ERP 외</span>
+                          <span className="text-[16px] font-bold tabular-nums text-amber-700">{vendorStats.nonErpCount}</span>
+                        </div>
+                      </>
+                    )}
+                    {vendorStats.pendingApproval > 0 && (
+                      <>
+                        <span className="text-slate-300 text-[13px]" aria-hidden>·</span>
+                        <div className="flex items-baseline gap-1" title="승인 요청하라">
+                          <span className="text-[14px] text-rose-700 font-semibold">⚠ 승인 대기</span>
+                          <span className="text-[16px] font-bold tabular-nums text-rose-700">{vendorStats.pendingApproval}</span>
+                        </div>
+                      </>
+                    )}
+                    {vendorStats.incomplete > 0 && (
+                      <>
+                        <span className="text-slate-300 text-[13px]" aria-hidden>·</span>
+                        <div className="flex items-baseline gap-1" title="연락처 / 사업자번호 미완성">
+                          <span className="text-[14px] text-rose-600 font-medium">⚠ 미완성</span>
+                          <span className="text-[16px] font-bold tabular-nums text-rose-600">{vendorStats.incomplete}</span>
+                        </div>
+                      </>
+                    )}
+                  </section>
+                )}
                 {/* 상단 2-col · 방문예약 달력 + 공급사 정보 요약 */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3">
