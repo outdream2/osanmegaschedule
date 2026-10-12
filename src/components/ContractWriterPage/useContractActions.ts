@@ -154,13 +154,26 @@ export function useContractActions({
         ? emp.primary_focus_percent
         : prev.primaryFocusPercent,
       employeeEmail: (emp as any).email || prev.employeeEmail,
-      employeeBirth: (emp as any).resident_number || prev.employeeBirth,
+      // 2026-10-12 · 사용자 지시 "전수조사" · bug fix · resident_number (주민번호) → birth_date (생년월일)
+      employeeBirth: (emp as any).birth_date || prev.employeeBirth,
       employeeGender: emp.gender || prev.employeeGender,
       employeeRank: emp.rank || prev.employeeRank,
       employeeWorkplace: emp.workplace || prev.employeeWorkplace,
-      startDate: (emp.hireDate && (!prev.startDate || prev.startDate === todayIso()))
-        ? emp.hireDate
+      // 2026-10-12 · 사용자 지시 "전수조사" · 신규 매핑 7 field
+      bankName: (emp as any).bank_name || prev.bankName,
+      bankAccountNumber: (emp as any).bank_account_no || prev.bankAccountNumber,
+      bankbookImageUrl: (emp as any).bankbook_image_url || prev.bankbookImageUrl,
+      jobDuty: (emp as any).job_duties || prev.jobDuty,
+      // 계약 시작 · contract_start 우선 · hireDate fallback
+      startDate: ((emp as any).contract_start || emp.hireDate) && (!prev.startDate || prev.startDate === todayIso())
+        ? ((emp as any).contract_start || emp.hireDate)
         : prev.startDate,
+      // 계약 종료 · 있으면 설정 · 없으면 prev 유지
+      endDate: (emp as any).contract_end || prev.endDate,
+      // 휴게시간 분 · Employee.break_time_minutes
+      breakMinutes: (emp as any).break_time_minutes != null ? String((emp as any).break_time_minutes) : prev.breakMinutes,
+      // 4대보험 · insurance_excluded true 면 미가입 · 아니면 가입
+      socialInsurance: (emp as any).insurance_excluded === true ? false : (prev.socialInsurance ?? true),
     }));
   };
 

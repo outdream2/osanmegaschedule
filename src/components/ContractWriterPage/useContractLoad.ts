@@ -145,13 +145,26 @@ export function useContractLoad({ form, setForm }: UseContractLoadProps) {
             typeof p.contractType === "string" && p.contractType ? p.contractType : (typeof p.employmentType === "string" ? p.employmentType : ""),
             prev.contractType,
           ),
-          startDate: typeof p.hireDate === "string" && p.hireDate ? p.hireDate : prev.startDate,
+          // 2026-10-12 · 사용자 지시 "전수조사" · 계약시작 contract_start 우선 · hireDate fallback
+          startDate: (typeof p.contractStart === "string" && p.contractStart)
+            ? p.contractStart
+            : (typeof p.hireDate === "string" && p.hireDate ? p.hireDate : prev.startDate),
+          endDate: typeof p.contractEnd === "string" && p.contractEnd ? p.contractEnd : prev.endDate,
           weekdayHourly: wd,
           weekendHourly: we,
           employeeEmail: typeof p.employeeEmail === "string" && p.employeeEmail ? p.employeeEmail : prev.employeeEmail,
           employeeGender: typeof p.gender === "string" && p.gender ? p.gender : prev.employeeGender,
           employeeRank: typeof p.rank === "string" && p.rank ? p.rank : prev.employeeRank,
           employeeWorkplace: typeof p.workplace === "string" && p.workplace ? p.workplace : prev.employeeWorkplace,
+          // 2026-10-12 · 사용자 지시 "전수조사" · 신규 inject field + bug fix (birth_date)
+          employeeBirth: typeof p.birthDate === "string" && p.birthDate ? p.birthDate : prev.employeeBirth,
+          employeeNumber: typeof p.employeeNumber === "string" && p.employeeNumber ? p.employeeNumber : prev.employeeNumber,
+          bankName: typeof p.bankName === "string" && p.bankName ? p.bankName : prev.bankName,
+          bankAccountNumber: typeof p.bankAccountNumber === "string" && p.bankAccountNumber ? p.bankAccountNumber : prev.bankAccountNumber,
+          bankbookImageUrl: typeof p.bankbookImageUrl === "string" && p.bankbookImageUrl ? p.bankbookImageUrl : prev.bankbookImageUrl,
+          jobDuty: typeof p.jobDuty === "string" && p.jobDuty ? p.jobDuty : prev.jobDuty,
+          breakMinutes: p.breakMinutes != null ? String(p.breakMinutes) : prev.breakMinutes,
+          socialInsurance: p.insuranceExcluded === true ? false : (prev.socialInsurance ?? true),
         };
       });
     } catch { /* silent */ } finally {

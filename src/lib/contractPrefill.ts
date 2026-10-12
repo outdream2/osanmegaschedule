@@ -18,6 +18,17 @@ export interface ContractPrefill {
   rank?: string;
   workplace?: string;
   employeeEmail?: string;
+  /** 2026-10-12 · 사용자 지시 "전수조사" · 신규 inject field (bug fix 포함) */
+  birthDate?: string;
+  bankName?: string;
+  bankAccountNumber?: string;
+  bankbookImageUrl?: string;
+  jobDuty?: string;
+  contractStart?: string;
+  contractEnd?: string;
+  breakMinutes?: number | null;
+  insuranceExcluded?: boolean | null;
+  employeeNumber?: string;
 }
 
 let _prefill: ContractPrefill | null = null;

@@ -158,15 +158,32 @@ export const StaffListRow: React.FC<StaffListRowProps> = ({
   };
   const writeContract = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // 2026-10-12 · 사용자 지시 "전수조사" · 직원정보 전체 field inject
+    const e2 = emp as any;
     setContractPrefill({
       employeeId: emp.id,
       employeeName: emp.name ?? "",
       employeePhone: emp.phone ?? "",
-      employeeAddress: (emp as any).address ?? "",
+      employeeAddress: e2.address ?? "",
       hireDate: emp.hire_date ?? "",
       position: emp.position ?? "",
-      employmentType: (emp as any).employmentType ?? (emp as any).employment_type ?? "",
-      annualLeaveDays: (emp as any).annual_leave_days ?? null,
+      employmentType: e2.employmentType ?? e2.employment_type ?? "",
+      contractType: e2.contract_type ?? "",
+      annualLeaveDays: e2.annual_leave_days ?? null,
+      gender: e2.gender ?? "",
+      rank: e2.rank ?? "",
+      workplace: e2.workplace ?? "",
+      employeeEmail: e2.email ?? "",
+      birthDate: e2.birth_date ?? "",
+      employeeNumber: e2.employee_number ?? "",
+      bankName: e2.bank_name ?? "",
+      bankAccountNumber: e2.bank_account_no ?? "",
+      bankbookImageUrl: e2.bankbook_image_url ?? "",
+      jobDuty: e2.job_duties ?? "",
+      contractStart: e2.contract_start ?? "",
+      contractEnd: e2.contract_end ?? "",
+      breakMinutes: e2.break_time_minutes ?? null,
+      insuranceExcluded: e2.insurance_excluded ?? null,
     });
     if (onWriteContract) {
       onWriteContract(emp);
