@@ -7,7 +7,7 @@ import {
   House, Calendar, CalendarDots, CalendarBlank, Bookmarks, Coffee,
   SquaresFour, ScanSmiley, Barcode, Package, Bell,
   ShoppingCart, FileMagnifyingGlass, Truck, CurrencyKrw, ChartBar, Storefront, Buildings,
-  ChatCircle, FirstAid, FileText,
+  ChatCircle, FileText,
   Briefcase, Lock,
   UserCircle, UsersThree, CheckSquare, PencilLine,
   Palette, Gear,
@@ -82,7 +82,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "schedule-v2", label: "새 스케줄", icon: Calendar, color: "amber" },
       // 2026-09-20 · 사용자 지시 · 연차신청 · 승인요청에서 독립 · 스케줄 그룹으로 이동
       //   · 이유 · 직원 신청 성격 · 관리 메뉴 아래 부적합
-      { key: "approval-request", label: "연차신청", icon: CalendarDots, color: "amber", subTab: "leave" },
+      { key: "approval-request", label: "휴가신청", icon: CalendarDots, color: "amber", subTab: "leave" },
     ],
   },
   // 2026-10-11 · #14 X안 · "업무요청" 그룹 삭제 · "경영 > 업무요청" 으로 완전 흡수
@@ -124,6 +124,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     color: "emerald",
     // 2026-10-12 · 사용자 지시 · "거래처 빌딩아이콘 말고 동그라니 다른 메뉴와 똑같이" · Buildings → UserCircle
     icon: UserCircle,
+    // 2026-10-12 · 사용자 지시 · "거래처 메뉴만 생긴게 달라" · topTab 명시 추가 (다른 그룹과 동일 처리)
+    topTab: { key: "vendor-overview" },
     // 2026-10-06 · 사용자 지시 · surface-specific hide 제거
     //   · PC/mobile/top nav 노출 통일 · 숨김 필요 시 DB app_settings.page_visibility 로 설정
     // 2026-10-12 · #13 Phase 4 · 거래처 그룹 통합 완료 ·
@@ -151,15 +153,7 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "business-manage", label: "각종양식", icon: FileText,   color: "violet", subTab: "hr-forms",  managerOnly: true },
     ],
   },
-  {
-    id: "pharmacist",
-    label: "약사",
-    color: "sky",
-    icon: FirstAid,
-    topTab: { key: "pharmacist" },
-    pharmacistOnly: true,
-    items: [{ key: "pharmacist", label: "약사", icon: FirstAid, color: "sky", pharmacistOnly: true }],
-  },
+  // 2026-10-12 · 사용자 지시 · 약사 그룹 전체 제거 (사이드바 메뉴 + topTab · PharmacistPage route 는 코드 보존)
   {
     id: "board",
     label: "이슈",
@@ -196,14 +190,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "admin-initial-build", label: "ERP 초기 구축", icon: Database, color: "slate", minLevel: 9 },
     ],
   },
-  {
-    id: "account",
-    label: "계정",
-    color: "slate",
-    icon: UserCircle,
-    // 2026-10-06 · 사용자 지시 · surface-specific hide 제거 · PC/mobile/top nav 통일
-    items: [{ key: "mypage", label: "마이페이지", icon: UserCircle, color: "slate" }],
-  },
+  // 2026-10-12 · 사용자 지시 · "계정 메뉴 삭제 · 로그인 아이콘 클릭 → confirm → slide drawer 로 조회"
+  //   · 계정 그룹 전체 제거 · AppNavHeader User 아이콘 트리거만 유지
 ];
 
 /** 공통헤더 TABS 파생용 · SIDE_NAV_GROUPS 로부터 자동 파생 (AppNavHeader.tsx 에서 소비)
