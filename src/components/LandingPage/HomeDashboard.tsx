@@ -300,15 +300,37 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     try { setMonthOrders(await fetchOrdersByDays(30)); } catch { setMonthOrders([]); }
   }, [isManagerOrAdmin, fetchOrdersByDays]);
 
-  // 2026-10-09 · 직원현황 (총원 · 근무 · 비번)
+  // 2026-10-11 · 사용자 지시 · 홈 직원현황 = 총직원수 중 **오늘 출근인원** · 스케쥴 데이터 join
+  //   · /api/employees · 재직자 (status === "active") 전체 수 = total
+  //   · /api/schedules?year=Y&month=M · 오늘 날짜 schedule.type 이 근무 타입이면 onDuty
+  //   · 근무 타입 · 오픈·미들·마감·오픈마감·오전반차·오후반차 (반차도 출근 1건)
+  //   · 쉼 타입 · 휴무·월차·결근·빈값 → 미출근
   const loadStaffStats = useCallback(async () => {
     if (!isManagerOrAdmin) return;
     try {
-      const r = await api.get<Array<{ status?: string }>>("/api/employees");
-      const list = Array.isArray(r.data) ? r.data : [];
-      const total = list.length;
-      const active = list.filter((e) => (e.status ?? "active") === "active").length;
-      setStaffStats({ total, onDuty: active, off: total - active });
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = d.getMonth() + 1;
+      const todayISO = `${y}-${String(m).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const [empRes, schedRes] = await Promise.all([
+        api.get<Array<{ id: number; status?: string }>>("/api/employees"),
+        api.get<{ employees?: Array<{ id: number; schedules?: Array<{ date: string; type?: string }> }> }>(
+          `/api/schedules?year=${y}&month=${m}`,
+        ),
+      ]);
+      const emps = Array.isArray(empRes.data) ? empRes.data : [];
+      const activeEmps = emps.filter((e) => (e.status ?? "active") === "active");
+      const total = activeEmps.length;
+
+      const schedEmps = Array.isArray(schedRes.data?.employees) ? schedRes.data!.employees! : [];
+      const ATTEND = new Set(["오픈", "미들", "마감", "오픈마감", "오전반차", "오후반차"]);
+      let onDuty = 0;
+      for (const emp of activeEmps) {
+        const entry = schedEmps.find((s) => s.id === emp.id);
+        const t = entry?.schedules?.find((sc) => sc.date === todayISO)?.type ?? "";
+        if (ATTEND.has(t)) onDuty++;
+      }
+      setStaffStats({ total, onDuty, off: total - onDuty });
     } catch { setStaffStats(null); }
   }, [isManagerOrAdmin]);
 
@@ -492,22 +514,25 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             {/* 오른쪽(col-4): 직원현황 + 오늘업무 + 입고알림 · absolute (왼쪽이 row 높이 결정) · gap 축소 (overflow fix) */}
             <div className="min-w-0 lg:col-span-4 lg:relative">
               {/* 2026-10-09 · 사용자 지시 · 오늘 업무 삐져나옴 fix · 전체 밸런스 · absolute inset-0 내부 flex overflow-hidden + 자식 min-h-0 */}
-              <div className="lg:absolute lg:inset-0 flex flex-col gap-2 md:gap-2.5 overflow-hidden">
+              {/* 2026-10-12 · 사용자 지시 · 입고알림 아래 카드 높낮이 안 맞춤 · col-8 과 gap 통일 (gap-2.5 md:gap-4) */}
+              <div className="lg:absolute lg:inset-0 flex flex-col gap-2.5 md:gap-4 overflow-hidden">
                 {/* 2026-10-09 · 사용자 지시 · 직원현황 추가 (입고알림 위) */}
                 <div className="shrink-0">
                   <StaffStatusCard
                     stats={staffStats}
-                    onOpen={() => onNavigate("business-manage", authSession)}
+                    onOpen={() => { setActiveByPage("business-manage", "dashboard"); onNavigate("business-manage", authSession); }}
                   />
                 </div>
-                <div className="flex-1 min-h-0 overflow-hidden">
+                {/* 2026-10-12 · 사용자 지시 · 오늘업무 늘려서 왼쪽 카드와 아래 매칭 · flex-1 → flex-[2] */}
+                <div className="flex-[2] min-h-0 overflow-hidden">
                   <TodayTasksCard
                     totalBadge={totalPending}
                     items={taskItems}
                     onOpenAll={() => { setActiveByPage("requests", "leave"); onNavigate("requests", authSession); }}
                   />
                 </div>
-                <div className="flex-1 min-h-0 overflow-hidden">
+                {/* 2026-10-12 · 사용자 지시 · 입고 알림 높이 짧아서 확장 · flex-1 → flex-[2] (2배 공간) */}
+                <div className="flex-[2] min-h-0 overflow-hidden">
                   <StockArrivalList
                     isVendor={false}
                     compact
@@ -1313,21 +1338,23 @@ const StaffStatusCard: React.FC<{ stats: { total: number; onDuty: number; off: n
         </div>
         <ChevronRight size={14} className="text-slate-400" />
       </div>
+      {/* 2026-10-11 · 사용자 지시 · "총직원수중 출근인원" · 스케쥴에서 데이터 가져옴
+          · 근무 → 출근 label 변경 · 비번 → 미출근 label 변경 */}
       <div className="grid grid-cols-3 divide-x divide-slate-100">
         <div className="px-3 py-2.5 text-center">
-          <div className="text-[11px] text-slate-500 font-medium">총원</div>
+          <div className="text-[12px] text-slate-500 font-medium">총원</div>
           <div className="mt-0.5 text-[18px] font-bold tabular-nums text-ink leading-none">
             {stats?.total ?? "-"}
           </div>
         </div>
         <div className="px-3 py-2.5 text-center">
-          <div className="text-[11px] text-slate-500 font-medium">근무</div>
+          <div className="text-[12px] text-slate-500 font-medium">출근</div>
           <div className="mt-0.5 text-[18px] font-bold tabular-nums text-emerald-700 leading-none">
             {stats?.onDuty ?? "-"}
           </div>
         </div>
         <div className="px-3 py-2.5 text-center">
-          <div className="text-[11px] text-slate-500 font-medium">비번</div>
+          <div className="text-[12px] text-slate-500 font-medium">미출근</div>
           <div className="mt-0.5 text-[18px] font-bold tabular-nums text-slate-500 leading-none">
             {stats?.off ?? "-"}
           </div>
