@@ -183,8 +183,9 @@ export const SalesStatus: React.FC = () => {
   const [metaMap, setMetaMap] = useState<Map<string, ProductMeta>>(new Map());
 
   // 2026-10-12 · 사용자 지시 · 기간 필터 pill (오늘·7일·14일·한달) · null = 월 선택기 사용
+  // 2026-10-12 · 사용자 지시 · "기간필터들 기본값은 모두 오늘" · 전체 통일 default = "today"
   type QuickRange = "today" | "7d" | "14d" | "30d" | null;
-  const [quickRange, setQuickRange] = useState<QuickRange>(null);
+  const [quickRange, setQuickRange] = useState<QuickRange>("today");
 
   const { curDates, prevDates, periodLabel } = useMemo(() => {
     // Quick range 우선 · null 이면 월 선택기 사용
