@@ -14,7 +14,25 @@ export type EmployeeExt = Employee & {
   contract_end?: string | null;
   birth_date?: string | null;
   resume_url?: string | null;
+  // 2026-10-12 · 사용자 지시 "퇴직탭 선택되면 사직서 · 퇴사일"
+  resignation_file_url?: string | null;
+  // 2026-10-12 · 사용자 지시 "퇴직금 지급대상 확인 컬럼"
+  working_hours_per_week?: number | null;
 };
+
+// ─── 퇴직금 지급 대상 판정 (근기법 §34) ────────────────────────
+//   · 1년 이상 근속 · 주 15시간 이상 (working_hours_per_week null 이면 통과)
+export function isSeveranceEligible(hireYmd: string | null | undefined, retireYmd: string | null | undefined, hoursPerWeek: number | null | undefined): boolean {
+  if (!hireYmd) return false;
+  const hire = new Date(String(hireYmd));
+  if (isNaN(hire.getTime())) return false;
+  const end = retireYmd ? new Date(String(retireYmd)) : new Date();
+  const years = (end.getTime() - hire.getTime()) / (365.25 * 24 * 3600 * 1000);
+  if (years < 1) return false;
+  const h = Number(hoursPerWeek);
+  if (Number.isFinite(h) && h > 0 && h < 15) return false;
+  return true;
+}
 
 // ─── POSITION_TONE (공통 · 중복 제거) ─────────────────────────
 export const POSITION_TONE: Record<string, string> = {
@@ -70,7 +88,12 @@ export type ColumnKey =
   | "tenure"
   | "birth"
   | "resume"
-  | "contract_doc";
+  | "contract_doc"
+  // 2026-10-12 · 사용자 지시 "퇴직탭에 사직서 · 퇴사일"
+  | "retire_date"
+  | "resignation"
+  // 2026-10-12 · 사용자 지시 "퇴직금 지급대상 확인"
+  | "severance";
 
 const COLUMN_META: Record<ColumnKey, { label: string; width: string; align: "left" | "center" }> = {
   name:          { label: "이름",      width: "w-[110px]",  align: "left"   },
@@ -82,11 +105,14 @@ const COLUMN_META: Record<ColumnKey, { label: string; width: string; align: "lef
   birth:         { label: "생년월일",  width: "w-[108px]",  align: "left"   },
   resume:        { label: "이력서",    width: "w-[72px]",   align: "center" },
   contract_doc:  { label: "근로계약서",width: "w-[88px]",   align: "center" },
+  retire_date:   { label: "퇴사일",    width: "w-[108px]",  align: "left"   },
+  resignation:   { label: "사직서",    width: "w-[72px]",   align: "center" },
+  severance:     { label: "퇴직금",    width: "w-[88px]",   align: "center" },
 };
 
 const DEFAULT_COLUMNS: ColumnKey[] = [
   "name", "position", "contract_type", "contract_start", "hire_date",
-  "tenure", "birth", "resume", "contract_doc",
+  "tenure", "birth", "resume", "contract_doc", "retire_date", "resignation", "severance",
 ];
 
 // ─── Props ─────────────────────────────────────────────────────
@@ -141,8 +167,11 @@ export const StaffListTable: React.FC<StaffListTableProps> = ({
             const posTone = POSITION_TONE[e.position || "기타"] ?? "bg-slate-50 text-slate-700 border-slate-200";
             const hasResume = !!(e.resume_url && String(e.resume_url).trim());
             const hasContract = !!(e.contract_type || e.contract_start);
+            const hasResignation = !!(e.resignation_file_url && String(e.resignation_file_url).trim());
             const tenureMonths = monthsBetween(e.hireDate ?? "", today);
             const tenureYears = Math.floor(tenureMonths / 12);
+            // 2026-10-12 · 퇴직금 지급대상 · 1년+ 근속 + 주 15시간+ (근기법 §34)
+            const severanceOk = isSeveranceEligible(e.hireDate, e.retireDate, e.working_hours_per_week);
 
             return (
               <tr
@@ -228,6 +257,42 @@ export const StaffListTable: React.FC<StaffListTableProps> = ({
                             title={hasContract ? "근로계약서 작성됨" : "근로계약서 미작성"}
                           >
                             {hasContract ? "✓" : "✗"}
+                          </span>
+                        </td>
+                      );
+                    case "retire_date":
+                      return (
+                        <td key={col} className="px-3 py-2 text-[13px] tabular-nums text-slate-500 whitespace-nowrap">
+                          {e.retireDate ? String(e.retireDate).slice(0, 10) : "—"}
+                        </td>
+                      );
+                    case "resignation":
+                      return (
+                        <td key={col} className="px-3 py-2 text-center">
+                          <span
+                            className={`text-[11px] font-semibold px-1.5 py-0.5 rounded border ${
+                              hasResignation
+                                ? "bg-rose-50 text-rose-700 border-rose-200"
+                                : "bg-slate-50 text-slate-400 border-slate-200"
+                            }`}
+                            title={hasResignation ? "사직서 작성됨" : "사직서 미작성"}
+                          >
+                            {hasResignation ? "✓" : "✗"}
+                          </span>
+                        </td>
+                      );
+                    case "severance":
+                      return (
+                        <td key={col} className="px-3 py-2 text-center">
+                          <span
+                            className={`text-[11px] font-semibold px-1.5 py-0.5 rounded border ${
+                              severanceOk
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : "bg-slate-50 text-slate-400 border-slate-200"
+                            }`}
+                            title={severanceOk ? "퇴직금 지급 대상 (1년+ 근속 · 주 15시간+)" : "퇴직금 미대상"}
+                          >
+                            {severanceOk ? "대상" : "미대상"}
                           </span>
                         </td>
                       );

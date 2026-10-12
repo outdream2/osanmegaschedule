@@ -47,6 +47,8 @@ import { LunchPanel } from "./LunchPanel";
 import { usePagePermissions } from "../../hooks/usePagePermissions";
 // 2026-10-09 · 사용자 지시 · 현황 대시보드 탭 (OrderReturnOverview 톤)
 import { RequestsOverview } from "./RequestsOverview";
+// 2026-10-12 · 사용자 지시 "업무요청 제목을 다른 페이지처럼" · OverviewHero (compact 3px bar inline) 통일
+import { OverviewHero } from "../DisplayPage/overviews/OverviewHeader";
 
 interface RequestsPageProps {
   onBack: () => void;
@@ -530,7 +532,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       ] as [Tab, string, number, string, string, string, string][])),
       ...(isLeaveHidden ? [] : ([
-        ["leave",     "연차승인",   leavePendingCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
+        ["leave",     "휴가승인",   leavePendingCount, "bg-white text-zinc-900 ring-zinc-200/70",  "text-zinc-800", "bg-indigo-100 text-indigo-700",  "text-zinc-500 hover:text-zinc-800 hover:bg-white/50"],
       ] as [Tab, string, number, string, string, string, string][])),
       // 2026-08-26 · #192 · 거래처승인 신규 탭 · pending-counts.vendor
       ...(isVendorHidden ? [] : ([
@@ -565,59 +567,29 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         />
       )}
 
-      {/* 2026-10-10 · 사용자 지시 · 상단 2개 그룹 탭 (현황 / 서류작성)
-          · description · topGroup 별 context-aware */}
+      {/* 2026-10-12 · 사용자 지시 "업무요청 제목을 다른 페이지처럼" · OverviewHero (3px bar · compact inline)
+           · embedded (경영현황 안) 시 · 부모가 이미 OverviewHero 표시하므로 skip
+           · standalone 시 · OverviewHero 로 매출현황·거래처 등과 톤 통일 */}
+      {!embedded && (
+        <OverviewHero
+          tone="violet"
+          title="업무요청"
+          description="승인·요청 통합 현황판"
+        />
+      )}
       <OperationsPageTemplate
-        title="업무 요청"
-        // 2026-10-10 · 사용자 지시 · 서류작성 탭에서 description 중복 공간 차지 X · 빈 문자열로 (DocumentWriterPage 내부 탭이 역할 대신)
-        description={
-          topGroup === "overview"  ? "승인·요청·서류 종합 현황" :
-          topGroup === "document"  ? "" :
-          "통합 요청·결재 센터"
-        }
-        tabs={
-          <div className="flex flex-col gap-2">
-            <TabBar<TopGroup>
-              level={2}
-              tabs={[
-                { key: "overview",  label: "현황",     icon: LayoutDashboard, color: "brand"   },
-                { key: "document",  label: "서류작성", icon: PenLine,         color: "emerald" },
-              ] as CommonTabDef<TopGroup>[]}
-              activeKey={topGroup}
-              onSelect={handleTopGroupChange}
-            />
-            {/* 2026-10-10 · 사용자 지시 · level-3 contract/resignation TabBar 제거
-                · DocumentWriterPage 내부 TabBar 가 근로계약서/사직서 전환 담당 */}
-          </div>
-        }
+        title={undefined}
+        description={undefined}
       >
       <main className="flex-1 flex flex-col gap-4">
 
-        {/* 2026-10-09 · 사용자 지시 · 통합 현황판 (HomeDashboard 톤) · 서류작성 현황 포함 */}
-        {topGroup === "overview" && (
-          <RequestsOverview
-            onNavigate={handleOverviewNavigate}
-            onNavigateToDocument={() => handleTopGroupChange("document")}
-            isManager={isManager}
-          />
-        )}
-
-        {/* 2026-10-10 · 사용자 지시 · 서류작성 탭 · DocumentWriterPage embed
-            · 사이드바 "서류작성" 메뉴 제거 → 현황판 서류작성 탭 안에서 직접 작성
-            · DocumentWriterPage 내부 TabBar(level 2) 로 근로계약서/사직서 전환 · settings 은 숨김 (allowedTabs)
-            · ContractWriterPage · ResignationWriterPage 는 DocumentWriterPage 내부 lazy render */}
-        {topGroup === "document" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="서류작성 로딩 중..." size={16} tone="brand" /></div>}>
-            <DocumentWriterPage
-              embedded
-              allowedTabs={["contract", "resignation"]}
-              onBack={onBack}
-              authSession={authSession ?? null}
-              onNavigate={onNavigate}
-              onLogout={onLogout}
-            />
-          </Suspense>
-        )}
+        {/* 2026-10-12 · 사용자 지시 "서류작성탭페이지 필요없음 · 근로계약서 작성이 (경영현황) 있음"
+             · topGroup/서류작성 탭 제거 · 현황판 단일 render */}
+        <RequestsOverview
+          onNavigate={handleOverviewNavigate}
+          onNavigateToDocument={() => { /* document 탭 제거됨 · noop */ }}
+          isManager={isManager}
+        />
 
         {/* 2026-10-10 · 사용자 지시 · topGroup 승인업무/요청확인 inner block 제거
             · 모든 승인·요청 panel 은 drawer 안에서 render (아래 drawer block 참조)
@@ -677,7 +649,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </span>
               <div className="flex-1 min-w-0">
                 <h2 className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight truncate leading-tight">
-                  {drawer.tab === "leave" && "연차승인"}
+                  {drawer.tab === "leave" && "휴가승인"}
                   {drawer.tab === "vendor" && "거래처승인"}
                   {drawer.tab === "resignation" && "사직서승인"}
                   {drawer.tab === "display" && (isManager ? "진열요청 · 실재고차이" : "내가 받은 요청")}

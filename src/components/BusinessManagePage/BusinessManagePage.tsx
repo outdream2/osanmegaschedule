@@ -51,7 +51,8 @@ interface BusinessManagePageProps {
 //   · 다른 subTab 값들 (staff-manage · requests · document-writer · wage-analysis) 은 BusinessOverview 안 innerTab 으로 흡수
 //   · 하위 호환 · 기존 subTab 값 → dashboard + initialInnerTab 매핑
 type BmSubTab = "dashboard" | "hr-forms";
-type BmInnerKey = "overview" | "staff-manage" | "requests" | "wage-analysis" | "contract";
+// 2026-10-12 · "resignation" 추가 · BusinessOverview 내부 사직서 승인 탭과 타입 맞춤
+type BmInnerKey = "overview" | "staff-manage" | "requests" | "wage-analysis" | "contract" | "resignation";
 
 // 색상 · 공통 TabBar 프리셋 (COLOR_MAP · TabBar.tsx 내부)
 type TabColor = "sky" | "amber" | "violet" | "teal" | "indigo" | "rose" | "emerald" | "orange" | "slate";

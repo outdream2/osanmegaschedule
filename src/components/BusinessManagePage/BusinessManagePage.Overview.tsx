@@ -26,7 +26,7 @@ const BusinessDashboard = React.lazy(() => import("./BusinessManagePage.Dashboar
 // 2026-10-12 · 사용자 지시 · 현금흐름 구성 차트 (매출 대비 인건비·매입·발주·임대료·수수료·공과금 % · settings JSON)
 const BusinessCashFlow = React.lazy(() => import("./BusinessManagePage.CashFlow"));
 
-type InnerTabKey = "overview" | "staff-manage" | "requests" | "wage-analysis" | "contract";
+type InnerTabKey = "overview" | "staff-manage" | "requests" | "wage-analysis" | "contract" | "resignation";
 
 const CARD = "bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]";
 
@@ -141,6 +141,7 @@ export const BusinessOverview: React.FC<BusinessOverviewProps> = ({
     { k: "requests",     label: "업무요청",     tone: "indigo",  count: pendingTotal || null },
     { k: "wage-analysis", label: "인건비 분석", tone: "amber",   count: null },
     { k: "contract",     label: "근로계약서 작성", tone: "rose", count: expiringContracts.length || null },
+    { k: "resignation",  label: "사직서 작성",    tone: "amber", count: resignPending || null },
   ];
 
   // 서브페이지 공통 props (embedded=true)
@@ -242,6 +243,16 @@ export const BusinessOverview: React.FC<BusinessOverviewProps> = ({
           <div className="-mx-4 sm:-mx-6">
             <Suspense fallback={<FallbackSpinner label="근로계약서 로딩 중..." />}>
               <DocumentWriterPage {...subPageProps} allowedTabs={["contract", "settings"]} />
+            </Suspense>
+          </div>
+        )}
+
+        {/* 2026-10-12 · 사용자 지시 "근로계약서 작성 옆에 사직서 작성 페이지 만들고 · 원래 있던 사직서 작성 페이지 연결"
+             · DocumentWriterPage 내부 resignation 탭 (ResignationWriterPage lazy) 활성 */}
+        {innerTab === "resignation" && (
+          <div className="-mx-4 sm:-mx-6">
+            <Suspense fallback={<FallbackSpinner label="사직서 로딩 중..." />}>
+              <DocumentWriterPage {...subPageProps} allowedTabs={["resignation", "settings"]} />
             </Suspense>
           </div>
         )}

@@ -55,6 +55,8 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onOpenFullStaffM
   const [loading, setLoading] = useState(true);
   const [filterPosition, setFilterPosition] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  // 2026-10-12 · 사용자 지시 "직원리스트에 재직퇴직 탭" · 리스트 상단 재직/퇴직 토글
+  const [listTab, setListTab] = useState<"active" | "retired">("active");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -69,6 +71,8 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onOpenFullStaffM
   useEffect(() => { load(); }, [load]);
 
   const activeEmps = useMemo(() => employees.filter(e => !e.retireDate), [employees]);
+  // 2026-10-12 · 사용자 지시 "재직/퇴직 탭" · 퇴직자 리스트 (retireDate 있는 직원)
+  const retiredEmps = useMemo(() => employees.filter(e => !!e.retireDate), [employees]);
   const today = todayYmd();
   const curYm = currentYm();
 
@@ -216,30 +220,69 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({ onOpenFullStaffM
         </div>
       </section>
 
-      {/* 2026-10-12 · 사용자 지시 "직원관리 페이지도 경영현황 직원리스트처럼" · 테이블 통일 톤
-          · 7-column (이름/직군/계약유형/계약시작일/입사일/이력서/근로계약서) · 스크롤 처리
-          · thead sticky · 선택 row 는 violet accent 유지 */}
+      {/* 2026-10-12 · 사용자 지시 "직원리스트에 재직퇴직 탭 · 퇴직탭에 이력서 · 근로계약서 · 사직서 · 퇴사일 · 퇴직금 지급대상"
+          · listTab=active · 재직자 (이력서/근로계약서 열)
+          · listTab=retired · 퇴직자 (퇴사일/이력서/근로계약서/사직서/퇴직금 열) */}
       <section className={`${CARD} p-3 md:p-4 flex flex-col`}>
         <header className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <span className="w-[3px] h-[12px] bg-violet-500 rounded-full" aria-hidden />
             <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">직원 리스트</h3>
+            {/* 2026-10-12 · 재직/퇴직 토글 (inline tab) */}
+            <div className="inline-flex items-center gap-0.5 ml-1 p-0.5 bg-slate-100 rounded-md" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={listTab === "active"}
+                onClick={() => setListTab("active")}
+                className={`inline-flex items-center h-7 px-3 rounded text-[13px] font-semibold tracking-tight transition-colors cursor-pointer ${
+                  listTab === "active"
+                    ? "bg-white text-ink shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
+                    : "text-slate-500 hover:text-ink"
+                }`}
+              >
+                재직 <span className="ml-1 text-[11.5px] tabular-nums opacity-70">{activeEmps.length}</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={listTab === "retired"}
+                onClick={() => setListTab("retired")}
+                className={`inline-flex items-center h-7 px-3 rounded text-[13px] font-semibold tracking-tight transition-colors cursor-pointer ${
+                  listTab === "retired"
+                    ? "bg-white text-ink shadow-[0_1px_2px_rgba(0,0,0,0.08)]"
+                    : "text-slate-500 hover:text-ink"
+                }`}
+              >
+                퇴직 <span className="ml-1 text-[11.5px] tabular-nums opacity-70">{retiredEmps.length}</span>
+              </button>
+            </div>
             <span className="text-[13px] text-slate-500 tabular-nums">
-              {filterPosition
-                ? `· ${filterPosition} ${filteredEmps.length}명`
-                : `· 총 ${filteredEmps.length}명`}
+              {listTab === "active"
+                ? (filterPosition ? `· ${filterPosition} ${filteredEmps.length}명` : `· 총 ${filteredEmps.length}명`)
+                : `· 총 ${retiredEmps.length}명`}
             </span>
           </div>
           <span className="text-[13px] text-slate-400">클릭 → 상세 slide drawer</span>
         </header>
-        {/* 공용 StaffListTable · 공통 컴포넌트 */}
-        <StaffListTable
-          employees={filteredEmps as StaffListEmployeeExt[]}
-          onRowClick={(id) => setSelectedId(id)}
-          selectedId={selectedId}
-          maxHeight="max-h-[520px]"
-          showColumns={["name", "position", "contract_type", "contract_start", "hire_date", "tenure", "birth"]}
-        />
+        {/* 공용 StaffListTable · 공통 컴포넌트 · 탭별 분기 columns */}
+        {listTab === "active" ? (
+          <StaffListTable
+            employees={filteredEmps as StaffListEmployeeExt[]}
+            onRowClick={(id) => setSelectedId(id)}
+            selectedId={selectedId}
+            maxHeight="max-h-[520px]"
+            showColumns={["name", "position", "contract_type", "contract_start", "hire_date", "tenure", "birth", "resume", "contract_doc"]}
+          />
+        ) : (
+          <StaffListTable
+            employees={retiredEmps as StaffListEmployeeExt[]}
+            onRowClick={(id) => setSelectedId(id)}
+            selectedId={selectedId}
+            maxHeight="max-h-[520px]"
+            showColumns={["name", "position", "hire_date", "retire_date", "tenure", "resume", "contract_doc", "resignation", "severance"]}
+          />
+        )}
       </section>
 
       {/* ── 공용 EmployeeDrawer · EmployeeInfoPanel slide drawer ── */}

@@ -688,6 +688,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({
 
   // 2026-10-12 · 사용자 지시 · 신청이력 검색 (관리자만) · 좌/우 분할 레이아웃
   const [searchQuery, setSearchQuery] = useState("");
+  // 2026-10-12 · 사용자 지시 "통합할 수 있는거 하고 공간 최대한 적게" · 신규 신청 폼 collapsible
+  const [applyFormOpen, setApplyFormOpen] = useState(false);
   // 2026-10-12 · 사용자 지시 · 지각·결근 지표 (schedules.type 안 "지각"/"결근"/"조퇴" 포함 row)
   //   · 비관리자: 본인 (employeeId) · 관리자: 전체
   type AttendanceIssue = { date: string; employee_id: number; employee_name: string; type: string; kind: "지각" | "결근" | "조퇴" };
@@ -1018,30 +1020,31 @@ export const LeavePage: React.FC<LeavePageProps> = ({
 
       <main className={`flex-1 ${PAGE_CONTAINER_CLS} px-4 py-5`}>
 
-        {/* ── 직원 뷰 (신청) · 2026-10-09 사용자 지시 · 홈 랜딩 톤 재디자인 ── */}
+        {/* ── 직원 뷰 (신청) · 2026-10-12 사용자 지시 "상단 상세정보랑 휴가신청하는 부분 놔두라고 했는데"
+             · 2026-10-12 통합 CARD 분리 복원 · 3 섹션 (상세정보 대시보드 / 신규 신청 / 신청이력)
+             · 상세정보 : 잔여 큰 숫자 + 총부여 + 사용 + progress + 올해 사용 리스트 + 안내문구 ── */}
         {showApply && (
           <div className="flex flex-col gap-4">
 
-            {/* 2026-10-12 · 사용자 지시 · "병합해서 컴팩트하고 깔끔하고 예쁘게"
-                · 내 근태 정보 + 신규 신청 → 1개 통합 CARD
-                · lg: 좌(근태 KPI) · 우(신청 폼) 분할 · 모바일 세로 stack */}
             {(() => {
               const mine = myRequests;
               const now = new Date();
-              const yStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-              const monthMine = mine.filter(r => String(r.start_date ?? "").startsWith(yStr));
+              const curYear = now.getFullYear();
+              const yearStr = `${curYear}`;
+              const yearMine = mine.filter(r => String(r.start_date ?? "").startsWith(yearStr));
               const pendingCount = mine.filter(r => r.status === "pending").length;
-              const monthApproved = monthMine.filter(r => r.status === "approved").length;
-              const monthRejected = monthMine.filter(r => r.status === "rejected").length;
               const usedPct = balance && balance.total > 0 ? Math.min(100, Math.round((balance.used / balance.total) * 100)) : 0;
-              const curMonth = now.getMonth() + 1;
-              // 2026-10-12 · 사용자 지시 · 계약직 계약만료 D-day
+              // 승인된 연차 리스트 (올해) · 날짜 asc
+              const approvedUsed = yearMine
+                .filter(r => r.status === "approved")
+                .sort((a, b) => String(a.start_date ?? "").localeCompare(String(b.start_date ?? "")));
+              // 계약직 D-day
               const isContract = String(employeeDetail?.employmentType ?? "").includes("계약");
               const contractEnd = employeeDetail?.contract_end;
               let contractDday: number | null = null;
               if (isContract && contractEnd) {
                 const d1 = new Date(contractEnd + "T00:00:00").getTime();
-                const d0 = new Date(now.getFullYear() + "-" + String(curMonth).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0") + "T00:00:00").getTime();
+                const d0 = new Date(curYear + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0") + "T00:00:00").getTime();
                 contractDday = Math.round((d1 - d0) / 86400000);
               }
               const contractTone =
@@ -1055,170 +1058,6 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                 contractDday < 0 ? `만료 (${-contractDday}일 경과)` :
                 contractDday === 0 ? "오늘 만료" :
                 `D-${contractDday}`;
-              return (
-                <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
-                  {/* 통합 header · 좌 아이콘·타이틀 · 우 관리자 라벨 */}
-                  <header className="flex items-center justify-between gap-3 px-5 py-3 border-b border-slate-100">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-[3px] h-[14px] bg-emerald-500 rounded-full shrink-0" aria-hidden />
-                      <CalendarDays size={14} className="text-emerald-600 shrink-0" />
-                      <span className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">휴가 · 근태</span>
-                      <span className="text-[12.5px] md:text-[13px] text-slate-400 font-medium hidden sm:inline">· 유급휴가 신청</span>
-                    </div>
-                    {isManager && (
-                      <span className="text-[12.5px] md:text-[13px] text-slate-400 font-medium">관리자 · 전체 신청 조회</span>
-                    )}
-                  </header>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr]">
-                    {/* ── LEFT · 근태 KPI (lg 좌측 column · 모바일은 상단) ── */}
-                    <div className="px-5 py-4 lg:border-r border-slate-100 border-b lg:border-b-0 flex flex-col gap-3">
-                      {balance ? (
-                        <div className="flex items-baseline gap-2 flex-wrap">
-                          <span className="text-[28px] md:text-[32px] font-bold text-emerald-700 tabular-nums tracking-tight leading-none">{balance.remaining}</span>
-                          <span className="text-[13px] text-slate-500 font-medium">일 남음</span>
-                          <span className="ml-auto text-[12px] text-slate-500 font-medium tabular-nums">사용 {balance.used} / {balance.total}</span>
-                        </div>
-                      ) : (
-                        <div className="text-[13px] text-slate-400 font-medium">유급휴가 정보 로딩 중...</div>
-                      )}
-                      {balance && balance.total > 0 && (
-                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all ${usedPct >= 80 ? "bg-rose-500" : usedPct >= 50 ? "bg-amber-500" : "bg-emerald-500"}`}
-                            style={{ width: `${usedPct}%` }}
-                          />
-                        </div>
-                      )}
-                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
-                        <div className="min-w-0">
-                          <div className="text-[11px] text-slate-500 font-medium">대기</div>
-                          <div className={`text-[16px] font-bold tabular-nums mt-0.5 ${pendingCount > 0 ? "text-amber-700" : "text-slate-400"}`}>{pendingCount}건</div>
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[11px] text-slate-500 font-medium">{curMonth}월 승인</div>
-                          <div className={`text-[16px] font-bold tabular-nums mt-0.5 ${monthApproved > 0 ? "text-emerald-700" : "text-slate-400"}`}>{monthApproved}건</div>
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[11px] text-slate-500 font-medium">{curMonth}월 반려</div>
-                          <div className={`text-[16px] font-bold tabular-nums mt-0.5 ${monthRejected > 0 ? "text-rose-600" : "text-slate-400"}`}>{monthRejected}건</div>
-                        </div>
-                      </div>
-                      {/* 2026-10-12 · 사용자 지시 · 계약직 계약만료 D-day pill (계약직 + contract_end 둘 다 있을 때만) */}
-                      {isContract && contractEnd && contractDday != null && (
-                        <div className={`flex items-center justify-between gap-2 px-3 py-2 border rounded-md ${contractTone}`}>
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <Clock size={13} className="shrink-0" />
-                            <span className="text-[12px] font-semibold tracking-tight">계약 만료</span>
-                            <span className="text-[11.5px] opacity-80 tabular-nums shrink-0">· {contractEnd}</span>
-                          </div>
-                          <span className="text-[13px] font-bold tabular-nums shrink-0">{contractLabel}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* ── RIGHT · 신규 신청 폼 (컴팩트) ── */}
-                    <form onSubmit={handleSubmit} className="px-5 py-4 flex flex-col gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="w-[3px] h-[12px] bg-indigo-500 rounded-full shrink-0" aria-hidden />
-                        <span className="text-[13.5px] md:text-[14px] font-semibold text-ink tracking-tight">신규 신청</span>
-                      </div>
-
-                      {/* PC · 1-line inline 폼 (유형/시작/종료/일수) · pill 톤 input */}
-                      <div className="hidden sm:grid grid-cols-[140px_1fr_1fr_64px] gap-2">
-                        <select
-                          value={formType}
-                          onChange={e => setFormType(e.target.value)}
-                          className="h-9 px-2.5 bg-white border border-slate-200 rounded-md text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer transition"
-                          aria-label="휴가 유형"
-                        >
-                          {LEAVE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                        <input
-                          type="date"
-                          value={formStart}
-                          onChange={e => { const s = e.target.value; setFormStart(s); if (formEnd < s) setFormEnd(s); }}
-                          className="h-9 px-2.5 bg-white border border-slate-200 rounded-md text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums transition"
-                          required aria-label="시작일"
-                        />
-                        <input
-                          type="date"
-                          value={formEnd} min={formStart}
-                          onChange={e => setFormEnd(e.target.value)}
-                          className="h-9 px-2.5 bg-white border border-slate-200 rounded-md text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums transition"
-                          required aria-label="종료일"
-                        />
-                        <div className="h-9 px-2.5 bg-emerald-50 border border-emerald-100 rounded-md flex items-center justify-center text-[14px] font-bold text-emerald-700 tabular-nums">
-                          {calcDays(formStart, formEnd)}일
-                        </div>
-                      </div>
-
-                      {/* 사유 input (PC + mobile 공통) */}
-                      <input
-                        type="text" {...KO_INPUT_PROPS}
-                        value={formReason}
-                        onChange={e => setFormReason(e.target.value)}
-                        placeholder="사유 (선택)"
-                        className="hidden sm:block h-9 w-full px-3 bg-white border border-slate-200 rounded-md text-[14px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
-                      />
-
-                      {/* 모바일 · 2열 그리드 */}
-                      <div className="sm:hidden flex flex-col gap-2.5">
-                        <select
-                          value={formType}
-                          onChange={e => setFormType(e.target.value)}
-                          className="h-10 w-full px-3 bg-white border border-slate-200 rounded-md text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer transition"
-                        >
-                          {LEAVE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="date" value={formStart}
-                            onChange={e => { const s = e.target.value; setFormStart(s); if (formEnd < s) setFormEnd(s); }}
-                            className="h-10 px-3 bg-white border border-slate-200 rounded-md text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums transition"
-                            required aria-label="시작일"
-                          />
-                          <input
-                            type="date" value={formEnd} min={formStart}
-                            onChange={e => setFormEnd(e.target.value)}
-                            className="h-10 px-3 bg-white border border-slate-200 rounded-md text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums transition"
-                            required aria-label="종료일"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between text-[13px] text-slate-500 font-medium">
-                          <span>신청 일수</span>
-                          <span className="text-[15px] font-bold text-emerald-700 tabular-nums">{calcDays(formStart, formEnd)}일</span>
-                        </div>
-                        <input
-                          type="text" {...KO_INPUT_PROPS} value={formReason}
-                          onChange={e => setFormReason(e.target.value)}
-                          placeholder="사유 (선택)"
-                          className="h-10 w-full px-3 bg-white border border-slate-200 rounded-md text-[14px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition"
-                        />
-                      </div>
-
-                      {submitError && (
-                        <div className="text-[13px] text-rose-600 font-medium">⚠ {submitError}</div>
-                      )}
-
-                      {/* 신청 버튼 · emerald primary · 전체 폭 */}
-                      <button
-                        type="submit"
-                        disabled={submitting}
-                        className="h-10 w-full rounded-md bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[14px] md:text-[15px] font-semibold tracking-tight transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-                      >
-                        {submitting ? "신청 중..." : "유급휴가 신청"}
-                      </button>
-                    </form>
-                  </div>
-                </section>
-              );
-            })()}
-
-            {/* 2026-10-12 · 사용자 지시 · 좌(유급휴가 신청이력) + 우(지각·결근) 2-col 분할
-                · 좌: 전체/내 유급휴가 신청이력 (관리자만 검색)
-                · 우: 지각·결근 (본인/전체 scope) */}
-            {(() => {
               const filteredRequests = isManager && searchQuery.trim()
                 ? displayRequests.filter(r => {
                     const q = searchQuery.toLowerCase();
@@ -1236,143 +1075,277 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                 : attendanceIssues;
               const historyTitle = isManager ? "전체 유급휴가 신청이력" : "내 유급휴가 신청이력";
               const issuesTitle = isManager ? "전체 지각·결근" : "내 지각·결근";
+              const lateCnt = filteredIssues.filter(a => a.kind === "지각").length;
+              const absentCnt = filteredIssues.filter(a => a.kind === "결근").length;
+              const earlyCnt = filteredIssues.filter(a => a.kind === "조퇴").length;
               return (
-                <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-4">
-                  {/* ── 좌 · 유급휴가 신청이력 ── */}
-                  <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden relative">
-                    <div className="absolute top-0 left-0 bottom-0 w-[4px] bg-gradient-to-b from-slate-300 to-slate-500" aria-hidden />
-                    <div className="pl-6 pr-5 pt-4 pb-4">
-                      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <FileText size={16} className="text-slate-500 shrink-0" strokeWidth={2.2} />
-                          <span className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">{historyTitle}</span>
-                          <span className="text-[13.5px] md:text-[14px] font-medium text-slate-400 tabular-nums">· {filteredRequests.length}건</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {isManager && selectedIds.size > 0 && (
-                            <button type="button" onClick={() => handleBulkDelete(Array.from(selectedIds))} disabled={bulkDeleting}
-                              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-rose-500 hover:bg-rose-600 active:bg-rose-700 disabled:opacity-40 text-white text-[13px] md:text-[14px] font-semibold tracking-tight transition-colors cursor-pointer">
-                              <Trash2 size={12} /><span>선택 삭제 ({selectedIds.size})</span>
-                            </button>
-                          )}
-                          <button onClick={isManager ? loadAllRequests : loadMyRequests} disabled={displayLoading}
-                            className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md text-slate-500 hover:text-ink hover:bg-slate-50 text-[13px] font-medium transition-colors cursor-pointer"
-                            title="새로고침">
-                            <RefreshCw size={12} className={displayLoading ? "animate-spin" : ""} />
-                            <span className="hidden sm:inline">새로고침</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* 2026-10-12 · 사용자 지시 · 관리자만 검색 input */}
-                      {isManager && (
-                        <div className="mb-3">
-                          <input
-                            type="text" {...KO_INPUT_PROPS}
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                            placeholder="직원명·유형·사유·지각·결근 검색"
-                            className="w-full h-9 px-3 bg-slate-50 border border-slate-200 rounded-md text-[14px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep focus:bg-white transition"
-                          />
-                        </div>
-                      )}
-
-                      {displayLoading && filteredRequests.length > 0 && (
-                        <div className="flex items-center justify-center gap-1.5 py-1.5 mb-2 bg-amber-50 border border-amber-100 rounded-md">
-                          <Spinner size={12} tone="amber" label="새로 불러오는 중..." labelSize={13} />
-                        </div>
-                      )}
-
-                      <RequestHistoryTable
-                        rows={filteredRequests}
-                        isManager={isManager}
-                        loading={displayLoading}
-                        selectedIds={selectedIds}
-                        onToggleRow={toggleSelectRow}
-                        onToggleAll={toggleSelectAll}
-                        cancellingId={cancellingId}
-                        deletingId={deletingId}
-                        onCancel={handleCancel}
-                        onDelete={handleDeleteLeaveRequest}
-                        onOpenPdf={openPdfModal}
-                      />
+                <>
+                {/* ── 섹션 A · 상세정보 대시보드 (유급휴가 잔여/총부여/사용 + 올해 사용 리스트) ── */}
+                <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+                  <header className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-100 flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-[3px] h-[14px] bg-emerald-500 rounded-full shrink-0" aria-hidden />
+                      <CalendarDays size={14} className="text-emerald-600 shrink-0" />
+                      <span className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">연차 · 유급휴가</span>
+                      <span className="text-[12.5px] md:text-[13px] text-slate-400 font-medium hidden sm:inline">· 내 상세정보</span>
                     </div>
-                  </section>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {isContract && contractEnd && contractDday != null && (
+                        <span className={`inline-flex items-center h-6 px-2 border rounded-md text-[12.5px] font-semibold tabular-nums ${contractTone}`}>
+                          계약 {contractLabel}
+                        </span>
+                      )}
+                      {pendingCount > 0 && (
+                        <span className="inline-flex items-center h-6 px-2 rounded-md border bg-amber-50 text-amber-700 border-amber-100 text-[12.5px] font-semibold tabular-nums">
+                          대기 {pendingCount}
+                        </span>
+                      )}
+                      {(lateCnt > 0 || absentCnt > 0 || earlyCnt > 0) && (
+                        <>
+                          {lateCnt > 0 && <span className="inline-flex items-center h-6 px-2 rounded-md border bg-amber-50 text-amber-700 border-amber-100 text-[12.5px] font-semibold tabular-nums">지각 {lateCnt}</span>}
+                          {absentCnt > 0 && <span className="inline-flex items-center h-6 px-2 rounded-md border bg-rose-50 text-rose-600 border-rose-100 text-[12.5px] font-semibold tabular-nums">결근 {absentCnt}</span>}
+                          {earlyCnt > 0 && <span className="inline-flex items-center h-6 px-2 rounded-md border bg-slate-50 text-slate-600 border-slate-200 text-[12.5px] font-semibold tabular-nums">조퇴 {earlyCnt}</span>}
+                        </>
+                      )}
+                    </div>
+                  </header>
 
-                  {/* ── 우 · 지각·결근 ── */}
-                  <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
-                    <div className="px-5 pt-4 pb-4 flex flex-col gap-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="w-[3px] h-[14px] bg-rose-500 rounded-full shrink-0" aria-hidden />
-                          <Warning size={14} className="text-rose-600 shrink-0" />
-                          <span className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">{issuesTitle}</span>
-                          <span className="text-[13.5px] text-slate-400 font-medium tabular-nums">· {filteredIssues.length}건</span>
-                        </div>
-                        <button
-                          onClick={loadAttendanceIssues}
-                          disabled={attendanceLoading}
-                          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md text-slate-500 hover:text-ink hover:bg-slate-50 text-[13px] font-medium transition-colors cursor-pointer"
-                          title="새로고침"
-                        >
-                          <RefreshCw size={12} className={attendanceLoading ? "animate-spin" : ""} />
-                        </button>
-                      </div>
-                      {/* 월 요약 · 지각/결근/조퇴 count */}
-                      <div className="grid grid-cols-3 gap-2">
-                        {([
-                          { k: "지각" as const, tone: "amber" },
-                          { k: "결근" as const, tone: "rose" },
-                          { k: "조퇴" as const, tone: "slate" },
-                        ]).map(({ k, tone }) => {
-                          const cnt = filteredIssues.filter(a => a.kind === k).length;
-                          const toneCls = tone === "amber" ? "text-amber-700 bg-amber-50 border-amber-100"
-                            : tone === "rose" ? "text-rose-600 bg-rose-50 border-rose-100"
-                            : "text-slate-500 bg-slate-50 border-slate-200";
-                          return (
-                            <div key={k} className={`px-3 py-2 border rounded-md ${toneCls}`}>
-                              <div className="text-[11px] font-medium opacity-80">{k}</div>
-                              <div className="text-[16px] font-bold tabular-nums mt-0.5">{cnt}건</div>
+                  <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr]">
+                    {/* ── 좌 · KPI 3-tile (잔여/총 부여/사용) · 큰 숫자 ── */}
+                    <div className="px-4 py-4 lg:border-r border-slate-100 border-b lg:border-b-0 flex flex-col gap-3">
+                      {balance ? (
+                        <>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="flex flex-col items-start min-w-0">
+                              <span className="text-[11.5px] text-slate-500 font-medium">잔여</span>
+                              <div className="flex items-baseline gap-0.5">
+                                <span className="text-[26px] md:text-[30px] font-bold text-emerald-700 tabular-nums leading-none">{balance.remaining}</span>
+                                <span className="text-[12px] text-slate-500 font-medium">일</span>
+                              </div>
                             </div>
-                          );
-                        })}
+                            <div className="flex flex-col items-start min-w-0">
+                              <span className="text-[11.5px] text-slate-500 font-medium">총 부여</span>
+                              <div className="flex items-baseline gap-0.5">
+                                <span className="text-[22px] md:text-[26px] font-bold text-ink tabular-nums leading-none">{balance.total}</span>
+                                <span className="text-[12px] text-slate-500 font-medium">일</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-start min-w-0">
+                              <span className="text-[11.5px] text-slate-500 font-medium">사용</span>
+                              <div className="flex items-baseline gap-0.5">
+                                <span className={`text-[22px] md:text-[26px] font-bold tabular-nums leading-none ${balance.used > 0 ? "text-amber-700" : "text-slate-400"}`}>{balance.used}</span>
+                                <span className="text-[12px] text-slate-500 font-medium">일</span>
+                              </div>
+                            </div>
+                          </div>
+                          {balance.total > 0 && (
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${usedPct >= 80 ? "bg-rose-500" : usedPct >= 50 ? "bg-amber-500" : "bg-emerald-500"}`}
+                                style={{ width: `${usedPct}%` }}
+                              />
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-[13px] text-slate-400 font-medium">유급휴가 정보 로딩 중...</div>
+                      )}
+                    </div>
+
+                    {/* ── 우 · 올해 사용한 연차 리스트 (dashboard) ── */}
+                    <div className="px-4 py-3 flex flex-col gap-2">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="inline-flex items-center h-6 px-2 bg-slate-50 text-slate-700 border border-slate-200 rounded-md text-[12.5px] font-semibold tabular-nums">
+                          {curYear}년
+                        </span>
+                        <span className="text-[13.5px] md:text-[14px] text-slate-500 font-medium">사용한 연차</span>
+                        <span className={`text-[14px] font-bold tabular-nums ${approvedUsed.length > 0 ? "text-ink" : "text-slate-400"}`}>· {approvedUsed.length}건</span>
                       </div>
-                      {/* 리스트 · 최근순 */}
-                      <div className="min-h-[160px] max-h-[320px] overflow-y-auto border-t border-slate-100 pt-2">
-                        {attendanceLoading && filteredIssues.length === 0 ? (
-                          <div className="flex items-center justify-center py-8">
-                            <Spinner size={13} tone="zinc" label="불러오는 중..." labelSize={13} />
-                          </div>
-                        ) : filteredIssues.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-8 text-center">
-                            <div className="text-[13px] text-slate-400 font-medium">이번 달 지각·결근 없음</div>
-                            <div className="text-[12px] text-slate-400 mt-0.5">근태 성실 👍</div>
-                          </div>
-                        ) : (
-                          <ul className="flex flex-col divide-y divide-slate-100">
-                            {filteredIssues.map((a, i) => {
-                              const kindCls = a.kind === "결근" ? "bg-rose-50 text-rose-600 border-rose-100"
-                                : a.kind === "지각" ? "bg-amber-50 text-amber-700 border-amber-100"
-                                : "bg-slate-50 text-slate-600 border-slate-200";
-                              return (
-                                <li key={`${a.employee_id}-${a.date}-${i}`} className="flex items-center justify-between gap-2 py-2 px-1">
-                                  <div className="flex items-center gap-2 min-w-0">
-                                    <span className={`inline-flex items-center h-5 px-1.5 rounded border text-[11px] font-semibold shrink-0 ${kindCls}`}>{a.kind}</span>
-                                    {isManager && (
-                                      <span className="text-[13px] font-semibold text-ink truncate">{a.employee_name}</span>
-                                    )}
-                                    <span className="text-[12.5px] text-slate-500 tabular-nums shrink-0">{a.date.slice(5)}</span>
-                                  </div>
-                                  <span className="text-[12px] text-slate-500 truncate max-w-[160px]">{a.type}</span>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        )}
+                      {approvedUsed.length === 0 ? (
+                        <div className="text-[13px] text-slate-400 italic py-2">{curYear}년 사용한 연차가 없습니다</div>
+                      ) : (
+                        <ul className="flex flex-col divide-y divide-slate-100 max-h-[160px] overflow-y-auto">
+                          {approvedUsed.map(r => {
+                            const d = calcDays(r.start_date, r.end_date);
+                            const weight = String(r.leave_type ?? "").includes("반차") ? 0.5 * d : d;
+                            return (
+                              <li key={r.id} className="flex items-center justify-between gap-2 py-1.5">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span className="inline-flex items-center h-5 px-1.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 text-[11.5px] font-semibold shrink-0">{r.leave_type}</span>
+                                  <span className="text-[13px] text-slate-700 tabular-nums shrink-0">{fmtDateYMD(r.start_date)}</span>
+                                  {r.start_date !== r.end_date && (
+                                    <>
+                                      <span className="text-slate-300 text-[12px]">~</span>
+                                      <span className="text-[13px] text-slate-700 tabular-nums shrink-0">{fmtDateYMD(r.end_date)}</span>
+                                    </>
+                                  )}
+                                </div>
+                                <span className="text-[12.5px] font-semibold text-slate-500 tabular-nums shrink-0">{weight % 1 === 0 ? weight : weight.toFixed(1)}일</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                      <div className="text-[11.5px] text-slate-400 leading-snug mt-auto pt-1 border-t border-slate-100">
+                        연차 승인 시 자동 반영 · 삭제 시 스케줄표(월차)에서도 제거됩니다 · 반차는 0.5일로 계산
                       </div>
                     </div>
-                  </section>
-                </div>
+                  </div>
+                </section>
+
+                {/* ── 섹션 B · 신규 신청 폼 (상시 노출 · 상단 분리 복원) ── */}
+                <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+                  <header className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-[3px] h-[14px] bg-indigo-500 rounded-full shrink-0" aria-hidden />
+                      <CalendarDays size={14} className="text-indigo-600 shrink-0" />
+                      <span className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">휴가 신청</span>
+                    </div>
+                  </header>
+                  <form onSubmit={handleSubmit} className="px-4 py-3 flex flex-col gap-2">
+                    {/* PC · 1-line inline 폼 */}
+                    <div className="hidden sm:grid grid-cols-[140px_1fr_1fr_64px_1fr_auto] gap-2 items-center">
+                      <select value={formType} onChange={e => setFormType(e.target.value)}
+                        className="h-9 px-2.5 bg-white border border-slate-200 rounded-md text-[13.5px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer transition" aria-label="휴가 유형">
+                        {LEAVE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <input type="date" value={formStart}
+                        onChange={e => { const s = e.target.value; setFormStart(s); if (formEnd < s) setFormEnd(s); }}
+                        className="h-9 px-2.5 bg-white border border-slate-200 rounded-md text-[13.5px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums transition" required aria-label="시작일" />
+                      <input type="date" value={formEnd} min={formStart}
+                        onChange={e => setFormEnd(e.target.value)}
+                        className="h-9 px-2.5 bg-white border border-slate-200 rounded-md text-[13.5px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums transition" required aria-label="종료일" />
+                      <div className="h-9 px-2 bg-emerald-50 border border-emerald-100 rounded-md flex items-center justify-center text-[13.5px] font-bold text-emerald-700 tabular-nums">
+                        {calcDays(formStart, formEnd)}일
+                      </div>
+                      <input type="text" {...KO_INPUT_PROPS} value={formReason}
+                        onChange={e => setFormReason(e.target.value)} placeholder="사유 (선택)"
+                        className="h-9 px-2.5 bg-white border border-slate-200 rounded-md text-[13.5px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition" />
+                      <button type="submit" disabled={submitting}
+                        className="h-9 px-4 rounded-md bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[13.5px] font-semibold tracking-tight transition-colors cursor-pointer whitespace-nowrap">
+                        {submitting ? "신청 중..." : "신청"}
+                      </button>
+                    </div>
+                    {/* 모바일 · 2열 그리드 */}
+                    <div className="sm:hidden flex flex-col gap-2">
+                      <select value={formType} onChange={e => setFormType(e.target.value)}
+                        className="h-9 w-full px-3 bg-white border border-slate-200 rounded-md text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep cursor-pointer transition">
+                        {LEAVE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <div className="grid grid-cols-[1fr_1fr_56px] gap-2">
+                        <input type="date" value={formStart}
+                          onChange={e => { const s = e.target.value; setFormStart(s); if (formEnd < s) setFormEnd(s); }}
+                          className="h-9 px-2.5 bg-white border border-slate-200 rounded-md text-[13.5px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums transition" required aria-label="시작일" />
+                        <input type="date" value={formEnd} min={formStart}
+                          onChange={e => setFormEnd(e.target.value)}
+                          className="h-9 px-2.5 bg-white border border-slate-200 rounded-md text-[13.5px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep tabular-nums transition" required aria-label="종료일" />
+                        <div className="h-9 px-2 bg-emerald-50 border border-emerald-100 rounded-md flex items-center justify-center text-[13.5px] font-bold text-emerald-700 tabular-nums">
+                          {calcDays(formStart, formEnd)}일
+                        </div>
+                      </div>
+                      <input type="text" {...KO_INPUT_PROPS} value={formReason}
+                        onChange={e => setFormReason(e.target.value)} placeholder="사유 (선택)"
+                        className="h-9 w-full px-3 bg-white border border-slate-200 rounded-md text-[14px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep transition" />
+                      <button type="submit" disabled={submitting}
+                        className="h-10 w-full rounded-md bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[14px] font-semibold tracking-tight transition-colors cursor-pointer">
+                        {submitting ? "신청 중..." : "유급휴가 신청"}
+                      </button>
+                    </div>
+                    {submitError && (
+                      <div className="text-[13px] text-rose-600 font-medium">⚠ {submitError}</div>
+                    )}
+                  </form>
+                </section>
+
+                {/* ── 섹션 C · 신청이력 (+ 지각·결근 상세 collapsible) ── */}
+                <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+                  <header className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-100 flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-[3px] h-[14px] bg-slate-400 rounded-full shrink-0" aria-hidden />
+                      <FileText size={14} className="text-slate-500 shrink-0" strokeWidth={2.2} />
+                      <span className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">{historyTitle}</span>
+                      <span className="text-[12.5px] md:text-[13px] font-medium text-slate-400 tabular-nums">· {filteredRequests.length}건</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {isManager && (
+                        <input
+                          type="text" {...KO_INPUT_PROPS}
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                          placeholder="직원명·유형·사유 검색"
+                          className="h-8 px-2.5 w-full sm:w-[240px] bg-slate-50 border border-slate-200 rounded-md text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-tint focus:border-brand-deep focus:bg-white transition"
+                        />
+                      )}
+                      {isManager && selectedIds.size > 0 && (
+                        <button type="button" onClick={() => handleBulkDelete(Array.from(selectedIds))} disabled={bulkDeleting}
+                          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md bg-rose-500 hover:bg-rose-600 active:bg-rose-700 disabled:opacity-40 text-white text-[12.5px] font-semibold tracking-tight transition-colors cursor-pointer">
+                          <Trash2 size={12} /><span>삭제 ({selectedIds.size})</span>
+                        </button>
+                      )}
+                      <button onClick={isManager ? loadAllRequests : loadMyRequests} disabled={displayLoading}
+                        className="inline-flex items-center h-8 px-2 rounded-md text-slate-500 hover:text-ink hover:bg-slate-50 text-[12.5px] font-medium transition-colors cursor-pointer"
+                        title="새로고침">
+                        <RefreshCw size={12} className={displayLoading ? "animate-spin" : ""} />
+                      </button>
+                    </div>
+                  </header>
+
+                  {/* 지각·결근 상세 (collapsible · 리스트 있을 때만) */}
+                  {filteredIssues.length > 0 && (
+                    <details className="border-b border-slate-100 group">
+                      <summary className="list-none cursor-pointer px-4 py-2 flex items-center gap-2 text-[13px] font-semibold text-ink hover:bg-slate-50/70 transition-colors">
+                        <Warning size={13} className="text-rose-600 shrink-0" />
+                        <span>{issuesTitle} 상세</span>
+                        <span className="text-slate-400 font-medium tabular-nums">· {filteredIssues.length}건</span>
+                        <span className="ml-auto text-slate-400 text-[12px] group-open:hidden">펼치기 ▾</span>
+                        <span className="ml-auto text-slate-400 text-[12px] hidden group-open:inline">접기 ▴</span>
+                      </summary>
+                      <div className="px-4 pb-3 max-h-[200px] overflow-y-auto">
+                        <ul className="flex flex-col divide-y divide-slate-100">
+                          {filteredIssues.map((a, i) => {
+                            const kindCls = a.kind === "결근" ? "bg-rose-50 text-rose-600 border-rose-100"
+                              : a.kind === "지각" ? "bg-amber-50 text-amber-700 border-amber-100"
+                              : "bg-slate-50 text-slate-600 border-slate-200";
+                            return (
+                              <li key={`${a.employee_id}-${a.date}-${i}`} className="flex items-center justify-between gap-2 py-1.5 px-1">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className={`inline-flex items-center h-5 px-1.5 rounded border text-[11px] font-semibold shrink-0 ${kindCls}`}>{a.kind}</span>
+                                  {isManager && (
+                                    <span className="text-[13px] font-semibold text-ink truncate">{a.employee_name}</span>
+                                  )}
+                                  <span className="text-[12.5px] text-slate-500 tabular-nums shrink-0">{a.date.slice(5)}</span>
+                                </div>
+                                <span className="text-[12px] text-slate-500 truncate max-w-[160px]">{a.type}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    </details>
+                  )}
+
+                  <div className="px-4 py-3">
+                    {displayLoading && filteredRequests.length > 0 && (
+                      <div className="flex items-center justify-center gap-1.5 py-1 mb-2 bg-amber-50 border border-amber-100 rounded-md">
+                        <Spinner size={11} tone="amber" label="새로 불러오는 중..." labelSize={12} />
+                      </div>
+                    )}
+                    <RequestHistoryTable
+                      rows={filteredRequests}
+                      isManager={isManager}
+                      loading={displayLoading}
+                      selectedIds={selectedIds}
+                      onToggleRow={toggleSelectRow}
+                      onToggleAll={toggleSelectAll}
+                      cancellingId={cancellingId}
+                      deletingId={deletingId}
+                      onCancel={handleCancel}
+                      onDelete={handleDeleteLeaveRequest}
+                      onOpenPdf={openPdfModal}
+                    />
+                  </div>
+                </section>
+                </>
               );
             })()}
           </div>

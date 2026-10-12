@@ -59,7 +59,7 @@ export const EmployeeDrawer: React.FC<EmployeeDrawerProps> = ({
       aria-modal="true"
     >
       <div
-        className="w-full sm:w-[560px] bg-white h-full shadow-2xl flex flex-col relative"
+        className="w-full sm:w-[720px] md:w-[880px] bg-white h-full shadow-2xl flex flex-col relative"
         onClick={e => e.stopPropagation()}
         style={{ animation: "employeeDrawerSlideIn 180ms ease-out" }}
       >
