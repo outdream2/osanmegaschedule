@@ -85,20 +85,9 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "approval-request", label: "연차신청", icon: CalendarDots, color: "amber", subTab: "leave" },
     ],
   },
-  {
-    id: "approvals",
-    label: "업무요청",
-    color: "indigo",
-    icon: CheckSquare, // 헤더용 · 기존 TABS 아이콘 유지 (items[0]=CalendarDots 와 다름 · 회귀 방지)
-    topTab: { key: "requests", mobileLabel: "업무" },
-    // 2026-08-12 · 직원(lv1) 도 본인 승인 신청 · managerOnly 해제
-    // 2026-10-10 · 사용자 지시 · 하위 메뉴 전부 제거 · 그룹 라벨 = 단일 메뉴
-    //   · "업무요청" 클릭 시 RequestsPage(현황) 바로 진입 · 현황 overview 가 승인·요청·서류 섹션 통합
-    //   · 상단 탭 (현황 / 서류작성) 안에서 세부 UI 접근
-    items: [
-      { key: "requests", label: "업무요청", icon: CheckSquare, color: "indigo" },
-    ],
-  },
+  // 2026-10-11 · #14 X안 · "업무요청" 그룹 삭제 · "경영 > 업무요청" 으로 완전 흡수
+  //   · 기존 사용자 flow (연차신청 lv1) 는 스케줄 > 연차신청 (approval-request) 로 유지
+  //   · 관리자 결재 UI 는 경영 메뉴 안 "업무요청" 서브탭 (RequestsPage embed) 으로 통합
   {
     id: "display",
     label: "매장",
@@ -111,22 +100,21 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     //   · NEW 5개 overview 통합 탭 (overview-*) 병행 노출 · 2개 UX 공존
     //   · 추후 사용자 지시 시 OLD → NEW 전환 예정
     items: [
-      // ── OLD · 기존 standalone 탭 (사용자 지시 · 유지) ──
-      { key: "display", label: "발주", icon: Truck, color: "red", subTab: "purchase-order", minLevel: 9 },
-      { key: "display", label: "매입", icon: Package, color: "red", subTab: "purchase", minLevel: 9 },
-      { key: "display", label: "판매", icon: ChartBar, color: "red", subTab: "statistics", minLevel: 9 },
-      { key: "display", label: "결제", icon: CurrencyKrw, color: "red", subTab: "payment", minLevel: 9 },
-      { key: "display", label: "반품", icon: ArrowLeftRight, color: "red", subTab: "return", minLevel: 9 },
-      { key: "display", label: "매장진열", icon: Storefront, color: "red", subTab: "store", managerOnly: true },
+      // 2026-10-10 · 사용자 지시 · 발주·매입·결제·반품 메뉴 사이드바에서 제거 (NEW overview 로 대체 · 뒤 코드/페이지는 보존)
       // 2026-10-09 · 사용자 지시 · 매장 아래 상품스캔 (바코드 스캔 → 실재고 입력 · 실재고 테이블 연동)
       { key: "display", label: "상품스캔", icon: Barcode, color: "red", subTab: "product-scan", minLevel: 3 },
-      { key: "display", label: "입고알림", icon: Bell, color: "red", subTab: "stock-arrivals", minLevel: 3 },
+      // 2026-10-10 · 사용자 지시 · 입고알림 메뉴 삭제 (홈 랜딩 drawer 로 이관 완료 · UI-8 Phase 2)
       // ── NEW · 5개 통합 overview (2026-10-08 ~ 2026-10-09 신설) ──
       { key: "display", label: "발주·반품 현황",   icon: Truck,       color: "red", subTab: "overview-order-return",      minLevel: 9 },
       { key: "display", label: "매입 재고현황",     icon: Package,     color: "red", subTab: "overview-purchase-arrival",  minLevel: 9 },
-      { key: "display", label: "판매·매출현황",     icon: CurrencyKrw, color: "red", subTab: "revenue",                    minLevel: 9 },
+      // 2026-10-10 · 사용자 지시 · "판매·매출현황" 1개 → 2개 분리 (A안 · RevenuePage 재사용 · initialTab 분기 · #12)
+      { key: "display", label: "매출현황",           icon: CurrencyKrw, color: "red", subTab: "revenue",                    minLevel: 9 },
+      { key: "display", label: "판매현황",           icon: ChartBar,    color: "red", subTab: "sales",                      minLevel: 9 },
       // 2026-10-10 · 사용자 지시 · 결제·정산 현황 메뉴 제거
       { key: "display", label: "재고·진열 현황",   icon: Storefront,  color: "red", subTab: "overview-inventory-display", managerOnly: true },
+      // 2026-10-10 · 사용자 지시 · "판매 메뉴 매장 그룹 맨 아래로"
+      // 2026-10-12 · 사용자 지시 · 매장 그룹 "판매" 메뉴 제거 (판매·매출현황 overview 로 통합)
+      // 2026-10-10 · 사용자 지시 · 매장진열 메뉴 삭제 (재고·진열 현황 overview 안 매장구역도 inner tab 으로 이관 완료)
     ],
   },
   // 2026-09-05 · 사용자 지시 · 거래처 그룹 · 매장 아래 이동 · 관리자에게도 노출
@@ -154,11 +142,12 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     topTab: { key: "business" }, // 특수 키 · AppNavHeader 내부에서 business-manage 로 라우팅
     managerOnly: true,
     items: [
-      // BusinessManagePage 서브탭
-      { key: "business-manage", label: "직원관리",       icon: UsersThree, color: "violet", subTab: "staff-manage",              managerOnly: true },
-      { key: "business-manage", label: "근로계약서 작성", icon: PencilLine, color: "violet", subTab: "document-writer:contract", managerOnly: true },
-      { key: "business-manage", label: "각종양식",       icon: FileText,   color: "violet", subTab: "hr-forms",                  managerOnly: true },
-      // 2026-08-31 · 사용자 지시 · 요청목록 · 승인요청 그룹으로 이동됨 (중복 제거)
+      // 2026-10-11 · #14-P3 · 사용자 지시 · "경영현황 안에 inner tabs" (현황/직원관리/업무요청/인건비분석/근로계약서작성)
+      //   · 매장 overview 공통 UI (OverviewHero + OverviewInnerTabs) 적용 · 홈 랜딩 톤
+      //   · 사이드바 메뉴 2개로 축소 · 경영현황 (dashboard) + 각종양식 (hr-forms)
+      //   · 업무요청/인건비 분석/근로계약서 작성/직원관리 메뉴 → 경영현황 안 inner tab 으로 흡수
+      { key: "business-manage", label: "경영현황", icon: SquaresFour, color: "violet", subTab: "dashboard", managerOnly: true },
+      { key: "business-manage", label: "각종양식", icon: FileText,   color: "violet", subTab: "hr-forms",  managerOnly: true },
     ],
   },
   {
@@ -186,6 +175,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     topTab: { key: "permissions" },
     managerOnly: true,
     items: [
+      // 2026-10-11 · 사용자 지시 · 설정 통합 대시보드 (매장 overview 패턴 복제) · 설정 그룹 맨 위 default
+      { key: "settings-hub", label: "설정 현황", icon: SquaresFour, color: "slate", minLevel: 9 },
       { key: "permissions", label: "메뉴 설정", icon: Lock, color: "slate", minLevel: 9 },
       // 2026-09-04 · 스케줄 설정 (기본연차일 직군별)
       { key: "schedule-settings", label: "스케줄 설정", icon: CalendarBlank, color: "slate", minLevel: 9 },
