@@ -263,8 +263,8 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
                   로드 실패 · {error}
                 </div>
               ) : subview === "calendar" ? (
-                /* 2026-10-11 · 사용자 지시 · 달력 바로 아래 "같은 Card 안"에 일괄등록 panel 삽입
-                   MonthGridV2 children slot 활용 · border-t 로 구분 · 외부 gap/wrapper 제거 */
+                // 2026-10-12 · 사용자 재지시 · 일괄등록 달력 아래 노출 · Fragment 세로 flow
+                <>
                 <MonthGridV2
                   employees={selectedAsArray}
                   dateList={dateList}
@@ -275,7 +275,8 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
                   onOpenEdit={openEdit}
                   onCloseEdit={closeEdit}
                   onTypeSelect={handleTypeSelect}
-                >
+                />
+                <div className="shrink-0 mt-3">
                   <EmployeeBulkPanel
                     employee={selectedEmployee}
                     year={year}
@@ -286,7 +287,8 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
                     showNotification={showNotification}
                     onApplied={() => fetchScheduleData(dateList, true)}
                   />
-                </MonthGridV2>
+                </div>
+                </>
               ) : subview === "bulk" ? (
                 <EmployeeBulkPanel
                   employee={selectedEmployee}
