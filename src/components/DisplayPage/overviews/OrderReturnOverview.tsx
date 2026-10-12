@@ -121,9 +121,10 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
   const [returnsPending, setReturnsPending] = useState<AnyRow[] | null>(null);
   const [returnsDone, setReturnsDone] = useState<AnyRow[] | null>(null);
   const [search, setSearch] = useState("");
-  // 2026-10-12 · 공통 QuickRangePills · "today"/"7d"/"14d"/"30d" · default "14d"
+  // 2026-10-12 · 공통 QuickRangePills · "today"/"7d"/"14d"/"30d" · default "today"
+  //   · 사용자 지시 "기간필터들 기본값은 모두 오늘" · 전체 통일
   //   · 기존 period "7"/"14"/"30" 호환 위해 periodDays (effective days) 로 변환해서 사용
-  const [quickRange, setQuickRange] = useState<QuickRangeKey>("14d");
+  const [quickRange, setQuickRange] = useState<QuickRangeKey>("today");
   const periodDays = quickRange === "today" ? 1 : quickRange === "7d" ? 7 : quickRange === "14d" ? 14 : quickRange === "30d" ? 30 : 14;
   const period = String(periodDays) as "1" | "7" | "14" | "30";
   const [orderDetail, setOrderDetail] = useState<OrderDetailRow | null>(null);

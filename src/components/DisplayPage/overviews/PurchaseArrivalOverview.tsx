@@ -77,9 +77,10 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   const PAGE_STEP = 10;
   // 2026-10-09 · 사용자 지시 · 위치별 bar 클릭 → 해당 위치 상품 리스트 drawer
   const [locDrawer, setLocDrawer] = useState<{ key: LocationKey; label: string } | null>(null);
-  // 2026-10-12 · 공통 QuickRangePills · "today"/"7d"/"14d"/"30d" (default 14d)
+  // 2026-10-12 · 공통 QuickRangePills · "today"/"7d"/"14d"/"30d" · default "today"
+  //   · 사용자 지시 "기간필터들 기본값은 모두 오늘" · 전체 통일
   //   · 호환 periodDays (effective days) 유지 (match API · 라벨용)
-  const [quickRange, setQuickRange] = useState<QuickRangeKey>("14d");
+  const [quickRange, setQuickRange] = useState<QuickRangeKey>("today");
   const periodDays = quickRange === "today" ? 1 : quickRange === "7d" ? 7 : quickRange === "14d" ? 14 : quickRange === "30d" ? 30 : 14;
   const period = String(periodDays) as "1" | "7" | "14" | "30";
   // 2026-10-12 · 사용자 지시 · 일별 매입금액 chart · 일별/주간/월별 3-way 토글
