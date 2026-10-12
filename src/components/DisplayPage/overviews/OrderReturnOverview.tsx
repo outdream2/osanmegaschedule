@@ -21,8 +21,8 @@ import { useToast } from "../../../hooks/useToast";
 import { api } from "../../../lib/apiClient";
 import type { OrderDetailRow } from "./OrderDetailModal";
 // 2026-10-09 · 사용자 지시 · OLD 페이지 그대로 embed 금지 · NEW UI 유지하면서 기능만 재구성
-import ReturnListPanel from "../../OrderManagePage/ReturnListPanel";
-import ReturnConfirmedPanel from "../../OrderManagePage/ReturnConfirmedPanel";
+// 2026-10-12 · #16 Step 1 · 반품 통합 · ReturnUnifiedPanel (상 반품필요 + 하 반품확정)
+import ReturnUnifiedPanel from "../../OrderManagePage/ReturnUnifiedPanel";
 import { SalesRecommendationPanel } from "../../OrderManagePage/SalesRecommendationPanel";
 import { OrderHistorySupplierModal } from "../../OrderManagePage/OrderHistorySupplierModal";
 import { StepperInput } from "../../common/StepperInput";
@@ -1158,35 +1158,10 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
       )}
       {innerTab === "return" && (
         <div className="px-4 sm:px-6">
-          {/* 2026-10-12 · 사용자 "들쭉날쭉" fix · items-start → items-stretch · 각 section flex flex-col h-full */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-            <section className="relative bg-white border border-slate-200 rounded-[12px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col h-full">
-              <header className="flex items-center gap-2.5 px-5 pt-4 pb-3 border-b border-slate-100">
-                <span className="w-[3px] h-[16px] bg-indigo-500 rounded-full shrink-0" aria-hidden />
-                <ArrowsLeftRight size={18} weight="fill" className="text-slate-500" />
-                <div className="min-w-0">
-                  <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">반품필요</h3>
-                  <p className="text-[13px] md:text-[14px] text-slate-500 mt-0.5">반품 요청 대기 · 처리</p>
-                </div>
-              </header>
-              <div className="p-2 flex-1 min-h-0 overflow-y-auto">
-                <ReturnListPanel />
-              </div>
-            </section>
-            <section className="relative bg-white border border-slate-200 rounded-[12px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col h-full">
-              <header className="flex items-center gap-2.5 px-5 pt-4 pb-3 border-b border-slate-100">
-                <span className="w-[3px] h-[16px] bg-emerald-500 rounded-full shrink-0" aria-hidden />
-                <ArrowsLeftRight size={18} weight="fill" className="text-slate-500" />
-                <div className="min-w-0">
-                  <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">반품확정</h3>
-                  <p className="text-[13px] md:text-[14px] text-slate-500 mt-0.5">완료된 반품 이력</p>
-                </div>
-              </header>
-              <div className="p-2 flex-1 min-h-0 overflow-y-auto">
-                <ReturnConfirmedPanel />
-              </div>
-            </section>
-          </div>
+          {/* 2026-10-12 · #16 Step 1 · 반품 통합 · ReturnUnifiedPanel (상 반품필요 + 하 반품확정)
+              이전: 2-col grid (lg:grid-cols-2) 반품필요 + 반품확정 좌우 분리
+              이후: 상하 2 섹션 wrapper · Step 2-6 자동 필터/체크박스/공급사 그룹 모달 예정 */}
+          <ReturnUnifiedPanel />
         </div>
       )}
 
