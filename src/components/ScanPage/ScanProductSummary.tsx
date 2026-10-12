@@ -14,17 +14,40 @@ interface ScanProductSummaryProps {
   product: ProductInfo | null;
 }
 
-const Field: React.FC<{ label: string; value: string; emphasize?: boolean }> = ({ label, value, emphasize }) => (
+// 2026-10-12 · UI-11-SCAN Phase 2 Step 1 · 스크린샷 패턴 · 큰 숫자 + tone 분화
+type FieldTone = "ink" | "sky" | "emerald" | "rose" | "indigo";
+const TONE_TEXT: Record<FieldTone, string> = {
+  ink: "text-ink",
+  sky: "text-sky-700",
+  emerald: "text-emerald-700",
+  rose: "text-rose-700",
+  indigo: "text-indigo-700",
+};
+const Field: React.FC<{ label: string; value: string; emphasize?: boolean; tone?: FieldTone }> = ({ label, value, emphasize, tone = "ink" }) => (
   <div className="min-w-0">
     <p className="text-[13px] font-medium text-slate-500 mb-0.5">{label}</p>
     <p
-      className={`font-bold text-ink break-words leading-tight tabular-nums ${emphasize ? "text-[15px]" : "text-[14px]"}`}
+      className={`font-bold break-words leading-tight tabular-nums ${TONE_TEXT[tone]} ${emphasize ? "text-[16px] md:text-[17px]" : "text-[14px]"}`}
       title={value}
     >
       {value}
     </p>
   </div>
 );
+
+// 2026-10-12 · 판매상태 pill (판매중 emerald · 중지 rose · 기타 slate)
+const SaleStatusPill: React.FC<{ status: string }> = ({ status }) => {
+  const isActive = /판매\s*중|active|판매중/i.test(status);
+  const isStopped = /중지|stop|단종|판매\s*중지/i.test(status);
+  const tone = isActive ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+             : isStopped ? "bg-rose-50 text-rose-700 border-rose-200"
+             : "bg-slate-50 text-slate-700 border-slate-200";
+  return (
+    <span className={`inline-flex items-center h-6 px-2 rounded-full border text-[12px] font-semibold ${tone}`}>
+      {status}
+    </span>
+  );
+};
 
 export const ScanProductSummary: React.FC<ScanProductSummaryProps> = ({ product }) => {
   // 2026-10-12 · UI-11-SCAN · 사용자 지시 "사진 찍어서 넣을 수 있는 구조" ·
@@ -101,13 +124,17 @@ export const ScanProductSummary: React.FC<ScanProductSummaryProps> = ({ product 
           <p className="text-[13px] font-mono text-slate-500 tabular-nums mt-0.5">{product.code}</p>
         </div>
       </div>
-      {/* 사용자 지시 "위" · 매입가·판매가·공급사·현재고·판매상태 */}
+      {/* 사용자 지시 "위" · 매입가·판매가·공급사·현재고·판매상태
+          2026-10-12 · Phase 2 Step 1 · tone 분화 · 매입가 ink · 판매가 emerald · 현재고 indigo · 판매상태 pill */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-x-3 gap-y-2 mb-2.5">
-        <Field label="매입가" value={purchase} emphasize />
-        <Field label="판매가" value={sale} emphasize />
-        <Field label="공급사" value={supplier} emphasize />
-        <Field label="현재고" value={curStock} emphasize />
-        <Field label="판매상태" value={saleStatus} emphasize />
+        <Field label="매입가" value={purchase} emphasize tone="ink" />
+        <Field label="판매가" value={sale} emphasize tone="emerald" />
+        <Field label="공급사" value={supplier} emphasize tone="ink" />
+        <Field label="현재고" value={curStock} emphasize tone="indigo" />
+        <div className="min-w-0">
+          <p className="text-[13px] font-medium text-slate-500 mb-0.5">판매상태</p>
+          <SaleStatusPill status={saleStatus} />
+        </div>
       </div>
       {/* "나머지 적정한 곳" · 진열위치·적정재고·재고자산 */}
       <div className="grid grid-cols-3 gap-x-3 gap-y-1 pt-2.5 border-t border-slate-100">
