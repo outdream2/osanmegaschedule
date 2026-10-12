@@ -47,7 +47,8 @@ type AnyRow = Record<string, any>;
 // 2026-10-10 · 사용자 지시 · inner tab · "현황" / "구역도" 2탭 · 홈 톤 pill 패턴
 type InnerTab = "overview" | "map";
 // 2026-10-10 · 사용자 지시 · 구역도 inner-inner tab (판매·매출현황 패턴) · 매장/창고1/창고2
-type MapInnerTab = "store" | "wh1" | "wh2";
+// 2026-10-12 · 사용자 지시 · 매장1/매장2/매장3 추가
+type MapInnerTab = "store" | "store1" | "store2" | "store3" | "wh1" | "wh2";
 
 // 2026-10-10 · 매장 매대 chip · code (1A·22·35 등) + 매대 이름 (subA/subB category)
 interface StoreChipItem {
@@ -97,8 +98,9 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   const [saleQtyByCode, setSaleQtyByCode] = useState<Map<string, number>>(new Map());
   const { selectedMonths, setSelectedMonths } = useMonthFilter();
   // 2026-10-12 · 사용자 지시 · 기간 필터 pill (오늘·7일·14일·한달) · null = 월 선택기 사용
+  //   · 사용자 원 지시 "오늘 판매데이터중에서 진열위치별로 정렬해서 판매수를 합산" · default="today" 자동 ERP fetch
   type QuickRange = "today" | "7d" | "14d" | "30d" | null;
-  const [quickRange, setQuickRange] = useState<QuickRange>(null);
+  const [quickRange, setQuickRange] = useState<QuickRange>("today");
   // 2026-10-12 · 사용자 지시 · 매장 매대 자동 헤더 정렬 · default = 재고자산 desc
   const [storeSortKey, setStoreSortKey] = useState<ZoneSortKey>("asset");
   const [storeSortDir, setStoreSortDir] = useState<SortDir>("desc");
@@ -359,9 +361,11 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
       .catch(() => { if (alive) setSaleQtyByCode(new Map()); });
     return () => { alive = false; };
   }, [refreshKey]);
-  // 실시간 ERP · 조회 버튼 클릭 시 (refreshErp 증가)
+  // 실시간 ERP · 2026-10-12 · 사용자 지시 · "오늘 판매데이터" default 자동 fetch (quickRange="today" 시)
+  //   · "today" · mount 자동 (1일 1 call · ERP 부하 적음)
+  //   · 7d/14d/30d · "실시간 조회" 버튼 수동 트리거 (refreshErp)
   useEffect(() => {
-    if (refreshErp === 0) return;
+    if (quickRange !== "today" && refreshErp === 0) return;
     let alive = true;
     (async () => {
       setErpLoading(true);
@@ -408,7 +412,7 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
       }
     })();
     return () => { alive = false; };
-  }, [refreshErp]);
+  }, [refreshErp, quickRange]);
 
   const q = search.trim().toLowerCase();
   const expiryRows = useMemo(() => {
@@ -474,21 +478,11 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   return (
     <div className="flex flex-col gap-1 md:gap-2 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* 2026-10-10 · 사용자 지시 · 공통 모듈 OverviewHero (발주반품현황·매출현황 패턴 통일) */}
+      {/* 2026-10-12 · 사용자 지시 · 구역 편집 버튼 → 왼쪽 세로탭 아래로 이동 (hero right slot 제거) */}
       <OverviewHero
         tone="violet"
         title="재고·진열 현황"
         description="재고 / 실재고 / 유통기한 / 진열 업무"
-        right={
-          <button
-            type="button"
-            onClick={() => setZoneEditorOpen(true)}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-ink text-[13.5px] font-semibold cursor-pointer transition-colors shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-            title="매장구역 편집 · 매대 code 와 카테고리 매칭"
-          >
-            <Pencil size={13} weight="fill" />
-            구역 편집
-          </button>
-        }
       />
       {/* 2026-10-11 · 사용자 지시 · 매장구역 편집 모달 · 텍스트 리스트 · 홈 랜딩 톤 */}
       <StoreZoneTextEditor
@@ -623,9 +617,13 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
             <aside className={`${CARD} overflow-hidden flex flex-col lg:self-start`}>
               <ul className="divide-y divide-slate-100">
                 {([
-                  { key: "store", label: "매장",   count: emergencyChips.length + generalChips.length, Icon: Storefront, tone: "sky" as Tone },
-                  { key: "wh1",   label: "창고 1", count: warehouseAggs.wh1.productCount,              Icon: Warehouse,  tone: "emerald" as Tone },
-                  { key: "wh2",   label: "창고 2", count: warehouseAggs.wh2.productCount,              Icon: Warehouse,  tone: "violet" as Tone },
+                  { key: "store",  label: "매장",   count: emergencyChips.length + generalChips.length, Icon: Storefront, tone: "sky"     as Tone },
+                  // 2026-10-12 · 사용자 지시 · 매장1/매장2/매장3 추가 · inventory_checks store1/2/3_stock 기준
+                  { key: "store1", label: "매장 1", count: (checks ?? []).filter(c => Number(c.store1_stock ?? 0) > 0).length, Icon: Storefront, tone: "sky"     as Tone },
+                  { key: "store2", label: "매장 2", count: (checks ?? []).filter(c => Number(c.store2_stock ?? 0) > 0).length, Icon: Storefront, tone: "indigo"  as Tone },
+                  { key: "store3", label: "매장 3", count: (checks ?? []).filter(c => Number(c.store3_stock ?? 0) > 0).length, Icon: Storefront, tone: "rose"    as Tone },
+                  { key: "wh1",    label: "창고 1", count: warehouseAggs.wh1.productCount,              Icon: Warehouse,  tone: "emerald" as Tone },
+                  { key: "wh2",    label: "창고 2", count: warehouseAggs.wh2.productCount,              Icon: Warehouse,  tone: "violet"  as Tone },
                 ] as const).map(t => {
                   const active = mapInnerTab === t.key;
                   const ton = TONE[t.tone];
@@ -653,6 +651,18 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
                   );
                 })}
               </ul>
+              {/* 2026-10-12 · 사용자 지시 · 구역·카테고리 편집 버튼 (라벨 변경) · 바깥 세로탭 아래 */}
+              <div className="border-t border-slate-100 p-2">
+                <button
+                  type="button"
+                  onClick={() => setZoneEditorOpen(true)}
+                  className="w-full inline-flex items-center justify-center gap-1.5 h-9 px-2.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white text-[13px] font-semibold transition-colors shadow-sm"
+                  title="매장구역 + 카테고리 편집"
+                >
+                  <Pencil size={13} weight="fill" />
+                  구역·카테고리 편집
+                </button>
+              </div>
             </aside>
 
             {/* 우측 content · 매대 리스트 or 창고 상품 리스트 */}
@@ -701,20 +711,27 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
                       : "sky";
                     return (
                       <div className="grid grid-cols-[128px_1fr] gap-2 p-3 min-w-0">
-                        <ul className="flex flex-col gap-0.5 border-r border-slate-100 pr-2">
+                        {/* 2026-10-12 · 사용자 지시 · "인덱서처럼 디자인" · 검은 bg 제거 · subtle 좌측 strip indicator */}
+                        <ul className="flex flex-col gap-px border-r border-slate-100 pr-2">
                           {navItems.map(t => {
                             const active = storeFilter === t.k;
+                            // tone · 상비약/뷰티=rose · 냉장고=cyan · 물약=indigo · 나머지=slate
+                            const stripCls = t.k === "상비약" || t.k === "뷰티" ? "bg-rose-500"
+                              : t.k === "냉장고" ? "bg-cyan-500"
+                              : t.k === "물약" ? "bg-indigo-500"
+                              : "bg-slate-400";
                             return (
                               <li key={t.k}>
                                 <button
                                   type="button"
                                   onClick={() => setStoreFilter(t.k)}
-                                  className={`w-full flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-md text-[13px] font-semibold text-left transition-colors cursor-pointer ${
-                                    active ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50 hover:text-ink"
+                                  className={`relative w-full flex items-center justify-between gap-1.5 pl-3 pr-2.5 py-1.5 rounded-r-sm text-[13px] font-medium text-left transition-colors cursor-pointer ${
+                                    active ? "bg-slate-50 text-ink font-semibold" : "text-slate-500 hover:bg-slate-50/60 hover:text-ink"
                                   }`}
                                 >
+                                  {active && <span className={`absolute left-0 top-1 bottom-1 w-[2px] ${stripCls} rounded-full`} aria-hidden />}
                                   <span>{t.label}</span>
-                                  <span className={`text-[12px] tabular-nums ${active ? "text-slate-200" : "text-slate-400"}`}>{t.count}</span>
+                                  <span className={`text-[12px] tabular-nums ${active ? "text-slate-500" : "text-slate-400"}`}>{t.count}</span>
                                 </button>
                               </li>
                             );
@@ -757,6 +774,34 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
                   <WarehouseProductTable products={warehouseAggs.wh2.products} fmtWon={fmtWon} tone="violet" />
                 </>
               )}
+
+              {/* 2026-10-12 · 사용자 지시 · 매장1/매장2/매장3 분기 · inventory_checks.store{N}_stock > 0 상품 리스트 */}
+              {(mapInnerTab === "store1" || mapInnerTab === "store2" || mapInnerTab === "store3") && (() => {
+                const slot = mapInnerTab === "store1" ? "store1_stock" : mapInnerTab === "store2" ? "store2_stock" : "store3_stock";
+                const tone: Tone = mapInnerTab === "store1" ? "sky" : mapInnerTab === "store2" ? "indigo" : "rose";
+                const label = mapInnerTab === "store1" ? "매장 1" : mapInnerTab === "store2" ? "매장 2" : "매장 3";
+                const products: Array<{ code: string; name: string; stock: number; unitPrice: number; assetValue: number; saleQty: number }> = [];
+                let assetTotal = 0;
+                for (const chk of (checks ?? [])) {
+                  const code = String(chk.product_code ?? "");
+                  if (!code) continue;
+                  const stock = Number((chk as any)[slot] ?? 0);
+                  if (stock <= 0) continue;
+                  const prod = productsMap[code] as any;
+                  const unitPrice = Number(prod?.purchase_price ?? 0);
+                  const asset = stock * unitPrice;
+                  const saleQty = saleQtyByCode.get(code) ?? 0;
+                  products.push({ code, name: String(chk.product_name ?? prod?.product_name ?? prod?.name ?? code), stock, unitPrice, assetValue: asset, saleQty });
+                  assetTotal += asset;
+                }
+                products.sort((a, b) => b.assetValue - a.assetValue);
+                return (
+                  <>
+                    <ZoneListHeader icon={Storefront} tone={tone} title={`${label} 상품`} count={products.length} assetValue={assetTotal} fmtWon={fmtWon} />
+                    <WarehouseProductTable products={products} fmtWon={fmtWon} tone={tone} />
+                  </>
+                );
+              })()}
             </section>
           </div>
         </div>

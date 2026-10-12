@@ -495,7 +495,8 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
   const supplier = String(req.query.supplier ?? "").trim();
   const from = String(req.query.from ?? "").trim();
   const to = String(req.query.to ?? "").trim();
-  const limit = Math.max(1, Math.min(5000, parseInt(String(req.query.limit ?? "500"), 10) || 500));
+  // 2026-10-12 · 사용자 지시 "매입이력 다 안올라와" fix · cap 5000 → 20000 상향 (Supabase 1000 cap 극복 · while loop 모두 수집)
+  const limit = Math.max(1, Math.min(20000, parseInt(String(req.query.limit ?? "500"), 10) || 500));
   // 페이지네이션 파라미터 (2026-08-05)
   //   page=1 · per_page=100 → 0-indexed range(0, 99)
   //   응답에 has_more / total_fetched 포함 → 클라이언트 무한스크롤용

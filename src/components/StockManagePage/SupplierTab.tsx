@@ -66,6 +66,12 @@ export interface SupplierTabProps {
    */
   periodMonths?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   periodSeason?: SeasonKey | null;
+  /**
+   * 2026-10-12 · 월 멀티선택 (비연속) · 부모가 제어하는 selectedMonths SSOT
+   *   - 지정 시 · periodMonths/periodSeason 보다 우선 (하지만 내부 자동 변환 로직은 periodMonths 기반)
+   *   - 하위호환 · 기존 호출처 미영향 (optional)
+   */
+  selectedMonths?: string[];
 }
 
 export const SupplierTab: React.FC<SupplierTabProps> = ({

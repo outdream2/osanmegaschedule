@@ -1291,7 +1291,9 @@ router.get("/api/inventory-checks", asyncHandler(async (req, res) => {
     "system_stock", "status", "note",
     "shelf_positions",
   ].join(", ");
-  let q = supabase.from("inventory_checks").select(COLS).order("checked_at", { ascending: false });
+  // 2026-10-12 · 사용자 리포트 "1000개만 나와?" fix · Supabase 기본 limit=1000 명시적 극복
+  //   · 재고·진열 overview 에서 전체 실재고 집계 필요 · 50000 넉넉하게 (실제 inventory_checks rows 수는 수천 수준)
+  let q = supabase.from("inventory_checks").select(COLS).order("checked_at", { ascending: false }).limit(50000);
   if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
   const { data, error } = await q;
   if (error) throw new HttpError(500, error.message);

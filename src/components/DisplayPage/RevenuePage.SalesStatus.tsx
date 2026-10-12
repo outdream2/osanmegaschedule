@@ -32,6 +32,9 @@ import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveCont
 import { formatMargin } from "../../lib/formatMargin";
 
 const CategoryTab = React.lazy(() => import("../OrderManagePage/CategoryTab").then((m) => ({ default: m.CategoryTab })));
+// 2026-10-12 · 사용자 지시 · 매출현황 → 판매현황 inner tab · HourlyReportTab + MonthlyReportTab 재사용
+const HourlyReportTab = React.lazy(() => import("./RevenuePage").then((m) => ({ default: m.HourlyReportTab })));
+const MonthlyReportTab = React.lazy(() => import("./RevenuePage").then((m) => ({ default: m.MonthlyReportTab })));
 // 2026-10-11 · 사용자 지시 재확정 "매장-판매현황-상품별 판매현황 탭에 판매 메뉴 아래의 상품별 판매현황 (= FlowTab) 그대로 embed"
 //   · 판매 메뉴 통계 > 상품현황 (= FlowTab · StockManagePage/FlowTab.tsx) 전체 재사용
 //   · lazy · 좌 리스트 + 중앙 재고·매입·판매 테이블 + 우 상세 drawer 자체 완결
@@ -90,7 +93,8 @@ interface ProductMeta {
 }
 
 // 2026-10-12 · 사용자 지시 "판매-손실추적도 판매현황 이너탭으로 이동"
-type InnerTabKey = "overview" | "zone" | "supplier" | "product" | "loss";
+// 2026-10-12 · 사용자 지시 · 매출현황 → 판매현황 inner tab (현황 옆에)
+type InnerTabKey = "overview" | "revenue" | "zone" | "supplier" | "product" | "loss";
 type ClassFilter = "all" | "pre" | "general" | "unknown";
 type Status = "good" | "warn" | "risk";
 function statusToPill(s: Status) {
@@ -133,6 +137,8 @@ const QuickRangePills: React.FC<{ value: QuickRangeKey; onChange: (v: QuickRange
 
 export const SalesStatus: React.FC = () => {
   const [innerTab, setInnerTab] = useState<InnerTabKey>("overview");
+  // 2026-10-12 · 매출현황 inner tab · 시간대별/월별 sub tab
+  const [revenueSubTab, setRevenueSubTab] = useState<"hourly" | "monthly">("hourly");
   const { selectedMonths, setSelectedMonths } = useMonthFilter();
   const [classFilter, setClassFilter] = useState<ClassFilter>("all");
   // 2026-10-12 · Bento Cockpit · Collapse state (overview 구역별 · 공급사)
@@ -485,6 +491,8 @@ export const SalesStatus: React.FC = () => {
 
   const tabs: ReadonlyArray<OverviewInnerTab<InnerTabKey>> = [
     { k: "overview", label: "현황",              tone: "indigo",  count: null },
+    // 2026-10-12 · 사용자 지시 · 매출현황 → 현황 옆 inner tab
+    { k: "revenue",  label: "매출현황",         tone: "emerald", count: null },
     { k: "zone",     label: "구역별 판매현황",   tone: "amber",   count: null },
     { k: "supplier", label: "공급사별 판매현황", tone: "emerald", count: supplierScore.length || null },
     // 2026-10-11 · product 탭 count · FlowTab 자체 집계 사용 · null
@@ -504,9 +512,30 @@ export const SalesStatus: React.FC = () => {
         tabs={tabs}
       />
 
-      {/* 2026-10-11 · 사용자 지시 · 통합 대시보드 (매대 리스트 + slide drawer)
-          좌측 매대 리스트 + 매대 row 클릭 → 우측 slide drawer (매대 상품 상세) */}
-      {innerTab === "zone" ? (
+      {/* 2026-10-12 · 사용자 지시 · 매출현황 inner tab · HourlyReportTab + MonthlyReportTab 재사용 */}
+      {innerTab === "revenue" ? (
+        <div className="px-4 sm:px-6 pt-3 flex flex-col gap-3">
+          <div className="inline-flex rounded-lg bg-slate-100 p-0.5 self-start">
+            {([
+              { k: "hourly" as const,  label: "시간대별" },
+              { k: "monthly" as const, label: "월별" },
+            ]).map((t) => {
+              const active = revenueSubTab === t.k;
+              return (
+                <button key={t.k} type="button" onClick={() => setRevenueSubTab(t.k)}
+                  className={`px-3 py-1.5 rounded-md text-[13px] md:text-[14px] font-medium transition-colors ${
+                    active ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}>
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <React.Suspense fallback={<div className="flex items-center justify-center py-10 text-[14px] text-slate-500">매출현황 로딩 중...</div>}>
+            {revenueSubTab === "hourly" ? <HourlyReportTab /> : <MonthlyReportTab />}
+          </React.Suspense>
+        </div>
+      ) : innerTab === "zone" ? (
         <div className="min-w-0 px-4 sm:px-6 pt-3 flex flex-col gap-4">
           {/* 상단 filter · 월 선택 + 기간 라벨 + 2026-10-12 사용자 지시 "오늘/7일/14일/30일 필터 추가" */}
           <div className="flex items-start gap-3 flex-wrap">

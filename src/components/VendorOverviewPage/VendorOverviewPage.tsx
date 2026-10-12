@@ -9,12 +9,13 @@
 // Phase 3: 방문예약 slide drawer
 // Phase 4: 사이드바 거래처 그룹 통합 (4개 메뉴 → 단일 "거래처")
 import React, { Suspense, useState, useEffect, useMemo } from "react";
-import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "../DisplayPage/overviews/OverviewHeader";
 import { Spinner } from "../common/Spinner";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import { api } from "../../lib/apiClient";
+// 2026-10-12 · #13 Phase 6 · 공급사 Supabase + ERP 둘 다 fetch · ERP 아닌 것 marker
+import { useVendors, type Vendor } from "../../hooks/useVendors";
 // 2026-10-12 · #13 Phase 2 · 각 탭 content · 기존 페이지 embedded render (self-contained)
 const VendorManageSplit = React.lazy(() => import("../DisplayPage/VendorManageSplit").then(m => ({ default: m.VendorManageSplit })));
 const VendorStockPage = React.lazy(() => import("../LandingPage/VendorStockPage").then(m => ({ default: m.VendorStockPage })));
@@ -35,6 +36,20 @@ type InnerTabKey = "overview" | "vendor-info" | "vendor-stock" | "order-history"
 export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   // 2026-10-12 · #13 Phase 5 · 사용자 "현황판이 없는데 거래처" · 현황 탭 default 추가
   const [innerTab, setInnerTab] = useState<InnerTabKey>("overview");
+
+  // 2026-10-12 · #13 Phase 6 · 공급사 Supabase vendors fetch (useVendors 캐시) · ERP 여부 ct_code 로 판정
+  const { vendors } = useVendors();
+  const vendorStats = useMemo(() => {
+    const list = vendors as Vendor[];
+    const total = list.length;
+    const erpCount = list.filter(v => (v as any).ct_code).length;
+    const nonErpCount = total - erpCount;
+    const pendingApproval = list.filter(v => (v as any).approval_status && (v as any).approval_status !== "approved").length;
+    const incomplete = list.filter(v =>
+      !v.contact_name || !v.phone || !(v as any).business_number
+    ).length;
+    return { total, erpCount, nonErpCount, pendingApproval, incomplete };
+  }, [vendors]);
   // 2026-10-12 · #13 Phase 3 · 방문예약 slide drawer (RequestsPage drawer 공식 재사용)
   const [reservationDrawerOpen, setReservationDrawerOpen] = useState(false);
 
@@ -132,11 +147,10 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
     { k: "order-history", label: "발주이력",        tone: "violet",  count: null },
   ];
 
+  // 2026-10-12 · 사용자 "위의 큰 제목과 하얀 배경 현재 UI톤과 안맞잖아"
+  //   · OperationsPageTemplate (큰 제목 + 하얀 배경) 폐기 · 홈 랜딩 톤 통일 (매장 overview 공식)
   return (
-    <OperationsPageTemplate
-      title="거래처"
-      description="공급사 정보 · 재고확인 · 발주이력 (방문예약은 slide drawer)"
-    >
+    <>
       <div className="flex flex-col gap-1 md:gap-2 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* 2026-10-12 · 사용자 지시 · "거래처는 현황판이 없는데" · title "거래처 현황" → "거래처" (overview 집계 성격 아님) ·
             각 탭 = 기존 페이지 상세 그대로 (탭 메뉴 상세 이동 패턴) */}
@@ -165,20 +179,56 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
                         예약
                       </button>
                     </div>
-                    <div className="flex-1 h-[180px] flex items-center justify-center bg-slate-50/40 rounded-md text-[13px] text-slate-400 text-center px-4">
-                      달력 skeleton · Phase 6 · availability API 집계 (가능 날짜 highlight · 클릭 → 예약 drawer)
+                    {/* 2026-10-12 · 실제 달력 render · 가능 날짜 highlight (emerald bg) · 오늘 ring */}
+                    <div className="flex-1">
+                      <div className="text-[12px] text-slate-500 font-medium mb-1">
+                        {calendarGrid.month}월 · 가능 날짜 <b className="text-emerald-700 tabular-nums">{calendarGrid.availCount}</b>건
+                      </div>
+                      <div className="grid grid-cols-7 gap-0.5">
+                        {["일","월","화","수","목","금","토"].map(d => (
+                          <div key={d} className="text-center text-[11px] text-slate-400 font-semibold py-1">{d}</div>
+                        ))}
+                        {calendarGrid.cells.map((c, i) => (
+                          <button key={i} type="button"
+                            disabled={!c.available}
+                            onClick={() => c.available && setReservationDrawerOpen(true)}
+                            className={`h-8 text-[12px] font-semibold tabular-nums rounded-md transition-colors ${
+                              c.day === null ? "" :
+                              c.available ? `bg-emerald-50 text-emerald-700 hover:bg-emerald-100 cursor-pointer ${c.isToday ? "ring-2 ring-emerald-400" : ""}` :
+                              `text-slate-300 ${c.isToday ? "ring-1 ring-slate-300" : ""}`
+                            }`}
+                          >
+                            {c.day ?? ""}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </section>
+                  {/* 공급사 정보 · 로그인 거래처 자기 자신 */}
                   <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3 cursor-pointer hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all"
                     onClick={() => setInnerTab("vendor-info")}
                     role="button" tabIndex={0}>
                     <div className="flex items-center gap-2">
                       <span className="w-[3px] h-[14px] bg-emerald-500 rounded-full shrink-0" />
                       <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">공급사 정보</h3>
+                      {isAdmin && <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 font-semibold">관리자 · 테스트2</span>}
                       <span className="ml-auto text-[12px] text-slate-400">탭 상세 →</span>
                     </div>
-                    <div className="flex-1 h-[180px] flex items-center justify-center bg-slate-50/40 rounded-md text-[13px] text-slate-400 text-center px-4">
-                      공급사 N개 skeleton · Phase 6 · 저장 안 된 항목 있으면 상단에 "⚠️ N개 공급사 정보 미완성" 코멘트
+                    {/* 2026-10-12 · 실제 공급사 데이터 render */}
+                    <div className="flex-1">
+                      {myVendor === null ? (
+                        <div className="h-[160px] flex items-center justify-center text-[13px] text-slate-400">
+                          {vendorName ? `"${vendorName}" 공급사 정보 없음` : "로그인 정보 없음"}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
+                          <div><span className="text-slate-500">공급사명</span><div className="text-[15px] font-bold text-ink mt-0.5 truncate" title={myVendor.name ?? myVendor.vendor_name ?? "-"}>{myVendor.name ?? myVendor.vendor_name ?? "-"}</div></div>
+                          <div><span className="text-slate-500">담당자</span><div className="text-[14px] font-semibold text-ink mt-0.5 truncate">{myVendor.manager ?? myVendor.contact_name ?? "-"}</div></div>
+                          <div><span className="text-slate-500">연락처</span><div className="text-[14px] font-semibold text-ink tabular-nums mt-0.5 truncate">{myVendor.phone ?? myVendor.contact_phone ?? "-"}</div></div>
+                          <div><span className="text-slate-500">이메일</span><div className="text-[14px] font-semibold text-ink mt-0.5 truncate" title={myVendor.email ?? "-"}>{myVendor.email ?? "-"}</div></div>
+                          <div className="col-span-2"><span className="text-slate-500">주소</span><div className="text-[14px] font-semibold text-ink mt-0.5 truncate" title={myVendor.address ?? "-"}>{myVendor.address ?? "-"}</div></div>
+                        </div>
+                      )}
                     </div>
                   </section>
                 </div>
@@ -191,10 +241,26 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
                     <div className="flex items-center gap-2">
                       <span className="w-[3px] h-[14px] bg-sky-500 rounded-full shrink-0" />
                       <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">공급사 재고확인</h3>
+                      {vendorProducts && <span className="text-[12px] text-slate-500 tabular-nums">· {vendorProducts.length}건</span>}
                       <span className="ml-auto text-[12px] text-slate-400">탭 상세 →</span>
                     </div>
-                    <div className="flex-1 h-[180px] flex items-center justify-center bg-slate-50/40 rounded-md text-[13px] text-slate-400 text-center px-4">
-                      재고 요약 skeleton · Phase 6 · VendorStockPage 요약 집계 (상위 10 · 전체 N건)
+                    {/* 2026-10-12 · 공급사 공급 상품 상위 10 */}
+                    <div className="flex-1 min-h-0 overflow-y-auto max-h-[220px]">
+                      {vendorProducts === null ? (
+                        <div className="h-[180px] flex items-center justify-center text-[13px] text-slate-400">조회 중...</div>
+                      ) : vendorProducts.length === 0 ? (
+                        <div className="h-[180px] flex items-center justify-center text-[13px] text-slate-400">공급 상품 없음</div>
+                      ) : (
+                        <ul className="divide-y divide-slate-100">
+                          {vendorProducts.slice(0, 10).map((p: any, i: number) => (
+                            <li key={p.product_code ?? i} className="flex items-center gap-2 py-1.5 text-[13px]">
+                              <span className="text-[11px] text-slate-400 tabular-nums w-5 text-right">{i + 1}</span>
+                              <span className="flex-1 min-w-0 truncate text-ink font-medium" title={p.product_name ?? p.name ?? "-"}>{p.product_name ?? p.name ?? "-"}</span>
+                              <span className="shrink-0 text-slate-500 tabular-nums text-[12px]">현 <b className="text-ink">{Number(p.current_stock ?? 0).toLocaleString()}</b></span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </section>
                   <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3 cursor-pointer hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all"
@@ -203,10 +269,26 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
                     <div className="flex items-center gap-2">
                       <span className="w-[3px] h-[14px] bg-violet-500 rounded-full shrink-0" />
                       <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">발주이력</h3>
+                      {orderHistory && <span className="text-[12px] text-slate-500 tabular-nums">· {orderHistory.length}건</span>}
                       <span className="ml-auto text-[12px] text-slate-400">탭 상세 →</span>
                     </div>
-                    <div className="flex-1 h-[180px] flex items-center justify-center bg-slate-50/40 rounded-md text-[13px] text-slate-400 text-center px-4">
-                      최근 발주 N건 skeleton · Phase 6 · order-history API 요약
+                    {/* 2026-10-12 · 최근 발주 10건 */}
+                    <div className="flex-1 min-h-0 overflow-y-auto max-h-[220px]">
+                      {orderHistory === null ? (
+                        <div className="h-[180px] flex items-center justify-center text-[13px] text-slate-400">조회 중...</div>
+                      ) : orderHistory.length === 0 ? (
+                        <div className="h-[180px] flex items-center justify-center text-[13px] text-slate-400">발주이력 없음</div>
+                      ) : (
+                        <ul className="divide-y divide-slate-100">
+                          {orderHistory.slice(0, 10).map((o: any, i: number) => (
+                            <li key={o.order_id ?? o.id ?? i} className="flex items-center gap-2 py-1.5 text-[13px]">
+                              <span className="shrink-0 text-slate-500 tabular-nums text-[12px] w-16">{String(o.order_date ?? o.created_at ?? "").slice(0, 10)}</span>
+                              <span className="flex-1 min-w-0 truncate text-ink font-medium" title={o.product_name ?? "-"}>{o.product_name ?? o.product_names ?? `${o.item_count ?? "?"}건`}</span>
+                              <span className="shrink-0 text-slate-500 tabular-nums text-[12px]">{Number(o.total_amount ?? o.amount ?? 0).toLocaleString()}원</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </section>
                 </div>
@@ -265,7 +347,7 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
           </aside>
         </>
       )}
-    </OperationsPageTemplate>
+    </>
   );
 };
 

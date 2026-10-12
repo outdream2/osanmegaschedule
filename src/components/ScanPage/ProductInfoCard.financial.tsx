@@ -40,7 +40,7 @@ export const ProductInfoFinancial: React.FC<ProductInfoFinancialProps> = ({
     <div className="rounded-[12px] border border-slate-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] px-3 py-2.5 mb-2.5">
       <p className="text-[15px] font-semibold text-ink mb-2 flex items-center gap-1.5">
         <span className="w-[3px] h-[14px] bg-indigo-500 rounded-full" aria-hidden />
-        <DollarSign size={13} className="text-indigo-600" weight="fill" />매입 · 판매가
+        <DollarSign size={13} className="text-indigo-600" />매입 · 판매가
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2">
         <InlineField label="매입가" fieldKey="purchase_price" value={purchasePrice} type="number" accent="emerald"

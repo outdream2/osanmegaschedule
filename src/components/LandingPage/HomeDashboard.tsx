@@ -111,6 +111,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const [weekHourlyRows, setWeekHourlyRows] = useState<HourlyRow[] | null>(null);
   // 2026-10-12 · 사용자 지시 · 오늘 예상매출 피크타임 가중 (평일/토/일/공휴일 4-tier) · 지난 90일 hourly
   const [monthHourlyRows, setMonthHourlyRows] = useState<HourlyRow[] | null>(null);
+  // 2026-10-12 · 사용자 지시 "오늘의 판매현황에 공급사 매입가 판매단가 최근매입일 표시" · products-map 조회 (pcode → meta)
+  const [productsMeta, setProductsMeta] = useState<Map<string, { supplier: string | null; purchase_price: number | null; sale_price: number | null; last_purchase_date: string | null }>>(new Map());
   const [weekSalesLoading, setWeekSalesLoading] = useState(false);
   const [dayProducts, setDayProducts] = useState<DaySaleProductItem[] | null>(null);
   const [productsLoading, setProductsLoading] = useState(false);
@@ -199,6 +201,25 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       setWeekHourlyRows(r.data.rows ?? []);
     } catch { setWeekHourlyRows(null); }
     finally { setWeekSalesLoading(false); }
+  }, [isManagerOrAdmin]);
+
+  // 2026-10-12 · 사용자 지시 · 오늘 판매현황 상품 메타 (공급사·매입가·판매단가·최근매입일)
+  const loadProductsMeta = useCallback(async () => {
+    if (!isManagerOrAdmin) return;
+    try {
+      const r = await api.get<Record<string, { supplier?: string | null; purchase_price?: number | null; sale_price?: number | null; last_purchase_date?: string | null }>>("/api/products-map?fields=slim&include_inactive=1&include_hidden=1");
+      const m = new Map<string, { supplier: string | null; purchase_price: number | null; sale_price: number | null; last_purchase_date: string | null }>();
+      for (const [code, p] of Object.entries(r.data ?? {})) {
+        if (!p) continue;
+        m.set(String(code), {
+          supplier: p.supplier ?? null,
+          purchase_price: p.purchase_price != null ? Number(p.purchase_price) : null,
+          sale_price: p.sale_price != null ? Number(p.sale_price) : null,
+          last_purchase_date: p.last_purchase_date ?? null,
+        });
+      }
+      setProductsMeta(m);
+    } catch { /* noop */ }
   }, [isManagerOrAdmin]);
 
   // 2026-10-12 · 사용자 지시 · 오늘 예상매출 피크타임 가중 (지난 90일 range · 4-tier 요일 분리)
@@ -365,6 +386,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   useEffect(() => { void loadWeekSales(); }, [loadWeekSales]);
   // 2026-10-12 · 오늘 예상매출 가중용 · 지난 90일 1회 로드 (일단위 refresh 는 매 10분 ok · 데이터 변동 적음)
   useEffect(() => { void loadMonthSales(); }, [loadMonthSales]);
+  // 2026-10-12 · 오늘의 판매현황 상품 메타 (공급사·매입가·판매단가·최근매입일) · pcode lookup
+  useEffect(() => { void loadProductsMeta(); }, [loadProductsMeta]);
   useEffect(() => { void loadMonthProjection(); }, [loadMonthProjection]);
   useEffect(() => { void loadDayProducts(); }, [loadDayProducts]);
   useEffect(() => { void loadTodayPurchases(); }, [loadTodayPurchases]);
@@ -613,6 +636,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               items={dayProducts ?? []}
               onOpen={goTo("display", "revenue")}
               onProductClick={handleProductClick}
+              productsMeta={productsMeta}
             />
           </section>
         </>
@@ -664,7 +688,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           >
             <header className="sticky top-0 z-10 flex items-center gap-2 px-3 py-2.5 md:px-4 md:py-3 border-b border-slate-200 bg-white">
               <span className="inline-flex items-center justify-center w-7 h-7 rounded-[8px] bg-slate-100 text-slate-600 shrink-0">
-                <Package size={14} weight="fill" />
+                <Package size={14} />
               </span>
               <div className="flex-1 min-w-0">
                 <h2 className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight truncate leading-tight">입고 알림</h2>
@@ -1080,13 +1104,15 @@ interface TodaySalesTableProps {
   onOpen: () => void;
   // 2026-10-08 · 사용자 지시 · 상품 클릭 시 상품정보 모달 open
   onProductClick?: (pcode: string | null) => void;
+  // 2026-10-12 · 사용자 지시 · 공급사·매입가·판매단가·최근매입일 inline 메타
+  productsMeta?: Map<string, { supplier: string | null; purchase_price: number | null; sale_price: number | null; last_purchase_date: string | null }>;
 }
 
 // 2026-10-08 · 사용자 지시 · TodaySalesTable · 상품 · 마진율 · 수량만 (매출 컬럼 제거)
 type SalesSortKey = "name" | "qty" | "margin";
 type SortDir = "asc" | "desc";
 
-const TodaySalesTable: React.FC<TodaySalesTableProps> = ({ loading, error, items, onOpen, onProductClick }) => {
+const TodaySalesTable: React.FC<TodaySalesTableProps> = ({ loading, error, items, onOpen, onProductClick, productsMeta }) => {
   // 2026-10-08 · fix · 단일 state object (atomic update · React batching 분리 setState 이슈 방지)
   const [sort, setSort] = useState<{ key: SalesSortKey; dir: SortDir }>({ key: "margin", dir: "desc" });
   const { key: sortKey, dir: sortDir } = sort;
@@ -1203,13 +1229,10 @@ const TodaySalesTable: React.FC<TodaySalesTableProps> = ({ loading, error, items
                   <tr key={`${sortKey}-${sortDir}-${i}-${it.pcode ?? ""}`} className="hover:bg-slate-50/60 transition-colors text-[14px] md:text-[15px]">
                     <td className="px-3 py-2 tabular-nums text-slate-400 align-top">{i + 1}</td>
                     <td className="px-3 py-2 font-medium leading-snug align-top text-ink">
-                      {/* 2026-10-08 · 사용자 지시 · 말줄임표 금지 · 전체 노출 (wrap) · 클릭 → 상품정보 모달
-                            · 2026-10-08 · 상품데이터 폰트 -1 (tableBody 15/16 → 14/15) */}
                       {onProductClick ? (
                         <button
                           type="button"
                           onClick={() => {
-                            // 2026-10-09 · 사용자 지시 · 상품 클릭 디버깅 로그
                             console.log("[TodaySalesTable.rowClick]", { idx: i, pcode: it.pcode, productName: it.productName, hasPcode: !!it.pcode });
                             onProductClick(it.pcode);
                           }}
@@ -1222,6 +1245,27 @@ const TodaySalesTable: React.FC<TodaySalesTableProps> = ({ loading, error, items
                       ) : (
                         <span className="break-words whitespace-normal">{it.productName ?? "(상품명 없음)"}</span>
                       )}
+                      {/* 2026-10-12 · 사용자 지시 "공급사·매입가·판매단가·최근매입일 표시" · 상품명 아래 메타 inline */}
+                      {(() => {
+                        const meta = it.pcode ? productsMeta?.get(it.pcode) : null;
+                        if (!meta) return null;
+                        const parts: string[] = [];
+                        if (meta.supplier) parts.push(meta.supplier);
+                        if (meta.purchase_price != null) parts.push(`매입 ${Math.round(meta.purchase_price).toLocaleString("ko-KR")}원`);
+                        if (meta.sale_price != null) parts.push(`판매 ${Math.round(meta.sale_price).toLocaleString("ko-KR")}원`);
+                        if (meta.last_purchase_date) parts.push(`최근매입 ${String(meta.last_purchase_date).slice(5, 10)}`);
+                        if (parts.length === 0) return null;
+                        return (
+                          <div className="mt-1 flex items-center gap-x-1.5 gap-y-0.5 flex-wrap text-[12px] text-slate-500 font-normal tabular-nums">
+                            {parts.map((p, idx) => (
+                              <React.Fragment key={idx}>
+                                {idx > 0 && <span className="text-slate-300">·</span>}
+                                <span>{p}</span>
+                              </React.Fragment>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className={`px-3 py-2 tabular-nums text-right align-top font-semibold ${marginRate >= 30 ? "text-emerald-600" : marginRate >= 15 ? "text-slate-700" : "text-slate-400"}`}>
                       {sale > 0 ? `${marginRate.toFixed(1)}%` : "-"}

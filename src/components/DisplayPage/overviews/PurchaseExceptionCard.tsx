@@ -21,6 +21,11 @@ interface MatchRow {
   order_number?: string;
   match_status?: string;
   exception_type?: string;
+  // 2026-10-12 · 사용자 지시 "매입단가이상 데이터 이상" fix · 서버 응답 field 추가
+  unit_price?: number;             // 발주 단가
+  purchase_avg_price?: number;     // 매입 가중평균 단가
+  price_diff_pct?: number;         // 단가 차이 %
+  auto_exception_type?: "qty_short" | "qty_over" | "price_diff" | "no_purchase" | null;
 }
 interface ProductMetaSlim {
   pcode?: string | null;
@@ -188,7 +193,22 @@ export const PurchaseExceptionCard: React.FC<PurchaseExceptionCardProps> = ({
                         {String(r.order_date ?? "").slice(5, 10) || "-"}
                       </td>
                       <td className="px-2 py-2 text-[14px] text-ink font-medium align-middle">
-                        {r.product_name ?? r.product_code ?? "-"}
+                        <div className="truncate">{r.product_name ?? r.product_code ?? "-"}</div>
+                        {/* 2026-10-12 · 사용자 지시 · 매입단가 이상 데이터 노출 · 단가 subtext (발주 vs 매입) */}
+                        {(r.auto_exception_type === "price_diff" || (r.unit_price != null && r.purchase_avg_price != null && r.unit_price !== r.purchase_avg_price)) && (
+                          <div className="text-[12px] text-slate-500 tabular-nums mt-0.5">
+                            단가 발주 <span className="text-ink font-semibold">{fmt(r.unit_price)}</span>
+                            <span className="text-slate-300 mx-0.5">/</span>
+                            <span className={`font-semibold ${r.price_diff_pct != null && Math.abs(r.price_diff_pct) >= 5 ? "text-rose-600" : "text-slate-700"}`}>
+                              매입 {fmt(r.purchase_avg_price)}
+                            </span>
+                            {r.price_diff_pct != null && (
+                              <span className={`ml-1 text-[11px] font-semibold ${Math.abs(r.price_diff_pct) >= 5 ? "text-rose-600" : "text-slate-500"}`}>
+                                ({r.price_diff_pct > 0 ? "+" : ""}{r.price_diff_pct.toFixed(1)}%)
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="px-2 py-2 text-right text-[14px] tabular-nums align-middle whitespace-nowrap">
                         <span className="font-semibold text-ink">{fmt(oq)}</span>

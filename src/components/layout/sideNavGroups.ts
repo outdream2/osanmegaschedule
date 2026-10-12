@@ -105,13 +105,13 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
       { key: "display", label: "상품스캔", icon: Barcode, color: "red", subTab: "product-scan", minLevel: 3 },
       // 2026-10-10 · 사용자 지시 · 입고알림 메뉴 삭제 (홈 랜딩 drawer 로 이관 완료 · UI-8 Phase 2)
       // ── NEW · 5개 통합 overview (2026-10-08 ~ 2026-10-09 신설) ──
-      { key: "display", label: "발주·반품 현황",   icon: Truck,       color: "red", subTab: "overview-order-return",      minLevel: 9 },
-      { key: "display", label: "매입 재고현황",     icon: Package,     color: "red", subTab: "overview-purchase-arrival",  minLevel: 9 },
-      // 2026-10-10 · 사용자 지시 · "판매·매출현황" 1개 → 2개 분리 (A안 · RevenuePage 재사용 · initialTab 분기 · #12)
-      { key: "display", label: "매출현황",           icon: CurrencyKrw, color: "red", subTab: "revenue",                    minLevel: 9 },
-      { key: "display", label: "판매현황",           icon: ChartBar,    color: "red", subTab: "sales",                      minLevel: 9 },
-      // 2026-10-10 · 사용자 지시 · 결제·정산 현황 메뉴 제거
-      { key: "display", label: "재고·진열 현황",   icon: Storefront,  color: "red", subTab: "overview-inventory-display", managerOnly: true },
+      { key: "display", label: "발주·반품 현황",       icon: Truck,       color: "red", subTab: "overview-order-return",      minLevel: 9 },
+      // 2026-10-12 · 사용자 지시 · "매입 재고현황" → "매입·재고·진열 현황" · 재고·진열 inner tab 흡수
+      { key: "display", label: "매입·재고·진열 현황", icon: Package,     color: "red", subTab: "overview-purchase-arrival",  minLevel: 9 },
+      // 2026-10-12 · 사용자 지시 · "판매현황" → "매출·판매 현황" · 매출현황 inner tab 흡수
+      { key: "display", label: "매출·판매 현황",      icon: ChartBar,    color: "red", subTab: "sales",                      minLevel: 9 },
+      // 2026-10-12 · 사용자 지시 · 재고·진열 현황 메뉴 제거 (매입·재고·진열 현황 inner tab 흡수)
+      // 2026-10-12 · 사용자 지시 · 매출현황 메뉴 제거 (판매현황 inner tab 흡수)
       // 2026-10-10 · 사용자 지시 · "판매 메뉴 매장 그룹 맨 아래로"
       // 2026-10-12 · 사용자 지시 · 매장 그룹 "판매" 메뉴 제거 (판매·매출현황 overview 로 통합)
       // 2026-10-10 · 사용자 지시 · 매장진열 메뉴 삭제 (재고·진열 현황 overview 안 매장구역도 inner tab 으로 이관 완료)

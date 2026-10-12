@@ -136,17 +136,29 @@ router.get(
       .eq("id", id)
       .single();
     if (anchorErr || !anchor) throw new HttpError(404, "purchase_detail not found");
+    if (!anchor.product_code) throw badRequest("product_code null · history 조회 불가");
     if (!anchor.supplier_code) throw badRequest("supplier_code null · history 조회 불가");
 
-    // 2차: RPC 로 history 조회
-    const { data, error } = await supabase.rpc("get_purchase_price_history", {
-      p_product_code: anchor.product_code,
-      p_supplier_code: anchor.supplier_code,
-      p_limit: limit,
-    });
-    if (error) throw new HttpError(500, `history RPC 실패 · ${error.message}`);
+    // 2026-10-12 · 사용자 리포트 "timeline 데이터 이상 · 가격 345,670원 등 완전히 다른 상품"
+    //   · RPC `get_purchase_price_history` 가 잘못된 결과 반환 (다른 상품 섞임)
+    //   · fix · RPC 폐기 + 직접 쿼리 (product_code + supplier_code 명시 WHERE)
+    const { data: histRows, error: histErr } = await supabase
+      .from("purchase_details")
+      .select("id, purchase_date, unit_price, quantity, bm_code, row_num")
+      .eq("product_code", anchor.product_code)
+      .eq("supplier_code", anchor.supplier_code)
+      .order("purchase_date", { ascending: false })
+      .limit(limit);
+    if (histErr) throw new HttpError(500, `history 조회 실패 · ${histErr.message}`);
 
-    const rows = (data ?? []) as PriceHistoryRow[];
+    const rows: PriceHistoryRow[] = (histRows ?? []).map((r: any) => ({
+      purchase_detail_id: Number(r.id),
+      purchase_date: String(r.purchase_date ?? ""),
+      unit_price: Number(r.unit_price ?? 0),
+      quantity: Number(r.quantity ?? 0),
+      bm_code: r.bm_code ?? null,
+      row_num: r.row_num ?? null,
+    }));
     const payload: PriceHistoryResponse = { rows };
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
     res.json(payload);

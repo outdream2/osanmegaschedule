@@ -196,7 +196,8 @@ interface HourlyApiResponse {
   error?: string;
 }
 
-const HourlyReportTab: React.FC = () => {
+// 2026-10-12 · 사용자 지시 · 매출현황 → 판매현황 inner tab 이동 · export 로 SalesStatus 에서 재사용
+export const HourlyReportTab: React.FC = () => {
   // HOURLY 전용 state
   // 2026-10-06 · 사용자 지시 · 시간대별 chart metric 탭 (매출/객단가/마진율/고객수)
   //   · 같은 dataset 재사용 · tab 변경 시 API 재호출 X · series 만 전환
@@ -1576,7 +1577,8 @@ const KpiBox: React.FC<{ label: string; value: string }> = ({ label, value }) =>
 //   · 일요일 셀 안 "[주간 합계]" subtotal (해당 주 월~토 합계 · WEB 계산)
 //   · 오늘 날짜 셀 하이라이트
 // ──────────────────────────────────────────────────────────────────────────
-const MonthlyReportTab: React.FC = () => {
+// 2026-10-12 · 사용자 지시 · 매출현황 → 판매현황 inner tab · export
+export const MonthlyReportTab: React.FC = () => {
   const now = new Date();
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number>(now.getMonth() + 1);

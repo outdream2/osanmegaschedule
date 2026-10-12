@@ -18,6 +18,8 @@ import { RealStockTablePage } from "../RealStockTablePage";
 import { PurchaseExceptionCard } from "./PurchaseExceptionCard";
 // 2026-10-12 · 사용자 지시 · 매입/발주 overlay chart (bar + line)
 import { PurchaseOrderOverlayChart, type PurchaseOrderOverlayDatum } from "./PurchaseOrderOverlayChart";
+// 2026-10-12 · 사용자 지시 · 재고·진열 현황 → 매입재고진열현황 inner tab 으로 이동
+import { InventoryDisplayOverview } from "./InventoryDisplayOverview";
 
 export interface PurchaseArrivalOverviewProps { onSelectSubTab: (sub: DpSubTabKey) => void; }
 
@@ -30,10 +32,22 @@ export interface PurchaseArrivalOverviewProps { onSelectSubTab: (sub: DpSubTabKe
 const CARD = "bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]";
 
 type AnyRow = Record<string, any>;
-type PurchaseRow = { purchase_date?: string; amount?: number | string; product_code?: string; product_name?: string; supplier?: string; qty?: number | string; unit_price?: number | string };
+// 2026-10-12 · 사용자 리포트 "수량·공급사 안 나와" fix · API 실제 필드명 반영
+//   · /api/purchase-details 응답 · quantity (not qty) · supplier_name (not supplier)
+type PurchaseRow = {
+  purchase_date?: string;
+  amount?: number | string;
+  product_code?: string;
+  product_name?: string;
+  supplier_name?: string;
+  supplier?: string;  // backward compat (혹시 다른 소스)
+  quantity?: number | string;
+  qty?: number | string;  // backward compat
+  unit_price?: number | string;
+};
 type MatchRow = { product_code?: string; product_name?: string; supplier?: string; order_qty?: number; purchase_qty?: number; order_date?: string; order_number?: string; match_status?: string; exception_type?: string };
 type InvCheckRow = { product_code: string; product_name: string | null; checked_at: string; warehouse1_stock: number | null; warehouse2_stock: number | null; store1_stock: number | null; store2_stock: number | null; store3_stock: number | null };
-type ProductRow = { product_code: string; product_name?: string; supplier?: string; current_stock?: number | null; purchase_price?: number | null };
+type ProductRow = { product_code: string; product_name?: string; supplier?: string; current_stock?: number | null; purchase_price?: number | null; sale_price?: number | null };
 
 const ymdDaysAgo = (days: number) => {
   const d = new Date(); d.setDate(d.getDate() - days);
@@ -45,11 +59,17 @@ const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
 type LocationKey = "warehouse1_stock" | "warehouse2_stock" | "store1_stock" | "store2_stock" | "store3_stock";
 
 // 2026-10-12 · 사용자 지시 "실재고테이블옆에 매입이력만들어 · 현황판 매입이력 누르면 일루 이동"
-type InnerTabKey = "overview" | "real-stock" | "purchase-history";
+// 2026-10-12 · 사용자 지시 · 재고·진열 + 매입이상 inner tab 추가 (별도 메뉴 → 흡수)
+type InnerTabKey = "overview" | "real-stock" | "purchase-history" | "inventory-display" | "exception";
 
 export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = ({ onSelectSubTab }) => {
   // 2026-10-09 · 사용자 지시 · 현황 | 실재고테이블 inner tab
   const [innerTab, setInnerTab] = useState<InnerTabKey>("overview");
+  // 2026-10-12 · 사용자 지시 "매입이력 접힌게 기본" · expandedSuppliers · default 모두 접힘 (Set 비어있음)
+  const [expandedSuppliers, setExpandedSuppliers] = useState<Set<string>>(new Set());
+  // 2026-10-12 · 사용자 지시 "페이징으로 다 보여줘" · 각 공급사 안 세부 row 노출 개수 · default 10 · "+N 더 보기" 로 10씩 확장
+  const [visiblePerSupplier, setVisiblePerSupplier] = useState<Map<string, number>>(new Map());
+  const PAGE_STEP = 10;
   // 2026-10-09 · 사용자 지시 · 위치별 bar 클릭 → 해당 위치 상품 리스트 drawer
   const [locDrawer, setLocDrawer] = useState<{ key: LocationKey; label: string } | null>(null);
   const [period, setPeriod] = useState<"7" | "14" | "30">("14");
@@ -86,7 +106,8 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   // 1. 매입이력 (purchase-details)
   useEffect(() => {
     let alive = true;
-    api.get<{ rows?: PurchaseRow[] }>(`/api/purchase-details?from=${effectiveRange.from}&to=${effectiveRange.to}&no_cycle=1&per_page=5000`)
+    // 2026-10-12 · 사용자 지시 "매입이력 다 안올라와" · per_page (Supabase 1000 cap) → limit 모드 (while loop · 전부 수집)
+    api.get<{ rows?: PurchaseRow[] }>(`/api/purchase-details?from=${effectiveRange.from}&to=${effectiveRange.to}&no_cycle=1&limit=20000`)
       .then(({ data }) => { if (alive) setPurchases(Array.isArray(data?.rows) ? data.rows : []); })
       .catch(() => { if (alive) setPurchases([]); });
     return () => { alive = false; };
@@ -150,7 +171,8 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
     for (const r of (purchases ?? [])) {
       const dStr = String(r.purchase_date ?? "").slice(0, 10);
       if (!dStr || !map.has(dStr)) continue;
-      const amt = Number(r.amount ?? 0);
+      // 2026-10-12 · 전수조사 fix · total(VAT 포함) ?? amount(공급가액) 우선순위 · PurchaseHistoryList 패턴 통일
+      const amt = Number((r as any).total ?? r.amount ?? 0);
       const prev = map.get(dStr)!;
       map.set(dStr, { amount: prev.amount + amt, count: prev.count + 1 });
     }
@@ -232,9 +254,143 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   const chartAvgLabel = chartMode === "daily" ? "일평균" : chartMode === "weekly" ? "주평균" : "월평균";
   const chartAvg = chartData.length > 0 ? Math.round(chartData.reduce((s, d) => s + d.amount, 0) / chartData.length) : 0;
 
-  const historyRows = useMemo(() => (purchases ?? []).slice().sort((a, b) =>
-    String(b.purchase_date ?? "").localeCompare(String(a.purchase_date ?? ""))
-  ), [purchases]);
+  // 2026-10-12 · 사용자 지시 · "공급사별로 정렬되어져서 공급사별로 보여야 돼"
+  //   · 1차 · supplier_name asc (같은 공급사 그룹핑)
+  //   · 2차 · purchase_date desc (최근 매입 상단)
+  const historyRows = useMemo(() => (purchases ?? []).slice().sort((a, b) => {
+    const sa = String(a.supplier_name ?? a.supplier ?? "").trim();
+    const sb = String(b.supplier_name ?? b.supplier ?? "").trim();
+    if (sa !== sb) return sa.localeCompare(sb, "ko");
+    return String(b.purchase_date ?? "").localeCompare(String(a.purchase_date ?? ""));
+  }), [purchases]);
+
+  // 2026-10-12 · 사용자 지시 "공급사별 집계 + 현재고·마진율·수량·매입금액·판매가 노출" · bucket 확장
+  //   · lastPurchaseDate (max purchase_date) · 공급사명 앞 inline 표시용
+  //   · productsMap join · 현재고 · 평균 매입/판매가 · 마진율
+  const supplierBuckets = useMemo(() => {
+    const m = new Map<string, {
+      rows: PurchaseRow[];
+      totalQty: number;
+      totalAmount: number;
+      count: number;
+      lastPurchaseDate: string;
+      pcodes: Set<string>;
+    }>();
+    for (const r of historyRows) {
+      const sup = String(r.supplier_name ?? r.supplier ?? "").trim() || "(공급사 미지정)";
+      let b = m.get(sup);
+      if (!b) { b = { rows: [], totalQty: 0, totalAmount: 0, count: 0, lastPurchaseDate: "", pcodes: new Set() }; m.set(sup, b); }
+      b.rows.push(r);
+      b.totalQty += Number(r.quantity ?? r.qty ?? 0);
+      b.totalAmount += Number((r as any).total ?? r.amount ?? 0);
+      b.count += 1;
+      const pd = String(r.purchase_date ?? "").slice(0, 10);
+      if (pd && pd > b.lastPurchaseDate) b.lastPurchaseDate = pd;
+      if (r.product_code) b.pcodes.add(String(r.product_code));
+    }
+    return Array.from(m.entries()).map(([supplier, v]) => {
+      // 공급사별 상품 집계 (productsMap join · 현재고·판매가·평균매입가)
+      let stockSum = 0;
+      let saleSum = 0;
+      let saleCount = 0;
+      let marginSum = 0;
+      let marginCount = 0;
+      for (const code of v.pcodes) {
+        const p = productsMap.get(code);
+        if (!p) continue;
+        if (p.current_stock != null) stockSum += Number(p.current_stock);
+        if (p.sale_price != null && p.sale_price > 0) {
+          saleSum += Number(p.sale_price);
+          saleCount += 1;
+          if (p.purchase_price != null && p.purchase_price > 0) {
+            const margin = ((Number(p.sale_price) - Number(p.purchase_price)) / Number(p.sale_price)) * 100;
+            marginSum += margin;
+            marginCount += 1;
+          }
+        }
+      }
+      const avgSale = saleCount > 0 ? saleSum / saleCount : 0;
+      const avgMarginPct = marginCount > 0 ? marginSum / marginCount : 0;
+      // 2026-10-12 · 사용자 지시 "공급사별로 묶고 그 안에서 날짜별로 다시 묶어야" · 2-tier 그룹 (공급사 → 날짜)
+      const dateMap = new Map<string, { rows: PurchaseRow[]; qty: number; amount: number; count: number }>();
+      for (const r of v.rows) {
+        const d = String(r.purchase_date ?? "").slice(0, 10) || "-";
+        let dg = dateMap.get(d);
+        if (!dg) { dg = { rows: [], qty: 0, amount: 0, count: 0 }; dateMap.set(d, dg); }
+        dg.rows.push(r);
+        dg.qty += Number(r.quantity ?? r.qty ?? 0);
+        dg.amount += Number((r as any).total ?? r.amount ?? 0);
+        dg.count += 1;
+      }
+      const dateGroups = Array.from(dateMap.entries())
+        .map(([date, g]) => ({ date, ...g }))
+        .sort((a, b) => b.date.localeCompare(a.date)); // 최근일 상단
+      return {
+        supplier,
+        rows: v.rows,
+        totalQty: v.totalQty,
+        totalAmount: v.totalAmount,
+        count: v.count,
+        lastPurchaseDate: v.lastPurchaseDate,
+        stockSum,
+        avgSale,
+        avgMarginPct,
+        dateGroups,
+      };
+    }).sort((a, b) => b.totalAmount - a.totalAmount);
+  }, [historyRows, productsMap]);
+
+  // 2026-10-12 · 날짜 sub-group expand state · key = "{supplier}|{date}"
+  const [expandedDateGroups, setExpandedDateGroups] = useState<Set<string>>(new Set());
+  const toggleDateGroup = (key: string) => {
+    setExpandedDateGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+  // 2026-10-12 · 사용자 지시 "헤더자동정렬" · 세부 row 정렬 (상품/수량/단가/금액)
+  type HistorySortKey = "product" | "qty" | "unit" | "amount";
+  const [historySort, setHistorySort] = useState<{ key: HistorySortKey; dir: "asc" | "desc" }>({ key: "amount", dir: "desc" });
+  const toggleHistorySort = (k: HistorySortKey) => {
+    setHistorySort(prev => prev.key === k ? { key: k, dir: prev.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "product" ? "asc" : "desc" });
+  };
+  const historyArrow = (k: HistorySortKey): string => historySort.key !== k ? " ⇅" : historySort.dir === "asc" ? " ▲" : " ▼";
+  const sortRows = (rows: PurchaseRow[]): PurchaseRow[] => {
+    const dir = historySort.dir === "asc" ? 1 : -1;
+    const key = historySort.key;
+    return [...rows].sort((a, b) => {
+      if (key === "product") return dir * String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko");
+      if (key === "qty") return dir * (Number(a.quantity ?? a.qty ?? 0) - Number(b.quantity ?? b.qty ?? 0));
+      if (key === "unit") return dir * (Number(a.unit_price ?? 0) - Number(b.unit_price ?? 0));
+      /* amount */
+      return dir * (Number((a as any).total ?? a.amount ?? 0) - Number((b as any).total ?? b.amount ?? 0));
+    });
+  };
+
+  const toggleSupplier = (sup: string) => {
+    setExpandedSuppliers(prev => {
+      const next = new Set(prev);
+      if (next.has(sup)) next.delete(sup); else next.add(sup);
+      return next;
+    });
+  };
+  // 2026-10-12 · 페이징 · 공급사별 노출 개수 조회·확장
+  const getVisible = (sup: string): number => visiblePerSupplier.get(sup) ?? PAGE_STEP;
+  const expandSupplier = (sup: string, total: number) => {
+    setVisiblePerSupplier(prev => {
+      const next = new Map(prev);
+      next.set(sup, Math.min((prev.get(sup) ?? PAGE_STEP) + PAGE_STEP, total));
+      return next;
+    });
+  };
+  const expandAllSupplier = (sup: string, total: number) => {
+    setVisiblePerSupplier(prev => {
+      const next = new Map(prev);
+      next.set(sup, total);
+      return next;
+    });
+  };
 
   const exceptionRows = useMemo<MatchRow[]>(() => {
     const ex = Array.isArray(matchData?.exceptions) ? matchData.exceptions : [];
@@ -242,74 +398,88 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
     return [...ex, ...um];
   }, [matchData]);
 
-  // 2026-10-12 · 사용자 지시 · "매입이상 아래 매입단가 이상 카드 추가 · 매입이력 중 기간 필터 적용해서 단가 변화 있는 것만 리스트업"
-  //   · 데이터 소스 · purchases (purchase_details · 기간 period 이미 적용됨)
-  //   · 2026-10-12 fix · 사용자 리포트 "데이터 이상" · product_code + supplier 조합으로 그룹
-  //     (같은 상품을 다른 공급사에서 매입 시 자연히 단가 다름 · 분리 필수)
-  //   · 집계 · 조합 그룹 · unit_price 2개 이상 && 서로 다른 경우만 (실제 단가 변화)
-  //   · 지표 · 최초/최종 단가 · 최소/최대 · 변화율 (max-min)/min · 매입 건수
-  //   · 정렬 · 변화율 desc (큰 변화 상단)
-  const priceAnomalies = useMemo(() => {
-    const byKey = new Map<string, {
-      code: string;
-      name: string;
-      supplier: string;
-      records: Array<{ price: number; date: string; qty: number }>;
-    }>();
-    for (const r of purchases ?? []) {
-      const code = String(r.product_code ?? "").trim();
-      const supplier = String(r.supplier ?? "").trim();
-      const price = Number(r.unit_price ?? 0);
-      if (!code || !price || price <= 0) continue;
-      const date = String(r.purchase_date ?? "").slice(0, 10);
-      const qty = Number(r.qty ?? 0);
-      // 공급사별 분리 · 같은 상품을 다른 공급사에서 매입 시 각각 집계
-      const key = `${code}::${supplier}`;
-      const existing = byKey.get(key);
-      if (!existing) {
-        byKey.set(key, {
-          code,
-          name: String(r.product_name ?? ""),
-          supplier,
-          records: [{ price, date, qty }],
-        });
-      } else {
-        existing.records.push({ price, date, qty });
-      }
-    }
-    // 2026-10-12 · 사용자 지시 "계속 진행" · row 클릭 drawer 를 위해 records 포함
-    const result: Array<{
-      code: string; name: string; supplier: string;
-      min: number; max: number; count: number;
-      diffPct: number; earliest: number; latest: number;
-      earliestDate: string; latestDate: string;
-      records: Array<{ price: number; date: string; qty: number }>;
-    }> = [];
-    for (const [, v] of byKey.entries()) {
-      if (v.records.length < 2) continue;
-      const prices = v.records.map(x => x.price);
-      if (new Set(prices).size <= 1) continue;
-      const min = Math.min(...prices);
-      const max = Math.max(...prices);
-      const diffPct = min > 0 ? ((max - min) / min) * 100 : 0;
-      const sorted = v.records.slice().sort((a, b) => a.date.localeCompare(b.date));
-      result.push({
-        code: v.code, name: v.name, supplier: v.supplier,
-        min, max, count: v.records.length, diffPct,
-        earliest: sorted[0].price, latest: sorted[sorted.length - 1].price,
-        earliestDate: sorted[0].date, latestDate: sorted[sorted.length - 1].date,
-        records: sorted,
-      });
-    }
-    return result.sort((a, b) => b.diffPct - a.diffPct);
-  }, [purchases]);
+  // 2026-10-12 · 사용자 지시 "매입단가 달라진 거 체크하는 부분 request/response 넣어놨어 · 참고해서 API 적용"
+  //   · 로컬 집계 폐기 → 전용 서버 API `/api/purchases/price-variance` (PriceVarianceTab 참고)
+  //   · 응답 shape · PriceVarianceRow[] (purchase_detail_id, previous_price, current_price, change_rate, change_type, effective_review_status, ...)
+  //   · 공급사 분리 · 이전 매입 매칭 · review status 서버 집계 (전부 서버 처리)
+  type AnomalyRow = {
+    purchaseDetailId: number;
+    previousPurchaseDetailId: number | null;
+    code: string;
+    name: string;
+    supplier: string;
+    previousPrice: number | null;
+    currentPrice: number;
+    diffAmount: number | null;
+    diffPct: number;        // |change_rate| * 100
+    changeType: "PRICE_INCREASE" | "PRICE_DECREASE";
+    purchaseDate: string;   // YYYY-MM-DD
+    reviewStatus: string;   // PENDING | CONFIRMED_CHANGE | NEEDS_CHECK | RESOLVED
+  };
+  const [priceAnomalies, setPriceAnomalies] = useState<AnomalyRow[]>([]);
+  const [priceAnomaliesLoading, setPriceAnomaliesLoading] = useState<boolean>(false);
 
-  // 2026-10-12 · 사용자 지시 "계속 진행" · 매입단가 이상 row 클릭 → 상세 drawer (매입 timeline)
-  const [priceDrawerCode, setPriceDrawerCode] = useState<string | null>(null);
+  // months_list · selectedMonths 있으면 그것, 없으면 현재 월 (period 는 월 단위 API 와 매칭 X)
+  const monthsListParam = useMemo(() => {
+    if (selectedMonths.length > 0) return selectedMonths.join(",");
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }, [selectedMonths]);
+
+  useEffect(() => {
+    let alive = true;
+    setPriceAnomaliesLoading(true);
+    const params = new URLSearchParams();
+    params.set("months_list", monthsListParam);
+    params.set("sort", "rate");          // 변화율 desc
+    params.set("page_size", "100");
+    api.get<any>(`/api/purchases/price-variance?${params}`)
+      .then(({ data }) => {
+        if (!alive) return;
+        const rows = Array.isArray(data?.rows) ? data.rows : [];
+        setPriceAnomalies(rows.map((r: any): AnomalyRow => ({
+          purchaseDetailId: Number(r.purchase_detail_id),
+          previousPurchaseDetailId: r.previous_purchase_detail_id != null ? Number(r.previous_purchase_detail_id) : null,
+          code: String(r.product_code ?? ""),
+          name: String(r.product_name ?? ""),
+          supplier: String(r.supplier_name ?? ""),
+          previousPrice: r.previous_price != null ? Number(r.previous_price) : null,
+          currentPrice: Number(r.current_price),
+          diffAmount: r.price_difference != null ? Number(r.price_difference) : null,
+          diffPct: Math.abs(Number(r.change_rate ?? 0)) * 100,
+          changeType: r.change_type,
+          purchaseDate: String(r.purchase_date ?? "").slice(0, 10),
+          reviewStatus: String(r.effective_review_status ?? "PENDING"),
+        })));
+      })
+      .catch(() => { if (alive) setPriceAnomalies([]); })
+      .finally(() => { if (alive) setPriceAnomaliesLoading(false); });
+    return () => { alive = false; };
+  }, [monthsListParam]);
+
+  // 2026-10-12 · drawer · row 클릭 → 상세 매입 timeline (별도 history API 호출)
+  const [priceDrawerCode, setPriceDrawerCode] = useState<number | null>(null); // purchaseDetailId
   const priceDrawerItem = useMemo(
-    () => priceAnomalies.find(p => p.code === priceDrawerCode) ?? null,
+    () => priceAnomalies.find(p => p.purchaseDetailId === priceDrawerCode) ?? null,
     [priceAnomalies, priceDrawerCode],
   );
+  const [priceDrawerHistory, setPriceDrawerHistory] = useState<Array<{ purchase_date: string; unit_price: number; quantity: number }> | null>(null);
+  useEffect(() => {
+    if (priceDrawerCode == null) { setPriceDrawerHistory(null); return; }
+    let alive = true;
+    api.get<any>(`/api/purchases/price-variance/${priceDrawerCode}/history?limit=20`)
+      .then(({ data }) => {
+        if (!alive) return;
+        const rows = Array.isArray(data?.rows) ? data.rows : [];
+        setPriceDrawerHistory(rows.map((h: any) => ({
+          purchase_date: String(h.purchase_date ?? "").slice(0, 10),
+          unit_price: Number(h.unit_price ?? 0),
+          quantity: Number(h.quantity ?? 0),
+        })));
+      })
+      .catch(() => { if (alive) setPriceDrawerHistory([]); });
+    return () => { alive = false; };
+  }, [priceDrawerCode]);
 
   // 실재고 비교: ERP (current_stock × purchase_price) vs 실제 (sum stocks × purchase_price)
   const stockCompare = useMemo(() => {
@@ -382,7 +552,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
             · 월 선택 시 selectedMonths 범위 사용 · 미선택 시 period 적용 */}
       <OverviewHero
         tone="sky"
-        title="매입 재고현황"
+        title="매입·재고·진열 현황"
         description="매입이력 · 일별 매입금액 · 매입이상 · 실재고 vs ERP 재고자산 비교"
         right={
           <div className="flex items-center gap-2 flex-wrap">
@@ -409,50 +579,140 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
         active={innerTab}
         onChange={setInnerTab}
         tabs={[
-          { k: "overview",         label: "현황",         tone: "sky",     count: null },
-          { k: "real-stock",       label: "실재고테이블", tone: "violet",  count: null },
-          { k: "purchase-history", label: "매입이력",     tone: "emerald", count: purchases?.length ?? null },
+          { k: "overview",          label: "현황",         tone: "sky",     count: null },
+          { k: "real-stock",        label: "실재고테이블", tone: "violet",  count: null },
+          { k: "purchase-history",  label: "매입이력",     tone: "emerald", count: purchases?.length ?? null },
+          // 2026-10-12 · 사용자 지시 · 재고·진열 흡수
+          { k: "inventory-display", label: "재고·진열",    tone: "amber",   count: null },
+          // 2026-10-12 · 사용자 지시 · 매입이상 inner tab (매입단가 이상 full view)
+          { k: "exception",         label: "매입이상",     tone: "rose",    count: exceptionRows.length || null },
         ] as const satisfies ReadonlyArray<OverviewInnerTab<InnerTabKey>>}
       />
 
       {innerTab === "real-stock" ? (
         <div className="px-4 sm:px-6"><RealStockTablePage /></div>
+      ) : innerTab === "inventory-display" ? (
+        <div className="px-4 sm:px-6"><InventoryDisplayOverview onSelectSubTab={onSelectSubTab} /></div>
+      ) : innerTab === "exception" ? (
+        /* 2026-10-12 · 사용자 지시 · 매입이상 full view inner tab (단가·수량 전부) · maxHeight 넓게 */
+        <div className="px-4 sm:px-6 pt-3">
+          <PurchaseExceptionCard
+            period={Number(period)}
+            maxHeight={9999}
+            onViewAll={() => { try { sessionStorage.setItem("overview-order-return.innerTab", "match"); } catch {} onSelectSubTab("overview-order-return"); }}
+          />
+        </div>
       ) : innerTab === "purchase-history" ? (
         <div className="px-4 sm:px-6 pt-3">
+          {/* 2026-10-12 · 사용자 지시 "매입이력 공급사별로 집계" · 공급사별 그룹 header (총 수량/금액/건수) + 접기/펼치기 세부 */}
           <section className={`${CARD} overflow-hidden`}>
             <header className="flex items-center gap-2.5 px-5 pt-4 pb-3 border-b border-slate-100">
               <span className="w-[3px] h-[16px] bg-emerald-500 rounded-full shrink-0" aria-hidden />
               <Package size={18} weight="fill" className="text-slate-500" />
-              <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">매입이력</h3>
-              <span className="text-[14px] text-slate-500 font-medium">· 최근 {period}일 · {historyRows.length}건</span>
+              <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">매입이력 (공급사별)</h3>
+              <span className="text-[14px] text-slate-500 font-medium">· 공급사 {supplierBuckets.length}곳 · 총 {historyRows.length}건</span>
             </header>
             <div className="overflow-y-auto max-h-[70vh]">
               <table className="w-full text-[14px]">
-                <thead className="sticky top-0 bg-white z-10">
+                {/* 2026-10-12 · 사용자 지시 "헤더자동정렬" · 상품/수량/단가/금액 column 클릭 정렬 (일자는 공급사 header 로 이동) */}
+                <thead className="sticky top-0 bg-slate-100 z-10">
                   <tr className="border-b border-slate-200">
-                    <th className="pl-5 pr-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500 w-[108px]">일자</th>
-                    <th className="px-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500">상품</th>
-                    <th className="px-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500 w-[140px]">공급사</th>
-                    <th className="px-3 py-2 text-right text-[13px] md:text-[14px] font-semibold text-slate-500 w-[70px]">수량</th>
-                    <th className="px-3 py-2 text-right text-[13px] md:text-[14px] font-semibold text-slate-500 w-[90px]">단가</th>
-                    <th className="px-3 pr-5 py-2 text-right text-[13px] md:text-[14px] font-semibold text-slate-500 w-[112px]">금액</th>
+                    <th className="pl-5 pr-3 py-2 text-left text-[13px] font-semibold text-slate-700 w-[48px]"></th>
+                    <th onClick={() => toggleHistorySort("product")} className="px-3 py-2 text-left text-[13px] font-semibold text-slate-700 cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
+                      상품{historyArrow("product")}
+                    </th>
+                    <th onClick={() => toggleHistorySort("qty")} className="px-3 py-2 text-right text-[13px] font-semibold text-slate-700 w-[80px] cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
+                      수량{historyArrow("qty")}
+                    </th>
+                    <th onClick={() => toggleHistorySort("unit")} className="px-3 py-2 text-right text-[13px] font-semibold text-slate-700 w-[100px] cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
+                      단가{historyArrow("unit")}
+                    </th>
+                    <th onClick={() => toggleHistorySort("amount")} className="px-3 pr-5 py-2 text-right text-[13px] font-semibold text-slate-700 w-[120px] cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
+                      금액{historyArrow("amount")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {historyRows.length === 0 ? (
-                    <tr><td colSpan={6} className="py-10 text-center text-[13px] text-slate-500">{purchases == null ? "불러오는 중..." : "매입이력이 없습니다"}</td></tr>
-                  ) : historyRows.map((r, i) => (
-                    <tr key={i} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60">
-                      <td className="pl-5 pr-3 py-2 text-[13px] md:text-[14px] tabular-nums text-slate-500">{String(r.purchase_date ?? "").slice(0, 10)}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex flex-col"><span className="text-[14px] text-ink font-medium truncate">{r.product_name ?? "-"}</span><span className="text-[12px] md:text-[13px] text-slate-500 tabular-nums">{r.product_code ?? ""}</span></div>
-                      </td>
-                      <td className="px-3 py-2 text-[13px] md:text-[14px] text-ink truncate">{r.supplier ?? "-"}</td>
-                      <td className="px-3 py-2 text-right text-[14px] tabular-nums text-ink">{fmt(Number(r.qty ?? 0))}</td>
-                      <td className="px-3 py-2 text-right text-[14px] tabular-nums text-slate-500">{fmt(Number(r.unit_price ?? 0))}</td>
-                      <td className="px-3 pr-5 py-2 text-right text-[14px] tabular-nums font-semibold text-ink">{fmt(Number(r.amount ?? 0))}</td>
-                    </tr>
-                  ))}
+                  {supplierBuckets.length === 0 ? (
+                    <tr><td colSpan={5} className="py-10 text-center text-[13px] text-slate-500">{purchases == null ? "불러오는 중..." : "매입이력이 없습니다"}</td></tr>
+                  ) : supplierBuckets.map((b) => {
+                    // 2026-10-12 · 사용자 지시 "매입이력 접힌게 기본" · expanded set 반전 (default 접힘)
+                    const expanded = expandedSuppliers.has(b.supplier);
+                    return (
+                      <React.Fragment key={b.supplier}>
+                        {/* 2026-10-12 · 사용자 지시 "공급사 앞에 일자표시 · 현재고 마진율 수량 매입금액 판매가" 노출
+                            · 최근매입일 (앞) · 공급사명 · 수량 · 매입금액 · 현재고 · 평균판매가 · 마진율 */}
+                        <tr
+                          onClick={() => toggleSupplier(b.supplier)}
+                          className="border-b border-slate-200 bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors sticky top-[36px] z-[5]"
+                          title={expanded ? "접기" : "펼치기"}
+                        >
+                          <td colSpan={5} className="px-5 py-2.5">
+                            <div className="flex items-center gap-2 flex-wrap text-[13px] tabular-nums">
+                              <span className={`inline-block transition-transform text-slate-400 ${expanded ? "rotate-90" : ""}`} aria-hidden>▸</span>
+                              {/* 최근 매입일 (공급사 앞) */}
+                              <span className="font-semibold text-slate-500 whitespace-nowrap">{b.lastPurchaseDate || "-"}</span>
+                              <span className="text-slate-300">·</span>
+                              <span className="text-[15px] font-semibold text-ink">{b.supplier}</span>
+                              <span className="text-slate-500">· {b.count}건</span>
+                              <span className="text-slate-300 mx-0.5">·</span>
+                              <span className="text-slate-500">수량 <b className="text-ink">{fmt(b.totalQty)}</b></span>
+                              <span className="text-slate-300 mx-0.5">·</span>
+                              <span className="text-slate-500">현재고 <b className={b.stockSum > 0 ? "text-ink" : "text-slate-300"}>{fmt(b.stockSum)}</b></span>
+                              <span className="text-slate-300 mx-0.5">·</span>
+                              <span className="text-slate-500">판매가 <b className="text-ink">{b.avgSale > 0 ? fmt(b.avgSale) : "-"}</b></span>
+                              <span className="text-slate-300 mx-0.5">·</span>
+                              <span className="text-slate-500">마진율 <b className={b.avgMarginPct >= 20 ? "text-emerald-700" : b.avgMarginPct >= 10 ? "text-ink" : "text-rose-600"}>{b.avgMarginPct > 0 ? `${b.avgMarginPct.toFixed(1)}%` : "-"}</b></span>
+                              <span className="ml-auto text-[14px] font-bold text-ink">매입 {fmt(b.totalAmount)}원</span>
+                            </div>
+                          </td>
+                        </tr>
+                        {/* 세부 매입 row · 펼친 상태 · 2026-10-12 사용자 지시 "페이징으로 다 보여줘"
+                            · default 10 row 노출 + "+N 더 보기" / "모두 보기" 버튼 */}
+                        {expanded && b.rows.slice(0, getVisible(b.supplier)).map((r, i) => (
+                          <tr key={`${b.supplier}-${i}`} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60">
+                            <td className="pl-5 pr-3 py-2 text-[13px] tabular-nums text-slate-500 whitespace-nowrap">{String(r.purchase_date ?? "").slice(0, 10)}</td>
+                            <td className="px-3 py-2">
+                              <div className="flex flex-col">
+                                <span className="text-[14px] text-ink font-medium">{r.product_name ?? "-"}</span>
+                                <span className="text-[12px] text-slate-500 tabular-nums">{r.product_code ?? ""}</span>
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 text-right text-[14px] tabular-nums text-ink">{fmt(Number(r.quantity ?? r.qty ?? 0))}</td>
+                            <td className="px-3 py-2 text-right text-[14px] tabular-nums text-slate-500">{fmt(Number(r.unit_price ?? 0))}</td>
+                            <td className="px-3 pr-5 py-2 text-right text-[14px] tabular-nums font-semibold text-ink">{fmt(Number((r as any).total ?? r.amount ?? 0))}</td>
+                          </tr>
+                        ))}
+                        {expanded && b.rows.length > getVisible(b.supplier) && (
+                          <tr className="border-b border-slate-100 bg-slate-50/40">
+                            <td colSpan={5} className="px-5 py-2 text-center">
+                              <div className="inline-flex items-center gap-2.5 text-[13px]">
+                                <span className="text-slate-500 tabular-nums">
+                                  {getVisible(b.supplier)}건 / 총 {b.rows.length}건
+                                </span>
+                                <span className="text-slate-300">·</span>
+                                <button
+                                  type="button"
+                                  onClick={() => expandSupplier(b.supplier, b.rows.length)}
+                                  className="font-semibold text-brand-deep hover:text-[#0d3a5c] transition-colors cursor-pointer"
+                                >
+                                  +{Math.min(PAGE_STEP, b.rows.length - getVisible(b.supplier))}건 더 보기 ▾
+                                </button>
+                                <span className="text-slate-300">·</span>
+                                <button
+                                  type="button"
+                                  onClick={() => expandAllSupplier(b.supplier, b.rows.length)}
+                                  className="font-semibold text-slate-600 hover:text-ink transition-colors cursor-pointer"
+                                >
+                                  모두 보기 ({b.rows.length - getVisible(b.supplier)}건)
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -582,7 +842,8 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
               <table className="w-full text-[14px]">
                 <thead className="sticky top-0 bg-white z-10">
                   <tr className="border-b border-slate-200">
-                    <th className="pl-5 pr-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500 w-[108px]">일자</th>
+                    {/* 2026-10-12 · 사용자 지시 · 날짜 줄바꿈 안되게 */}
+                    <th className="pl-5 pr-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500 w-[108px] whitespace-nowrap">일자</th>
                     <th className="px-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500">상품</th>
                     <th className="px-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500 w-[130px]">공급사</th>
                     <th className="px-3 py-2 text-right text-[13px] md:text-[14px] font-semibold text-slate-500 w-[70px]">수량</th>
@@ -595,14 +856,14 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                     <tr><td colSpan={6} className="py-8 text-center text-[13px] text-slate-500">{purchases == null ? "불러오는 중..." : "매입이력이 없습니다"}</td></tr>
                   ) : historyRows.slice(0, 100).map((r, i) => (
                     <tr key={i} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60">
-                      <td className="pl-5 pr-3 py-2 text-[13px] md:text-[14px] tabular-nums text-slate-500">{String(r.purchase_date ?? "").slice(0, 10)}</td>
+                      <td className="pl-5 pr-3 py-2 text-[13px] md:text-[14px] tabular-nums text-slate-500 whitespace-nowrap">{String(r.purchase_date ?? "").slice(0, 10)}</td>
                       <td className="px-3 py-2">
                         <div className="flex flex-col"><span className="text-[14px] text-ink font-medium truncate">{r.product_name ?? "-"}</span><span className="text-[12px] md:text-[13px] text-slate-500 tabular-nums">{r.product_code ?? ""}</span></div>
                       </td>
-                      <td className="px-3 py-2 text-[13px] md:text-[14px] text-ink truncate">{r.supplier ?? "-"}</td>
-                      <td className="px-3 py-2 text-right text-[14px] tabular-nums text-ink">{fmt(Number(r.qty ?? 0))}</td>
+                      <td className="px-3 py-2 text-[13px] md:text-[14px] text-ink truncate">{r.supplier_name ?? r.supplier ?? "-"}</td>
+                      <td className="px-3 py-2 text-right text-[14px] tabular-nums text-ink">{fmt(Number(r.quantity ?? r.qty ?? 0))}</td>
                       <td className="px-3 py-2 text-right text-[14px] tabular-nums text-slate-500">{fmt(Number(r.unit_price ?? 0))}</td>
-                      <td className="px-3 pr-5 py-2 text-right text-[14px] tabular-nums font-semibold text-ink">{fmt(Number(r.amount ?? 0))}</td>
+                      <td className="px-3 pr-5 py-2 text-right text-[14px] tabular-nums font-semibold text-ink">{fmt(Number((r as any).total ?? r.amount ?? 0))}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -617,7 +878,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
               · 현재고 column 포함 · 자체 fetch · "매입재고현황정보도 매입이상에 나와야" 반영 */}
           <PurchaseExceptionCard
             period={Number(period)}
-            onViewAll={() => { try { sessionStorage.setItem("overview-order-return.innerTab", "exception"); } catch {} onSelectSubTab("overview-order-return"); }}
+            onViewAll={() => { try { sessionStorage.setItem("overview-order-return.innerTab", "match"); } catch {} onSelectSubTab("overview-order-return"); }}
           />
 
           {/* 2026-10-12 · 사용자 지시 · 매입이상 아래 "매입단가 이상" 카드
@@ -627,34 +888,45 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
               <span className="w-[3px] h-[16px] bg-rose-500 rounded-full shrink-0" aria-hidden />
               <Warning size={18} weight="fill" className="text-rose-500" />
               <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">매입단가 이상</h3>
-              <span className="text-[13px] text-slate-500 font-medium">· 최근 {period}일 단가 변화</span>
+              <span className="text-[13px] text-slate-500 font-medium">· {monthsListParam} 단가 변화</span>
               <span className={`ml-auto text-[14px] font-bold tabular-nums ${priceAnomalies.length > 0 ? "text-rose-700" : "text-slate-400"}`}>{priceAnomalies.length}건</span>
             </header>
             <div className="max-h-[320px] overflow-y-auto">
-              {priceAnomalies.length === 0 ? (
-                <div className="py-8 text-center text-[13px] md:text-[14px] text-slate-500">
-                  {purchases == null ? "불러오는 중..." : "기간 내 단가 변화 상품 없음"}
-                </div>
+              {priceAnomaliesLoading && priceAnomalies.length === 0 ? (
+                <div className="py-8 text-center text-[13px] md:text-[14px] text-slate-500">불러오는 중...</div>
+              ) : priceAnomalies.length === 0 ? (
+                <div className="py-8 text-center text-[13px] md:text-[14px] text-slate-500">기간 내 단가 변화 상품 없음</div>
               ) : (
                 <table className="w-full text-[14px]">
                   <thead className="sticky top-0 bg-white z-10">
                     <tr className="border-b border-slate-200">
                       <th className="pl-5 pr-2 py-1.5 text-left text-[12px] md:text-[13px] font-semibold text-slate-500">상품 / 공급사</th>
-                      <th className="px-2 py-1.5 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[120px]">최초 → 최종</th>
-                      <th className="px-2 py-1.5 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[100px]">최소 / 최대</th>
-                      <th className="px-2 py-1.5 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[70px]">변화율</th>
-                      <th className="px-2 pr-5 py-1.5 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[50px]">건수</th>
+                      <th className="px-2 py-1.5 text-left text-[12px] md:text-[13px] font-semibold text-slate-500 w-[90px] whitespace-nowrap">일자</th>
+                      <th className="px-2 py-1.5 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[130px]">이전 → 현재</th>
+                      <th className="px-2 py-1.5 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[80px]">변화율</th>
+                      <th className="px-2 pr-5 py-1.5 text-center text-[12px] md:text-[13px] font-semibold text-slate-500 w-[76px]">상태</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {priceAnomalies.slice(0, 50).map((p, i) => {
-                      const trend = p.latest > p.earliest ? "up" : p.latest < p.earliest ? "down" : "flat";
-                      const trendCls = trend === "up" ? "text-rose-600" : trend === "down" ? "text-emerald-700" : "text-slate-500";
-                      const trendArrow = trend === "up" ? "▲" : trend === "down" ? "▼" : "·";
+                    {priceAnomalies.map((p) => {
+                      const isUp = p.changeType === "PRICE_INCREASE";
+                      const trendCls = isUp ? "text-rose-600" : "text-emerald-700";
+                      const trendArrow = isUp ? "▲" : "▼";
+                      const statusCls = p.reviewStatus === "PENDING"
+                        ? "text-rose-700 bg-rose-50 border-rose-200"
+                        : p.reviewStatus === "CONFIRMED_CHANGE"
+                          ? "text-sky-700 bg-sky-50 border-sky-200"
+                          : p.reviewStatus === "NEEDS_CHECK"
+                            ? "text-amber-700 bg-amber-50 border-amber-200"
+                            : "text-slate-500 bg-slate-50 border-slate-200";
+                      const statusLabel = p.reviewStatus === "PENDING" ? "미확인"
+                        : p.reviewStatus === "CONFIRMED_CHANGE" ? "정상변동"
+                        : p.reviewStatus === "NEEDS_CHECK" ? "확인요청"
+                        : "처리완료";
                       return (
                         <tr
-                          key={`${p.code}-${i}`}
-                          onClick={() => setPriceDrawerCode(p.code)}
+                          key={p.purchaseDetailId}
+                          onClick={() => setPriceDrawerCode(p.purchaseDetailId)}
                           className="border-b border-slate-50 last:border-b-0 hover:bg-rose-50/40 cursor-pointer transition-colors"
                           title="클릭 · 매입 timeline 보기"
                         >
@@ -664,18 +936,17 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                               {p.supplier || "-"} · <span className="text-slate-400">{p.code}</span>
                             </div>
                           </td>
+                          <td className="px-2 py-2 text-[12px] text-slate-500 tabular-nums align-top whitespace-nowrap">{p.purchaseDate.slice(5)}</td>
                           <td className="px-2 py-2 text-right text-[13px] tabular-nums align-top whitespace-nowrap">
-                            <div className="text-slate-500">{fmt(p.earliest)}</div>
-                            <div className={`font-semibold ${trendCls}`}>{trendArrow} {fmt(p.latest)}</div>
-                          </td>
-                          <td className="px-2 py-2 text-right text-[12px] tabular-nums text-slate-500 align-top whitespace-nowrap">
-                            <div>{fmt(p.min)}</div>
-                            <div>{fmt(p.max)}</div>
+                            <div className="text-slate-500">{p.previousPrice != null ? fmt(p.previousPrice) : "-"}</div>
+                            <div className={`font-semibold ${trendCls}`}>{trendArrow} {fmt(p.currentPrice)}</div>
                           </td>
                           <td className={`px-2 py-2 text-right text-[14px] font-bold tabular-nums align-top ${trendCls}`}>
-                            {p.diffPct.toFixed(1)}%
+                            {isUp ? "+" : "−"}{p.diffPct.toFixed(1)}%
                           </td>
-                          <td className="px-2 pr-5 py-2 text-right text-[13px] tabular-nums text-slate-500 align-top">{p.count}</td>
+                          <td className="px-2 pr-5 py-2 text-center align-top">
+                            <span className={`inline-flex items-center justify-center min-w-[48px] h-5 px-1.5 rounded border text-[11px] font-semibold ${statusCls}`}>{statusLabel}</span>
+                          </td>
                         </tr>
                       );
                     })}
@@ -803,59 +1074,59 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
               </button>
             </header>
 
-            {/* 요약 KPI */}
-            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/40 shrink-0 grid grid-cols-4 gap-3">
+            {/* 요약 KPI · API 응답 shape · 이전/현재 2건 */}
+            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/40 shrink-0 grid grid-cols-3 gap-3">
               <div className="min-w-0">
-                <div className="text-[11px] text-slate-500 font-medium">최초</div>
-                <div className="text-[14px] font-bold text-slate-700 tabular-nums mt-0.5">{fmt(priceDrawerItem.earliest)}</div>
-                <div className="text-[11px] text-slate-400 tabular-nums">{priceDrawerItem.earliestDate.slice(5)}</div>
+                <div className="text-[11px] text-slate-500 font-medium">이전 단가</div>
+                <div className="text-[14px] font-bold text-slate-700 tabular-nums mt-0.5">
+                  {priceDrawerItem.previousPrice != null ? fmt(priceDrawerItem.previousPrice) : "-"}
+                </div>
               </div>
               <div className="min-w-0">
-                <div className="text-[11px] text-slate-500 font-medium">최종</div>
-                <div className={`text-[14px] font-bold tabular-nums mt-0.5 ${priceDrawerItem.latest > priceDrawerItem.earliest ? "text-rose-600" : priceDrawerItem.latest < priceDrawerItem.earliest ? "text-emerald-700" : "text-slate-700"}`}>
-                  {fmt(priceDrawerItem.latest)}
+                <div className="text-[11px] text-slate-500 font-medium">현재 단가</div>
+                <div className={`text-[14px] font-bold tabular-nums mt-0.5 ${priceDrawerItem.changeType === "PRICE_INCREASE" ? "text-rose-600" : "text-emerald-700"}`}>
+                  {fmt(priceDrawerItem.currentPrice)}
                 </div>
-                <div className="text-[11px] text-slate-400 tabular-nums">{priceDrawerItem.latestDate.slice(5)}</div>
-              </div>
-              <div className="min-w-0">
-                <div className="text-[11px] text-slate-500 font-medium">최소 / 최대</div>
-                <div className="text-[13px] font-semibold text-slate-700 tabular-nums mt-0.5">
-                  {fmt(priceDrawerItem.min)}
-                </div>
-                <div className="text-[13px] font-semibold text-slate-700 tabular-nums">
-                  {fmt(priceDrawerItem.max)}
-                </div>
+                <div className="text-[11px] text-slate-400 tabular-nums">{priceDrawerItem.purchaseDate.slice(5)}</div>
               </div>
               <div className="min-w-0">
                 <div className="text-[11px] text-slate-500 font-medium">변화율</div>
-                <div className={`text-[16px] font-bold tabular-nums mt-0.5 ${priceDrawerItem.latest > priceDrawerItem.earliest ? "text-rose-600" : priceDrawerItem.latest < priceDrawerItem.earliest ? "text-emerald-700" : "text-slate-500"}`}>
-                  {priceDrawerItem.diffPct.toFixed(1)}%
+                <div className={`text-[16px] font-bold tabular-nums mt-0.5 ${priceDrawerItem.changeType === "PRICE_INCREASE" ? "text-rose-600" : "text-emerald-700"}`}>
+                  {priceDrawerItem.changeType === "PRICE_INCREASE" ? "+" : "−"}{priceDrawerItem.diffPct.toFixed(1)}%
                 </div>
-                <div className="text-[11px] text-slate-400 tabular-nums">{priceDrawerItem.count}건</div>
+                <div className="text-[11px] text-slate-400 tabular-nums">
+                  {priceDrawerItem.diffAmount != null && (priceDrawerItem.diffAmount >= 0 ? "+" : "−")}
+                  {priceDrawerItem.diffAmount != null ? fmt(Math.abs(priceDrawerItem.diffAmount)) : "-"}원
+                </div>
               </div>
             </div>
 
-            {/* timeline body */}
+            {/* timeline body · /history API 응답 */}
             <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3">
-              <div className="text-[12px] text-slate-500 font-medium mb-2">매입 timeline · 날짜 asc</div>
+              <div className="text-[12px] text-slate-500 font-medium mb-2">매입 timeline · 최근 20건</div>
+              {priceDrawerHistory == null ? (
+                <div className="py-6 text-center text-[13px] text-slate-400">timeline 불러오는 중...</div>
+              ) : priceDrawerHistory.length === 0 ? (
+                <div className="py-6 text-center text-[13px] text-slate-400">이력 없음</div>
+              ) : (
               <ul className="space-y-1.5">
-                {priceDrawerItem.records.map((rec, idx) => {
-                  const prev = idx > 0 ? priceDrawerItem.records[idx - 1].price : null;
-                  const delta = prev !== null ? rec.price - prev : 0;
-                  const deltaPct = prev !== null && prev > 0 ? ((rec.price - prev) / prev) * 100 : 0;
+                {priceDrawerHistory.map((rec, idx) => {
+                  const prev = idx > 0 ? priceDrawerHistory[idx - 1].unit_price : null;
+                  const delta = prev !== null ? rec.unit_price - prev : 0;
+                  const deltaPct = prev !== null && prev > 0 ? ((rec.unit_price - prev) / prev) * 100 : 0;
                   const deltaCls = delta > 0 ? "text-rose-600" : delta < 0 ? "text-emerald-700" : "text-slate-400";
                   const deltaArrow = delta > 0 ? "▲" : delta < 0 ? "▼" : "·";
                   return (
-                    <li key={`${rec.date}-${idx}`} className="flex items-center gap-3 bg-slate-50/50 border border-slate-100 rounded-md px-3 py-2">
+                    <li key={`${rec.purchase_date}-${idx}`} className="flex items-center gap-3 bg-slate-50/50 border border-slate-100 rounded-md px-3 py-2">
                       <span className="shrink-0 text-[11px] text-slate-400 tabular-nums w-5 text-right font-medium">{idx + 1}</span>
                       <div className="shrink-0 w-20">
-                        <div className="text-[12px] text-slate-500 tabular-nums">{rec.date.slice(0, 10)}</div>
+                        <div className="text-[12px] text-slate-500 tabular-nums">{rec.purchase_date.slice(0, 10)}</div>
                       </div>
                       <div className="flex-1 min-w-0 text-right">
-                        <div className="text-[14px] font-bold text-ink tabular-nums">{fmt(rec.price)}원</div>
+                        <div className="text-[14px] font-bold text-ink tabular-nums">{fmt(rec.unit_price)}원</div>
                       </div>
                       <div className="shrink-0 w-16 text-right">
-                        <div className="text-[12px] text-slate-500 tabular-nums">{fmt(rec.qty)}개</div>
+                        <div className="text-[12px] text-slate-500 tabular-nums">{fmt(rec.quantity)}개</div>
                       </div>
                       <div className={`shrink-0 w-20 text-right text-[13px] font-semibold tabular-nums ${deltaCls}`}>
                         {prev === null ? <span className="text-slate-300">—</span> : `${deltaArrow} ${Math.abs(deltaPct).toFixed(1)}%`}
@@ -864,6 +1135,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                   );
                 })}
               </ul>
+              )}
             </div>
           </aside>
         </>

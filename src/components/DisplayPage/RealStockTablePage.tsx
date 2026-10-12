@@ -541,29 +541,30 @@ export const RealStockTablePage: React.FC = () => {
                 <tr>
                   {thSortable("supplier",     "left",   "공급사", 140, "", 2)}
                   {thSortable("product_name", "left",   "상품명", 240, "", 2)}
-                  <th colSpan={1} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>진열위치</th>
-                  <th colSpan={1} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>ERP</th>
-                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>매장1</th>}
-                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>매장2</th>}
-                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>매장3</th>}
-                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>창고1</th>}
-                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-slate-50 text-slate-500 font-semibold border-b border-slate-100`}>창고2</th>}
-                  {thSortable("total", "num", "실재고합", 95, "bg-slate-50 text-brand-deep", 2)}
-                  {thSortable("diff",  "num", "차이",     80, "bg-slate-50 text-slate-500",   2)}
+                  <th colSpan={1} className={`${tableThCls("center")} bg-slate-100 text-slate-700 font-semibold border-b border-slate-200`}>진열위치</th>
+                  <th colSpan={1} className={`${tableThCls("center")} bg-slate-100 text-slate-700 font-semibold border-b border-slate-200`}>ERP</th>
+                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-slate-100 text-slate-700 font-semibold border-b border-slate-200`}>매장1</th>}
+                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-slate-100 text-slate-700 font-semibold border-b border-slate-200`}>매장2</th>}
+                  {showStore && <th colSpan={2} className={`${tableThCls("center")} bg-slate-100 text-slate-700 font-semibold border-b border-slate-200`}>매장3</th>}
+                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-slate-100 text-slate-700 font-semibold border-b border-slate-200`}>창고1</th>}
+                  {showWarehouse && <th colSpan={2} className={`${tableThCls("center")} bg-slate-100 text-slate-700 font-semibold border-b border-slate-200`}>창고2</th>}
+                  {/* 2026-10-12 · 사용자 지시 "헤더 디자인 최신 트렌드 · 기존 리스트 톤 적용" · 그룹 header 톤 통일 (bg-slate-100) */}
+                  {thSortable("total", "num", "실재고합", 95, "bg-slate-100 text-brand-deep border-b border-slate-200", 2)}
+                  {thSortable("diff",  "num", "차이",     80, "bg-slate-100 text-slate-700 border-b border-slate-200",   2)}
                 </tr>
                 <tr>
-                  {thSortable("location", "center", "구역", 60, "bg-slate-50/50", undefined, true)}
-                  {thSortable("erp",      "num",    "수량", 60, "bg-slate-50/50", undefined, true)}
-                  {showStore && thSortable("s1zone", "center", "구역", 60, "bg-slate-50/50", undefined, true)}
-                  {showStore && thSortable("s1",     "num",    "수량", 60, "bg-slate-50/50", undefined, true)}
-                  {showStore && thSortable("s2zone", "center", "구역", 60, "bg-slate-50/50", undefined, true)}
-                  {showStore && thSortable("s2",     "num",    "수량", 60, "bg-slate-50/50", undefined, true)}
-                  {showStore && thSortable("s3zone", "center", "구역", 60, "bg-slate-50/50", undefined, true)}
-                  {showStore && thSortable("s3",     "num",    "수량", 60, "bg-slate-50/50", undefined, true)}
-                  {showWarehouse && thSortable("w1zone", "center", "구역", 60, "bg-slate-50/50", undefined, true)}
-                  {showWarehouse && thSortable("w1",     "num",    "수량", 60, "bg-slate-50/50", undefined, true)}
-                  {showWarehouse && thSortable("w2zone", "center", "구역", 60, "bg-slate-50/50", undefined, true)}
-                  {showWarehouse && thSortable("w2",     "num",    "수량", 60, "bg-slate-50/50", undefined, true)}
+                  {thSortable("location", "center", "구역", 60, "bg-slate-50 text-slate-500 border-b border-slate-200", undefined, true)}
+                  {thSortable("erp",      "num",    "수량", 60, "bg-slate-50 text-slate-500 border-b border-slate-200", undefined, true)}
+                  {showStore && thSortable("s1zone", "center", "구역", 60, "bg-slate-50 text-slate-500 border-b border-slate-200", undefined, true)}
+                  {showStore && thSortable("s1",     "num",    "수량", 60, "bg-slate-50 text-slate-500 border-b border-slate-200", undefined, true)}
+                  {showStore && thSortable("s2zone", "center", "구역", 60, "bg-slate-50 text-slate-500 border-b border-slate-200", undefined, true)}
+                  {showStore && thSortable("s2",     "num",    "수량", 60, "bg-slate-50 text-slate-500 border-b border-slate-200", undefined, true)}
+                  {showStore && thSortable("s3zone", "center", "구역", 60, "bg-slate-50 text-slate-500 border-b border-slate-200", undefined, true)}
+                  {showStore && thSortable("s3",     "num",    "수량", 60, "bg-slate-50 text-slate-500 border-b border-slate-200", undefined, true)}
+                  {showWarehouse && thSortable("w1zone", "center", "구역", 60, "bg-slate-50 text-slate-500 border-b border-slate-200", undefined, true)}
+                  {showWarehouse && thSortable("w1",     "num",    "수량", 60, "bg-slate-50 text-slate-500 border-b border-slate-200", undefined, true)}
+                  {showWarehouse && thSortable("w2zone", "center", "구역", 60, "bg-slate-50 text-slate-500 border-b border-slate-200", undefined, true)}
+                  {showWarehouse && thSortable("w2",     "num",    "수량", 60, "bg-slate-50 text-slate-500 border-b border-slate-200", undefined, true)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -623,7 +624,8 @@ export const RealStockTablePage: React.FC = () => {
                             <span className="ml-auto flex items-center gap-3 text-[12.5px] font-semibold tabular-nums">
                               <span className="text-slate-500">ERP <span className="text-slate-700 font-bold">{totalErp}</span></span>
                               <span className="text-slate-500">실재고 <span className="text-emerald-700 font-bold">{totalReal}</span></span>
-                              <span className="text-slate-500">차이 <span className={totalErp - totalReal > 0 ? "text-rose-600 font-bold" : totalErp - totalReal < 0 ? "text-emerald-600 font-bold" : "text-slate-400 font-semibold"}>{totalErp - totalReal > 0 ? `+${totalErp - totalReal}` : totalErp - totalReal}</span></span>
+                              {/* 2026-10-12 · 사용자 지시 "차이는 - 가 붉은색" · 음수(손실) rose · 양수(이상) emerald */}
+                              <span className="text-slate-500">차이 <span className={totalErp - totalReal < 0 ? "text-rose-600 font-bold" : totalErp - totalReal > 0 ? "text-emerald-600 font-bold" : "text-slate-400 font-semibold"}>{totalErp - totalReal > 0 ? `+${totalErp - totalReal}` : totalErp - totalReal}</span></span>
                             </span>
                           </div>
                         </td>
@@ -646,7 +648,7 @@ export const RealStockTablePage: React.FC = () => {
                           {showWarehouse && <><td className={tableTdCls("center")}>{renderZoneCell(r, "w1")}</td><td className={tableTdCls("num")}>{renderQtyCell(r, "w1")}</td></>}
                           {showWarehouse && <><td className={tableTdCls("center")}>{renderZoneCell(r, "w2")}</td><td className={tableTdCls("num")}>{renderQtyCell(r, "w2")}</td></>}
                           <td className={tableTdCls("num", `tabular-nums text-[14px] font-semibold ${r.total > 0 ? "text-emerald-700" : "text-slate-300 font-medium"}`)}>{r.total > 0 ? r.total : "-"}</td>
-                          <td className={tableTdCls("num", `tabular-nums text-[13.5px] font-semibold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-slate-300 font-medium"}`)}>{r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}</td>
+                          <td className={tableTdCls("num", `tabular-nums text-[13px] font-semibold ${r.diff < 0 ? "text-rose-600" : r.diff > 0 ? "text-emerald-600" : "text-slate-300 font-medium"}`)}>{r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}</td>
                         </tr>
                       ))),
                     ];
@@ -678,7 +680,7 @@ export const RealStockTablePage: React.FC = () => {
                     <td className={tableTdCls("num", `tabular-nums text-[14px] font-semibold ${r.total > 0 ? "text-emerald-700" : "text-slate-300 font-medium"}`)}>
                       {r.total > 0 ? r.total : "—"}
                     </td>
-                    <td className={tableTdCls("num", `tabular-nums text-[13.5px] font-semibold ${r.diff > 0 ? "text-rose-600" : r.diff < 0 ? "text-emerald-600" : "text-slate-300 font-medium"}`)}>
+                    <td className={tableTdCls("num", `tabular-nums text-[13px] font-semibold ${r.diff < 0 ? "text-rose-600" : r.diff > 0 ? "text-emerald-600" : "text-slate-300 font-medium"}`)}>
                       {r.diff !== 0 ? (r.diff > 0 ? `+${r.diff}` : String(r.diff)) : "0"}
                     </td>
                   </tr>

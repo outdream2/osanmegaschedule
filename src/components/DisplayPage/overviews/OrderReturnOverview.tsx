@@ -98,7 +98,19 @@ const SECTION_META: Record<SectionKey, {
 };
 
 export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSelectSubTab: _ }) => {
-  const [innerTab, setInnerTab] = useState<InnerTabKey>("overview");
+  // 2026-10-12 · 사용자 지시 · 외부 overview 에서 "전체보기 →" 클릭 시 sessionStorage 로 초기 innerTab 지정
+  //   · 예 · PurchaseArrivalOverview 매입이상 "전체보기" → "match" (발주매입대조)
+  const [innerTab, setInnerTab] = useState<InnerTabKey>(() => {
+    try {
+      const stored = sessionStorage.getItem("overview-order-return.innerTab");
+      if (stored) {
+        sessionStorage.removeItem("overview-order-return.innerTab");
+        const valid: InnerTabKey[] = ["overview", "order-need", "order-request", "stockout", "order-history", "match", "exception", "return"];
+        if ((valid as string[]).includes(stored)) return stored as InnerTabKey;
+      }
+    } catch { /* no-op */ }
+    return "overview";
+  });
   const [orderReqs, setOrderReqs] = useState<OrderRequestRow[] | null>(null);
   const [lowStock, setLowStock] = useState<AnyRow[] | null>(null);
   const [history, setHistory] = useState<AnyRow[] | null>(null);
