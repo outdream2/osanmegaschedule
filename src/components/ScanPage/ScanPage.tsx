@@ -89,6 +89,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   // ── 좌측 마지막 스캔 상태
   const [lastProduct, setLastProduct]           = useState<ProductInfo | null>(null);
   const [lastCode, setLastCode]                 = useState<string | null>(null);
+  // 2026-10-12 · 사용자 지시 · 스캔 → 리스트 추가 사이 로딩 중 표시 (handleScan async flow)
+  const [scanLoading, setScanLoading] = useState<boolean>(false);
   const [notFoundCode, setNotFoundCode]         = useState<string | null>(null);
 
   // 2026-08-23 · #179 · 미등록 상품 즉시 등록 · Modal + 권한 게이트
@@ -341,6 +343,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   const handleScan = useCallback(async (result: string, preloadedProduct?: ProductInfo | any | null) => {
     setScannerOpen(false);
     setNotFoundCode(null);
+    // 2026-10-12 · 사용자 지시 · 스캔 → 리스트 추가 전 로딩 중 표시
+    setScanLoading(true);
+    try {
     if (!isProductsLoaded()) {
       setMapLoading(true);
       await getProductsMap();
@@ -450,6 +455,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         ));
       })
       .catch(() => {});
+    } finally {
+      setScanLoading(false);
+    }
   }, [rows, showToast, autoIncOn]);
 
   // ── 행 필드 업데이트 · 2026-08-23 · #204 · qty/zone 변경 시 savedThisSession 해제 (dirty 표시)
@@ -805,11 +813,11 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           )}
           right={(
             <div className="flex flex-col gap-4">
-              {/* 2026-10-11 · UI-12 · 최근 스캔 상품 상세 요약 · 매입가·판매가·공급사·현재고·판매상태 상단 · 나머지 (위치·적정재고·재고자산) 하단 */}
-              <ScanProductSummary product={lastProduct} />
+              {/* 2026-10-12 · UI-11-SCAN Phase 2 Step 2 · 스크린샷 7c2d9aa8 반영 · KPI 7-col + 수량(scanned) + 전체금액 · rows prop 전달 */}
+              <ScanProductSummary product={lastProduct} rows={rows} />
               {/* 2026-08-25 · Framework Phase 4 · 우측 패널 · ScanRightPanel 이관 */}
               <ScanRightPanel
-                rows={rows} filteredRows={filteredRows} lastCode={lastCode} lastAddedKey={lastAddedKey}
+                rows={rows} filteredRows={filteredRows} lastCode={lastCode} lastAddedKey={lastAddedKey} scanLoading={scanLoading}
                 requestingKey={requestingKey} scanFilter={scanFilter} setScanFilter={setScanFilter}
                 setExpiryModalRow={setExpiryModalRow} requestDisplay={requestDisplay}
                 patchRow={patchRow} removeRow={removeRow} openHistory={openHistory}
