@@ -719,17 +719,10 @@ export const SalesStatus: React.FC = () => {
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-amber-200 bg-amber-50 text-amber-700 font-semibold">주의 {nWarn}</span>
                       <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-rose-200 bg-rose-50 text-rose-700 font-semibold">위험 {nRisk}</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setSupplierExpanded(v => !v)}
-                      className="ml-auto inline-flex items-center gap-1 text-[13px] font-semibold text-brand-deep hover:text-[#0d3a5c] cursor-pointer transition-colors"
-                    >
-                      {supplierExpanded ? "접기 ▴" : "펼치기 ▾"}
-                    </button>
                   </div>
-                  {supplierExpanded && (
-                    <div className="overflow-auto max-h-[480px]">
-                      <table className="w-full text-[14px]">
+                  {/* 2026-10-12 · 사용자 지시 · 펼치기 제거 · 리스트 항상 노출 + 스크롤 처리 */}
+                  <div className="overflow-auto max-h-[480px] [scrollbar-width:thin]">
+                    <table className="w-full text-[14px]">
                         <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[13px] font-medium sticky top-0 z-10">
                           <tr>
                             <th className="text-left px-3 py-2 cursor-pointer select-none hover:text-ink" onClick={() => toggleSupSort("name")}>공급사 {supSortArrow("name")}</th>
@@ -757,10 +750,9 @@ export const SalesStatus: React.FC = () => {
                               </tr>
                             );
                           })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               );
             })()}
