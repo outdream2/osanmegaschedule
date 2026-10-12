@@ -615,18 +615,18 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* 2026-10-08 · GLOBAL UI · 매장 5개 통합 overview · map 기반 단일 분기 (navigation hub · lazy) */}
       {STORE_OVERVIEW_MAP[dpSubTab] ? (
-        <main className="flex-1 flex flex-col min-h-0">
+        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={14} tone="zinc" /></div>}>
             {React.createElement(STORE_OVERVIEW_MAP[dpSubTab]!, { onSelectSubTab: setDpSubTab })}
           </React.Suspense>
         </main>
       ) : dpSubTab === "stock-arrivals" && dpCanSeeStockArrivals ? (
-        <main className="flex-1 flex flex-col min-h-0">
+        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <StockArrivalPage authSession={authSession ?? null} onBack={onBack} onNavigate={onNavigate as any} onLogout={onLogout} embedded />
         </main>
       ) : dpSubTab === "product-scan" && dpCanSeeStockArrivals ? (
         /* 2026-10-09 · 사용자 지시 · 매장 하위 상품스캔 (바코드 스캔 → 실재고 입력) · 기존 ScanPage embedded 재사용 */
-        <main className="flex-1 flex flex-col min-h-0">
+        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="상품스캔 로딩 중..." size={16} tone="brand" /></div>}>
             <ScanPageLazy embedded onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate as any} onLogout={onLogout} />
           </React.Suspense>
@@ -638,14 +638,14 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           </React.Suspense>
         </main>
       ) : (dpSubTab === "purchase-order" || dpSubTab === "purchase" || dpSubTab === "payment" || dpSubTab === "statistics") && dpCanSeeStockManage ? (
-        <main className="flex-1 flex flex-col min-h-0">
+        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <OrderManagePage
             ocrTabAuthSession={authSession} ocrTabOnBack={onBack} ocrTabOnNavigate={onNavigate as any}
             ocrTabOnLogout={onLogout} initialTopTab={dpSubTab as "purchase-order" | "purchase" | "payment" | "statistics"} hideTopTabs
           />
         </main>
       ) : dpSubTab === "revenue" && dpCanSeeStockManage ? (
-        <main className="flex-1 flex flex-col min-h-0">
+        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="매출 로딩 중..." size={14} tone="brand" /></div>}>
             {/* 2026-10-12 · 버그 fix "매출현황→판매현황 이동 안됨" · key 분리로 재마운트 강제 (useState initialTab prop 재적용 안되는 문제) */}
             <RevenuePage key="revenue" initialTab="revenue" />
@@ -653,7 +653,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         </main>
       ) : dpSubTab === "sales" && dpCanSeeStockManage ? (
         // 2026-10-10 · #12 · 판매현황 메뉴 · RevenuePage 재사용 · initialTab="sales"
-        <main className="flex-1 flex flex-col min-h-0">
+        <main className="flex-1 flex flex-col min-h-0 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="판매 로딩 중..." size={14} tone="brand" /></div>}>
             {/* 2026-10-12 · 버그 fix "매출현황→판매현황 이동 안됨" · key 분리 */}
             <RevenuePage key="sales" initialTab="sales" />

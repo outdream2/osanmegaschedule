@@ -157,21 +157,16 @@ export const PurchaseExceptionCard: React.FC<PurchaseExceptionCardProps> = ({
             {matchData == null ? "불러오는 중..." : "매입이상이 없습니다"}
           </div>
         ) : (
-          /* 2026-10-12 · 사용자 지시 · 발주량/매입량 별도 column 분리 + 글씨 다 나오게 (truncate 제거 · overflow-x scroll) */
+          /* 2026-10-12 · 사용자 지시 "공급사 안나오게 · 발주/매입 통합 · 이것만 나오게 · 너무 길다"
+              · 4 column 만 유지: 날짜 · 상품 · 발주/매입 · 처리현황 (공급사 · 판매 · 현재고 제거) */
           <div className="overflow-x-auto">
             <table className="w-full text-[14px]">
               <thead className="sticky top-0 bg-white z-10">
                 <tr className="border-b border-slate-200">
-                  <th className="pl-5 pr-2 py-1.5 text-left text-[12px] md:text-[13px] font-semibold text-slate-500 w-[80px] whitespace-nowrap">날짜</th>
-                  <th className="px-2 py-1.5 text-left text-[12px] md:text-[13px] font-semibold text-slate-500 whitespace-nowrap">상품</th>
-                  <th className="px-2 py-1.5 text-left text-[12px] md:text-[13px] font-semibold text-slate-500 whitespace-nowrap">공급사</th>
-                  <th className="px-2 py-1.5 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[64px] whitespace-nowrap">발주</th>
-                  <th className="px-2 py-1.5 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[64px] whitespace-nowrap">매입</th>
-                  {/* 2026-10-12 · 사용자 지시 · 판매 데이터 (period 기간 ERP sale 집계) */}
-                  <th className="px-2 py-1.5 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[64px] whitespace-nowrap" title={`최근 ${period}일 판매수량`}>판매</th>
-                  {/* 2026-10-12 · 사용자 지시 · 매입재고현황 정보 (현재고) column */}
-                  <th className="px-2 py-1.5 text-right text-[12px] md:text-[13px] font-semibold text-slate-500 w-[72px] whitespace-nowrap">현재고</th>
-                  <th className="px-2 pr-5 py-1.5 text-left text-[12px] md:text-[13px] font-semibold text-slate-500 w-[108px] whitespace-nowrap">처리현황</th>
+                  <th className="pl-5 pr-2 py-1.5 text-left text-[13px] font-semibold text-slate-500 w-[80px] whitespace-nowrap">날짜</th>
+                  <th className="px-2 py-1.5 text-left text-[13px] font-semibold text-slate-500">상품</th>
+                  <th className="px-2 py-1.5 text-right text-[13px] font-semibold text-slate-500 w-[96px] whitespace-nowrap">발주/매입</th>
+                  <th className="px-2 pr-5 py-1.5 text-left text-[13px] font-semibold text-slate-500 w-[108px] whitespace-nowrap">처리현황</th>
                 </tr>
               </thead>
               <tbody>
@@ -182,35 +177,23 @@ export const PurchaseExceptionCard: React.FC<PurchaseExceptionCardProps> = ({
                   const status = r.exception_type ?? r.match_status ?? (diff !== 0 ? "수량 불일치" : "미확인");
                   const statusCls = status.includes("완료") ? "text-emerald-700"
                     : status.includes("미") || status.includes("불일치") ? "text-rose-600" : "text-amber-700";
-                  const stock = r.product_code ? stockByCode.get(String(r.product_code)) : undefined;
-                  const saleQty = r.product_code ? saleQtyByCode.get(String(r.product_code)) : undefined;
                   return (
                     <tr
                       key={i}
                       onClick={() => rowClick(r)}
                       className="border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 cursor-pointer transition-colors"
-                      title="클릭 · 발주·매입대조 상품 리스트로 이동"
+                      title={`${r.supplier ?? "-"} · 클릭 → 발주·매입대조`}
                     >
                       <td className="pl-5 pr-2 py-2 text-[13px] tabular-nums text-slate-500 align-middle whitespace-nowrap">
                         {String(r.order_date ?? "").slice(5, 10) || "-"}
                       </td>
-                      <td className="px-2 py-2 text-[13px] md:text-[14px] text-ink font-medium align-middle whitespace-nowrap">
+                      <td className="px-2 py-2 text-[14px] text-ink font-medium align-middle">
                         {r.product_name ?? r.product_code ?? "-"}
                       </td>
-                      <td className="px-2 py-2 text-[13px] text-slate-500 align-middle whitespace-nowrap">
-                        {r.supplier ?? "-"}
-                      </td>
-                      <td className="px-2 py-2 text-right text-[14px] md:text-[15px] font-semibold text-ink tabular-nums align-middle whitespace-nowrap">
-                        {fmt(oq)}
-                      </td>
-                      <td className={`px-2 py-2 text-right text-[14px] md:text-[15px] font-semibold tabular-nums align-middle whitespace-nowrap ${diff === 0 ? "text-ink" : "text-rose-600"}`}>
-                        {fmt(pq)}
-                      </td>
-                      <td className="px-2 py-2 text-right text-[14px] md:text-[15px] font-semibold text-emerald-700 tabular-nums align-middle whitespace-nowrap">
-                        {saleQty != null && saleQty > 0 ? fmt(saleQty) : <span className="text-slate-300">0</span>}
-                      </td>
-                      <td className="px-2 py-2 text-right text-[14px] md:text-[15px] font-semibold text-ink tabular-nums align-middle whitespace-nowrap">
-                        {stock != null ? fmt(stock) : <span className="text-slate-300">—</span>}
+                      <td className="px-2 py-2 text-right text-[14px] tabular-nums align-middle whitespace-nowrap">
+                        <span className="font-semibold text-ink">{fmt(oq)}</span>
+                        <span className="text-slate-300 mx-0.5">/</span>
+                        <span className={`font-semibold ${diff === 0 ? "text-ink" : "text-rose-600"}`}>{fmt(pq)}</span>
                       </td>
                       <td className={`px-2 pr-5 py-2 text-[13px] font-semibold align-middle whitespace-nowrap ${statusCls}`}>
                         {status}

@@ -41,7 +41,7 @@ export const OverviewHero: React.FC<{
   description?: React.ReactNode;
   right?: React.ReactNode;
 }> = ({ tone, title, description, right }) => (
-  <section className="flex items-center gap-2 py-0.5 px-4 sm:px-6 pt-4">
+  <section className="flex items-center gap-2 py-0 px-4 sm:px-6 pt-1">
     <span className={`w-[3px] h-[14px] ${TONE_BAR[tone]} rounded-full shrink-0`} />
     <span className="text-[14px] md:text-[15px] text-slate-700 min-w-0 flex-1 truncate">
       <strong className="font-semibold text-ink">{title}</strong>

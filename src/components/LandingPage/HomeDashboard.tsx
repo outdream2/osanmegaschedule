@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, Legend, ComposedChart, Line } from "recharts";
 import { api } from "../../lib/apiClient";
+// 2026-10-12 · 사용자 지시 · 오늘 예상매출 (평일/토/일/공휴일 4-tier) · 공휴일 분류 유틸
+import { getDayType } from "../../lib/koreanHolidays";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import { StockArrivalList } from "./StockArrivalList";
@@ -76,6 +78,15 @@ export interface HomeDashboardProps {
 const fmtWon = (n: number): string => `${Math.round(n).toLocaleString("ko-KR")}원`;
 // 2026-10-09 · 사용자 지시 · 예상 월매출액 "12.34억원" 포맷
 const fmtEok = (n: number): string => `${(n / 1e8).toFixed(2)}억원`;
+// 2026-10-12 · 사용자 지시 · 오늘 매출은 억 단위 아님 (몇천만원) · 자동 단위 선택 (억/만 fallback)
+const fmtWonSmart = (n: number): string => {
+  const v = Math.round(n);
+  if (!Number.isFinite(v) || v === 0) return "0원";
+  const abs = Math.abs(v);
+  if (abs >= 1e8) return `${(v / 1e8).toFixed(2)}억원`;
+  if (abs >= 1e4) return `${Math.round(v / 1e4).toLocaleString("ko-KR")}만원`;
+  return `${v.toLocaleString("ko-KR")}원`;
+};
 const todayYmd = (): string => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -98,6 +109,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const [monthProjectionWon, setMonthProjectionWon] = useState<number | null>(null);
   // 2026-10-09 · 사용자 지시 · 매출현황 주간 tab · 7일 range hourly data
   const [weekHourlyRows, setWeekHourlyRows] = useState<HourlyRow[] | null>(null);
+  // 2026-10-12 · 사용자 지시 · 오늘 예상매출 피크타임 가중 (평일/토/일/공휴일 4-tier) · 지난 90일 hourly
+  const [monthHourlyRows, setMonthHourlyRows] = useState<HourlyRow[] | null>(null);
   const [weekSalesLoading, setWeekSalesLoading] = useState(false);
   const [dayProducts, setDayProducts] = useState<DaySaleProductItem[] | null>(null);
   const [productsLoading, setProductsLoading] = useState(false);
@@ -186,6 +199,20 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
       setWeekHourlyRows(r.data.rows ?? []);
     } catch { setWeekHourlyRows(null); }
     finally { setWeekSalesLoading(false); }
+  }, [isManagerOrAdmin]);
+
+  // 2026-10-12 · 사용자 지시 · 오늘 예상매출 피크타임 가중 (지난 90일 range · 4-tier 요일 분리)
+  const loadMonthSales = useCallback(async () => {
+    if (!isManagerOrAdmin) return;
+    try {
+      const to = todayYmd();
+      const fromDate = new Date();
+      fromDate.setDate(fromDate.getDate() - 89);
+      const from = `${fromDate.getFullYear()}-${String(fromDate.getMonth() + 1).padStart(2, "0")}-${String(fromDate.getDate()).padStart(2, "0")}`;
+      const r = await api.get<HourlyApiResponse>(`/api/erp/sale-hourly-report?from=${from}&to=${to}`);
+      if (!r.data.ok) throw new Error(r.data.error ?? "90일 매출 조회 실패");
+      setMonthHourlyRows(r.data.rows ?? []);
+    } catch { setMonthHourlyRows(null); }
   }, [isManagerOrAdmin]);
 
   const loadDayProducts = useCallback(async () => {
@@ -336,6 +363,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
   useEffect(() => { void loadSales(); }, [loadSales]);
   useEffect(() => { void loadWeekSales(); }, [loadWeekSales]);
+  // 2026-10-12 · 오늘 예상매출 가중용 · 지난 90일 1회 로드 (일단위 refresh 는 매 10분 ok · 데이터 변동 적음)
+  useEffect(() => { void loadMonthSales(); }, [loadMonthSales]);
   useEffect(() => { void loadMonthProjection(); }, [loadMonthProjection]);
   useEffect(() => { void loadDayProducts(); }, [loadDayProducts]);
   useEffect(() => { void loadTodayPurchases(); }, [loadTodayPurchases]);
@@ -384,6 +413,39 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   const todaySale = useMemo(() => todayRows.reduce((a, r) => a + Number(r.SaleTotal ?? 0), 0), [todayRows]);
   const todayCust = useMemo(() => todayRows.reduce((a, r) => a + Number(r.CustomerCnt ?? 0), 0), [todayRows]);
   const avgOrder = todayCust > 0 ? todaySale / todayCust : 0;
+
+  // 2026-10-12 · 사용자 지시 · 오늘 예상매출 (피크타임 가중 · 평일/토/일/공휴일 4-tier)
+  //   · 공식: 오늘 지금까지 매출 + (지난 90일 중 같은 요일타입 시간대별 평균의 curHour+1~23 합)
+  //   · 데이터 부족 (타입별 ≤ 1건) → 전체 90일 평균 fallback
+  const todayExpectedSale = useMemo(() => {
+    if (!monthHourlyRows || monthHourlyRows.length === 0) return null;
+    const todayType = getDayType(today);
+    // 같은 요일타입 row 필터 (오늘 제외 · 과거만)
+    const sameTypeRows = monthHourlyRows.filter(r => r.SaleDate !== today && getDayType(r.SaleDate) === todayType);
+    const sourceRows = sameTypeRows.length > 0 ? sameTypeRows : monthHourlyRows.filter(r => r.SaleDate !== today);
+    if (sourceRows.length === 0) return null;
+    // 각 날짜별 시간대 집계 (중복 시간 row 평균 아닌 합산 · 각 날짜 당 1회 집계)
+    const byDate = new Map<string, Map<number, number>>();
+    for (const r of sourceRows) {
+      const h = parseHour(r.SaleTime);
+      if (!Number.isFinite(h)) continue;
+      let m = byDate.get(r.SaleDate);
+      if (!m) { m = new Map(); byDate.set(r.SaleDate, m); }
+      m.set(h, (m.get(h) ?? 0) + Number(r.SaleTotal ?? 0));
+    }
+    const dateCount = byDate.size;
+    if (dateCount === 0) return null;
+    // 시간대별 평균 (0..23)
+    const avgByHour = Array.from({ length: 24 }, () => 0);
+    for (const m of byDate.values()) {
+      for (const [h, v] of m) avgByHour[h] += v;
+    }
+    for (let h = 0; h < 24; h += 1) avgByHour[h] = avgByHour[h] / dateCount;
+    // 남은 시간 (curHour+1 ~ 23) 평균 합
+    let remaining = 0;
+    for (let h = curHour + 1; h < 24; h += 1) remaining += avgByHour[h];
+    return todaySale + remaining;
+  }, [monthHourlyRows, today, curHour, todaySale]);
 
   const totalApprovals = leavePendingCount + requestsCounts.resignation + (isAdmin ? requestsCounts.vendor : 0);
   const totalPending = totalApprovals + requestsCounts.display + requestsCounts.order + (isAdmin ? paymentPendingCount : 0);
@@ -500,6 +562,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 weekRows={weekHourlyRows}
                 weekLoading={weekSalesLoading}
                 monthProjectionWon={monthProjectionWon}
+                todayExpectedWon={todayExpectedSale}
               />
               {/* 2026-10-09 · 사용자 지시 · 매입발주현황 (매출현황처럼 tabbed · 1주 chart) */}
               <PurchaseOrderOverviewCard
@@ -706,9 +769,11 @@ interface SalesOverviewProps {
   weekLoading: boolean;
   // 2026-10-09 · 사용자 지시 · 매출현황 헤더 옆 "예상월매출액 X.XX억원"
   monthProjectionWon: number | null;
+  // 2026-10-12 · 사용자 지시 · 오늘 예상매출 (피크타임 가중 · 평일/토/일/공휴일 4-tier)
+  todayExpectedWon?: number | null;
 }
 
-const SalesOverviewCard: React.FC<SalesOverviewProps> = ({ loading, error, rows, todaySale, todayCust, avgOrder, curHour, onOpen, weekRows, weekLoading, monthProjectionWon }) => {
+const SalesOverviewCard: React.FC<SalesOverviewProps> = ({ loading, error, rows, todaySale, todayCust, avgOrder, curHour, onOpen, weekRows, weekLoading, monthProjectionWon, todayExpectedWon }) => {
   // 2026-10-09 · tab · 오늘 (hourly) · 주간 (daily)
   const [tab, setTab] = useState<"today" | "week">("today");
   const isWeek = tab === "week";
@@ -785,7 +850,16 @@ const SalesOverviewCard: React.FC<SalesOverviewProps> = ({ loading, error, rows,
           {!isWeek ? (
             <>
               <div>
-                <div className={T.kpiLabel}>오늘 매출</div>
+                <div className={`${T.kpiLabel} flex items-baseline gap-2 flex-wrap`}>
+                  <span>오늘 매출</span>
+                  {/* 2026-10-12 · 사용자 지시 · 오늘 예상매출 (피크타임 가중 · 평일/토/일/공휴일 4-tier)
+                      · 공식: 오늘 지금까지 매출 + Σ (지난 90일 중 같은 요일타입 시간대별 평균 for curHour+1..23) */}
+                  {todayExpectedWon != null && todayExpectedWon > 0 && (
+                    <span className="text-[12px] md:text-[13px] font-medium text-slate-400 tabular-nums" title="피크타임 가중 (평일/토/일/공휴일 4-tier · 지난 90일 같은 요일타입 시간대 평균)">
+                      (예상 {fmtWonSmart(todayExpectedWon)})
+                    </span>
+                  )}
+                </div>
                 {loading && rows.length === 0 ? (
                   <SkeletonBar className="h-8 w-40 mt-1" />
                 ) : (

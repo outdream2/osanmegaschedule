@@ -8,6 +8,8 @@ import { fmtWonCompact } from "../../lib/format";
 import { fmt } from "./FlowTab.types";
 import type { StockFlowRow, FlowGroup } from "./FlowTab.types";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
+// 2026-10-12 · 사용자 지시 대원칙 · 마진율 색상 (음수 빨강 "−" / 양수 초록)
+import { formatMargin } from "../../lib/formatMargin";
 
 const fmtWon = fmtWonCompact;
 
@@ -137,8 +139,9 @@ export const FlowRow: React.FC<FlowRowProps> = ({
         })()}
         <td className="text-right px-1.5 py-2.5 text-zinc-500 font-bold text-[16px] align-top tabular-nums">{purP > 0 ? fmtWon(purP) : "-"}</td>
         <td className="text-right px-1.5 py-2.5 text-zinc-600 font-bold text-[16px] align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
-        <td className={`text-right px-1.5 py-2.5 font-bold text-[16px] align-top tabular-nums ${profitRate == null ? "text-zinc-300" : profitRate >= 30 ? "text-zinc-700" : profitRate >= 15 ? "text-zinc-600" : profitRate >= 0 ? "text-zinc-500" : "text-rose-500"}`}>
-          {profitRate != null ? `${profitRate}%` : "-"}
+        {/* 2026-10-12 · 대원칙 · formatMargin 공통 유틸 (음수 빨강 "−" · 양수 초록) */}
+        <td className={`text-right px-1.5 py-2.5 text-[16px] align-top ${formatMargin(profitRate).className}`}>
+          {formatMargin(profitRate).text}
         </td>
       </>}
       {isFlowGroupCollapsed("sales") && <td className="bg-zinc-50/20" />}

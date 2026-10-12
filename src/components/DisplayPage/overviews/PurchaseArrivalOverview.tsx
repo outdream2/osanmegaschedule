@@ -375,7 +375,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   // ─── Render helpers ────────────────────
 
   return (
-    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="flex flex-col gap-1 md:gap-2 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* 2026-10-09 · UI-4 · 공통 모듈 OverviewHero + OverviewInnerTabs
           2026-10-12 · 사용자 지시 · "재고·진열 현황의 기간별 필터 적용"
             · 월 멀티 선택기 (MonthToggleSelector) 추가 · 기존 period select 와 병행
@@ -479,16 +479,17 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
       {/* 2-col · LEFT 1.6fr (chart + history) · RIGHT 1.2fr (exceptions + stock-compare) · overflow-x 가능 */}
       <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-[1.6fr_1.2fr] gap-4 items-start">
         <div className="flex flex-col gap-4">
-          {/* 2026-10-12 · 사용자 지시 · 매입(bar) + 발주금액(line overlay) 통합 chart (recharts ComposedChart) */}
+          {/* 2026-10-12 · 사용자 지시 · 매입(bar) + 발주금액(Lollipop overlay) 통합 chart
+              · 색상 "발주 녹색 · 매입 다른 색" · 매입 amber · 발주 emerald */}
           <PurchaseOrderOverlayChart
             title={`${chartMode === "daily" ? "일별" : chartMode === "weekly" ? "주간" : "월별"} 매입금액`}
             periodLabel={`최근 ${chartPeriodLabel}`}
             data={overlayChartData}
             primaryLabel="매입금액"
             overlayLabel="발주금액"
-            barColor="#0A4F44"
-            lineColor="#E11D48"
-            stripColor="bg-sky-500"
+            barColor="#D97706"
+            lineColor="#059669"
+            stripColor="bg-amber-500"
             right={
               <div className="inline-flex items-center bg-slate-100 rounded-md p-0.5 shrink-0" role="tablist" aria-label="차트 모드">
                 {([

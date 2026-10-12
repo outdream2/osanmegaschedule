@@ -8,12 +8,13 @@
 // Phase 2 (다음): 각 탭에 기존 페이지 embedded render
 // Phase 3: 방문예약 slide drawer
 // Phase 4: 사이드바 거래처 그룹 통합 (4개 메뉴 → 단일 "거래처")
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useState, useEffect, useMemo } from "react";
 import { OperationsPageTemplate } from "../common/OperationsPageTemplate";
 import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "../DisplayPage/overviews/OverviewHeader";
 import { Spinner } from "../common/Spinner";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
+import { api } from "../../lib/apiClient";
 // 2026-10-12 · #13 Phase 2 · 각 탭 content · 기존 페이지 embedded render (self-contained)
 const VendorManageSplit = React.lazy(() => import("../DisplayPage/VendorManageSplit").then(m => ({ default: m.VendorManageSplit })));
 const VendorStockPage = React.lazy(() => import("../LandingPage/VendorStockPage").then(m => ({ default: m.VendorStockPage })));
@@ -37,6 +38,93 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
   // 2026-10-12 · #13 Phase 3 · 방문예약 slide drawer (RequestsPage drawer 공식 재사용)
   const [reservationDrawerOpen, setReservationDrawerOpen] = useState(false);
 
+  // 2026-10-12 · 사용자 리포트 "데이터가 하나도 안 보인다 · 장난해" · Phase 6 데이터 fetch 즉시 적용
+  //   · 로그인한 거래처 (authSession.employeeName) 정보 · 재고 · 발주이력 · 방문예약 달력
+  //   · 사용자 "관리자 로그인 시 테스트2사 데이터 가져와" · admin fallback
+  const sessionRole = authSession?.role ?? "";
+  const sessionPerm = (authSession as any)?.permission ?? 0;
+  const isAdmin = sessionRole === "admin" || sessionRole === "superadmin" || Number(sessionPerm) >= 9;
+  const vendorName = isAdmin ? "테스트2" : (authSession?.employeeName ?? "");
+
+  // 공급사 정보 (로그인한 거래처 자기 자신)
+  const [myVendor, setMyVendor] = useState<any | null>(null);
+  useEffect(() => {
+    if (!vendorName) return;
+    let alive = true;
+    api.get<any[]>("/api/vendors").then(({ data }) => {
+      if (!alive) return;
+      const list = Array.isArray(data) ? data : [];
+      const found = list.find((v: any) =>
+        String(v?.name ?? v?.vendor_name ?? "").trim() === vendorName.trim()
+      );
+      setMyVendor(found ?? null);
+    }).catch(() => { if (alive) setMyVendor(null); });
+    return () => { alive = false; };
+  }, [vendorName]);
+
+  // 공급사 재고 (로그인한 거래처 공급 상품)
+  const [vendorProducts, setVendorProducts] = useState<any[] | null>(null);
+  useEffect(() => {
+    if (!vendorName) return;
+    let alive = true;
+    api.get<{ products?: any[]; rows?: any[] }>(`/api/vendor-stock?supplier=${encodeURIComponent(vendorName)}`)
+      .then(({ data }) => {
+        if (!alive) return;
+        const rows = Array.isArray(data?.products) ? data.products : Array.isArray(data?.rows) ? data.rows : [];
+        setVendorProducts(rows);
+      }).catch(() => { if (alive) setVendorProducts([]); });
+    return () => { alive = false; };
+  }, [vendorName]);
+
+  // 발주이력 (로그인한 거래처 자기 자신 발주)
+  const [orderHistory, setOrderHistory] = useState<any[] | null>(null);
+  useEffect(() => {
+    if (!vendorName) return;
+    let alive = true;
+    api.get<{ orders?: any[] }>(`/api/order-history?supplier=${encodeURIComponent(vendorName)}&limit=100`)
+      .then(({ data }) => {
+        if (!alive) return;
+        const orders = Array.isArray(data?.orders) ? data.orders : [];
+        setOrderHistory(orders);
+      }).catch(() => { if (alive) setOrderHistory([]); });
+    return () => { alive = false; };
+  }, [vendorName]);
+
+  // 방문예약 가능 날짜 (이번달)
+  const [availableDates, setAvailableDates] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let alive = true;
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 1;
+    api.get<{ available?: string[]; dates?: string[] }>(`/api/reservations/availability?year=${y}&month=${m}`)
+      .then(({ data }) => {
+        if (!alive) return;
+        const arr = Array.isArray(data?.available) ? data.available : Array.isArray(data?.dates) ? data.dates : [];
+        setAvailableDates(new Set(arr));
+      }).catch(() => { if (alive) setAvailableDates(new Set()); });
+    return () => { alive = false; };
+  }, []);
+
+  // 이번달 달력 데이터 (일~토 격자)
+  const calendarGrid = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const first = new Date(y, m, 1);
+    const last = new Date(y, m + 1, 0);
+    const firstDow = first.getDay();
+    const daysInMonth = last.getDate();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const cells: Array<{ day: number | null; ymd: string | null; available: boolean; isToday: boolean }> = [];
+    for (let i = 0; i < firstDow; i++) cells.push({ day: null, ymd: null, available: false, isToday: false });
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ymd = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      cells.push({ day: d, ymd, available: availableDates.has(ymd), isToday: ymd === todayStr });
+    }
+    return { cells, month: m + 1, availCount: availableDates.size };
+  }, [availableDates]);
+
   const tabs: ReadonlyArray<OverviewInnerTab<InnerTabKey>> = [
     { k: "overview",      label: "현황",            tone: "indigo",  count: null },
     { k: "vendor-info",   label: "공급사 정보",     tone: "emerald", count: null },
@@ -49,7 +137,7 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
       title="거래처"
       description="공급사 정보 · 재고확인 · 발주이력 (방문예약은 slide drawer)"
     >
-      <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex flex-col gap-1 md:gap-2 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* 2026-10-12 · 사용자 지시 · "거래처는 현황판이 없는데" · title "거래처 현황" → "거래처" (overview 집계 성격 아님) ·
             각 탭 = 기존 페이지 상세 그대로 (탭 메뉴 상세 이동 패턴) */}
         <OverviewHero tone="emerald" title="거래처" description="현황판 → 각 섹션 상세로 이동" />

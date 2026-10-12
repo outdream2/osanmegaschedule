@@ -6,7 +6,7 @@
 //   · 홈 랜딩 톤 · CARD + 3px 세로줄 header · 2-tier typography
 
 import React, { useMemo } from "react";
-import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const CARD = "bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]";
 
@@ -69,6 +69,23 @@ export const PurchaseOrderOverlayChart: React.FC<PurchaseOrderOverlayChartProps>
         {right}
       </header>
       <div className="px-3 py-4">
+        {/* 2026-10-12 · 사용자 지시 "범례를 그래프 내에 보기 좋게" · 커스텀 inline 범례
+            · primary = 두꺼운 사각형 (Bar) · overlay = Lollipop (stick + head) 미니어처
+            · recharts Legend 제거 · 홈 톤 compact */}
+        <div className="flex items-center gap-4 px-2 pb-2 text-[12px]">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: barColor }} aria-hidden />
+            <span className="text-slate-600 font-medium">{primaryLabel}</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            {/* Lollipop 미니어처 (stick + head) */}
+            <span className="relative inline-block" style={{ width: 10, height: 12 }} aria-hidden>
+              <span className="absolute left-1/2 bottom-0" style={{ transform: "translateX(-50%)", width: 2, height: "100%", background: lineColor }} />
+              <span className="absolute left-1/2" style={{ transform: "translate(-50%, 0)", top: -1, width: 6, height: 6, borderRadius: "50%", background: lineColor }} />
+            </span>
+            <span className="text-slate-600 font-medium">{overlayLabel}</span>
+          </span>
+        </div>
         <div className="h-[200px]">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
@@ -88,28 +105,32 @@ export const PurchaseOrderOverlayChart: React.FC<PurchaseOrderOverlayChartProps>
                 formatter={(value: any, name: any) => [`${fmt(Number(value))}원`, name]}
                 contentStyle={{ fontSize: 12, borderRadius: 8 }}
               />
-              <Legend wrapperStyle={{ fontSize: 12 }} iconType="square" />
+              {/* 2026-10-12 · 범례는 chart 상단 custom inline 으로 이동 · recharts Legend 제거 */}
               {/* primary · 두꺼운 bar (매입/발주 주 지표) */}
               <Bar dataKey="primary" name={primaryLabel} fill={barColor} isAnimationActive={false} radius={[2, 2, 0, 0]} />
-              {/* overlay · Lollipop stick (얇은 2px bar) · recharts Bar 는 값=0 자동 숨김 (높이 0) */}
-              <Bar dataKey="overlay" name={overlayLabel} fill={lineColor} isAnimationActive={false} barSize={2} radius={[1, 1, 0, 0]} legendType="none" />
-              {/* overlay · Lollipop head · 2026-10-12 사용자 지시 "0이면 Lollipop 표시하지마"
-                  · dot/activeDot 를 function 으로 교체 · payload.overlay <= 0 이면 null return */}
-              <Line
-                type="monotone"
+              {/* overlay · Lollipop (stick + head) · 2026-10-12 사용자 지시 "매입이 막대랑 롤리 둘 다 나와" fix
+                  · Bar 1개 + Line 분리 → Bar 1개로 통합 (custom shape 로 stick + dot 함께 그림)
+                  · value <= 0 → null return (자동 숨김 · 사용자 "0이면 표시하지마" 지시) */}
+              <Bar
                 dataKey="overlay"
                 name={overlayLabel}
-                stroke="transparent"
+                fill={lineColor}
                 isAnimationActive={false}
-                dot={(props: any) => {
+                shape={(props: any) => {
                   const v = Number(props?.payload?.overlay ?? 0);
-                  if (!Number.isFinite(v) || v <= 0) return <g key={props?.key} />;
-                  return <circle key={props?.key} cx={props.cx} cy={props.cy} r={5} fill={lineColor} strokeWidth={0} />;
-                }}
-                activeDot={(props: any) => {
-                  const v = Number(props?.payload?.overlay ?? 0);
-                  if (!Number.isFinite(v) || v <= 0) return <g key={props?.key} />;
-                  return <circle key={props?.key} cx={props.cx} cy={props.cy} r={6} fill={lineColor} strokeWidth={0} />;
+                  if (!Number.isFinite(v) || v <= 0) return <g />;
+                  const { x, y, width, height } = props;
+                  const cx = x + width / 2;
+                  const stickTopY = y;
+                  const stickBottomY = y + height;
+                  return (
+                    <g>
+                      {/* Lollipop stick (얇은 세로선) */}
+                      <line x1={cx} y1={stickBottomY} x2={cx} y2={stickTopY} stroke={lineColor} strokeWidth={2} />
+                      {/* Lollipop head (상단 원) */}
+                      <circle cx={cx} cy={stickTopY} r={5} fill={lineColor} />
+                    </g>
+                  );
                 }}
               />
             </ComposedChart>

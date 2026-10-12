@@ -28,6 +28,8 @@ import { useZoneDefs } from "../../hooks/useZoneDefs";
 import { getZoneLabelByLocation } from "../../lib/zoneClassification";
 // 2026-10-11 · 사용자 지시 · drawer 안 "판매량 + 마진율" combo chart
 import { ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
+// 2026-10-12 · 사용자 지시 대원칙 · 마진율 색상 (음수 빨강 "−" / 양수 초록) · 공통 유틸
+import { formatMargin } from "../../lib/formatMargin";
 
 const CategoryTab = React.lazy(() => import("../OrderManagePage/CategoryTab").then((m) => ({ default: m.CategoryTab })));
 // 2026-10-11 · 사용자 지시 재확정 "매장-판매현황-상품별 판매현황 탭에 판매 메뉴 아래의 상품별 판매현황 (= FlowTab) 그대로 embed"
@@ -624,7 +626,7 @@ export const SalesStatus: React.FC = () => {
                         <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{fmtNum(s.skuCount)}</td>
                         <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{fmtNum(s.qty)}</td>
                         <td className="px-3 py-1.5 text-right tabular-nums font-semibold">{fmtWonShort(s.sale)}원</td>
-                        <td className={`px-3 py-1.5 text-right tabular-nums font-semibold ${(s.marginPct ?? 0) >= 20 ? "text-emerald-600" : (s.marginPct ?? 0) >= 10 ? "text-slate-700" : "text-rose-600"}`}>{s.marginPct === null ? "-" : `${s.marginPct.toFixed(1)}%`}</td>
+                        {(() => { const m = formatMargin(s.marginPct); return <td className={`px-3 py-1.5 text-right ${m.className}`}>{m.text}</td>; })()}
                         <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{fmtWonShort(s.stockValue)}원</td>
                         <td className={`px-3 py-1.5 text-right tabular-nums font-semibold ${s.daysOfStock > 90 ? "text-rose-600" : s.daysOfStock > 45 ? "text-amber-600" : "text-emerald-600"}`}>{s.daysOfStock >= 999 ? "∞" : `${s.daysOfStock}일`}</td>
                         <td className="px-3 py-1.5 text-center">
@@ -745,7 +747,7 @@ export const SalesStatus: React.FC = () => {
                                 <td className="px-3 py-1.5 font-medium break-keep truncate max-w-[160px]" title={s.sup}>{s.sup}</td>
                                 <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{fmtNum(s.skuCount)}</td>
                                 <td className="px-3 py-1.5 text-right tabular-nums font-semibold">{fmtWonShort(s.sale)}원</td>
-                                <td className={`px-3 py-1.5 text-right tabular-nums font-semibold ${(s.marginPct ?? 0) >= 20 ? "text-emerald-600" : (s.marginPct ?? 0) >= 10 ? "text-slate-700" : "text-rose-600"}`}>{s.marginPct === null ? "-" : `${s.marginPct.toFixed(1)}%`}</td>
+                                {(() => { const m = formatMargin(s.marginPct); return <td className={`px-3 py-1.5 text-right ${m.className}`}>{m.text}</td>; })()}
                                 <td className={`px-3 py-1.5 text-right tabular-nums font-semibold ${s.daysOfStock > 90 ? "text-rose-600" : s.daysOfStock > 45 ? "text-amber-600" : "text-emerald-600"}`}>{s.daysOfStock >= 999 ? "∞" : `${s.daysOfStock}일`}</td>
                                 <td className="px-3 py-1.5 text-center">
                                   <span className={`inline-flex items-center justify-center min-w-[36px] h-6 px-1.5 rounded border text-[12px] font-semibold ${p.cls}`}>{p.label}</span>
@@ -1043,7 +1045,7 @@ export const SalesStatus: React.FC = () => {
                               <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{salePrice != null ? `${fmtNum(salePrice)}원` : <span className="text-slate-300">-</span>}</td>
                               <td className="px-3 py-1.5 text-right tabular-nums font-semibold">{fmtNum(p.qty)}</td>
                               <td className="px-3 py-1.5 text-right tabular-nums text-slate-700">{fmtWonShort(p.sale)}원</td>
-                              <td className={`px-3 py-1.5 text-right tabular-nums font-semibold ${(marginPct ?? 0) >= 20 ? "text-emerald-600" : (marginPct ?? 0) >= 10 ? "text-slate-700" : "text-rose-600"}`}>{marginText}</td>
+                              {(() => { const mm = formatMargin(marginPct); return <td className={`px-3 py-1.5 text-right ${mm.className}`}>{mm.text}</td>; })()}
                             </tr>
                           );
                         })}

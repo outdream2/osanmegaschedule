@@ -16,8 +16,8 @@
 
 import type { ZoneDef } from "../constants/displayZones";
 
-/** 상품 분류 결과 · 상비약 / 뷰티 / 미분류 */
-export type ZoneClass = "상비약" | "뷰티" | "미분류";
+/** 상품 분류 결과 · 상비약 / 뷰티 / 냉장고 / 물약 / 미분류 · 2026-10-12 사용자 지시 확장 */
+export type ZoneClass = "상비약" | "뷰티" | "냉장고" | "물약" | "미분류";
 
 /**
  * ERP display_location 문자열에서 **매대 번호** 추출.
@@ -68,8 +68,11 @@ export function classifyByZoneDefs(
   if (!zone) return "미분류";
   const cat = String(zone.category ?? "").trim();
   if (!cat) return "미분류";
+  // 2026-10-12 · 사용자 지시 · "뷰티·냉장고·물약" 카테고리 반영 · zone_defs.category 부분 매칭
   if (cat.includes("상비약")) return "상비약";
   if (cat.includes("뷰티")) return "뷰티";
+  if (cat.includes("냉장고")) return "냉장고";
+  if (cat.includes("물약")) return "물약";
   return "미분류";
 }
 
@@ -99,6 +102,8 @@ export function classifyProducts<T extends { code: string; display_location?: st
     const cat = String(zone?.category ?? "").trim();
     if (cat.includes("상비약")) result.set(p.code, "상비약");
     else if (cat.includes("뷰티")) result.set(p.code, "뷰티");
+    else if (cat.includes("냉장고")) result.set(p.code, "냉장고");
+    else if (cat.includes("물약")) result.set(p.code, "물약");
     else result.set(p.code, "미분류");
   }
   return result;
@@ -161,7 +166,9 @@ export const ZONE_CLASS_TONE: Record<ZoneClass, {
   strip: string;
   label: string;
 }> = {
-  상비약: { bg: "bg-rose-50",   text: "text-rose-700",   strip: "bg-rose-500",   label: "상비약" },
-  뷰티:   { bg: "bg-pink-50",   text: "text-pink-700",   strip: "bg-pink-500",   label: "뷰티"  },
-  미분류: { bg: "bg-slate-50",  text: "text-slate-600",  strip: "bg-slate-400",  label: "미분류" },
+  상비약: { bg: "bg-rose-50",    text: "text-rose-700",    strip: "bg-rose-500",    label: "상비약" },
+  뷰티:   { bg: "bg-pink-50",    text: "text-pink-700",    strip: "bg-pink-500",    label: "뷰티"  },
+  냉장고: { bg: "bg-cyan-50",    text: "text-cyan-700",    strip: "bg-cyan-500",    label: "냉장고" },
+  물약:   { bg: "bg-indigo-50",  text: "text-indigo-700",  strip: "bg-indigo-500",  label: "물약"  },
+  미분류: { bg: "bg-slate-50",   text: "text-slate-600",   strip: "bg-slate-400",   label: "미분류" },
 };

@@ -892,7 +892,7 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
   const navigateToSection = (k: SectionKey) => setInnerTab(sectionToInnerTab[k]);
 
   return (
-    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="flex flex-col gap-1 md:gap-2 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* 2026-10-09 · 사용자 지시 · 홈 랜딩페이지 톤 · compact inline hero */}
       <section className="flex items-center gap-2 py-0.5 px-4 sm:px-6 pt-4">
         <span className="w-[3px] h-[14px] bg-red-500 rounded-full shrink-0" />
@@ -984,15 +984,16 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
             {/* LEFT · 주요 콘텐츠 세로 스택 · 하단 라인 정렬 (flex-1 + h-full) */}
             <div className="flex flex-col gap-4 h-full">
               {/* 2026-10-12 · 사용자 지시 · 발주(bar) + 매입금액(line overlay) 통합 chart */}
+              {/* 2026-10-12 · 사용자 지시 "발주 녹색 · 매입 다른 색" · 색상 명확 분리 (발주 emerald · 매입 amber) */}
               <PurchaseOrderOverlayChart
                 title="일별 발주금액"
                 periodLabel={`최근 ${period}일`}
                 data={orderOverlayChartData}
                 primaryLabel="발주금액"
                 overlayLabel="매입금액"
-                barColor="#0A4F44"
-                lineColor="#E11D48"
-                stripColor="bg-sky-500"
+                barColor="#059669"
+                lineColor="#D97706"
+                stripColor="bg-emerald-500"
               />
               {/* 공급사별 발주비중 + 이상품목 (flex-1 로 확장) · 2026-10-12 · 사용자 "병합" · 공통 Card 사용 (현재고 column 포함) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch flex-1 min-h-0">

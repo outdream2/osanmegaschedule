@@ -83,9 +83,9 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   const [mapInnerTab, setMapInnerTab] = useState<MapInnerTab>("store");
   // 2026-10-11 · 사용자 지시 · 일반약 섹션 5개 → 탭으로 전환 (좌우 2단 안 우측 영역)
   type GeneralSubTab = "topWall" | "center22" | "bottomWall" | "wing" | "counter";
-  const [generalSubTab, setGeneralSubTab] = useState<GeneralSubTab>("topWall");
-  // 2026-10-11 · 사용자 지시 · 왼쪽 카드 · 상비약/뷰티/미분류 3탭 (ERP 위치 + zone_defs.category 기반 공통 함수)
-  const [emerSubTab, setEmerSubTab] = useState<ZoneClass>("상비약");
+  // 2026-10-12 · 사용자 지시 · 1단 구조 · 세로 nav 통합 · default "상비약"
+  type StoreFilterKey = "all" | ZoneClass | GeneralSubTab;
+  const [storeFilter, setStoreFilter] = useState<StoreFilterKey>("상비약");
   // 2026-10-10 · 사용자 지시 · 매대 클릭 시 하단 상품 리스트 아코디언 expand
   const [expandedZone, setExpandedZone] = useState<string | null>(null);
   // 2026-10-10 · products.display_location + purchase_price 매칭용 cache
@@ -93,9 +93,7 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   // 2026-10-12 · 사용자 지시 · 로딩 중 spinner 노출 (fetch 완료 전 render skip)
   const [productsMapLoaded, setProductsMapLoaded] = useState<boolean>(false);
   const [checksLoaded, setChecksLoaded] = useState<boolean>(false);
-  // 2026-10-12 · 사용자 지시 · 판매수·재고수·재고자산 한눈에 노출 · 월 멀티 선택기 (sales 패턴 재사용)
-  //   · 매대 chip 에 (판매수 / 재고수 / 재고자산) 3개 수치 노출
-  //   · 판매 데이터는 pcode별 집계 → 매대별 소계 자동 산출
+  // 2026-10-12 · 사용자 지시 · 판매수 (pcode → qty) · 마진율은 Phase 2 (margin 집계 미완)
   const [saleQtyByCode, setSaleQtyByCode] = useState<Map<string, number>>(new Map());
   const { selectedMonths, setSelectedMonths } = useMonthFilter();
   // 2026-10-12 · 사용자 지시 · 기간 필터 pill (오늘·7일·14일·한달) · null = 월 선택기 사용
@@ -299,13 +297,13 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
     return { wh1: build("1"), wh2: build("2") };
   }, [checks, productsMap, saleQtyByCode]);
 
-  // 통화 포맷
+  // 금액 포맷 · 2026-10-12 · 사용자 지시 · 원화 기호(₩) 제거
   const fmtWon = (n: number): string => {
-    if (!Number.isFinite(n) || n === 0) return "₩0";
-    if (n >= 100_000_000) return `₩${(n / 100_000_000).toFixed(1)}억`;
-    if (n >= 10_000_000) return `₩${Math.round(n / 1_000_000)}백만`;
-    if (n >= 10_000) return `₩${Math.round(n / 10_000)}만`;
-    return `₩${n.toLocaleString()}`;
+    if (!Number.isFinite(n) || n === 0) return "0";
+    if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
+    if (n >= 10_000_000) return `${Math.round(n / 1_000_000)}백만`;
+    if (n >= 10_000) return `${Math.round(n / 10_000)}만`;
+    return `${n.toLocaleString()}`;
   };
 
   // 2026-10-10 · warehouse zones KV · 창고 매대 매핑 (현재 UI 미사용 · 재사용 대비 로드만 유지)
@@ -474,7 +472,7 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   const dataLoading = !productsMapLoaded || !checksLoaded;
 
   return (
-    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="flex flex-col gap-1 md:gap-2 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* 2026-10-10 · 사용자 지시 · 공통 모듈 OverviewHero (발주반품현황·매출현황 패턴 통일) */}
       <OverviewHero
         tone="violet"
@@ -551,8 +549,28 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
               {erpLoading ? "조회 중..." : "실시간 조회"}
             </button>
             <span className="text-[13px] text-slate-500 font-medium ml-auto">
-              집계 매대 <b className="text-ink tabular-nums">{storeZoneAggs.size}</b>곳 · 판매 상품 <b className="text-ink tabular-nums">{saleQtyByCode.size}</b>건
+              집계 매대 <b className="text-ink tabular-nums">{storeZoneAggs.size}</b>곳 · 판매 상품 <b className={`tabular-nums ${saleQtyByCode.size === 0 ? "text-rose-600" : "text-ink"}`}>{saleQtyByCode.size}</b>건
             </span>
+            {/* 2026-10-12 · 사용자 "판매데이터 안 나와" 조사 · saleMap vs inventory_checks 매칭 샘플 */}
+            <div className="text-[12px] text-slate-500 bg-amber-50/60 border border-amber-200 rounded px-2 py-1.5 w-full font-mono tabular-nums overflow-x-auto">
+              {saleQtyByCode.size === 0 ? (
+                <>⚠️ saleMap 비어있음 · /api/stock-manage/top-sales 응답에 sale_stock&gt;0 row 없음</>
+              ) : (
+                <>
+                  <b className="text-amber-700">saleMap 상위 3:</b>{" "}
+                  {Array.from(saleQtyByCode.entries()).slice(0, 3).map(([k, v], i) => (
+                    <span key={i} className="mr-2">[{k}:{v}]</span>
+                  ))}
+                  <span className="mx-2 text-slate-300">|</span>
+                  <b className="text-amber-700">inv_checks → sale 매칭:</b>{" "}
+                  {(checks ?? []).slice(0, 5).map((c: any, i: number) => {
+                    const pc = String(c.product_code ?? "");
+                    const hit = saleQtyByCode.get(pc);
+                    return <span key={i} className={`mr-2 ${hit != null ? "text-emerald-700" : "text-rose-600"}`}>[{pc.slice(-5)}:{hit != null ? `✓${hit}` : "✗"}]</span>;
+                  })}
+                </>
+              )}
+            </div>
           </section>
 
           {/* 요약 KPI 라인 */}
@@ -639,85 +657,88 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
 
             {/* 우측 content · 매대 리스트 or 창고 상품 리스트 */}
             <section className={`${CARD} overflow-hidden flex flex-col`}>
-              {/* 매장 · 좌(상비약) · 우(일반약) 2단 · 2026-10-11 사용자 지시 "왼쪽 상비약 오른쪽 일반약 한 번에 보이게" */}
+              {/* 매장 · 1단 구조 · 세로 nav (전체 + 상비약/뷰티/미분류 + 상단벽/중앙22/하단벽/윙/카운터) · 2026-10-12 사용자 지시 */}
               {mapInnerTab === "store" && (
                 <>
                   <ZoneListHeader icon={Storefront} tone="sky" title="매장 매대" count={emergencyChips.length + generalChips.length} />
                   {storeZones.length === 0 ? (
                     <div className="py-6 text-center text-[14px] text-slate-400">매장 구역 데이터를 불러오는 중...</div>
-                  ) : (
-                    // 2026-10-11 · 사용자 지시 "좌우로 보기좋게" · lg → md breakpoint 로 조정 · 좁은 화면에서도 2 column
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3">
-                      {/* 좌 · 상비약/뷰티/미분류 3탭 (2026-10-11 사용자 지시 · ERP 위치 + zone_defs 공통 함수) */}
-                      <div className="min-w-0 flex flex-col">
-                        {(() => {
-                          // 매대 1~9 chip 들을 category 로 분류 (classifyByZoneDefs · zoneClassification SSOT)
-                          const emerClassified: Record<ZoneClass, StoreChipItem[]> = { "상비약": [], "뷰티": [], "미분류": [] };
-                          for (const chip of emergencyChips) {
-                            const cls = classifyByZoneDefs(chip.code, storeZones);
-                            emerClassified[cls].push(chip);
-                          }
-                          // 2026-10-12 · 사용자 지시 · "ERP category = 상비약 없어 · 진열위치 가져와서 zone db 매칭하고 거기서 카테고리 가져오는거야"
-                          //   · ERP products 에는 category 없음 · products.display_location → zone_defs.category 매칭 결과 사용
-                          //   · classifyByZoneDefs(code, storeZones) 가 그 매칭 로직 (SSOT)
-                          const emerTabs: Array<{ k: ZoneClass; label: string; subtitle: string }> = [
-                            { k: "상비약", label: "상비약", subtitle: "진열위치 → zone_defs 매칭 category" },
-                            { k: "뷰티",   label: "뷰티",   subtitle: "진열위치 → zone_defs 매칭 category" },
-                            { k: "미분류", label: "미분류", subtitle: "zone_defs 매칭 실패 매대"   },
-                          ];
-                          const activeChips = emerClassified[emerSubTab];
-                          const activeTabMeta = emerTabs.find(t => t.k === emerSubTab);
-                          return (
-                            <>
-                              <div className="inline-flex flex-wrap items-center gap-0.5 bg-slate-100 border border-slate-200 rounded-md p-0.5 self-start mb-2">
-                                {emerTabs.map(t => (
-                                  <button key={t.k} type="button" onClick={() => setEmerSubTab(t.k)}
-                                    className={`inline-flex items-baseline gap-1 px-3 h-7 rounded text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${emerSubTab === t.k ? "bg-white text-rose-700 shadow-sm" : "text-slate-500 hover:text-ink"}`}>
-                                    <span>{t.label}</span>
-                                    <span className="text-[11.5px] text-slate-400 tabular-nums">({emerClassified[t.k].length})</span>
-                                  </button>
-                                ))}
-                              </div>
-                              <ZoneListTable sortKey={storeSortKey} sortDir={storeSortDir} onSort={toggleStoreSort}>
-                                <ZoneListGroup title={emerSubTab} subtitle={activeTabMeta?.subtitle ?? ""} tone="rose" chips={activeChips} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} sortKey={storeSortKey} sortDir={storeSortDir} />
-                              </ZoneListTable>
-                            </>
-                          );
-                        })()}
+                  ) : (() => {
+                    // 2026-10-12 · 사용자 지시 · 전체 chips (매장 1-46) category 분류 (zone_defs 매칭) · 상비약·뷰티·냉장고·물약·미분류
+                    const allChips = [...emergencyChips, ...generalChips];
+                    const classified: Record<ZoneClass, StoreChipItem[]> = { "상비약": [], "뷰티": [], "냉장고": [], "물약": [], "미분류": [] };
+                    for (const chip of allChips) {
+                      const cls = classifyByZoneDefs(chip.code, storeZones);
+                      classified[cls].push(chip);
+                    }
+                    // 2026-10-12 · 사용자 지시 · "중간탭은 상비약 일반약(1-12) 이런식" · 라벨에 매대 범위 괄호 표시
+                    const navItems: Array<{ k: StoreFilterKey; label: string; count: number }> = [
+                      { k: "all",        label: "전체",             count: allChips.length },
+                      { k: "상비약",      label: "상비약 (1-9)",     count: classified["상비약"].length },
+                      { k: "뷰티",        label: "뷰티",             count: classified["뷰티"].length },
+                      { k: "냉장고",      label: "냉장고",           count: classified["냉장고"].length },
+                      { k: "물약",        label: "물약",             count: classified["물약"].length },
+                      { k: "미분류",      label: "미분류",           count: classified["미분류"].length },
+                      { k: "topWall",    label: "상단 벽 (10-21)",  count: storeSections.topWall.length },
+                      { k: "center22",   label: "중앙 (22)",        count: storeSections.center22.length },
+                      { k: "bottomWall", label: "하단 벽 (23-27)",  count: storeSections.bottomWall.length },
+                      { k: "wing",       label: "윙 (28-40)",       count: storeSections.wing.length },
+                      { k: "counter",    label: "카운터 (41-46)",   count: storeSections.counter.length },
+                    ];
+                    const activeChips: StoreChipItem[] =
+                      storeFilter === "all" ? allChips
+                      : storeFilter === "상비약" || storeFilter === "뷰티" || storeFilter === "냉장고" || storeFilter === "물약" || storeFilter === "미분류" ? classified[storeFilter as ZoneClass]
+                      : storeFilter === "topWall" ? storeSections.topWall
+                      : storeFilter === "center22" ? storeSections.center22
+                      : storeFilter === "bottomWall" ? storeSections.bottomWall
+                      : storeFilter === "wing" ? storeSections.wing
+                      : storeSections.counter;
+                    const activeLabel = navItems.find(n => n.k === storeFilter)?.label ?? "전체";
+                    const activeTone: Tone = storeFilter === "상비약" ? "rose"
+                      : storeFilter === "뷰티" ? "rose"
+                      : storeFilter === "냉장고" ? "sky"
+                      : storeFilter === "물약" ? "indigo"
+                      : "sky";
+                    return (
+                      <div className="grid grid-cols-[128px_1fr] gap-2 p-3 min-w-0">
+                        <ul className="flex flex-col gap-0.5 border-r border-slate-100 pr-2">
+                          {navItems.map(t => {
+                            const active = storeFilter === t.k;
+                            return (
+                              <li key={t.k}>
+                                <button
+                                  type="button"
+                                  onClick={() => setStoreFilter(t.k)}
+                                  className={`w-full flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-md text-[13px] font-semibold text-left transition-colors cursor-pointer ${
+                                    active ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50 hover:text-ink"
+                                  }`}
+                                >
+                                  <span>{t.label}</span>
+                                  <span className={`text-[12px] tabular-nums ${active ? "text-slate-200" : "text-slate-400"}`}>{t.count}</span>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        <div className="min-w-0">
+                          <ZoneListTable sortKey={storeSortKey} sortDir={storeSortDir} onSort={toggleStoreSort}>
+                            <ZoneListGroup
+                              title={activeLabel}
+                              subtitle=""
+                              tone={activeTone}
+                              chips={activeChips}
+                              aggs={storeZoneAggs}
+                              expanded={expandedZone}
+                              onToggle={setExpandedZone}
+                              fmtWon={fmtWon}
+                              sortKey={storeSortKey}
+                              sortDir={storeSortDir}
+                            />
+                          </ZoneListTable>
+                        </div>
                       </div>
-                      {/* 우 · 일반약 (탭으로 전환 · 2026-10-11 사용자 지시) */}
-                      <div className="min-w-0 flex flex-col">
-                        {(() => {
-                          const allTabs: Array<{ k: GeneralSubTab; label: string; chips: StoreChipItem[]; subtitle: string }> = [
-                            { k: "topWall",    label: "상단 벽 10~21",   chips: storeSections.topWall,    subtitle: "상단 벽 10~21" },
-                            { k: "center22",   label: "중앙 22",         chips: storeSections.center22,   subtitle: "중앙 22" },
-                            { k: "bottomWall", label: "하단 벽 23~27",  chips: storeSections.bottomWall, subtitle: "하단 벽 23~27" },
-                            { k: "wing",       label: "윙 28~40",        chips: storeSections.wing,       subtitle: "윙 28~40" },
-                            { k: "counter",    label: "카운터 41~46",   chips: storeSections.counter,    subtitle: "카운터 41~46" },
-                          ];
-                          const generalTabs = allTabs.filter(t => t.chips.length > 0);
-                          const activeTab = generalTabs.find(t => t.k === generalSubTab) ?? generalTabs[0];
-                          return (
-                            <>
-                              <div className="inline-flex flex-wrap items-center gap-0.5 bg-slate-100 border border-slate-200 rounded-md p-0.5 self-start mb-2">
-                                {generalTabs.map(t => (
-                                  <button key={t.k} type="button" onClick={() => setGeneralSubTab(t.k)}
-                                    className={`px-3 h-7 rounded text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${generalSubTab === t.k ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-ink"}`}>
-                                    {t.label}
-                                  </button>
-                                ))}
-                              </div>
-                              {activeTab && (
-                                <ZoneListTable sortKey={storeSortKey} sortDir={storeSortDir} onSort={toggleStoreSort}>
-                                  <ZoneListGroup title="일반약" subtitle={activeTab.subtitle} tone="sky" chips={activeTab.chips} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} sortKey={storeSortKey} sortDir={storeSortDir} />
-                                </ZoneListTable>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </>
               )}
 
@@ -912,7 +933,7 @@ const ZoneListHeader: React.FC<{
 
 /** 테이블 wrapper · 공통 그리드 (코드 · 매대명 · 제품수 · 판매수 · 재고자산)
  *  2026-10-12 · 사용자 지시 · 판매수 column + 자동 헤더 정렬 */
-export type ZoneSortKey = "code" | "label" | "sale" | "stock" | "asset";
+export type ZoneSortKey = "code" | "label" | "margin" | "sale" | "count" | "stock" | "asset";
 export type SortDir = "asc" | "desc";
 const ZoneListTable: React.FC<{
   children: React.ReactNode;
@@ -927,12 +948,14 @@ const ZoneListTable: React.FC<{
       <table className="w-full text-left">
         <thead>
           <tr className="text-[13px] text-slate-500 font-medium border-b border-slate-100 bg-slate-50/40">
-            {/* 2026-10-12 · 사용자 지시 · 컬럼순서 (판매수 → 재고수 → 재고자산) */}
-            <th className={`${headCls} md:px-4 w-[90px]`} onClick={() => onSort("code")}>코드 <span className="text-slate-400">{arrow("code")}</span></th>
+            {/* 2026-10-12 · 사용자 지시 · 컬럼순서 (마진율 → 판매수 → 제품수 → 재고수 → 재고자산) */}
+            <th className={`${headCls} md:px-4 w-[80px]`} onClick={() => onSort("code")}>코드 <span className="text-slate-400">{arrow("code")}</span></th>
             <th className={headCls} onClick={() => onSort("label")}>매대명 <span className="text-slate-400">{arrow("label")}</span></th>
-            <th className={`${headCls} text-right w-[80px]`} onClick={() => onSort("sale")}>판매수 <span className="text-slate-400">{arrow("sale")}</span></th>
-            <th className={`${headCls} text-right w-[80px]`} onClick={() => onSort("stock")}>재고수 <span className="text-slate-400">{arrow("stock")}</span></th>
-            <th className={`${headCls} md:px-4 text-right w-[130px]`} onClick={() => onSort("asset")}>재고자산 <span className="text-slate-400">{arrow("asset")}</span></th>
+            <th className={`${headCls} text-right w-[72px]`} onClick={() => onSort("margin")}>마진율 <span className="text-slate-400">{arrow("margin")}</span></th>
+            <th className={`${headCls} text-right w-[72px]`} onClick={() => onSort("sale")}>판매수 <span className="text-slate-400">{arrow("sale")}</span></th>
+            <th className={`${headCls} text-right w-[72px]`} onClick={() => onSort("count")}>제품수 <span className="text-slate-400">{arrow("count")}</span></th>
+            <th className={`${headCls} text-right w-[72px]`} onClick={() => onSort("stock")}>재고수 <span className="text-slate-400">{arrow("stock")}</span></th>
+            <th className={`${headCls} md:px-4 text-right w-[110px]`} onClick={() => onSort("asset")}>재고자산 <span className="text-slate-400">{arrow("asset")}</span></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -965,10 +988,12 @@ const ZoneListGroup: React.FC<{
     arr.sort((a, b) => {
       const ag = aggs.get(a.code);
       const bg = aggs.get(b.code);
-      if (sortKey === "code")  return a.code.localeCompare(b.code, "ko") * sign;
-      if (sortKey === "label") return a.label.localeCompare(b.label, "ko") * sign;
-      if (sortKey === "sale")  return ((ag?.totalSale ?? 0) - (bg?.totalSale ?? 0)) * sign;
-      if (sortKey === "stock") return ((ag?.totalStock ?? 0) - (bg?.totalStock ?? 0)) * sign;
+      if (sortKey === "code")   return a.code.localeCompare(b.code, "ko") * sign;
+      if (sortKey === "label")  return a.label.localeCompare(b.label, "ko") * sign;
+      if (sortKey === "margin") return 0; // margin 데이터 미집계 · placeholder
+      if (sortKey === "sale")   return ((ag?.totalSale ?? 0) - (bg?.totalSale ?? 0)) * sign;
+      if (sortKey === "count")  return ((ag?.productCount ?? 0) - (bg?.productCount ?? 0)) * sign;
+      if (sortKey === "stock")  return ((ag?.totalStock ?? 0) - (bg?.totalStock ?? 0)) * sign;
       return ((ag?.assetValue ?? 0) - (bg?.assetValue ?? 0)) * sign;
     });
     return arr;
@@ -987,8 +1012,10 @@ const ZoneListGroup: React.FC<{
             <span className="text-[12px] text-slate-500 font-medium">{subtitle}</span>
           </div>
         </td>
-        {/* 2026-10-12 · 사용자 지시 · 컬럼순서 (판매 → 재고 → 자산) · 재고수 = totalStock */}
+        {/* 2026-10-12 · 사용자 지시 · 컬럼 (마진율 → 판매 → 제품수 → 재고 → 자산) */}
+        <td className="px-3 py-1.5 text-right text-[13px] text-slate-400 tabular-nums">-</td>
         <td className="px-3 py-1.5 text-right text-[13px] text-slate-500 font-semibold tabular-nums">{sectionSaleTotal > 0 ? sectionSaleTotal.toLocaleString() : "-"}</td>
+        <td className="px-3 py-1.5 text-right text-[13px] text-slate-500 font-semibold tabular-nums">{chips.reduce((s, c) => s + (aggs.get(c.code)?.productCount ?? 0), 0)}</td>
         <td className="px-3 py-1.5 text-right text-[13px] text-slate-500 font-semibold tabular-nums">{sectionStockTotal > 0 ? sectionStockTotal.toLocaleString() : "-"}</td>
         <td className="px-3 md:px-4 py-1.5 text-right text-[13px] text-slate-600 font-semibold tabular-nums">{fmtWon(sectionAssetTotal)}</td>
       </tr>
@@ -1020,9 +1047,13 @@ const ZoneListGroup: React.FC<{
               <td className="px-3 py-2 text-[14px] text-ink font-medium leading-tight">
                 <span className="line-clamp-1" title={c.label}>{c.label}</span>
               </td>
-              {/* 2026-10-12 · 사용자 지시 · 판매수 → 재고수 → 재고자산 순서 */}
+              {/* 2026-10-12 · 사용자 지시 · 마진율 → 판매수 → 제품수 → 재고수 → 재고자산 */}
+              <td className="px-3 py-2 text-right text-[14px] text-slate-400 tabular-nums">-</td>
               <td className="px-3 py-2 text-right text-[14px] font-semibold text-ink tabular-nums">
                 {(agg?.totalSale ?? 0) > 0 ? agg!.totalSale.toLocaleString() : <span className="text-slate-300">-</span>}
+              </td>
+              <td className="px-3 py-2 text-right text-[14px] font-semibold text-ink tabular-nums">
+                {count > 0 ? count : <span className="text-slate-300">0</span>}
               </td>
               <td className="px-3 py-2 text-right text-[14px] font-semibold text-ink tabular-nums">
                 {(agg?.totalStock ?? 0) > 0 ? agg!.totalStock.toLocaleString() : <span className="text-slate-300">0</span>}

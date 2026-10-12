@@ -11,7 +11,7 @@
 | 스캔 파일 | 1210 |
 | 위반 파일 | 101 |
 | 클린 파일 | 1109 (92%) |
-| 총 위반 개수 | 535 |
+| 총 위반 개수 | 536 |
 
 ## 🚨 규칙별 위반 현황
 
@@ -21,7 +21,7 @@
 | `large-file-warn` | 18 | 18 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 | `no-raw-console-server` | 274 | 28 | medium | logger.info / logger.warn / logger.error (server/lib/logger.ts) |
 | `no-any-server` | 237 | 64 | medium | 구체 타입 · unknown + type guard · zod 스키마 추론 |
-| `prefer-modal-primitive` | 4 | 4 | medium | Modal 프리미티브 (src/components/common/Modal.tsx) |
+| `prefer-modal-primitive` | 5 | 5 | medium | Modal 프리미티브 (src/components/common/Modal.tsx) |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
@@ -33,7 +33,7 @@
 | 4 | `server/ocr/engines/ppuPaddle.ts` | 729 | 71 | no-raw-console-server(33) · no-any-server(5) |
 | 5 | `server/routes/ocr/parseRouter.ts` | 186 | 33 | no-raw-console-server(13) · no-any-server(7) |
 | 6 | `server/ocr/pipeline/stages/05-normalize.ts` | 248 | 25 | no-raw-console-server(12) · no-any-server(1) |
-| 7 | `src/components/DisplayPage/overviews/OrderReturnOverview.tsx` | 2365 | 24 | large-file-critical(1) |
+| 7 | `src/components/DisplayPage/overviews/OrderReturnOverview.tsx` | 2383 | 24 | large-file-critical(1) |
 | 8 | `src/components/DisplayPage/RevenuePage.tsx` | 2589 | 24 | large-file-critical(1) |
 | 9 | `server/routes/display/requests.ts` | 1641 | 20 | no-any-server(20) |
 | 10 | `server/ocr/pipeline/stages/09-totals.ts` | 147 | 18 | no-raw-console-server(9) |
@@ -70,7 +70,7 @@
 | `server/ocr/engines/ppuPaddle.ts` | 729 | 71 |
 | `server/routes/ocr/parseRouter.ts` | 186 | 33 |
 | `server/ocr/pipeline/stages/05-normalize.ts` | 248 | 25 |
-| `src/components/DisplayPage/overviews/OrderReturnOverview.tsx` | 2365 | 24 |
+| `src/components/DisplayPage/overviews/OrderReturnOverview.tsx` | 2383 | 24 |
 | `src/components/DisplayPage/RevenuePage.tsx` | 2589 | 24 |
 | `server/routes/display/requests.ts` | 1641 | 20 |
 | `server/ocr/pipeline/stages/09-totals.ts` | 147 | 18 |
@@ -102,6 +102,7 @@
 | `server/routes/purchase/vat.ts` | 594 | 6 |
 | `server/routes/stock/products.ts` | 1400 | 6 |
 | `server/routes/stock/stockManage/topSales.ts` | 1093 | 6 |
+| `src/components/DisplayPage/overviews/PurchaseArrivalOverview.tsx` | 934 | 5 |
 | `server/lib/auditLogger.ts` | 79 | 5 |
 | `server/routes/display/zoneDefs.ts` | 173 | 5 |
 | `server/routes/ocr/diagRouter.ts` | 54 | 5 |
@@ -115,7 +116,6 @@
 | `server/routes/stock/lossTracking.ts` | 297 | 4 |
 | `server/services/googleDriveService.ts` | 466 | 4 |
 | `src/components/DisplayPage/DisplayPage.tsx` | 818 | 3 |
-| `src/components/DisplayPage/overviews/PurchaseArrivalOverview.tsx` | 816 | 3 |
 | `src/components/LandingPage/VendorListEditor.tsx` | 907 | 3 |
 | `src/components/OrderManagePage/OrderHistoryTab.tsx` | 817 | 3 |
 | `src/components/OrderManagePage/OrderManagePage.tsx` | 905 | 3 |

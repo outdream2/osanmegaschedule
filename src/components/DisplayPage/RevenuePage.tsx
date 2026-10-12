@@ -137,7 +137,7 @@ export const RevenuePage: React.FC<RevenuePageProps> = ({ initialTab = "revenue"
     // 2026-10-10 · 사용자 "아직도 달라 · 똑같이 · 통일성" 3차 통일
     //   · 발주반품/매입재고/재고진열 wrapper 공식 100% 복제 · flex-1 제거
     //   · 다른 overview 들은 flex-1 없이 상위 main 의 min-h-0 flex-col 안에서 자연 작동
-    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="flex flex-col gap-1 md:gap-2 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* 2026-10-10 · #12 · 메뉴 쪼개진 후 상단 inner tab 제거 (사용자 지시 "매출현황메뉴에서는 매출현황탭 판매현황탭 없애야지") · OverviewHero title 만 initialTab 따라 분기 */}
       <OverviewHero
         tone={initialTab === "sales" ? "rose" : "emerald"}
@@ -517,10 +517,11 @@ const HourlyReportTab: React.FC = () => {
             <div className="flex items-baseline gap-2 md:gap-3 flex-wrap text-[14px] text-slate-600">
               <span className="text-[12px] text-slate-400 font-medium shrink-0">최근 {nDays}일</span>
               <span className="text-slate-300 shrink-0">|</span>
+              {/* 2026-10-12 · 사용자 지시 "매출총액 데이터 붉은색 계열" · strip + 수치 모두 rose */}
               <span className="inline-flex items-baseline gap-1.5 shrink-0">
-                <span className="w-[3px] h-[12px] bg-brand-deep rounded-full self-center" aria-hidden />
+                <span className="w-[3px] h-[12px] bg-rose-500 rounded-full self-center" aria-hidden />
                 <span className="font-medium">매출총액</span>
-                <span className="font-bold text-ink tabular-nums">{fmtWon(sumSale)}</span>
+                <span className="font-bold text-rose-700 tabular-nums">{fmtWon(sumSale)}</span>
               </span>
               <span className="text-slate-300 shrink-0">·</span>
               <span className="inline-flex items-baseline gap-1.5 shrink-0">
