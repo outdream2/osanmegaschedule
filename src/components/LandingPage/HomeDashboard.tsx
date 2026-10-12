@@ -641,11 +641,12 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               items={dayProducts ?? []}
               onOpen={() => {
                 // 2026-10-12 · 사용자 지시 · 홈 '오늘의 판매현황' → 매출현황>상품별 deeplink
+                //   · subTab "sales" (sideNavGroups) · SalesStatus 안 innerTab=revenue + revenueSubTab=product
                 try {
                   sessionStorage.setItem("sales-status.innerTab", "revenue");
                   sessionStorage.setItem("sales-status.revenueSubTab", "product");
                 } catch {}
-                goTo("display", "revenue")();
+                goTo("display", "sales")();
               }}
               onProductClick={handleProductClick}
               productsMeta={productsMeta}

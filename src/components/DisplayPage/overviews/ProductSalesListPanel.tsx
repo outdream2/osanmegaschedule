@@ -27,7 +27,7 @@ interface TopSalesRow {
   category?: string | null;
 }
 
-type SortKey = "sale" | "amount" | "margin" | "stock" | "name";
+type SortKey = "sale" | "amount" | "margin" | "stock" | "name" | "purchase" | "price";
 type SortDir = "asc" | "desc";
 
 const fmt = (n: number | null | undefined): string => {
@@ -99,12 +99,14 @@ export const ProductSalesListPanel: React.FC<Props> = ({ linkedToHome = true }) 
     };
     const sorted = [...filtered].sort((a, b) => {
       switch (sortKey) {
-        case "sale":   return sign * (Number(a.sale_stock ?? 0) - Number(b.sale_stock ?? 0));
-        case "amount": return sign * (Number(a.total_amount ?? 0) - Number(b.total_amount ?? 0));
-        case "margin": return sign * (marginOf(a) - marginOf(b));
-        case "stock":  return sign * (Number(a.current_stock ?? a.closing_stock ?? 0) - Number(b.current_stock ?? b.closing_stock ?? 0));
-        case "name":   return sign * String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko");
-        default:       return 0;
+        case "sale":     return sign * (Number(a.sale_stock ?? 0) - Number(b.sale_stock ?? 0));
+        case "amount":   return sign * (Number(a.total_amount ?? 0) - Number(b.total_amount ?? 0));
+        case "margin":   return sign * (marginOf(a) - marginOf(b));
+        case "stock":    return sign * (Number(a.current_stock ?? a.closing_stock ?? 0) - Number(b.current_stock ?? b.closing_stock ?? 0));
+        case "name":     return sign * String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko");
+        case "purchase": return sign * (Number(a.purchase_price ?? 0) - Number(b.purchase_price ?? 0));
+        case "price":    return sign * (Number(a.sale_price ?? 0) - Number(b.sale_price ?? 0));
+        default:         return 0;
       }
     });
     return sorted;
@@ -185,25 +187,29 @@ export const ProductSalesListPanel: React.FC<Props> = ({ linkedToHome = true }) 
                     상품명 <SortIcon k="name" />
                   </button>
                 </th>
-                <th className="px-3 py-2 text-left text-[11.5px] font-semibold text-slate-500 hidden md:table-cell">공급사</th>
                 <th className="px-3 py-2 text-right text-[11.5px] font-semibold text-slate-500">
-                  <button type="button" onClick={() => toggleSort("sale")} className="inline-flex items-center gap-1 hover:text-ink">
-                    판매수량 <SortIcon k="sale" />
-                  </button>
-                </th>
-                <th className="px-3 py-2 text-right text-[11.5px] font-semibold text-slate-500">
-                  <button type="button" onClick={() => toggleSort("amount")} className="inline-flex items-center gap-1 hover:text-ink">
-                    매출 <SortIcon k="amount" />
-                  </button>
-                </th>
-                <th className="px-3 py-2 text-right text-[11.5px] font-semibold text-slate-500 hidden lg:table-cell">
                   <button type="button" onClick={() => toggleSort("margin")} className="inline-flex items-center gap-1 hover:text-ink">
                     마진율 <SortIcon k="margin" />
                   </button>
                 </th>
                 <th className="px-3 py-2 text-right text-[11.5px] font-semibold text-slate-500 hidden md:table-cell">
-                  <button type="button" onClick={() => toggleSort("stock")} className="inline-flex items-center gap-1 hover:text-ink">
-                    현재고 <SortIcon k="stock" />
+                  <button type="button" onClick={() => toggleSort("purchase")} className="inline-flex items-center gap-1 hover:text-ink">
+                    매입가 <SortIcon k="purchase" />
+                  </button>
+                </th>
+                <th className="px-3 py-2 text-right text-[11.5px] font-semibold text-slate-500 hidden md:table-cell">
+                  <button type="button" onClick={() => toggleSort("price")} className="inline-flex items-center gap-1 hover:text-ink">
+                    판매가 <SortIcon k="price" />
+                  </button>
+                </th>
+                <th className="px-3 py-2 text-right text-[11.5px] font-semibold text-slate-500">
+                  <button type="button" onClick={() => toggleSort("sale")} className="inline-flex items-center gap-1 hover:text-ink">
+                    수량 <SortIcon k="sale" />
+                  </button>
+                </th>
+                <th className="px-3 py-2 text-right text-[11.5px] font-semibold text-slate-500">
+                  <button type="button" onClick={() => toggleSort("amount")} className="inline-flex items-center gap-1 hover:text-ink">
+                    전체금액 <SortIcon k="amount" />
                   </button>
                 </th>
               </tr>
@@ -213,27 +219,27 @@ export const ProductSalesListPanel: React.FC<Props> = ({ linkedToHome = true }) 
                 const sp = Number(r.sale_price ?? 0);
                 const pp = Number(r.purchase_price ?? 0);
                 const margin = sp > 0 ? ((sp - pp) / sp) * 100 : null;
-                const stock = r.current_stock ?? r.closing_stock ?? null;
                 return (
                   <tr key={`${r.product_code ?? r.pcode ?? i}`} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                     <td className="px-3 py-1.5 text-right text-slate-400 text-[12.5px]">{i + 1}</td>
                     <td className="px-3 py-1.5">
                       <div className="flex flex-col min-w-0">
                         <span className="text-ink font-medium truncate" title={r.product_name ?? ""}>{r.product_name ?? "—"}</span>
-                        <span className="text-[11.5px] text-slate-400 tabular-nums truncate">{r.product_code ?? r.pcode ?? ""}</span>
+                        <div className="flex items-center gap-1.5 text-[11.5px] text-slate-400 tabular-nums truncate">
+                          <span>{r.product_code ?? r.pcode ?? ""}</span>
+                          {r.supplier_name && <span className="truncate">· {r.supplier_name}</span>}
+                        </div>
                       </div>
                     </td>
-                    <td className="px-3 py-1.5 text-slate-600 truncate hidden md:table-cell max-w-[160px]" title={r.supplier_name ?? ""}>
-                      {r.supplier_name ?? "—"}
-                    </td>
-                    <td className="px-3 py-1.5 text-right font-semibold text-ink">{fmt(r.sale_stock)}</td>
-                    <td className="px-3 py-1.5 text-right font-semibold text-emerald-700">{fmt(r.total_amount)}</td>
-                    <td className="px-3 py-1.5 text-right hidden lg:table-cell">
+                    <td className="px-3 py-1.5 text-right">
                       {margin == null ? <span className="text-slate-400">—</span>
                         : margin < 0 ? <span className="text-rose-600 font-semibold">−{Math.abs(margin).toFixed(1)}%</span>
                         : <span className="text-emerald-700 font-semibold">{margin.toFixed(1)}%</span>}
                     </td>
-                    <td className="px-3 py-1.5 text-right hidden md:table-cell text-slate-600">{fmt(stock)}</td>
+                    <td className="px-3 py-1.5 text-right hidden md:table-cell text-slate-600">{sp > 0 ? fmt(pp) : "—"}</td>
+                    <td className="px-3 py-1.5 text-right hidden md:table-cell text-slate-600">{sp > 0 ? fmt(sp) : "—"}</td>
+                    <td className="px-3 py-1.5 text-right font-semibold text-ink">{fmt(r.sale_stock)}</td>
+                    <td className="px-3 py-1.5 text-right font-semibold text-emerald-700">{fmt(r.total_amount)}</td>
                   </tr>
                 );
               })}
