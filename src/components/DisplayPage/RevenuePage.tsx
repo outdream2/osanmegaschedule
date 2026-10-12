@@ -137,7 +137,7 @@ export const RevenuePage: React.FC<RevenuePageProps> = ({ initialTab = "revenue"
     // 2026-10-10 · 사용자 "아직도 달라 · 똑같이 · 통일성" 3차 통일
     //   · 발주반품/매입재고/재고진열 wrapper 공식 100% 복제 · flex-1 제거
     //   · 다른 overview 들은 flex-1 없이 상위 main 의 min-h-0 flex-col 안에서 자연 작동
-    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
+    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* 2026-10-10 · #12 · 메뉴 쪼개진 후 상단 inner tab 제거 (사용자 지시 "매출현황메뉴에서는 매출현황탭 판매현황탭 없애야지") · OverviewHero title 만 initialTab 따라 분기 */}
       <OverviewHero
         tone={initialTab === "sales" ? "rose" : "emerald"}
@@ -427,34 +427,27 @@ const HourlyReportTab: React.FC = () => {
   return (
     // 2026-10-06 · 사용자 지시 · 반응형 · min-w-0 보장 · 오른쪽 잘림 방지
     <div className="flex flex-col gap-4 w-full min-w-0 max-w-full">
-      {/* 상단 TODAY KPI (HOURLY 전용 · 오늘 데이터만) · 미묘 톤 · 매출 색 포인트 */}
-      <div className="bg-white border border-zinc-200 rounded-xl p-3 md:p-4">
-        <div className="text-[13px] md:text-[14px] text-zinc-500 font-semibold mb-2">오늘 {today} {curTimeLabel} 기준</div>
-        <div className="flex items-stretch divide-x divide-zinc-100">
-          {/* 매출 (color point) */}
-          <div className="flex-1 pr-3 relative min-w-0">
-            <span className="absolute left-0 top-1 bottom-1 w-[2px] bg-brand-deep rounded-r-full" aria-hidden />
-            <div className="pl-2">
-              <div className="text-[13px] md:text-[14px] text-zinc-500 font-semibold mb-0.5">누적 매출</div>
-              <div className="text-[17px] md:text-[20px] font-bold tabular-nums text-brand-deep leading-tight truncate">
-                {showTopKpi ? fmtWon(todaySale) : "-"}
-              </div>
-            </div>
-          </div>
-          {/* 객단가 */}
-          <div className="flex-1 px-3 min-w-0">
-            <div className="text-[13px] md:text-[14px] text-zinc-500 font-semibold mb-0.5">객단가</div>
-            <div className="text-[17px] md:text-[20px] font-bold tabular-nums text-ink leading-tight truncate">
-              {showTopKpi && todayCust > 0 ? fmtWon(todaySale / todayCust) : "-"}
-            </div>
-          </div>
-          {/* 고객수 */}
-          <div className="flex-1 pl-3 min-w-0">
-            <div className="text-[13px] md:text-[14px] text-zinc-500 font-semibold mb-0.5">누적 고객수</div>
-            <div className="text-[17px] md:text-[20px] font-bold tabular-nums text-ink leading-tight truncate">
-              {showTopKpi ? todayCust.toLocaleString() + "명" : "-"}
-            </div>
-          </div>
+      {/* 2026-10-12 · 사용자 지시 "통합·공간 차지 않게·텍스트로·예쁘게" · TODAY KPI inline compact 톤
+          · 홈 랜딩 톤 CARD · 좌측 strip accent (brand) + divider dot · 1 라인 ellipsis flex-wrap */}
+      <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] px-3 py-2 md:px-4 md:py-2.5">
+        <div className="flex items-baseline gap-2 md:gap-3 flex-wrap text-[14px] text-slate-600">
+          <span className="text-[12px] text-slate-400 font-medium shrink-0">오늘 {today} {curTimeLabel} 기준</span>
+          <span className="text-slate-300 shrink-0">|</span>
+          <span className="inline-flex items-baseline gap-1.5 shrink-0">
+            <span className="w-[3px] h-[12px] bg-brand-deep rounded-full self-center" aria-hidden />
+            <span className="font-medium">누적매출</span>
+            <span className="font-bold text-brand-deep tabular-nums">{showTopKpi ? fmtWon(todaySale) : "-"}</span>
+          </span>
+          <span className="text-slate-300 shrink-0">·</span>
+          <span className="inline-flex items-baseline gap-1.5 shrink-0">
+            <span className="font-medium">객단가</span>
+            <span className="font-bold text-ink tabular-nums">{showTopKpi && todayCust > 0 ? fmtWon(todaySale / todayCust) : "-"}</span>
+          </span>
+          <span className="text-slate-300 shrink-0">·</span>
+          <span className="inline-flex items-baseline gap-1.5 shrink-0">
+            <span className="font-medium">고객</span>
+            <span className="font-bold text-ink tabular-nums">{showTopKpi ? todayCust.toLocaleString() + "명" : "-"}</span>
+          </span>
         </div>
       </div>
 
@@ -518,23 +511,36 @@ const HourlyReportTab: React.FC = () => {
         const avgMarginRate = sumSale > 0 ? (sumMargin / sumSale) * 100 : 0;
         const avgCust = displayDateData.length > 0 ? sumCust / displayDateData.length : 0;
         const nDays = displayDateData.length;
-        const items: Array<{ label: string; value: string; accent: string }> = [
-          { label: `${nDays}일 누적 매출총액`, value: fmtWon(sumSale), accent: "bg-brand-deep" },
-          { label: `${nDays}일 누적 매출이익`, value: fmtWon(sumMargin), accent: "bg-emerald-500" },
-          { label: `${nDays}일 평균 마진율`, value: `${avgMarginRate.toFixed(1)}%`, accent: "bg-amber-500" },
-          { label: `${nDays}일 일평균 고객수`, value: `${Math.round(avgCust).toLocaleString()}명`, accent: "bg-sky-500" },
-        ];
+        // 2026-10-12 · 사용자 지시 "통합·공간 차지 않게·텍스트로·예쁘게" · N일 KPI inline compact
         return (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-            {items.map((it) => (
-              <div key={it.label} className="bg-white border border-zinc-200 rounded-xl px-3 py-2.5 min-w-0 shadow-[0_1px_2px_rgba(10,46,74,0.04)] relative overflow-hidden">
-                <span className={`absolute left-0 top-2 bottom-2 w-[3px] ${it.accent} rounded-r-full`} aria-hidden />
-                <div className="pl-2.5 min-w-0">
-                  <div className="text-[12px] md:text-[13px] text-zinc-500 font-semibold mb-0.5 truncate">{it.label}</div>
-                  <div className="text-[16px] md:text-[19px] font-bold tabular-nums text-ink leading-tight truncate">{it.value}</div>
-                </div>
-              </div>
-            ))}
+          <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] px-3 py-2 md:px-4 md:py-2.5">
+            <div className="flex items-baseline gap-2 md:gap-3 flex-wrap text-[14px] text-slate-600">
+              <span className="text-[12px] text-slate-400 font-medium shrink-0">최근 {nDays}일</span>
+              <span className="text-slate-300 shrink-0">|</span>
+              <span className="inline-flex items-baseline gap-1.5 shrink-0">
+                <span className="w-[3px] h-[12px] bg-brand-deep rounded-full self-center" aria-hidden />
+                <span className="font-medium">매출총액</span>
+                <span className="font-bold text-ink tabular-nums">{fmtWon(sumSale)}</span>
+              </span>
+              <span className="text-slate-300 shrink-0">·</span>
+              <span className="inline-flex items-baseline gap-1.5 shrink-0">
+                <span className="w-[3px] h-[12px] bg-emerald-500 rounded-full self-center" aria-hidden />
+                <span className="font-medium">매출이익</span>
+                <span className="font-bold text-emerald-700 tabular-nums">{fmtWon(sumMargin)}</span>
+              </span>
+              <span className="text-slate-300 shrink-0">·</span>
+              <span className="inline-flex items-baseline gap-1.5 shrink-0">
+                <span className="w-[3px] h-[12px] bg-amber-500 rounded-full self-center" aria-hidden />
+                <span className="font-medium">마진율</span>
+                <span className="font-bold text-ink tabular-nums">{avgMarginRate.toFixed(1)}%</span>
+              </span>
+              <span className="text-slate-300 shrink-0">·</span>
+              <span className="inline-flex items-baseline gap-1.5 shrink-0">
+                <span className="w-[3px] h-[12px] bg-sky-500 rounded-full self-center" aria-hidden />
+                <span className="font-medium">일평균 고객</span>
+                <span className="font-bold text-ink tabular-nums">{Math.round(avgCust).toLocaleString()}명</span>
+              </span>
+            </div>
           </div>
         );
       })()}

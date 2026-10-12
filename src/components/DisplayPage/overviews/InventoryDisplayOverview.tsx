@@ -101,6 +101,19 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   // 2026-10-12 · 사용자 지시 · 기간 필터 pill (오늘·7일·14일·한달) · null = 월 선택기 사용
   type QuickRange = "today" | "7d" | "14d" | "30d" | null;
   const [quickRange, setQuickRange] = useState<QuickRange>(null);
+  // 2026-10-12 · 사용자 지시 · 매장 매대 자동 헤더 정렬 · default = 재고자산 desc
+  const [storeSortKey, setStoreSortKey] = useState<ZoneSortKey>("asset");
+  const [storeSortDir, setStoreSortDir] = useState<SortDir>("desc");
+  const toggleStoreSort = useCallback((k: ZoneSortKey) => {
+    setStoreSortKey(prev => {
+      if (prev === k) {
+        setStoreSortDir(d => d === "asc" ? "desc" : "asc");
+        return prev;
+      }
+      setStoreSortDir(k === "code" || k === "label" ? "asc" : "desc");
+      return k;
+    });
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -320,52 +333,84 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
     return () => { alive = false; };
   }, [refreshKey]);
 
-  // 2026-10-12 · 사용자 지시 · 기간 필터 pill (오늘·7일·14일·한달) · quickRange 우선 · null 이면 월 선택기 사용
-  //   · 월 선택기 (dateRangesFromMonths) → chunked fetch
+  // 2026-10-12 · 사용자 지시 · "db참고하고. 조회버튼 누를떄만 실시간"
+  //   · default · 서버 집계 API /api/stock-manage/top-sales (ERP 부하 X · DB 쿼리)
+  //   · "조회" 버튼 클릭 시 · ERP sale-day-products 반복 호출 (실시간 · period 기반)
+  const [refreshErp, setRefreshErp] = useState<number>(0);
+  const [erpLoading, setErpLoading] = useState<boolean>(false);
+  // DB default · mount + refreshKey
   useEffect(() => {
     let alive = true;
-    (async () => {
-      const addDay = (ymd: string, delta: number): string => {
-        const d = new Date(ymd + "T00:00:00");
-        d.setDate(d.getDate() + delta);
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      };
-      const dates: string[] = [];
-      if (quickRange) {
-        const dayCount = quickRange === "today" ? 1 : quickRange === "7d" ? 7 : quickRange === "14d" ? 14 : 30;
-        const endC = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
-        const startC = addDay(endC, -(dayCount - 1));
-        for (let d = startC; d <= endC; d = addDay(d, 1)) dates.push(d);
-      } else {
-        const ranges = dateRangesFromMonths(selectedMonths);
-        for (const r of ranges) {
-          for (let d = r.startDate; d <= r.endDate; d = addDay(d, 1)) dates.push(d);
-        }
-      }
-      if (dates.length === 0) {
-        if (alive) setSaleQtyByCode(new Map());
-        return;
-      }
-      const CHUNK = 5;
-      const saleMap = new Map<string, number>();
-      for (let i = 0; i < dates.length; i += CHUNK) {
+    api.get<{ rows?: any[] }>(`/api/stock-manage/top-sales?sort=sale&dir=desc&limit=5000`)
+      .then(({ data }) => {
         if (!alive) return;
-        const batch = dates.slice(i, i + CHUNK);
-        const results = await Promise.all(batch.map(d =>
-          api.get<any>(`/api/erp/sale-day-products?date=${d}`).then(r => r.data).catch(() => ({ ok: false }))
-        ));
-        for (const res of results) {
-          for (const it of (res?.items ?? [])) {
-            const key = String(it.pcode ?? "").trim();
-            if (!key) continue;
-            saleMap.set(key, (saleMap.get(key) ?? 0) + (Number(it.totalStock) || 0));
+        const rows = Array.isArray(data?.rows) ? data.rows : [];
+        const map = new Map<string, number>();
+        // 2026-10-12 · 사용자 "판매수 안 나와" fix · pcode + product_code 양쪽 identity 매핑
+        //   · inventory_checks.product_code 가 두 identity 중 어느 쪽이든 매칭 성공
+        for (const r of rows) {
+          const pcode = String(r.pcode ?? "").trim();
+          const productCode = String(r.product_code ?? "").trim();
+          const qty = Number(r.sale_stock ?? 0) || 0;
+          if (qty <= 0) continue;
+          if (pcode) map.set(pcode, (map.get(pcode) ?? 0) + qty);
+          if (productCode && productCode !== pcode) map.set(productCode, (map.get(productCode) ?? 0) + qty);
+        }
+        setSaleQtyByCode(map);
+      })
+      .catch(() => { if (alive) setSaleQtyByCode(new Map()); });
+    return () => { alive = false; };
+  }, [refreshKey]);
+  // 실시간 ERP · 조회 버튼 클릭 시 (refreshErp 증가)
+  useEffect(() => {
+    if (refreshErp === 0) return;
+    let alive = true;
+    (async () => {
+      setErpLoading(true);
+      try {
+        const addDay = (ymd: string, delta: number): string => {
+          const d = new Date(ymd + "T00:00:00");
+          d.setDate(d.getDate() + delta);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        };
+        const dates: string[] = [];
+        if (quickRange) {
+          const dayCount = quickRange === "today" ? 1 : quickRange === "7d" ? 7 : quickRange === "14d" ? 14 : 30;
+          const endC = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; })();
+          const startC = addDay(endC, -(dayCount - 1));
+          for (let d = startC; d <= endC; d = addDay(d, 1)) dates.push(d);
+        } else {
+          const ranges = dateRangesFromMonths(selectedMonths);
+          for (const r of ranges) {
+            for (let d = r.startDate; d <= r.endDate; d = addDay(d, 1)) dates.push(d);
           }
         }
+        if (dates.length === 0) return;
+        const CHUNK = 5;
+        const saleMap = new Map<string, number>();
+        for (let i = 0; i < dates.length; i += CHUNK) {
+          if (!alive) return;
+          const batch = dates.slice(i, i + CHUNK);
+          const results = await Promise.all(batch.map(d =>
+            api.get<any>(`/api/erp/sale-day-products?date=${d}`).then(r => r.data).catch(() => ({ ok: false }))
+          ));
+          for (const res of results) {
+            for (const it of (res?.items ?? [])) {
+              const pcode = String(it.pcode ?? it.product_code ?? "").trim();
+              if (!pcode) continue;
+              const qty = Number(it.totalStock ?? it.qty ?? 0) || 0;
+              if (qty <= 0) continue;
+              saleMap.set(pcode, (saleMap.get(pcode) ?? 0) + qty);
+            }
+          }
+        }
+        if (alive) setSaleQtyByCode(saleMap);
+      } finally {
+        if (alive) setErpLoading(false);
       }
-      if (alive) setSaleQtyByCode(saleMap);
     })();
     return () => { alive = false; };
-  }, [selectedMonths, quickRange, refreshKey]);
+  }, [refreshErp]);
 
   const q = search.trim().toLowerCase();
   const expiryRows = useMemo(() => {
@@ -429,7 +474,7 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   const dataLoading = !productsMapLoaded || !checksLoaded;
 
   return (
-    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
+    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* 2026-10-10 · 사용자 지시 · 공통 모듈 OverviewHero (발주반품현황·매출현황 패턴 통일) */}
       <OverviewHero
         tone="violet"
@@ -495,6 +540,16 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
                 </button>
               ))}
             </div>
+            {/* 2026-10-12 · 사용자 지시 · "조회버튼 누를때만 실시간" · ERP sale-day-products 반복 집계 */}
+            <button
+              type="button"
+              onClick={() => setRefreshErp(r => r + 1)}
+              disabled={erpLoading}
+              className="h-7 px-3 rounded-md bg-slate-900 text-white text-[13px] font-semibold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="ERP 실시간 판매 집계 (현재 기간 필터 기준)"
+            >
+              {erpLoading ? "조회 중..." : "실시간 조회"}
+            </button>
             <span className="text-[13px] text-slate-500 font-medium ml-auto">
               집계 매대 <b className="text-ink tabular-nums">{storeZoneAggs.size}</b>곳 · 판매 상품 <b className="text-ink tabular-nums">{saleQtyByCode.size}</b>건
             </span>
@@ -623,8 +678,8 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
                                   </button>
                                 ))}
                               </div>
-                              <ZoneListTable>
-                                <ZoneListGroup title={emerSubTab} subtitle={activeTabMeta?.subtitle ?? ""} tone="rose" chips={activeChips} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} />
+                              <ZoneListTable sortKey={storeSortKey} sortDir={storeSortDir} onSort={toggleStoreSort}>
+                                <ZoneListGroup title={emerSubTab} subtitle={activeTabMeta?.subtitle ?? ""} tone="rose" chips={activeChips} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} sortKey={storeSortKey} sortDir={storeSortDir} />
                               </ZoneListTable>
                             </>
                           );
@@ -653,8 +708,8 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
                                 ))}
                               </div>
                               {activeTab && (
-                                <ZoneListTable>
-                                  <ZoneListGroup title="일반약" subtitle={activeTab.subtitle} tone="sky" chips={activeTab.chips} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} />
+                                <ZoneListTable sortKey={storeSortKey} sortDir={storeSortDir} onSort={toggleStoreSort}>
+                                  <ZoneListGroup title="일반약" subtitle={activeTab.subtitle} tone="sky" chips={activeTab.chips} aggs={storeZoneAggs} expanded={expandedZone} onToggle={setExpandedZone} fmtWon={fmtWon} sortKey={storeSortKey} sortDir={storeSortDir} />
                                 </ZoneListTable>
                               )}
                             </>
@@ -856,25 +911,37 @@ const ZoneListHeader: React.FC<{
 };
 
 /** 테이블 wrapper · 공통 그리드 (코드 · 매대명 · 제품수 · 판매수 · 재고자산)
- *  2026-10-12 · 사용자 지시 · 판매수 column 추가 */
-const ZoneListTable: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="overflow-x-auto">
-    <table className="w-full text-left">
-      <thead>
-        <tr className="text-[13px] text-slate-500 font-medium border-b border-slate-100 bg-slate-50/40">
-          <th className="px-3 md:px-4 py-2 w-[90px]">코드</th>
-          <th className="px-3 py-2">매대명</th>
-          <th className="px-3 py-2 text-right w-[80px]">제품수</th>
-          <th className="px-3 py-2 text-right w-[80px]">판매수</th>
-          <th className="px-3 md:px-4 py-2 text-right w-[130px]">재고자산</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-slate-100">
-        {children}
-      </tbody>
-    </table>
-  </div>
-);
+ *  2026-10-12 · 사용자 지시 · 판매수 column + 자동 헤더 정렬 */
+export type ZoneSortKey = "code" | "label" | "sale" | "stock" | "asset";
+export type SortDir = "asc" | "desc";
+const ZoneListTable: React.FC<{
+  children: React.ReactNode;
+  sortKey: ZoneSortKey;
+  sortDir: SortDir;
+  onSort: (k: ZoneSortKey) => void;
+}> = ({ children, sortKey, sortDir, onSort }) => {
+  const arrow = (k: ZoneSortKey) => sortKey === k ? (sortDir === "asc" ? "▲" : "▼") : "";
+  const headCls = "px-3 py-2 cursor-pointer hover:text-ink select-none";
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left">
+        <thead>
+          <tr className="text-[13px] text-slate-500 font-medium border-b border-slate-100 bg-slate-50/40">
+            {/* 2026-10-12 · 사용자 지시 · 컬럼순서 (판매수 → 재고수 → 재고자산) */}
+            <th className={`${headCls} md:px-4 w-[90px]`} onClick={() => onSort("code")}>코드 <span className="text-slate-400">{arrow("code")}</span></th>
+            <th className={headCls} onClick={() => onSort("label")}>매대명 <span className="text-slate-400">{arrow("label")}</span></th>
+            <th className={`${headCls} text-right w-[80px]`} onClick={() => onSort("sale")}>판매수 <span className="text-slate-400">{arrow("sale")}</span></th>
+            <th className={`${headCls} text-right w-[80px]`} onClick={() => onSort("stock")}>재고수 <span className="text-slate-400">{arrow("stock")}</span></th>
+            <th className={`${headCls} md:px-4 text-right w-[130px]`} onClick={() => onSort("asset")}>재고자산 <span className="text-slate-400">{arrow("asset")}</span></th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {children}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
 /** 섹션 그룹 (상비약/일반약) · header row + 매대 row들 (클릭 시 expand) */
 const ZoneListGroup: React.FC<{
@@ -887,10 +954,28 @@ const ZoneListGroup: React.FC<{
   expanded: string | null;
   onToggle: (code: string | null) => void;
   fmtWon: (n: number) => string;
-}> = ({ title, subtitle, tone, chips, aggs, expanded, onToggle, fmtWon }) => {
+  // 2026-10-12 · 사용자 지시 · 자동 헤더 정렬
+  sortKey?: ZoneSortKey;
+  sortDir?: SortDir;
+}> = ({ title, subtitle, tone, chips, aggs, expanded, onToggle, fmtWon, sortKey = "asset", sortDir = "desc" }) => {
+  // chips sort by sortKey
+  const sortedChips = useMemo(() => {
+    const arr = [...chips];
+    const sign = sortDir === "asc" ? 1 : -1;
+    arr.sort((a, b) => {
+      const ag = aggs.get(a.code);
+      const bg = aggs.get(b.code);
+      if (sortKey === "code")  return a.code.localeCompare(b.code, "ko") * sign;
+      if (sortKey === "label") return a.label.localeCompare(b.label, "ko") * sign;
+      if (sortKey === "sale")  return ((ag?.totalSale ?? 0) - (bg?.totalSale ?? 0)) * sign;
+      if (sortKey === "stock") return ((ag?.totalStock ?? 0) - (bg?.totalStock ?? 0)) * sign;
+      return ((ag?.assetValue ?? 0) - (bg?.assetValue ?? 0)) * sign;
+    });
+    return arr;
+  }, [chips, aggs, sortKey, sortDir]);
   const t = TONE[tone];
   const sectionAssetTotal = chips.reduce((s, c) => s + (aggs.get(c.code)?.assetValue ?? 0), 0);
-  const sectionProductTotal = chips.reduce((s, c) => s + (aggs.get(c.code)?.productCount ?? 0), 0);
+  const sectionStockTotal = chips.reduce((s, c) => s + (aggs.get(c.code)?.totalStock ?? 0), 0);
   const sectionSaleTotal = chips.reduce((s, c) => s + (aggs.get(c.code)?.totalSale ?? 0), 0);
   return (
     <>
@@ -902,11 +987,12 @@ const ZoneListGroup: React.FC<{
             <span className="text-[12px] text-slate-500 font-medium">{subtitle}</span>
           </div>
         </td>
-        <td className="px-3 py-1.5 text-right text-[13px] text-slate-500 font-semibold tabular-nums">{sectionProductTotal}</td>
+        {/* 2026-10-12 · 사용자 지시 · 컬럼순서 (판매 → 재고 → 자산) · 재고수 = totalStock */}
         <td className="px-3 py-1.5 text-right text-[13px] text-slate-500 font-semibold tabular-nums">{sectionSaleTotal > 0 ? sectionSaleTotal.toLocaleString() : "-"}</td>
+        <td className="px-3 py-1.5 text-right text-[13px] text-slate-500 font-semibold tabular-nums">{sectionStockTotal > 0 ? sectionStockTotal.toLocaleString() : "-"}</td>
         <td className="px-3 md:px-4 py-1.5 text-right text-[13px] text-slate-600 font-semibold tabular-nums">{fmtWon(sectionAssetTotal)}</td>
       </tr>
-      {chips.map(c => {
+      {sortedChips.map(c => {
         const agg = aggs.get(c.code);
         const count = agg?.productCount ?? 0;
         const asset = agg?.assetValue ?? 0;
@@ -934,12 +1020,12 @@ const ZoneListGroup: React.FC<{
               <td className="px-3 py-2 text-[14px] text-ink font-medium leading-tight">
                 <span className="line-clamp-1" title={c.label}>{c.label}</span>
               </td>
-              <td className="px-3 py-2 text-right text-[14px] font-semibold text-ink tabular-nums">
-                {count > 0 ? count : <span className="text-slate-300">0</span>}
-              </td>
-              {/* 2026-10-12 · 사용자 지시 · 판매수 column 추가 */}
+              {/* 2026-10-12 · 사용자 지시 · 판매수 → 재고수 → 재고자산 순서 */}
               <td className="px-3 py-2 text-right text-[14px] font-semibold text-ink tabular-nums">
                 {(agg?.totalSale ?? 0) > 0 ? agg!.totalSale.toLocaleString() : <span className="text-slate-300">-</span>}
+              </td>
+              <td className="px-3 py-2 text-right text-[14px] font-semibold text-ink tabular-nums">
+                {(agg?.totalStock ?? 0) > 0 ? agg!.totalStock.toLocaleString() : <span className="text-slate-300">0</span>}
               </td>
               <td className="px-3 md:px-4 py-2 text-right text-[14px] font-bold text-ink tabular-nums">
                 {asset > 0 ? fmtWon(asset) : <span className="text-slate-300 font-medium">-</span>}

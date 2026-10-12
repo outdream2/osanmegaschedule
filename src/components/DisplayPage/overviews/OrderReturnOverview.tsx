@@ -800,7 +800,8 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
         </header>
 
         {/* list · 현황판보드 · 스크롤 (2026-10-09 · 사용자 지시 · 영역 확장 220→360px) */}
-        <div className="flex-1 min-h-0 px-3 pb-3 overflow-y-auto max-h-[360px]"
+        {/* 2026-10-12 · 사용자 "들쭉날쭉 · 내용짤림 fix · 예쁘게" · body padding 통일 px-3 → px-4 */}
+        <div className="flex-1 min-h-0 px-4 pb-4 overflow-y-auto max-h-[360px]"
           onClick={(e) => e.stopPropagation()}
         >
           {preview.length === 0 ? (
@@ -891,7 +892,7 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
   const navigateToSection = (k: SectionKey) => setInnerTab(sectionToInnerTab[k]);
 
   return (
-    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
+    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* 2026-10-09 · 사용자 지시 · 홈 랜딩페이지 톤 · compact inline hero */}
       <section className="flex items-center gap-2 py-0.5 px-4 sm:px-6 pt-4">
         <span className="w-[3px] h-[14px] bg-red-500 rounded-full shrink-0" />
@@ -948,12 +949,30 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
       <OverviewToolbar search={search} onSearch={setSearch} placeholder="상품·코드·공급사·발주번호 검색"
         right={
           <>
-            <select value={period} onChange={(e) => setPeriod(e.target.value as any)}
-              className="h-10 px-3 text-[16px] font-semibold text-ink border border-slate-200 rounded-lg bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer">
-              <option value="7">최근 7일</option><option value="14">최근 14일</option><option value="30">최근 30일</option>
-            </select>
+            {/* 2026-10-12 · 사용자 지시 "재고진열현황 필터 가져와" · InventoryDisplayOverview 패턴 복제
+                · 기간 필터 pill (오늘·7일·14일·한달) · h-7 · text-[13px] · rounded-md · active bg-white */}
+            <div className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-md p-0.5" role="tablist" aria-label="기간 필터">
+              {([
+                { k: "7"  as const, label: "7일" },
+                { k: "14" as const, label: "14일" },
+                { k: "30" as const, label: "한달" },
+              ]).map(p => (
+                <button
+                  key={p.k}
+                  type="button"
+                  onClick={() => setPeriod(p.k)}
+                  className={`h-7 px-2.5 rounded-sm text-[13px] font-semibold tabular-nums transition-colors cursor-pointer ${
+                    period === p.k ? "bg-white text-brand-deep shadow-sm" : "text-slate-500 hover:text-ink"
+                  }`}
+                  aria-selected={period === p.k}
+                  role="tab"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
             <button type="button" onClick={refresh}
-              className="h-10 px-3 text-[16px] font-semibold text-ink border border-slate-200 rounded-lg bg-white hover:bg-slate-50 cursor-pointer transition-colors">새로고침</button>
+              className="h-7 px-2.5 text-[13px] font-semibold text-slate-600 border border-slate-200 rounded-md bg-white hover:bg-slate-50 cursor-pointer transition-colors">새로고침</button>
           </>
         }
       />
@@ -997,7 +1016,8 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
       )}
 
       {innerTab === "order-need" && (
-        <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 items-start">
+        // 2026-10-12 · 사용자 "들쭉날쭉" fix · items-start → items-stretch (grid 자식 높이 통일)
+        <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 items-stretch">
           <div>
           {(() => {
             // 정렬 적용 (사용자 지시 · 자동 정렬)
@@ -1139,10 +1159,9 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
       )}
       {innerTab === "return" && (
         <div className="px-4 sm:px-6">
-          {/* 반품필요 + 반품확정 좌우 분할 · 기존 기능 그대로 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-            <section className="relative bg-white border border-slate-200 rounded-[12px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              {/* 2026-10-09 · 사용자 지시 · 홈 톤 · inline 3px 세로 레일 (indigo) */}
+          {/* 2026-10-12 · 사용자 "들쭉날쭉" fix · items-start → items-stretch · 각 section flex flex-col h-full */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+            <section className="relative bg-white border border-slate-200 rounded-[12px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col h-full">
               <header className="flex items-center gap-2.5 px-5 pt-4 pb-3 border-b border-slate-100">
                 <span className="w-[3px] h-[16px] bg-indigo-500 rounded-full shrink-0" aria-hidden />
                 <ArrowsLeftRight size={18} weight="fill" className="text-slate-500" />
@@ -1151,12 +1170,11 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
                   <p className="text-[13px] md:text-[14px] text-slate-500 mt-0.5">반품 요청 대기 · 처리</p>
                 </div>
               </header>
-              <div className="p-2">
+              <div className="p-2 flex-1 min-h-0 overflow-y-auto">
                 <ReturnListPanel />
               </div>
             </section>
-            <section className="relative bg-white border border-slate-200 rounded-[12px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-              {/* 2026-10-09 · 사용자 지시 · 홈 톤 · inline 3px 세로 레일 (emerald) */}
+            <section className="relative bg-white border border-slate-200 rounded-[12px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col h-full">
               <header className="flex items-center gap-2.5 px-5 pt-4 pb-3 border-b border-slate-100">
                 <span className="w-[3px] h-[16px] bg-emerald-500 rounded-full shrink-0" aria-hidden />
                 <ArrowsLeftRight size={18} weight="fill" className="text-slate-500" />
@@ -1165,7 +1183,7 @@ export const OrderReturnOverview: React.FC<OrderReturnOverviewProps> = ({ onSele
                   <p className="text-[13px] md:text-[14px] text-slate-500 mt-0.5">완료된 반품 이력</p>
                 </div>
               </header>
-              <div className="p-2">
+              <div className="p-2 flex-1 min-h-0 overflow-y-auto">
                 <ReturnConfirmedPanel />
               </div>
             </section>
@@ -1757,7 +1775,7 @@ const FullBoard: React.FC<{
         {headerAction && <div className="shrink-0">{headerAction}</div>}
       </header>
       {/* 2026-10-09 · 사용자 지시 · 리스트 너무 길어짐 fix · 세로 스크롤 (max-h + overflow-y-auto) */}
-      <div className="px-2 pb-2 overflow-y-auto max-h-[65vh]">
+      <div className="px-4 pb-4 overflow-y-auto max-h-[65vh]">
         <OverviewTable
           columns={columns}
           rows={rows.map(r => mapper(k, r))}
@@ -1796,7 +1814,7 @@ const OrderHistoryExpandableBoard: React.FC<{
           <span className="text-[15px] md:text-[16px] text-slate-500 font-medium truncate">· {meta.description}</span>
         </div>
       </header>
-      <div className="px-2 pb-2 overflow-y-auto max-h-[65vh]">
+      <div className="px-4 pb-4 overflow-y-auto max-h-[65vh]">
         <table className="w-full text-[13px]">
           <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_rgba(226,232,240,1)]">
             {/* 2026-10-12 · 폰트 리밸런싱 · 테이블 헤더 12 → 13 (사용자 "폰트 작게 금지" 원칙 · tiny 하한 상향) */}

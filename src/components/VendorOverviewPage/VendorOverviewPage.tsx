@@ -49,7 +49,7 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
       title="거래처"
       description="공급사 정보 · 재고확인 · 발주이력 (방문예약은 slide drawer)"
     >
-      <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
+      <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {/* 2026-10-12 · 사용자 지시 · "거래처는 현황판이 없는데" · title "거래처 현황" → "거래처" (overview 집계 성격 아님) ·
             각 탭 = 기존 페이지 상세 그대로 (탭 메뉴 상세 이동 패턴) */}
         <OverviewHero tone="emerald" title="거래처" description="현황판 → 각 섹션 상세로 이동" />

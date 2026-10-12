@@ -433,7 +433,7 @@ export const FlowTab: React.FC = () => {
   return (
     // 2026-10-11 · 사용자 지시 · 홈 랜딩 톤 통일 (다른 overview 공식 복제)
     //   wrapper: gap-3 md:gap-4 + min-h-0 + pb-6 + bg-[#F4F7FA]
-    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
+    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* 2026-10-11 · 상단 Hero · 다른 overview 공식 (3px tone bar + title + description) */}
       <OverviewHero tone="rose" title="상품별 판매현황" description="재고 · 매입 · 판매 통합 현황" />
 

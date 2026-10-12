@@ -9,6 +9,9 @@ import type { DpSubTabKey } from "../DisplayPage.types";
 import { api } from "../../../lib/apiClient";
 // 2026-10-09 · UI-4 · 공통 모듈
 import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "./OverviewHeader";
+// 2026-10-12 · 사용자 지시 · "재고·진열 현황의 기간별 필터 적용" · 월 멀티 선택기 통합
+import { useMonthFilter } from "../../../hooks/useMonthFilter";
+import { MonthToggleSelector, dateRangesFromMonths } from "../../common/MonthToggleSelector";
 // 2026-10-09 · 사용자 지시 · 실재고테이블 페이지 옮겨와서 현황 옆 inner tab 으로 통합
 import { RealStockTablePage } from "../RealStockTablePage";
 // 2026-10-12 · 사용자 지시 · 매입이상 공통 Card (현재고 column 포함 · "병합")
@@ -56,26 +59,47 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   const [matchData, setMatchData] = useState<any>(null);
   const [invChecks, setInvChecks] = useState<InvCheckRow[] | null>(null);
   const [productsMap, setProductsMap] = useState<Map<string, ProductRow>>(new Map());
+  // 2026-10-12 · 사용자 지시 · 재고·진열 현황 패턴 복제 · 월 멀티 선택기
+  //   · selectedMonths 비어있으면 period (7/14/30일) · 아니면 선택 월 범위
+  const { selectedMonths, setSelectedMonths } = useMonthFilter();
+
+  // 월 멀티 → 날짜 범위 변환 (선택 안 하면 period 적용)
+  const effectiveRange = useMemo(() => {
+    if (selectedMonths.length > 0) {
+      const ranges = dateRangesFromMonths(selectedMonths);
+      if (ranges.length > 0) {
+        // 가장 이른 startDate · 가장 늦은 endDate
+        const from = ranges.reduce((min, r) => r.startDate < min ? r.startDate : min, ranges[0].startDate);
+        const to = ranges.reduce((max, r) => r.endDate > max ? r.endDate : max, ranges[0].endDate);
+        // period 일수 계산 (match API 용)
+        const d1 = new Date(from + "T00:00:00");
+        const d2 = new Date(to + "T00:00:00");
+        const days = Math.max(1, Math.round((d2.getTime() - d1.getTime()) / 86400000) + 1);
+        return { from, to, days };
+      }
+    }
+    const to = today();
+    const from = ymdDaysAgo(Number(period) - 1);
+    return { from, to, days: Number(period) };
+  }, [selectedMonths, period]);
 
   // 1. 매입이력 (purchase-details)
   useEffect(() => {
     let alive = true;
-    const to = today();
-    const from = ymdDaysAgo(Number(period) - 1);
-    api.get<{ rows?: PurchaseRow[] }>(`/api/purchase-details?from=${from}&to=${to}&no_cycle=1&per_page=5000`)
+    api.get<{ rows?: PurchaseRow[] }>(`/api/purchase-details?from=${effectiveRange.from}&to=${effectiveRange.to}&no_cycle=1&per_page=5000`)
       .then(({ data }) => { if (alive) setPurchases(Array.isArray(data?.rows) ? data.rows : []); })
       .catch(() => { if (alive) setPurchases([]); });
     return () => { alive = false; };
-  }, [period]);
+  }, [effectiveRange.from, effectiveRange.to]);
 
   // 2. 매입이상 (order-purchase-match)
   useEffect(() => {
     let alive = true;
-    api.get<any>(`/api/order-purchase-match?days=${period}`)
+    api.get<any>(`/api/order-purchase-match?days=${effectiveRange.days}`)
       .then(({ data }) => { if (alive) setMatchData(data ?? {}); })
       .catch(() => { if (alive) setMatchData({}); });
     return () => { alive = false; };
-  }, [period]);
+  }, [effectiveRange.days]);
 
   // 2026-10-12 · 사용자 지시 · 발주 금액 overlay · /api/order-history fetch
   const [orderHistory, setOrderHistory] = useState<AnyRow[]>([]);
@@ -85,7 +109,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
       .then(({ data }) => { if (alive) setOrderHistory(Array.isArray(data?.orders) ? data.orders : []); })
       .catch(() => { if (alive) setOrderHistory([]); });
     return () => { alive = false; };
-  }, [period]);
+  }, []);
 
   // 3. 실재고 (inventory-checks)
   useEffect(() => {
@@ -113,19 +137,25 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   }, []);
 
   // ─── 집계 ───────────────────────────
+  // 2026-10-12 · effectiveRange 기반 daily bucket · from~to 날짜 전체 포함
   const daily = useMemo(() => {
-    const n = Number(period);
     const map = new Map<string, { amount: number; count: number }>();
-    for (let i = n - 1; i >= 0; i--) map.set(ymdDaysAgo(i), { amount: 0, count: 0 });
+    // from~to 사이 모든 날짜 bucket 생성
+    const d0 = new Date(effectiveRange.from + "T00:00:00");
+    const d1 = new Date(effectiveRange.to + "T00:00:00");
+    for (let d = new Date(d0); d <= d1; d.setDate(d.getDate() + 1)) {
+      const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      map.set(ymd, { amount: 0, count: 0 });
+    }
     for (const r of (purchases ?? [])) {
-      const d = String(r.purchase_date ?? "").slice(0, 10);
-      if (!d || !map.has(d)) continue;
+      const dStr = String(r.purchase_date ?? "").slice(0, 10);
+      if (!dStr || !map.has(dStr)) continue;
       const amt = Number(r.amount ?? 0);
-      const prev = map.get(d)!;
-      map.set(d, { amount: prev.amount + amt, count: prev.count + 1 });
+      const prev = map.get(dStr)!;
+      map.set(dStr, { amount: prev.amount + amt, count: prev.count + 1 });
     }
     return Array.from(map.entries()).map(([date, v]) => ({ date, ...v }));
-  }, [purchases, period]);
+  }, [purchases, effectiveRange.from, effectiveRange.to]);
 
   const totalAmount = useMemo(() => daily.reduce((s, d) => s + d.amount, 0), [daily]);
   const totalCount = useMemo(() => daily.reduce((s, d) => s + d.count, 0), [daily]);
@@ -214,39 +244,48 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
 
   // 2026-10-12 · 사용자 지시 · "매입이상 아래 매입단가 이상 카드 추가 · 매입이력 중 기간 필터 적용해서 단가 변화 있는 것만 리스트업"
   //   · 데이터 소스 · purchases (purchase_details · 기간 period 이미 적용됨)
-  //   · 집계 · product_code 별 그룹 · unit_price 2개 이상 && 서로 다른 경우만
+  //   · 2026-10-12 fix · 사용자 리포트 "데이터 이상" · product_code + supplier 조합으로 그룹
+  //     (같은 상품을 다른 공급사에서 매입 시 자연히 단가 다름 · 분리 필수)
+  //   · 집계 · 조합 그룹 · unit_price 2개 이상 && 서로 다른 경우만 (실제 단가 변화)
   //   · 지표 · 최초/최종 단가 · 최소/최대 · 변화율 (max-min)/min · 매입 건수
   //   · 정렬 · 변화율 desc (큰 변화 상단)
   const priceAnomalies = useMemo(() => {
-    const byCode = new Map<string, {
+    const byKey = new Map<string, {
+      code: string;
       name: string;
       supplier: string;
       records: Array<{ price: number; date: string; qty: number }>;
     }>();
     for (const r of purchases ?? []) {
-      const code = String(r.product_code ?? "");
+      const code = String(r.product_code ?? "").trim();
+      const supplier = String(r.supplier ?? "").trim();
       const price = Number(r.unit_price ?? 0);
       if (!code || !price || price <= 0) continue;
       const date = String(r.purchase_date ?? "").slice(0, 10);
       const qty = Number(r.qty ?? 0);
-      const existing = byCode.get(code);
+      // 공급사별 분리 · 같은 상품을 다른 공급사에서 매입 시 각각 집계
+      const key = `${code}::${supplier}`;
+      const existing = byKey.get(key);
       if (!existing) {
-        byCode.set(code, {
+        byKey.set(key, {
+          code,
           name: String(r.product_name ?? ""),
-          supplier: String(r.supplier ?? ""),
+          supplier,
           records: [{ price, date, qty }],
         });
       } else {
         existing.records.push({ price, date, qty });
       }
     }
+    // 2026-10-12 · 사용자 지시 "계속 진행" · row 클릭 drawer 를 위해 records 포함
     const result: Array<{
       code: string; name: string; supplier: string;
       min: number; max: number; count: number;
       diffPct: number; earliest: number; latest: number;
       earliestDate: string; latestDate: string;
+      records: Array<{ price: number; date: string; qty: number }>;
     }> = [];
-    for (const [code, v] of byCode.entries()) {
+    for (const [, v] of byKey.entries()) {
       if (v.records.length < 2) continue;
       const prices = v.records.map(x => x.price);
       if (new Set(prices).size <= 1) continue;
@@ -255,14 +294,22 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
       const diffPct = min > 0 ? ((max - min) / min) * 100 : 0;
       const sorted = v.records.slice().sort((a, b) => a.date.localeCompare(b.date));
       result.push({
-        code, name: v.name, supplier: v.supplier,
+        code: v.code, name: v.name, supplier: v.supplier,
         min, max, count: v.records.length, diffPct,
         earliest: sorted[0].price, latest: sorted[sorted.length - 1].price,
         earliestDate: sorted[0].date, latestDate: sorted[sorted.length - 1].date,
+        records: sorted,
       });
     }
     return result.sort((a, b) => b.diffPct - a.diffPct);
   }, [purchases]);
+
+  // 2026-10-12 · 사용자 지시 "계속 진행" · 매입단가 이상 row 클릭 → 상세 drawer (매입 timeline)
+  const [priceDrawerCode, setPriceDrawerCode] = useState<string | null>(null);
+  const priceDrawerItem = useMemo(
+    () => priceAnomalies.find(p => p.code === priceDrawerCode) ?? null,
+    [priceAnomalies, priceDrawerCode],
+  );
 
   // 실재고 비교: ERP (current_stock × purchase_price) vs 실제 (sum stocks × purchase_price)
   const stockCompare = useMemo(() => {
@@ -328,17 +375,33 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   // ─── Render helpers ────────────────────
 
   return (
-    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
-      {/* 2026-10-09 · UI-4 · 공통 모듈 OverviewHero + OverviewInnerTabs */}
+    <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA] overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* 2026-10-09 · UI-4 · 공통 모듈 OverviewHero + OverviewInnerTabs
+          2026-10-12 · 사용자 지시 · "재고·진열 현황의 기간별 필터 적용"
+            · 월 멀티 선택기 (MonthToggleSelector) 추가 · 기존 period select 와 병행
+            · 월 선택 시 selectedMonths 범위 사용 · 미선택 시 period 적용 */}
       <OverviewHero
         tone="sky"
         title="매입 재고현황"
         description="매입이력 · 일별 매입금액 · 매입이상 · 실재고 vs ERP 재고자산 비교"
         right={
-          <select value={period} onChange={(e) => setPeriod(e.target.value as any)}
-            className="h-8 px-2.5 text-[13px] font-semibold text-ink border border-slate-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer">
-            <option value="7">최근 7일</option><option value="14">최근 14일</option><option value="30">최근 30일</option>
-          </select>
+          <div className="flex items-center gap-2 flex-wrap">
+            <MonthToggleSelector
+              selectedMonths={selectedMonths}
+              onChange={setSelectedMonths}
+              maxMonths={6}
+              minOne={false}
+            />
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value as any)}
+              disabled={selectedMonths.length > 0}
+              className="h-8 px-2.5 text-[13px] font-semibold text-ink border border-slate-200 rounded-md bg-white outline-none focus:ring-2 focus:ring-brand-tint cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              title={selectedMonths.length > 0 ? "월 선택 중 · 기간 선택 비활성" : "기간 선택"}
+            >
+              <option value="7">최근 7일</option><option value="14">최근 14일</option><option value="30">최근 30일</option>
+            </select>
+          </div>
         }
       />
       <OverviewInnerTabs<InnerTabKey>
@@ -588,7 +651,12 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                       const trendCls = trend === "up" ? "text-rose-600" : trend === "down" ? "text-emerald-700" : "text-slate-500";
                       const trendArrow = trend === "up" ? "▲" : trend === "down" ? "▼" : "·";
                       return (
-                        <tr key={`${p.code}-${i}`} className="border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 transition-colors">
+                        <tr
+                          key={`${p.code}-${i}`}
+                          onClick={() => setPriceDrawerCode(p.code)}
+                          className="border-b border-slate-50 last:border-b-0 hover:bg-rose-50/40 cursor-pointer transition-colors"
+                          title="클릭 · 매입 timeline 보기"
+                        >
                           <td className="pl-5 pr-2 py-2 align-top">
                             <div className="text-[13px] md:text-[14px] text-ink font-medium truncate" title={p.name}>{p.name || p.code}</div>
                             <div className="text-[12px] text-slate-500 tabular-nums truncate mt-0.5" title={p.supplier}>
@@ -696,6 +764,109 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
         productsMap={productsMap}
         onClose={() => setLocDrawer(null)}
       />
+
+      {/* 2026-10-12 · 사용자 지시 "계속 진행" · 매입단가 이상 row 클릭 · 상세 drawer · 매입 timeline */}
+      {priceDrawerItem && (
+        <>
+          <style>{`@keyframes priceAnomalySlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
+          <div
+            className="fixed inset-0 z-40 bg-black/30"
+            onClick={() => setPriceDrawerCode(null)}
+            aria-hidden
+          />
+          <aside
+            className="fixed inset-y-0 right-0 z-50 w-full sm:w-[520px] md:w-[600px] bg-white shadow-2xl flex flex-col"
+            style={{ animation: "priceAnomalySlideIn 0.2s ease-out" }}
+            role="dialog"
+            aria-label="매입단가 변화 상세"
+          >
+            {/* header */}
+            <header className="flex items-start gap-3 px-4 py-3 border-b border-slate-200 shrink-0">
+              <span className="w-[3px] h-[16px] bg-rose-500 rounded-full shrink-0 mt-1.5" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <div className="text-[12px] text-slate-500 font-medium">매입단가 변화 상세</div>
+                <h3 className="text-[15px] md:text-[16px] font-semibold text-ink truncate" title={priceDrawerItem.name}>
+                  {priceDrawerItem.name || priceDrawerItem.code}
+                </h3>
+                <div className="text-[12px] text-slate-500 tabular-nums mt-0.5 truncate">
+                  {priceDrawerItem.supplier || "-"} · <span className="text-slate-400">{priceDrawerItem.code}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPriceDrawerCode(null)}
+                className="shrink-0 w-7 h-7 inline-flex items-center justify-center rounded-md text-slate-500 hover:text-ink hover:bg-slate-100 transition-colors cursor-pointer"
+                aria-label="닫기"
+              >
+                ✕
+              </button>
+            </header>
+
+            {/* 요약 KPI */}
+            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/40 shrink-0 grid grid-cols-4 gap-3">
+              <div className="min-w-0">
+                <div className="text-[11px] text-slate-500 font-medium">최초</div>
+                <div className="text-[14px] font-bold text-slate-700 tabular-nums mt-0.5">{fmt(priceDrawerItem.earliest)}</div>
+                <div className="text-[11px] text-slate-400 tabular-nums">{priceDrawerItem.earliestDate.slice(5)}</div>
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] text-slate-500 font-medium">최종</div>
+                <div className={`text-[14px] font-bold tabular-nums mt-0.5 ${priceDrawerItem.latest > priceDrawerItem.earliest ? "text-rose-600" : priceDrawerItem.latest < priceDrawerItem.earliest ? "text-emerald-700" : "text-slate-700"}`}>
+                  {fmt(priceDrawerItem.latest)}
+                </div>
+                <div className="text-[11px] text-slate-400 tabular-nums">{priceDrawerItem.latestDate.slice(5)}</div>
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] text-slate-500 font-medium">최소 / 최대</div>
+                <div className="text-[13px] font-semibold text-slate-700 tabular-nums mt-0.5">
+                  {fmt(priceDrawerItem.min)}
+                </div>
+                <div className="text-[13px] font-semibold text-slate-700 tabular-nums">
+                  {fmt(priceDrawerItem.max)}
+                </div>
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] text-slate-500 font-medium">변화율</div>
+                <div className={`text-[16px] font-bold tabular-nums mt-0.5 ${priceDrawerItem.latest > priceDrawerItem.earliest ? "text-rose-600" : priceDrawerItem.latest < priceDrawerItem.earliest ? "text-emerald-700" : "text-slate-500"}`}>
+                  {priceDrawerItem.diffPct.toFixed(1)}%
+                </div>
+                <div className="text-[11px] text-slate-400 tabular-nums">{priceDrawerItem.count}건</div>
+              </div>
+            </div>
+
+            {/* timeline body */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3">
+              <div className="text-[12px] text-slate-500 font-medium mb-2">매입 timeline · 날짜 asc</div>
+              <ul className="space-y-1.5">
+                {priceDrawerItem.records.map((rec, idx) => {
+                  const prev = idx > 0 ? priceDrawerItem.records[idx - 1].price : null;
+                  const delta = prev !== null ? rec.price - prev : 0;
+                  const deltaPct = prev !== null && prev > 0 ? ((rec.price - prev) / prev) * 100 : 0;
+                  const deltaCls = delta > 0 ? "text-rose-600" : delta < 0 ? "text-emerald-700" : "text-slate-400";
+                  const deltaArrow = delta > 0 ? "▲" : delta < 0 ? "▼" : "·";
+                  return (
+                    <li key={`${rec.date}-${idx}`} className="flex items-center gap-3 bg-slate-50/50 border border-slate-100 rounded-md px-3 py-2">
+                      <span className="shrink-0 text-[11px] text-slate-400 tabular-nums w-5 text-right font-medium">{idx + 1}</span>
+                      <div className="shrink-0 w-20">
+                        <div className="text-[12px] text-slate-500 tabular-nums">{rec.date.slice(0, 10)}</div>
+                      </div>
+                      <div className="flex-1 min-w-0 text-right">
+                        <div className="text-[14px] font-bold text-ink tabular-nums">{fmt(rec.price)}원</div>
+                      </div>
+                      <div className="shrink-0 w-16 text-right">
+                        <div className="text-[12px] text-slate-500 tabular-nums">{fmt(rec.qty)}개</div>
+                      </div>
+                      <div className={`shrink-0 w-20 text-right text-[13px] font-semibold tabular-nums ${deltaCls}`}>
+                        {prev === null ? <span className="text-slate-300">—</span> : `${deltaArrow} ${Math.abs(deltaPct).toFixed(1)}%`}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </aside>
+        </>
+      )}
     </div>
   );
 };
