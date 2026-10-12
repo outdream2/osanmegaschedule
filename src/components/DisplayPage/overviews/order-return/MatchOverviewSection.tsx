@@ -385,13 +385,14 @@ const MatchOrderRow: React.FC<MatchOrderRowProps> = ({ order, isOpen, onToggle, 
 
   return (
     <div>
-      {/* 메인 행 · 좌(발주 5) / 우(매입 5) / 끝(상태 + 처리) · 매칭 됐을 때만 클릭 → 아래 상세 */}
-      <div onClick={purchaseGroup.matchedCount > 0 ? onToggle : undefined}
-        className={`grid grid-cols-[1fr_1fr_260px] transition-colors ${purchaseGroup.matchedCount > 0 ? "hover:bg-slate-50/40 cursor-pointer" : ""}`}>
+      {/* 메인 행 · 좌(발주 5) / 우(매입 5) / 끝(상태 + 처리)
+          2026-10-12 · 사용자 지시 · 발주번호 화살표 누르면 발주 상세 (매입 매칭 없어도) · 조건 제거 */}
+      <div onClick={onToggle}
+        className="grid grid-cols-[1fr_1fr_260px] transition-colors hover:bg-slate-50/40 cursor-pointer">
         {/* 좌 · 발주 5 cells · 발주번호·공급사 / 발주기간 / 품목·수량 / 발주금액 / 문서 */}
         <div className="px-3 py-3 border-r border-slate-200 grid grid-cols-[22px_160px_90px_84px_90px_1fr] gap-2 items-center">
           <CaretRight size={13} weight="bold"
-            className={`shrink-0 text-slate-400 transition-transform ${purchaseGroup.matchedCount > 0 ? "" : "opacity-30"} ${isOpen ? "rotate-90" : ""}`} />
+            className={`shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-90" : ""}`} />
           {/* cell 1 · 발주번호 · 공급사 · 2줄 */}
           <div className="min-w-0 leading-tight">
             <div className="text-[12.5px] text-slate-500 font-mono truncate">#{order.orderNumber ?? "—"}</div>
