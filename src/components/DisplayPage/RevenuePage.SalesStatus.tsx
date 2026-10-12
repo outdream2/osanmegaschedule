@@ -811,6 +811,72 @@ export const SalesStatus: React.FC = () => {
             </div>
           </section>
 
+          {/* 2026-10-12 · 사용자 지시 · "판매현황의 현황탭에 상품별 판매현황 추가" ·
+              prodAgg 수량 Top 10 · 전체보기 click → product tab 이동 */}
+          <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+            <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-slate-100 flex-wrap">
+              <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">상품별 판매현황</h3>
+              <span className="text-[13px] text-slate-500 tabular-nums">· 상위 10개</span>
+              <button
+                type="button"
+                onClick={() => setInnerTab("product")}
+                className="ml-auto inline-flex items-center gap-1 text-[13px] font-semibold text-brand-deep hover:text-[#0d3a5c] cursor-pointer transition-colors"
+                title="상품 탭으로 이동"
+              >
+                전체보기 →
+              </button>
+            </div>
+            {(() => {
+              const items = Array.from(prodAgg.values())
+                .filter(p => Number(p.qty) > 0 || Number(p.sale) > 0)
+                .sort((a, b) => Number(b.qty) - Number(a.qty))
+                .slice(0, 10);
+              if (items.length === 0) {
+                return <div className="h-[80px] flex items-center justify-center text-[14px] text-slate-400">{status === "loading" ? "조회 중..." : "데이터 없음"}</div>;
+              }
+              return (
+                <div className="overflow-auto max-h-[420px] [scrollbar-width:thin]">
+                  <table className="w-full text-[14px]">
+                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[13px] font-medium sticky top-0 z-10">
+                      <tr>
+                        <th className="text-left px-3 py-2 w-8">#</th>
+                        <th className="text-left px-3 py-2">상품</th>
+                        <th className="text-left px-3 py-2 w-28">공급사</th>
+                        <th className="text-left px-3 py-2 w-20">매대</th>
+                        <th className="text-right px-3 py-2 w-16">수량</th>
+                        <th className="text-right px-3 py-2 w-24">매출</th>
+                        <th className="text-right px-3 py-2 w-16">마진</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {items.map((p, i) => {
+                        const key = p.pcode ?? `${p.name ?? ""}-${i}`;
+                        const marginPct = Number(p.sale) > 0 ? (Number(p.margin) / Number(p.sale)) * 100 : 0;
+                        const mFmt = formatMargin(marginPct);
+                        const zoneLabel =
+                          locationToLabel.get(String(p.location ?? "")) ??
+                          locationToLabel.get(String(p.location ?? "").toUpperCase()) ??
+                          getZoneLabelByLocation(p.location, zoneDefsList) ??
+                          "";
+                        return (
+                          <tr key={key} onClick={() => setDrawerKey(key)} className="hover:bg-slate-50/50 h-8 text-ink cursor-pointer transition-colors">
+                            <td className="px-3 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
+                            <td className="px-3 py-1.5 font-medium break-keep truncate max-w-[220px]" title={p.name ?? ""}>{p.name ?? "-"}</td>
+                            <td className="px-3 py-1.5 text-slate-600 truncate max-w-[100px]" title={p.supplier ?? ""}>{p.supplier ?? "-"}</td>
+                            <td className="px-3 py-1.5 text-indigo-700 font-semibold tabular-nums truncate max-w-[80px]" title={p.location ?? ""}>{zoneLabel || p.location || "-"}</td>
+                            <td className="px-3 py-1.5 text-right tabular-nums text-ink">{fmtNum(Number(p.qty))}</td>
+                            <td className="px-3 py-1.5 text-right tabular-nums font-semibold">{fmtWonShort(Number(p.sale))}원</td>
+                            <td className={`px-3 py-1.5 text-right ${mFmt.className}`}>{mFmt.text}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
+          </section>
+
           {/* ② 급상승 Top 6 + ③ 손실 Top 6 (2 column) */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
