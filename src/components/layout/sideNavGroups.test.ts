@@ -48,18 +48,13 @@ describe("DERIVED_TOP_TABS · SIDE_NAV_GROUPS 로부터 자동 파생", () => {
     });
   });
 
-  it("vendor / account / display 그룹 모두 상단 nav 노출", () => {
+  // 2026-10-13 · account 그룹 삭제 · vendor + display 만 체크
+  it("vendor / display 그룹 모두 상단 nav 노출", () => {
     // vendor 그룹 · hideInTopTabs 제거 후 상단 노출
     const vendorGroup = SIDE_NAV_GROUPS.find((g) => g.id === "vendor");
     expect(vendorGroup).toBeDefined();
     const vendorTabKey = vendorGroup!.topTab?.key ?? vendorGroup!.items[0]!.key;
     expect(DERIVED_TOP_TABS.find((t) => t.key === vendorTabKey)).toBeDefined();
-
-    // account 그룹 · hideInTopTabs 제거 후 상단 노출 (mypage)
-    const accountGroup = SIDE_NAV_GROUPS.find((g) => g.id === "account");
-    expect(accountGroup).toBeDefined();
-    const accountTabKey = accountGroup!.topTab?.key ?? accountGroup!.items[0]!.key;
-    expect(DERIVED_TOP_TABS.find((t) => t.key === accountTabKey)).toBeDefined();
 
     // display 그룹 · 매장 상단 탭
     expect(DERIVED_TOP_TABS.find((t) => t.key === "display")).toBeDefined();
@@ -187,7 +182,9 @@ describe("filterGroupsForSession", () => {
     expect(hasDocWriter).toBe(false);
   });
 
-  it("일반 직원 · employmentStatus=pending_resignation · 사직서 작성 노출", () => {
+  // 2026-10-13 · #14-P3 사이드바 재구성 · approvals 그룹 삭제 · document-writer 는 경영현황 inner tab 으로 이관
+  //   · 사이드바 노출 체크 자체가 outdated · test skip
+  it.skip("일반 직원 · employmentStatus=pending_resignation · 사직서 작성 노출 (outdated · inner tab 이관)", () => {
     const emp = { level: 1, role: "employee" } as AuthSession;
     const groups = filterGroupsForSession(emp, null, "pending_resignation");
     const approvals = groups.find((g) => g.id === "approvals");
@@ -209,7 +206,7 @@ describe("filterGroupsForSession", () => {
     expect(hasDocWriter).toBe(false);
   });
 
-  it("admin (level ≥ 9) · employmentStatus 무관 · 사직서 작성 항상 노출", () => {
+  it.skip("admin (level ≥ 9) · employmentStatus 무관 · 사직서 작성 항상 노출 (outdated · inner tab 이관)", () => {
     const admin = { level: 9, role: "admin" } as AuthSession;
     // active
     let groups = filterGroupsForSession(admin, null, "active");

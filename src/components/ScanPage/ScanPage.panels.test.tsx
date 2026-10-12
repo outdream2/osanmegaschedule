@@ -121,17 +121,19 @@ describe("SaveCard · #202 · 등록 준비 요약 리스트", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("rows 있음 · '등록 준비 요약' 헤더 · 건수 표시", () => {
+  // 2026-10-13 · UI 재디자인 반영 · "등록 준비 요약" 텍스트 폐기 · 리스트 셀렉터 rounded-[10px] border-slate-200
+  it("rows 있음 · 요약 리스트 렌더 · 전체 등록 (1건)", () => {
     const rows = [mkRow("PC001", "타이레놀", null, 5)];
     const { container } = render(<SaveCard {...baseSave} rows={rows} />);
-    expect(container.textContent).toContain("등록 준비 요약");
-    // 헤더에 "1건" 표시
-    const summaryHeader = container.querySelector(".rounded-lg.border.border-line\\/70");
-    expect(summaryHeader).not.toBeNull();
+    expect(container.textContent).toContain("타이레놀");
+    expect(container.textContent).toContain("전체 등록 (1건)");
+    // 홈 톤 리스트 (rounded-[10px] border-slate-200)
+    const summaryList = container.querySelector(".rounded-\\[10px\\].border.border-slate-200");
+    expect(summaryList).not.toBeNull();
   });
 
-  // 2026-08-25 · SaveCard 요약 리스트 재디자인 · 창고(cyan)/매장(violet)/합(brand) 배지 · "N개" 형식 폐기
-  it("요약 리스트 · 각 행 · 순번+상품명+합계 배지 렌더", () => {
+  // 2026-10-13 · 재디자인 · "합" 레이블 폐기 · 현/창/매 레이블 + 마지막 total 숫자만 indigo-700
+  it("요약 리스트 · 각 행 · 순번+상품명+total 숫자 렌더", () => {
     const rows = [
       mkRow("PC001", "타이레놀", null, 5),
       mkRow("PC002", "게보린", null, 3),
@@ -139,22 +141,24 @@ describe("SaveCard · #202 · 등록 준비 요약 리스트", () => {
     const { container } = render(<SaveCard {...baseSave} rows={rows} />);
     expect(container.textContent).toContain("타이레놀");
     expect(container.textContent).toContain("게보린");
-    // 순번 · 1 · 2 (요약 리스트 안)
-    const summary = container.querySelector(".rounded-lg.border.border-line\\/70");
+    // 순번 · 1 · 2 · 리스트 내부
+    const summary = container.querySelector(".rounded-\\[10px\\].border.border-slate-200");
     expect(summary!.textContent).toContain("1");
     expect(summary!.textContent).toContain("2");
-    // 합 배지 · 5·3 (창고 or 매장 or 합 · UI 재디자인)
+    // total 숫자 · 5·3 (indigo primary)
     expect(container.textContent).toContain("5");
     expect(container.textContent).toContain("3");
-    expect(container.textContent).toContain("합");
+    // 창고 또는 매장 레이블 (현/창/매)
+    expect(container.textContent).toMatch(/현|창|매/);
   });
 
-  // 2026-08-25 · location prop · 별도 위치 배지 표시 X · 창고/매장 zone 은 title 속성으로 이동
-  it("location 있음 · 요약 리스트 · 상품명·합계 렌더 (위치 배지 폐기)", () => {
+  // 2026-10-13 · location prop · 별도 위치 배지 없음 · 상품명/합계만 렌더
+  it("location 있음 · 요약 리스트 · 상품명·total 렌더 (위치 배지 폐기)", () => {
     const rows = [mkRow("PC001", "타이레놀", "12번", 5)];
     const { container } = render(<SaveCard {...baseSave} rows={rows} />);
     expect(container.textContent).toContain("타이레놀");
-    expect(container.textContent).toContain("합");
+    // "현" (현재고 레이블) 노출
+    expect(container.textContent).toContain("현");
   });
 
   it("전체 등록 버튼 · rows.length 표시", () => {
