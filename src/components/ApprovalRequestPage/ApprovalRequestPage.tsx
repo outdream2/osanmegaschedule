@@ -144,7 +144,7 @@ const ApprovalRequestPage: React.FC<ApprovalRequestPageProps> = ({
       {/* 2026-10-08 · GLOBAL UI · OperationsPageTemplate 적용 · L2 TabBar는 모바일만 (사이드바 모드 중복 방지) */}
       <OperationsPageTemplate
         title="업무 요청"
-        description="연차 신청 · 서류 작성 · 각종 신청 통합"
+        description=""
         tabs={!(SIDEBAR_ENABLED && !isMobile) && visibleTabs.length > 0 ? (
           <TabBar<ArSubTab>
             level={2}
