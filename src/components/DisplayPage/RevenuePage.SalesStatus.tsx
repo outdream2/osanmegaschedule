@@ -787,9 +787,14 @@ export const SalesStatus: React.FC = () => {
                           "";
                         return (
                           <li key={z.loc} className="flex items-center gap-2 text-[14px] min-w-0">
-                            <div className="shrink-0 flex items-baseline gap-1.5 w-32 min-w-0">
-                              <span className="shrink-0 text-[13px] font-semibold text-ink tabular-nums">{z.loc}</span>
-                              <span className="text-[13px] text-slate-600 truncate" title={label || z.loc}>{label || "-"}</span>
+                            {/* 2026-10-12 · 사용자 지시 · 카테고리 크고 컬러 포인트 + zone_def label 과 일치 · raw "벽 10" → "10" */}
+                            <div className="shrink-0 flex items-center w-24 min-w-0">
+                              <span
+                                className="shrink-0 text-[15px] md:text-[16px] font-bold text-indigo-700 tabular-nums truncate"
+                                title={z.loc}
+                              >
+                                {label || z.loc || "-"}
+                              </span>
                             </div>
                             <div className="flex-1 min-w-0 bg-slate-100 rounded-sm h-6 relative overflow-hidden">
                               <div className="absolute inset-y-0 left-0 bg-indigo-500/85 rounded-sm" style={{ width: `${pct}%` }} />
