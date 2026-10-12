@@ -523,8 +523,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                     onOpen={() => { setActiveByPage("business-manage", "dashboard"); onNavigate("business-manage", authSession); }}
                   />
                 </div>
-                {/* 2026-10-12 · 사용자 지시 · 오늘업무 늘려서 왼쪽 카드와 아래 매칭 · flex-1 → flex-[2] */}
-                <div className="flex-[2] min-h-0 overflow-hidden">
+                {/* 2026-10-12 · 사용자 지시 · 오늘업무 더 길게 (하단 매칭) · flex-[2] → flex-[3] */}
+                <div className="flex-[3] min-h-0 overflow-hidden">
                   <TodayTasksCard
                     totalBadge={totalPending}
                     items={taskItems}
