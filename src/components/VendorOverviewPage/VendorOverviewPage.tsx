@@ -29,14 +29,16 @@ interface VendorOverviewPageProps {
   onLogout?: () => void;
 }
 
-type InnerTabKey = "vendor-info" | "vendor-stock" | "order-history";
+type InnerTabKey = "overview" | "vendor-info" | "vendor-stock" | "order-history";
 
 export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
-  const [innerTab, setInnerTab] = useState<InnerTabKey>("vendor-info");
+  // 2026-10-12 · #13 Phase 5 · 사용자 "현황판이 없는데 거래처" · 현황 탭 default 추가
+  const [innerTab, setInnerTab] = useState<InnerTabKey>("overview");
   // 2026-10-12 · #13 Phase 3 · 방문예약 slide drawer (RequestsPage drawer 공식 재사용)
   const [reservationDrawerOpen, setReservationDrawerOpen] = useState(false);
 
   const tabs: ReadonlyArray<OverviewInnerTab<InnerTabKey>> = [
+    { k: "overview",      label: "현황",            tone: "indigo",  count: null },
     { k: "vendor-info",   label: "공급사 정보",     tone: "emerald", count: null },
     { k: "vendor-stock",  label: "공급사 재고확인", tone: "sky",     count: null },
     { k: "order-history", label: "발주이력",        tone: "violet",  count: null },
@@ -50,31 +52,78 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
       <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
         {/* 2026-10-12 · 사용자 지시 · "거래처는 현황판이 없는데" · title "거래처 현황" → "거래처" (overview 집계 성격 아님) ·
             각 탭 = 기존 페이지 상세 그대로 (탭 메뉴 상세 이동 패턴) */}
-        <OverviewHero
-          tone="emerald"
-          title="거래처"
-          description="탭에서 공급사 정보 · 재고확인 · 발주이력 상세 보기"
-          right={
-            <button
-              type="button"
-              onClick={() => setReservationDrawerOpen(true)}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-[13px] font-semibold cursor-pointer transition-colors"
-              title="방문예약 열기"
-            >
-              <CalendarDots size={14} weight="fill" />
-              방문예약
-            </button>
-          }
-        />
+        <OverviewHero tone="emerald" title="거래처" description="현황판 → 각 섹션 상세로 이동" />
         <OverviewInnerTabs<InnerTabKey>
           ariaLabel="거래처 inner tabs"
           active={innerTab}
           onChange={setInnerTab}
           tabs={tabs}
         />
-        {/* 2026-10-12 · #13 Phase 2 · 각 탭 content · 기존 페이지 embedded render */}
+        {/* 2026-10-12 · #13 Phase 5 · 사용자 "현황판에서 누르면 탭메뉴로 이동 · 방문예약도 현황 안으로 · 달력 표시" */}
         <div className="px-4 sm:px-6 pt-3 flex-1 min-h-0 flex flex-col">
           <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="로딩 중..." size={16} tone="brand" /></div>}>
+            {innerTab === "overview" && (
+              // 2026-10-12 · Phase 5 · 상단 2-col + 하단 2-col · placeholder · Phase 6 데이터 fetch
+              <div className="flex flex-col gap-4">
+                {/* 상단 2-col · 방문예약 달력 + 공급사 정보 요약 */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-[3px] h-[14px] bg-emerald-500 rounded-full shrink-0" />
+                      <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">방문예약 · 이번달 가능 날짜</h3>
+                      <button type="button" onClick={() => setReservationDrawerOpen(true)}
+                        className="ml-auto inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[13px] font-semibold cursor-pointer transition-colors">
+                        <CalendarDots size={13} weight="fill" />
+                        예약
+                      </button>
+                    </div>
+                    <div className="flex-1 h-[180px] flex items-center justify-center bg-slate-50/40 rounded-md text-[13px] text-slate-400 text-center px-4">
+                      달력 skeleton · Phase 6 · availability API 집계 (가능 날짜 highlight · 클릭 → 예약 drawer)
+                    </div>
+                  </section>
+                  <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3 cursor-pointer hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all"
+                    onClick={() => setInnerTab("vendor-info")}
+                    role="button" tabIndex={0}>
+                    <div className="flex items-center gap-2">
+                      <span className="w-[3px] h-[14px] bg-emerald-500 rounded-full shrink-0" />
+                      <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">공급사 정보</h3>
+                      <span className="ml-auto text-[12px] text-slate-400">탭 상세 →</span>
+                    </div>
+                    <div className="flex-1 h-[180px] flex items-center justify-center bg-slate-50/40 rounded-md text-[13px] text-slate-400 text-center px-4">
+                      공급사 N개 skeleton · Phase 6 · 저장 안 된 항목 있으면 상단에 "⚠️ N개 공급사 정보 미완성" 코멘트
+                    </div>
+                  </section>
+                </div>
+
+                {/* 하단 2-col · 재고목록 + 발주이력 */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3 cursor-pointer hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all"
+                    onClick={() => setInnerTab("vendor-stock")}
+                    role="button" tabIndex={0}>
+                    <div className="flex items-center gap-2">
+                      <span className="w-[3px] h-[14px] bg-sky-500 rounded-full shrink-0" />
+                      <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">공급사 재고확인</h3>
+                      <span className="ml-auto text-[12px] text-slate-400">탭 상세 →</span>
+                    </div>
+                    <div className="flex-1 h-[180px] flex items-center justify-center bg-slate-50/40 rounded-md text-[13px] text-slate-400 text-center px-4">
+                      재고 요약 skeleton · Phase 6 · VendorStockPage 요약 집계 (상위 10 · 전체 N건)
+                    </div>
+                  </section>
+                  <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3 cursor-pointer hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all"
+                    onClick={() => setInnerTab("order-history")}
+                    role="button" tabIndex={0}>
+                    <div className="flex items-center gap-2">
+                      <span className="w-[3px] h-[14px] bg-violet-500 rounded-full shrink-0" />
+                      <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">발주이력</h3>
+                      <span className="ml-auto text-[12px] text-slate-400">탭 상세 →</span>
+                    </div>
+                    <div className="flex-1 h-[180px] flex items-center justify-center bg-slate-50/40 rounded-md text-[13px] text-slate-400 text-center px-4">
+                      최근 발주 N건 skeleton · Phase 6 · order-history API 요약
+                    </div>
+                  </section>
+                </div>
+              </div>
+            )}
             {innerTab === "vendor-info" && <VendorManageSplit />}
             {innerTab === "vendor-stock" && (
               <VendorStockPage onBack={onBack} authSession={authSession ?? null} onNavigate={onNavigate} onLogout={onLogout} vendorName={authSession?.employeeName ?? ""} />
