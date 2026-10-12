@@ -189,6 +189,30 @@ export const BusinessCashFlow: React.FC = () => {
   const profit = revenue - totalCost;
   const profitPct = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
 
+  // 2026-10-12 · 사용자 지시 "항목/금액/매출%/비용% 제거 → 인건비 구성 노출 + 매출 대비 인건비 %"
+  //   · 직군(position) 별 그룹 · 각 그룹 인건비 합 · 직원수 · 비중 %
+  const payrollBreakdown = useMemo(() => {
+    if (!settings || employees.length === 0) return [] as Array<{ position: string; amount: number; count: number }>;
+    const g = new Map<string, { amount: number; count: number }>();
+    const active = employees.filter(e => !e.retireDate);
+    for (const emp of active) {
+      const resolution = resolveEmployeeWage(emp.id, emp.position, settings);
+      if (resolution.status !== "configured" || !resolution.wage) continue;
+      const hoursPerWeek = (emp.working_hours_per_week && Number.isFinite(emp.working_hours_per_week))
+        ? emp.working_hours_per_week
+        : DEFAULT_HOURS_PER_WEEK;
+      const monthly = Math.round(resolution.wage.weekday * hoursPerWeek * AVG_WEEKS_PER_MONTH);
+      const key = String(emp.position ?? "(직군 미지정)").trim() || "(직군 미지정)";
+      const prev = g.get(key) ?? { amount: 0, count: 0 };
+      g.set(key, { amount: prev.amount + monthly, count: prev.count + 1 });
+    }
+    return Array.from(g.entries())
+      .map(([position, v]) => ({ position, ...v }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [employees, settings]);
+  // 매출 대비 인건비 비율 (ERP 매출 or 수동 매출 base)
+  const payrollVsRevenuePct = revenue > 0 ? (payrollEstimate / revenue) * 100 : 0;
+
   const loading = costLoading || revenueLoading;
 
   // Edit handlers
@@ -283,22 +307,7 @@ export const BusinessCashFlow: React.FC = () => {
         )}
       </header>
 
-      {/* Revenue + Profit meta · 매출 소스 뱃지 (ERP/수동/미설정) */}
-      <div className="grid grid-cols-3 gap-3">
-        <MetaTile
-          label="월 매출"
-          value={fmtMan(revenue)}
-          tone="slate"
-          badge={revenueSource === "erp" ? "ERP" : revenueSource === "manual" ? "수동" : "미설정"}
-          badgeTone={revenueSource === "erp" ? "emerald" : revenueSource === "manual" ? "sky" : "amber"}
-        />
-        <MetaTile label="월 비용 합계" value={fmtMan(totalCost)} tone="slate" />
-        <MetaTile
-          label="영업이익"
-          value={`${fmtMan(profit)} (${profitPct >= 0 ? "+" : ""}${profitPct}%)`}
-          tone={profit >= 0 ? "emerald" : "rose"}
-        />
-      </div>
+      {/* 2026-10-12 · 사용자 지시 "월 매출/월 비용 합계/영업이익 KPI 제거 · 왼쪽 리스트로" */}
 
       {/* 100% Stacked Bar (요약 띠) */}
       {revenue > 0 && rows.length > 0 && (
@@ -328,43 +337,54 @@ export const BusinessCashFlow: React.FC = () => {
         </div>
       )}
 
-      {/* Progress Bar List · header row */}
-      <div className="flex items-center gap-3 pb-1.5 border-b border-slate-200 text-[12px] text-slate-500 font-medium">
-        <span className="w-2.5 shrink-0" aria-hidden />
-        <span className="flex-1 min-w-0">항목</span>
-        <span className="w-28 text-right shrink-0">금액</span>
-        <span className="w-16 text-right shrink-0 text-ink">매출 %</span>
-        <span className="w-14 text-right shrink-0 hidden sm:inline">비용 %</span>
-        <span className="w-24 md:w-32 shrink-0" aria-hidden />
-      </div>
-      <ul className="divide-y divide-slate-100">
-        {rows.map(r => {
-          const pct = totalCost > 0 ? Math.round((r.amount / totalCost) * 100) : 0;
-          const pctOfRevenue = revenue > 0 ? Math.round((r.amount / revenue) * 100) : 0;
-          return (
-            <li key={r.key} className="flex items-center gap-3 py-2 text-[14px] md:text-[15px]">
-              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: r.color }} aria-hidden />
-              <span className="flex-1 text-ink font-medium truncate min-w-0">{r.label}</span>
-              <span className="w-28 text-right tabular-nums text-ink shrink-0">{fmtMan(r.amount)}</span>
-              {/* 2026-10-12 · 사용자 지시 · "매출 대비 %" 강조 표시 (큰 글씨 · 더 짙은 톤) */}
-              <span className="w-16 text-right tabular-nums text-[14px] md:text-[15px] font-semibold text-ink shrink-0" title="매출 대비">
-                {pctOfRevenue}%
-              </span>
-              <span className="w-14 text-right tabular-nums text-[12px] text-slate-400 shrink-0 hidden sm:inline" title="비용 합계 대비">
-                비용 {pct}%
-              </span>
-              <div className="w-24 md:w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden shrink-0" title={`비용 비중 ${pct}%`}>
-                <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: r.color }} />
-              </div>
+      {/* 2026-10-12 · 사용자 지시 "항목/금액/매출%/비용% 제거 · 인건비 구성 노출 + 매출 대비 인건비 %" */}
+      <section className="pt-2">
+        {/* 요약 header · 전체 인건비 + 매출 대비 % */}
+        <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-200 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <span className="w-[3px] h-[14px] bg-indigo-500 rounded-full shrink-0" aria-hidden />
+            <h3 className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight">인건비 구성</h3>
+            <span className="text-[13px] text-slate-500 tabular-nums">· {payrollBreakdown.reduce((s, g) => s + g.count, 0)}명 · {payrollBreakdown.length}직군</span>
+          </div>
+          <div className="flex items-baseline gap-2 tabular-nums">
+            <span className="text-[13px] text-slate-500">월 인건비</span>
+            <span className="text-[16px] font-bold text-ink">{fmtMan(payrollEstimate)}</span>
+            <span className="text-slate-300">·</span>
+            <span className="text-[13px] text-slate-500">매출 대비</span>
+            <span className={`text-[16px] font-bold ${payrollVsRevenuePct >= 35 ? "text-rose-600" : payrollVsRevenuePct >= 25 ? "text-amber-600" : payrollVsRevenuePct > 0 ? "text-emerald-700" : "text-slate-300"}`}>
+              {payrollVsRevenuePct > 0 ? `${payrollVsRevenuePct.toFixed(1)}%` : "-"}
+            </span>
+          </div>
+        </div>
+        <ul className="divide-y divide-slate-100">
+          {payrollBreakdown.map(g => {
+            const pct = payrollEstimate > 0 ? (g.amount / payrollEstimate) * 100 : 0;
+            const pctRev = revenue > 0 ? (g.amount / revenue) * 100 : 0;
+            return (
+              <li key={g.position} className="flex items-center gap-3 py-2 text-[14px] md:text-[15px]">
+                <span className="w-2.5 h-2.5 rounded-sm shrink-0 bg-indigo-500" aria-hidden />
+                <span className="flex-1 text-ink font-medium truncate min-w-0">{g.position}</span>
+                <span className="w-14 text-right tabular-nums text-[13px] text-slate-500 shrink-0">{g.count}명</span>
+                <span className="w-28 text-right tabular-nums text-ink shrink-0">{fmtMan(g.amount)}</span>
+                <span className="w-16 text-right tabular-nums text-[14px] md:text-[15px] font-semibold text-ink shrink-0" title="매출 대비">
+                  {pctRev > 0 ? `${pctRev.toFixed(1)}%` : "-"}
+                </span>
+                <span className="w-14 text-right tabular-nums text-[12px] text-slate-400 shrink-0 hidden sm:inline" title="인건비 대비 비중">
+                  비중 {Math.round(pct)}%
+                </span>
+                <div className="w-24 md:w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden shrink-0" title={`인건비 비중 ${Math.round(pct)}%`}>
+                  <div className="h-full rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
+                </div>
+              </li>
+            );
+          })}
+          {payrollBreakdown.length === 0 && (
+            <li className="py-6 text-center text-[14px] text-slate-400">
+              인건비 구성 데이터 없음 · 직원 급여 설정 필요
             </li>
-          );
-        })}
-        {rows.length === 0 && (
-          <li className="py-6 text-center text-[14px] text-slate-400">
-            비용 항목이 없습니다. 상단 "입력" 버튼으로 값을 설정해 주세요.
-          </li>
-        )}
-      </ul>
+          )}
+        </ul>
+      </section>
 
       {/* Edit panel · inline table (사용자 Q1=b) */}
       {editing && (

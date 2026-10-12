@@ -18,6 +18,8 @@ import { Spinner } from "../../common/Spinner";
 // 2026-10-12 · 사용자 지시 · 월 멀티 선택기 + 매대별 판매 집계 · 공통 모듈 재사용
 import { MonthToggleSelector, dateRangesFromMonths } from "../../common/MonthToggleSelector";
 import { useMonthFilter } from "../../../hooks/useMonthFilter";
+// 2026-10-12 · 조회기간 필터 전체 통일 · 공통 모듈 SSOT
+import { QuickRangePills, type QuickRangeKey } from "../../common/OverviewPeriodFilter";
 import { ProductInventoryDetailModal, type ProductInventoryDetailRow } from "./ProductInventoryDetailModal";
 // 2026-10-10 · 사용자 지시 · 구역도 세로탭 + 매대 리스트 + 매대 클릭 → 상품 리스트 아코디언
 //   · 홈 랜딩 톤 (HomeDashboard SSOT · CARD rounded-[12px] + border-slate-200 + thin shadow)
@@ -97,10 +99,9 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   // 2026-10-12 · 사용자 지시 · 판매수 (pcode → qty) · 마진율은 Phase 2 (margin 집계 미완)
   const [saleQtyByCode, setSaleQtyByCode] = useState<Map<string, number>>(new Map());
   const { selectedMonths, setSelectedMonths } = useMonthFilter();
-  // 2026-10-12 · 사용자 지시 · 기간 필터 pill (오늘·7일·14일·한달) · null = 월 선택기 사용
-  //   · 사용자 원 지시 "오늘 판매데이터중에서 진열위치별로 정렬해서 판매수를 합산" · default="today" 자동 ERP fetch
-  type QuickRange = "today" | "7d" | "14d" | "30d" | null;
-  const [quickRange, setQuickRange] = useState<QuickRange>("today");
+  // 2026-10-12 · 사용자 지시 · 기간 필터 · 공통 모듈 QuickRangeKey SSOT
+  //   · default="today" 자동 ERP fetch · 월별 시 selectedMonths 사용
+  const [quickRange, setQuickRange] = useState<QuickRangeKey>("today");
   // 2026-10-12 · 사용자 지시 · 매장 매대 자동 헤더 정렬 · default = 재고자산 desc
   const [storeSortKey, setStoreSortKey] = useState<ZoneSortKey>("asset");
   const [storeSortDir, setStoreSortDir] = useState<SortDir>("desc");
@@ -510,28 +511,8 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
           {/* 2026-10-12 · 월 선택기 + 기간 필터 pill (오늘·7일·14일·한달) */}
           <section className={`${CARD} px-3 py-2 md:px-4 md:py-2.5 flex items-center gap-3 flex-wrap`}>
             <MonthToggleSelector selectedMonths={selectedMonths} onChange={setSelectedMonths} maxMonths={6} minOne />
-            <div className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-md p-0.5" role="tablist" aria-label="기간 필터">
-              {([
-                { k: null,    label: "월별" },
-                { k: "today" as const, label: "오늘" },
-                { k: "7d"    as const, label: "7일" },
-                { k: "14d"   as const, label: "14일" },
-                { k: "30d"   as const, label: "한달" },
-              ]).map(p => (
-                <button
-                  key={String(p.k)}
-                  type="button"
-                  onClick={() => setQuickRange(p.k)}
-                  className={`h-7 px-2.5 rounded-sm text-[13px] font-semibold tabular-nums transition-colors cursor-pointer ${
-                    quickRange === p.k ? "bg-white text-brand-deep shadow-sm" : "text-slate-500 hover:text-ink"
-                  }`}
-                  aria-selected={quickRange === p.k}
-                  role="tab"
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
+            {/* 2026-10-12 · 공통 모듈 (OverviewPeriodFilter · QuickRangePills) SSOT */}
+            <QuickRangePills value={quickRange} onChange={setQuickRange} />
             {/* 2026-10-12 · 사용자 지시 · "조회버튼 누를때만 실시간" · ERP sale-day-products 반복 집계 */}
             <button
               type="button"

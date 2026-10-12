@@ -20,6 +20,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../lib/apiClient";
 import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { MonthToggleSelector, dateRangesFromMonths } from "../common/MonthToggleSelector";
+// 2026-10-12 · 사용자 지시 · 조회기간 필터 전체 통일 · 공통 모듈 (QuickRangePills · QuickRangeKey SSOT)
+import { QuickRangePills, type QuickRangeKey } from "../common/OverviewPeriodFilter";
 import { formatDisplayLocation } from "../../lib/formatDisplayLocation";
 import { OverviewInnerTabs, type OverviewInnerTab } from "./overviews/OverviewHeader";
 // 2026-10-11 · 사용자 지시 · 구역별 판매 (요약) 에 매대 이름 · zone_defs 매핑
@@ -103,42 +105,14 @@ function statusToPill(s: Status) {
   return { label: "위험", cls: "bg-rose-50 text-rose-700 border-rose-200" };
 }
 
-// 2026-10-12 · 사용자 지시 · 기간 필터 pill (오늘·7일·14일·한달) · 공통 컴포넌트
-//   · null = 월 선택기 사용 · overview/supplier/zone tab toolbar 공통
-//   · SalesStatus 선언 앞 top-level (static analysis scope 보장)
-type QuickRangeKey = "today" | "7d" | "14d" | "30d" | null;
-const QuickRangePills: React.FC<{ value: QuickRangeKey; onChange: (v: QuickRangeKey) => void }> = ({ value, onChange }) => {
-  const items: Array<{ k: QuickRangeKey; label: string }> = [
-    { k: null,    label: "월별" },
-    { k: "today", label: "오늘" },
-    { k: "7d",    label: "7일" },
-    { k: "14d",   label: "14일" },
-    { k: "30d",   label: "한달" },
-  ];
-  return (
-    <div className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-md p-0.5" role="tablist" aria-label="기간 필터">
-      {items.map(p => (
-        <button
-          key={String(p.k)}
-          type="button"
-          onClick={() => onChange(p.k)}
-          className={`h-7 px-2.5 rounded-sm text-[13px] font-semibold tabular-nums transition-colors cursor-pointer ${
-            value === p.k ? "bg-white text-brand-deep shadow-sm" : "text-slate-500 hover:text-ink"
-          }`}
-          aria-selected={value === p.k}
-          role="tab"
-        >
-          {p.label}
-        </button>
-      ))}
-    </div>
-  );
-};
+// 2026-10-12 · 사용자 지시 · 조회기간 필터 전체 통일 · 공통 모듈 (common/OverviewPeriodFilter) SSOT 로 이관
+//   · inline QuickRangePills 정의 삭제 · import 로 교체 (상단 import 블록)
 
 export const SalesStatus: React.FC = () => {
   const [innerTab, setInnerTab] = useState<InnerTabKey>("overview");
   // 2026-10-12 · 매출현황 inner tab · 시간대별/월별 sub tab
-  const [revenueSubTab, setRevenueSubTab] = useState<"hourly" | "monthly">("hourly");
+  // 2026-10-12 · 사용자 지시 · 매출현황 sub tab · 시간대별/월별/상품별 (3개)
+  const [revenueSubTab, setRevenueSubTab] = useState<"hourly" | "monthly" | "product">("hourly");
   const { selectedMonths, setSelectedMonths } = useMonthFilter();
   const [classFilter, setClassFilter] = useState<ClassFilter>("all");
   // 2026-10-12 · Bento Cockpit · Collapse state (overview 구역별 · 공급사)
@@ -512,28 +486,27 @@ export const SalesStatus: React.FC = () => {
         tabs={tabs}
       />
 
-      {/* 2026-10-12 · 사용자 지시 · 매출현황 inner tab · HourlyReportTab + MonthlyReportTab 재사용 */}
+      {/* 2026-10-12 · 사용자 지시 · 매출현황 inner tab · 시간대별/월별/상품별 (OverviewInnerTabs 패턴) */}
       {innerTab === "revenue" ? (
-        <div className="px-4 sm:px-6 pt-3 flex flex-col gap-3">
-          <div className="inline-flex rounded-lg bg-slate-100 p-0.5 self-start">
-            {([
-              { k: "hourly" as const,  label: "시간대별" },
-              { k: "monthly" as const, label: "월별" },
-            ]).map((t) => {
-              const active = revenueSubTab === t.k;
-              return (
-                <button key={t.k} type="button" onClick={() => setRevenueSubTab(t.k)}
-                  className={`px-3 py-1.5 rounded-md text-[13px] md:text-[14px] font-medium transition-colors ${
-                    active ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                  }`}>
-                  {t.label}
-                </button>
-              );
-            })}
+        <div className="flex flex-col gap-3">
+          <OverviewInnerTabs<"hourly" | "monthly" | "product">
+            ariaLabel="매출현황 세부 탭"
+            active={revenueSubTab}
+            onChange={setRevenueSubTab}
+            tabs={[
+              { k: "hourly",  label: "시간대별", tone: "indigo",  count: null },
+              { k: "monthly", label: "월별",     tone: "emerald", count: null },
+              // 2026-10-12 · 사용자 지시 · "상품별" 추가 · FlowTab (상품별 판매내역) render
+              { k: "product", label: "상품별",   tone: "rose",    count: null },
+            ]}
+          />
+          <div className="px-4 sm:px-6">
+            <React.Suspense fallback={<div className="flex items-center justify-center py-10 text-[14px] text-slate-500">매출현황 로딩 중...</div>}>
+              {revenueSubTab === "hourly" ? <HourlyReportTab />
+                : revenueSubTab === "monthly" ? <MonthlyReportTab />
+                : <div className="min-w-0 -mx-4 sm:-mx-6"><FlowTab /></div>}
+            </React.Suspense>
           </div>
-          <React.Suspense fallback={<div className="flex items-center justify-center py-10 text-[14px] text-slate-500">매출현황 로딩 중...</div>}>
-            {revenueSubTab === "hourly" ? <HourlyReportTab /> : <MonthlyReportTab />}
-          </React.Suspense>
         </div>
       ) : innerTab === "zone" ? (
         <div className="min-w-0 px-4 sm:px-6 pt-3 flex flex-col gap-4">

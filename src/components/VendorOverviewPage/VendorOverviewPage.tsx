@@ -18,6 +18,8 @@ import { api } from "../../lib/apiClient";
 import { useVendors, type Vendor } from "../../hooks/useVendors";
 // 2026-10-12 · #13 Phase 2 · 각 탭 content · 기존 페이지 embedded render (self-contained)
 const VendorManageSplit = React.lazy(() => import("../DisplayPage/VendorManageSplit").then(m => ({ default: m.VendorManageSplit })));
+// 2026-10-12 · 사용자 지시 "공급사 클릭 slide drawer 는 공급사 정보 상세여야 · 목록 X" · 단일 공급사 상세 panel
+const VendorDetailModalLazy = React.lazy(() => import("../LandingPage/VendorListEditor").then(m => ({ default: m.VendorDetailModal })));
 const VendorStockPage = React.lazy(() => import("../LandingPage/VendorStockPage").then(m => ({ default: m.VendorStockPage })));
 const VendorOrderHistoryPage = React.lazy(() => import("../LandingPage/VendorOrderHistoryPage").then(m => ({ default: m.VendorOrderHistoryPage })));
 // 2026-10-12 · #13 Phase 3 · 방문예약 · slide drawer
@@ -52,6 +54,8 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
   }, [vendors]);
   // 2026-10-12 · #13 Phase 3 · 방문예약 slide drawer (RequestsPage drawer 공식 재사용)
   const [reservationDrawerOpen, setReservationDrawerOpen] = useState(false);
+  // 2026-10-12 · 사용자 지시 · 공급사 정보 클릭 → slide drawer (현황판에서 바로 수정)
+  const [vendorInfoDrawerOpen, setVendorInfoDrawerOpen] = useState(false);
 
   // 2026-10-12 · 사용자 리포트 "데이터가 하나도 안 보인다 · 장난해" · Phase 6 데이터 fetch 즉시 적용
   //   · 로그인한 거래처 (authSession.employeeName) 정보 · 재고 · 발주이력 · 방문예약 달력
@@ -79,14 +83,17 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
   }, [vendorName]);
 
   // 공급사 재고 (로그인한 거래처 공급 상품)
+  // 2026-10-12 · fix · `/api/vendor-stock` endpoint 존재 X → `/api/products-search?supplier=` 사용 (VendorStockPage 패턴)
   const [vendorProducts, setVendorProducts] = useState<any[] | null>(null);
   useEffect(() => {
     if (!vendorName) return;
     let alive = true;
-    api.get<{ products?: any[]; rows?: any[] }>(`/api/vendor-stock?supplier=${encodeURIComponent(vendorName)}`)
+    api.get<any>(`/api/products-search?supplier=${encodeURIComponent(vendorName)}&limit=1000`)
       .then(({ data }) => {
         if (!alive) return;
-        const rows = Array.isArray(data?.products) ? data.products : Array.isArray(data?.rows) ? data.rows : [];
+        const rows = Array.isArray(data?.products) ? data.products
+          : Array.isArray(data?.rows) ? data.rows
+          : Array.isArray(data) ? data : [];
         setVendorProducts(rows);
       }).catch(() => { if (alive) setVendorProducts([]); });
     return () => { alive = false; };
@@ -253,7 +260,12 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
                   </section>
                   {/* 공급사 정보 · 로그인 거래처 자기 자신 */}
                   <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-5 flex flex-col gap-3 cursor-pointer hover:border-slate-300 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-all"
-                    onClick={() => setInnerTab("vendor-info")}
+                    onClick={() => {
+                      // 2026-10-12 · 사용자 지시 "승인받은 사람만 볼 수 있게" · approval_status === "approved" 또는 admin 만 drawer 접근
+                      if (myVendor?.approval_status === "approved" || isAdmin) {
+                        setVendorInfoDrawerOpen(true);
+                      }
+                    }}
                     role="button" tabIndex={0}>
                     {/* 2026-10-12 · 사용자 지시 · 공급사 정보 UI 교체 · 2-section 레이아웃
                         · 상단 · "내 정보" compact header (공급사명 + ERP 뱃지 + 핵심 연락처 1-line)
@@ -262,7 +274,9 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
                       <span className="w-[3px] h-[14px] bg-emerald-500 rounded-full shrink-0" />
                       <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">공급사 정보</h3>
                       {isAdmin && <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 font-semibold">관리자 · 테스트2</span>}
-                      <span className="ml-auto text-[12px] text-slate-400">탭 상세 →</span>
+                      <span className="ml-auto text-[12px] text-slate-400">
+                        {myVendor?.approval_status === "approved" || isAdmin ? "수정 →" : "승인 대기"}
+                      </span>
                     </div>
                     <div className="flex-1">
                       {myVendor === null ? (
@@ -271,27 +285,33 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
                         </div>
                       ) : (() => {
                         const name = myVendor.company_name ?? myVendor.name ?? myVendor.vendor_name ?? "-";
-                        const manager = myVendor.manager ?? myVendor.contact_name ?? "";
+                        const manager = myVendor.contact_name ?? myVendor.manager ?? "";
                         const phone = myVendor.phone ?? myVendor.contact_phone ?? "";
                         const email = myVendor.email ?? "";
-                        const bizNum = myVendor.business_number ?? myVendor.biz_num ?? "";
+                        const teamLeadName = myVendor.team_lead_name ?? myVendor.manager_name ?? "";
+                        const teamLeadPhone = myVendor.team_lead_phone ?? myVendor.manager_phone ?? "";
+                        const teamLeadEmail = myVendor.team_lead_email ?? myVendor.manager_email ?? "";
+                        const emergencyContact = myVendor.emergency_contact ?? myVendor.urgent_phone ?? "";
+                        const specialNotes = myVendor.special_notes ?? myVendor.note ?? myVendor.memo ?? "";
+                        const bizNum = myVendor.business_number ?? "";
                         const address = myVendor.address ?? "";
-                        const account = myVendor.account ?? myVendor.bank_account ?? "";
                         const isErp = !!myVendor.ct_code;
-                        const Field: React.FC<{ label: string; value: string; warn?: boolean }> = ({ label, value, warn }) => (
-                          <div className="min-w-0">
-                            <div className={`text-[11px] font-medium ${warn && !value ? "text-rose-500" : "text-slate-500"}`}>
-                              {label}{warn && !value ? " · 미입력" : ""}
+                        const approvalStatus = String(myVendor.approval_status ?? "");
+                        // 2026-10-12 · 사용자 지시 · 담당자/팀장/긴급연락처/비고 field 추가
+                        const Row: React.FC<{ label: string; value: string; warn?: boolean; mono?: boolean }> = ({ label, value, warn, mono }) => (
+                          <div className="min-w-0 flex items-baseline gap-2 py-1 border-b border-slate-50 last:border-b-0">
+                            <div className={`shrink-0 w-24 text-[12px] font-medium ${warn && !value ? "text-rose-500" : "text-slate-500"}`}>
+                              {label}{warn && !value ? " ⚠" : ""}
                             </div>
-                            <div className={`text-[13.5px] font-semibold tabular-nums mt-0.5 truncate ${value ? "text-ink" : "text-slate-300"}`} title={value || "-"}>
+                            <div className={`flex-1 min-w-0 text-[13.5px] font-semibold ${mono ? "tabular-nums" : ""} truncate ${value ? "text-ink" : "text-slate-300"}`} title={value || "-"}>
                               {value || "-"}
                             </div>
                           </div>
                         );
                         return (
                           <div className="flex flex-col gap-2.5">
-                            {/* 상단 header · 상호 + ERP 뱃지 + 담당자/전화 inline */}
-                            <div className="flex items-start gap-2 pb-2.5 border-b border-slate-100">
+                            {/* 상단 header · 상호 + ERP + 승인 뱃지 */}
+                            <div className="flex items-start gap-2 pb-2 border-b border-slate-100">
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5 flex-wrap">
                                   <span className="text-[16px] md:text-[17px] font-bold text-ink truncate" title={name}>{name}</span>
@@ -300,20 +320,28 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
                                   }`}>
                                     {isErp ? "ERP 연동" : "ERP 외"}
                                   </span>
-                                </div>
-                                <div className="text-[12px] text-slate-500 mt-1 truncate" title={`${manager} / ${phone}`}>
-                                  {manager || <span className="text-rose-500">담당자 미입력</span>}
-                                  {" · "}
-                                  <span className="tabular-nums">{phone || <span className="text-rose-500">연락처 미입력</span>}</span>
+                                  <span className={`shrink-0 inline-flex items-center h-[18px] px-1.5 rounded-sm text-[10px] font-bold tracking-wide ${
+                                    approvalStatus === "approved"
+                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                      : "bg-rose-50 text-rose-700 border border-rose-200"
+                                  }`}>
+                                    {approvalStatus === "approved" ? "승인됨" : "승인 대기"}
+                                  </span>
                                 </div>
                               </div>
                             </div>
-                            {/* 하단 2x3 grid · 세부 field · 미입력 warn */}
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                              <Field label="이메일" value={email} />
-                              <Field label="사업자번호" value={bizNum} warn />
-                              <Field label="계좌" value={account} />
-                              <Field label="주소" value={address} />
+                            {/* 세부 field · row list (사용자 지시 · 담당자/팀장/긴급연락처/비고 전부) */}
+                            <div className="max-h-[260px] overflow-y-auto">
+                              <Row label="담당자" value={manager} warn />
+                              <Row label="담당자 전화" value={phone} warn mono />
+                              <Row label="담당자 이메일" value={email} />
+                              <Row label="팀장" value={teamLeadName} />
+                              <Row label="팀장 전화" value={teamLeadPhone} mono />
+                              <Row label="팀장 이메일" value={teamLeadEmail} />
+                              <Row label="긴급연락처" value={emergencyContact} mono />
+                              <Row label="사업자번호" value={bizNum} warn mono />
+                              <Row label="주소" value={address} />
+                              <Row label="비고" value={specialNotes} />
                             </div>
                           </div>
                         );
@@ -368,15 +396,51 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
                       ) : orderHistory.length === 0 ? (
                         <div className="h-[180px] flex items-center justify-center text-[13px] text-slate-400">발주이력 없음</div>
                       ) : (
-                        <ul className="divide-y divide-slate-100">
-                          {orderHistory.slice(0, 10).map((o: any, i: number) => (
-                            <li key={o.order_id ?? o.id ?? i} className="flex items-center gap-2 py-1.5 text-[13px]">
-                              <span className="shrink-0 text-slate-500 tabular-nums text-[12px] w-16">{String(o.order_date ?? o.created_at ?? "").slice(0, 10)}</span>
-                              <span className="flex-1 min-w-0 truncate text-ink font-medium" title={o.product_name ?? "-"}>{o.product_name ?? o.product_names ?? `${o.item_count ?? "?"}건`}</span>
-                              <span className="shrink-0 text-slate-500 tabular-nums text-[12px]">{Number(o.total_amount ?? o.amount ?? 0).toLocaleString()}원</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <table className="w-full text-[12.5px]">
+                          <thead className="text-left text-[11px] text-slate-500 font-semibold border-b border-slate-200">
+                            <tr>
+                              <th className="py-1.5 pr-2 whitespace-nowrap">발주일</th>
+                              <th className="py-1.5 pr-2 whitespace-nowrap">발주번호</th>
+                              <th className="py-1.5 px-2">상품</th>
+                              <th className="py-1.5 px-2 text-right w-14">품목</th>
+                              <th className="py-1.5 px-2 text-right w-16">수량</th>
+                              <th className="py-1.5 px-2 text-right w-20">금액</th>
+                              <th className="py-1.5 pl-2 text-center w-14">상태</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {orderHistory.slice(0, 10).map((o: any, i: number) => {
+                              // 2026-10-12 · 사용자 지시 · 발주이력 column 자세히 · /api/order-history 응답 shape 참조
+                              //   · order_number (발주서) · order_date / sent_at · items[] + product_names (grouped shape)
+                              const items = Array.isArray(o.items) ? o.items : [];
+                              const itemCount = items.length || Number(o.item_count ?? 0) || (o.product_name ? 1 : 0);
+                              const totalQty = items.length > 0
+                                ? items.reduce((s: number, it: any) => s + Number(it.order_qty ?? 0), 0)
+                                : Number(o.order_qty ?? 0);
+                              const totalAmount = Number(o.total_amount ?? o.amount ?? 0) || items.reduce((s: number, it: any) => s + (Number(it.order_qty ?? 0) * Number(it.unit_price ?? 0)), 0);
+                              const productLabel = Array.isArray(o.product_names) && o.product_names.length > 0
+                                ? (o.product_names.length === 1 ? String(o.product_names[0]) : `${o.product_names[0]} 외 ${o.product_names.length - 1}`)
+                                : (o.product_name ?? "-");
+                              const statusLabel = o.status === "ordered" ? "발주" : o.status === "matched" ? "매입" : o.status === "cancelled" ? "취소" : "기타";
+                              const statusCls = o.status === "matched" ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                                : o.status === "ordered" ? "text-indigo-700 bg-indigo-50 border-indigo-200"
+                                : "text-slate-500 bg-slate-50 border-slate-200";
+                              return (
+                                <tr key={o.order_number ?? o.order_id ?? o.id ?? i} className="hover:bg-slate-50/40">
+                                  <td className="py-1.5 pr-2 text-slate-500 tabular-nums whitespace-nowrap">{String(o.order_date ?? o.sent_at ?? o.created_at ?? "").slice(0, 10)}</td>
+                                  <td className="py-1.5 pr-2 text-slate-400 tabular-nums text-[11px] truncate max-w-[90px]" title={o.order_number ?? "-"}>{o.order_number ?? "-"}</td>
+                                  <td className="py-1.5 px-2 text-ink font-medium truncate max-w-[180px]" title={productLabel}>{productLabel}</td>
+                                  <td className="py-1.5 px-2 text-right text-slate-600 tabular-nums">{itemCount}</td>
+                                  <td className="py-1.5 px-2 text-right text-ink tabular-nums">{totalQty.toLocaleString()}</td>
+                                  <td className="py-1.5 px-2 text-right text-ink tabular-nums font-semibold">{totalAmount > 0 ? totalAmount.toLocaleString() : "-"}</td>
+                                  <td className="py-1.5 pl-2 text-center">
+                                    <span className={`inline-flex items-center justify-center min-w-[38px] h-5 px-1 rounded border text-[10px] font-semibold ${statusCls}`}>{statusLabel}</span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       )}
                     </div>
                   </section>
@@ -431,6 +495,53 @@ export const VendorOverviewPage: React.FC<VendorOverviewPageProps> = ({ onBack, 
             <div className="flex-1 min-h-0 overflow-y-auto">
               <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="방문예약 로딩 중..." size={16} tone="brand" /></div>}>
                 <ReservationPage onBack={() => setReservationDrawerOpen(false)} authSession={authSession ?? null} />
+              </Suspense>
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* 2026-10-12 · 사용자 지시 · 공급사 정보 클릭 → slide drawer (수정 UI · VendorManageSplit embedded) */}
+      {vendorInfoDrawerOpen && (
+        <>
+          <style>{`
+            @keyframes vendorInfoSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+            @keyframes vendorInfoFadeIn { from { opacity: 0; } to { opacity: 1; } }
+          `}</style>
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-40"
+            style={{ animation: "vendorInfoFadeIn 200ms ease-out" }}
+            onClick={() => setVendorInfoDrawerOpen(false)}
+            aria-hidden
+          />
+          <aside
+            className="fixed right-0 top-0 bottom-0 w-full md:w-[920px] lg:w-[1200px] bg-[#F4F7FA] z-50 shadow-[-8px_0_32px_rgba(15,23,42,0.12)] flex flex-col overflow-hidden"
+            style={{ animation: "vendorInfoSlideIn 250ms ease-out" }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="공급사 정보 수정"
+          >
+            <header className="sticky top-0 z-10 flex items-center gap-2 px-3 py-2.5 md:px-4 md:py-3 border-b border-slate-200 bg-white">
+              <span className="w-[3px] h-[14px] bg-emerald-500 rounded-full shrink-0" aria-hidden />
+              <h2 className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight flex-1 min-w-0 truncate leading-tight">공급사 정보 수정</h2>
+              <button
+                type="button"
+                onClick={() => setVendorInfoDrawerOpen(false)}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-[8px] text-slate-500 hover:text-ink hover:bg-slate-100 transition-colors cursor-pointer"
+                aria-label="닫기"
+                title="닫기"
+              >
+                <XIcon size={14} />
+              </button>
+            </header>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <Suspense fallback={<div className="flex-1 flex items-center justify-center py-16"><Spinner label="공급사 정보 로딩 중..." size={16} tone="brand" /></div>}>
+                {/* 2026-10-12 · 사용자 지시 "공급사 정보가 나와야지 목록이 아니고" · myVendor 단일 상세 panel · 목록 제거 */}
+                {myVendor ? (
+                  <VendorDetailModalLazy vendor={myVendor as any} onClose={() => setVendorInfoDrawerOpen(false)} onSaved={() => { /* refresh 는 상위 fetch · noop */ }} panel />
+                ) : (
+                  <div className="flex-1 flex items-center justify-center py-16 text-[14px] text-slate-500">공급사 정보가 없습니다</div>
+                )}
               </Suspense>
             </div>
           </aside>

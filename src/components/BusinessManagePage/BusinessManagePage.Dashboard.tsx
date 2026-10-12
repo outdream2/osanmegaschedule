@@ -15,6 +15,13 @@ import { getLeavePendingCount } from "../../lib/leaveApi";
 import { getResignationPendingCount } from "../../lib/resignationsApi";
 import type { Employee } from "../../types";
 import { Spinner } from "../common/Spinner";
+// 2026-10-12 · 사용자 지시 "조치 필요 자리에 인건비 구성 + 클릭 시 직군별 세부" · wage resolver 통합
+import { useSettings } from "../../hooks/useSettings";
+import { resolveEmployeeWage } from "../../lib/wageResolver";
+
+const AVG_WEEKS_PER_MONTH = 4.345;
+const DEFAULT_HOURS_PER_WEEK = 40;
+const fmtMan = (n: number): string => `${Math.round(n / 10000).toLocaleString("ko-KR")}만원`;
 
 const CARD = "bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)]";
 
@@ -47,6 +54,7 @@ type EmployeeExt = Employee & {
   contract_type?: string | null;
   contract_start?: string | null;
   contract_end?: string | null;
+  resume_url?: string | null;
 };
 
 export interface BusinessDashboardProps {
@@ -114,6 +122,55 @@ export const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ onOpenTab,
 
   const pendingTotal = leavePending + resignPending;
 
+  // 2026-10-12 · 사용자 지시 "조치 필요 자리에 인건비 구성 넣어" · 직군별 인건비 집계 (payrollBreakdown)
+  const { settings } = useSettings();
+  const [expandedPositions, setExpandedPositions] = useState<Set<string>>(new Set());
+  const togglePosition = (pos: string) => {
+    setExpandedPositions(prev => {
+      const next = new Set(prev);
+      if (next.has(pos)) next.delete(pos); else next.add(pos);
+      return next;
+    });
+  };
+  // 직군별 (position) 월 인건비 집계 + 소속 직원 리스트
+  const payrollBreakdown = useMemo(() => {
+    if (!settings) return [] as Array<{ position: string; amount: number; count: number; members: Array<{ emp: EmployeeExt; monthly: number }> }>;
+    const g = new Map<string, { amount: number; count: number; members: Array<{ emp: EmployeeExt; monthly: number }> }>();
+    for (const emp of activeEmps) {
+      const resolution = resolveEmployeeWage(emp.id, emp.position, settings);
+      if (resolution.status !== "configured" || !resolution.wage) continue;
+      const hoursPerWeek = ((emp as any).working_hours_per_week && Number.isFinite((emp as any).working_hours_per_week))
+        ? (emp as any).working_hours_per_week
+        : DEFAULT_HOURS_PER_WEEK;
+      const monthly = Math.round(resolution.wage.weekday * hoursPerWeek * AVG_WEEKS_PER_MONTH);
+      const key = String(emp.position ?? "(직군 미지정)").trim() || "(직군 미지정)";
+      const prev = g.get(key) ?? { amount: 0, count: 0, members: [] };
+      prev.amount += monthly;
+      prev.count += 1;
+      prev.members.push({ emp, monthly });
+      g.set(key, prev);
+    }
+    return Array.from(g.entries())
+      .map(([position, v]) => ({ position, ...v, members: v.members.sort((a, b) => b.monthly - a.monthly) }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [activeEmps, settings]);
+  const payrollTotal = useMemo(() => payrollBreakdown.reduce((s, g) => s + g.amount, 0), [payrollBreakdown]);
+
+  // 2026-10-12 · 사용자 지시 "직원리스트는 3단으로 · 약사 / 매장 / 창고/기타"
+  const classifyPosition = (position: string | null | undefined): "pharmacist" | "store" | "warehouse_other" => {
+    const p = String(position ?? "").trim();
+    if (p.includes("약사")) return "pharmacist";
+    if (p.includes("매장") || p.includes("캐셔") || p.includes("매니저") || p.includes("판매")) return "store";
+    return "warehouse_other";
+  };
+  const grouped3 = useMemo(() => {
+    const buckets: Record<"pharmacist" | "store" | "warehouse_other", EmployeeExt[]> = {
+      pharmacist: [], store: [], warehouse_other: [],
+    };
+    for (const e of activeEmps) buckets[classifyPosition(e.position)].push(e);
+    return buckets;
+  }, [activeEmps]);
+
   const groupedByPosition = useMemo(() => {
     const map = new Map<string, EmployeeExt[]>();
     for (const e of activeEmps) {
@@ -139,100 +196,124 @@ export const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ onOpenTab,
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-5">
-      {/* ── KPI 6-strip ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <KpiTile
-          icon={UsersThree}
-          tone="violet"
-          label="전체 재직"
-          value={activeEmps.length}
-          unit="명"
-          onClick={() => onOpenTab("staff-manage")}
-        />
-        <KpiTile
-          icon={UserPlus}
-          tone="emerald"
-          label="신규 입사 (이번달)"
-          value={newThisMonth.length}
-          unit="명"
-          onClick={() => onOpenTab("staff-manage")}
-        />
-        <KpiTile
-          icon={CalendarDots}
-          tone="amber"
-          label="계약 만료 임박 (30일)"
-          value={expiringContracts.length}
-          unit="명"
-          onClick={() => onOpenTab("document-writer")}
-        />
-        <KpiTile
-          icon={ChatCenteredText}
-          tone="indigo"
-          label="미승인 요청"
-          value={pendingTotal}
-          unit="건"
-          badge={pendingTotal > 0 ? "조치 필요" : undefined}
-          onClick={() => onOpenTab("requests")}
-        />
-        {/* 2026-10-11 · #14-P2 · 인건비 분석 탭으로 이동 · 상세 KPI 는 그 탭 안에서 표시 */}
-        <KpiTile
-          icon={CurrencyKrw}
-          tone="violet"
-          label="이번달 예상 인건비"
-          value="보기"
-          meta="인건비 분석 탭으로 이동"
-          onClick={() => onOpenTab("wage-analysis")}
-        />
-        <KpiTile
-          icon={Percent}
-          tone="slate"
-          label="매출 대비 인건비율"
-          value="—"
-          meta="매출 API 연동 예정"
-        />
-      </div>
+      {/* ── 2026-10-12 · 사용자 지시 "전부 텍스트로 깔끔하게" · KPI 큰 카드 6-strip 제거 · inline text 요약 */}
+      <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] px-4 py-3">
+        <div className="flex items-baseline gap-x-6 gap-y-1.5 flex-wrap text-[14px]">
+          <button type="button" onClick={() => onOpenTab("staff-manage")} className="inline-flex items-baseline gap-1.5 cursor-pointer hover:text-brand-deep transition-colors">
+            <span className="text-slate-500 font-medium">전체 재직</span>
+            <span className="font-bold text-ink tabular-nums">{activeEmps.length}</span>
+            <span className="text-slate-500">명</span>
+          </button>
+          <span className="text-slate-300">·</span>
+          <button type="button" onClick={() => onOpenTab("staff-manage")} className="inline-flex items-baseline gap-1.5 cursor-pointer hover:text-brand-deep transition-colors">
+            <span className="text-slate-500 font-medium">신규 입사 (이번달)</span>
+            <span className="font-bold text-ink tabular-nums">{newThisMonth.length}</span>
+            <span className="text-slate-500">명</span>
+          </button>
+          <span className="text-slate-300">·</span>
+          <button type="button" onClick={() => onOpenTab("document-writer")} className="inline-flex items-baseline gap-1.5 cursor-pointer hover:text-brand-deep transition-colors">
+            <span className="text-slate-500 font-medium">계약 만료 임박 (30일)</span>
+            <span className={`font-bold tabular-nums ${expiringContracts.length > 0 ? "text-amber-600" : "text-ink"}`}>{expiringContracts.length}</span>
+            <span className="text-slate-500">명</span>
+          </button>
+          <span className="text-slate-300">·</span>
+          <button type="button" onClick={() => onOpenTab("requests")} className="inline-flex items-baseline gap-1.5 cursor-pointer hover:text-brand-deep transition-colors">
+            <span className="text-slate-500 font-medium">미승인 요청</span>
+            <span className={`font-bold tabular-nums ${pendingTotal > 0 ? "text-rose-600" : "text-ink"}`}>{pendingTotal}</span>
+            <span className="text-slate-500">건</span>
+            {pendingTotal > 0 && <span className="ml-1 text-[12px] font-semibold text-rose-600">· 조치 필요</span>}
+          </button>
+          <span className="text-slate-300">·</span>
+          <button type="button" onClick={() => onOpenTab("wage-analysis")} className="inline-flex items-baseline gap-1.5 cursor-pointer hover:text-brand-deep transition-colors">
+            <span className="text-slate-500 font-medium">이번달 예상 인건비</span>
+            <span className="font-semibold text-brand-deep">보기 →</span>
+          </button>
+          <span className="text-slate-300">·</span>
+          <span className="inline-flex items-baseline gap-1.5">
+            <span className="text-slate-500 font-medium">매출 대비 인건비율</span>
+            <span className="text-slate-300">—</span>
+            <span className="text-[12px] text-slate-400">매출 API 연동 예정</span>
+          </span>
+        </div>
+      </section>
 
-      {/* ── 메인 2단: 조치 필요 + 직원 요약 ─────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {/* 조치 필요 (좌 2/5) */}
-        <section className={`${CARD} md:col-span-2 p-4 flex flex-col`}>
-          <header className="flex items-center justify-between mb-3">
+      {/* ── 2026-10-12 · 사용자 지시 "조치 필요 자리에 인건비 구성 · 직원 요약 아래로" · vertical stack */}
+      <div className="flex flex-col gap-4">
+        {/* 인건비 구성 (상단) · 조치 필요 교체 · 직군별 리스트 · 클릭 expand 세부 직원 */}
+        <section className={`${CARD} p-4 flex flex-col`}>
+          <header className="flex items-center justify-between mb-3 flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <span className="w-[3px] h-[12px] bg-rose-500 rounded-full" aria-hidden />
-              <h2 className={T.sectionTitle}>조치 필요</h2>
+              <span className="w-[3px] h-[12px] bg-indigo-500 rounded-full" aria-hidden />
+              <h2 className={T.sectionTitle}>인건비 구성</h2>
+              <span className="text-[13px] text-slate-500 tabular-nums">· {payrollBreakdown.reduce((s, g) => s + g.count, 0)}명 · {payrollBreakdown.length}직군</span>
             </div>
-            <span className="text-[12px] text-slate-400">우선 처리</span>
+            <div className="flex items-baseline gap-2 tabular-nums">
+              <span className="text-[13px] text-slate-500">월 인건비</span>
+              <span className="text-[18px] font-bold text-ink">{fmtMan(payrollTotal)}</span>
+            </div>
           </header>
-
-          <ActionRow
-            icon={CalendarDots}
-            iconTone="text-amber-600"
-            title={`재계약 대상 · ${expiringContracts.length}명`}
-            meta={expiringContracts.length === 0 ? "30일 이내 만료 없음" : expiringContracts.slice(0, 3).map(x => `${x.emp.name} (D-${x.days})`).join(" · ")}
-            onClick={() => onOpenTab("document-writer")}
-          />
-          <ActionRow
-            icon={ChatCenteredText}
-            iconTone="text-indigo-600"
-            title={`미승인 요청 · ${pendingTotal}건`}
-            meta={pendingTotal === 0 ? "대기 중인 요청 없음" : `연차 ${leavePending}건 · 사직서 ${resignPending}건`}
-            onClick={() => onOpenTab("requests")}
-          />
-          <ActionRow
-            icon={FileText}
-            iconTone="text-slate-500"
-            title="서류 누락 점검"
-            meta="각종양식 탭에서 확인"
-            onClick={() => onOpenTab("hr-forms")}
-          />
+          <ul className="divide-y divide-slate-100">
+            {payrollBreakdown.map(g => {
+              const expanded = expandedPositions.has(g.position);
+              const pct = payrollTotal > 0 ? (g.amount / payrollTotal) * 100 : 0;
+              return (
+                <React.Fragment key={g.position}>
+                  <li
+                    className="py-2.5 flex items-center gap-3 text-[14px] md:text-[15px] cursor-pointer hover:bg-slate-50 -mx-2 px-2 rounded transition-colors"
+                    onClick={() => togglePosition(g.position)}
+                    title={expanded ? "접기" : "펼치기 · 소속 직원 리스트"}
+                  >
+                    <span className={`inline-block text-slate-400 transition-transform ${expanded ? "rotate-90" : ""}`} aria-hidden>▸</span>
+                    <span className="w-2.5 h-2.5 rounded-sm bg-indigo-500 shrink-0" aria-hidden />
+                    <span className="flex-1 text-ink font-medium truncate min-w-0">{g.position}</span>
+                    <span className="w-14 text-right tabular-nums text-[13px] text-slate-500 shrink-0">{g.count}명</span>
+                    <span className="w-28 text-right tabular-nums text-ink shrink-0 font-semibold">{fmtMan(g.amount)}</span>
+                    <span className="w-14 text-right tabular-nums text-[12px] text-slate-400 shrink-0 hidden sm:inline">비중 {Math.round(pct)}%</span>
+                    <div className="w-24 md:w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden shrink-0">
+                      <div className="h-full rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
+                    </div>
+                  </li>
+                  {/* 2026-10-12 · 클릭 expand · 소속 직원 세부 리스트 (금액 desc) */}
+                  {expanded && (
+                    <li className="bg-slate-50/60 -mx-2 px-2 py-2">
+                      <ul className="divide-y divide-slate-200/60 pl-10">
+                        {g.members.map(({ emp, monthly }) => {
+                          const empPct = g.amount > 0 ? (monthly / g.amount) * 100 : 0;
+                          return (
+                            <li
+                              key={emp.id}
+                              className="py-1.5 flex items-center gap-3 text-[13px] cursor-pointer hover:bg-white -mx-2 px-2 rounded transition-colors"
+                              onClick={(ev) => { ev.stopPropagation(); onOpenEmployeeId?.(emp.id); }}
+                              title="클릭 · 직원 상세"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-300 shrink-0" aria-hidden />
+                              <span className="flex-1 text-slate-700 truncate min-w-0">{emp.name}</span>
+                              <span className="w-24 text-right tabular-nums text-slate-700 shrink-0">{fmtMan(monthly)}</span>
+                              <span className="w-14 text-right tabular-nums text-[12px] text-slate-400 shrink-0">{Math.round(empPct)}%</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </li>
+                  )}
+                </React.Fragment>
+              );
+            })}
+            {payrollBreakdown.length === 0 && (
+              <li className="py-6 text-center text-[13px] text-slate-400">
+                인건비 집계 데이터 없음 · 직원 급여 설정 필요
+              </li>
+            )}
+          </ul>
         </section>
 
-        {/* 직원 요약 (우 3/5) */}
-        <section className={`${CARD} md:col-span-3 p-4 flex flex-col`}>
+        {/* 2026-10-12 · 사용자 지시 "직원리스트 3단 · 약사 / 매장 / 창고기타" · 3-column grid */}
+        <section className={`${CARD} p-4 flex flex-col`}>
           <header className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="w-[3px] h-[12px] bg-violet-500 rounded-full" aria-hidden />
               <h2 className={T.sectionTitle}>직원 요약</h2>
+              <span className="text-[13px] text-slate-500">· 약사 {grouped3.pharmacist.length} · 매장 {grouped3.store.length} · 창고/기타 {grouped3.warehouse_other.length}</span>
             </div>
             <button
               type="button"
@@ -242,40 +323,68 @@ export const BusinessDashboard: React.FC<BusinessDashboardProps> = ({ onOpenTab,
               전체 보기 <CaretRight size={12} weight="bold" />
             </button>
           </header>
-
-          <div className="flex flex-wrap gap-2 mb-3">
-            {groupedByPosition.map(([pos, list]) => (
-              <span
-                key={pos}
-                className={`${T.pill} border ${POSITION_TONE[pos] ?? "bg-slate-50 text-slate-700 border-slate-200"}`}
-              >
-                {pos} <strong className="tabular-nums">{list.length}</strong>
-              </span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {([
+              { key: "pharmacist" as const,       title: "약사",       tone: "bg-emerald-500", list: grouped3.pharmacist },
+              { key: "store" as const,            title: "매장",       tone: "bg-sky-500",     list: grouped3.store },
+              { key: "warehouse_other" as const,  title: "창고 / 기타", tone: "bg-slate-500",   list: grouped3.warehouse_other },
+            ]).map(group => (
+              <div key={group.key} className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-1.5 pb-1.5 border-b border-slate-200">
+                  <span className={`w-1.5 h-1.5 rounded-full ${group.tone}`} aria-hidden />
+                  <span className="text-[13px] font-semibold text-slate-700">{group.title}</span>
+                  <span className="text-[12px] text-slate-400 tabular-nums">· {group.list.length}명</span>
+                </div>
+                <ul className="divide-y divide-slate-100">
+                  {group.list.length === 0 ? (
+                    <li className="py-3 text-center text-[13px] text-slate-400">직원 없음</li>
+                  ) : group.list.map(e => {
+                    const ext = e as EmployeeExt;
+                    const hasResume = !!(ext.resume_url && String(ext.resume_url).trim());
+                    const hasContract = !!(ext.contract_type || ext.contract_start);
+                    const contractType = String(ext.contract_type ?? "").trim();
+                    const isRegular = contractType.includes("정규") || contractType.includes("정직원");
+                    const isTemp = contractType.includes("계약") || contractType.includes("수습");
+                    const typeLabel = isRegular ? "정규" : isTemp ? "계약" : "미지정";
+                    const typeCls = isRegular
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : isTemp
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : "bg-slate-50 text-slate-400 border-slate-200";
+                    return (
+                      <li
+                        key={e.id}
+                        className="py-1.5 flex items-center gap-2 hover:bg-slate-50 -mx-1 px-1 rounded cursor-pointer transition-colors"
+                        onClick={() => onOpenEmployeeId?.(e.id)}
+                        title="클릭 · 직원 상세 열기"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[14px] text-ink font-medium truncate">{e.name}</div>
+                          <div className="text-[12px] text-slate-500 truncate">{e.position || "—"}</div>
+                        </div>
+                        <div className="shrink-0 flex items-center gap-1">
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${typeCls}`}>{typeLabel}</span>
+                          <span
+                            className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${hasResume ? "bg-sky-50 text-sky-700 border-sky-200" : "bg-slate-50 text-slate-400 border-slate-200"}`}
+                            title={hasResume ? "이력서 있음" : "이력서 없음"}
+                          >
+                            이력서 {hasResume ? "✓" : "✗"}
+                          </span>
+                          <span
+                            className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${hasContract ? "bg-indigo-50 text-indigo-700 border-indigo-200" : "bg-slate-50 text-slate-400 border-slate-200"}`}
+                            title={hasContract ? "근로계약서 작성됨" : "근로계약서 미작성"}
+                          >
+                            계약서 {hasContract ? "✓" : "✗"}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             ))}
           </div>
-
-          <ul className="divide-y divide-slate-100">
-            {activeEmps.slice(0, 6).map(e => (
-              <li
-                key={e.id}
-                className="py-2 flex items-center justify-between hover:bg-slate-50 -mx-2 px-2 rounded cursor-pointer"
-                onClick={() => onOpenEmployeeId?.(e.id)}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={`${T.rowTitle} truncate`}>{e.name}</div>
-                  <span className="text-[12px] text-slate-500 shrink-0">{e.position}</span>
-                </div>
-                <div className={`${T.rowMeta} shrink-0 tabular-nums`}>
-                  {e.hireDate ? `입사 ${e.hireDate.slice(0, 7)}` : "—"}
-                </div>
-              </li>
-            ))}
-            {activeEmps.length > 6 && (
-              <li className="pt-3 text-[13px] text-slate-500 text-center">
-                외 {activeEmps.length - 6}명 · <button type="button" onClick={() => onOpenTab("staff-manage")} className="text-indigo-600 hover:underline">전체 보기</button>
-              </li>
-            )}
-          </ul>
+          {/* 2026-10-12 · 사용자 지시 "클릭시 슬라이딩윈도우 편집 가능" · onOpenEmployeeId 는 상위 BusinessManagePage.Overview 가 slide drawer 로 처리 */}
         </section>
       </div>
 

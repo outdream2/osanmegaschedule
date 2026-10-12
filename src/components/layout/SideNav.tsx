@@ -6,7 +6,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { Collapsible } from "radix-ui";
 // 2026-08-12 · 접힘 아이콘 · CaretDown (Radix/shadcn 표준 · 부드러운 화살표)
-import { CaretDown } from "@phosphor-icons/react";
+import { CaretDown, CaretRight } from "@phosphor-icons/react";
 import { useIsMobile } from "../../hooks/use-mobile";
 // 2026-08-23 · #188 · usePageVisibility · 사이드바 items · 뷰포트별 필터
 import { usePageVisibility } from "../../hooks/usePageVisibility";
@@ -233,8 +233,16 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                     "transition-all duration-150 ease-out",
                   ].join(" ")}
                 >
+                  {/* 2026-10-12 · 사용자 지시 · 앞 "동글이" (small dot · 통일) + 기존 아이콘 */}
+                  <span
+                    className={[
+                      "w-1.5 h-1.5 rounded-full shrink-0 transition-colors duration-150 ease-out group-data-[collapsible=icon]:hidden",
+                      active ? "bg-white" : "bg-[#5E7A95]",
+                    ].join(" ")}
+                    aria-hidden
+                  />
                   <Icon
-                    size={18}
+                    size={16}
                     weight={active ? "fill" : "regular"}
                     className={[
                       "shrink-0 transition-colors duration-150 ease-out",
@@ -250,6 +258,16 @@ const CollapsibleGroup: React.FC<CollapsibleGroupProps> = ({
                       </span>
                     )}
                   </span>
+                  {/* 2026-10-12 · 사용자 지시 · 뒤 "화살표" (CaretRight) 통일 */}
+                  <CaretRight
+                    size={12}
+                    weight="bold"
+                    className={[
+                      "shrink-0 transition-colors duration-150 ease-out group-data-[collapsible=icon]:hidden",
+                      active ? "text-white/70" : "text-[#5E7A95]",
+                    ].join(" ")}
+                    aria-hidden
+                  />
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );

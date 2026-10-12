@@ -122,7 +122,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     id: "vendor",
     label: "거래처",
     color: "emerald",
-    icon: Buildings,
+    // 2026-10-12 · 사용자 지시 · "거래처 빌딩아이콘 말고 동그라니 다른 메뉴와 똑같이" · Buildings → UserCircle
+    icon: UserCircle,
     // 2026-10-06 · 사용자 지시 · surface-specific hide 제거
     //   · PC/mobile/top nav 노출 통일 · 숨김 필요 시 DB app_settings.page_visibility 로 설정
     // 2026-10-12 · #13 Phase 4 · 거래처 그룹 통합 완료 ·
@@ -130,7 +131,8 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     //   · 방문예약 · drawer / 나머지 · 탭 content embedded
     //   · route 는 코드 보존 (사용자 지시 전까지 dead code 유지)
     items: [
-      { key: "vendor-overview", label: "거래처", icon: Buildings, color: "emerald" },
+      // 2026-10-12 · 사용자 지시 · item 아이콘도 동그란 톤 통일 · Buildings → UserCircle
+      { key: "vendor-overview", label: "거래처", icon: UserCircle, color: "emerald" },
     ],
   },
   {

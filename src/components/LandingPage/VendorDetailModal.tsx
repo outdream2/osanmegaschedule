@@ -397,7 +397,7 @@ export const VendorDetailModal: React.FC<{
             <button
               onClick={handleSave}
               disabled={!isDirty || saving}
-              className="inline-flex items-center gap-1.5 h-8 px-4 text-[13px] font-bold bg-brand-deep hover:bg-[#0d3a5c] active:bg-[#08253a] disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
+              className="inline-flex items-center gap-1.5 h-8 px-4 text-[13px] font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-md transition-colors shadow-sm cursor-pointer"
               title="변경사항 저장"
             >
               {saving ? <Spinner size={11} tone="white" /> : <Check size={11} strokeWidth={2.5} />}
@@ -406,7 +406,7 @@ export const VendorDetailModal: React.FC<{
             {/* X 닫기 */}
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-100 border border-line flex items-center justify-center text-zinc-500 shrink-0 transition"
+              className="w-8 h-8 rounded-md bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-ink shrink-0 transition-colors"
               title="닫기 (ESC)"
             >
               <X size={15} />
@@ -434,31 +434,32 @@ export const VendorDetailModal: React.FC<{
           <>
           {/* 2026-09-02 · 사용자 지시 · 공급 요약 (총재고·총상품·총매입) 섹션 제거 · vendor 화면 단순화 */}
 
-          {/* 2026-08-10 · 사용자 요청 · 결제정보 · VAT 포함/별도 · 2체크박스 (하나만 활성) */}
-          <div className="mb-4 pb-1.5 border-b border-zinc-100">
-            <div className="flex items-center gap-x-4 gap-y-1 flex-wrap">
+          {/* 2026-10-12 · 사용자 지시 · UI 교체 · 홈 랜딩 톤 (결제 정보 섹션)
+              · 좌측 w-1 h-4 → w-[3px] h-[14px] strip · 큰 폰트 축소 · subtle slate 톤 */}
+          <div className="mb-4 pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
               <div className="flex items-center gap-2 shrink-0">
-                <span className="w-1 h-4 rounded-full bg-amber-500 shrink-0" />
-                <span className="text-[18px] font-bold text-amber-700">결제 정보</span>
+                <span className="w-[3px] h-[14px] rounded-full bg-amber-500 shrink-0" aria-hidden />
+                <span className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">결제 정보</span>
               </div>
-              <span className="text-[14px] text-zinc-400 shrink-0">거래명세서 금액</span>
-              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+              <span className="text-[13px] text-slate-400 font-medium shrink-0">거래명세서 금액</span>
+              <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={draft.vat_included === "included"}
                   onChange={() => setDraft({ ...draft, vat_included: "included" })}
-                  className="w-4 h-4 accent-emerald-500 cursor-pointer"
+                  className="w-3.5 h-3.5 accent-emerald-500 cursor-pointer"
                 />
-                <span className={`text-[16px] font-semibold ${draft.vat_included === "included" ? "text-emerald-700" : "text-zinc-500"}`}>부가세 포함</span>
+                <span className={`text-[13.5px] font-semibold ${draft.vat_included === "included" ? "text-emerald-700" : "text-slate-500"}`}>부가세 포함</span>
               </label>
-              <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+              <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={draft.vat_included === "excluded"}
                   onChange={() => setDraft({ ...draft, vat_included: "excluded" })}
-                  className="w-4 h-4 accent-amber-500 cursor-pointer"
+                  className="w-3.5 h-3.5 accent-amber-500 cursor-pointer"
                 />
-                <span className={`text-[16px] font-semibold ${draft.vat_included === "excluded" ? "text-amber-700" : "text-zinc-500"}`}>부가세 별도</span>
+                <span className={`text-[13.5px] font-semibold ${draft.vat_included === "excluded" ? "text-amber-700" : "text-slate-500"}`}>부가세 별도</span>
               </label>
             </div>
           </div>

@@ -59,6 +59,10 @@ export const PurchasePriceVariationCard: React.FC<PurchasePriceVariationCardProp
   const [loading, setLoading] = useState<boolean>(false);
   // 2026-10-12 · 사용자 지시 · 행 클릭 → 상품 매입이력 slide drawer
   const [drawerProduct, setDrawerProduct] = useState<{ code: string; name: string } | null>(null);
+  // 2026-10-12 · 사용자 지시 · 상품명 검색
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  // 2026-10-12 · 사용자 지시 · 전품목 검색 체크 · true 시 변동률 1%+ 필터 bypass (전부 포함)
+  const [searchAllProducts, setSearchAllProducts] = useState<boolean>(false);
 
   // 기간 결정 · quickRange 우선 · null 이면 selectedMonths
   const dateRange = useMemo(() => {
@@ -117,17 +121,29 @@ export const PurchasePriceVariationCard: React.FC<PurchasePriceVariationCardProp
         });
       }
     }
-    // avg + diffPct 계산 · 변동 있는 상품만 filter
+    // avg + diffPct 계산 · 전품목 모드 아니면 변동률 ≥ minDiffPct filter
     const result: VariationRow[] = [];
     for (const v of byCode.values()) {
       const totalAmt = v.prices.reduce((s, p) => s + p.price * p.qty, 0);
       v.avgPrice = v.totalQty > 0 ? totalAmt / v.totalQty : 0;
       v.diffPct = v.avgPrice > 0 ? ((v.maxPrice - v.minPrice) / v.avgPrice) * 100 : 0;
-      if (v.diffPct >= minDiffPct) result.push(v);
+      // 2026-10-12 · 사용자 지시 · 전품목 검색 체크 시 filter bypass
+      if (searchAllProducts || v.diffPct >= minDiffPct) result.push(v);
     }
     result.sort((a, b) => b.diffPct - a.diffPct);
     return result;
-  }, [rows, minDiffPct]);
+  }, [rows, minDiffPct, searchAllProducts]);
+
+  // 2026-10-12 · 상품명 검색 filter
+  const filteredRows = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return variationRows;
+    return variationRows.filter(v =>
+      v.name.toLowerCase().includes(q) ||
+      v.code.toLowerCase().includes(q) ||
+      (v.supplier ?? "").toLowerCase().includes(q)
+    );
+  }, [variationRows, searchQuery]);
 
   const periodLabel = dateRange ? `${dateRange.from} ~ ${dateRange.to}` : "기간 선택";
 
@@ -137,7 +153,13 @@ export const PurchasePriceVariationCard: React.FC<PurchasePriceVariationCardProp
         <span className="w-[3px] h-[16px] bg-rose-500 rounded-full shrink-0" aria-hidden />
         <Warning size={18} weight="fill" className="text-slate-500" />
         <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">매입단가 변동 품목</h3>
-        <span className="text-[13px] text-slate-500 font-medium">· {variationRows.length}건 · {periodLabel}</span>
+        <span className="text-[13px] text-slate-500 font-medium">
+          · <b className="text-ink tabular-nums">{filteredRows.length}</b>
+          {searchQuery.trim() && variationRows.length !== filteredRows.length && (
+            <span className="text-slate-400"> / {variationRows.length}</span>
+          )}
+          건 · {periodLabel}
+        </span>
       </header>
 
       {/* 기간 필터 · 7일/14일/한달/월별 */}
@@ -160,14 +182,43 @@ export const PurchasePriceVariationCard: React.FC<PurchasePriceVariationCardProp
         {quickRange === null && (
           <MonthToggleSelector selectedMonths={selectedMonths} onChange={setSelectedMonths} maxMonths={6} minOne />
         )}
+        {/* 2026-10-12 · 사용자 지시 · 상품명 검색 · 기간 옆에 붙임 (ml-auto 제거) */}
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="상품명·코드·공급사 검색..."
+          className="h-7 px-2.5 min-w-[180px] rounded-md border border-slate-200 bg-white text-[13px] text-ink placeholder:text-slate-400 focus:border-slate-400 focus:outline-none"
+        />
+        {/* 2026-10-12 · 사용자 지시 · 전품목 검색 체크박스 · 상품명 input 옆 */}
+        <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-[13px] text-slate-600 font-medium">
+          <input
+            type="checkbox"
+            checked={searchAllProducts}
+            onChange={(e) => setSearchAllProducts(e.target.checked)}
+            className="w-3.5 h-3.5 cursor-pointer accent-brand-deep"
+          />
+          전품목
+        </label>
+        {searchQuery.trim() && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="text-[12px] text-slate-500 hover:text-ink font-medium"
+          >
+            지우기
+          </button>
+        )}
       </div>
 
       {/* 리스트 */}
       <div className="max-h-[70vh] overflow-y-auto">
         {loading ? (
           <div className="py-8 text-center text-[14px] text-slate-500">조회 중...</div>
-        ) : variationRows.length === 0 ? (
-          <div className="py-8 text-center text-[14px] text-slate-500">단가 변동 품목이 없습니다 (기간 내)</div>
+        ) : filteredRows.length === 0 ? (
+          <div className="py-8 text-center text-[14px] text-slate-500">
+            {searchQuery.trim() ? `"${searchQuery.trim()}" 검색 결과 없음` : "단가 변동 품목이 없습니다 (기간 내)"}
+          </div>
         ) : (
           <table className="w-full text-[14px]">
             <thead className="sticky top-0 bg-white z-10">
@@ -181,7 +232,7 @@ export const PurchasePriceVariationCard: React.FC<PurchasePriceVariationCardProp
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {variationRows.slice(0, 100).map(v => (
+              {filteredRows.slice(0, 100).map(v => (
                 <tr key={v.code} onClick={() => setDrawerProduct({ code: v.code, name: v.name })}
                     className="hover:bg-slate-50/60 cursor-pointer transition-colors" title="클릭 · 상품 매입이력 보기">
                   <td className="pl-5 pr-2 py-2 align-middle">

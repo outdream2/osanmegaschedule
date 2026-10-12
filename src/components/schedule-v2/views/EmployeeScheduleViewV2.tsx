@@ -95,7 +95,14 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
   // 우측 subview
   // 2026-10-08 · 일괄등록 shortcut · 부모 initialSubview 반영
   const [subview, setSubviewRaw] = useState<EmpSubView>(initialSubview ?? "calendar");
+  // 2026-10-12 · 사용자 지시 · 기본정보 subview → slide drawer 로 전환 · subview 변경 X
+  const [infoDrawerOpen, setInfoDrawerOpen] = useState<boolean>(false);
   const setSubview = useCallback((next: EmpSubView) => {
+    // "info" 는 subview 변경하지 않고 drawer 로 열기
+    if (next === "info") {
+      setInfoDrawerOpen(true);
+      return;
+    }
     setSubviewRaw(next);
     onSubviewChange?.(next);
   }, [onSubviewChange]);
@@ -300,13 +307,36 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
                   showNotification={showNotification}
                   onApplied={() => fetchScheduleData(dateList, true)}
                 />
-              ) : (
-                <EmployeeInfoPanel
-                  employee={selectedEmployee}
-                  onOpenManagement={onEmployeeManagement}
-                />
-              )}
+              ) : null}
             </div>
+            {/* 2026-10-12 · 사용자 지시 · 기본정보 slide drawer (오른쪽) */}
+            {infoDrawerOpen && (
+              <>
+                <div className="fixed inset-0 bg-slate-900/30 z-40" onClick={() => setInfoDrawerOpen(false)} aria-hidden />
+                <aside
+                  role="dialog"
+                  aria-label={`${selectedEmployee.name} 기본정보`}
+                  className="fixed top-0 right-0 bottom-0 w-full sm:w-[560px] bg-white shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-200"
+                >
+                  <header className="flex items-center justify-between px-4 py-3 border-b border-slate-200 shrink-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="w-[3px] h-[14px] bg-brand-deep rounded-full shrink-0" />
+                      <h2 className="text-[16px] md:text-[17px] font-semibold text-ink truncate">{selectedEmployee.name} · 기본정보</h2>
+                    </div>
+                    <button type="button" onClick={() => setInfoDrawerOpen(false)}
+                      className="p-1 rounded hover:bg-slate-100 text-slate-500 text-[14px] font-semibold" aria-label="닫기">
+                      ✕
+                    </button>
+                  </header>
+                  <div className="flex-1 overflow-y-auto p-3">
+                    <EmployeeInfoPanel
+                      employee={selectedEmployee}
+                      onOpenManagement={onEmployeeManagement}
+                    />
+                  </div>
+                </aside>
+              </>
+            )}
           </>
         )}
       </div>

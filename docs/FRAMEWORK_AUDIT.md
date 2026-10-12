@@ -8,10 +8,10 @@
 
 | 지표 | 값 |
 |---|---:|
-| 스캔 파일 | 1212 |
-| 위반 파일 | 102 |
-| 클린 파일 | 1110 (92%) |
-| 총 위반 개수 | 537 |
+| 스캔 파일 | 1214 |
+| 위반 파일 | 103 |
+| 클린 파일 | 1111 (92%) |
+| 총 위반 개수 | 538 |
 
 ## 🚨 규칙별 위반 현황
 
@@ -21,7 +21,7 @@
 | `large-file-warn` | 18 | 18 | medium | 800-2000라인 · 서브 컴포넌트 분리 권장 |
 | `no-raw-console-server` | 274 | 28 | medium | logger.info / logger.warn / logger.error (server/lib/logger.ts) |
 | `no-any-server` | 238 | 65 | medium | 구체 타입 · unknown + type guard · zod 스키마 추론 |
-| `prefer-modal-primitive` | 5 | 5 | medium | Modal 프리미티브 (src/components/common/Modal.tsx) |
+| `prefer-modal-primitive` | 6 | 6 | medium | Modal 프리미티브 (src/components/common/Modal.tsx) |
 
 ## 🔥 우선순위 파일 (weight 순 · TOP 30)
 
@@ -46,9 +46,9 @@
 | 17 | `server/ocr/logging/diagnostics.ts` | 246 | 9 | no-raw-console-server(4) · no-any-server(1) |
 | 18 | `server/ocr/pipeline/stages/02-ocr-engine.ts` | 99 | 9 | no-raw-console-server(4) · no-any-server(1) |
 | 19 | `server/ocr/tables/tableStructure.ts` | 126 | 9 | no-raw-console-server(3) · no-any-server(3) |
-| 20 | `src/components/DisplayPage/overviews/InventoryDisplayOverview.tsx` | 1197 | 8 | large-file-warn(1) · prefer-modal-primitive(1) |
-| 21 | `src/components/DisplayPage/overviews/PurchaseArrivalOverview.tsx` | 1260 | 8 | large-file-warn(1) · prefer-modal-primitive(1) |
-| 22 | `src/components/DisplayPage/RevenuePage.SalesStatus.tsx` | 1219 | 8 | large-file-warn(1) · prefer-modal-primitive(1) |
+| 20 | `src/components/DisplayPage/overviews/InventoryDisplayOverview.tsx` | 1178 | 8 | large-file-warn(1) · prefer-modal-primitive(1) |
+| 21 | `src/components/DisplayPage/overviews/PurchaseArrivalOverview.tsx` | 1407 | 8 | large-file-warn(1) · prefer-modal-primitive(1) |
+| 22 | `src/components/DisplayPage/RevenuePage.SalesStatus.tsx` | 1192 | 8 | large-file-warn(1) · prefer-modal-primitive(1) |
 | 23 | `server/ocr/parsing/preprocess.ts` | 159 | 8 | no-raw-console-server(4) |
 | 24 | `server/ocr/pipeline/runner.ts` | 78 | 8 | no-raw-console-server(4) |
 | 25 | `server/routes/board/board.ts` | 519 | 8 | no-any-server(8) |
@@ -56,9 +56,9 @@
 | 27 | `server/routes/settings/eventCategoryRules.ts` | 169 | 8 | no-raw-console-server(4) |
 | 28 | `server/ocr/logging/fieldMatchLog.ts` | 229 | 7 | no-raw-console-server(2) · no-any-server(3) |
 | 29 | `src/components/LandingPage/HomeDashboard.tsx` | 1486 | 6 | large-file-warn(1) |
-| 30 | `src/components/LeavePage/LeavePage.tsx` | 1400 | 6 | large-file-warn(1) |
+| 30 | `src/components/LeavePage/LeavePage.tsx` | 1453 | 6 | large-file-warn(1) |
 
-## 📝 모든 위반 파일 (102개)
+## 📝 모든 위반 파일 (103개)
 
 <details><summary>펼치기 · 파일 리스트</summary>
 
@@ -83,9 +83,9 @@
 | `server/ocr/logging/diagnostics.ts` | 246 | 9 |
 | `server/ocr/pipeline/stages/02-ocr-engine.ts` | 99 | 9 |
 | `server/ocr/tables/tableStructure.ts` | 126 | 9 |
-| `src/components/DisplayPage/overviews/InventoryDisplayOverview.tsx` | 1197 | 8 |
-| `src/components/DisplayPage/overviews/PurchaseArrivalOverview.tsx` | 1260 | 8 |
-| `src/components/DisplayPage/RevenuePage.SalesStatus.tsx` | 1219 | 8 |
+| `src/components/DisplayPage/overviews/InventoryDisplayOverview.tsx` | 1178 | 8 |
+| `src/components/DisplayPage/overviews/PurchaseArrivalOverview.tsx` | 1407 | 8 |
+| `src/components/DisplayPage/RevenuePage.SalesStatus.tsx` | 1192 | 8 |
 | `server/ocr/parsing/preprocess.ts` | 159 | 8 |
 | `server/ocr/pipeline/runner.ts` | 78 | 8 |
 | `server/routes/board/board.ts` | 519 | 8 |
@@ -93,7 +93,7 @@
 | `server/routes/settings/eventCategoryRules.ts` | 169 | 8 |
 | `server/ocr/logging/fieldMatchLog.ts` | 229 | 7 |
 | `src/components/LandingPage/HomeDashboard.tsx` | 1486 | 6 |
-| `src/components/LeavePage/LeavePage.tsx` | 1400 | 6 |
+| `src/components/LeavePage/LeavePage.tsx` | 1453 | 6 |
 | `src/components/OrderManagePage/PaymentInputPage.tsx` | 1013 | 6 |
 | `src/components/OrderManagePage/PurchaseHistoryTab.tsx` | 1163 | 6 |
 | `src/components/ProductInfoPage/ProductInfoPage.tsx` | 1135 | 6 |
@@ -122,13 +122,14 @@
 | `src/components/OrderManagePage/ReturnListPanel.tsx` | 823 | 3 |
 | `src/components/OrderManagePage/SalesRecommendationPanel.tsx` | 840 | 3 |
 | `src/components/ProductArrivalPage/ProductArrivalPage.tsx` | 940 | 3 |
-| `src/components/RequestsPage/RequestsPage.tsx` | 830 | 3 |
+| `src/components/RequestsPage/RequestsPage.tsx` | 834 | 3 |
 | `src/components/ScanPage/ScanPage.tsx` | 965 | 3 |
 | `src/components/SchedulePage/SchedulePage.tsx` | 804 | 3 |
 | `server/controllers/scheduleController.ts` | 390 | 3 |
 | `server/productCache.ts` | 406 | 3 |
 | `server/routes/settings/holidays.ts` | 266 | 3 |
 | `server/services/scheduleService.ts` | 465 | 3 |
+| `src/components/BusinessManagePage/BusinessManagePage.Overview.tsx` | 581 | 2 |
 | `src/components/NotificationBell.tsx` | 347 | 2 |
 | `src/components/OrderManagePage/EventProductAddModal.tsx` | 103 | 2 |
 | `server/lib/optimalStock.ts` | 321 | 2 |

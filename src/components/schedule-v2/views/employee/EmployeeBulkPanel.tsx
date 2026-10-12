@@ -111,7 +111,8 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
     // 2026-10-12 · 사용자 지시 · 달력 아래 shrink-0 wrapper 안에서 height=0 bug fix
     //   · flex-1 min-h-0 overflow-auto → w-full 자연 height (shrink-0 환경 호환)
     //   · bulk 단독 subview 도 natural height 로 작동 (parent flex-col 안에서 자체 content height)
-    <Card variant="sm" padding="md" rounded="xl" className="w-full">
+    // 2026-10-12 · 사용자 지시 · 달력 폭 축소 "한눈에 보이게" · max-w-sm (560px) + 중앙 정렬
+    <Card variant="sm" padding="md" rounded="xl" className="w-full max-w-[560px] mx-auto">
       {isLocked && (
         <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[13px] font-semibold">
           <span>이 월({month}월)은 확정됨 · 편집 불가</span>
@@ -140,13 +141,57 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
         )}
       </div>
       <div className="flex flex-col gap-3">
-        {/* 섹션 1 · 날짜 선택 · 실제 월 달력 레이아웃 (사용자 지시 "해당월 달력처럼 배치")
-            · 요일 header (일~토) click → 해당 요일 전체 toggle (사용자 지시 "그 후 요일 선택")
-            · 1일 position = 요일 column · 앞 빈칸 (leading placeholder) + 뒤 빈칸 (trailing placeholder) 유지해 그리드 정렬 */}
+        {/* 2026-10-12 · 사용자 지시 · 근무 조건 섹션 위로 · 날짜 선택 아래로 (순서 교체) */}
+
+        {/* 섹션 1 · 근무 조건 (NEW · 위) */}
+        <section>
+          <h3 className="text-[14px] font-bold text-ink mb-2">① 근무 조건</h3>
+          <div className="flex flex-col gap-2">
+            <label className="flex items-center gap-2 text-[14px]">
+              <span className="w-20 shrink-0 text-ink-soft">근무유형</span>
+              <select
+                value={type}
+                onChange={e => onTypeChange(e.target.value)}
+                className="flex-1 h-9 px-2 rounded-md border border-zinc-200 bg-white text-[14px] cursor-pointer"
+                disabled={!canEdit || scheduleTypes.length === 0}
+              >
+                <option value="">선택</option>
+                {scheduleTypes.map(entry => (
+                  <option key={entry.type} value={entry.type}>
+                    {entry.type} {typeHoursMap[entry.type] ? `(${typeHoursMap[entry.type]})` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-[14px]">
+              <span className="w-20 shrink-0 text-ink-soft">근무시간</span>
+              <input
+                type="text"
+                value={workingHours}
+                onChange={e => setWorkingHours(e.target.value)}
+                placeholder="예: 09:30-18:30"
+                className="flex-1 h-9 px-2 rounded-md border border-zinc-200 bg-white text-[14px]"
+                disabled={!canEdit}
+              />
+            </label>
+            <label className="flex items-start gap-2 text-[14px]">
+              <span className="w-20 shrink-0 text-ink-soft mt-2">메모</span>
+              <textarea
+                value={memo}
+                onChange={e => setMemo(e.target.value)}
+                rows={2}
+                className="flex-1 px-2 py-1.5 rounded-md border border-zinc-200 bg-white text-[14px]"
+                disabled={!canEdit}
+              />
+            </label>
+          </div>
+        </section>
+
+        {/* 섹션 2 · 날짜 선택 (NEW · 아래 · 2 → 날짜) */}
         <section>
           <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
             <div className="flex items-baseline gap-2">
-              <h3 className="text-[14px] font-bold text-ink">① 날짜 선택</h3>
+              <h3 className="text-[14px] font-bold text-ink">② 날짜 선택</h3>
               <span className="text-[14px] font-bold text-brand-deep tabular-nums tracking-tight">
                 {year}년 {month}월
               </span>
@@ -193,12 +238,12 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* 달력 요일 header · display 전용 (click X · 요일 선택은 위 row 사용) */}
+          {/* 달력 요일 header · display 전용 · 2026-10-12 폰트 up (11 → 13) */}
           <div className="grid grid-cols-7 gap-1.5 mb-1.5">
             {["일","월","화","수","목","금","토"].map((label, i) => (
               <div
                 key={`cal-h-${i}`}
-                className={`h-6 flex items-center justify-center text-[11px] font-semibold tabular-nums ${
+                className={`h-7 flex items-center justify-center text-[13px] font-semibold tabular-nums ${
                   i === 0 ? "text-rose-600" : i === 6 ? "text-sky-600" : "text-ink-soft"
                 }`}
                 aria-hidden
@@ -232,7 +277,7 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
                     type="button"
                     onClick={() => toggleDate(d)}
                     disabled={!canEdit}
-                    className={`h-9 rounded-md border text-[13px] font-semibold tabular-nums transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                    className={`h-10 rounded-md border text-[14px] font-semibold tabular-nums transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                       selected
                         ? "bg-brand-deep text-white border-brand-deep"
                         : isSun ? "bg-rose-50/40 border-rose-100 text-rose-700 hover:bg-rose-100/60"
@@ -249,51 +294,7 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
           <div className="mt-1.5 text-[12px] text-ink-soft tabular-nums">선택 {selectedDates.size}일</div>
         </section>
 
-        {/* 섹션 2 · 근무 조건 */}
-        <section>
-          <h3 className="text-[14px] font-bold text-ink mb-2">② 근무 조건</h3>
-          <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-2 text-[13px]">
-              <span className="w-20 shrink-0 text-ink-soft">근무유형</span>
-              <select
-                value={type}
-                onChange={e => onTypeChange(e.target.value)}
-                className="flex-1 h-9 px-2 rounded-md border border-zinc-200 bg-white text-[13px] cursor-pointer"
-                disabled={!canEdit || scheduleTypes.length === 0}
-              >
-                <option value="">선택</option>
-                {scheduleTypes.map(entry => (
-                  <option key={entry.type} value={entry.type}>
-                    {entry.type} {typeHoursMap[entry.type] ? `(${typeHoursMap[entry.type]})` : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex items-center gap-2 text-[13px]">
-              <span className="w-20 shrink-0 text-ink-soft">근무시간</span>
-              <input
-                type="text"
-                value={workingHours}
-                onChange={e => setWorkingHours(e.target.value)}
-                placeholder="예: 09:30-18:30"
-                className="flex-1 h-9 px-2 rounded-md border border-zinc-200 bg-white text-[13px]"
-                disabled={!canEdit}
-              />
-            </label>
-            <label className="flex items-start gap-2 text-[13px]">
-              <span className="w-20 shrink-0 text-ink-soft mt-2">메모</span>
-              <textarea
-                value={memo}
-                onChange={e => setMemo(e.target.value)}
-                rows={2}
-                className="flex-1 px-2 py-1.5 rounded-md border border-zinc-200 bg-white text-[13px]"
-                disabled={!canEdit}
-              />
-            </label>
-          </div>
-        </section>
-
-        {/* 2026-10-08 · 저장 섹션 3 · 상단 sticky bar 로 이동 완료 (중복 제거) */}
+        {/* 2026-10-12 · 사용자 지시 · 근무 조건 섹션 위로 이동 · 중복 제거 */}
       </div>
     </Card>
   );

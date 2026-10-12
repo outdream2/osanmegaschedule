@@ -63,8 +63,10 @@ export const AppFooter: React.FC<AppFooterProps> = ({
         </>
       )}
       <span className="w-1 h-1 rounded-full bg-zinc-300" />
+      {/* 2026-10-12 · 사용자 지시 "copyright 글씨 나오게 · 전체 footer 통일" · © Copyright IRUMs (주) 이룸즈 since 2026 */}
       <span className="inline-flex items-center gap-1 text-zinc-500">
         <span className="text-zinc-400">©</span>
+        <span className="text-zinc-400 uppercase tracking-wider text-[12px]">Copyright</span>
         <span className="font-bold tracking-wide text-brand-deep">IRUMs</span>
         <span className="text-zinc-500">(주) 이룸즈</span>
         <span className="text-zinc-400 tabular-nums">since 2026</span>

@@ -96,13 +96,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   }, []);
   const closeDrawer = React.useCallback(() => setDrawer(null), []);
   // 2026-09-27 · activeNav 변화 감지 · 사이드바 재클릭 대응
+  // 2026-10-12 · 사용자 "업무요청 못 들어가" fix · embedded 모드에선 activeNav 간섭 skip
+  //   (BusinessOverview 가 "business-manage" + inner tab "requests" 로 state 유지)
   useEffect(() => {
+    if (embedded) return;
     if (activeNav?.itemKey !== "requests") return;
     const next = activeNav.subTab as Tab | null | undefined;
     if (next && next !== tab) _setTab(next);
-  }, [activeNav, tab]);
+  }, [activeNav, tab, embedded]);
   // 2026-09-27 · 페이지 mount 시 · activeNav 정착
   useEffect(() => {
+    if (embedded) return;  // embedded 모드에서 activeNav 덮어쓰기 금지
     if (activeNav?.itemKey !== "requests" || activeNav.subTab !== tab) {
       setActiveByPage("requests", tab);
     }

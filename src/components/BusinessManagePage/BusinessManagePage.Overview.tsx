@@ -9,7 +9,7 @@ import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../layout/AppNavHeader";
 import type { Employee } from "../../types";
 import { listEmployees } from "../../lib/employeeApi";
-import { getLeavePendingCount } from "../../lib/leaveApi";
+import { getLeavePendingCount, listLeaveRequests, type LeaveRequestRow } from "../../lib/leaveApi";
 import { getResignationPendingCount } from "../../lib/resignationsApi";
 import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "../DisplayPage/overviews/OverviewHeader";
 import { Spinner } from "../common/Spinner";
@@ -20,6 +20,8 @@ const RequestsPage = React.lazy(() => import("../RequestsPage/RequestsPage").the
 const WageAnalysisTab = React.lazy(() => import("./BusinessManagePage.WageAnalysis"));
 // 2026-10-12 · 사용자 지시 · 직원관리 대시보드 (KPI + 리스트 + 우측 slide drawer)
 const StaffDashboard = React.lazy(() => import("./BusinessManagePage.StaffDashboard"));
+// 2026-10-12 · 사용자 지시 "다 해 · 조치필요→인건비구성 · 직원요약 3단 · 슬라이딩 창" · BusinessDashboard 교체
+const BusinessDashboard = React.lazy(() => import("./BusinessManagePage.Dashboard"));
 // 2026-10-12 · 사용자 지시 · 현금흐름 구성 차트 (매출 대비 인건비·매입·발주·임대료·수수료·공과금 % · settings JSON)
 const BusinessCashFlow = React.lazy(() => import("./BusinessManagePage.CashFlow"));
 
@@ -72,6 +74,8 @@ export const BusinessOverview: React.FC<BusinessOverviewProps> = ({
   // 2026-10-12 · 직원관리 모드 toggle · default="dashboard" · "edit" 는 StaffManagePage 전체 render (상세 편집 열기 버튼)
   const [staffMode, setStaffMode] = useState<"dashboard" | "edit">("dashboard");
   const [staffSelectedId, setStaffSelectedId] = useState<number | null>(initialEmployeeId ?? null);
+  // 2026-10-12 · 사용자 지시 "슬라이딩 윈도우로 편집" · drawer state (Overview 레벨 · 어느 inner tab 에서든 open)
+  const [drawerEmpId, setDrawerEmpId] = useState<number | null>(null);
   // initialEmployeeId 가 넘어온 경우 (스케줄 → 직원 수정) · edit 모드 로 바로 진입
   useEffect(() => {
     if (initialEmployeeId != null) {
@@ -85,18 +89,22 @@ export const BusinessOverview: React.FC<BusinessOverviewProps> = ({
   const [leavePending, setLeavePending] = useState<number>(0);
   const [resignPending, setResignPending] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
+  // 2026-10-12 · 사용자 지시 · 경영현황 현황판에 업무요청 리스트 추가 · pending 연차 상위 노출
+  const [leaveRows, setLeaveRows] = useState<LeaveRequestRow[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [emps, leaveCnt, resignCnt] = await Promise.all([
+      const [emps, leaveCnt, resignCnt, leaveList] = await Promise.all([
         listEmployees().catch(() => [] as Employee[]),
         getLeavePendingCount().catch(() => 0),
         getResignationPendingCount().catch(() => 0),
+        listLeaveRequests({ all: true }).catch(() => [] as LeaveRequestRow[]),
       ]);
       setEmployees(emps as EmployeeExt[]);
       setLeavePending(leaveCnt);
       setResignPending(resignCnt);
+      setLeaveRows(leaveList.filter(r => r.status === "pending"));
     } finally {
       setLoading(false);
     }
@@ -155,16 +163,23 @@ export const BusinessOverview: React.FC<BusinessOverviewProps> = ({
       {/* ── Content ─────────────────────────────────────────────── */}
       <div className="px-4 sm:px-6 pt-3 flex flex-col">
         {innerTab === "overview" && (
-          <OverviewContent
-            loading={loading && employees.length === 0}
-            activeEmps={activeEmps}
-            newThisMonth={newThisMonth.length}
-            expiringContracts={expiringContracts}
-            pendingTotal={pendingTotal}
-            leavePending={leavePending}
-            resignPending={resignPending}
-            onOpenTab={setInnerTab}
-          />
+          /* 2026-10-12 · 사용자 지시 "다 해" · BusinessDashboard 교체 (조치필요→인건비구성 · 직원요약 3단 · 슬라이딩 창)
+              · onOpenTab 매핑: Dashboard 키 → Overview InnerTabKey (document-writer/hr-forms → contract) */
+          <Suspense fallback={<FallbackSpinner label="대시보드 로딩 중..." />}>
+            <BusinessDashboard
+              onOpenTab={(k) => {
+                const map: Record<string, InnerTabKey> = {
+                  "staff-manage": "staff-manage",
+                  "requests": "requests",
+                  "wage-analysis": "wage-analysis",
+                  "document-writer": "contract",
+                  "hr-forms": "contract",
+                };
+                setInnerTab(map[k] ?? "overview");
+              }}
+              onOpenEmployeeId={(id) => setDrawerEmpId(id)}
+            />
+          </Suspense>
         )}
 
         {innerTab === "staff-manage" && (
@@ -230,6 +245,48 @@ export const BusinessOverview: React.FC<BusinessOverviewProps> = ({
           </div>
         )}
       </div>
+
+      {/* 2026-10-12 · 사용자 지시 "클릭 시 슬라이딩 윈도우 · 편집 가능" · 직원 상세 slide drawer
+          · 우측 slide-in · StaffManagePage lazy embed (상세 영역 재사용) · overlay click close */}
+      {drawerEmpId != null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/30 flex justify-end animate-in fade-in duration-150"
+          onClick={() => setDrawerEmpId(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-full md:w-[72%] lg:w-[60%] bg-white h-full shadow-2xl overflow-y-auto flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+            style={{ animation: "slideInRight 180ms ease-out" }}
+          >
+            <header className="sticky top-0 bg-white border-b border-slate-200 px-5 py-3 flex items-center justify-between z-10">
+              <div className="flex items-center gap-2">
+                <span className="w-[3px] h-[14px] bg-indigo-500 rounded-full" aria-hidden />
+                <h2 className="text-[15px] md:text-[16px] font-semibold text-ink">직원 상세 · 편집</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDrawerEmpId(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-slate-100 cursor-pointer text-slate-500 text-[18px]"
+                aria-label="닫기"
+                title="닫기 (Esc)"
+              >
+                ✕
+              </button>
+            </header>
+            <div className="flex-1 min-h-0">
+              <Suspense fallback={<FallbackSpinner label="직원 상세 로딩 중..." />}>
+                <StaffManagePage
+                  initialSelectedId={drawerEmpId}
+                  onWriteContract={() => { setDrawerEmpId(null); setInnerTab("contract"); }}
+                />
+              </Suspense>
+            </div>
+          </div>
+          <style>{`@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
+        </div>
+      )}
     </div>
   );
 };
@@ -248,6 +305,8 @@ interface OverviewContentProps {
   pendingTotal: number;
   leavePending: number;
   resignPending: number;
+  // 2026-10-12 · 사용자 지시 · 업무요청 리스트 (pending)
+  leaveRows: LeaveRequestRow[];
   onOpenTab: (k: InnerTabKey) => void;
 }
 
@@ -264,7 +323,7 @@ const POSITION_TONE: Record<string, string> = {
 };
 
 const OverviewContent: React.FC<OverviewContentProps> = ({
-  loading, activeEmps, newThisMonth, expiringContracts, pendingTotal, leavePending, resignPending, onOpenTab,
+  loading, activeEmps, newThisMonth, expiringContracts, pendingTotal, leavePending, resignPending, leaveRows, onOpenTab,
 }) => {
   const groupedByPosition = useMemo(() => {
     const map = new Map<string, EmployeeExt[]>();
@@ -375,10 +434,47 @@ const OverviewContent: React.FC<OverviewContentProps> = ({
         </section>
       </div>
 
-      {/* 2026-10-12 · 현금흐름 구성 (매출 대비 비용 비율) · lazy embed · 조치필요/직원요약 아래 full width */}
-      <Suspense fallback={<FallbackSpinner label="현금흐름 로딩 중..." />}>
-        <BusinessCashFlow />
-      </Suspense>
+      {/* 2026-10-12 · 사용자 지시 · 경영현황 현황판에 업무요청 리스트 추가 · pending 연차 상위 */}
+      <section className={`${CARD} p-4 flex flex-col`}>
+        <header className="flex items-center justify-between mb-3">
+          <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">업무요청 대기</h3>
+          <button
+            type="button"
+            onClick={() => onOpenTab("requests")}
+            className="text-[13px] text-slate-500 hover:text-ink font-medium inline-flex items-center gap-1"
+            title="업무요청 전체 보기"
+          >
+            전체 보기 ({pendingTotal})
+          </button>
+        </header>
+        {leaveRows.length === 0 ? (
+          <div className="py-6 text-center text-[14px] text-slate-500">대기 중인 요청이 없습니다</div>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {leaveRows.slice(0, 6).map(r => (
+              <li key={r.id}
+                  onClick={() => onOpenTab("requests")}
+                  className="py-2 flex items-center gap-3 hover:bg-slate-50 -mx-2 px-2 rounded cursor-pointer">
+                <span className="w-14 text-[12px] text-slate-500 shrink-0 tabular-nums">{String(r.created_at ?? "").slice(5, 10)}</span>
+                <span className="text-[14px] md:text-[15px] text-ink font-medium shrink-0">{r.employee_name}</span>
+                <span className="text-[12px] px-1.5 py-[1px] rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200 font-medium shrink-0">{r.leave_type ?? "연차"}</span>
+                <span className="text-[13px] text-slate-500 tabular-nums shrink-0">
+                  {String(r.start_date ?? "").slice(5, 10)}
+                  {r.end_date && r.end_date !== r.start_date && (
+                    <> ~ {String(r.end_date).slice(5, 10)}</>
+                  )}
+                </span>
+                <span className="flex-1 text-[13px] text-slate-500 truncate" title={r.reason ?? ""}>{r.reason ?? ""}</span>
+              </li>
+            ))}
+            {leaveRows.length > 6 && (
+              <li className="pt-3 text-[13px] text-slate-500 text-center">
+                외 {leaveRows.length - 6}건 · <button type="button" onClick={() => onOpenTab("requests")} className="text-indigo-600 hover:underline">전체 보기</button>
+              </li>
+            )}
+          </ul>
+        )}
+      </section>
     </div>
   );
 };
