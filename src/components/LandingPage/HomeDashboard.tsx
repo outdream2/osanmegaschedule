@@ -56,6 +56,11 @@ interface DaySaleProductItem {
   pcode: string | null; productName: string | null;
   unitSale: number | null; totalStock: number | null;
   saleTotal: number | null; margin: number | null;
+  // 2026-10-12 · 서버 join 보강 (products.pcode) · 매 호출 fresh
+  supplier?: string | null;
+  purchasePrice?: number | null;
+  salePrice?: number | null;
+  lastPurchaseDate?: string | null;
 }
 interface DayProductApiResponse {
   ok: boolean; items?: DaySaleProductItem[]; error?: string;
@@ -485,7 +490,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   // 2026-10-08 · 사용자 지시 · 반품필요 + 유통기한 임박 제거 · 매입이력(3일)을 발주 필요 바로 아래로 이동
   //   · 발주 필요 = low-stock 상품 수 (current < optimal)
   const taskItems: TaskItem[] = [
-    { label: "연차 승인", count: leavePendingCount, onClick: () => { setActiveByPage("requests", "leave"); onNavigate("requests", authSession); } },
+    { label: "휴가 승인", count: leavePendingCount, onClick: () => { setActiveByPage("requests", "leave"); onNavigate("requests", authSession); } },
     ...(isAdmin ? [{ label: "거래처 승인", count: requestsCounts.vendor, onClick: () => { setActiveByPage("requests", "vendor"); onNavigate("requests", authSession); } }] : []),
     { label: "진열 요청", count: requestsCounts.display, onClick: () => { setActiveByPage("requests", "display"); onNavigate("requests", authSession); } },
     { label: "발주 필요", count: lowStockCount, onClick: () => { setActiveByPage("display", "purchase-order"); onNavigate("display", authSession); } },
@@ -532,13 +537,13 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               <QuickBtn tone="sky" icon={<Calendar size={16} />} label="스케줄표" onClick={goTo("schedule")} />
               <QuickBtn tone="sky" icon={<Scan size={16} />} label="실재고 확인" onClick={goTo("scan")} />
               <QuickBtn tone="sky" icon={<MessageSquare size={16} />} label="이슈 공유" onClick={goTo("board")} />
-              <QuickBtn tone="sky" icon={<CalendarPlus size={16} />} label="연차신청" onClick={() => { setActiveByPage("approval-request", "leave"); onNavigate("approval-request", authSession); }} />
+              <QuickBtn tone="sky" icon={<CalendarPlus size={16} />} label="휴가신청" onClick={() => { setActiveByPage("approval-request", "leave"); onNavigate("approval-request", authSession); }} />
             </div>
             <div className="md:hidden grid grid-cols-4 gap-1">
               <QuickBtn tone="sky" icon={<Calendar size={16} />} label="스케줄" onClick={goTo("schedule")} />
               <QuickBtn tone="sky" icon={<Scan size={16} />} label="실재고" onClick={goTo("scan")} />
               <QuickBtn tone="sky" icon={<MessageSquare size={16} />} label="이슈" onClick={goTo("board")} />
-              <QuickBtn tone="sky" icon={<CalendarPlus size={16} />} label="연차신청" onClick={() => { setActiveByPage("approval-request", "leave"); onNavigate("approval-request", authSession); }} />
+              <QuickBtn tone="sky" icon={<CalendarPlus size={16} />} label="휴가신청" onClick={() => { setActiveByPage("approval-request", "leave"); onNavigate("approval-request", authSession); }} />
             </div>
           </div>
         )}
@@ -634,7 +639,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               loading={productsLoading}
               error={productsError}
               items={dayProducts ?? []}
-              onOpen={goTo("display", "revenue")}
+              onOpen={() => {
+                // 2026-10-12 · 사용자 지시 · 홈 '오늘의 판매현황' → 매출현황>상품별 deeplink
+                try {
+                  sessionStorage.setItem("sales-status.innerTab", "revenue");
+                  sessionStorage.setItem("sales-status.revenueSubTab", "product");
+                } catch {}
+                goTo("display", "revenue")();
+              }}
               onProductClick={handleProductClick}
               productsMeta={productsMeta}
             />
@@ -1249,15 +1261,19 @@ const TodaySalesTable: React.FC<TodaySalesTableProps> = ({ loading, error, items
                       ) : (
                         <span className="break-words whitespace-normal">{it.productName ?? "(상품명 없음)"}</span>
                       )}
-                      {/* 2026-10-12 · 사용자 지시 "공급사·매입가·판매단가·최근매입일 표시" · 상품명 아래 메타 inline */}
+                      {/* 2026-10-12 · 사용자 지시 "공급사·매입가·판매단가·최근매입일 표시" · 상품명 아래 메타 inline
+                           · 서버 응답 (it.supplier 등) 우선 · productsMeta fallback */}
                       {(() => {
-                        const meta = it.pcode ? productsMeta?.get(it.pcode) : null;
-                        if (!meta) return null;
+                        const fb = it.pcode ? productsMeta?.get(it.pcode) : null;
+                        const supplier = it.supplier ?? fb?.supplier ?? null;
+                        const purchase = it.purchasePrice ?? fb?.purchase_price ?? null;
+                        const salePrice = it.salePrice ?? fb?.sale_price ?? null;
+                        const lastPurchase = it.lastPurchaseDate ?? fb?.last_purchase_date ?? null;
                         const parts: string[] = [];
-                        if (meta.supplier) parts.push(meta.supplier);
-                        if (meta.purchase_price != null) parts.push(`매입 ${Math.round(meta.purchase_price).toLocaleString("ko-KR")}원`);
-                        if (meta.sale_price != null) parts.push(`판매 ${Math.round(meta.sale_price).toLocaleString("ko-KR")}원`);
-                        if (meta.last_purchase_date) parts.push(`최근매입 ${String(meta.last_purchase_date).slice(5, 10)}`);
+                        if (supplier) parts.push(supplier);
+                        if (purchase != null) parts.push(`매입 ${Math.round(purchase).toLocaleString("ko-KR")}원`);
+                        if (salePrice != null) parts.push(`판매 ${Math.round(salePrice).toLocaleString("ko-KR")}원`);
+                        if (lastPurchase) parts.push(`최근매입 ${String(lastPurchase).slice(5, 10)}`);
                         if (parts.length === 0) return null;
                         return (
                           <div className="mt-1 flex items-center gap-x-1.5 gap-y-0.5 flex-wrap text-[12px] text-slate-500 font-normal tabular-nums">
@@ -1274,11 +1290,13 @@ const TodaySalesTable: React.FC<TodaySalesTableProps> = ({ loading, error, items
                     <td className={`px-3 py-2 tabular-nums text-right align-top font-semibold ${marginRate >= 30 ? "text-emerald-600" : marginRate >= 15 ? "text-slate-700" : "text-slate-400"}`}>
                       {sale > 0 ? `${marginRate.toFixed(1)}%` : "-"}
                     </td>
-                    {/* 2026-10-12 · 사용자 지시 · 매입가 · 판매가 · 전체금액 신규 컬럼 */}
+                    {/* 2026-10-12 · 사용자 지시 · 매입가 · 판매가 · 전체금액 신규 컬럼 (서버 응답 우선 · productsMeta fallback) */}
                     {(() => {
-                      const meta = it.pcode ? productsMeta?.get(it.pcode) : null;
-                      const purchase = meta?.purchase_price != null ? Math.round(Number(meta.purchase_price)) : null;
-                      const salePrice = meta?.sale_price != null ? Math.round(Number(meta.sale_price)) : null;
+                      const fb = it.pcode ? productsMeta?.get(it.pcode) : null;
+                      const purchaseRaw = it.purchasePrice ?? fb?.purchase_price ?? null;
+                      const saleRaw = it.salePrice ?? fb?.sale_price ?? null;
+                      const purchase = purchaseRaw != null ? Math.round(Number(purchaseRaw)) : null;
+                      const salePrice = saleRaw != null ? Math.round(Number(saleRaw)) : null;
                       return (
                         <>
                           <td className="px-3 py-2 tabular-nums text-right align-top text-slate-600 whitespace-nowrap">

@@ -44,6 +44,8 @@ const FlowTab = React.lazy(() => import("../StockManagePage/FlowTab").then((m) =
 // 2026-10-12 · 사용자 지시 "이 페이지는 상품판매현황리스트가 나와야지 · UI교체"
 //   · FlowTab (상품현황 리스트 · 복잡) 대신 ProductSalesListPanel (판매 중심 compact 리스트) 사용
 const ProductSalesListPanel = React.lazy(() => import("./overviews/ProductSalesListPanel").then((m) => ({ default: m.ProductSalesListPanel })));
+// 2026-10-12 · 사용자 지시 "오늘의 판매현황을 매출현황의 상품별페이지로 이동 · 홈과 연결"
+const TodaySalesCard = React.lazy(() => import("./overviews/TodaySalesCard").then((m) => ({ default: m.TodaySalesCard })));
 // 2026-10-12 · 사용자 지시 "판매-손실추적도 판매현황 이너탭으로 이동" · 판매 메뉴 아래 손실추적 탭 (= LossTrackerTab) 재사용
 const LossTrackerTab = React.lazy(() => import("../SalesTrendPage/LossTrackerTab").then((m) => ({ default: m.LossTrackerTab })));
 
@@ -112,10 +114,26 @@ function statusToPill(s: Status) {
 //   · inline QuickRangePills 정의 삭제 · import 로 교체 (상단 import 블록)
 
 export const SalesStatus: React.FC = () => {
-  const [innerTab, setInnerTab] = useState<InnerTabKey>("overview");
+  // 2026-10-12 · 사용자 지시 · 홈 "오늘의 판매현황" → 매출현황>상품별 deeplink · sessionStorage hint 복원
+  const [innerTab, setInnerTab] = useState<InnerTabKey>(() => {
+    try {
+      const hint = sessionStorage.getItem("sales-status.innerTab");
+      if (hint) { sessionStorage.removeItem("sales-status.innerTab"); return hint as InnerTabKey; }
+    } catch {}
+    return "overview";
+  });
   // 2026-10-12 · 매출현황 inner tab · 시간대별/월별 sub tab
   // 2026-10-12 · 사용자 지시 · 매출현황 sub tab · 시간대별/월별/상품별 (3개)
-  const [revenueSubTab, setRevenueSubTab] = useState<"hourly" | "monthly" | "product">("hourly");
+  const [revenueSubTab, setRevenueSubTab] = useState<"hourly" | "monthly" | "product">(() => {
+    try {
+      const hint = sessionStorage.getItem("sales-status.revenueSubTab");
+      if (hint === "hourly" || hint === "monthly" || hint === "product") {
+        sessionStorage.removeItem("sales-status.revenueSubTab");
+        return hint;
+      }
+    } catch {}
+    return "hourly";
+  });
   const { selectedMonths, setSelectedMonths } = useMonthFilter();
   const [classFilter, setClassFilter] = useState<ClassFilter>("all");
   // 2026-10-12 · Bento Cockpit · Collapse state (overview 구역별 · 공급사)
@@ -508,7 +526,15 @@ export const SalesStatus: React.FC = () => {
             <React.Suspense fallback={<div className="flex items-center justify-center py-10 text-[14px] text-slate-500">매출현황 로딩 중...</div>}>
               {revenueSubTab === "hourly" ? <HourlyReportTab />
                 : revenueSubTab === "monthly" ? <MonthlyReportTab />
-                : <ProductSalesListPanel />}
+                : (
+                  /* 2026-10-12 · 사용자 지시 · 매출현황>상품별 안
+                     · 상단 TodaySalesCard (홈 '오늘의 판매현황' 이동 · 오늘 default 로딩 · 마진율 bar chart + drawer)
+                     · 하단 ProductSalesListPanel (기간 집계 리스트) */
+                  <div className="flex flex-col gap-4">
+                    <TodaySalesCard />
+                    <ProductSalesListPanel />
+                  </div>
+                )}
             </React.Suspense>
           </div>
         </div>
