@@ -11,6 +11,8 @@ import { api } from "../../../lib/apiClient";
 import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "./OverviewHeader";
 // 2026-10-09 · 사용자 지시 · 실재고테이블 페이지 옮겨와서 현황 옆 inner tab 으로 통합
 import { RealStockTablePage } from "../RealStockTablePage";
+// 2026-10-12 · 사용자 지시 · 매입이상 공통 Card (현재고 column 포함 · "병합")
+import { PurchaseExceptionCard } from "./PurchaseExceptionCard";
 
 export interface PurchaseArrivalOverviewProps { onSelectSubTab: (sub: DpSubTabKey) => void; }
 
@@ -37,7 +39,8 @@ const fmt = (n: number) => Math.round(n).toLocaleString("ko-KR");
 
 type LocationKey = "warehouse1_stock" | "warehouse2_stock" | "store1_stock" | "store2_stock" | "store3_stock";
 
-type InnerTabKey = "overview" | "real-stock";
+// 2026-10-12 · 사용자 지시 "실재고테이블옆에 매입이력만들어 · 현황판 매입이력 누르면 일루 이동"
+type InnerTabKey = "overview" | "real-stock" | "purchase-history";
 
 export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = ({ onSelectSubTab }) => {
   // 2026-10-09 · 사용자 지시 · 현황 | 실재고테이블 inner tab
@@ -45,6 +48,8 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   // 2026-10-09 · 사용자 지시 · 위치별 bar 클릭 → 해당 위치 상품 리스트 drawer
   const [locDrawer, setLocDrawer] = useState<{ key: LocationKey; label: string } | null>(null);
   const [period, setPeriod] = useState<"7" | "14" | "30">("14");
+  // 2026-10-12 · 사용자 지시 · 일별 매입금액 chart · 일별/주간/월별 3-way 토글
+  const [chartMode, setChartMode] = useState<"daily" | "weekly" | "monthly">("daily");
   const [purchases, setPurchases] = useState<PurchaseRow[] | null>(null);
   const [matchData, setMatchData] = useState<any>(null);
   const [invChecks, setInvChecks] = useState<InvCheckRow[] | null>(null);
@@ -113,6 +118,39 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   const totalAmount = useMemo(() => daily.reduce((s, d) => s + d.amount, 0), [daily]);
   const totalCount = useMemo(() => daily.reduce((s, d) => s + d.count, 0), [daily]);
   const avgAmount = daily.length > 0 ? Math.round(totalAmount / daily.length) : 0;
+
+  // 2026-10-12 · 사용자 지시 · chart 모드별 집계 (일별/주간/월별)
+  //   · daily: 기존 N일 bucket 그대로
+  //   · weekly: 7일씩 그룹핑 (뒤에서부터 · 최신 주 기준)
+  //   · monthly: YYYY-MM 기준 그룹핑
+  const chartData = useMemo(() => {
+    if (chartMode === "daily") return daily;
+    if (chartMode === "weekly") {
+      const buckets: Array<{ date: string; amount: number; count: number }> = [];
+      for (let i = daily.length - 1; i >= 0; i -= 7) {
+        const start = Math.max(0, i - 6);
+        const slice = daily.slice(start, i + 1);
+        if (slice.length === 0) continue;
+        const amount = slice.reduce((s, d) => s + d.amount, 0);
+        const count = slice.reduce((s, d) => s + d.count, 0);
+        const label = `${slice[0].date.slice(5)}~${slice[slice.length - 1].date.slice(5)}`;
+        buckets.unshift({ date: label, amount, count });
+      }
+      return buckets;
+    }
+    const map = new Map<string, { amount: number; count: number }>();
+    for (const d of daily) {
+      const ym = d.date.slice(0, 7);
+      const prev = map.get(ym) ?? { amount: 0, count: 0 };
+      map.set(ym, { amount: prev.amount + d.amount, count: prev.count + d.count });
+    }
+    return Array.from(map.entries()).map(([date, v]) => ({ date, ...v }));
+  }, [daily, chartMode]);
+
+  const maxChart = useMemo(() => Math.max(1, ...chartData.map(d => d.amount)), [chartData]);
+  const chartPeriodLabel = chartMode === "daily" ? `${period}일` : chartMode === "weekly" ? `${chartData.length}주` : `${chartData.length}개월`;
+  const chartAvgLabel = chartMode === "daily" ? "일평균" : chartMode === "weekly" ? "주평균" : "월평균";
+  const chartAvg = chartData.length > 0 ? Math.round(chartData.reduce((s, d) => s + d.amount, 0) / chartData.length) : 0;
 
   const historyRows = useMemo(() => (purchases ?? []).slice().sort((a, b) =>
     String(b.purchase_date ?? "").localeCompare(String(a.purchase_date ?? ""))
@@ -186,7 +224,6 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
   }, [invChecks, productsMap]);
 
   // ─── Render helpers ────────────────────
-  const maxDaily = Math.max(1, ...daily.map(d => d.amount));
 
   return (
     <div className="flex flex-col gap-3 md:gap-4 min-h-0 pb-6 bg-[#F4F7FA]">
@@ -207,13 +244,55 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
         active={innerTab}
         onChange={setInnerTab}
         tabs={[
-          { k: "overview",   label: "현황",         tone: "sky",    count: null },
-          { k: "real-stock", label: "실재고테이블", tone: "violet", count: null },
+          { k: "overview",         label: "현황",         tone: "sky",     count: null },
+          { k: "real-stock",       label: "실재고테이블", tone: "violet",  count: null },
+          { k: "purchase-history", label: "매입이력",     tone: "emerald", count: purchases?.length ?? null },
         ] as const satisfies ReadonlyArray<OverviewInnerTab<InnerTabKey>>}
       />
 
       {innerTab === "real-stock" ? (
         <div className="px-4 sm:px-6"><RealStockTablePage /></div>
+      ) : innerTab === "purchase-history" ? (
+        <div className="px-4 sm:px-6 pt-3">
+          <section className={`${CARD} overflow-hidden`}>
+            <header className="flex items-center gap-2.5 px-5 pt-4 pb-3 border-b border-slate-100">
+              <span className="w-[3px] h-[16px] bg-emerald-500 rounded-full shrink-0" aria-hidden />
+              <Package size={18} weight="fill" className="text-slate-500" />
+              <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">매입이력</h3>
+              <span className="text-[14px] text-slate-500 font-medium">· 최근 {period}일 · {historyRows.length}건</span>
+            </header>
+            <div className="overflow-y-auto max-h-[70vh]">
+              <table className="w-full text-[14px]">
+                <thead className="sticky top-0 bg-white z-10">
+                  <tr className="border-b border-slate-200">
+                    <th className="pl-5 pr-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500 w-[108px]">일자</th>
+                    <th className="px-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500">상품</th>
+                    <th className="px-3 py-2 text-left text-[13px] md:text-[14px] font-semibold text-slate-500 w-[140px]">공급사</th>
+                    <th className="px-3 py-2 text-right text-[13px] md:text-[14px] font-semibold text-slate-500 w-[70px]">수량</th>
+                    <th className="px-3 py-2 text-right text-[13px] md:text-[14px] font-semibold text-slate-500 w-[90px]">단가</th>
+                    <th className="px-3 pr-5 py-2 text-right text-[13px] md:text-[14px] font-semibold text-slate-500 w-[112px]">금액</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {historyRows.length === 0 ? (
+                    <tr><td colSpan={6} className="py-10 text-center text-[13px] text-slate-500">{purchases == null ? "불러오는 중..." : "매입이력이 없습니다"}</td></tr>
+                  ) : historyRows.map((r, i) => (
+                    <tr key={i} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/60">
+                      <td className="pl-5 pr-3 py-2 text-[13px] md:text-[14px] tabular-nums text-slate-500">{String(r.purchase_date ?? "").slice(0, 10)}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex flex-col"><span className="text-[14px] text-ink font-medium truncate">{r.product_name ?? "-"}</span><span className="text-[12px] md:text-[13px] text-slate-500 tabular-nums">{r.product_code ?? ""}</span></div>
+                      </td>
+                      <td className="px-3 py-2 text-[13px] md:text-[14px] text-ink truncate">{r.supplier ?? "-"}</td>
+                      <td className="px-3 py-2 text-right text-[14px] tabular-nums text-ink">{fmt(Number(r.qty ?? 0))}</td>
+                      <td className="px-3 py-2 text-right text-[14px] tabular-nums text-slate-500">{fmt(Number(r.unit_price ?? 0))}</td>
+                      <td className="px-3 pr-5 py-2 text-right text-[14px] tabular-nums font-semibold text-ink">{fmt(Number(r.amount ?? 0))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
       ) : (<>
 
       {/* 상단 요약 · 단일 라인 inline text (사용자 지시 · KPI card 배지 폐기 · 공간 절약)
@@ -231,35 +310,91 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
         </div>
       </div>
 
-      {/* 2-col · LEFT 2fr (chart + history) · RIGHT 1fr (exceptions + stock-compare summary) */}
-      <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 items-start">
+      {/* 2026-10-12 · 사용자 지시 · "글씨 다 나오게 카드 길이 변경" · 2.3fr:1fr → 1.6fr:1.2fr (오른쪽 넓힘 · 매입이상 column 많아짐) */}
+      {/* 2-col · LEFT 1.6fr (chart + history) · RIGHT 1.2fr (exceptions + stock-compare) · overflow-x 가능 */}
+      <div className="px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-[1.6fr_1.2fr] gap-4 items-start">
         <div className="flex flex-col gap-4">
-          {/* 일별 매입금액 chart · 2026-10-09 사용자 지시 · 홈 톤 · 긴 좌측 레일 제거 · title 앞 inline 3px 세로줄 */}
+          {/* 일별 매입금액 chart · 2026-10-09 사용자 지시 · 홈 톤 · 긴 좌측 레일 제거 · title 앞 inline 3px 세로줄
+              2026-10-12 · 사용자 지시 · 일별/주간/월별 3-way 토글 · chartMode state */}
           <section className={`${CARD} overflow-hidden`}>
             <header className="flex items-center gap-2.5 px-5 pt-4 pb-3 border-b border-slate-100">
               <span className="w-[3px] h-[16px] bg-sky-500 rounded-full shrink-0" aria-hidden />
-              <div className="min-w-0">
-                <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">일별 매입금액</h3>
-                <p className="text-[13px] md:text-[14px] text-slate-500 mt-0.5">최근 {period}일 · 총 {fmt(totalAmount)}원 · 일평균 {fmt(avgAmount)}원</p>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">
+                  {chartMode === "daily" ? "일별" : chartMode === "weekly" ? "주간" : "월별"} 매입금액
+                </h3>
+                <p className="text-[13px] md:text-[14px] text-slate-500 mt-0.5">최근 {chartPeriodLabel} · 총 {fmt(totalAmount)}원 · {chartAvgLabel} {fmt(chartAvg)}원</p>
+              </div>
+              {/* 2026-10-12 · 사용자 지시 · 일별/주간/월별 pill 토글 */}
+              <div className="inline-flex items-center bg-slate-100 rounded-md p-0.5 shrink-0" role="tablist" aria-label="차트 모드">
+                {([
+                  { k: "daily", label: "일별" },
+                  { k: "weekly", label: "주간" },
+                  { k: "monthly", label: "월별" },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.k}
+                    type="button"
+                    onClick={() => setChartMode(opt.k)}
+                    className={`px-2.5 h-7 text-[13px] font-semibold rounded transition-colors cursor-pointer ${
+                      chartMode === opt.k ? "bg-white text-ink shadow-sm" : "text-slate-500 hover:text-ink"
+                    }`}
+                    role="tab"
+                    aria-selected={chartMode === opt.k}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
             </header>
             <div className="px-5 py-4">
-              <div className="flex items-end gap-1 h-[160px] border-b border-slate-100 pt-2">
-                {daily.map(d => {
-                  const h = maxDaily > 0 ? Math.round((d.amount / maxDaily) * 100) : 0;
-                  return (
-                    <div key={d.date} className="flex-1 flex flex-col justify-end items-center group min-w-0" title={`${d.date} · ${fmt(d.amount)}원 · ${d.count}건`}>
-                      <div className={`w-full rounded-t ${d.amount > 0 ? "bg-brand-deep/80 group-hover:bg-brand-deep" : "bg-slate-100"} transition-colors`}
-                        style={{ height: `${Math.max(h, 2)}%` }} />
+              {/* 2026-10-12 · 사용자 지시 · 좌측 Y축 추가 (max · mid · 0) */}
+              {(() => {
+                const yTick = (n: number): string => {
+                  if (!Number.isFinite(n) || n === 0) return "0";
+                  if (n >= 100_000_000) return `${(n / 100_000_000).toFixed(1)}억`;
+                  if (n >= 10_000_000) return `${Math.round(n / 1_000_000)}백만`;
+                  if (n >= 10_000) return `${Math.round(n / 10_000)}만`;
+                  return `${Math.round(n).toLocaleString("ko-KR")}`;
+                };
+                return (
+                  <div className="flex gap-2">
+                    <div className="flex flex-col justify-between h-[160px] text-[11px] text-slate-400 tabular-nums shrink-0 text-right pt-2 pr-1 min-w-[36px]">
+                      <span>{yTick(maxChart)}</span>
+                      <span>{yTick(maxChart * 0.75)}</span>
+                      <span>{yTick(maxChart * 0.5)}</span>
+                      <span>{yTick(maxChart * 0.25)}</span>
+                      <span>0</span>
                     </div>
-                  );
-                })}
-              </div>
-              <div className="flex justify-between mt-2 text-[11px] md:text-[12px] font-medium text-slate-500 tabular-nums">
-                <span>{daily[0]?.date.slice(5) ?? ""}</span>
-                <span>{daily[Math.floor(daily.length / 2)]?.date.slice(5) ?? ""}</span>
-                <span>{daily[daily.length - 1]?.date.slice(5) ?? ""}</span>
-              </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-stretch gap-1 h-[160px] border-b border-l border-slate-100 pt-2 pl-1 relative">
+                        {/* 가로 grid lines (0.25/0.5/0.75/1) */}
+                        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none" aria-hidden>
+                          <div className="h-px bg-slate-100" />
+                          <div className="h-px bg-slate-100" />
+                          <div className="h-px bg-slate-100" />
+                          <div className="h-px bg-slate-100" />
+                          <div className="h-px bg-transparent" />
+                        </div>
+                        {chartData.map(d => {
+                          const h = maxChart > 0 ? Math.round((d.amount / maxChart) * 100) : 0;
+                          return (
+                            <div key={d.date} className="flex-1 h-full flex flex-col justify-end items-center group min-w-0 relative z-10" title={`${d.date} · ${fmt(d.amount)}원 · ${d.count}건`}>
+                              <div className={`w-full rounded-t ${d.amount > 0 ? "bg-brand-deep/80 group-hover:bg-brand-deep" : "bg-slate-100"} transition-colors`}
+                                style={{ height: `${Math.max(h, 2)}%` }} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-between mt-2 pl-1 text-[11px] md:text-[12px] font-medium text-slate-500 tabular-nums">
+                        <span>{chartData[0]?.date.slice(chartMode === "monthly" ? 0 : 5) ?? ""}</span>
+                        <span>{chartData[Math.floor(chartData.length / 2)]?.date.slice(chartMode === "monthly" ? 0 : 5) ?? ""}</span>
+                        <span>{chartData[chartData.length - 1]?.date.slice(chartMode === "monthly" ? 0 : 5) ?? ""}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </section>
 
@@ -321,7 +456,8 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
               <Package size={18} weight="fill" className="text-slate-500" />
               <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">매입이력</h3>
               <span className="text-[14px] text-slate-500 font-medium">· 최근 {period}일 · {historyRows.length}건</span>
-              <button type="button" onClick={() => onSelectSubTab("purchase")}
+              {/* 2026-10-12 · 사용자 지시 "현황판 매입이력 누르면 일루 이동" · OrderManagePage 대신 같은 overview 안 매입이력 탭으로 이동 */}
+              <button type="button" onClick={() => setInnerTab("purchase-history")}
                 className="ml-auto inline-flex items-center gap-0.5 text-[13px] md:text-[14px] font-semibold text-brand-deep hover:text-[#0d3a5c] cursor-pointer transition-colors">
                 전체보기 →
               </button>
@@ -361,63 +497,12 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
 
         {/* RIGHT · 매입이상 + 실재고 비교 */}
         <div className="flex flex-col gap-4">
-          {/* 매입이상 · 2026-10-09 사용자 지시 · 홈 톤 · inline 3px 세로줄 (rose) */}
-          <section className={`${CARD} overflow-hidden`}>
-            <header className="flex items-center gap-2.5 px-5 pt-4 pb-3 border-b border-slate-100">
-              <span className="w-[3px] h-[16px] bg-rose-500 rounded-full shrink-0" aria-hidden />
-              <Warning size={18} weight="fill" className="text-slate-500" />
-              <h3 className="text-[15px] md:text-[16px] font-semibold text-ink tracking-tight">매입이상</h3>
-              <span className="text-[14px] text-slate-500 font-medium">· {exceptionRows.length}건</span>
-              <button type="button" onClick={() => { try { sessionStorage.setItem("overview-order-return.innerTab", "exception"); } catch {} onSelectSubTab("overview-order-return"); }}
-                className="ml-auto inline-flex items-center gap-0.5 text-[13px] md:text-[14px] font-semibold text-brand-deep hover:text-[#0d3a5c] cursor-pointer transition-colors">
-                전체보기 →
-              </button>
-            </header>
-            {/* 2026-10-09 · 사용자 지시 · 날짜 · 상품 · 처리현황 column */}
-            <div className="max-h-[320px] overflow-y-auto">
-              {exceptionRows.length === 0 ? (
-                <div className="py-8 text-center text-[13px] md:text-[14px] text-slate-500">{matchData == null ? "불러오는 중..." : "매입이상이 없습니다"}</div>
-              ) : (
-                <table className="w-full text-[14px]">
-                  <thead className="sticky top-0 bg-white z-10">
-                    <tr className="border-b border-slate-200">
-                      <th className="pl-5 pr-2 py-1.5 text-left text-[12px] md:text-[13px] font-semibold text-slate-500 w-[72px]">날짜</th>
-                      <th className="px-2 py-1.5 text-left text-[12px] md:text-[13px] font-semibold text-slate-500">상품</th>
-                      <th className="px-2 pr-5 py-1.5 text-left text-[12px] md:text-[13px] font-semibold text-slate-500 w-[108px]">처리현황</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {exceptionRows.slice(0, 50).map((r, i) => {
-                      const oq = Number(r.order_qty ?? 0);
-                      const pq = Number(r.purchase_qty ?? 0);
-                      const diff = pq - oq;
-                      const status = r.exception_type ?? r.match_status ?? (diff !== 0 ? "수량 불일치" : "미확인");
-                      const statusCls = status.includes("완료") ? "text-emerald-700"
-                        : status.includes("미") || status.includes("불일치") ? "text-rose-600" : "text-amber-700";
-                      return (
-                        <tr key={i}
-                          onClick={() => { try { sessionStorage.setItem("overview-order-return.innerTab", "exception"); } catch {} onSelectSubTab("overview-order-return"); }}
-                          className="border-b border-slate-50 last:border-b-0 hover:bg-slate-50/60 cursor-pointer transition-colors"
-                          title="클릭 · 발주·매입대조 상품 리스트로 이동"
-                        >
-                          <td className="pl-5 pr-2 py-2 text-[13px] tabular-nums text-slate-500 align-top">
-                            {String(r.order_date ?? "").slice(5, 10) || "-"}
-                          </td>
-                          <td className="px-2 py-2 align-top">
-                            <div className="text-[13px] md:text-[14px] text-ink font-medium truncate">{r.product_name ?? r.product_code ?? "-"}</div>
-                            <div className="text-[12px] text-slate-500 tabular-nums truncate mt-0.5">
-                              {r.supplier ?? "-"} · 발주 {fmt(oq)} / 매입 <span className={diff === 0 ? "" : "text-rose-600 font-semibold"}>{fmt(pq)}</span>
-                            </div>
-                          </td>
-                          <td className={`px-2 pr-5 py-2 text-[13px] font-semibold align-top ${statusCls}`}>{status}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </section>
+          {/* 2026-10-12 · 사용자 지시 · 공통 모듈로 추출 (PurchaseExceptionCard · 발주반품현황 과 "병합")
+              · 현재고 column 포함 · 자체 fetch · "매입재고현황정보도 매입이상에 나와야" 반영 */}
+          <PurchaseExceptionCard
+            period={Number(period)}
+            onViewAll={() => { try { sessionStorage.setItem("overview-order-return.innerTab", "exception"); } catch {} onSelectSubTab("overview-order-return"); }}
+          />
 
           {/* 실재고 vs ERP · 2026-10-09 사용자 지시 · 홈 톤 · inline 3px 세로줄 (amber) */}
           <section className={`${CARD} overflow-hidden`}>
