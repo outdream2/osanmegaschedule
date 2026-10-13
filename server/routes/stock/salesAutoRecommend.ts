@@ -18,6 +18,8 @@
 //   · no-store (발주 관련 · 캐시 절대 X)
 //   · custom 이벤트 · 규칙 없음 → event_products 수동 매핑으로 폴백 (기존 /api/events/today 활용)
 //     · 본 엔드포인트는 · 자동 규칙 매칭만 처리
+// 2026-10-13 · P1-8 · console.log → winston logger
+import logger from "../../lib/logger";
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { asyncHandler } from "../../middleware/asyncHandler";
@@ -94,10 +96,10 @@ async function loadRules(): Promise<{
         rulesCache = entry;
         return { rules: entry.rules, offSeason: entry.offSeason, source: "kv" };
       }
-      console.warn("[sales-auto-recommend] KV 규칙 · 검증 실패 · SSOT 폴백");
+      logger.warn("[sales-auto-recommend] KV 규칙 · 검증 실패 · SSOT 폴백");
     }
   } catch (e: any) {
-    console.warn("[sales-auto-recommend] KV 규칙 조회 실패 · SSOT 폴백 · " + (e?.message ?? "?"));
+    logger.warn("[sales-auto-recommend] KV 규칙 조회 실패 · SSOT 폴백 · " + (e?.message ?? "?"));
   }
   const entry: RulesCacheEntry = {
     rules: EVENT_CATEGORY_RULES.filter(r => r.eventType !== "custom"),
@@ -287,7 +289,7 @@ router.get("/api/sales-auto-recommend", asyncHandler(async (req, res) => {
         .gte("period_end", cutoff);
       if (sErr) {
         // 테이블 없거나 접근 실패 · 조용히 스킵 (판매 데이터 없이도 재고 기준 추천 가능)
-        console.warn(`[sales-auto-recommend] stock_history 조회 실패 · ${sErr.message}`);
+        logger.warn(`[sales-auto-recommend] stock_history 조회 실패 · ${sErr.message}`);
         break;
       }
       for (const r of sh ?? []) {
@@ -371,7 +373,7 @@ router.get("/api/sales-auto-recommend", asyncHandler(async (req, res) => {
     total_matched: items.length,
   };
 
-  console.log(`[sales-auto-recommend] today=${today} · matched_events=${matchedEvents.length} · items=${items.length} · off_season=${offSeason?.label ?? "-"} · rules=${rulesSource}`);
+  logger.info(`[sales-auto-recommend] today=${today} · matched_events=${matchedEvents.length} · items=${items.length} · off_season=${offSeason?.label ?? "-"} · rules=${rulesSource}`);
   res.json(response);
 }));
 

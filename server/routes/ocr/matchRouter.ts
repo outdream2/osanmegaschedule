@@ -1,4 +1,6 @@
 // ocr/matchRouter.ts — GET /api/health · GET /api/ocr-ping · POST /api/ocr-match
+// 2026-10-13 · P1-8 · console.log → winston logger
+import logger from "../../lib/logger";
 import { Router } from "express";
 import { getProductMap, getSynonymMap, getSupplierAliasMap } from "../../productCache";
 import { saveMatchDiagnostic, type RowMatchTrace, type MatchDiagnostic } from "../../ocr/diagnostics";
@@ -125,7 +127,7 @@ router.post("/api/ocr-match", authorize(5), validateBody(OcrMatchSchema), asyncH
     const commonTrace = { rowIdx: i, ocrName: name, supplierHint, bestScore, bestCandidate: best?.name ?? null, bestCode: best?.code ?? null, top3Candidates: top3 };
 
     if (!best || bestScore < 20) {
-      console.log(`[MATCH-MISS] score=${bestScore ?? 0} ocr="${name}" best="${best?.name ?? "-"}"`);
+      logger.debug(`[MATCH-MISS] score=${bestScore ?? 0} ocr="${name}" best="${best?.name ?? "-"}"`);
       matchTraces.push({ ...commonTrace, matched: false, reason: bestScore < 20 ? "score-too-low" : "no-candidate" });
       return { input: name, matched: null, score: bestScore };
     }

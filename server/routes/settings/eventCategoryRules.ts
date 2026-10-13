@@ -16,6 +16,8 @@
 // **주의**
 //   · rules 배열은 eventType 중복 불가 (서버측 dedupe · 뒤에 온 값 우선)
 //   · 하드코딩 SSOT · 언제나 fallback · KV null·error 시 자동 복귀
+// 2026-10-13 · P1-8 · console.log → winston logger
+import logger from "../../lib/logger";
 import { Router } from "express";
 import { supabase } from "../../../src/supabase/client";
 import { asyncHandler } from "../../middleware/asyncHandler";
@@ -82,7 +84,7 @@ router.get(
             ...parsed.data,
           });
         }
-        console.warn("[event-category-rules] KV 저장값 검증 실패 · SSOT 폴백 · " + parsed.error.message);
+        logger.warn("[event-category-rules] KV 저장값 검증 실패 · SSOT 폴백 · " + parsed.error.message);
       }
       // KV 미설정 or 검증 실패 · 하드코딩 SSOT
       return res.json({
@@ -91,7 +93,7 @@ router.get(
         ...ssotPayload(),
       });
     } catch (e: any) {
-      console.error("[event-category-rules GET] " + (e?.message ?? "unknown"));
+      logger.error("[event-category-rules GET] " + (e?.message ?? "unknown"));
       // 마지막 안전망 · 하드코딩 SSOT
       return res.json({
         source: "ssot" as const,
@@ -138,7 +140,7 @@ router.post(
     if (error) throw new HttpError(500, error.message, "DB_ERROR");
 
     invalidateEventCategoryRulesCache();
-    console.log(
+    logger.info(
       `[event-category-rules POST] rules=${rules.length} · offSeason=${value.offSeason.length}`,
     );
     res.json({ ok: true, source: "kv" as const, ...value });
@@ -160,7 +162,7 @@ router.delete(
     if (error) throw new HttpError(500, error.message, "DB_ERROR");
 
     invalidateEventCategoryRulesCache();
-    console.log("[event-category-rules DELETE] KV row 삭제 · SSOT 복귀");
+    logger.info("[event-category-rules DELETE] KV row 삭제 · SSOT 복귀");
     res.json({ ok: true, source: "ssot" as const, ...ssotPayload() });
   }),
 );

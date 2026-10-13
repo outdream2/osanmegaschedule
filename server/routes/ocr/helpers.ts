@@ -1,4 +1,6 @@
 // ocr/helpers.ts — 캐시·템플릿·컬럼매핑·vendor매칭 공통 유틸
+// 2026-10-13 · P1-8 · console.log → winston logger · production 로그 파일 통합
+import logger from "../../lib/logger";
 import { supabase } from "../../../src/supabase/client";
 import { ocrConfig } from "../../config/ocrConfig";
 import { getVendorNames } from "../../productCache";
@@ -60,9 +62,9 @@ export async function upsertOcrTemplate(supplier: string | null | undefined, hea
       { supplier_name: cleaned, headers, updated_at: new Date().toISOString() },
       { onConflict: "supplier_name" }
     );
-    console.log(`[OCR/Template] 자동 저장/갱신: "${cleaned}" 헤더=${JSON.stringify(headers)}`);
+    logger.info(`[OCR/Template] 자동 저장/갱신: "${cleaned}" 헤더=${JSON.stringify(headers)}`);
   } catch (e: any) {
-    console.warn("[OCR/Template] 자동 저장 실패 (무시):", e?.message);
+    logger.warn("[OCR/Template] 자동 저장 실패 (무시): " + (e?.message ?? "unknown"));
   }
 }
 
@@ -235,14 +237,14 @@ export async function findVendorInText(rawText: string | null | undefined): Prom
         if (windowNorm.includes(vn) && vn.length > bestLen) { bestLen = vn.length; best = v; }
       }
       if (best) {
-        console.log(`[findVendorInText] page-header/공급자-label → "${best}"`);
+        logger.debug(`[findVendorInText] page-header/공급자-label → "${best}"`);
         return best;
       }
     }
 
     const headerBest = headerFindLongest();
     if (headerBest) {
-      console.log(`[findVendorInText] page-header 최장매칭 → "${headerBest}"`);
+      logger.debug(`[findVendorInText] page-header 최장매칭 → "${headerBest}"`);
       return headerBest;
     }
 
