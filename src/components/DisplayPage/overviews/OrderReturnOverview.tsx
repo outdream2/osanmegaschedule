@@ -1216,32 +1216,19 @@ const OrderRequestGroupedView: React.FC<{
   const [qtyEdit, setQtyEdit] = useState<Map<string, number>>(new Map());
   const [savingQty, setSavingQty] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
-  // 2026-10-09 · 사용자 지시 · 공급사별 분류 (위탁/선결제/60회전 등) 배지 노출
-  const { getVendorCategory } = useVendors();
+  // 2026-10-13 · P1-6 · useVendors 캐시 재사용 (이전 로컬 vendorMap state + /api/vendors 직접 fetch 제거)
+  //   · useVendors.vendorMap 은 Record<company_name, Vendor> · 5분 TTL 캐시 공유 · 중복 네트워크 제거
+  //   · 공급사 카테고리 배지 (getVendorCategory) 도 동일 훅에서 획득
+  const { getVendorCategory, vendorMap: vendorRecord } = useVendors();
   // 2026-10-09 · 사용자 지시 · "적정재고 미달 아닌 상품도 발주 가능해야" · 상품 검색 모달
   const [showAddModal, setShowAddModal] = useState(false);
-
-  // 2026-10-09 · 사용자 지시 · 발주 전 담당자/연락처 검증 · vendor map prefetch
-  //   · 발주요청페이지 (useOrderModal.submitOrderModal) 패턴 · pre-send validation
-  const [vendorMap, setVendorMap] = useState<Map<string, { contact_name: string | null; phone: string | null; email: string | null }>>(new Map());
-  useEffect(() => {
-    let alive = true;
-    api.get<any[]>("/api/vendors").then(({ data }) => {
-      if (!alive) return;
-      const m = new Map<string, { contact_name: string | null; phone: string | null; email: string | null }>();
-      for (const v of (Array.isArray(data) ? data : [])) {
-        const name = String(v.company_name ?? "").trim();
-        if (!name) continue;
-        m.set(name, { contact_name: v.contact_name ?? null, phone: v.phone ?? null, email: v.email ?? null });
-      }
-      setVendorMap(m);
-    }).catch(() => {});
-    return () => { alive = false; };
-  }, []);
   // 공급사별 발주이력 모달 (OrderRequestTab · supplierHistorySupplier 패턴)
   const [historySupplier, setHistorySupplier] = useState<string | null>(null);
 
-  const getVendor = (supplier: string) => vendorMap.get(supplier.trim());
+  const getVendor = (supplier: string) => {
+    const v = vendorRecord[supplier.trim()];
+    return v ? { contact_name: v.contact_name ?? null, phone: v.phone ?? null, email: v.email ?? null } : undefined;
+  };
   const hasContact = (supplier: string) => {
     const v = getVendor(supplier);
     if (!v) return false;
