@@ -5,10 +5,44 @@
 
 import { api } from "./apiClient";
 
-/** GET /api/settings?key=... · KV 설정 값 조회 */
+// 2026-10-13 · 긴급 fix · ERR_INSUFFICIENT_RESOURCES 폭주 fix
+//   · 콘솔: brand_identity + page_visibility GET 반복 폭주 (브라우저 소켓 소진)
+//   · 원인: 여러 useKvSetting hook 인스턴스 (AppNavHeader + 각 Page) 가 동일 key 동시 fetch
+//   · fix: inflight promise dedupe (동시 호출 1회 네트워크) + 5초 TTL micro-cache
+//   · 저장 (saveSetting / patchSettings) 성공 시 캐시 invalidate
+const _settingCache = new Map<string, { value: unknown; expireAt: number }>();
+const _inflight = new Map<string, Promise<unknown>>();
+const SETTING_TTL_MS = 5000;
+
+function _invalidate(key: string): void {
+  _settingCache.delete(key);
+  _inflight.delete(key);
+}
+
+/** GET /api/settings?key=... · KV 설정 값 조회 · inflight dedupe + TTL 캐시 */
 export async function getSetting<T = unknown>(key: string): Promise<T | null> {
-  const { data } = await api.get<{ value?: T }>(`/api/settings?key=${encodeURIComponent(key)}`);
-  return (data?.value ?? null) as T | null;
+  // 캐시 hit · TTL 안
+  const cached = _settingCache.get(key);
+  if (cached && Date.now() < cached.expireAt) {
+    return cached.value as T | null;
+  }
+  // inflight 공유 (여러 hook 동시 호출 → 네트워크 1회)
+  const inflight = _inflight.get(key);
+  if (inflight) {
+    return inflight as Promise<T | null>;
+  }
+  const p = (async () => {
+    try {
+      const { data } = await api.get<{ value?: T }>(`/api/settings?key=${encodeURIComponent(key)}`);
+      const value = (data?.value ?? null) as T | null;
+      _settingCache.set(key, { value, expireAt: Date.now() + SETTING_TTL_MS });
+      return value;
+    } finally {
+      _inflight.delete(key);
+    }
+  })();
+  _inflight.set(key, p);
+  return p;
 }
 
 /** POST /api/settings · KV 설정 값 저장 (관리자 · 서버 authorize)
@@ -18,6 +52,7 @@ export async function getSetting<T = unknown>(key: string): Promise<T | null> {
  */
 export async function saveSetting<T = unknown>(key: string, value: T): Promise<void> {
   await api.post("/api/settings", { key, value });
+  _invalidate(key);
 }
 
 /** 2026-10-07 · Phase 2 · P0-5 OPTION A · atomic jsonb_set patch (lost-update 방지)
@@ -38,5 +73,6 @@ export async function patchSettings<T = unknown>(
     "/api/settings/patch",
     { key, patches },
   );
+  _invalidate(key);
   return (data?.value ?? null) as T | null;
 }
