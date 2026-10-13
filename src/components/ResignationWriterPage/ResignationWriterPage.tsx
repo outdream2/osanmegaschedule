@@ -41,7 +41,7 @@ import { Card } from "../common/Card";
 // 2026-08-24 · 공통 SplitPanel 좌측 헤더 프리미티브
 import { SplitLeftHeader } from "../common/SplitLeftHeader";
 import html2canvas from "html2canvas-pro"; // 2026-08-04 · Tailwind v4 oklch 지원 · drop-in 교체
-import jsPDF from "jspdf";
+// 2026-10-13 · P0-2 · jsPDF dynamic import · 번들 1091kb 제외
 
 import { AppNavHeader, type AppNavPage } from "../layout/AppNavHeader";
 import { FieldLabel } from "../common/FieldLabel";
@@ -233,6 +233,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
       windowWidth: node.scrollWidth,
     });
     const imgData = canvas.toDataURL("image/png");
+    const { default: jsPDF } = await import("jspdf");
     const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
     const pdfW = pdf.internal.pageSize.getWidth();   // 210
     const pdfH = pdf.internal.pageSize.getHeight();  // 297

@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 // 2026-09-14 · #101 · 차용계약 PDF 프리뷰 · html2canvas + jsPDF
 import html2canvas from "html2canvas-pro";
-import jsPDF from "jspdf";
+// 2026-10-13 · P0-2 · jsPDF dynamic import · 번들 1091kb 제외
 import { BorrowingPdfPreview } from "./BorrowingPdfPreview";
 import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
@@ -123,6 +123,7 @@ export const BorrowingDetailPanel: React.FC<BorrowingDetailPanelProps> = ({
         windowWidth: node.scrollWidth,
       });
       const imgData = canvas.toDataURL("image/png");
+      const { default: jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
       const pdfW = pdf.internal.pageSize.getWidth();
       const pdfH = pdf.internal.pageSize.getHeight();

@@ -13,7 +13,7 @@ import { tableHeadCls, tableThCls } from "../common";
 // 2026-08-25 · 발주서 PDF · 오프스크린 A4 프리뷰 + html2canvas + jsPDF
 import { OrderPdfPreview } from "./OrderPdfPreview";
 import html2canvas from "html2canvas-pro";
-import jsPDF from "jspdf";
+// 2026-10-13 · P0-2 · jsPDF dynamic import · 번들 1091kb 제외
 // 2026-08-25 · 프레임워크 · useToast (raw alert 제거)
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-09-02 · fix · 사업장 이름 하드코딩 제거 · useCompanyInfo (설정 · 회사·브랜드)
@@ -113,6 +113,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         windowWidth: node.scrollWidth,
       });
       const imgData = canvas.toDataURL("image/png");
+      const { default: jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
       const pdfW = pdf.internal.pageSize.getWidth();
       const pdfH = pdf.internal.pageSize.getHeight();

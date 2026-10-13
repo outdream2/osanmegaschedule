@@ -37,7 +37,8 @@ import { useToast } from "../../hooks/useToast";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
 import { LeaveRequestPdfPreview, type LeaveRequestPdfData } from "./LeaveRequestPdfPreview";
 import html2canvas from "html2canvas-pro";
-import jsPDF from "jspdf";
+// 2026-10-13 · P0-2 · jsPDF dynamic import · 번들 1091kb 제외 · type-only import 유지 (리턴 타입)
+import type jsPDF from "jspdf";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
@@ -794,6 +795,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({
       windowWidth: refEl.scrollWidth,
     });
     const imgData = canvas.toDataURL("image/png");
+    const { default: jsPDF } = await import("jspdf");
     const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
     const pdfW = pdf.internal.pageSize.getWidth();
     const pdfH = pdf.internal.pageSize.getHeight();
@@ -1080,6 +1082,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({
               const earlyCnt = filteredIssues.filter(a => a.kind === "조퇴").length;
               return (
                 <>
+                {/* 2026-10-13 · 사용자 지시 · PC 에서 상단 2 카드 (A: 내 상세정보 · B: 휴가 신청) 나란히 · xl ≥1280px 2열 · 그 이하 세로 유지 */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {/* ── 섹션 A · 상세정보 대시보드 (유급휴가 잔여/총부여/사용 + 올해 사용 리스트) ── */}
                 <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
                   <header className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-100 flex-wrap">
@@ -1256,6 +1260,8 @@ export const LeavePage: React.FC<LeavePageProps> = ({
                     )}
                   </form>
                 </section>
+                </div>
+                {/* /2026-10-13 · 섹션 A·B 2열 wrapper 종료 */}
 
                 {/* ── 섹션 C · 신청이력 (+ 지각·결근 상세 collapsible) ── */}
                 <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">

@@ -15,7 +15,7 @@ import type { ReturnReasonKey, ReturnLineItem } from "./ReturnListPanel.types";
 import { buildReturnNumber, todayStr } from "./ReturnListPanel.types";
 import { ReturnPdfPreview } from "./ReturnPdfPreview";
 import html2canvas from "html2canvas-pro";
-import jsPDF from "jspdf";
+// 2026-10-13 · P0-2 · jsPDF dynamic import · 번들 1091kb 제외
 // 2026-08-25 · 프레임워크 · useToast (raw alert 제거)
 import { useToast, toastClass } from "../../hooks/useToast";
 // 2026-09-21 · #329 · 한글 IME 우선
@@ -169,6 +169,7 @@ export const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, it
         windowWidth: node.scrollWidth,
       });
       const imgData = canvas.toDataURL("image/png");
+      const { default: jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
       const pdfW = pdf.internal.pageSize.getWidth();
       const pdfH = pdf.internal.pageSize.getHeight();

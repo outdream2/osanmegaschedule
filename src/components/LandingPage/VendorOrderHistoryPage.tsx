@@ -36,7 +36,7 @@ import { useToast, toastClass } from "../../hooks/useToast";
 import { useCompanyInfo } from "../../hooks/useCompanyInfo";
 // 2026-09-08 · 발주서 PDF 다운 · html2canvas + jsPDF (OrderHistoryTab 동일)
 import html2canvas from "html2canvas-pro";
-import jsPDF from "jspdf";
+// 2026-10-13 · P0-2 · jsPDF dynamic import · 번들 1091kb 제외 · 초기 로드 성능
 import type { AuthSession } from "../../types";
 // 2026-10-06 · 공급사 승인 접근 fix · URL 직접 접근 차단 공통 guard
 import { VendorApprovalGuard } from "./VendorApprovalGuard";
@@ -230,6 +230,7 @@ export const VendorOrderHistoryPage: React.FC<VendorOrderHistoryPageProps> = ({
       if (!node) throw new Error("PDF 프리뷰를 찾을 수 없습니다");
       const canvas = await html2canvas(node, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false, windowWidth: node.scrollWidth });
       const imgData = canvas.toDataURL("image/png");
+      const { default: jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
       const pdfW = pdf.internal.pageSize.getWidth();
       const pdfH = pdf.internal.pageSize.getHeight();

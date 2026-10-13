@@ -19,7 +19,7 @@ import { OrderHistoryPoCard } from "./OrderHistoryPoCard";
 import type { OrderHistoryPoCardOrder } from "./OrderHistoryPoCard";
 // 2026-09-08 · 사용자 지시 · 발주이력 각 행 PDF 다운 · html2canvas + jsPDF
 import html2canvas from "html2canvas-pro";
-import jsPDF from "jspdf";
+// 2026-10-13 · P0-2 · jsPDF dynamic import · 번들 1091kb 제외
 import { OrderPdfPreview } from "./OrderPdfPreview";
 import type { OrderModalState } from "./OrderModal";
 import { Spinner } from "../common/Spinner";
@@ -187,6 +187,7 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ onSelectOrder,
       if (!node) throw new Error("PDF 프리뷰를 찾을 수 없습니다");
       const canvas = await html2canvas(node, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false, windowWidth: node.scrollWidth });
       const imgData = canvas.toDataURL("image/png");
+      const { default: jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
       const pdfW = pdf.internal.pageSize.getWidth();
       const pdfH = pdf.internal.pageSize.getHeight();
