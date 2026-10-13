@@ -68,7 +68,7 @@ export { PageToolbar } from "./PageToolbar";
 export { Panel } from "./Panel";
 export { PeriodSelector } from "./PeriodSelector";
 export { ProductDetailHero } from "./ProductDetailHero";
-export { ResizableTh } from "./ResizableHeader";
+// 2026-10-13 · dead code 정리 · ResizableTh 참조 0건 · 파일 삭제
 export { SaleStatusFilter } from "./SaleStatusFilter";
 export { SearchBar } from "./SearchBar";
 export { SeasonButtons } from "./SeasonButtons";
@@ -79,8 +79,7 @@ export type { SegmentedTone, SegmentedSize, SegmentedOption, SegmentedControlPro
 export { SessionTimeoutWarning } from "./SessionTimeoutWarning";
 export { SettingsPageShell } from "./SettingsPageShell";
 export { SignaturePad } from "./SignaturePad";
-export { SubmitBar } from "./SubmitBar";
-export type { SubmitBarProps } from "./SubmitBar";
+// 2026-10-13 · dead code 정리 · SubmitBar 참조 0건 · 파일 삭제
 export { Spinner } from "./Spinner";
 export { SortHeader, SortHeaderContent } from "./SortHeader";
 export type { SortHeaderProps, SortHeaderContentProps } from "./SortHeader";
@@ -100,7 +99,7 @@ export type { StatusPillProps } from "./StatusPill";
 export { StepperInput } from "./StepperInput";
 export { TabBar } from "./TabBar";
 export type { TabDef } from "./TabBar";
-export { Toolbar } from "./Toolbar";
+// 2026-10-13 · dead code 정리 · Toolbar (PageToolbar 아님) 참조 0건 · 파일 삭제
 export { VendorCategoryBadge } from "./VendorCategoryBadge";
 export { VendorInfoHeader } from "./VendorInfoHeader";
 export type { VendorInfoFull, VendorKpis, VendorInfoHeaderProps } from "./VendorInfoHeader";
