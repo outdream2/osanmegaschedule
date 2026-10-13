@@ -10,6 +10,7 @@
 // 2026-08-23 · v3.2 · Modal primitive 재마이그레이션 (align="bottom-mobile")
 import { useState } from "react";
 import { api } from "../../../lib/apiClient";
+import { DOM_EVENTS, dispatchDomEvent } from "../../../lib/domEvents";
 import { X, Building2, Save } from "lucide-react";
 import { Spinner } from "../Spinner";
 import { IconTile } from "../IconTile";
@@ -53,7 +54,7 @@ export function NewVendorModal({ onClose, onSaved }: NewVendorModalProps) {
       note: note.trim() || null,
     }));
     if (saved) {
-      try { window.dispatchEvent(new CustomEvent("vendors-changed")); } catch { /* silent */ }
+      dispatchDomEvent(DOM_EVENTS.VENDORS_CHANGED);
       onSaved?.((saved as any).data as any);
       onClose();
     }

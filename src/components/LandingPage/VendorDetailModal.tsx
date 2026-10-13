@@ -7,6 +7,7 @@
 
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { api, ApiError } from "../../lib/apiClient";
+import { DOM_EVENTS, dispatchDomEvent } from "../../lib/domEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast, toastClass } from "../../hooks/useToast";
 import {
@@ -266,7 +267,7 @@ export const VendorDetailModal: React.FC<{
       setSaveMsg({ type: "ok", text: "저장 완료" });
       showSuccess("저장되었습니다");
       // 2026-07-30 · 사용자 요청 · 분류(category) 저장 시 · 리스트 배지 즉시 반영 이벤트
-      try { window.dispatchEvent(new CustomEvent("vendors-changed")); } catch { /* ignore */ }
+      dispatchDomEvent(DOM_EVENTS.VENDORS_CHANGED);
       onSaved();
     } catch (e: any) {
       const msg = `저장 실패: ${e?.message ?? e}`;

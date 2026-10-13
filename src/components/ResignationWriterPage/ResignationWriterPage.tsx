@@ -23,6 +23,7 @@
 //   - memory feedback_git_push · remote push 절대 금지
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError } from "../../lib/apiClient";
+import { DOM_EVENTS, dispatchDomEvent } from "../../lib/domEvents";
 // 2026-09-14 · resignationsApi · employeeApi 프리미티브
 import { createResignation } from "../../lib/resignationsApi";
 import { listEmployees } from "../../lib/employeeApi";
@@ -333,7 +334,7 @@ const ResignationWriterPage: React.FC<ResignationWriterPageProps> = ({
       });
       setNotice({ tone: "ok", text: "사직서가 제출되었습니다. 관리자에게 알림이 전송되었습니다." });
       // 승인대기 배지 즉시 갱신
-      window.dispatchEvent(new CustomEvent("approval-count-updated"));
+      dispatchDomEvent(DOM_EVENTS.APPROVAL_COUNT_UPDATED);
     } catch (err: any) {
       setNotice({ tone: "err", text: err instanceof ApiError ? err.message : (err?.message ?? "사직서 제출에 실패했습니다.") });
     } finally {

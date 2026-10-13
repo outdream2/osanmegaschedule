@@ -5,6 +5,7 @@ import { AccentBar } from "../common/AccentBar";
 import { Card } from "../common/Card";
 import { StatusPill } from "../common/StatusPill";
 import { ApiError } from "../../lib/apiClient";
+import { DOM_EVENTS, dispatchDomEvent } from "../../lib/domEvents";
 // 2026-09-14 · resignationsApi 프리미티브
 import { listResignations, reviewResignation } from "../../lib/resignationsApi";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
@@ -156,7 +157,7 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
       setReviewingId(null);
       setRejectReason("");
       // 배지 즉시 갱신
-      window.dispatchEvent(new CustomEvent("approval-count-updated"));
+      dispatchDomEvent(DOM_EVENTS.APPROVAL_COUNT_UPDATED);
     } catch (err: any) {
       showError(err?.message ?? "처리 실패");
     } finally {

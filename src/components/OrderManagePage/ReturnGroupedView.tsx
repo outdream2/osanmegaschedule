@@ -13,6 +13,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Package, Send, RefreshCw, AlertCircle } from "lucide-react";
 import { api } from "../../lib/apiClient";
+import { DOM_EVENTS, dispatchDomEvent } from "../../lib/domEvents";
 import { listInventoryChecks } from "../../lib/inventoryChecksApi";
 import { lookupProduct } from "../../lib/productsCache";
 import { matchesProductQuery } from "../../lib/productMatch";
@@ -139,7 +140,7 @@ export const ReturnGroupedView: React.FC = () => {
       });
       filtered.sort((a, b) => (b.purchase_cycle ?? 0) - (a.purchase_cycle ?? 0));
       setItems(filtered);
-      try { window.dispatchEvent(new CustomEvent("return-need-count", { detail: { count: filtered.length } })); } catch { /**/ }
+      dispatchDomEvent(DOM_EVENTS.RETURN_NEED_COUNT, { count: filtered.length });
     } catch (e: any) {
       console.warn("[반품 공급사 그룹 뷰] 로드 실패:", e?.message);
       setItems([]);

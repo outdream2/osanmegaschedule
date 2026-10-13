@@ -19,6 +19,7 @@ import { Spinner } from "../common/Spinner";
 import { useColumnResize, RESIZER_CLS } from "../../hooks/useColumnResize";
 import { useReferenceValues } from "../../hooks/useReferenceValues";
 import { api, ApiError } from "../../lib/apiClient";
+import { DOM_EVENTS, dispatchDomEvent } from "../../lib/domEvents";
 // 2026-09-14 · inventoryChecksApi · productsApi 프리미티브
 import { listInventoryChecks } from "../../lib/inventoryChecksApi";
 import { getProductByCode } from "../../lib/productsApi";
@@ -192,7 +193,7 @@ export const ReturnListPanel: React.FC<ReturnListPanelProps> = ({ onSupplierClic
       filtered.sort((a, b) => (b.purchase_cycle ?? 0) - (a.purchase_cycle ?? 0));
       setReturnList(filtered);
       // 매입 탭 · 반품필요 서브탭 배지용 · 필터링 전 원본 갯수
-      try { window.dispatchEvent(new CustomEvent("return-need-count", { detail: { count: filtered.length } })); } catch { /**/ }
+      dispatchDomEvent(DOM_EVENTS.RETURN_NEED_COUNT, { count: filtered.length });
     } catch (e: any) {
       console.warn("[반품필요] 로드 실패:", e?.message);
       setReturnList([]);
