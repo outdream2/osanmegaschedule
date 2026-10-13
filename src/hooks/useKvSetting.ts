@@ -185,7 +185,16 @@ export function useKvSetting<T>(opts: UseKvSettingOptions<T>): UseKvSettingResul
           ? sanitizeRef.current(serverVal)
           : (serverVal as T);
         if (cleaned !== null && cleaned !== undefined) {
-          setValueState(cleaned as T);
+          // 2026-10-13 · crash fix · Maximum update depth 방지 · 동일 값 skip
+          //   · sanitize 가 매번 새 object 반환 → setValueState 매번 다른 reference
+          //   · 상위 컴포넌트가 이 값을 effect dep 로 쓰면 cycle 유발 (예: BrandingSettingsPage draft)
+          //   · 함수형 setter + JSON 비교로 ref 안정화
+          setValueState(prev => {
+            try {
+              if (JSON.stringify(prev) === JSON.stringify(cleaned)) return prev;
+            } catch { /* fall through */ }
+            return cleaned as T;
+          });
           safeLocalSet(cacheKey, JSON.stringify(cleaned));
         }
         setLoaded(true);

@@ -470,21 +470,33 @@ export const StampsSection: React.FC = () => {
 
 // ═══════════════════════════════════════════════════════════════════════
 //   섹션 4 · 메뉴 표시 · 페이지별 PC/모바일 노출 (2026-08-23 · #188 개편)
-//     · 자동 마이그레이션 · 기존 mobile_min_level (레벨 5+) → mobile OFF (첫 조회 시)
-//     · 페이지 · 뷰포트별 [PC ☑] [모바일 ☑] 2 체크박스
+//     · 2026-10-06 (DEPRECATED · 2026-10-13 override) · 단일 toggle 로 축소
+//     · 2026-10-13 · 사용자 재지시 · PC/모바일 분리 복원 · 2 체크박스 + 저장 버튼
+//     · 저장 UX · 체크 즉시 저장 X · 로컬 draft 수집 → "저장" 버튼 눌러야 반영
 //     · 기본값 · 둘 다 ON · 하위 호환
 //     · SIDE_NAV_GROUPS 순회 · 같은 pageKey 중복 제거
 //     · landing 편집 UI 제외 (차단 금지)
 // ═══════════════════════════════════════════════════════════════════════
 
-// deprecated · useMobilePageLevel 은 자동 마이그레이션용 · usePageVisibility 내부 참조
 export const MobileVisibilitySection: React.FC = () => {
-  const { isVisible, setVisible, loaded, saveState } = usePageVisibility();
+  const { visibility, setAll, loaded, saveState } = usePageVisibility();
 
-  // 2026-08-25 · 사용자 지시 · 서브탭 별로 개별 노출 토글 지원 (승인요청 · 점심불참 등)
-  //   · 같은 page key 여도 · subTab 다르면 · 각각 checkbox 노출
-  //   · dedupe 는 · (key + subTab) 조합 기준
-  //   · 페이지 자체 (subTab 없음) 는 · key 만으로 저장 · 하위 호환
+  // 2026-10-13 · 사용자 지시 · 저장 버튼 명시 · 로컬 draft 로 수집
+  //   · draft 는 서버 상태의 clone · 체크박스 토글은 draft 만 업데이트
+  //   · "저장" 버튼 클릭 → setAll(draft) → debounced 서버 저장 (useKvSetting)
+  const [draft, setDraft] = useState<typeof visibility>(visibility);
+  // 2026-10-13 · crash fix · Maximum update depth · visibility 매 render 새 object → cycle
+  //   · 이전: setDraft(visibility) 무조건 → setDraft → re-render → 새 visibility → cycle
+  //   · 이후: JSON 비교로 실제 변경 시만 setDraft (effect deps 는 string 안정)
+  const visibilityStr = React.useMemo(() => JSON.stringify(visibility), [visibility]);
+  React.useEffect(() => {
+    setDraft(prev => {
+      if (JSON.stringify(prev) === visibilityStr) return prev;
+      return visibility;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibilityStr]);
+
   const groups = useMemo(() => {
     return SIDE_NAV_GROUPS
       .map((g) => {
@@ -506,6 +518,51 @@ export const MobileVisibilitySection: React.FC = () => {
       .filter((g) => g.items.length > 0);
   }, []);
 
+  // 2026-10-13 · draft 기반 isVisible (서버값 X · 미저장 상태 반영)
+  const draftIsVisible = useCallback((pageKey: string, viewport: "pc" | "mobile"): boolean => {
+    let entry = draft[pageKey];
+    if (!entry && pageKey.includes(":")) {
+      const leaf = pageKey.split(":").pop() ?? "";
+      if (leaf) entry = draft[leaf];
+    }
+    if (!entry && !pageKey.includes(":")) {
+      for (const k of Object.keys(draft)) {
+        if (k.endsWith(`:${pageKey}`)) { entry = draft[k]; break; }
+      }
+    }
+    if (!entry) return true;
+    return viewport === "mobile" ? entry.mobile !== false : entry.pc !== false;
+  }, [draft]);
+
+  // 2026-10-13 · draft 토글 (서버 저장 X · 저장 버튼 클릭 시만 서버 반영)
+  const toggleDraft = useCallback((pageKey: string, viewport: "pc" | "mobile", visible: boolean) => {
+    setDraft(prev => {
+      const existing = prev[pageKey] ?? { pc: true, mobile: true };
+      const nextEntry = {
+        pc: viewport === "pc" ? visible : (existing.pc ?? true),
+        mobile: viewport === "mobile" ? visible : (existing.mobile ?? true),
+      };
+      const next = { ...prev, [pageKey]: nextEntry };
+      // 둘 다 true → 항목 삭제 (default = 노출)
+      if (nextEntry.pc && nextEntry.mobile) {
+        delete next[pageKey];
+      }
+      return next;
+    });
+  }, []);
+
+  // 변경 감지 · draft vs 서버값 (shallow diff 가 아닌 JSON 비교로 안전하게)
+  const dirty = useMemo(() => JSON.stringify(draft) !== JSON.stringify(visibility), [draft, visibility]);
+
+  const handleSave = useCallback(() => {
+    if (!dirty) return;
+    setAll(draft);
+  }, [dirty, draft, setAll]);
+
+  const handleReset = useCallback(() => {
+    setDraft(visibility);
+  }, [visibility]);
+
   return (
     <Card as="section" clip padding="none">
       <div className={SECTION_HEADER}>
@@ -513,8 +570,8 @@ export const MobileVisibilitySection: React.FC = () => {
         <div className="flex-1 min-w-0">
           <div className="text-[17px] font-bold text-zinc-800 leading-tight">메뉴 표시</div>
           <div className="text-[17px] text-zinc-500 mt-0.5">
-            {/* 2026-10-06 · 사용자 지시 · 메뉴 visibility 는 화면 종류와 관계없이 하나 · PC/모바일 동일 */}
-            페이지 노출 · 기본 · 표시 · 체크 해제 시 · PC · 반응형 · 모바일 모두 해당 페이지 숨김
+            {/* 2026-10-13 · 사용자 재지시 · PC/모바일 분리 · 2 체크박스 각각 토글 (2026-10-06 통일 override) */}
+            페이지별 · PC · 모바일 노출 각각 설정 · 체크 해제 시 해당 뷰포트에서 메뉴 숨김 · 변경 후 "저장" 클릭 필수
           </div>
         </div>
         <StatusBadge state={saveState as SaveState} />
@@ -525,41 +582,77 @@ export const MobileVisibilitySection: React.FC = () => {
             <div className="text-[17px] font-bold text-zinc-500 uppercase tracking-wide">
               {g.label}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
               {g.items.map((it) => {
-                // 2026-10-06 · 사용자 지시 · 단일 visibility toggle · PC/모바일 분리 UI 제거
-                //   · setVisible 가 내부적으로 pc + mobile 동시 저장 · viewport parameter 는 signature 호환 유지만
-                const on = isVisible(it.pageKey, "pc");
+                const pcOn = draftIsVisible(it.pageKey, "pc");
+                const mobileOn = draftIsVisible(it.pageKey, "mobile");
+                const bothOn = pcOn && mobileOn;
                 return (
-                  <label
+                  <div
                     key={`${g.id}-${it.pageKey}`}
                     className={[
-                      "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors cursor-pointer select-none",
-                      on
+                      "flex items-center gap-3 px-3 py-2 rounded-lg border transition-colors select-none",
+                      bothOn
                         ? "border-emerald-200 bg-emerald-50/40"
-                        : "border-violet-200 bg-violet-50/60",
+                        : (!pcOn && !mobileOn)
+                          ? "border-rose-200 bg-rose-50/40"
+                          : "border-violet-200 bg-violet-50/60",
                     ].join(" ")}
-                    title={`${it.label} · 메뉴 노출`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={on}
-                      onChange={(e) => setVisible(it.pageKey, "pc", e.target.checked)}
-                      className="w-4 h-4 accent-brand-deep cursor-pointer shrink-0"
-                      aria-label={`${it.label} 메뉴 노출`}
-                    />
-                    <span className="text-[17px] font-bold text-zinc-800 flex-1 min-w-0 truncate">
+                    <span className="text-[16px] font-bold text-zinc-800 flex-1 min-w-0 truncate">
                       {it.label}
                     </span>
-                    <span className={`text-[13px] font-semibold ${on ? "text-emerald-700" : "text-zinc-400"}`}>
-                      {on ? "표시" : "숨김"}
-                    </span>
-                  </label>
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer" title={`${it.label} · PC 노출`}>
+                      <input
+                        type="checkbox"
+                        checked={pcOn}
+                        onChange={(e) => toggleDraft(it.pageKey, "pc", e.target.checked)}
+                        className="w-4 h-4 accent-brand-deep cursor-pointer shrink-0"
+                        aria-label={`${it.label} PC 노출`}
+                      />
+                      <span className={`text-[13px] font-semibold ${pcOn ? "text-emerald-700" : "text-zinc-400"}`}>PC</span>
+                    </label>
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer" title={`${it.label} · 모바일 노출`}>
+                      <input
+                        type="checkbox"
+                        checked={mobileOn}
+                        onChange={(e) => toggleDraft(it.pageKey, "mobile", e.target.checked)}
+                        className="w-4 h-4 accent-brand-deep cursor-pointer shrink-0"
+                        aria-label={`${it.label} 모바일 노출`}
+                      />
+                      <span className={`text-[13px] font-semibold ${mobileOn ? "text-emerald-700" : "text-zinc-400"}`}>모바일</span>
+                    </label>
+                  </div>
                 );
               })}
             </div>
           </div>
         ))}
+      </div>
+      {/* 2026-10-13 · 사용자 지시 · 명시 "저장" 버튼 · dirty 일 때만 활성 */}
+      <div className="sticky bottom-0 border-t border-line bg-white/95 backdrop-blur px-4 py-2.5 flex items-center justify-between gap-2 z-10">
+        <div className="text-[13px] text-zinc-500">
+          {dirty ? "미저장 변경사항이 있습니다" : "모든 변경사항 저장됨"}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={!dirty}
+            className="px-3 py-1.5 rounded-md border border-zinc-200 bg-white text-[13px] font-semibold text-zinc-600 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+          >
+            되돌리기
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!dirty}
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-indigo-600 text-white text-[13px] font-semibold hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+          >
+            <FloppyDisk size={13} weight="fill" />
+            저장
+          </button>
+        </div>
       </div>
       {!loaded && (
         <div className="px-4 pb-3"><Spinner label="서버에서 설정을 불러오는 중…" size={14} tone="zinc" labelSize={15} /></div>
