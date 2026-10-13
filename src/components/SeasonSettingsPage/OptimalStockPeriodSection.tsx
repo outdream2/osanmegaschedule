@@ -15,6 +15,7 @@ import {
 } from "../../hooks/useOptimalStockPeriod";
 import { api, ApiError } from "../../lib/apiClient";
 import { getErrorMessage } from "../../lib/errorMessage";
+import { DOM_EVENTS, dispatchDomEvent } from "../../lib/domEvents";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
 import { Spinner } from "../common/Spinner";
@@ -98,7 +99,7 @@ export const OptimalStockPeriodSection: React.FC = () => {
         try {
           window.dispatchEvent(new CustomEvent("optimal-stock-updated"));
           window.dispatchEvent(new CustomEvent("products-map-updated"));
-          window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
+          dispatchDomEvent(DOM_EVENTS.INVENTORY_CHECKS_UPDATED);
         } catch { /* silent */ }
       } else {
         showError(data?.note ?? "재계산 결과 · 업데이트 0건");

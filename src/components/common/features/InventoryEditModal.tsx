@@ -7,6 +7,7 @@
 // 2026-09-14 · inventoryChecksApi 프리미티브 사용
 import React, { useState } from "react";
 import { saveInventoryCheck } from "../../../lib/inventoryChecksApi";
+import { DOM_EVENTS, dispatchDomEvent } from "../../../lib/domEvents";
 import { Modal } from "../Modal";
 import { InventoryEditPanel, type ZoneKey } from "../InventoryEditPanel";
 import type { CurrentValues } from "../InventoryEditPanel";
@@ -142,7 +143,7 @@ export const InventoryEditModal: React.FC<InventoryEditModalProps> = ({
       await saveInventoryCheck(payload);
       setCurrentValues(next);
       showSuccess("재고가 저장되었습니다");
-      window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
+      dispatchDomEvent(DOM_EVENTS.INVENTORY_CHECKS_UPDATED);
       onSaved?.();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "저장 중 오류가 발생했습니다.";

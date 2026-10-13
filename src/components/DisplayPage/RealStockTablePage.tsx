@@ -12,6 +12,7 @@ import { api, ApiError } from "../../lib/apiClient";
 // 2026-09-14 · inventoryChecksApi 프리미티브
 import { saveInventoryCheck } from "../../lib/inventoryChecksApi";
 import { getErrorMessage } from "../../lib/errorMessage";
+import { DOM_EVENTS, dispatchDomEvent } from "../../lib/domEvents";
 import { Card } from "../common/Card";
 // 2026-08-29 · framework audit · SegmentedControl 프리미티브
 import { SegmentedControl } from "../common/SegmentedControl";
@@ -285,7 +286,7 @@ export const RealStockTablePage: React.FC = () => {
       }));
       showSuccess(`${row.product_name} · ${SLOT_LABEL[slot]} = ${parsed} 저장`);
       // 2026-08-27 · source="real-stock" · self-dispatch skip 위한 태그
-      window.dispatchEvent(new CustomEvent("inventory-checks-updated", { detail: { source: "real-stock", productCode: row.product_code } }));
+      dispatchDomEvent(DOM_EVENTS.INVENTORY_CHECKS_UPDATED, { source: "real-stock", productCode: row.product_code });
       cancelEdit();
     } catch (e: unknown) {
       const msg = e instanceof ApiError ? e.message : getErrorMessage(e, "저장 실패");

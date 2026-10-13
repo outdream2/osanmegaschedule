@@ -34,6 +34,7 @@ import { classifyArrivalSlot } from "../../lib/warehouseZoneMap";
 import { Spinner } from "../common/Spinner";
 // 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
+import { DOM_EVENTS, dispatchDomEvent } from "../../lib/domEvents";
 
 // 2026-08-26 · P0 fix · 모달 body overflow-hidden 안 · autocomplete dropdown clip fix
 //   · createPortal 로 body 에 렌더 · getBoundingClientRect 기준 fixed positioning
@@ -373,9 +374,7 @@ export const ProductCreateModal: React.FC<Props> = ({
             shelf_positions: sp,
           });
           // 실재고 테이블 자동 동기
-          window.dispatchEvent(new CustomEvent("inventory-checks-updated", {
-            detail: { source: "product-modal", productCode: code },
-          }));
+          dispatchDomEvent(DOM_EVENTS.INVENTORY_CHECKS_UPDATED, { source: "product-modal", productCode: code });
         } catch (spErr: any) {
           devWarn(`[ProductCreateModal] shelf_positions 저장 실패 (경고 · 등록·수정은 성공): ${spErr?.message ?? spErr}`);
         }

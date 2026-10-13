@@ -8,6 +8,7 @@ import { api, ApiError } from "../../lib/apiClient";
 import { saveBulkInventoryChecks, listInventoryChecks, saveInventoryCheck } from "../../lib/inventoryChecksApi";
 import { PAGE_CONTAINER_CLS } from "../../styles/tokens";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
+import { DOM_EVENTS, dispatchDomEvent } from "../../lib/domEvents";
 import { useSortableTable, type Comparator, type SortDir } from "../../hooks/useSortableTable";
 import { SplitPanel } from "../common/SplitPanel";
 import { StatusPill } from "../common/StatusPill";
@@ -585,9 +586,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       } : r)));
       // 2026-09-17 · fix · 연동된 페이지 자동 refresh · DiffTab · OrderManage · ShelfPositionsMap · RealStockTable 등
       //   · 이전 · 저장 성공해도 · 다른 페이지 stale 데이터 유지 → 사용자 "저장 안 됨" 오해
-      window.dispatchEvent(new CustomEvent("inventory-checks-updated", {
-        detail: { source: "scan-page", productCode: row.code },
-      }));
+      dispatchDomEvent(DOM_EVENTS.INVENTORY_CHECKS_UPDATED, { source: "scan-page", productCode: row.code });
       showToast(`${row.product.name} · 저장 완료`);
     } catch (e: unknown) {
       const msg = e instanceof ApiError ? e.message : (e instanceof Error ? e.message : "저장 실패");
@@ -655,9 +654,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* noop */ }
       setDraftBanner(false);
       // 2026-09-17 · fix · 전체 저장 후 · 연동된 페이지 자동 refresh (DiffTab · OrderManage · RealStockTable · ShelfPositionsMap 등)
-      window.dispatchEvent(new CustomEvent("inventory-checks-updated", {
-        detail: { source: "scan-page-bulk", saved: savedNum, total: rows.length },
-      }));
+      dispatchDomEvent(DOM_EVENTS.INVENTORY_CHECKS_UPDATED, { source: "scan-page-bulk", saved: savedNum, total: rows.length });
       showToast(
         j.downgraded
           ? `${savedNum}건 저장 완료 (DB 컬럼 확장 대기 · 레거시 모드)`

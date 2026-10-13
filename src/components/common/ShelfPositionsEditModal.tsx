@@ -8,6 +8,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Minus, Plus, ChevronDown } from "lucide-react";
 import { api } from "../../lib/apiClient";
+import { DOM_EVENTS, dispatchDomEvent } from "../../lib/domEvents";
 import { devLog } from "../../lib/devLog";
 import { useStorageLocations } from "../../hooks/useStorageLocations";
 import { invalidateShelfPositionsMap, refetchShelfPositionsMap, patchShelfPositionsCache } from "../../hooks/useShelfPositionsMap";
@@ -279,7 +280,7 @@ export const ShelfPositionsEditModal: React.FC<ShelfPositionsEditModalProps> = (
       const freshMap = await refetchShelfPositionsMap();
       devLog("[ShelfPositionsEditModal] refetched map for code:", productCode, "value:", freshMap[productCode]);
       const saved = freshMap[productCode] ?? savedFromServer;
-      window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
+      dispatchDomEvent(DOM_EVENTS.INVENTORY_CHECKS_UPDATED);
       showSuccess("상세구역 저장 완료");
       onSaved?.(saved);
       onClose();

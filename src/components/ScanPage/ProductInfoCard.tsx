@@ -8,6 +8,7 @@ import { api, ApiError } from "../../lib/apiClient";
 import { saveInventoryCheck, listInventoryChecks } from "../../lib/inventoryChecksApi";
 import { createOrderRequest } from "../../lib/orderRequestsApi";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
+import { DOM_EVENTS, dispatchDomEvent } from "../../lib/domEvents";
 import { useConfirm } from "../../hooks/useConfirm";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
@@ -181,9 +182,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         checked_by: checkedBy ?? "",
       });
       statusSetters[field]("done");
-      window.dispatchEvent(new CustomEvent("inventory-checks-updated", {
-        detail: { product_code: product.code, field, value: Number(value) },
-      }));
+      dispatchDomEvent(DOM_EVENTS.INVENTORY_CHECKS_UPDATED, { product_code: product.code, field, value: Number(value) });
     } catch (e: any) {
       errorSetters[field](e instanceof ApiError ? e.message : (e?.message ?? "네트워크 오류"));
       statusSetters[field]("error");
