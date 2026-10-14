@@ -80,18 +80,20 @@ export const MonthGridV2: React.FC<GridProps> = ({
     return m;
   }, [employees, scheduleTypes]);
 
+  // 2026-10-12 · 사용자 "직원별 달력 화면 너비에 맞게" fix · cell 폭 축소 (160→100 · 72→44)
+  //   · 31일 기준 전체 폭 1464px (viewport 1600px+ 안 수용)
   return (
     <Card variant="sm" padding="none" rounded="xl" className="flex-1 min-h-0 overflow-auto">
       <table className="border-collapse text-[13px]" style={{ tableLayout: "fixed" }}>
         <colgroup>
-          <col style={{ width: 160 }} />
-          {dateList.map((d) => <col key={`col-${d}`} style={{ width: 72 }} />)}
+          <col style={{ width: 100 }} />
+          {dateList.map((d) => <col key={`col-${d}`} style={{ width: 44 }} />)}
         </colgroup>
         <thead>
           <tr>
             <th
               className="sticky top-0 left-0 z-40 bg-zinc-50 border-r border-b border-line text-left px-3 py-2 text-[14px] font-bold text-ink-soft tracking-tight"
-              style={{ minWidth: 160 }}
+              style={{ minWidth: 100 }}
             >
               성명
             </th>

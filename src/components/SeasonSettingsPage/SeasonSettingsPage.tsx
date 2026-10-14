@@ -32,6 +32,8 @@ interface Props {
   authSession: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  /** 2026-10-13 · #18 Phase 2 · SettingsHub inner tab embed · SettingsPageShell skip */
+  embedded?: boolean;
 }
 
 // 2026-09-13 · #88 · 탭 정의 · #52·#54 · 이벤트 관리 탭 추가
@@ -44,7 +46,7 @@ const STATS_TABS: TabDef<StatsTab>[] = [
   { key: "reco-rules", label: "추천 규칙",       icon: Sparkle,   color: "amber" },
 ];
 
-const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
+const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout, embedded = false }) => {
   const level = authSession?.level ?? 0;
   const employeeId = authSession?.employeeId;
 
@@ -86,30 +88,31 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
   };
 
   if (level < 9 || !employeeId) {
+    const accessBody = (
+      <SectionCard
+        title="접근 권한 필요"
+        icon={<Lock size={18} />}
+        tone="danger"
+        description="이 페이지는 관리자(lv 9) 전용입니다."
+      >
+        <div className="text-[16px] text-zinc-500 text-center py-4">
+          관리자 계정으로 로그인 후 · 다시 시도해주세요.
+        </div>
+      </SectionCard>
+    );
+    if (embedded) {
+      return <div data-scope="stats-settings" className="px-4 py-4">{accessBody}</div>;
+    }
     return (
-      // 2026-08-26 · data-scope 로 페이지 전체 감싸기 (헤더+콘텐츠 모두 +3)
       <div data-scope="stats-settings">
-        <SettingsPageShell {...commonShellProps}>
-          {/* 2026-08-29 · #122 P2 · 접근 제한 안내 · SectionCard (danger tone) */}
-          <SectionCard
-            title="접근 권한 필요"
-            icon={<Lock size={18} />}
-            tone="danger"
-            description="이 페이지는 관리자(lv 9) 전용입니다."
-          >
-            <div className="text-[16px] text-zinc-500 text-center py-4">
-              관리자 계정으로 로그인 후 · 다시 시도해주세요.
-            </div>
-          </SectionCard>
-        </SettingsPageShell>
+        <SettingsPageShell {...commonShellProps}>{accessBody}</SettingsPageShell>
       </div>
     );
   }
 
-  return (
-    // 2026-08-26 · 사용자 지시 · 통계설정 · 폰트 +3 · Shell 전체 감쌈 (헤더 포함)
-    <div data-scope="stats-settings">
-      <SettingsPageShell {...commonShellProps}>
+  // 2026-10-13 · #18 Phase 2 · body + shell 분리 · embedded 모드 지원
+  const body = (
+    <>
         {/* 2026-09-13 · #88 · 통계설정 · 탭메뉴로 변경 · TabBar level=2 · 계절 정의 · 재고·판매 필터 */}
         <TabBar
           level={2}
@@ -186,7 +189,17 @@ const SeasonSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
             </section>
           )}
         </div>
-      </SettingsPageShell>
+    </>
+  );
+
+  if (embedded) {
+    return <div data-scope="stats-settings" className="px-4 py-4">{body}</div>;
+  }
+
+  return (
+    // 2026-08-26 · 사용자 지시 · 통계설정 · 폰트 +3 · Shell 전체 감쌈 (헤더 포함)
+    <div data-scope="stats-settings">
+      <SettingsPageShell {...commonShellProps}>{body}</SettingsPageShell>
     </div>
   );
 };

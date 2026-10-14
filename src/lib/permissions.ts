@@ -36,8 +36,10 @@ export function canReadPage(session: AuthSession | null, perm: PagePermission | 
 }
 
 /** hidden 을 무시하는 · essential 페이지 (admin 접근 유지용) 판정
- *  · permissions/business-manage/account 등 · sidebar canAccessItem 과 동일 목록 */
-const ADMIN_ESSENTIAL_PAGES = new Set(["permissions", "business-manage", "account"]);
+ *  · permissions/business-manage · sidebar canAccessItem 과 동일 목록
+ *  · 2026-10-13 · "account" 제거 · 계정 그룹 삭제됨 (AppNavPage union 에 없음)
+ *  · 2026-10-13 · "settings-hub" 추가 · 설정 통합 대시보드 lockout 방지 (사용자 리포트 "튕겨나감") */
+const ADMIN_ESSENTIAL_PAGES = new Set(["permissions", "business-manage", "settings-hub"]);
 export function isAdminEssentialPage(pageKey: string): boolean {
   return ADMIN_ESSENTIAL_PAGES.has(pageKey);
 }

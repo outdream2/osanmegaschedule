@@ -1,23 +1,23 @@
 // src/components/RequestsPage/VendorApprovalPanel.tsx
+// 2026-10-12 · 사용자 지시 "거래처 승인 슬라이딩윈도우 UI 교체" (UI-7-3)
+//   · 기존: 각 vendor 카드 안에 모든 상세 inline 펼침 · 공간 많이 차지
+//   · 변경: 리스트 compact row · click → right slide-in drawer · 상세정보 + 거절/승인 drawer 안
+//   · 다른 slide drawer 패턴 (RequestsPage · VendorOverviewPage) 과 통일
+//
 // 2026-08-26 · #192 · 거래처 승인 목록 · RequestsPage 신규 탭
-//   · vendors.approval_status = "pending" 만 조회
+//   · vendors.approval_status = "pending" / "requested" 만 조회
 //   · 승인 · POST /api/vendors/:id/approve
 //   · 거절 · POST /api/vendors/:id/reject · 사유 optional
-//   · 연차승인 UX 참고 · 카드형 리스트 · 승인/거절 액션
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Building2, Check, X, Clock, RefreshCw, MessageSquare, Mail, Phone, ShieldAlert, User, ShoppingBag, MessageCircle, Hash, AlertTriangle } from "lucide-react";
+import { Building2, Check, X, Clock, RefreshCw, MessageSquare, Mail, Phone, ShieldAlert, User, ShoppingBag, MessageCircle, Hash, AlertTriangle, ChevronRight } from "lucide-react";
 import { api, ApiError } from "../../lib/apiClient";
 import { useToast, toastClass } from "../../hooks/useToast";
 import { useConfirm } from "../../hooks/useConfirm";
-import { Card } from "../common/Card";
 import { Spinner } from "../common/Spinner";
 import { EmptyState } from "../common/EmptyState";
 import { displayVendorName } from "../../utils/vendorNameNormalize";
-import { IconTile } from "../common/IconTile";
-import { StatusPill } from "../common/StatusPill";
 import { dispatchApprovalChange } from "../../lib/approvalEvents";
-// 2026-09-21 · #329 · 한글 IME 우선
 import { KO_INPUT_PROPS } from "../../lib/koreanInput";
 
 interface PendingVendor {
@@ -48,18 +48,18 @@ export const VendorApprovalPanel: React.FC = () => {
   const [rows, setRows] = useState<PendingVendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
-  const [rejectId, setRejectId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [rejectMode, setRejectMode] = useState(false);
+  // 2026-10-12 · drawer target
+  const [selected, setSelected] = useState<PendingVendor | null>(null);
   const { toast, showSuccess, showError } = useToast();
   const confirm = useConfirm();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // pending vendor 조회 · /api/vendors?withBalances=0 · 클라이언트에서 filter (신규 서버 endpoint 없음)
       const { data } = await api.get<any[]>("/api/vendors");
       const arr = Array.isArray(data) ? data : [];
-      // 2026-09-03 · 4-state · requested (신규 · vendor 승인 요청) + pending (하위호환)
       const pending = arr
         .filter((v: any) => v?.approval_status === "requested" || v?.approval_status === "pending")
         .sort((a: any, b: any) => String(b?.approval_requested_at ?? "").localeCompare(String(a?.approval_requested_at ?? "")));
@@ -75,6 +75,12 @@ export const VendorApprovalPanel: React.FC = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  const closeDrawer = useCallback(() => {
+    setSelected(null);
+    setRejectMode(false);
+    setRejectReason("");
+  }, []);
+
   const handleApprove = async (v: PendingVendor) => {
     const ok = await confirm({
       title: "거래처 승인",
@@ -87,6 +93,7 @@ export const VendorApprovalPanel: React.FC = () => {
       showSuccess(`${v.company_name} · 승인 완료`);
       dispatchApprovalChange();
       setRows(prev => prev.filter(x => x.id !== v.id));
+      closeDrawer();
     } catch (e: any) {
       const msg = e instanceof ApiError ? e.message : e?.message ?? "승인 실패";
       showError(`승인 실패 · ${msg}`);
@@ -102,8 +109,7 @@ export const VendorApprovalPanel: React.FC = () => {
       showSuccess(`${v.company_name} · 거절 완료`);
       dispatchApprovalChange();
       setRows(prev => prev.filter(x => x.id !== v.id));
-      setRejectId(null);
-      setRejectReason("");
+      closeDrawer();
     } catch (e: any) {
       const msg = e instanceof ApiError ? e.message : e?.message ?? "거절 실패";
       showError(`거절 실패 · ${msg}`);
@@ -120,215 +126,235 @@ export const VendorApprovalPanel: React.FC = () => {
         </div>
       )}
 
-      {/* 2026-09-03 · 사용자 지시 · 최신 트렌드 · Linear/Attio 톤 · 배지 X · 폰트 +2
-           · 헤더 · 대기 건수는 · 배지 대신 · 큰 숫자 · 도트 · 텍스트만 */}
-      <Card padding="lg" topAccent>
-        <div className="flex items-center gap-4">
-          <IconTile icon={<Building2 size={18} />} tone="brand" size="md" />
-          <div className="flex-1 min-w-0">
-            <div className="text-[19px] font-bold text-ink tracking-tight">거래처 승인 요청</div>
-            <div className="text-[15px] text-ink-soft mt-1">거래처 담당자가 필수 항목 완성 후 · 승인 요청</div>
+      {/* 2026-10-12 · 홈 랜딩 톤 compact header */}
+      <section className="bg-white border border-slate-200 rounded-[12px] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+        <header className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-slate-100 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <Building2 size={14} className="text-brand-deep shrink-0" />
+            <span className="text-[15px] font-semibold text-ink tracking-tight">거래처 승인 요청</span>
+            <span className={`inline-flex items-center h-6 px-2 rounded-md border text-[12.5px] font-semibold tabular-nums ${rows.length > 0 ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-slate-50 text-slate-500 border-slate-200"}`}>
+              대기 {rows.length}
+            </span>
+            <span className="text-[12.5px] text-slate-400 font-medium hidden sm:inline">· 담당자 필수 항목 완성 후 승인 요청</span>
           </div>
-          <div className="flex items-baseline gap-2 pr-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${rows.length > 0 ? "bg-amber-500" : "bg-zinc-300"}`} />
-            <span className="text-[15px] font-semibold text-ink-soft">대기</span>
-            <span className={`text-[24px] font-bold tabular-nums ${rows.length > 0 ? "text-amber-700" : "text-zinc-400"}`}>{rows.length}</span>
-            <span className="text-[15px] text-ink-soft">건</span>
-          </div>
-          <button
-            type="button"
-            onClick={load}
-            disabled={loading}
-            className="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-line bg-white hover:border-brand-deep/40 hover:bg-brand-tint/20 text-ink-soft hover:text-brand-deep transition cursor-pointer disabled:opacity-40"
-            title="새로고침"
-          >
-            <RefreshCw size={17} className={loading ? "animate-spin" : ""} />
+          <button type="button" onClick={load} disabled={loading}
+            className="inline-flex items-center h-8 px-2 rounded-md text-slate-500 hover:text-ink hover:bg-slate-50 text-[12.5px] font-medium transition-colors cursor-pointer"
+            title="새로고침">
+            <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
           </button>
-        </div>
-      </Card>
+        </header>
 
-      {/* 리스트 */}
-      {loading ? (
-        <Card padding="md" className="flex items-center justify-center py-16">
-          <Spinner size={18} tone="brand" label="승인 목록 로드 중..." labelSize={14} />
-        </Card>
-      ) : rows.length === 0 ? (
-        <Card padding="none">
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <Spinner size={14} tone="zinc" label="승인 목록 로드 중..." labelSize={13} />
+          </div>
+        ) : rows.length === 0 ? (
           <EmptyState icon={Building2} title="승인 대기 거래처 없음" hint="거래처가 필수 항목을 채우고 승인 요청 시 여기에 표시됩니다" />
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {rows.map(v => (
-            <Card key={v.id} padding="none" className="hover:border-brand-deep/40 hover:shadow-lg transition overflow-hidden">
-              {/* 2026-09-03 · Notion + Attio 톤 · 헤더 gradient · 정보 아이콘 · 여백 넉넉 */}
-              {/* 헤더 · gradient bg · 큰 회사명 + 사업자번호 · 요청시각 */}
-              <div className="px-6 py-5 bg-gradient-to-br from-brand-tint/40 via-white to-white border-b border-line">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-3 flex-wrap">
-                      <div className="text-[24px] font-bold text-ink tracking-tight">{displayVendorName(v.company_name) || v.company_name}</div>
+        ) : (
+          <ul className="flex flex-col divide-y divide-slate-100">
+            {rows.map(v => (
+              <li key={v.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelected(v)}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50/80 transition-colors cursor-pointer text-left"
+                >
+                  <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-[15px] font-semibold text-ink tracking-tight truncate">
+                        {displayVendorName(v.company_name) || v.company_name}
+                      </span>
                       {v.category && (
-                        <span className="text-[15px] font-semibold text-violet-600 tracking-tight">· {v.category}</span>
+                        <span className="text-[12.5px] font-semibold text-violet-600">· {v.category}</span>
                       )}
-                      {/* 2026-09-24 · E-012 · 사업자번호 헤더 노출 */}
                       {v.business_number && (
-                        <span className="flex items-center gap-1 text-[14px] font-semibold text-zinc-500 tabular-nums">
-                          <Hash size={13} />
+                        <span className="inline-flex items-center gap-0.5 text-[12px] text-slate-500 tabular-nums">
+                          <Hash size={11} />
                           {v.business_number}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 text-[14px] text-ink-soft mt-2 tabular-nums">
-                      <Clock size={13} />
-                      <span>승인 요청 {fmtDateTime(v.approval_requested_at)}</span>
+                    <div className="flex items-center gap-2 text-[12.5px] text-slate-500 flex-wrap">
+                      {v.order_method && (
+                        <span className="inline-flex items-center gap-1">
+                          <ShoppingBag size={11} className="text-brand-deep" />
+                          <span className="font-medium">{v.order_method}</span>
+                        </span>
+                      )}
+                      {v.contact_name && (
+                        <span className="inline-flex items-center gap-1">
+                          <User size={11} />
+                          <span>{v.contact_name}</span>
+                        </span>
+                      )}
+                      {v.phone && (
+                        <span className="inline-flex items-center gap-1 tabular-nums">
+                          <Phone size={11} />
+                          <span>{v.phone}</span>
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 tabular-nums text-slate-400 ml-auto">
+                        <Clock size={11} />
+                        <span>{fmtDateTime(v.approval_requested_at)}</span>
+                      </span>
                     </div>
                   </div>
+                  <ChevronRight size={16} className="text-slate-300 shrink-0" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* 2026-10-12 · right slide-in drawer · 다른 drawer 와 통일 */}
+      {selected && (
+        <>
+          <style>{`@keyframes vendorApprovalDrawerSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
+          <div
+            className="fixed inset-0 z-[80] bg-slate-900/30 backdrop-blur-[1px]"
+            onClick={closeDrawer}
+            aria-hidden
+          />
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="vendor-approval-drawer-title"
+            className="fixed right-0 top-0 bottom-0 z-[81] w-full sm:w-[480px] bg-white shadow-2xl flex flex-col"
+            style={{ animation: "vendorApprovalDrawerSlideIn 0.22s ease-out" }}
+          >
+            {/* drawer header */}
+            <header className="px-5 py-3.5 border-b border-slate-200 flex items-start justify-between gap-3 shrink-0">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <h2 id="vendor-approval-drawer-title" className="text-[17px] font-bold text-ink tracking-tight truncate">
+                    {displayVendorName(selected.company_name) || selected.company_name}
+                  </h2>
+                  {selected.category && (
+                    <span className="text-[13px] font-semibold text-violet-600">· {selected.category}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-[12.5px] text-slate-500 mt-1 flex-wrap tabular-nums">
+                  {selected.business_number && (
+                    <span className="inline-flex items-center gap-0.5"><Hash size={11} />{selected.business_number}</span>
+                  )}
+                  <span className="inline-flex items-center gap-1"><Clock size={11} />승인 요청 {fmtDateTime(selected.approval_requested_at)}</span>
                 </div>
               </div>
+              <button type="button" onClick={closeDrawer}
+                className="shrink-0 w-8 h-8 rounded-md flex items-center justify-center text-slate-400 hover:text-ink hover:bg-slate-100 transition-colors cursor-pointer"
+                aria-label="닫기"
+              >
+                <X size={16} />
+              </button>
+            </header>
 
-              {/* 정보 그룹핑 · 2026-09-24 · E-012 · Linear/Vercel 카드 그룹핑 스타일
-                  · 1행: 주문방식
-                  · 2행: 담당자 · 연락처 · 이메일 (3개 가로)
-                  · 3행: 팀장 · 팀장연락처 · 긴급연락처 (3개 가로)
-                  · 4행: 특이사항 · 비고 */}
-              <div className="px-6 pt-4 pb-2 flex flex-col gap-4">
+            {/* drawer body · 섹션별 그룹 */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
+              {/* 주문방식 */}
+              <DrawerField icon={<ShoppingBag size={14} className="text-brand-deep" />} label="주문방식" value={selected.order_method} />
 
-                {/* 1행 · 주문방식 */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-[12px] font-semibold text-ink-soft uppercase tracking-wide">주문방식</span>
+              <div className="h-px bg-slate-100" />
+
+              {/* 담당자·연락처·이메일 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                <DrawerField icon={<User size={14} className="text-slate-500" />} label="담당자" value={selected.contact_name} />
+                <DrawerField icon={<Phone size={14} className="text-slate-500" />} label="연락처" value={selected.phone} mono />
+                <DrawerField icon={<Mail size={14} className="text-slate-500" />} label="이메일" value={selected.email} />
+              </div>
+
+              <div className="h-px bg-slate-100" />
+
+              {/* 팀장·팀장연락처·긴급연락처 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+                <DrawerField icon={<User size={14} className="text-slate-400" />} label="팀장" value={selected.team_leader_name} />
+                <DrawerField icon={<Phone size={14} className="text-slate-400" />} label="팀장 연락처" value={selected.team_leader_phone} mono />
+                <DrawerField icon={<ShieldAlert size={14} className="text-rose-500" />} label="긴급 연락처" value={selected.emergency_contact} mono accent="rose" />
+              </div>
+
+              <div className="h-px bg-slate-100" />
+
+              {/* 특이사항·비고 */}
+              <DrawerField icon={<AlertTriangle size={14} className="text-amber-500" />} label="특이사항" value={selected.special_notes} accent="amber" />
+              <DrawerField icon={<MessageCircle size={14} className="text-slate-400" />} label="비고" value={selected.note} />
+            </div>
+
+            {/* drawer footer · 액션 */}
+            <footer className="shrink-0 border-t border-slate-200 bg-slate-50/40 px-5 py-3 flex flex-col gap-2">
+              {rejectMode ? (
+                <>
                   <div className="flex items-center gap-2">
-                    <ShoppingBag size={15} className="text-brand-deep shrink-0" />
-                    <span className={`text-[17px] font-bold ${v.order_method ? "text-ink" : "text-zinc-300 italic font-medium"}`}>
-                      {v.order_method ?? "미입력"}
-                    </span>
+                    <MessageSquare size={13} className="text-rose-500 shrink-0" />
+                    <input
+                      type="text" {...KO_INPUT_PROPS}
+                      value={rejectReason}
+                      onChange={e => setRejectReason(e.target.value)}
+                      placeholder="거절 사유 (선택 · 500자)"
+                      maxLength={500}
+                      autoFocus
+                      className="flex-1 h-9 px-3 rounded-md border border-rose-200 bg-white text-[13.5px] focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-400 transition"
+                    />
                   </div>
-                </div>
-
-                {/* 구분선 */}
-                <div className="border-t border-line" />
-
-                {/* 2행 · 담당자 · 연락처 · 이메일 */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <InfoInlineField icon={<User size={15} />} label="담당자" value={v.contact_name} />
-                  <InfoInlineField icon={<Phone size={15} />} label="연락처" value={v.phone} mono />
-                  <InfoInlineField icon={<Mail size={15} />} label="이메일" value={v.email} />
-                </div>
-
-                {/* 구분선 */}
-                <div className="border-t border-line" />
-
-                {/* 3행 · 팀장 · 팀장연락처 · 긴급연락처 */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <InfoInlineField icon={<User size={15} className="text-zinc-400" />} label="팀장" value={v.team_leader_name} />
-                  <InfoInlineField icon={<Phone size={15} className="text-zinc-400" />} label="팀장 연락처" value={v.team_leader_phone} mono />
-                  <InfoInlineField icon={<ShieldAlert size={15} className="text-rose-500" />} label="긴급 연락처" value={v.emergency_contact} mono />
-                </div>
-
-                {/* 구분선 */}
-                <div className="border-t border-line" />
-
-                {/* 4행 · 특이사항 · 비고 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-1">
-                  <InfoInlineField icon={<AlertTriangle size={15} className="text-amber-500" />} label="특이사항" value={v.special_notes} accent />
-                  <InfoInlineField icon={<MessageCircle size={15} />} label="비고" value={v.note} />
-                </div>
-
-              </div>
-
-              {/* 액션 영역 wrapper */}
-              <div className="px-6 pb-5">
-
-
-              {/* 거절 사유 입력 · rejectId 매치 시 */}
-              {rejectId === v.id && (
-                <div className="mb-4 flex items-center gap-2">
-                  <MessageSquare size={15} className="text-rose-500 shrink-0" />
-                  <input
-                    type="text" {...KO_INPUT_PROPS}
-                    value={rejectReason}
-                    onChange={e => setRejectReason(e.target.value)}
-                    placeholder="거절 사유 (선택 · 500자)"
-                    maxLength={500}
-                    className="flex-1 h-11 px-4 rounded-lg border border-rose-300 bg-white text-[15px] focus:outline-none focus:ring-2 focus:ring-rose-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => { setRejectId(null); setRejectReason(""); }}
-                    className="h-11 px-4 rounded-lg border border-line text-[15px] font-semibold text-ink-soft hover:bg-zinc-50 cursor-pointer"
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRejectSubmit(v)}
-                    disabled={busyId === v.id}
-                    className="inline-flex items-center gap-2 h-11 px-5 rounded-lg text-[15px] font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 cursor-pointer"
-                  >
-                    {busyId === v.id ? <Spinner size={13} tone="white" /> : <X size={14} />}
-                    거절 확정
-                  </button>
-                </div>
-              )}
-
-              {/* 액션 · 승인 / 거절 · 폰트 +2 · 배지 X · 모던 톤 */}
-              {rejectId !== v.id && (
-                <div className="flex items-center gap-3 justify-end pt-1">
-                  <button
-                    type="button"
-                    onClick={() => { setRejectId(v.id); setRejectReason(""); }}
-                    disabled={busyId === v.id}
-                    className="inline-flex items-center gap-2 h-11 px-5 rounded-lg text-[15px] font-bold text-rose-700 bg-white border border-rose-300 hover:bg-rose-50 disabled:opacity-40 cursor-pointer transition"
-                  >
-                    <X size={14} strokeWidth={2.5} />
+                  <div className="flex items-center gap-2 justify-end">
+                    <button type="button" onClick={() => { setRejectMode(false); setRejectReason(""); }}
+                      className="h-9 px-4 rounded-md border border-slate-200 bg-white text-[13.5px] font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer">
+                      취소
+                    </button>
+                    <button type="button" onClick={() => handleRejectSubmit(selected)} disabled={busyId === selected.id}
+                      className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white text-[13.5px] font-semibold transition-colors cursor-pointer">
+                      {busyId === selected.id ? <Spinner size={11} tone="white" /> : <X size={13} strokeWidth={2.5} />}
+                      거절 확정
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 justify-end">
+                  <button type="button" onClick={() => setRejectMode(true)} disabled={busyId === selected.id}
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-md border border-rose-200 bg-white text-rose-600 hover:bg-rose-50 disabled:opacity-40 text-[13.5px] font-semibold transition-colors cursor-pointer">
+                    <X size={13} strokeWidth={2.5} />
                     거절
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApprove(v)}
-                    disabled={busyId === v.id}
-                    className="inline-flex items-center gap-2 h-11 px-6 rounded-lg text-[15px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm ring-2 ring-emerald-300/30 disabled:opacity-40 cursor-pointer transition"
-                  >
-                    {busyId === v.id ? <Spinner size={13} tone="white" /> : <Check size={14} strokeWidth={2.5} />}
+                  <button type="button" onClick={() => handleApprove(selected)} disabled={busyId === selected.id}
+                    className="inline-flex items-center gap-1.5 h-9 px-5 rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-[13.5px] font-semibold transition-colors cursor-pointer">
+                    {busyId === selected.id ? <Spinner size={11} tone="white" /> : <Check size={13} strokeWidth={2.5} />}
                     승인
                   </button>
                 </div>
               )}
-              </div>
-            </Card>
-          ))}
-        </div>
+            </footer>
+          </aside>
+        </>
       )}
     </div>
   );
 };
 
-// 2026-09-03 · Notion + Attio 톤 · 아이콘 + 라벨(15px) + 값(17px) · 여백 넉넉 (기존 유지 · 내부 미사용 대비)
-const InfoField: React.FC<{ icon: React.ReactNode; label: string; value: string | null; mono?: boolean }> = ({ icon, label, value, mono }) => (
-  <div className="flex items-start gap-3 min-w-0">
-    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-tint/50 text-brand-deep shrink-0 mt-0.5">
-      {icon}
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="text-[15px] font-semibold text-ink-soft mb-0.5">{label}</div>
-      <div className={`${mono ? "tabular-nums" : ""} text-[17px] font-bold text-ink break-words ${!value ? "text-zinc-300 font-medium italic" : ""}`}>
-        {value ?? "미입력"}
+// 2026-10-12 · drawer 내부 field · 라벨 (12px 캡션) + 아이콘 + 값 (14px 세미볼드)
+const DrawerField: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: string | null;
+  mono?: boolean;
+  accent?: "amber" | "rose";
+}> = ({ icon, label, value, mono, accent }) => {
+  const valueCls = !value
+    ? "text-slate-300 italic font-medium"
+    : accent === "amber"
+    ? "text-amber-700"
+    : accent === "rose"
+    ? "text-rose-600"
+    : "text-ink";
+  return (
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <span className="text-[11.5px] font-semibold text-slate-500 uppercase tracking-wide">{label}</span>
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className="shrink-0">{icon}</span>
+        <span className={`text-[14px] font-semibold break-words whitespace-normal leading-snug ${mono ? "tabular-nums" : ""} ${valueCls}`}>
+          {value ?? "미입력"}
+        </span>
       </div>
     </div>
-  </div>
-);
-
-// 2026-09-24 · E-012 · 인라인 그룹핑용 · 라벨(12px 회색 캡션) + 아이콘+값(가로) · Linear 톤
-// accent=true · 특이사항 · amber 강조
-const InfoInlineField: React.FC<{ icon: React.ReactNode; label: string; value: string | null; mono?: boolean; accent?: boolean }> = ({ icon, label, value, mono, accent }) => (
-  <div className="flex flex-col gap-1 min-w-0">
-    <span className="text-[12px] font-semibold text-ink-soft uppercase tracking-wide">{label}</span>
-    <div className={`flex items-center gap-2 ${accent && value ? "text-amber-700" : ""}`}>
-      <span className="shrink-0">{icon}</span>
-      <span className={`text-[16px] font-semibold break-words whitespace-normal leading-tight ${mono ? "tabular-nums" : ""} ${!value ? "text-zinc-300 italic font-medium text-[15px]" : ""}`}>
-        {value ?? "미입력"}
-      </span>
-    </div>
-  </div>
-);
+  );
+};
 
 export default VendorApprovalPanel;

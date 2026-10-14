@@ -40,6 +40,8 @@ export interface EmployeeUpdatePayload {
   annual_leave_days?: number | null;
   level?: number | null;
   address?: string | null;
+  // 2026-10-13 · 사용자 지시 "주소. 상세주소창" · DB migration (2026-10-12_employees_address_detail.sql) 선행
+  address_detail?: string | null;
   email?: string | null;
   bankbook_image_url?: string | null;
   // 2026-08-16 · #122 · 사번 (create · 사용자 편집 or 자동 생성)

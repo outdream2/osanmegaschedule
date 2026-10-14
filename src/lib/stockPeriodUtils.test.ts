@@ -93,8 +93,8 @@ describe("periodLabel · 기간 라벨", () => {
 
 describe("fillPeriodsWithRows · 기간 채움", () => {
   const makeEmpty = (start: string, end: string, type: "early" | "mid" | "late"): PeriodRow => ({
-    period_start_date: start,
-    snapshot_date: end,
+    period_start: start,
+    period_end: end,
     period_type: type,
   });
 
@@ -113,14 +113,14 @@ describe("fillPeriodsWithRows · 기간 채움", () => {
     const mm = todayUtc.slice(5, 7);
     const start = `${yy}-${mm}-01`;
     const existing: PeriodRow = {
-      period_start_date: start,
-      snapshot_date: `${yy}-${mm}-10`,
+      period_start: start,
+      period_end: `${yy}-${mm}-10`,
       period_type: "early" as const,
-      purchase_qty: 999,
+      buy_stock: 999,
     };
     const r = fillPeriodsWithRows([existing], 30, makeEmpty);
-    const matched = r.find(x => x.period_start_date === start);
-    expect(matched?.purchase_qty).toBe(999);
+    const matched = r.find(x => x.period_start === start);
+    expect(matched?.buy_stock).toBe(999);
   });
 
   it("반환 · 배열 · rangeDays 커버", () => {
@@ -138,81 +138,81 @@ describe("aggregateToMonths · 10일 기간 → 월별 집계", () => {
 
   it("동일 월 · early/mid/late · 합계 집계", () => {
     const rows = [
-      { period_start_date: "2026-07-01", snapshot_date: "2026-07-10", period_type: "early",
-        opening_stock: 100, purchase_qty: 10, sale_qty: 5, disposal_qty: 1,
+      { period_start: "2026-07-01", period_end: "2026-07-10", period_type: "early",
+        prv_stock: 100, buy_stock: 10, sale_stock: 5, product_bad_stock: 1,
         closing_stock: 104, supply_amount: 1000, total_amount: 1100, product_count: 50 },
-      { period_start_date: "2026-07-11", snapshot_date: "2026-07-20", period_type: "mid",
-        opening_stock: 104, purchase_qty: 20, sale_qty: 8, disposal_qty: 0,
+      { period_start: "2026-07-11", period_end: "2026-07-20", period_type: "mid",
+        prv_stock: 104, buy_stock: 20, sale_stock: 8, product_bad_stock: 0,
         closing_stock: 116, supply_amount: 2000, total_amount: 2200, product_count: 55 },
-      { period_start_date: "2026-07-21", snapshot_date: "2026-07-31", period_type: "late",
-        opening_stock: 116, purchase_qty: 15, sale_qty: 10, disposal_qty: 2,
+      { period_start: "2026-07-21", period_end: "2026-07-31", period_type: "late",
+        prv_stock: 116, buy_stock: 15, sale_stock: 10, product_bad_stock: 2,
         closing_stock: 119, supply_amount: 1500, total_amount: 1650, product_count: 60 },
     ];
     const r = aggregateToMonths(rows);
     expect(r).toHaveLength(1);
-    expect(r[0].period_start_date).toBe("2026-07-01");
-    expect(r[0].purchase_qty).toBe(45);
-    expect(r[0].sale_qty).toBe(23);
-    expect(r[0].disposal_qty).toBe(3);
+    expect(r[0].period_start).toBe("2026-07-01");
+    expect(r[0].buy_stock).toBe(45);
+    expect(r[0].sale_stock).toBe(23);
+    expect(r[0].product_bad_stock).toBe(3);
     expect(r[0].supply_amount).toBe(4500);
     expect(r[0].total_amount).toBe(4950);
   });
 
-  it("opening_stock · 가장 이른 snapshot 기준", () => {
+  it("prv_stock · 가장 이른 snapshot 기준", () => {
     const rows = [
-      { period_start_date: "2026-07-11", snapshot_date: "2026-07-20", period_type: "mid",
-        opening_stock: 200 },
-      { period_start_date: "2026-07-01", snapshot_date: "2026-07-10", period_type: "early",
-        opening_stock: 100 },
+      { period_start: "2026-07-11", period_end: "2026-07-20", period_type: "mid",
+        prv_stock: 200 },
+      { period_start: "2026-07-01", period_end: "2026-07-10", period_type: "early",
+        prv_stock: 100 },
     ];
     const r = aggregateToMonths(rows);
-    expect(r[0].opening_stock).toBe(100);
+    expect(r[0].prv_stock).toBe(100);
   });
 
   it("closing_stock · 가장 늦은 snapshot 기준", () => {
     const rows = [
-      { period_start_date: "2026-07-01", snapshot_date: "2026-07-10", period_type: "early",
+      { period_start: "2026-07-01", period_end: "2026-07-10", period_type: "early",
         closing_stock: 100 },
-      { period_start_date: "2026-07-21", snapshot_date: "2026-07-31", period_type: "late",
+      { period_start: "2026-07-21", period_end: "2026-07-31", period_type: "late",
         closing_stock: 300 },
     ];
     const r = aggregateToMonths(rows);
     expect(r[0].closing_stock).toBe(300);
-    expect(r[0].snapshot_date).toBe("2026-07-31");
+    expect(r[0].period_end).toBe("2026-07-31");
   });
 
   it("여러 월 · 각각 집계 · start 기준 정렬", () => {
     const rows = [
-      { period_start_date: "2026-08-01", snapshot_date: "2026-08-10", period_type: "early",
-        purchase_qty: 5 },
-      { period_start_date: "2026-06-01", snapshot_date: "2026-06-10", period_type: "early",
-        purchase_qty: 3 },
-      { period_start_date: "2026-07-01", snapshot_date: "2026-07-10", period_type: "early",
-        purchase_qty: 7 },
+      { period_start: "2026-08-01", period_end: "2026-08-10", period_type: "early",
+        buy_stock: 5 },
+      { period_start: "2026-06-01", period_end: "2026-06-10", period_type: "early",
+        buy_stock: 3 },
+      { period_start: "2026-07-01", period_end: "2026-07-10", period_type: "early",
+        buy_stock: 7 },
     ];
     const r = aggregateToMonths(rows);
     expect(r).toHaveLength(3);
-    expect(r[0].period_start_date).toBe("2026-06-01");
-    expect(r[1].period_start_date).toBe("2026-07-01");
-    expect(r[2].period_start_date).toBe("2026-08-01");
+    expect(r[0].period_start).toBe("2026-06-01");
+    expect(r[1].period_start).toBe("2026-07-01");
+    expect(r[2].period_start).toBe("2026-08-01");
   });
 
   it("잘못된 date 포맷 · skip", () => {
     const rows = [
-      { period_start_date: "invalid", snapshot_date: "2026-07-10", period_type: "early",
-        purchase_qty: 100 },
-      { period_start_date: "2026-07-01", snapshot_date: "2026-07-10", period_type: "early",
-        purchase_qty: 5 },
+      { period_start: "invalid", period_end: "2026-07-10", period_type: "early",
+        buy_stock: 100 },
+      { period_start: "2026-07-01", period_end: "2026-07-10", period_type: "early",
+        buy_stock: 5 },
     ];
     const r = aggregateToMonths(rows);
     expect(r).toHaveLength(1);
-    expect(r[0].purchase_qty).toBe(5);
+    expect(r[0].buy_stock).toBe(5);
   });
 
   it("_first_snap · _last_snap 은 반환 제외", () => {
     const rows = [
-      { period_start_date: "2026-07-01", snapshot_date: "2026-07-10", period_type: "early",
-        opening_stock: 100 },
+      { period_start: "2026-07-01", period_end: "2026-07-10", period_type: "early",
+        prv_stock: 100 },
     ];
     const r = aggregateToMonths(rows);
     expect((r[0] as any)._first_snap).toBeUndefined();
@@ -221,11 +221,11 @@ describe("aggregateToMonths · 10일 기간 → 월별 집계", () => {
 
   it("product_count · Math.max 처리", () => {
     const rows = [
-      { period_start_date: "2026-07-01", snapshot_date: "2026-07-10", period_type: "early",
+      { period_start: "2026-07-01", period_end: "2026-07-10", period_type: "early",
         product_count: 30 },
-      { period_start_date: "2026-07-11", snapshot_date: "2026-07-20", period_type: "mid",
+      { period_start: "2026-07-11", period_end: "2026-07-20", period_type: "mid",
         product_count: 55 },
-      { period_start_date: "2026-07-21", snapshot_date: "2026-07-31", period_type: "late",
+      { period_start: "2026-07-21", period_end: "2026-07-31", period_type: "late",
         product_count: 40 },
     ];
     const r = aggregateToMonths(rows);
@@ -234,12 +234,12 @@ describe("aggregateToMonths · 10일 기간 → 월별 집계", () => {
 
   it("undefined 필드 · 0으로 처리", () => {
     const rows = [
-      { period_start_date: "2026-07-01", snapshot_date: "2026-07-10", period_type: "early" },
+      { period_start: "2026-07-01", period_end: "2026-07-10", period_type: "early" },
     ];
     const r = aggregateToMonths(rows);
-    expect(r[0].purchase_qty).toBe(0);
-    expect(r[0].sale_qty).toBe(0);
-    expect(r[0].disposal_qty).toBe(0);
+    expect(r[0].buy_stock).toBe(0);
+    expect(r[0].sale_stock).toBe(0);
+    expect(r[0].product_bad_stock).toBe(0);
     expect(r[0].supply_amount).toBe(0);
     expect(r[0].total_amount).toBe(0);
   });

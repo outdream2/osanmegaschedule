@@ -521,10 +521,14 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
   const monthsListFrom = monthsParsed.from;
   const monthsListTo = monthsParsed.to;
 
+  // 2026-10-12 · 사용자 리포트 "10월 1건인데 UI 에 여러 번 · 말이 안돼" · pagination 중복 fix
+  //   · 근본 원인: ORDER BY purchase_date 만 사용 (unique 아님) · PostgreSQL pagination 시 같은 row 재등장 가능
+  //   · 해결: id tie-breaker 추가 (unique) · range(0, 999) · range(1000, 1999) 모두 안정적 결과 보장
   let q = supabase
     .from("purchase_details")
     .select("id, purchase_date, period_start_date, period_type, supplier_code, supplier_name, product_code, product_name, spec, quantity, unit_price, amount, vat, total")
-    .order("purchase_date", { ascending: false });
+    .order("purchase_date", { ascending: false })
+    .order("id", { ascending: false });
 
   if (productCode) q = q.eq("product_code", productCode);
   // 2026-09-07 · #116 · supplier 파라미터 서버 필터 추가 (기존: 읽고 버림 → 클라이언트만 필터)
@@ -578,6 +582,22 @@ router.get("/api/purchase-details", asyncHandler(async (req, res) => {
       rows.push(...batch);
       if (batch.length < take) break; // 더 이상 없음
       offset += take;
+    }
+    // 2026-10-12 · 사용자 리포트 "10월 1건인데 UI 중복" 방어 · id 기준 dedup (ORDER unstable fallback)
+    if (rows.length > 0) {
+      const seen = new Set<number>();
+      const deduped: typeof rows = [];
+      for (const r of rows) {
+        const id = Number(r.id);
+        if (!Number.isFinite(id)) { deduped.push(r); continue; }
+        if (seen.has(id)) continue;
+        seen.add(id);
+        deduped.push(r);
+      }
+      if (deduped.length !== rows.length) {
+        logger.warn(`[purchase-details] pagination 중복 제거: ${rows.length} → ${deduped.length}`);
+      }
+      rows = deduped;
     }
   }
   // 계절 월 필터 (년도 무관) — SQL EXTRACT 미지원이므로 후처리

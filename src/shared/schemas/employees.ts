@@ -17,6 +17,9 @@ const BaseEmployeeShape = {
   annual_leave_days: z.number().min(0).max(365).nullable().optional(),
   level: z.number().min(0).max(9).nullable().optional(),
   address: z.string().max(300).nullable().optional(),
+  // 2026-10-13 · migration 2026-10-12_employees_address_detail.sql 선 준비
+  //   · 지금은 UI 가 base+detail concat 저장 → payload 에 안 들어오지만, 추후 UI 분리 저장 전환 시 자동 반영
+  address_detail: z.string().max(300).nullable().optional(),
   email: z.string().email("이메일 형식 오류").nullable().optional().or(z.literal("")),
   bankbook_image_url: z.string().nullable().optional(),
   employee_number: z.string().max(20).nullable().optional(),

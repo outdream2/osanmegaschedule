@@ -185,10 +185,11 @@ describe("getEffectivePerm", () => {
 });
 
 describe("isAdminEssentialPage", () => {
-  it("permissions/business-manage/account · true", () => {
+  it("permissions/business-manage · true", () => {
     expect(isAdminEssentialPage("permissions")).toBe(true);
     expect(isAdminEssentialPage("business-manage")).toBe(true);
-    expect(isAdminEssentialPage("account")).toBe(true);
+    // 2026-10-13 · "account" 제거 · 계정 그룹 사이드바에서 삭제됨
+    expect(isAdminEssentialPage("account")).toBe(false);
   });
 
   it("그 외 · false", () => {

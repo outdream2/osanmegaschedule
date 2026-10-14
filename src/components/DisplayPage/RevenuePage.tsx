@@ -11,6 +11,8 @@ import { api } from "../../lib/apiClient";
 import { Modal } from "../common/Modal";
 // 2026-10-09 · UI-4 · overview 상단 공통 모듈
 import { OverviewHero, OverviewInnerTabs, type OverviewInnerTab } from "./overviews/OverviewHeader";
+// 2026-10-12 · 사용자 지시 "시간대별 월별 상품별 inner tab" · 상품별 매출 panel + 공통 기간 필터 적용
+import { ProductsReportTab } from "./RevenuePage.ProductsReport";
 import { CalendarDays } from "lucide-react";
 import { LineChart, Line, Bar, ComposedChart, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from "recharts";
 import { shortDateWithDow } from "../../lib/dateFormat";
@@ -20,7 +22,8 @@ import { MonthToggleSelector, dateRangesFromMonths } from "../common/MonthToggle
 // 2026-10-07 · DayDetailModal · 날짜별 상품 ERP 실시간 조회 · 상비약/일반약 분류 필터
 import { CLASS_FILTER_LABEL, type ClassFilter, type ProductClass } from "../../utils/productClassify";
 
-type RevenueTab = "hourly" | "monthly";
+// 2026-10-12 · 사용자 지시 "시간대별 월별 상품별로 inner tab" · products tab 추가
+type RevenueTab = "hourly" | "monthly" | "products";
 // 2026-10-09 · 사용자 지시 · 판매·매출현황 페이지 상단 탭 (매출 | 판매)
 type TopTab = "revenue" | "sales";
 // 2026-10-10 · #13 · 판매현황 대시보드 신규 (공급사·구역·급상승·손실 중심 · 재고↔판매 혼합)
@@ -152,8 +155,9 @@ export const RevenuePage: React.FC<RevenuePageProps> = ({ initialTab = "revenue"
           <div className="px-4 sm:px-6 pt-3 shrink-0">
             <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
               {([
-                { k: "hourly" as const,  label: "시간대별" },
-                { k: "monthly" as const, label: "월별" },
+                { k: "hourly" as const,   label: "시간대별" },
+                { k: "monthly" as const,  label: "월별" },
+                { k: "products" as const, label: "상품별" },
               ]).map((t) => (
                 <button key={t.k} type="button" onClick={() => setTab(t.k)}
                   className={`px-3 py-1.5 rounded-md text-[13px] md:text-[14px] font-medium transition-colors ${
@@ -166,7 +170,10 @@ export const RevenuePage: React.FC<RevenuePageProps> = ({ initialTab = "revenue"
           </div>
 
           <div className="px-4 sm:px-6">
-            {tab === "hourly" ? <HourlyReportTab /> : <MonthlyReportTab />}
+            {/* 2026-10-12 · 사용자 지시 "상품별 inner tab 구현 + 공통 기간 필터 적용" · ProductsReportTab lazy embed */}
+            {tab === "hourly" ? <HourlyReportTab />
+              : tab === "monthly" ? <MonthlyReportTab />
+              : <ProductsReportTab />}
           </div>
         </>
       ) : (

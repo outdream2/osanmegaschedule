@@ -87,23 +87,28 @@ function makeSupabaseChain(
 // ═══════════════════════════════════════════════════════════
 
 describe("dayDiff · 날짜 계산 헬퍼", () => {
+  // 2026-10-13 · 소스는 로컬 자정 기준 (setHours(0,0,0,0)) · 테스트도 로컬 YYYY-MM-DD 로 통일
+  //   · 이전 · toISOString().slice(0,10) → UTC 날짜 → KST 환경 00:00~09:00 사이에 off-by-1 flaky
+  const toLocalYmd = (d: Date): string =>
+    `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+
   it("오늘 날짜 · 0", () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toLocalYmd(new Date());
     expect(dayDiff(today)).toBe(0);
   });
 
   it("내일 · 1", () => {
-    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const tomorrow = toLocalYmd(new Date(Date.now() + 86400000));
     expect(dayDiff(tomorrow)).toBe(1);
   });
 
   it("7일 후 · 7", () => {
-    const d7 = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    const d7 = toLocalYmd(new Date(Date.now() + 7 * 86400000));
     expect(dayDiff(d7)).toBe(7);
   });
 
   it("어제 · -1", () => {
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const yesterday = toLocalYmd(new Date(Date.now() - 86400000));
     expect(dayDiff(yesterday)).toBe(-1);
   });
 

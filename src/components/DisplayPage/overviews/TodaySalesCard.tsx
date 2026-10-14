@@ -8,7 +8,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowsVertical, X as XIcon, Warning } from "@phosphor-icons/react";
-import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
+import { ComposedChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, Legend } from "recharts";
 import { api } from "../../../lib/apiClient";
 import { Spinner } from "../../common/Spinner";
 
@@ -209,11 +209,23 @@ export const TodaySalesCard: React.FC = () => {
       {/* 마진율별 수량·금액 bar chart · click 시 drawer */}
       {!loading && !error && items.length > 0 && (
         <div className="px-5 py-3 border-b border-slate-100">
-          <div className="flex items-center gap-2 mb-2">
+          {/* 2026-10-12 · 사용자 지시 · 막대 2개 설명 · 좌축 수량 (진한색) · 우축 금액 (연한색) · bar 클릭 drawer */}
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <Warning size={13} className="text-amber-600" weight="bold" />
-            <span className="text-[12.5px] md:text-[13px] font-medium text-slate-600">마진율별 수량·금액 · <span className="text-slate-400">bar 클릭 → 상품 리스트</span></span>
+            <span className="text-[12.5px] md:text-[13px] font-medium text-slate-600">마진율별 수량·금액</span>
+            <span className="text-[12px] text-slate-400">· bar 클릭 → 상품 리스트</span>
+            <span className="ml-auto inline-flex items-center gap-2 text-[11px] font-medium text-slate-500">
+              <span className="inline-flex items-center gap-1">
+                <span className="w-3 h-3 rounded-sm bg-slate-400 shrink-0" aria-hidden />
+                <span>진한 bar · 수량 (좌축)</span>
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="w-3 h-3 rounded-sm bg-slate-400/40 border border-slate-300 shrink-0" aria-hidden />
+                <span>연한 bar · 금액 (우축)</span>
+              </span>
+            </span>
           </div>
-          <div className="h-[180px]">
+          <div className="h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={chartData} margin={{ top: 8, right: 10, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
@@ -225,19 +237,28 @@ export const TodaySalesCard: React.FC = () => {
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E2E8F0" }}
                   formatter={(value: any, name: any) => {
-                    if (name === "수량") return [Number(value).toLocaleString(), "수량"];
-                    if (name === "금액") return [`${Number(value).toLocaleString()}원`, "금액"];
+                    if (name === "수량 (좌축)") return [Number(value).toLocaleString(), "수량"];
+                    if (name === "금액 (우축)") return [`${Number(value).toLocaleString()}원`, "금액"];
                     return [value, name];
                   }}
                 />
-                <Bar yAxisId="qty" dataKey="qty" name="수량" radius={[4, 4, 0, 0]} cursor="pointer"
+                {/* 2026-10-12 · Recharts Legend · 2 bar 설명 · 가운데 상단 */}
+                <Legend
+                  verticalAlign="top"
+                  align="center"
+                  height={24}
+                  iconType="rect"
+                  iconSize={10}
+                  wrapperStyle={{ fontSize: 11, color: "#64748B" }}
+                />
+                <Bar yAxisId="qty" dataKey="qty" name="수량 (좌축)" radius={[4, 4, 0, 0]} cursor="pointer"
                   onClick={(d: any) => {
                     const b = MARGIN_BUCKETS.find(x => x.k === d.bucketKey);
                     if (b) setDrawerBucket(b);
                   }}>
                   {chartData.map((d) => (<Cell key={d.bucketKey} fill={d.color} />))}
                 </Bar>
-                <Bar yAxisId="amt" dataKey="amount" name="금액" radius={[4, 4, 0, 0]} fillOpacity={0.4} cursor="pointer"
+                <Bar yAxisId="amt" dataKey="amount" name="금액 (우축)" radius={[4, 4, 0, 0]} fillOpacity={0.4} cursor="pointer"
                   onClick={(d: any) => {
                     const b = MARGIN_BUCKETS.find(x => x.k === d.bucketKey);
                     if (b) setDrawerBucket(b);

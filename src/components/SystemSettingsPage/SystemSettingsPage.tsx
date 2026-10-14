@@ -41,6 +41,8 @@ interface Props {
   authSession: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  /** 2026-10-13 · #18 Phase 2 · SettingsHub inner tab embed · SettingsPageShell skip */
+  embedded?: boolean;
 }
 
 // ─── 카테고리별 키 그룹 ─────────────────────────────────────────────────────
@@ -112,7 +114,7 @@ interface FieldState {
   hasValue: boolean;
 }
 
-const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
+const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout, embedded = false }) => {
   // 2026-10-06 · BREADCRUMB SSOT CLEANUP · mount 시 activeNav 정착 (사이드바 미경유 직접 진입·refresh 포함)
   //   · AppNavHeader buildBreadcrumbFromNav(activeNav) 가 유일한 breadcrumb 표시 소스
   const setActiveByPage = useSetActiveByPage();
@@ -170,18 +172,9 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
 
   const dirty = Object.keys(draft).length > 0;
 
-  return (
-    <SettingsPageShell
-      activePage={"system-settings" as AppNavPage}
-      authSession={authSession}
-      onBack={onBack}
-      onNavigate={onNavigate}
-      onLogout={onLogout}
-      icon={Gear}
-      iconColor="text-zinc-600"
-      title="시스템 설정"
-      description="DB · 인증 · AI/OCR · 알림톡·SMS · 이미지 CDN · Web Push · OCR 수신처 등 서버 env 편집. 저장 후 서버 재시작 시 반영. 관리자(lv 9) 전용."
-    >
+  // 2026-10-13 · #18 Phase 2 · body + shell 분리 · embedded 모드 지원
+  const body = (
+      <>
         {/* 안내 배너 · 2026-08-12 · 폰트 -1 · 중요부분 붉은 강조 */}
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-2 text-xs text-amber-800">
           <Warning size={14} weight="fill" className="mt-0.5 shrink-0 text-rose-600" />
@@ -288,6 +281,26 @@ const SystemSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, 
           </button>
         </div>
         )}
+      </>
+  );
+
+  if (embedded) {
+    return <div className="px-4 py-4">{body}</div>;
+  }
+
+  return (
+    <SettingsPageShell
+      activePage={"system-settings" as AppNavPage}
+      authSession={authSession}
+      onBack={onBack}
+      onNavigate={onNavigate}
+      onLogout={onLogout}
+      icon={Gear}
+      iconColor="text-zinc-600"
+      title="시스템 설정"
+      description="DB · 인증 · AI/OCR · 알림톡·SMS · 이미지 CDN · Web Push · OCR 수신처 등 서버 env 편집. 저장 후 서버 재시작 시 반영. 관리자(lv 9) 전용."
+    >
+      {body}
     </SettingsPageShell>
   );
 };

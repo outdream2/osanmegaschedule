@@ -33,14 +33,7 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("OrderHistorySupplierModal · 렌더", () => {
-  // 2026-10-13 · UI/API 재구조 이후 outdated · 헤더 레이블 변경 가능 · skip
-  it.skip("open · 헤더 · 공급사명 · 기간 selector (outdated)", async () => {
-    const { container } = render(<OrderHistorySupplierModal supplier="코스트팜" onClose={vi.fn()} />);
-    expect(container.textContent).toContain("발주이력");
-    expect(container.textContent).toContain("코스트팜");
-    // PeriodSelector · 30/90/180/1년
-    expect(container.textContent).toMatch(/30일|90일|1년/);
-  });
+  // 2026-10-13 삭제 · 구 period selector "30일/90일/1년" 테스트 · 지금은 월 토글 (useMonthFilter) 로 대체 · 삭제
 
   it("초기 · loading · Spinner 노출", () => {
     const { container } = render(<OrderHistorySupplierModal supplier="코스트팜" onClose={vi.fn()} />);
@@ -148,15 +141,4 @@ describe("OrderHistorySupplierModal · 확장/접기", () => {
   });
 });
 
-describe("OrderHistorySupplierModal · 기간 변경", () => {
-  // 2026-10-13 · days 쿼리 → months 쿼리로 변경 가능 · API 시그니처 재검증 필요 · skip
-  it.skip("기간 선택 시 · API 재호출 · days 쿼리 반영 (outdated)", async () => {
-    const { container } = render(<OrderHistorySupplierModal supplier="코스트팜" onClose={vi.fn()} />);
-    await waitFor(() => expect(mockGet).toHaveBeenCalledWith("/api/order-history?days=90"));
-    // 30일 버튼 클릭
-    const btn30 = Array.from(container.querySelectorAll("button")).find(b => b.textContent === "30일") as HTMLButtonElement;
-    expect(btn30).toBeTruthy();
-    fireEvent.click(btn30);
-    await waitFor(() => expect(mockGet).toHaveBeenCalledWith("/api/order-history?days=30"));
-  });
-});
+// 2026-10-13 삭제 · "기간 변경 days 쿼리" describe · API 가 ?days= → ?months_list= 로 변경됨 · 구 쿼리 테스트 폐기

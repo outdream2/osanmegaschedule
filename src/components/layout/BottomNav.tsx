@@ -6,7 +6,7 @@
 //   · 더보기 시트: filterGroupsForSession() 기반 · 각 그룹 · items 동적 렌더
 //     · 사이드바 편집 시 · 모바일 시트 자동 동기 (사용자 크리티컬 원칙)
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { Menu, LogOut } from "lucide-react";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "./AppNavHeader";
@@ -43,7 +43,12 @@ export const BottomNav: React.FC<Props> = ({ activePage, authSession, onNavigate
   const { isVisible, loaded: visLoaded } = usePageVisibility();
   const { perms } = usePagePermissions();
   const { status: employmentStatus } = useEmploymentStatus(authSession);
-  const mobileVisible = (pageKey: string) => !visLoaded || isVisible(pageKey, "mobile");
+  // 2026-10-13 · fix (Bug#2) · useCallback 으로 stale closure 방지 · sheetGroups useMemo deps 안 참조 안정화
+  //   · 이전 · 매 렌더마다 새 함수 참조 → memoization 효과 상실 · page_visibility 변경이 즉시 반영 안 될 수 있음
+  const mobileVisible = useCallback(
+    (pageKey: string) => !visLoaded || isVisible(pageKey, "mobile"),
+    [visLoaded, isVisible],
+  );
   // 2026-09-15 · T-MENU-BOTTOMNAV · page_permissions.hidden 반영 (사이드바와 동일 원칙)
   //   · 이전 · BottomNav 는 usePageVisibility 만 반영 · perms.hidden 미적용
   //   · 이후 · 하단 4탭 · perms[key].hidden=true 면 숨김 (사이드바와 정합)

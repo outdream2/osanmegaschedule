@@ -381,7 +381,10 @@ export class ScheduleService {
     const optionalKeys = [
       // 기존
       "rank", "gender", "phone", "annual_leave_days", "level", "contract_file_url",
-      "address", "break_time_minutes", "break_apply_paid",
+      "address",
+      // 2026-10-13 · migration 2026-10-12_employees_address_detail.sql 선 준비 · 추후 UI 분리 저장 시 자동 반영
+      "address_detail",
+      "break_time_minutes", "break_apply_paid",
       // 신규 HR 필드
       "contract_type", "contract_start", "contract_end", "probation_end_date",
       "birth_date", "emergency_contact_name", "emergency_contact_phone", "emergency_contact_rel",

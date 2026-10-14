@@ -4,7 +4,7 @@
 //   · 날짜 선택 (해당 월 · 요일 단축선택) · schedule type · workingHours · memo
 //   · lock · canEdit=false 일 때 저장 비활성 · server guard 가 최종 authority
 //   · V2 전용 bulk API 생성 X · V1 과 동일 contract
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import { Check, X as XIcon } from "@phosphor-icons/react";
 import { api } from "../../../../lib/apiClient";
 import type { Employee } from "../../../../types";
@@ -27,6 +27,11 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
   employee, year, month, scheduleTypes, isLocked, canEdit, showNotification, onApplied,
 }) => {
   const dateList = useMemo(() => buildDateList(year, month), [year, month]);
+  // 2026-10-12 · 사용자 지시 · 오늘 날짜 붉은 테두리용 YYYY-MM-DD 상수
+  const todayYmd = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
   const [selectedDates, setSelectedDates] = useState<Set<string>>(new Set());
   const [type, setType] = useState<string>("");
   const [workingHours, setWorkingHours] = useState<string>("");
@@ -37,6 +42,33 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
     () => getTypeHoursMap(employee.position ?? "", employee.employmentType ?? "", scheduleTypes),
     [employee, scheduleTypes],
   );
+
+  // 2026-10-12 · 사용자 지시 · "근무조건이 적용된 날짜는 근무유형 표시" · 기존 schedule fetch
+  const [existingByDate, setExistingByDate] = useState<Map<string, { type: string; workingHours?: string }>>(new Map());
+  const typeColorMap = useMemo(() => {
+    const m = new Map<string, string | undefined>();
+    for (const e of scheduleTypes) m.set(e.type, e.color);
+    return m;
+  }, [scheduleTypes]);
+
+  const loadExisting = useCallback(async () => {
+    try {
+      const { data } = await api.get<{ employees?: Array<{ id: number; schedules?: Array<{ date: string; type?: string; workingHours?: string }> }> }>(
+        `/api/schedules?year=${year}&month=${month}`,
+      );
+      const emps = Array.isArray(data?.employees) ? data!.employees! : [];
+      const me = emps.find(e => e.id === employee.id);
+      const map = new Map<string, { type: string; workingHours?: string }>();
+      for (const s of me?.schedules ?? []) {
+        const t = String(s?.type ?? "").trim();
+        if (!t || !s?.date) continue;
+        map.set(String(s.date), { type: t, workingHours: s.workingHours });
+      }
+      setExistingByDate(map);
+    } catch { setExistingByDate(new Map()); }
+  }, [employee.id, year, month]);
+
+  useEffect(() => { void loadExisting(); }, [loadExisting]);
 
   const toggleDate = (d: string) => {
     setSelectedDates(prev => {
@@ -99,6 +131,8 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
       setSelectedDates(new Set());
       setMemo("");
       onApplied();
+      // 2026-10-12 · 사용자 지시 · 저장 후 달력 셀 근무유형 라벨 즉시 refetch
+      void loadExisting();
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message ?? "네트워크 오류";
       showNotification(`일괄 등록 실패 · ${msg}`, "error");
@@ -111,8 +145,10 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
     // 2026-10-12 · 사용자 지시 · 달력 아래 shrink-0 wrapper 안에서 height=0 bug fix
     //   · flex-1 min-h-0 overflow-auto → w-full 자연 height (shrink-0 환경 호환)
     //   · bulk 단독 subview 도 natural height 로 작동 (parent flex-col 안에서 자체 content height)
-    // 2026-10-12 · 사용자 지시 · 달력 폭 축소 "한눈에 보이게" · max-w-sm (560px) + 중앙 정렬
-    <Card variant="sm" padding="md" rounded="xl" className="w-full max-w-[560px] mx-auto">
+    // 2026-10-12 · 사용자 지시 재조정 · "2단 좌/우를 담고 있는 카드가 좁음" ·
+    //   · max-w-[560px] 제거 → w-full 전체 폭 활용 (2단 좌 220px + 우 flex-1 확보)
+    // 2026-10-12 · 사용자 "화면 넘어가버려" · min-w-0 + overflow-hidden 추가 (가로 overflow 방지)
+    <Card variant="sm" padding="md" rounded="xl" className="w-full min-w-0 max-w-full overflow-hidden">
       {isLocked && (
         <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[13px] font-semibold">
           <span>이 월({month}월)은 확정됨 · 편집 불가</span>
@@ -140,11 +176,10 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
           <span className="ml-auto text-[12px] font-semibold text-amber-700">근무유형 선택 필요</span>
         )}
       </div>
-      <div className="flex flex-col gap-3">
-        {/* 2026-10-12 · 사용자 지시 · 근무 조건 섹션 위로 · 날짜 선택 아래로 (순서 교체) */}
-
-        {/* 섹션 1 · 근무 조건 (NEW · 위) */}
-        <section>
+      {/* 2026-10-12 · 사용자 "근무조건 폭 더 축소 · 달력 더 넓게" · grid-cols-4 (1:3) */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 items-start min-w-0">
+        {/* 섹션 1 · 근무 조건 (좌 · 1/4) */}
+        <section className="lg:col-span-1 min-w-0 overflow-hidden">
           <h3 className="text-[14px] font-bold text-ink mb-2">① 근무 조건</h3>
           <div className="flex flex-col gap-2">
             <label className="flex items-center gap-2 text-[14px]">
@@ -187,8 +222,8 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
           </div>
         </section>
 
-        {/* 섹션 2 · 날짜 선택 (NEW · 아래 · 2 → 날짜) */}
-        <section>
+        {/* 섹션 2 · 날짜 선택 (우 · 3/4) · 달력 더 넓게 · min-w-0 로 overflow 차단 */}
+        <section className="lg:col-span-3 min-w-0 overflow-hidden">
           <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
             <div className="flex items-baseline gap-2">
               <h3 className="text-[14px] font-bold text-ink">② 날짜 선택</h3>
@@ -271,21 +306,35 @@ export const EmployeeBulkPanel: React.FC<Props> = ({
                 const selected = selectedDates.has(d);
                 const isSun = dateObj.getDay() === 0;
                 const isSat = dateObj.getDay() === 6;
+                // 2026-10-12 · 사용자 지시 · 기존 근무유형 적용 날짜 표시 (color bg + type label)
+                const existing = existingByDate.get(d);
+                const existingColor = existing?.type ? typeColorMap.get(existing.type) : undefined;
+                // 2026-10-12 · 사용자 지시 · 오늘 날짜 붉은 테두리 (ring 중첩 · 상태 색과 양립)
+                const isToday = d === todayYmd;
                 return (
                   <button
                     key={d}
                     type="button"
                     onClick={() => toggleDate(d)}
                     disabled={!canEdit}
-                    className={`h-10 rounded-md border text-[14px] font-semibold tabular-nums transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                    style={!selected && existingColor ? { backgroundColor: existingColor } : undefined}
+                    className={`h-11 rounded-md border text-[13px] font-semibold tabular-nums transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 relative ${
+                      isToday ? "ring-2 ring-rose-500 ring-offset-1" : ""
+                    } ${
                       selected
                         ? "bg-brand-deep text-white border-brand-deep"
-                        : isSun ? "bg-rose-50/40 border-rose-100 text-rose-700 hover:bg-rose-100/60"
-                        : isSat ? "bg-sky-50/40 border-sky-100 text-sky-700 hover:bg-sky-100/60"
-                        : "bg-white border-zinc-200 text-ink hover:bg-zinc-50"
+                        : existing
+                          ? "border-slate-300 text-ink hover:brightness-95"
+                          : isSun ? "bg-rose-50/40 border-rose-100 text-rose-700 hover:bg-rose-100/60"
+                          : isSat ? "bg-sky-50/40 border-sky-100 text-sky-700 hover:bg-sky-100/60"
+                          : "bg-white border-zinc-200 text-ink hover:bg-zinc-50"
                     }`}
+                    title={existing ? `${d} · ${existing.type}` : d}
                   >
-                    {dayNum}
+                    <span className="leading-none">{dayNum}</span>
+                    {existing && !selected && (
+                      <span className="text-[9px] font-bold leading-none truncate max-w-full px-0.5 opacity-80">{existing.type}</span>
+                    )}
                   </button>
                 );
               });

@@ -164,3 +164,39 @@ export const OverviewPeriodFilter: React.FC<OverviewPeriodFilterProps> = ({
 };
 
 export default OverviewPeriodFilter;
+
+// 2026-10-12 · 사용자 지시 "기간필터 공통 적용" · effectiveRange + hook 통합
+export interface EffectiveRange { from: string; to: string; days: number; }
+const ymdDaysAgo = (days: number): string => {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+export function computeEffectiveRange(selectedMonths: string[], quickRange: QuickRangeKey): EffectiveRange {
+  if (quickRange === "today") { const t = ymdDaysAgo(0); return { from: t, to: t, days: 1 }; }
+  if (quickRange === "7d" || quickRange === "14d" || quickRange === "30d") {
+    const n = quickRange === "7d" ? 7 : quickRange === "14d" ? 14 : 30;
+    return { from: ymdDaysAgo(n - 1), to: ymdDaysAgo(0), days: n };
+  }
+  if (selectedMonths.length > 0) {
+    const sorted = [...selectedMonths].sort();
+    const earliest = sorted[0];
+    const latest = sorted[sorted.length - 1];
+    const [ey, em] = earliest.split("-").map(Number);
+    const [ly, lm] = latest.split("-").map(Number);
+    const from = `${ey}-${String(em).padStart(2, "0")}-01`;
+    const lastDay = new Date(ly, lm, 0).getDate();
+    const to = `${ly}-${String(lm).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    const d1 = new Date(from + "T00:00:00").getTime();
+    const d2 = new Date(to + "T00:00:00").getTime();
+    const days = Math.max(1, Math.round((d2 - d1) / 86400000) + 1);
+    return { from, to, days };
+  }
+  return { from: ymdDaysAgo(13), to: ymdDaysAgo(0), days: 14 };
+}
+export function useOverviewPeriod(initialQuickRange: QuickRangeKey = "14d") {
+  const [selectedMonths, setSelectedMonths] = React.useState<string[]>([]);
+  const [quickRange, setQuickRange] = React.useState<QuickRangeKey>(initialQuickRange);
+  const effectiveRange = useMemo(() => computeEffectiveRange(selectedMonths, quickRange), [selectedMonths, quickRange]);
+  return { selectedMonths, setSelectedMonths, quickRange, setQuickRange, effectiveRange };
+}

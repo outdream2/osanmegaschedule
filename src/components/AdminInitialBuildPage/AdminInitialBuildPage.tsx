@@ -25,6 +25,8 @@ interface Props {
   authSession: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  /** 2026-10-13 · #18 Phase 2 · SettingsHub inner tab embed · outer bg/min-height skip */
+  embedded?: boolean;
 }
 
 interface DryRunPreview {
@@ -66,7 +68,8 @@ interface DryRunPreview {
   readyForWrite: false;
 }
 
-export default function AdminInitialBuildPage(_props: Props): React.ReactElement {
+export default function AdminInitialBuildPage(props: Props): React.ReactElement {
+  const { embedded = false } = props;
   // 2026-10-06 · BREADCRUMB SSOT CLEANUP · mount 시 activeNav 정착 (사이드바 미경유 직접 진입·refresh 포함)
   //   · AppNavHeader buildBreadcrumbFromNav(activeNav) 가 유일한 breadcrumb 표시 소스
   const setActiveByPage = useSetActiveByPage();
@@ -103,9 +106,9 @@ export default function AdminInitialBuildPage(_props: Props): React.ReactElement
   const canExecute = false; // 2026-10-03 Phase 2 · 명시 lock · 사용자 승인 전 활성화 금지
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className={embedded ? "" : "min-h-screen bg-slate-50"}>
       {toast && <div className={toastClass(toast.tone)}>{toast.message}</div>}
-      <div className="mx-auto max-w-7xl px-4 py-6 space-y-4">
+      <div className={embedded ? "px-4 py-4 space-y-4" : "mx-auto max-w-7xl px-4 py-6 space-y-4"}>
 
         {/* 상단 헤더 */}
         <div className="flex items-center justify-between flex-wrap gap-3">

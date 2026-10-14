@@ -338,10 +338,12 @@ export function canAccessItem(
     const compositeKey = item.subTab ? `${item.key}:${item.subTab}` : null;
     const perm = (compositeKey && (perms as any)[compositeKey]) || (perms as any)[item.key];
     if (perm?.hidden === true) {
-      const ADMIN_ESSENTIAL = ["permissions", "business-manage", "account"] as const;
+      // 2026-10-13 · "account" 제거 · 계정 페이지 사이드바에서 삭제됨 (AppNavPage union 에 없음)
+      // 2026-10-13 · "settings-hub" 추가 · 설정 통합 대시보드 lockout 방지 (permissions.ts SSOT 동기화)
+      const ADMIN_ESSENTIAL = ["permissions", "business-manage", "settings-hub"] as const;
       const isEssential = (ADMIN_ESSENTIAL as readonly string[]).includes(item.key);
       if (level >= 9 && isEssential) {
-        // admin lockout 방지 · 설정·관리·계정 페이지는 admin 에게 항상 노출
+        // admin lockout 방지 · 설정·관리 페이지는 admin 에게 항상 노출
       } else {
         return false;
       }
@@ -449,14 +451,13 @@ import {
   PURCHASE_ORDER_DEFAULT_TABS,
   PURCHASE_DEFAULT_TABS,
   PAYMENT_DEFAULT_TABS,
-  STAT_DEFAULT_TABS,
 } from "../OrderManagePage/OrderManagePage.tabs";
 
+// 2026-10-13 · "display:statistics" entry + STAT_DEFAULT_TABS import 제거 · subTab=statistics 사이드바에서 삭제됨 (도달 불가)
 const INNER_TAB_REGISTRY: Record<string, ReadonlyArray<{ key: string; label: string }>> = {
   "display:purchase-order": PURCHASE_ORDER_DEFAULT_TABS,
   "display:purchase":       PURCHASE_DEFAULT_TABS,
   "display:payment":        PAYMENT_DEFAULT_TABS,
-  "display:statistics":     STAT_DEFAULT_TABS,
 };
 
 // 2026-10-06 · BREADCRUMB SSOT CLEANUP · 그룹 루트 pageKey (overview hub)

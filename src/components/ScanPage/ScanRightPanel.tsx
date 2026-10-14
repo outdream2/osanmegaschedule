@@ -27,6 +27,8 @@ interface ScanRightPanelProps {
   toggleExpiry: (row: StockRow) => void | Promise<void>;
   /** 2026-09-09 · 관리자 권한 · 슬롯 상세구역 편집 · 매장 추가/삭제 */
   canManage?: boolean;
+  /** 2026-10-12 · 사용자 지시 · 스캔 → 리스트 추가 사이 로딩 중 표시 */
+  scanLoading?: boolean;
 }
 
 export const ScanRightPanel: React.FC<ScanRightPanelProps> = ({
@@ -34,6 +36,7 @@ export const ScanRightPanel: React.FC<ScanRightPanelProps> = ({
   scanFilter, setScanFilter, setExpiryModalRow,
   requestDisplay, patchRow, removeRow, openHistory, handleSaveRow, toggleExpiry,
   canManage = false,
+  scanLoading = false,
 }) => {
   const targetRow = lastCode ? rows.find(r => r.code === lastCode) : null;
   const disabled = !targetRow;
@@ -72,7 +75,16 @@ export const ScanRightPanel: React.FC<ScanRightPanelProps> = ({
         </div>
       </div>
 
-      {rows.length === 0 ? (
+      {/* 2026-10-12 · 사용자 지시 · 스캔 → 리스트 추가 전 로딩 중 spinner */}
+      {scanLoading ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-2 py-12 select-none">
+          <div className="w-7 h-7 rounded-full border-2 border-indigo-200 border-t-indigo-600 animate-spin" aria-hidden />
+          <div className="text-center">
+            <p className="text-[14px] font-semibold text-slate-600">상품 조회 중...</p>
+            <p className="text-[12px] text-slate-400 mt-0.5">바코드 조회 · 실재고 로드</p>
+          </div>
+        </div>
+      ) : rows.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-2 py-12 select-none">
           <Package size={28} className="text-slate-300" />
           <div className="text-center">

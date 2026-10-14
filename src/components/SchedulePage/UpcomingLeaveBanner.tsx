@@ -61,7 +61,7 @@ export const UpcomingLeaveBanner: React.FC<UpcomingLeaveBannerProps> = ({ rows }
           strokeWidth={2.5}
         />
         <span className="flex-1 text-[15px] font-bold text-amber-900 leading-snug">
-          다가오는 연차 &middot; {uniqueCount}명{rows.length > uniqueCount ? ` (${rows.length}건)` : ""} &middot; 대체 인력 확인 필요
+          다가오는 휴가 &middot; {uniqueCount}명{rows.length > uniqueCount ? ` (${rows.length}건)` : ""} &middot; 대체 인력 확인 필요
         </span>
         {open ? (
           <ChevronUp size={15} className="text-amber-500 shrink-0" />

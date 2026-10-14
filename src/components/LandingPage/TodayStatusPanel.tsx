@@ -101,8 +101,8 @@ export const TodayStatusPanel: React.FC<TodayStatusPanelProps> = ({
             <span className="absolute left-0 top-3 bottom-3 w-[3px] bg-gradient-to-b from-brand-amber-ink via-brand-amber to-brand-amber/70 rounded-r-full shadow-[0_0_10px_rgba(232,138,61,0.25)]" aria-hidden />
             <div className="pl-2 flex flex-col gap-0.5">
               {/* 연차 */}
-              <div className="flex items-center justify-between gap-2 min-w-0" title={`연차 ${leaveCount}건`}>
-                <span className="text-[12px] sm:text-[13px] text-zinc-500 font-medium tracking-wide shrink-0">연차</span>
+              <div className="flex items-center justify-between gap-2 min-w-0" title={`휴가 ${leaveCount}건`}>
+                <span className="text-[12px] sm:text-[13px] text-zinc-500 font-medium tracking-wide shrink-0">휴가</span>
                 <span
                   className="font-bold tabular-nums leading-tight text-brand-amber-ink whitespace-nowrap"
                   style={{ fontSize: "clamp(15px, 2.3vw, 20px)" }}

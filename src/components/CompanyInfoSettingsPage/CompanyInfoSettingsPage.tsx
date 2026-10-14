@@ -34,6 +34,8 @@ interface Props {
   authSession: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  /** 2026-10-13 · #18 Phase 2 · SettingsHub inner tab embed · SettingsPageShell skip */
+  embedded?: boolean;
 }
 
 // 2026-08-31 · 폰트 +2 (탭메뉴 이하 모든 필드)
@@ -53,7 +55,7 @@ const RAIL_ITEMS: Array<{ id: SectionId; label: string; Icon: PhosphorIcon }> = 
   { id: "section-stamps",  label: "도장 매핑",     Icon: Stamp       },
 ];
 
-const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
+const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout, embedded = false }) => {
   const { info, setInfo, loaded, saveState } = useCompanyInfo();
   const { brand, setBrand } = useBrandIdentity();
 
@@ -118,24 +120,15 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
     saveState === "saved"  ? "emerald" :
     saveState === "error"  ? "rose" : null;
 
-  return (
-    <SettingsPageShell
-      activePage={"company-info" as AppNavPage}
-      authSession={authSession}
-      onBack={onBack}
-      onNavigate={onNavigate}
-      onLogout={onLogout}
-      icon={Buildings}
-      iconColor="text-indigo-500"
-      title="회사·브랜드"
-      description="근로계약서·사직서·PDF·랜딩·푸터 등에 표시되는 사업장 정보 · 앱 브랜딩 · 연락처 · 도장을 한 곳에서 관리합니다. 관리자(lv 9) 전용. (모바일 가시성은 '메뉴 설정' 페이지로 이동됨)"
-      rightSlot={badgeText && badgeTone ? (
-        <StatusPill tone={badgeTone} size="sm" dot pulse={saveState === "saving"}>
-          {badgeText}
-        </StatusPill>
-      ) : undefined}
-    >
-      {/* 2026-09-18 · Plan B · 좌 aside rail + 우 스크롤 레이아웃 */}
+  // 2026-10-13 · #18 Phase 2 · body + shell 분리 · embedded 모드 지원
+  const rightSlot = badgeText && badgeTone ? (
+    <StatusPill tone={badgeTone} size="sm" dot pulse={saveState === "saving"}>
+      {badgeText}
+    </StatusPill>
+  ) : undefined;
+
+  const body = (
+      /* 2026-09-18 · Plan B · 좌 aside rail + 우 스크롤 레이아웃 */
       <div className="flex gap-6 items-start">
 
         {/* ── 좌측 anchor rail · 데스크탑(≥sm)만 표시 ── */}
@@ -270,7 +263,32 @@ const CompanyInfoSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavig
           </section>
 
         </div>{/* /flex-1 */}
-      </div>{/* /flex gap-6 */}
+      </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className="px-4 py-4">
+        {rightSlot && <div className="flex justify-end mb-2">{rightSlot}</div>}
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <SettingsPageShell
+      activePage={"company-info" as AppNavPage}
+      authSession={authSession}
+      onBack={onBack}
+      onNavigate={onNavigate}
+      onLogout={onLogout}
+      icon={Buildings}
+      iconColor="text-indigo-500"
+      title="회사·브랜드"
+      description="근로계약서·사직서·PDF·랜딩·푸터 등에 표시되는 사업장 정보 · 앱 브랜딩 · 연락처 · 도장을 한 곳에서 관리합니다. 관리자(lv 9) 전용. (모바일 가시성은 '메뉴 설정' 페이지로 이동됨)"
+      rightSlot={rightSlot}
+    >
+      {body}
     </SettingsPageShell>
   );
 };

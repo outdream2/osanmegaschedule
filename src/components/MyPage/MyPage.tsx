@@ -148,7 +148,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
               <ReadRow icon={<Phone size={14} />} label="핸드폰번호" value={me.phone ?? "-"} mono />
               <ReadRow icon={<Mail size={14} />} label="이메일" value={(me as any).email ?? "-"} />
               <ReadRow icon={<CreditCard size={14} />} label="계좌" value={(me as any).employeeBankAccount ?? "-"} mono />
-              <ReadRow icon={<Calendar size={14} />} label="연차일수" value={`${me.annual_leave_days ?? "-"}일`} mono last />
+              <ReadRow icon={<Calendar size={14} />} label="휴가일수" value={`${me.annual_leave_days ?? "-"}일`} mono last />
             </>
           )}
         </div>
@@ -288,7 +288,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         {/* 안내 */}
         <Card variant="flat" padding="sm" bg="bg-white/60" className="text-[15px] text-zinc-500 flex items-start gap-2">
           <Check size={12} className="mt-0.5 text-emerald-500 shrink-0" />
-          <span>본인이 직접 수정할 수 있는 항목은 <b>비밀번호·주소</b>뿐입니다. 그 외 정보(이름·직급·연차 등) 는 관리자에게 문의하세요.</span>
+          <span>본인이 직접 수정할 수 있는 항목은 <b>비밀번호·주소</b>뿐입니다. 그 외 정보(이름·직급·휴가 등) 는 관리자에게 문의하세요.</span>
         </Card>
         </div>
       </OperationsPageTemplate>

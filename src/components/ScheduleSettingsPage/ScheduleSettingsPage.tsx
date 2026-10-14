@@ -16,9 +16,11 @@ interface Props {
   authSession: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  /** 2026-10-13 · #18 Phase 2 · SettingsHub inner tab embed · SettingsPageShell skip */
+  embedded?: boolean;
 }
 
-const ScheduleSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout }) => {
+const ScheduleSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate, onLogout, embedded = false }) => {
   // 2026-10-06 · BREADCRUMB SSOT CLEANUP · mount 시 activeNav 정착 (사이드바 미경유 직접 진입·refresh 포함)
   //   · AppNavHeader buildBreadcrumbFromNav(activeNav) 가 유일한 breadcrumb 표시 소스
   const setActiveByPage = useSetActiveByPage();
@@ -46,7 +48,7 @@ const ScheduleSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate
     update({ defaultAnnualLeave: { pharmacist: pharmVal, default: defVal } });
     const ok = await saveNow();
     setSaving(false);
-    if (ok) showSuccess("기본 연차일수가 저장됐습니다.");
+    if (ok) showSuccess("기본 휴가일수가 저장됐습니다.");
     else showError("저장 실패 · 다시 시도해주세요.");
   };
 
@@ -56,31 +58,35 @@ const ScheduleSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate
     icon: CalendarBlank,
     iconColor: "text-brand-deep",
     title: "스케줄 설정",
-    description: "직원 스케줄 관련 전역 설정 · 기본 연차일수 직군별 지정. 관리자(lv 9) 전용.",
+    description: "직원 스케줄 관련 전역 설정 · 기본 휴가일수 직군별 지정. 관리자(lv 9) 전용.",
   };
 
   if (level < 9) {
+    const accessBody = (
+      <SectionCard title="접근 권한 필요" icon={<Lock size={18} />} tone="danger" description="이 페이지는 관리자(lv 9) 전용입니다.">
+        <div className="text-[16px] text-zinc-500 text-center py-4">관리자 계정으로 로그인 후 · 다시 시도해주세요.</div>
+      </SectionCard>
+    );
+    if (embedded) {
+      return <div data-scope="schedule-settings" className="px-4 py-4">{accessBody}</div>;
+    }
     return (
       <div data-scope="schedule-settings">
-        <SettingsPageShell {...commonShellProps}>
-          <SectionCard title="접근 권한 필요" icon={<Lock size={18} />} tone="danger" description="이 페이지는 관리자(lv 9) 전용입니다.">
-            <div className="text-[16px] text-zinc-500 text-center py-4">관리자 계정으로 로그인 후 · 다시 시도해주세요.</div>
-          </SectionCard>
-        </SettingsPageShell>
+        <SettingsPageShell {...commonShellProps}>{accessBody}</SettingsPageShell>
       </div>
     );
   }
 
-  return (
-    <div data-scope="schedule-settings">
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-          <div className={toastClass(toast.tone)}>{toast.message}</div>
-        </div>
-      )}
-      <SettingsPageShell {...commonShellProps}>
+  // 2026-10-13 · #18 Phase 2 · body + shell 분리 · embedded 모드 지원
+  const toastEl = toast ? (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+      <div className={toastClass(toast.tone)}>{toast.message}</div>
+    </div>
+  ) : null;
+
+  const body = (
         <SectionCard
-          title="기본 연차일수"
+          title="기본 휴가일수"
           icon={<CalendarBlank size={18} />}
           description="신규 직원 등록 시 annual_leave_days 기본값 · 각 직원별로 개별 수정 가능."
         >
@@ -136,6 +142,22 @@ const ScheduleSettingsPage: React.FC<Props> = ({ onBack, authSession, onNavigate
             </div>
           </div>
         </SectionCard>
+  );
+
+  if (embedded) {
+    return (
+      <div data-scope="schedule-settings" className="px-4 py-4">
+        {toastEl}
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <div data-scope="schedule-settings">
+      {toastEl}
+      <SettingsPageShell {...commonShellProps}>
+        {body}
       </SettingsPageShell>
     </div>
   );

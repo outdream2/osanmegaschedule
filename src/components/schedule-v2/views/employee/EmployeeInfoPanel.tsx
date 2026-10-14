@@ -57,7 +57,8 @@ interface Props {
 
 type FieldKey =
   | "employee_number" | "position" | "rank" | "employmentType" | "workplace" | "gender"
-  | "phone" | "email" | "address"
+  | "hireDate" | "retireDate"
+  | "phone" | "email" | "address" | "address_detail"
   | "contract_type" | "contract_start" | "contract_end" | "birth_date" | "annual_leave_days"
   | "working_hours_per_week" | "break_time_minutes" | "break_apply_paid" | "weekly_holiday" | "work_location" | "job_duties"
   | "wage_calc_type" | "wage_amount" | "wage_pay_day" | "wage_pay_method" | "bank_name" | "bank_account_no"
@@ -77,9 +78,14 @@ const toForm = (e: EmployeeExt): Form => ({
   employmentType: e.employmentType ?? "",
   workplace: e.workplace ?? "",
   gender: e.gender ?? "",
+  // 2026-10-12 · 사용자 지시 · 입사일/퇴사일 inline edit 가능
+  hireDate: e.hireDate ?? "",
+  retireDate: e.retireDate ?? "",
   phone: e.phone ?? "",
   email: e.email ?? "",
   address: e.address ?? "",
+  // 2026-10-12 · 사용자 지시 "주소 상세주소창" · address_detail 보조 field (DB column 미migrate 상태는 공백)
+  address_detail: (e as any).address_detail ?? "",
   contract_type: e.contract_type ?? "",
   contract_start: e.contract_start ?? "",
   contract_end: e.contract_end ?? "",
@@ -162,6 +168,9 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
   const [editingField, setEditingField] = useState<FieldKey | null>(null);
   const [draft, setDraft] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  // 2026-10-12 · 사용자 지시 "편집버튼 추가해서 입사일등도 바로 바꿀수있게"
+  //   · allEditMode=true · 모든 InlineRow 가 editable 상태 (hover bg 영구 + chevron/연필 항상 노출)
+  const [allEditMode, setAllEditMode] = useState(false);
 
   // 2026-10-12 · 사용자 지시 · Timeoff 카드 · useLeaveManager lazy load
   //   · confirm mock (drawer 안에서는 삭제 액션 노출 X · 요약 카드만)
@@ -244,9 +253,20 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
       workplace: form.workplace.trim(),
       gender: strOrNull(form.gender),
       employee_number: strOrNull(form.employee_number),
+      // 2026-10-12 · 입사일/퇴사일 저장
+      hireDate: strOrNull(form.hireDate),
+      retireDate: strOrNull(form.retireDate),
       phone: strOrNull(form.phone),
       email: strOrNull(form.email),
-      address: strOrNull(form.address),
+      // 2026-10-12 · 주소 + 상세주소 concat 저장 (DB address 1 column 유지 · address_detail migration 전까지)
+      address: (() => {
+        const base = form.address.trim();
+        const detail = form.address_detail.trim();
+        if (!base && !detail) return null;
+        if (!detail) return base;
+        if (!base) return detail;
+        return `${base} ${detail}`;
+      })(),
       contract_type: strOrNull(form.contract_type),
       contract_start: strOrNull(form.contract_start),
       contract_end: strOrNull(form.contract_end),
@@ -328,16 +348,28 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
             <span className="text-[12.5px] text-slate-500 font-medium shrink-0">· {form.rank}</span>
           )}
         </div>
-        {onOpenManagement && (
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* 2026-10-12 · 사용자 지시 "편집버튼 추가해서 입사일등도 바로 바꿀수있게" · allEditMode toggle */}
           <button
             type="button"
-            onClick={() => onOpenManagement(emp.id)}
-            className="inline-flex items-center gap-1 h-7 px-2 rounded border border-slate-200 bg-white hover:bg-slate-50 text-[12px] font-medium text-slate-600 shrink-0"
-            title="직원관리 페이지에서 전체 정보 수정"
+            onClick={() => setAllEditMode(v => !v)}
+            className={`inline-flex items-center gap-1 h-7 px-2.5 rounded border text-[12px] font-semibold transition-colors ${allEditMode ? "border-brand-deep bg-brand-tint/40 text-brand-deep" : "border-slate-200 bg-white hover:bg-slate-50 text-slate-600"}`}
+            title={allEditMode ? "편집 모드 종료" : "모든 필드 편집 가능"}
           >
-            <ArrowSquareOut size={11} weight="bold" /> 전체
+            <PencilSimple size={11} weight="bold" />
+            {allEditMode ? "편집 중" : "편집"}
           </button>
-        )}
+          {onOpenManagement && (
+            <button
+              type="button"
+              onClick={() => onOpenManagement(emp.id)}
+              className="inline-flex items-center gap-1 h-7 px-2 rounded border border-slate-200 bg-white hover:bg-slate-50 text-[12px] font-medium text-slate-600"
+              title="직원관리 페이지에서 전체 정보 수정"
+            >
+              <ArrowSquareOut size={11} weight="bold" /> 전체
+            </button>
+          )}
+        </div>
       </header>
 
       {/* ── Scrollable body ─────────────────────────────────────── */}
@@ -357,99 +389,116 @@ export const EmployeeInfoPanel: React.FC<Props> = ({ employee, onOpenManagement,
           />
         </div>
 
+        {/* 2026-10-12 · 사용자 지시 "창을 조금더 넓게해서 2단구성" · 섹션 2-col grid wrapper · md+ 에서 2단
+             · Time Off · 메모 등 긴 섹션은 wrapper 밖 유지 (full-width) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x divide-slate-100 border-b border-slate-100">
         {/* 섹션 · 기본 정보 */}
         <Section title="기본 정보">
-          <InlineRow label="사번" fieldKey="employee_number" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="사번" fieldKey="employee_number" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             placeholder="예: EMP-001" />
-          <InlineRow label="직군" fieldKey="position" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="직군" fieldKey="position" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             options={positionOptions.map(p => ({ value: p, label: p }))} placeholder="직군 선택" />
-          <InlineRow label="직급" fieldKey="rank" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="직급" fieldKey="rank" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             options={ranksOptions} placeholder="직급 선택" />
-          <InlineRow label="고용형태" fieldKey="employmentType" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="고용형태" fieldKey="employmentType" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             options={employmentTypesOptions} placeholder="고용형태 선택" />
-          <InlineRow label="근무지" fieldKey="workplace" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="근무지" fieldKey="workplace" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             options={workplacesOptions} placeholder="근무지 선택" />
-          <InlineRow label="생년월일" fieldKey="birth_date" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="생년월일" fieldKey="birth_date" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             type="date" />
-          <InlineRow label="성별" fieldKey="gender" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="성별" fieldKey="gender" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             options={GENDERS.map(g => ({ value: g, label: g }))} placeholder="성별 선택" />
-          <InlineRow label="평가 등급" fieldKey="performance_rating" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="평가 등급" fieldKey="performance_rating" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             options={PERFORMANCE_RATINGS} placeholder="평가 등급 선택" />
+          {/* 2026-10-12 · 사용자 지시 "편집버튼 추가해서 입사일등도 바로 바꿀수있게" · 입사일/퇴사일 inline edit */}
+          <InlineRow label="입사일" fieldKey="hireDate" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
+            onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
+            type="date" />
+          <InlineRow label="퇴사일" fieldKey="retireDate" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
+            onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
+            type="date" />
         </Section>
 
         {/* 섹션 · 연락처 */}
         <Section title="연락처">
-          <InlineRow label="전화번호" fieldKey="phone" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="전화번호" fieldKey="phone" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             placeholder="010-0000-0000" inputMode="tel" />
-          <InlineRow label="이메일" fieldKey="email" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="이메일" fieldKey="email" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             placeholder="name@example.com" inputMode="email" />
-          <InlineRow label="주소" fieldKey="address" form={form} editingField={editingField} draft={draft}
-            onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
+          {/* 2026-10-12 · 사용자 지시 "주소 상세주소창으로 만들어서" · 2 input 분리 · 저장은 address 1 column 에 concat */}
+          <InlineRow label="주소" fieldKey="address" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
+            onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
+            placeholder="예: 경기도 오산시 ..." />
+          <InlineRow label="상세주소" fieldKey="address_detail" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
+            onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
+            placeholder="동·호수 등" />
         </Section>
 
         {/* 섹션 · 계약 */}
         <Section title="계약">
-          <InlineRow label="계약 유형" fieldKey="contract_type" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="계약 유형" fieldKey="contract_type" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             options={contractTypeOptions} placeholder="계약유형 선택" />
-          <InlineRow label="계약 시작" fieldKey="contract_start" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="계약 시작" fieldKey="contract_start" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             type="date" />
-          <InlineRow label="계약 종료" fieldKey="contract_end" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="계약 종료" fieldKey="contract_end" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             type="date" />
-          <InlineRow label="휴가 일수" fieldKey="annual_leave_days" form={form} editingField={editingField} draft={draft}
+          <InlineRow label="휴가 일수" fieldKey="annual_leave_days" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode}
             onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown}
             inputMode="numeric" suffix="일" />
         </Section>
 
         {/* 2026-10-12 · 사용자 지시 · old 직원상세 필드 전체 복제 */}
         <Section title="근로조건">
-          <InlineRow label="주 소정근로시간" fieldKey="working_hours_per_week" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="numeric" suffix="시간" />
-          <InlineRow label="휴게시간" fieldKey="break_time_minutes" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="numeric" suffix="분" />
-          <InlineRow label="휴게 유급 적용" fieldKey="break_apply_paid" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} options={[{ value: "true", label: "유급" }, { value: "false", label: "무급" }]} placeholder="유급/무급" />
-          <InlineRow label="주휴일" fieldKey="weekly_holiday" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} placeholder="예: 일요일" />
-          <InlineRow label="근무 장소" fieldKey="work_location" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
-          <InlineRow label="종사 업무" fieldKey="job_duties" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
+          <InlineRow label="주 소정근로시간" fieldKey="working_hours_per_week" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="numeric" suffix="시간" />
+          <InlineRow label="휴게시간" fieldKey="break_time_minutes" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="numeric" suffix="분" />
+          <InlineRow label="휴게 유급 적용" fieldKey="break_apply_paid" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} options={[{ value: "true", label: "유급" }, { value: "false", label: "무급" }]} placeholder="유급/무급" />
+          <InlineRow label="주휴일" fieldKey="weekly_holiday" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} placeholder="예: 일요일" />
+          <InlineRow label="근무 장소" fieldKey="work_location" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
+          <InlineRow label="종사 업무" fieldKey="job_duties" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
         </Section>
 
         <Section title="임금 / 계좌">
-          <InlineRow label="임금 유형" fieldKey="wage_calc_type" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} options={[{ value: "hourly", label: "시급" }, { value: "daily", label: "일급" }, { value: "monthly", label: "월급" }, { value: "annual", label: "연봉" }]} placeholder="임금 유형 선택" />
-          <InlineRow label="임금액" fieldKey="wage_amount" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="numeric" suffix="원" />
-          <InlineRow label="지급일" fieldKey="wage_pay_day" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} placeholder="예: 매월 25일" />
-          <InlineRow label="지급 방법" fieldKey="wage_pay_method" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} placeholder="예: 통장 입금" />
-          <InlineRow label="은행" fieldKey="bank_name" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
-          <InlineRow label="계좌번호" fieldKey="bank_account_no" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="numeric" />
+          <InlineRow label="임금 유형" fieldKey="wage_calc_type" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} options={[{ value: "hourly", label: "시급" }, { value: "daily", label: "일급" }, { value: "monthly", label: "월급" }, { value: "annual", label: "연봉" }]} placeholder="임금 유형 선택" />
+          <InlineRow label="임금액" fieldKey="wage_amount" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="numeric" suffix="원" />
+          <InlineRow label="지급일" fieldKey="wage_pay_day" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} placeholder="예: 매월 25일" />
+          <InlineRow label="지급 방법" fieldKey="wage_pay_method" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} placeholder="예: 통장 입금" />
+          <InlineRow label="은행" fieldKey="bank_name" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
+          <InlineRow label="계좌번호" fieldKey="bank_account_no" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="numeric" />
         </Section>
 
         <Section title="4대보험">
-          <InlineRow label="제외 대상" fieldKey="insurance_excluded" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} options={[{ value: "true", label: "제외" }, { value: "false", label: "가입" }]} placeholder="가입/제외" />
-          <InlineRow label="국민연금 가입" fieldKey="insurance_nps_date" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
-          <InlineRow label="건강보험 가입" fieldKey="insurance_nhis_date" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
-          <InlineRow label="고용보험 가입" fieldKey="insurance_ei_date" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
-          <InlineRow label="산재보험 가입" fieldKey="insurance_wcia_date" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
+          <InlineRow label="제외 대상" fieldKey="insurance_excluded" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} options={[{ value: "true", label: "제외" }, { value: "false", label: "가입" }]} placeholder="가입/제외" />
+          <InlineRow label="국민연금 가입" fieldKey="insurance_nps_date" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
+          <InlineRow label="건강보험 가입" fieldKey="insurance_nhis_date" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
+          <InlineRow label="고용보험 가입" fieldKey="insurance_ei_date" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
+          <InlineRow label="산재보험 가입" fieldKey="insurance_wcia_date" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
         </Section>
 
         <Section title="약국 특수 자격">
-          <InlineRow label="약사 면허번호" fieldKey="pharmacist_license_no" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
-          <InlineRow label="보건증 만료일" fieldKey="health_check_expiry" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
+          <InlineRow label="약사 면허번호" fieldKey="pharmacist_license_no" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
+          <InlineRow label="보건증 만료일" fieldKey="health_check_expiry" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} type="date" />
         </Section>
 
         <Section title="비상연락처">
-          <InlineRow label="이름" fieldKey="emergency_contact_name" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
-          <InlineRow label="전화번호" fieldKey="emergency_contact_phone" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="tel" placeholder="010-0000-0000" />
-          <InlineRow label="관계" fieldKey="emergency_contact_rel" form={form} editingField={editingField} draft={draft} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} placeholder="예: 배우자·부모" />
+          <InlineRow label="이름" fieldKey="emergency_contact_name" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} />
+          <InlineRow label="전화번호" fieldKey="emergency_contact_phone" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} inputMode="tel" placeholder="010-0000-0000" />
+          <InlineRow label="관계" fieldKey="emergency_contact_rel" form={form} editingField={editingField} draft={draft} allEditMode={allEditMode} onEdit={openEdit} onDraftChange={setDraft} onCommit={commitDraft} onCancel={cancelDraft} onKeyDown={handleKeyDown} placeholder="예: 배우자·부모" />
         </Section>
+        </div>
+        {/* 2단 grid 종료 · 아래 Time Off/메모 full-width */}
 
         {/* 2026-10-12 · 사용자 지시 · Timeoff 카드 · 직원관리 Time Off 탭 통합 · 요약 카드 */}
         <Section title="Time Off">
@@ -593,12 +642,14 @@ interface InlineRowProps {
   suffix?: string;
   /** 선택지가 있으면 <select> 드롭다운으로 전환 */
   options?: SelectOption[];
+  /** 2026-10-12 · 전체 편집 모드 · hover bg + 아이콘 영구 표시 */
+  allEditMode?: boolean;
 }
 
 const InlineRow: React.FC<InlineRowProps> = ({
   label, fieldKey, form, editingField, draft,
   onEdit, onDraftChange, onCommit, onCancel, onKeyDown,
-  type = "text", inputMode, placeholder, suffix, options,
+  type = "text", inputMode, placeholder, suffix, options, allEditMode,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const selectRef = useRef<HTMLSelectElement>(null);
@@ -660,17 +711,17 @@ const InlineRow: React.FC<InlineRowProps> = ({
         <button
           type="button"
           onClick={() => onEdit(fieldKey)}
-          className="group/btn flex items-center gap-1.5 flex-1 justify-end px-1.5 py-0.5 rounded hover:bg-slate-50 transition-colors cursor-pointer"
+          className={`group/btn flex items-center gap-1.5 flex-1 justify-end px-1.5 py-0.5 rounded transition-colors cursor-pointer ${allEditMode ? "bg-brand-tint/20 hover:bg-brand-tint/40" : "hover:bg-slate-50"}`}
           title="클릭하여 수정"
         >
           <span className={`text-[13px] md:text-[14px] tabular-nums text-right ${displayValue ? "text-ink" : "text-slate-400 italic"}`}>
             {displayValue ? (suffix ? `${displayValue}${suffix}` : displayValue) : (placeholder || "—")}
           </span>
-          {/* 2026-10-12 · 사용자 지시 "드롭박스엔 연필 X" · options 있는 select 필드는 연필 숨김 (chevron 으로 암시) */}
+          {/* 2026-10-12 · 사용자 지시 "드롭박스엔 연필 X" + "allEditMode 아이콘 영구 표시" */}
           {options ? (
-            <span className="text-slate-400 opacity-60 group-hover/btn:opacity-100 shrink-0 transition-opacity text-[11px] font-bold leading-none">▾</span>
+            <span className={`text-slate-500 shrink-0 transition-opacity text-[11px] font-bold leading-none ${allEditMode ? "opacity-100" : "opacity-60 group-hover/btn:opacity-100"}`}>▾</span>
           ) : (
-            <PencilSimple size={11} weight="bold" className="text-slate-400 opacity-60 group-hover/btn:opacity-100 shrink-0 transition-opacity" />
+            <PencilSimple size={11} weight="bold" className={`text-slate-500 shrink-0 transition-opacity ${allEditMode ? "opacity-100" : "opacity-60 group-hover/btn:opacity-100"}`} />
           )}
         </button>
       )}

@@ -43,9 +43,11 @@ interface Props {
   onBack: () => void;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  /** 2026-10-13 · #18 Phase 2 · SettingsHub inner tab embed · SettingsPageShell skip */
+  embedded?: boolean;
 }
 
-export const OrderSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavigate, onLogout }) => {
+export const OrderSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
   // 2026-10-06 · BREADCRUMB SSOT CLEANUP · mount 시 activeNav 정착 (사이드바 미경유 직접 진입·refresh 포함)
   //   · AppNavHeader buildBreadcrumbFromNav(activeNav) 가 유일한 breadcrumb 표시 소스
   const setActiveByPage = useSetActiveByPage();
@@ -128,24 +130,15 @@ export const OrderSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavi
     } finally { setTesting(false); }
   };
 
-  return (
-    <SettingsPageShell
-      activePage={"order-settings" as AppNavPage}
-      authSession={authSession}
-      onBack={onBack}
-      onNavigate={onNavigate}
-      onLogout={onLogout}
-      icon={Truck}
-      title="발주 설정"
-      description="발주 이메일 SMTP 설정 · 테스트 발송 · 향후 발주 규칙·템플릿 확장"
-      rightSlot={
-        saving ? <StatusPill tone="brand" size="sm" dot pulse>저장 중</StatusPill>
-        : dirty ? <StatusPill tone="amber" size="sm" dot>변경사항 있음</StatusPill>
-        : initialConfigured === true ? <StatusPill tone="emerald" size="sm" dot>SMTP 설정됨</StatusPill>
-        : initialConfigured === false ? <StatusPill tone="zinc" size="sm" dot>SMTP 미설정</StatusPill>
-        : null
-      }
-    >
+  // 2026-10-13 · #18 Phase 2 · body + shell 분리 · embedded 모드 지원
+  const rightSlot = saving ? <StatusPill tone="brand" size="sm" dot pulse>저장 중</StatusPill>
+    : dirty ? <StatusPill tone="amber" size="sm" dot>변경사항 있음</StatusPill>
+    : initialConfigured === true ? <StatusPill tone="emerald" size="sm" dot>SMTP 설정됨</StatusPill>
+    : initialConfigured === false ? <StatusPill tone="zinc" size="sm" dot>SMTP 미설정</StatusPill>
+    : null;
+
+  const body = (
+    <>
       {/* ── 1. SMTP 이메일 설정 ─────────────────────────────────── */}
       <Card as="section" variant="sm" padding="none" clip rounded="2xl" className="relative">
         <div className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-brand-deep via-brand to-[#3E7CB1]" />
@@ -270,6 +263,31 @@ export const OrderSettingsPage: React.FC<Props> = ({ authSession, onBack, onNavi
       {toast && (
         <div className={`fixed bottom-4 right-4 z-[9999] ${toastClass(toast.tone)}`}>{toast.message}</div>
       )}
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="px-4 py-4">
+        {rightSlot && <div className="flex justify-end mb-2">{rightSlot}</div>}
+        {body}
+      </div>
+    );
+  }
+
+  return (
+    <SettingsPageShell
+      activePage={"order-settings" as AppNavPage}
+      authSession={authSession}
+      onBack={onBack}
+      onNavigate={onNavigate}
+      onLogout={onLogout}
+      icon={Truck}
+      title="발주 설정"
+      description="발주 이메일 SMTP 설정 · 테스트 발송 · 향후 발주 규칙·템플릿 확장"
+      rightSlot={rightSlot}
+    >
+      {body}
     </SettingsPageShell>
   );
 };

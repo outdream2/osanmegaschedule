@@ -97,7 +97,7 @@ export const RequestsOverview: React.FC<Props> = ({ onNavigate, onNavigateToDocu
   }, [employees]);
 
   const approvalRows: SectionRow[] = isManager ? [
-    { key: "leave",       label: "연차승인",   Icon: Calendar,  tone: "indigo",  count: leavePending,            action: () => onNavigate("approval", "leave") },
+    { key: "leave",       label: "휴가승인",   Icon: Calendar,  tone: "indigo",  count: leavePending,            action: () => onNavigate("approval", "leave") },
     { key: "vendor",      label: "거래처승인", Icon: Buildings, tone: "emerald", count: counts.vendor ?? 0,      action: () => onNavigate("approval", "vendor") },
     { key: "resignation", label: "사직서승인", Icon: FileText,  tone: "rose",    count: counts.resignation ?? 0, action: () => onNavigate("approval", "resignation") },
   ] : [];
@@ -107,6 +107,12 @@ export const RequestsOverview: React.FC<Props> = ({ onNavigate, onNavigateToDocu
     ...(isManager ? [
       { key: "lunch", label: "점심불참", Icon: ForkKnife, tone: "sky" as const, count: counts.lunch ?? 0, action: () => onNavigate("request", "lunch") },
     ] : []),
+  ];
+
+  // 2026-10-12 · 사용자 지시 "휴가승인등 내용은 모두 리스트형태 3단구조" · 직원서류도 리스트 통합
+  const docRows: SectionRow[] = [
+    { key: "contract",    label: `근로계약서 · 재직 ${docStats.activeCount}명`,    Icon: FileText,       tone: "emerald", count: docStats.missingContract,    action: onNavigateToDocument },
+    { key: "resignation", label: `사직서 · 퇴직자 ${docStats.retiredCount}명`,     Icon: ClipboardText,  tone: "rose",    count: docStats.missingResignation, action: onNavigateToDocument },
   ];
 
   const approvalTotal = approvalRows.reduce((s, r) => s + r.count, 0);
@@ -144,8 +150,8 @@ export const RequestsOverview: React.FC<Props> = ({ onNavigate, onNavigateToDocu
         </div>
       </section>
 
-      {/* ═════════ 승인요청 + 긴급 요청 확인 · 2-col grid ═════════ */}
-      <div className={`grid grid-cols-1 ${isManager ? "lg:grid-cols-2" : ""} gap-2.5 md:gap-4`}>
+      {/* ═════════ 2026-10-12 · 사용자 지시 · 승인·요청·서류 3 섹션 lg:3-col grid 통합 리스트 ═════════ */}
+      <div className={`grid grid-cols-1 ${isManager ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2"} gap-2.5 md:gap-4`}>
         {isManager && (
           <SectionCard
             label="승인요청"
@@ -162,42 +168,14 @@ export const RequestsOverview: React.FC<Props> = ({ onNavigate, onNavigateToDocu
           rows={requestRows}
           emptyMsg="대기 중인 요청이 없습니다"
         />
+        <SectionCard
+          label="직원 서류"
+          stripTone="emerald"
+          description={docTotal > 0 ? `${docTotal}건 작성 필요` : "모두 작성 완료"}
+          rows={docRows}
+          emptyMsg="서류 데이터 없음"
+        />
       </div>
-
-      {/* ═════════ 직원 서류작성 현황 · 2 독립 카드 (HomeDashboard 패턴) ═════════ */}
-      <section className={`${CARD}`}>
-        <header className="flex items-center gap-2 px-3 py-2.5 md:px-4 md:py-3 border-b border-slate-100">
-{/* 컬러띠 제거 */}
-          <span className="text-[16px] md:text-[17px] font-semibold text-emerald-700 tracking-tight">직원 서류 현황</span>
-          {docTotal > 0 && (
-            <span className="ml-auto text-[14px] text-rose-600 font-semibold">
-              {docTotal}건 작성 필요
-            </span>
-          )}
-        </header>
-        <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
-          <DocCell
-            Icon={FileText}
-            tone="emerald"
-            title="근로계약서"
-            baseCount={docStats.activeCount}
-            baseLabel="재직 직원"
-            missingCount={docStats.missingContract}
-            onClick={onNavigateToDocument}
-            ctaLabel="근로계약서 작성"
-          />
-          <DocCell
-            Icon={ClipboardText}
-            tone="rose"
-            title="사직서"
-            baseCount={docStats.retiredCount}
-            baseLabel="퇴직자"
-            missingCount={docStats.missingResignation}
-            onClick={onNavigateToDocument}
-            ctaLabel="사직서 작성"
-          />
-        </div>
-      </section>
     </div>
   );
 };
@@ -259,54 +237,7 @@ const SectionCard: React.FC<{
   );
 };
 
-const DocCell: React.FC<{
-  Icon: React.ElementType;
-  tone: Tone;
-  title: string;
-  baseCount: number;
-  baseLabel: string;
-  missingCount: number;
-  onClick: () => void;
-  ctaLabel: string;
-}> = ({ Icon, tone, title, baseCount, baseLabel, missingCount, onClick, ctaLabel }) => {
-  const t = TONE[tone];
-  const noMissing = missingCount === 0 && baseCount > 0;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group px-3 md:px-4 py-3 md:py-3.5 text-left hover:bg-slate-50/60 active:bg-slate-100/40 transition-colors cursor-pointer flex items-center gap-3"
-    >
-      <span className={`inline-flex items-center justify-center w-7 h-7 rounded-[8px] ${t.bg} ${t.text} shrink-0`}>
-        <Icon size={14} weight="fill" />
-      </span>
-      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-        <div className="flex items-baseline gap-1.5 flex-wrap">
-          <span className="text-[16px] md:text-[16px] font-semibold text-ink truncate">{title}</span>
-          <span className="text-[15px] text-slate-400 font-medium">
-            {baseLabel} <span className="tabular-nums font-semibold text-slate-600">{baseCount}</span>명
-          </span>
-        </div>
-        <div className="flex items-baseline gap-1">
-          {noMissing ? (
-            <span className="inline-flex items-center gap-1 text-emerald-700 text-[14px] font-semibold">
-              <CheckCircle size={11} weight="fill" />
-              모두 작성 완료
-            </span>
-          ) : (
-            <>
-              <span className="text-[14px] text-slate-500 font-medium">미작성</span>
-              <span className={`text-[17px] font-bold tabular-nums ${t.text}`}>{missingCount}</span>
-              <span className="text-[15px] text-slate-400 font-semibold">건</span>
-              <span className="text-[15px] text-slate-400 font-medium ml-1">· {ctaLabel} →</span>
-            </>
-          )}
-        </div>
-      </div>
-      <ArrowRight size={12} weight="bold" className="text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all shrink-0" />
-    </button>
-  );
-};
+// 2026-10-12 · 사용자 지시 "3단구조 통합" · DocCell 제거 · 직원서류 섹션도 SectionCard 로 통합
 
 // unused imports guard
-void Warning; void PenNib;
+void Warning; void PenNib; void CheckCircle;

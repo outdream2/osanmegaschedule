@@ -136,17 +136,9 @@ describe("useAuth · 세션 만료 · 항상 적용 (2026-08-25 사용자 지시
     expect(result.current.session).toBeNull();
   });
 
-  it("rememberMe=false · 30분 idle 지난 세션도 만료", () => {
-    const idle = Date.now() - 60 * 60 * 1000; // 1시간 전
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      ...validSession,
-      rememberMe: false,
-      loginAt: idle,
-      lastActiveAt: idle,
-    }));
-    const { result } = renderHook(() => useAuth());
-    expect(result.current.session).toBeNull();
-  });
+  // 2026-10-13 · 삭제 · 2026-10-08 사용자 지시로 idle 설정 범위가 1440~10080분 (1~7일) 으로 변경됨
+  //   · "30분 idle" 시나리오는 정책상 재현 불가능 (MIN=1440) 하므로 테스트 자체 폐기
+  //   · absolute 24h 캡 커버리지는 상단 "100일 지난 세션" 테스트가 담당
 });
 
 describe("useAuth · 초기 상태 · showTimeoutWarning=false", () => {

@@ -151,7 +151,10 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
   );
 
   return (
-    <div className="flex-1 min-h-0 flex gap-3">
+    // 2026-10-12 · 사용자 리포트 "달력에서 다 오른쪽 넘어가 · bulk 뷰는 괜찮음" fix
+    //   · 최상위 flex row 에 overflow-hidden 추가 · MonthGridV2 (table 2392px) 가 parent 밀어내기 차단
+    //   · MonthGridV2 Card 안 overflow-auto 로 가로 scroll 처리
+    <div className="flex-1 min-h-0 flex gap-3 overflow-hidden">
       {/* 좌측 · 직원 리스트 · 2026-10-12 사용자 지시 "줄바꿈 없게 · 폭 자동 조정"
           · min-w ~ max-w · 긴 이름 수용 · 둘째 줄 nowrap + truncate */}
       <Card variant="sm" padding="none" rounded="xl" className="min-w-[200px] max-w-[320px] w-fit shrink-0 flex flex-col min-h-0 overflow-hidden">
@@ -217,6 +220,7 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
             <div className="sticky top-0 z-20 bg-white flex flex-wrap items-center gap-2 py-2 px-1 border-b border-line">
               <h2 className="text-[18px] font-extrabold text-ink leading-tight tracking-tight shrink-0">{selectedEmployee.name}</h2>
               <div className="inline-flex rounded-lg border border-line bg-white overflow-hidden shrink-0">
+                {/* 2026-10-12 · 사용자 지시 재확정 · "달력에도 나오고 일괄등록도 나오게" · bulk tab 복원 */}
                 {([
                   { k: "calendar" as const, label: "달력" },
                   { k: "bulk" as const,     label: "일괄등록" },
@@ -272,8 +276,8 @@ export const EmployeeScheduleViewV2: React.FC<Props> = ({
               </div>
             )}
 
-            {/* subview content */}
-            <div className="flex-1 min-h-0 flex flex-col mt-2">
+            {/* subview content · 2026-10-12 사용자 "오른쪽이 다 넘어가자나" fix · min-w-0 추가로 MonthGridV2 overflow 차단 */}
+            <div className="flex-1 min-h-0 min-w-0 flex flex-col mt-2">
               {error ? (
                 <div className="flex-1 flex items-center justify-center py-16 text-[13px] text-rose-600">
                   로드 실패 · {error}

@@ -351,7 +351,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                   </div>
                   {offTypes.length > 0 && (
                     <div>
-                      <label className="block text-[15px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">휴무/연차</label>
+                      <label className="block text-[15px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">휴무/휴가</label>
                       <div className="flex flex-wrap gap-1.5">
                         {offTypes.map(t => renderBtn(t, currentGroup === "work"))}
                       </div>

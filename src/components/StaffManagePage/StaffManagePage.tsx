@@ -347,7 +347,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract, init
       //   · 사용자에게 "퇴직 처리" 유도 (retireDate 사용)
       if (err instanceof EmployeeDeleteError && err.code === "EMPLOYEE_HAS_RELATED_ROWS") {
         showError(
-          "근무/연차/계약 등 이력이 있는 직원은 삭제할 수 없습니다. " +
+          "근무/휴가/계약 등 이력이 있는 직원은 삭제할 수 없습니다. " +
           "퇴직 처리해주세요 (직원 상세에서 [퇴사일] 입력)." +
           (err.message ? `\n\n상세: ${err.message}` : ""),
         );

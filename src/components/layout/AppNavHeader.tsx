@@ -6,7 +6,10 @@
 //   - 경영관리 탭 클릭 → business-manage 페이지로 단순 라우팅 (팝오버 제거)
 // 2026-08-31 · 분리: NavDesktopTab · NavMobileTab · AppNavHeader.types
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
-import { Lock, LogOut, Menu, Sun, CloudSun, Cloud, CloudFog, CloudRain, CloudSnow, CloudLightning, User } from "lucide-react";
+import { Lock, LogOut, Menu, Sun, CloudSun, Cloud, CloudFog, CloudRain, CloudSnow, CloudLightning, User, X as XIcon } from "lucide-react";
+// 2026-10-12 · 사용자 지시 · "계정 메뉴 삭제 · 로그인 아이콘 클릭 → confirm → slide drawer"
+import { useConfirm } from "../../hooks/useConfirm";
+const MyPageLazy = React.lazy(() => import("../MyPage/MyPage").then(m => ({ default: m.MyPage })));
 import type { AuthSession } from "../../types";
 import { NotificationBell } from "../NotificationBell";
 // 2026-09-14 · #108 · NotificationToggle 제거 (사용자 결정 · 실사용 빈도 낮음)
@@ -226,6 +229,16 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 }) => {
   const isMobileNav = useIsMobile();
   const SIDEBAR_ENABLED = useSidebarEnabled();
+  // 2026-10-12 · 사용자 지시 · 로그인 아이콘 클릭 → confirm → slide drawer
+  const confirm = useConfirm();
+  const [myPageDrawerOpen, setMyPageDrawerOpen] = React.useState(false);
+  const openMyPageDrawer = async () => {
+    const ok = await confirm({
+      title: "개인정보 조회",
+      message: "개인정보를 조회하시겠습니까?",
+    });
+    if (ok) setMyPageDrawerOpen(true);
+  };
   const { brand: hdrBrand } = useBrandIdentity();
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
@@ -250,18 +263,27 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isVendor) return false;
     if (t.managerOnly) return isPrivileged;
     if (t.pharmacistOnly) return isPharmacist;
-    if (perms) {
-      const group = SIDE_NAV_GROUPS.find(g => (g.topTab?.key ?? g.items[0]?.key) === t.key);
-      if (group) {
-        const allHidden = group.items.length > 0 && group.items.every(it => {
-          const compositeKey = it.subTab ? `${it.key}:${it.subTab}` : it.key;
-          const perm = perms[compositeKey] ?? perms[it.key];
-          if (perm?.hidden !== true) return false;
-          if (userLevel >= 9 && ADMIN_ESSENTIAL_KEYS.has(it.key)) return false;
-          return true;
-        });
-        if (allHidden) return false;
-      }
+    const group = SIDE_NAV_GROUPS.find(g => (g.topTab?.key ?? g.items[0]?.key) === t.key);
+    if (perms && group) {
+      const allHidden = group.items.length > 0 && group.items.every(it => {
+        const compositeKey = it.subTab ? `${it.key}:${it.subTab}` : it.key;
+        const perm = perms[compositeKey] ?? perms[it.key];
+        if (perm?.hidden !== true) return false;
+        if (userLevel >= 9 && ADMIN_ESSENTIAL_KEYS.has(it.key)) return false;
+        return true;
+      });
+      if (allHidden) return false;
+    }
+    // 2026-10-13 · fix (Bug#3) · page_visibility 도 그룹 item composite key 레벨까지 체크 (SideNav/BottomNav 와 정합)
+    //   · 이전 · 그룹 (탭) key 레벨만 체크 → subTab 레벨 숨김이 상단 nav 에서 무시됨
+    //   · 이후 · 그룹 안 모든 item 이 (key 또는 key:subTab) visibility off 면 탭 자체 숨김
+    if (group && group.items.length > 0) {
+      const allVisHidden = group.items.every(it => {
+        if (!isPageVisible(it.key as string, viewport)) return true;
+        if (it.subTab && !isPageVisible(`${it.key}:${it.subTab}`, viewport)) return true;
+        return false;
+      });
+      if (allVisHidden) return false;
     }
     if (!isPageVisible(t.key as string, viewport)) return false;
     return true;
@@ -444,7 +466,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           {authSession?.employeeName && (
             <button
               type="button"
-              onClick={() => onNavigate?.("mypage" as AppNavPage)}
+              onClick={openMyPageDrawer}
               // 2026-10-08 · 사용자 지시 · 최신 트렌드 ghost · 아이콘 20px (slim/light 톤)
               className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer shrink-0"
               title={`${authSession.employeeName}${authSession.employeeRank ?? ""} · 마이페이지`}
@@ -521,7 +543,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           {authSession?.employeeName && (
             <button
               type="button"
-              onClick={() => onNavigate?.("mypage" as AppNavPage)}
+              onClick={openMyPageDrawer}
               // 2026-10-08 · 사용자 지시 · visible chrome · 알림종과 통일 톤 (dark bg용)
               className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.1] hover:bg-white/[0.16] ring-1 ring-white/15 text-white transition-colors cursor-pointer shrink-0"
               title={`${authSession.employeeName}${authSession.employeeRank ?? ""} · 마이페이지`}
@@ -703,6 +725,53 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             )}
           </div>
         </div>
+      )}
+      {/* 2026-10-12 · 사용자 지시 · 로그인 아이콘 클릭 → confirm → slide drawer (MyPage embed) */}
+      {myPageDrawerOpen && authSession && (
+        <>
+          <style>{`
+            @keyframes mypageDrawerSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+            @keyframes mypageDrawerFadeIn { from { opacity: 0; } to { opacity: 1; } }
+          `}</style>
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-40"
+            style={{ animation: "mypageDrawerFadeIn 200ms ease-out" }}
+            onClick={() => setMyPageDrawerOpen(false)}
+            aria-hidden
+          />
+          <aside
+            className="fixed right-0 top-0 bottom-0 w-full md:w-[720px] lg:w-[920px] bg-[#F4F7FA] z-50 shadow-[-8px_0_32px_rgba(15,23,42,0.12)] flex flex-col overflow-hidden"
+            style={{ animation: "mypageDrawerSlideIn 250ms ease-out" }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="개인정보"
+          >
+            <header className="sticky top-0 z-10 flex items-center gap-2 px-3 py-2.5 md:px-4 md:py-3 border-b border-slate-200 bg-white">
+              <span className="w-[3px] h-[14px] bg-indigo-500 rounded-full shrink-0" aria-hidden />
+              <User size={14} className="text-indigo-600 shrink-0" />
+              <h2 className="text-[14px] md:text-[15px] font-semibold text-ink tracking-tight flex-1 min-w-0 truncate leading-tight">개인정보</h2>
+              <button
+                type="button"
+                onClick={() => setMyPageDrawerOpen(false)}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-[8px] text-slate-500 hover:text-ink hover:bg-slate-100 transition-colors cursor-pointer"
+                aria-label="닫기"
+                title="닫기"
+              >
+                <XIcon size={14} />
+              </button>
+            </header>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <React.Suspense fallback={<div className="flex-1 flex items-center justify-center py-16 text-[13px] text-slate-500">개인정보 로딩 중...</div>}>
+                <MyPageLazy
+                  authSession={authSession}
+                  onBack={() => setMyPageDrawerOpen(false)}
+                  onNavigate={onNavigate ?? (() => { /* no-op */ })}
+                  onLogout={onLogout ?? (() => { /* no-op */ })}
+                />
+              </React.Suspense>
+            </div>
+          </aside>
+        </>
       )}
     </header>
   );
