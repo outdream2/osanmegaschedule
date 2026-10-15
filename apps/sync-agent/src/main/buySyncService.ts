@@ -673,12 +673,15 @@ export async function applyBuySync(
     // 2026-10-12 · 사용자 지시 "같은 데이터는 덮어써야지 · 이런 일 없도록"
     //   · DB 에 UNIQUE constraint 미적용 상태에서 `.insert()` → 매 sync 마다 중복 row 수백 건 쌓임
     //   · 해결: business key `(purchase_date, product_code, quantity, unit_price, amount)` 조합으로 UPSERT
-    //   · ignoreDuplicates: true · 같은 business key 면 skip (ERP 는 identity 로 bm_code+row_num 쓰지만 실제 매입 식별은 business key)
+    // 2026-10-15 · 사용자 지시 "일별로 덮어쓰기 · 같은 날이면 UPDATE"
+    //   · ignoreDuplicates: true → false · 매입 UPDATE 모드 활성
+    //   · 같은 business_key 면 skip 아니라 **UPDATE** (수량/가격 변경 반영)
+    //   · 실제로는 business_key 가 수량/가격 포함이라 CHANGED 는 다른 key · onConflict 매칭 시 bm_code/row_num 메타 UPDATE
     const { data, error } = await supabase
       .from("purchase_details")
       .upsert(payloads, {
         onConflict: "purchase_date,product_code,quantity,unit_price,amount",
-        ignoreDuplicates: true,
+        ignoreDuplicates: false,
       })
       .select("id, bm_code, row_num");
     if (!error) {
