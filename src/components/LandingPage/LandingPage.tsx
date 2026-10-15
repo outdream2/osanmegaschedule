@@ -156,14 +156,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   }, [authSession?.role, authSession?.employeeId, refreshVendorsSelf]);
 
   // 2026-09-04 · Bug fix · 관리자 승인 후 공급사 재고확인 자동 활성화
-  //   · 승인 대기(requested/registered) 상태에서 30초마다 vendor 상태 재조회
-  //   · admin 승인 시 DB → approval_status="approved" → 30초 이내 버튼 자동 활성
+  //   · 승인 대기(requested/registered) 상태에서 vendor 상태 재조회
+  // 2026-10-15 · F2 bandwidth 폭주 fix · 사용자 지시 "가장 최적화 동기화"
+  //   · 이전: setInterval 30초 · useVendors.refresh() · /api/vendors?withBalances=1 · purchase_details 전체 스캔 · ~500KB
+  //   · 이후: 경량 endpoint /api/vendors/me/approval-status · 승인 상태만 체크 · ~100 bytes
+  //   · 간격 30초 → 2분 (120초) · 승인 반영 UX 수용 가능
+  //   · 승인 완료 감지 시 useVendors.refresh() 1회만 호출 · full data load
   useEffect(() => {
     if (authSession?.role !== "vendor") return;
     const status = (vendorSelf as any)?.approval_status;
     if (status === "approved") return; // 이미 승인 · 폴링 불필요
-    const id = setInterval(() => { refreshVendorsSelf(); }, 30_000);
-    return () => clearInterval(id);
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const { data } = await api.get<{ approval_status?: string } | null>("/api/vendors/me/approval-status");
+        if (cancelled) return;
+        if (data?.approval_status === "approved") {
+          // 승인 감지 · full data load (vendors 테이블 전체 refresh · 1회만)
+          refreshVendorsSelf();
+        }
+      } catch { /* silent · 다음 polling 재시도 */ }
+    };
+    const id = setInterval(check, 120_000); // 2분
+    return () => { cancelled = true; clearInterval(id); };
   }, [authSession?.role, vendorSelf, refreshVendorsSelf]);
 
   // 2026-09-04 · Bug #3 · 사이드바 vendor · "공급사 정보" 클릭 시 · VendorDetailModal open 신호 처리

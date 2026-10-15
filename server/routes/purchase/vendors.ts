@@ -142,6 +142,25 @@ router.post("/api/upload-vendors", authorize(9), express.raw({ type: "applicatio
 
 // 전체 거래처 목록 (관리자)
 // T-SLIM E · 표준 shape 주석 · List endpoint
+// 2026-10-15 · F2 bandwidth 폭주 fix · vendor 미승인 사용자 30초 polling 경량 endpoint
+//   · 이전: /api/vendors?withBalances=1 매번 호출 · purchase_details 26,504 row 전체 스캔 · ~500KB 응답
+//   · 이후: /api/vendors/me/approval-status · 승인 상태 1 row 반환 · ~100 bytes
+//   · LandingPage.tsx 폴링에서 사용 · bandwidth -99.9%
+router.get("/api/vendors/me/approval-status", authorize(0), asyncHandler(async (req, res) => {
+  const authUser = (req as AuthedRequest).authUser;
+  if (!authUser || authUser.role !== "vendor") throw forbidden("vendor 전용 endpoint");
+  const id = Number(authUser.sub);
+  if (!Number.isFinite(id) || id <= 0) throw badRequest("invalid session");
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  const { data, error } = await supabase
+    .from("vendors")
+    .select("id, approval_status, approval_requested_at, approved_at")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new HttpError(500, error.message);
+  res.json(data ?? null);
+}));
+
 // 현재: res.json(array) · 직접 배열 반환 · 프론트 소비 패턴과 breaking 없이 유지
 // 미래 v2: { rows: array, count: number } 로 전환 예정 (프론트 마이그레이션 후)
 router.get("/api/vendors", asyncHandler(async (req, res) => {
