@@ -126,23 +126,24 @@ describe("BottomNav · 더보기 sheet", () => {
   });
 
   // 2026-08-31 · admin(lv9) · settings 그룹 노출 (모두 minLevel:9)
-  //   · "메뉴 설정" = permissions key (구 "권한관리" → 현재 label "메뉴 설정")
-  it("admin(lv9) · 메뉴 설정 노출", () => {
+  // 2026-10-13 · #18 Phase 3 · 설정 그룹 통합 · 7개 하위 메뉴 → 단일 "설정 현황" (settings-hub)
+  //   · "메뉴 설정" (permissions) 은 SettingsHubPage inner tab 으로 접근 · 사이드바에는 "설정 현황" 1개만
+  it("admin(lv9) · 설정 현황 노출", () => {
     const { container } = render(
       <BottomNav activePage={"landing" as any} authSession={adminSession} onNavigate={() => {}} />
     );
     const moreBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("더보기"))!;
     fireEvent.click(moreBtn);
-    expect(container.textContent).toContain("메뉴 설정");
+    expect(container.textContent).toContain("설정 현황");
   });
 
-  it("manager (lv2) · 메뉴 설정 미노출 (lv9 전용)", () => {
+  it("manager (lv2) · 설정 현황 미노출 (lv9 전용)", () => {
     const { container } = render(
       <BottomNav activePage={"landing" as any} authSession={managerSession} onNavigate={() => {}} />
     );
     const moreBtn = Array.from(container.querySelectorAll("button")).find(b => b.textContent?.includes("더보기"))!;
     fireEvent.click(moreBtn);
-    expect(container.textContent).not.toContain("메뉴 설정");
+    expect(container.textContent).not.toContain("설정 현황");
   });
 
   it("onLogout · 로그아웃 타일 노출", () => {

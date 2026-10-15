@@ -21,6 +21,8 @@ import { useMonthFilter } from "../../hooks/useMonthFilter";
 import { MonthToggleSelector, dateRangesFromMonths } from "../common/MonthToggleSelector";
 // 2026-10-07 · DayDetailModal · 날짜별 상품 ERP 실시간 조회 · 상비약/일반약 분류 필터
 import { CLASS_FILTER_LABEL, type ClassFilter, type ProductClass } from "../../utils/productClassify";
+// 2026-10-15 · 사용자 리포트 "월별달력 공휴일 안됨" · API 실패/빈값 fallback
+import { getHardcodedHolidayMap } from "../../lib/koreanHolidays";
 
 // 2026-10-12 · 사용자 지시 "시간대별 월별 상품별로 inner tab" · products tab 추가
 type RevenueTab = "hourly" | "monthly" | "products";
@@ -308,6 +310,8 @@ export const HourlyReportTab: React.FC = () => {
 
   // 2026-10-07 · 공휴일 fetch · 활성 범위 연도별 · 서버 24h cache · API 실패 silent skip
   //   · 2026-10-08 · 서버 fetchHolidays 에서 고정 공휴일 fallback 처리 (API 누락 방어)
+  // 2026-10-15 · 사용자 리포트 "공휴일 안됨" · 하드코딩 fallback (2026-2027)
+  //   · 활성 범위 연도별 getHardcodedHolidayMap 즉시 반영 · API 응답 성공 시 override
   useEffect(() => {
     let cancelled = false;
     const years = new Set<number>();
@@ -318,9 +322,24 @@ export const HourlyReportTab: React.FC = () => {
       if (Number.isFinite(ey)) years.add(ey);
     }
     if (years.size === 0) { setHolidaySet(new Set()); setHolidayNameMap(new Map()); return; }
+
+    // 즉시 하드코딩 fallback 반영 (API 응답 전에도 UI 공백 방지)
+    const fallbackDates = new Set<string>();
+    const fallbackNameMap = new Map<string, string>();
+    for (const y of years) {
+      const m = getHardcodedHolidayMap(y);
+      for (const [date, name] of m) {
+        fallbackDates.add(date);
+        fallbackNameMap.set(date, name);
+      }
+    }
+    setHolidaySet(fallbackDates);
+    setHolidayNameMap(fallbackNameMap);
+
     (async () => {
       const dates = new Set<string>();
       const nameMap = new Map<string, string>();
+      let apiReturnedAny = false;
       for (const y of years) {
         try {
           const resp = await api.get<{ holidays?: Array<{ date: string; name?: string; is_holiday: boolean }> }>(`/api/holidays?year=${y}`);
@@ -328,11 +347,13 @@ export const HourlyReportTab: React.FC = () => {
             if (h.is_holiday && typeof h.date === "string") {
               dates.add(h.date);
               if (typeof h.name === "string" && h.name) nameMap.set(h.date, h.name);
+              apiReturnedAny = true;
             }
           }
-        } catch { /* HOLIDAY_API_KEY 미설정 등 · 해당 연도 skip */ }
+        } catch { /* HOLIDAY_API_KEY 미설정 등 · 해당 연도 skip · fallback 유지 */ }
       }
-      if (!cancelled) { setHolidaySet(dates); setHolidayNameMap(nameMap); }
+      // API 가 유의미 값 반환 시만 override · 아니면 fallback 유지
+      if (!cancelled && apiReturnedAny) { setHolidaySet(dates); setHolidayNameMap(nameMap); }
     })();
     return () => { cancelled = true; };
   }, [activeRanges]);
@@ -1680,11 +1701,16 @@ export const MonthlyReportTab: React.FC = () => {
   // 2026-10-06 · 사용자 지시 · 공식 공휴일 표시 (data.go.kr 특일정보 · /api/holidays?year)
   //   · 서버 라우트 server/routes/settings/holidays.ts · 24h in-memory cache
   //   · year 변경 시 1회 조회 · Map<YYYY-MM-DD, name> lookup
+  // 2026-10-15 · 사용자 리포트 "월별달력 공휴일 안됨" · API 실패/빈값 시 하드코딩 fallback
+  //   · getHardcodedHolidayMap · 2026-2027 지원 · 외 연도는 API 응답만 사용
+  //   · 초기값도 fallback 으로 시작 (API 응답 대기 중에도 즉시 표시)
   interface HolidayApiRow { date: string; name: string; is_holiday: boolean }
   interface HolidayApiResponse { year: number; holidays?: HolidayApiRow[] }
-  const [holidayMap, setHolidayMap] = useState<Map<string, string>>(new Map());
+  const [holidayMap, setHolidayMap] = useState<Map<string, string>>(() => getHardcodedHolidayMap(year));
   useEffect(() => {
     let cancelled = false;
+    // year 변경 즉시 fallback 세팅 (API 응답 대기 중 공백 방지)
+    setHolidayMap(getHardcodedHolidayMap(year));
     (async () => {
       try {
         const r = await api.get<HolidayApiResponse>(`/api/holidays?year=${year}`);
@@ -1693,8 +1719,9 @@ export const MonthlyReportTab: React.FC = () => {
         for (const h of r.data.holidays ?? []) {
           if (h.is_holiday && h.date && h.name) m.set(h.date, h.name);
         }
-        setHolidayMap(m);
-      } catch { /* noop · 공휴일 조회 실패시 일반 날짜로 표시 */ }
+        // API 가 빈값이면 fallback 유지 · 아니면 API 응답 우선
+        if (m.size > 0) setHolidayMap(m);
+      } catch { /* noop · 공휴일 조회 실패시 fallback 유지 */ }
     })();
     return () => { cancelled = true; };
   }, [year]);

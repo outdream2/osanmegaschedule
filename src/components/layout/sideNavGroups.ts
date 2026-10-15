@@ -167,27 +167,14 @@ export const SIDE_NAV_GROUPS: SideNavGroup[] = [
     label: "설정",
     color: "slate",
     icon: Gear, // 헤더용 · 기존 TABS 아이콘 유지 (items[0]=Lock 직원권한 과 다름 · 회귀 방지)
-    topTab: { key: "permissions" },
+    topTab: { key: "settings-hub" },
     managerOnly: true,
     items: [
-      // 2026-10-11 · 사용자 지시 · 설정 통합 대시보드 (매장 overview 패턴 복제) · 설정 그룹 맨 위 default
+      // 2026-10-13 · #18 Phase 3 · 설정 그룹 통합 (vendor-overview 패턴) · 7개 하위 메뉴 → 단일 "설정 현황"
+      //   · 각 설정 페이지는 SettingsHubPage 안 inner tab 으로 접근 (lazy embed)
+      //   · 기존 라우트 (permissions/schedule-settings 등) 는 App.tsx 유지 · deep link 하위 호환 (Phase 4)
+      //   · 이전 7개 라인 삭제 (permissions/schedule-settings/company-info/season-settings/system-settings/order-settings/admin-initial-build)
       { key: "settings-hub", label: "설정 현황", icon: SquaresFour, color: "slate", minLevel: 9 },
-      { key: "permissions", label: "메뉴 설정", icon: Lock, color: "slate", minLevel: 9 },
-      // 2026-09-04 · 스케줄 설정 (기본연차일 직군별)
-      { key: "schedule-settings", label: "스케줄 설정", icon: CalendarBlank, color: "slate", minLevel: 9 },
-      // 2026-09-02 · #74 · 창고 구역 · 매장 그룹으로 이동됨 (사용자 지시)
-      // 2026-08-23 · #181 · "매장 구역" 설정 페이지 제거 · StoreZoneMap 인라인 편집만 유지
-      // 2026-08-12 · 회사정보 + 앱브랜딩 통합 페이지 (약국명·대표·사업자·주소·전화·브랜드·연락처·도장·모바일)
-      { key: "company-info", label: "회사·브랜드", icon: Buildings, color: "slate", minLevel: 9 },
-      // 2026-08-12 · 계절 정의 (MyPage 에서 이동)
-      // 2026-08-23 · #193 · "계절 정의" → "통계 설정" (계절 + 적정재고 통합)
-      { key: "season-settings", label: "통계 설정", icon: Calendar, color: "slate", minLevel: 9 },
-      // 2026-08-12 · 시스템 설정 (env 편집)
-      { key: "system-settings", label: "시스템 설정", icon: Gear, color: "slate", minLevel: 9 },
-      // 2026-09-07 · 발주 설정 (SMTP 이메일 · 향후 발주 규칙·템플릿)
-      { key: "order-settings", label: "발주 설정", icon: Truck, color: "slate", minLevel: 9 },
-      // 2026-10-03 저녁 · Phase 2 · ERP 초기 데이터 구축 · DRY-RUN Preview (관리자 lv9 전용)
-      { key: "admin-initial-build", label: "ERP 초기 구축", icon: Database, color: "slate", minLevel: 9 },
     ],
   },
   // 2026-10-12 · 사용자 지시 · "계정 메뉴 삭제 · 로그인 아이콘 클릭 → confirm → slide drawer 로 조회"
