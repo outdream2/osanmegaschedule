@@ -708,6 +708,10 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                     <th onClick={() => toggleSupplierSort("qty")} className="px-2 py-2 text-right text-[13px] font-semibold text-slate-700 w-[72px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
                       수량{supplierArrow("qty")}
                     </th>
+                    {/* 2026-10-15 · 사용자 리포트 "매입이력 공급사별 매입가 없고" · 매입가 column 추가 (수량과 현재고 사이) */}
+                    <th className="px-2 py-2 text-right text-[13px] font-semibold text-slate-700 w-[80px] whitespace-nowrap">
+                      매입가
+                    </th>
                     <th onClick={() => toggleSupplierSort("stock")} className="px-2 py-2 text-right text-[13px] font-semibold text-slate-700 w-[72px] whitespace-nowrap cursor-pointer select-none hover:bg-slate-200/60 transition-colors">
                       현재고{supplierArrow("stock")}
                     </th>
@@ -724,7 +728,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                 </thead>
                 <tbody>
                   {sortedSuppliers.length === 0 ? (
-                    <tr><td colSpan={8} className="py-10 text-center text-[13px] text-slate-500">{purchases == null ? "불러오는 중..." : "매입이력이 없습니다"}</td></tr>
+                    <tr><td colSpan={9} className="py-10 text-center text-[13px] text-slate-500">{purchases == null ? "불러오는 중..." : "매입이력이 없습니다"}</td></tr>
                   ) : sortedSuppliers.map((b) => {
                     // 2026-10-12 · 사용자 지시 "매입이력 접힌게 기본" · expanded set 반전 (default 접힘)
                     const expanded = expandedSuppliers.has(b.supplier);
@@ -746,6 +750,10 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                           <td className="px-2 py-2.5 text-[15px] font-semibold text-ink truncate">{b.supplier}</td>
                           <td className="px-2 py-2.5 text-right text-[13px] tabular-nums text-slate-600">{fmt(b.count)}건</td>
                           <td className="px-2 py-2.5 text-right text-[14px] tabular-nums font-semibold text-ink">{fmt(b.totalQty)}</td>
+                          {/* 2026-10-15 · 매입가 column · 가중 평균 (totalAmount / totalQty) */}
+                          <td className={`px-2 py-2.5 text-right text-[14px] tabular-nums ${b.totalQty > 0 ? "text-ink" : "text-slate-300"}`}>
+                            {b.totalQty > 0 ? fmt(Math.round(b.totalAmount / b.totalQty)) : "-"}
+                          </td>
                           <td className={`px-2 py-2.5 text-right text-[14px] tabular-nums font-semibold ${b.stockSum > 0 ? "text-ink" : "text-slate-300"}`}>{fmt(b.stockSum)}</td>
                           <td className="px-2 py-2.5 text-right text-[14px] tabular-nums text-ink">{b.avgSale > 0 ? fmt(b.avgSale) : "-"}</td>
                           <td className={`px-2 py-2.5 text-right text-[14px] tabular-nums font-semibold ${b.avgMarginPct >= 20 ? "text-emerald-700" : b.avgMarginPct >= 10 ? "text-ink" : b.avgMarginPct > 0 ? "text-rose-600" : "text-slate-300"}`}>{b.avgMarginPct > 0 ? `${b.avgMarginPct.toFixed(1)}%` : "-"}</td>
@@ -758,18 +766,20 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                             · 공급사 → 날짜 → 상품 2-tier · 날짜 header 각 column 집계 */}
                         {expanded && (
                           <tr className="border-b border-indigo-100 bg-slate-50/40">
-                            <td colSpan={8} className="pl-12 pr-5 py-2 border-l-4 border-indigo-200">
+                            <td colSpan={9} className="pl-12 pr-5 py-2 border-l-4 border-indigo-200">
                               <table className="w-full text-[13px]">
                                 <thead>
                                   <tr className="border-b border-slate-200 bg-white">
-                                    <th className="pl-2 pr-2 py-1.5 text-left text-[12px] font-semibold text-slate-500 w-[80px] whitespace-nowrap">일자</th>
-                                    <th className="px-2 py-1.5 text-left text-[12px] font-semibold text-slate-500">상품</th>
-                                    <th className="px-2 py-1.5 text-right text-[12px] font-semibold text-slate-500 w-[56px] whitespace-nowrap">건수</th>
-                                    <th className="px-2 py-1.5 text-right text-[12px] font-semibold text-slate-500 w-[64px] whitespace-nowrap">수량</th>
-                                    <th className="px-2 py-1.5 text-right text-[12px] font-semibold text-slate-500 w-[64px] whitespace-nowrap">현재고</th>
-                                    <th className="px-2 py-1.5 text-right text-[12px] font-semibold text-slate-500 w-[72px] whitespace-nowrap">판매가</th>
-                                    <th className="px-2 py-1.5 text-right text-[12px] font-semibold text-slate-500 w-[64px] whitespace-nowrap">마진율</th>
-                                    <th className="pl-2 pr-2 py-1.5 text-right text-[12px] font-semibold text-slate-500 w-[108px] whitespace-nowrap">매입금액</th>
+                                    <th className="pl-2 pr-2 py-1.5 text-left text-[13px] font-semibold text-slate-500 w-[80px] whitespace-nowrap">일자</th>
+                                    <th className="px-2 py-1.5 text-left text-[13px] font-semibold text-slate-500">상품</th>
+                                    <th className="px-2 py-1.5 text-right text-[13px] font-semibold text-slate-500 w-[56px] whitespace-nowrap">건수</th>
+                                    <th className="px-2 py-1.5 text-right text-[13px] font-semibold text-slate-500 w-[64px] whitespace-nowrap">수량</th>
+                                    {/* 2026-10-15 · 매입가 column 추가 */}
+                                    <th className="px-2 py-1.5 text-right text-[13px] font-semibold text-slate-500 w-[72px] whitespace-nowrap">매입가</th>
+                                    <th className="px-2 py-1.5 text-right text-[13px] font-semibold text-slate-500 w-[64px] whitespace-nowrap">현재고</th>
+                                    <th className="px-2 py-1.5 text-right text-[13px] font-semibold text-slate-500 w-[72px] whitespace-nowrap">판매가</th>
+                                    <th className="px-2 py-1.5 text-right text-[13px] font-semibold text-slate-500 w-[64px] whitespace-nowrap">마진율</th>
+                                    <th className="pl-2 pr-2 py-1.5 text-right text-[13px] font-semibold text-slate-500 w-[108px] whitespace-nowrap">매입금액</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -791,6 +801,10 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                                         <td className="px-2 py-1.5 text-[12px] text-slate-500">{dg.rows.length}개 상품</td>
                                         <td className="px-2 py-1.5 text-right text-[13px] tabular-nums text-slate-700 font-medium">{fmt(dg.count)}</td>
                                         <td className="px-2 py-1.5 text-right text-[13px] tabular-nums font-semibold text-ink">{fmt(dg.qty)}</td>
+                                        {/* 2026-10-15 · 매입가 column · 가중 평균 (dg.amount / dg.qty) */}
+                                        <td className={`px-2 py-1.5 text-right text-[13px] tabular-nums ${dg.qty > 0 ? "text-ink" : "text-slate-300"}`}>
+                                          {dg.qty > 0 ? fmt(Math.round(dg.amount / dg.qty)) : "-"}
+                                        </td>
                                         <td className={`px-2 py-1.5 text-right text-[13px] tabular-nums font-semibold ${dg.stockSum > 0 ? "text-ink" : "text-slate-300"}`}>{fmt(dg.stockSum)}</td>
                                         <td className="px-2 py-1.5 text-right text-[13px] tabular-nums text-ink">{dg.avgSale > 0 ? fmt(dg.avgSale) : "-"}</td>
                                         <td className={`px-2 py-1.5 text-right text-[13px] tabular-nums font-semibold ${dg.avgMarginPct >= 20 ? "text-emerald-700" : dg.avgMarginPct >= 10 ? "text-ink" : dg.avgMarginPct > 0 ? "text-rose-600" : "text-slate-300"}`}>{dg.avgMarginPct > 0 ? `${dg.avgMarginPct.toFixed(1)}%` : "-"}</td>
@@ -806,13 +820,18 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                                           : null;
                                         return (
                                           <tr key={`${b.supplier}-${dg.date}-${i}`} className="border-b border-slate-100 last:border-b-0 hover:bg-white/60 transition-colors">
-                                            <td className="pl-2 pr-2 py-1 text-[12px] tabular-nums text-slate-300 whitespace-nowrap"></td>
+                                            <td className="pl-2 pr-2 py-1 text-[13px] tabular-nums text-slate-300 whitespace-nowrap"></td>
+                                            {/* 2026-10-15 · 사용자 리포트 "상품 글씨 너무 작아" · 상품명 13→14 · 상품코드 11→13 (대원칙 하한 12 준수) */}
                                             <td className="pl-6 pr-2 py-1">
-                                              <span className="text-[13px] text-ink font-medium">{r.product_name ?? "-"}</span>
-                                              <span className="text-[11px] text-slate-400 tabular-nums ml-1.5">{r.product_code ?? ""}</span>
+                                              <span className="text-[14px] text-ink font-medium">{r.product_name ?? "-"}</span>
+                                              <span className="text-[13px] text-slate-400 tabular-nums ml-1.5">{r.product_code ?? ""}</span>
                                             </td>
-                                            <td className="px-2 py-1 text-right text-[12px] tabular-nums text-slate-400">1</td>
+                                            <td className="px-2 py-1 text-right text-[13px] tabular-nums text-slate-400">1</td>
                                             <td className="px-2 py-1 text-right text-[13px] tabular-nums text-ink">{fmt(Number(r.quantity ?? r.qty ?? 0))}</td>
+                                            {/* 2026-10-15 · 매입가 · leaf row 는 r.unit_price 직접 */}
+                                            <td className="px-2 py-1 text-right text-[13px] tabular-nums text-ink">
+                                              {Number(r.unit_price ?? 0) > 0 ? fmt(Number(r.unit_price)) : "-"}
+                                            </td>
                                             <td className={`px-2 py-1 text-right text-[13px] tabular-nums ${pStock != null && pStock > 0 ? "text-slate-600" : "text-slate-300"}`}>{pStock != null ? fmt(pStock) : "-"}</td>
                                             <td className="px-2 py-1 text-right text-[13px] tabular-nums text-slate-500">{pSale != null && pSale > 0 ? fmt(pSale) : "-"}</td>
                                             <td className={`px-2 py-1 text-right text-[13px] tabular-nums ${pMargin != null && pMargin >= 20 ? "text-emerald-600" : pMargin != null && pMargin >= 10 ? "text-slate-600" : pMargin != null && pMargin > 0 ? "text-rose-500" : "text-slate-300"}`}>{pMargin != null && pMargin > 0 ? `${pMargin.toFixed(1)}%` : "-"}</td>
@@ -830,7 +849,7 @@ export const PurchaseArrivalOverview: React.FC<PurchaseArrivalOverviewProps> = (
                         )}
                         {expanded && b.rows.length > getVisible(b.supplier) && (
                           <tr className="border-b border-slate-100 bg-slate-50/40">
-                            <td colSpan={8} className="px-5 py-2 text-center">
+                            <td colSpan={9} className="px-5 py-2 text-center">
                               <div className="inline-flex items-center gap-2.5 text-[13px]">
                                 <span className="text-slate-500 tabular-nums">
                                   {getVisible(b.supplier)}건 / 총 {b.rows.length}건

@@ -190,7 +190,8 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   //   · 매장 매대 = products.display_location 그룹 (매대 코드 매칭)
   //   · 창고 매대 = warehouseZones KV (상품 매핑 X · code+label 노출)
   //   · 재고자산 = Σ (store1+store2+store3+warehouse1+warehouse2) × purchase_price
-  interface ZoneProduct { code: string; name: string; stock: number; unitPrice: number; assetValue: number; saleQty: number; }
+  // 2026-10-15 · 사용자 리포트 "매장매대 마진율 안나와" fix · ZoneProduct 에 marginPct 추가
+  interface ZoneProduct { code: string; name: string; stock: number; unitPrice: number; assetValue: number; saleQty: number; marginPct: number | null; }
   interface ZoneAgg {
     code: string;
     label: string;
@@ -199,6 +200,10 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
     // 2026-10-12 · 사용자 지시 · 판매수·재고수·재고자산 한눈
     totalStock: number;   // 재고수 (store*_stock 합)
     totalSale: number;    // 판매수 (ERP sale 집계)
+    // 2026-10-15 · 사용자 리포트 "매장매대 마진율 안나와" fix · 마진율 집계 (products 평균)
+    marginSum: number;      // marginPct 합 (유효 상품만)
+    marginCount: number;    // marginPct 유효 상품 수
+    avgMarginPct: number | null;  // 집계 결과
     products: ZoneProduct[];
   }
 
@@ -210,7 +215,8 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
   const storeZoneAggs = useMemo((): Map<string, ZoneAgg> => {
     const agg = new Map<string, ZoneAgg>();
     const safeChecks = Array.isArray(checks) ? checks : [];
-    const pushTo = (zoneCode: string, code: string, name: string, stock: number, unitPrice: number, saleQty: number) => {
+    // 2026-10-15 · 사용자 리포트 "매장매대 마진율 안나와" fix · marginPct 포함 (sale_price - purchase_price) / sale_price
+    const pushTo = (zoneCode: string, code: string, name: string, stock: number, unitPrice: number, saleQty: number, marginPct: number | null) => {
       if (!zoneCode || stock <= 0) return;
       const asset = stock * unitPrice;
       if (!agg.has(zoneCode)) {
@@ -219,14 +225,18 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
           zn.__locationA === zoneCode || zn.__locationB === zoneCode
         );
         const zoneLabel = zd?.category || zd?.subA || zd?.subB || zd?.label || "-";
-        agg.set(zoneCode, { code: zoneCode, label: zoneLabel, productCount: 0, assetValue: 0, totalStock: 0, totalSale: 0, products: [] });
+        agg.set(zoneCode, { code: zoneCode, label: zoneLabel, productCount: 0, assetValue: 0, totalStock: 0, totalSale: 0, marginSum: 0, marginCount: 0, avgMarginPct: null, products: [] });
       }
       const g = agg.get(zoneCode)!;
-      g.products.push({ code, name, stock, unitPrice, assetValue: asset, saleQty });
+      g.products.push({ code, name, stock, unitPrice, assetValue: asset, saleQty, marginPct });
       g.productCount += 1;
       g.assetValue += asset;
       g.totalStock += stock;
       g.totalSale += saleQty;
+      if (marginPct !== null && Number.isFinite(marginPct)) {
+        g.marginSum += marginPct;
+        g.marginCount += 1;
+      }
     };
     // 2026-10-12 · 매대 번호 추출 helper · "5A 1열"/"21"/"벽>21>전체>전체" 등 다양한 포맷 지원
     //   · 앞부분 숫자+A/B 패턴 (예: "5A", "21", "1B") 매칭
@@ -249,6 +259,10 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
       const prod = productsMap[pcode] as any;
       const unitPrice = Number(prod?.purchase_price ?? 0);
       const saleQty = saleQtyByCode.get(pcode) ?? 0;
+      // 2026-10-15 · 사용자 리포트 "매장매대 마진율 안나와" fix · 상품 marginPct 계산
+      //   · marginPct = (sale_price - purchase_price) / sale_price * 100
+      const salePrice = Number(prod?.sale_price ?? 0);
+      const marginPct = (salePrice > 0 && unitPrice > 0) ? ((salePrice - unitPrice) / salePrice) * 100 : null;
       const name = String(chk.product_name ?? prod?.product_name ?? prod?.name ?? pcode);
       // 매대 매칭 · ERP products.display_location → extract code → zone_defs
       const loc = String(prod?.display_location ?? prod?.location ?? "").trim();
@@ -265,9 +279,13 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
       const zoneCode = zd.__locationA === extracted ? zd.__locationA
         : zd.__locationB === extracted ? zd.__locationB
         : zd.__location ?? String(zd.num);
-      pushTo(zoneCode, pcode, name, storeStock, unitPrice, saleQty);
+      pushTo(zoneCode, pcode, name, storeStock, unitPrice, saleQty, marginPct);
     }
-    for (const z of agg.values()) z.products.sort((a, b) => b.assetValue - a.assetValue);
+    for (const z of agg.values()) {
+      z.products.sort((a, b) => b.assetValue - a.assetValue);
+      // 2026-10-15 · 매대별 평균 마진율 계산 (유효 상품만)
+      z.avgMarginPct = z.marginCount > 0 ? z.marginSum / z.marginCount : null;
+    }
     return agg;
   }, [checks, productsMap, storeZones, saleQtyByCode]);
 
@@ -279,6 +297,9 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
       let stockTotal = 0;
       let saleTotal = 0;
       const safeChecks = Array.isArray(checks) ? checks : [];
+      // 2026-10-15 · ZoneProduct 에 marginPct 추가 · 창고도 계산
+      let marginSum = 0;
+      let marginCount = 0;
       for (const chk of safeChecks) {
         const code = String(chk.product_code ?? "");
         if (!code) continue;
@@ -286,16 +307,23 @@ export const InventoryDisplayOverview: React.FC<InventoryDisplayOverviewProps> =
         if (stock <= 0) continue;
         const prod = productsMap[code];
         const unitPrice = Number((prod as any)?.purchase_price ?? 0);
+        const salePrice = Number((prod as any)?.sale_price ?? 0);
+        const marginPct = (salePrice > 0 && unitPrice > 0) ? ((salePrice - unitPrice) / salePrice) * 100 : null;
+        if (marginPct !== null && Number.isFinite(marginPct)) {
+          marginSum += marginPct;
+          marginCount += 1;
+        }
         const asset = stock * unitPrice;
         // 2026-10-12 · 사용자 지시 · 창고에도 판매수 노출 · pcode별 매칭 (창고 판매 비율 안분은 생략 · 전량)
         const saleQty = saleQtyByCode.get(code) ?? 0;
-        products.push({ code, name: String(chk.product_name ?? prod?.name ?? code), stock, unitPrice, assetValue: asset, saleQty });
+        products.push({ code, name: String(chk.product_name ?? prod?.name ?? code), stock, unitPrice, assetValue: asset, saleQty, marginPct });
         assetTotal += asset;
         stockTotal += stock;
         saleTotal += saleQty;
       }
       products.sort((a, b) => b.assetValue - a.assetValue);
-      return { code: filter === "1" ? "창고1" : "창고2", label: filter === "1" ? "창고 1" : "창고 2", productCount: products.length, assetValue: assetTotal, totalStock: stockTotal, totalSale: saleTotal, products };
+      const avgMarginPct = marginCount > 0 ? marginSum / marginCount : null;
+      return { code: filter === "1" ? "창고1" : "창고2", label: filter === "1" ? "창고 1" : "창고 2", productCount: products.length, assetValue: assetTotal, totalStock: stockTotal, totalSale: saleTotal, marginSum, marginCount, avgMarginPct, products };
     };
     return { wh1: build("1"), wh2: build("2") };
   }, [checks, productsMap, saleQtyByCode]);
@@ -999,7 +1027,8 @@ const ZoneListGroup: React.FC<{
   tone: Tone;
   chips: StoreChipItem[];
   // 2026-10-12 · 사용자 지시 · 판매수 column 추가 · totalSale/totalStock 포함
-  aggs: Map<string, { code: string; label: string; productCount: number; assetValue: number; totalSale: number; totalStock: number; products: Array<{ code: string; name: string; stock: number; unitPrice: number; assetValue: number }> }>;
+  // 2026-10-15 · 사용자 리포트 "매장매대 마진율 안나와" fix · avgMarginPct 포함
+  aggs: Map<string, { code: string; label: string; productCount: number; assetValue: number; totalSale: number; totalStock: number; avgMarginPct: number | null; products: Array<{ code: string; name: string; stock: number; unitPrice: number; assetValue: number; marginPct?: number | null }> }>;
   expanded: string | null;
   onToggle: (code: string | null) => void;
   fmtWon: (n: number) => string;
@@ -1016,7 +1045,7 @@ const ZoneListGroup: React.FC<{
       const bg = aggs.get(b.code);
       if (sortKey === "code")   return a.code.localeCompare(b.code, "ko") * sign;
       if (sortKey === "label")  return a.label.localeCompare(b.label, "ko") * sign;
-      if (sortKey === "margin") return 0; // margin 데이터 미집계 · placeholder
+      if (sortKey === "margin") return ((ag?.avgMarginPct ?? -Infinity) - (bg?.avgMarginPct ?? -Infinity)) * sign;
       if (sortKey === "sale")   return ((ag?.totalSale ?? 0) - (bg?.totalSale ?? 0)) * sign;
       if (sortKey === "count")  return ((ag?.productCount ?? 0) - (bg?.productCount ?? 0)) * sign;
       if (sortKey === "stock")  return ((ag?.totalStock ?? 0) - (bg?.totalStock ?? 0)) * sign;
@@ -1074,7 +1103,12 @@ const ZoneListGroup: React.FC<{
                 <span className="line-clamp-1" title={c.label}>{c.label}</span>
               </td>
               {/* 2026-10-12 · 사용자 지시 · 마진율 → 판매수 → 제품수 → 재고수 → 재고자산 */}
-              <td className="px-3 py-2 text-right text-[14px] text-slate-400 tabular-nums">-</td>
+              {/* 2026-10-15 · 사용자 리포트 "매장매대 마진율 안나와" fix · zone 평균 marginPct 노출 (products 평균) */}
+              <td className="px-3 py-2 text-right text-[14px] tabular-nums">
+                {agg?.avgMarginPct != null && Number.isFinite(agg.avgMarginPct)
+                  ? <span className={agg.avgMarginPct >= 20 ? "text-emerald-600 font-semibold" : agg.avgMarginPct >= 10 ? "text-ink" : "text-rose-600 font-semibold"}>{agg.avgMarginPct.toFixed(1)}%</span>
+                  : <span className="text-slate-300">-</span>}
+              </td>
               <td className="px-3 py-2 text-right text-[14px] font-semibold text-ink tabular-nums">
                 {(agg?.totalSale ?? 0) > 0 ? agg!.totalSale.toLocaleString() : <span className="text-slate-300">-</span>}
               </td>
